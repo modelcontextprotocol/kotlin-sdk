@@ -6,7 +6,7 @@ fixes/changes/improvements via pull requests.
 ## Submitting issues
 
 Both bug reports and feature requests are welcome.
-Submit issues [here](https://github.com/JetBrains/mcp-kotlin-sdk/issues).
+Submit issues [here](https://github.com/modelcontextprotocol/kotlin-sdk/issues).
 
 * Search for existing issues to avoid reporting duplicates.
 * When submitting a bug report:
@@ -23,7 +23,7 @@ Submit issues [here](https://github.com/JetBrains/mcp-kotlin-sdk/issues).
 
 ## Submitting PRs
 
-We love PRs. Submit PRs [here](https://github.com/JetBrains/mcp-kotlin-sdk/pulls).
+We love PRs. Submit PRs [here](https://github.com/modelcontextprotocol/kotlin-sdk/pulls).
 However, please keep in mind that maintainers will have to support the resulting code of the project,
 so do familiarize yourself with the following guidelines.
 

@@ -13,7 +13,7 @@ The Model Context Protocol allows applications to provide context for LLMs in a 
 
 ## Samples
 
-- [kotlin-mcp-server](./samples/kotlin-mcp-server): shows how to set up Kotlin MCP server with different tools and other features.
+- [kotlin-mcp-server](./samples/kotlin-mcp-server): shows how to set up a Kotlin MCP server with different tools and other features.
 
 ## Installation
 
@@ -21,7 +21,7 @@ Add the new repository to your build file:
 
 ```kotlin
 repositories {
-    maven(url = "https://maven.pkg.jetbrains.space/public/p/kotlin-mcp-sdk/sdk")
+    mavenCentral()
 }
 ```
 
@@ -29,7 +29,7 @@ Add the dependency:
 
 ```kotlin
 dependencies {
-    implementation("org.jetbrains.kotlinx:kotlinx-mcp-sdk:0.1.0")
+    implementation("io.modelcontextprotocol:kotlin-sdk:0.1.0")
 }
 ```
 
@@ -38,9 +38,9 @@ dependencies {
 ### Creating a Client
 
 ```kotlin
-import org.jetbrains.kotlinx.mcp.client.Client
-import org.jetbrains.kotlinx.mcp.client.StdioClientTransport
-import org.jetbrains.kotlinx.mcp.Implementation
+import io.modelcontextprotocol.kotlin.sdk.mcp.client.Client
+import io.modelcontextprotocol.kotlin.sdk.mcp.client.StdioClientTransport
+import io.modelcontextprotocol.kotlin.sdk.mcp.Implementation
 
 val client = Client(
     clientInfo = Implementation(
@@ -69,10 +69,10 @@ val resourceContent = client.readResource(
 ### Creating a Server
 
 ```kotlin
-import org.jetbrains.kotlinx.mcp.server.Server
-import org.jetbrains.kotlinx.mcp.server.ServerOptions
-import org.jetbrains.kotlinx.mcp.server.StdioServerTransport
-import org.jetbrains.kotlinx.mcp.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.mcp.server.Server
+import io.modelcontextprotocol.kotlin.sdk.mcp.server.ServerOptions
+import io.modelcontextprotocol.kotlin.sdk.mcp.server.StdioServerTransport
+import io.modelcontextprotocol.kotlin.sdk.mcp.ServerCapabilities
 
 val server = Server(
     serverInfo = Implementation(
@@ -116,7 +116,7 @@ server.connect(transport)
 
 ```kotlin
 import io.ktor.server.application.*
-import org.jetbrains.kotlinx.mcp.server.MCP
+import io.modelcontextprotocol.kotlin.sdk.mcp.server.MCP
 
 fun Application.module() {
     MCP {
