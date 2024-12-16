@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>Client</title>
+    <link href="../../../images/logo-icon.svg" rel="icon" type="image/svg">
+    <script>var pathToRoot = "../../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async="async"></script>
+<script type="text/javascript" src="../../../scripts/sourceset_dependencies.js" async="async"></script>
+<link href="../../../styles/style.css" rel="Stylesheet">
+<link href="../../../styles/main.css" rel="Stylesheet">
+<link href="../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../scripts/clipboard.js" async="async"></script>
+<script type="text/javascript" src="../../../scripts/navigation-loader.js" async="async"></script>
+<script type="text/javascript" src="../../../scripts/platform-content-handler.js" async="async"></script>
+<script type="text/javascript" src="../../../scripts/main.js" defer="defer"></script>
+<script type="text/javascript" src="../../../scripts/prism.js" async="async"></script>
+<script type="text/javascript" src="../../../ui-kit/ui-kit.min.js" async="async"></script>
+<script type="text/javascript" src="../../../scripts/symbol-parameters-wrapper_deferred.js" defer="defer"></script>
+</head>
+<body>
+    <div class="root">
+<nav class="navigation" id="navigation-wrapper">
+    <div class="navigation--inner">
+        <div class="navigation-title">
+            <button class="menu-toggle" id="menu-toggle" type="button">toggle menu</button>
+            <div class="library-name">
+                    <a class="library-name--link" href="../../../index.html">
+                            MCP Kotlin SDK
+                    </a>
+            </div>
+            <div class="library-version">
+0.1.0            </div>
+        </div>
+        <div class="filter-section" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":/main">jvm</button>
+        </div>
+    </div>
+    <div class="navigation-controls">
+        <button class="navigation-controls--btn navigation-controls--theme" id="theme-toggle-button" type="button">switch theme</button>
+        <div class="navigation-controls--btn navigation-controls--search" id="searchBar" role="button">search in API</div>
+    </div>
+</nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="sidebar--inner" id="sideMenu"></div>
+            </div>
+            <div id="main">
+<div class="main-content" data-page-type="classlike" id="content" pageIds="MCP Kotlin SDK::io.modelcontextprotocol.kotlin.sdk.client/Client///PointingToDeclaration//-251573632">
+  <div class="breadcrumbs"><a href="../../../index.html">MCP Kotlin SDK</a><span class="delimiter">/</span><a href="../index.html">io.modelcontextprotocol.kotlin.sdk.client</a><span class="delimiter">/</span><span class="current">Client</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span><span>Client</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">class </span><a href="index.html">Client</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">clientInfo<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-implementation/index.html">Implementation</a><span class="token punctuation">, </span></span><span class="parameter ">options<span class="token operator">: </span><a href="../-client-options/index.html">ClientOptions</a><span class="token operator"> = </span>ClientOptions()</span></span><span class="token punctuation">)</span> : <a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-protocol/index.html">Protocol</a><span class="token operator">&lt;</span><a href="../../io.modelcontextprotocol.kotlin.sdk/-client-request/index.html">ClientRequest</a><span class="token punctuation">, </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-client-notification/index.html">ClientNotification</a><span class="token punctuation">, </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-client-result/index.html">ClientResult</a><span class="token operator">&gt; </span><span class="clearfix"><span class="floating-right">(<a href="https://github.com/modelcontextprotocol/kotlin-sdk/io/modelcontextprotocol/kotlin/sdk/client/Client.kt#L70">source</a>)</span></span></div><p class="paragraph">An MCP client on top of a pluggable transport.</p><p class="paragraph">The client automatically performs the initialization handshake with the server when <a href="connect.html">connect</a> is called. After initialization, <a href="get-server-capabilities.html">getServerCapabilities</a> and <a href="get-server-version.html">getServerVersion</a> provide details about the connected server.</p><p class="paragraph">You can extend this class with custom request/notification/result types if needed.</p><h4 class="">Parameters</h4><div class="table"><div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span>client</span><wbr></wbr><span><span>Info</span></span></u></div></span></div><div><div class="title"><p class="paragraph">Information about the client implementation (name, version).</p></div></div></div></div><div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span><span>options</span></span></u></div></span></div><div><div class="title"><p class="paragraph">Configuration options for this client.</p></div></div></div></div></div></div></div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="CONSTRUCTOR">
+        <h2 class="">Constructors</h2>
+        <div class="table"><a data-name="-430090920%2FConstructors%2F-251573632" anchor-label="Client" id="-430090920%2FConstructors%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-client.html"><span><span>Client</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-430090920%2FConstructors%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">clientInfo<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-implementation/index.html">Implementation</a><span class="token punctuation">, </span></span><span class="parameter ">options<span class="token operator">: </span><a href="../-client-options/index.html">ClientOptions</a><span class="token operator"> = </span>ClientOptions()</span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="PROPERTY">
+        <h2 class="">Properties</h2>
+        <div class="table"><a data-name="-1758052378%2FProperties%2F-251573632" anchor-label="fallbackNotificationHandler" id="-1758052378%2FProperties%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-protocol/fallback-notification-handler.html"><span>fallback</span><wbr></wbr><span>Notification</span><wbr></wbr><span><span>Handler</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1758052378%2FProperties%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">var </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-protocol/fallback-notification-handler.html">fallbackNotificationHandler</a><span class="token operator">: </span><span class="token keyword">suspend </span><span class="token punctuation">(</span>notification<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-j-s-o-n-r-p-c-notification/index.html">JSONRPCNotification</a><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html">Unit</a><span class="token operator">?</span></div><div class="brief "><p class="paragraph">A handler to invoke for any notification types that do not have their own handler installed.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1260983750%2FProperties%2F-251573632" anchor-label="fallbackRequestHandler" id="-1260983750%2FProperties%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-protocol/fallback-request-handler.html"><span>fallback</span><wbr></wbr><span>Request</span><wbr></wbr><span><span>Handler</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1260983750%2FProperties%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">var </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-protocol/fallback-request-handler.html">fallbackRequestHandler</a><span class="token operator">: </span><span class="token keyword">suspend </span><span class="token punctuation">(</span>request<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-j-s-o-n-r-p-c-request/index.html">JSONRPCRequest</a><span class="token punctuation">, </span>extra<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-request-handler-extra/index.html">RequestHandlerExtra</a><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-client-result/index.html">ClientResult</a><span class="token operator">?</span><span class="token operator">?</span></div><div class="brief "><p class="paragraph">A handler to invoke for any request types that do not have their own handler installed.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="520899939%2FProperties%2F-251573632" anchor-label="notificationHandlers" id="520899939%2FProperties%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-protocol/notification-handlers.html"><span>notification</span><wbr></wbr><span><span>Handlers</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="520899939%2FProperties%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">val </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-protocol/notification-handlers.html">notificationHandlers</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-mutable-map/index.html">MutableMap</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span><span class="token keyword">suspend </span><span class="token punctuation">(</span>notification<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-j-s-o-n-r-p-c-notification/index.html">JSONRPCNotification</a><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html">Unit</a><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1392522586%2FProperties%2F-251573632" anchor-label="transport" id="1392522586%2FProperties%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-protocol/transport.html"><span><span>transport</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1392522586%2FProperties%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">var </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-protocol/transport.html">transport</a><span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-transport/index.html">Transport</a><span class="token operator">?</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="">Functions</h2>
+        <div class="table"><a data-name="-581026211%2FFunctions%2F-251573632" anchor-label="assertRequestHandlerCapability" id="-581026211%2FFunctions%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="assert-request-handler-capability.html"><span>assert</span><wbr></wbr><span>Request</span><wbr></wbr><span>Handler</span><wbr></wbr><span><span>Capability</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-581026211%2FFunctions%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="assert-request-handler-capability.html"><span class="token function">assertRequestHandlerCapability</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">method<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-method/index.html">Method</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">A method to check if a request handler is supported by the local side, for the given method to be handled.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2007790827%2FFunctions%2F-251573632" anchor-label="callTool" id="2007790827%2FFunctions%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="call-tool.html"><span>call</span><wbr></wbr><span><span>Tool</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2007790827%2FFunctions%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="call-tool.html"><span class="token function">callTool</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">request<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-call-tool-request/index.html">CallToolRequest</a><span class="token punctuation">, </span></span><span class="parameter ">compatibility<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token operator"> = </span><span class="token boolean">false</span><span class="token punctuation">, </span></span><span class="parameter ">options<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-request-options/index.html">RequestOptions</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-call-tool-result-base/index.html">CallToolResultBase</a><span class="token operator">?</span></div><div class="brief "><p class="paragraph">Calls a tool on the server using a <a href="../../io.modelcontextprotocol.kotlin.sdk/-call-tool-request/index.html">CallToolRequest</a> object.</p></div><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="call-tool.html"><span class="token function">callTool</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">name<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">arguments<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/index.html">Map</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a><span class="token operator">?</span><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">compatibility<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token operator"> = </span><span class="token boolean">false</span><span class="token punctuation">, </span></span><span class="parameter ">options<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-request-options/index.html">RequestOptions</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-call-tool-result-base/index.html">CallToolResultBase</a><span class="token operator">?</span></div><div class="brief "><p class="paragraph">Calls a tool on the server by name, passing the specified arguments.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="971540587%2FFunctions%2F-251573632" anchor-label="close" id="971540587%2FFunctions%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-protocol/close.html"><span><span>close</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="971540587%2FFunctions%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-protocol/close.html"><span class="token function">close</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Closes the connection.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="822532497%2FFunctions%2F-251573632" anchor-label="complete" id="822532497%2FFunctions%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="complete.html"><span><span>complete</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="822532497%2FFunctions%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="complete.html"><span class="token function">complete</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">params<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-complete-request/index.html">CompleteRequest</a><span class="token punctuation">, </span></span><span class="parameter ">options<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-request-options/index.html">RequestOptions</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-complete-result/index.html">CompleteResult</a><span class="token operator">?</span></div><div class="brief "><p class="paragraph">Sends a completion request to the server, typically to generate or complete some content.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="783842813%2FFunctions%2F-251573632" anchor-label="connect" id="783842813%2FFunctions%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="connect.html"><span><span>connect</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="783842813%2FFunctions%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="connect.html"><span class="token function">connect</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">transport<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-transport/index.html">Transport</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Connects the client to the given <a href="connect.html">transport</a>, performing the initialization handshake with the server.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="960172475%2FFunctions%2F-251573632" anchor-label="getPrompt" id="960172475%2FFunctions%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-prompt.html"><span>get</span><wbr></wbr><span><span>Prompt</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="960172475%2FFunctions%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="get-prompt.html"><span class="token function">getPrompt</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">request<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-get-prompt-request/index.html">GetPromptRequest</a><span class="token punctuation">, </span></span><span class="parameter ">options<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-request-options/index.html">RequestOptions</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-get-prompt-result/index.html">GetPromptResult</a><span class="token operator">?</span></div><div class="brief "><p class="paragraph">Retrieves a prompt by name from the server.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1704934087%2FFunctions%2F-251573632" anchor-label="getServerCapabilities" id="1704934087%2FFunctions%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-server-capabilities.html"><span>get</span><wbr></wbr><span>Server</span><wbr></wbr><span><span>Capabilities</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1704934087%2FFunctions%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="get-server-capabilities.html"><span class="token function">getServerCapabilities</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-server-capabilities/index.html">ServerCapabilities</a><span class="token operator">?</span></div><div class="brief "><p class="paragraph">Retrieves the server's reported capabilities after the initialization process completes.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2049358821%2FFunctions%2F-251573632" anchor-label="getServerVersion" id="2049358821%2FFunctions%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-server-version.html"><span>get</span><wbr></wbr><span>Server</span><wbr></wbr><span><span>Version</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2049358821%2FFunctions%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="get-server-version.html"><span class="token function">getServerVersion</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-implementation/index.html">Implementation</a><span class="token operator">?</span></div><div class="brief "><p class="paragraph">Retrieves the server's reported version information after initialization.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1881226647%2FFunctions%2F-251573632" anchor-label="listPrompts" id="-1881226647%2FFunctions%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="list-prompts.html"><span>list</span><wbr></wbr><span><span>Prompts</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1881226647%2FFunctions%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="list-prompts.html"><span class="token function">listPrompts</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">request<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-list-prompts-request/index.html">ListPromptsRequest</a><span class="token operator"> = </span>ListPromptsRequest()<span class="token punctuation">, </span></span><span class="parameter ">options<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-request-options/index.html">RequestOptions</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-list-prompts-result/index.html">ListPromptsResult</a><span class="token operator">?</span></div><div class="brief "><p class="paragraph">Lists all available prompts from the server.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2022776171%2FFunctions%2F-251573632" anchor-label="listResources" id="-2022776171%2FFunctions%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="list-resources.html"><span>list</span><wbr></wbr><span><span>Resources</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2022776171%2FFunctions%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="list-resources.html"><span class="token function">listResources</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">request<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-list-resources-request/index.html">ListResourcesRequest</a><span class="token operator"> = </span>ListResourcesRequest()<span class="token punctuation">, </span></span><span class="parameter ">options<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-request-options/index.html">RequestOptions</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-list-resources-result/index.html">ListResourcesResult</a><span class="token operator">?</span></div><div class="brief "><p class="paragraph">Lists all available resources from the server.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="607277153%2FFunctions%2F-251573632" anchor-label="listResourceTemplates" id="607277153%2FFunctions%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="list-resource-templates.html"><span>list</span><wbr></wbr><span>Resource</span><wbr></wbr><span><span>Templates</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="607277153%2FFunctions%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="list-resource-templates.html"><span class="token function">listResourceTemplates</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">request<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-list-resource-templates-request/index.html">ListResourceTemplatesRequest</a><span class="token punctuation">, </span></span><span class="parameter ">options<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-request-options/index.html">RequestOptions</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-list-resource-templates-result/index.html">ListResourceTemplatesResult</a><span class="token operator">?</span></div><div class="brief "><p class="paragraph">Lists resource templates available on the server.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="897483137%2FFunctions%2F-251573632" anchor-label="listTools" id="897483137%2FFunctions%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="list-tools.html"><span>list</span><wbr></wbr><span><span>Tools</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="897483137%2FFunctions%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="list-tools.html"><span class="token function">listTools</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">request<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-list-tools-request/index.html">ListToolsRequest</a><span class="token operator"> = </span>ListToolsRequest()<span class="token punctuation">, </span></span><span class="parameter ">options<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-request-options/index.html">RequestOptions</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-list-tools-result/index.html">ListToolsResult</a><span class="token operator">?</span></div><div class="brief "><p class="paragraph">Lists all available tools on the server.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="872480327%2FFunctions%2F-251573632" anchor-label="notification" id="872480327%2FFunctions%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="index.html#872480327%2FFunctions%2F-251573632"><span><span>notification</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="872480327%2FFunctions%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="index.html#872480327%2FFunctions%2F-251573632"><span class="token function">notification</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">notification<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-client-notification/index.html">ClientNotification</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Emits a notification, which is a one-way message that does not expect a response.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1100876662%2FFunctions%2F-251573632" anchor-label="onclose" id="-1100876662%2FFunctions%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-protocol/onclose.html"><span><span>onclose</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1100876662%2FFunctions%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-protocol/onclose.html"><span class="token function">onclose</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Callback for when the connection is closed for any reason.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1812764327%2FFunctions%2F-251573632" anchor-label="onerror" id="1812764327%2FFunctions%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-protocol/onerror.html"><span><span>onerror</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1812764327%2FFunctions%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-protocol/onerror.html"><span class="token function">onerror</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">error<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-throwable/index.html">Throwable</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Callback for when an error occurs.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1929012496%2FFunctions%2F-251573632" anchor-label="ping" id="1929012496%2FFunctions%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="ping.html"><span><span>ping</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1929012496%2FFunctions%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="ping.html"><span class="token function">ping</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">options<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-request-options/index.html">RequestOptions</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-empty-request-result/index.html">EmptyRequestResult</a></div><div class="brief "><p class="paragraph">Sends a ping request to the server to check connectivity.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1160794127%2FFunctions%2F-251573632" anchor-label="readResource" id="-1160794127%2FFunctions%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="read-resource.html"><span>read</span><wbr></wbr><span><span>Resource</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1160794127%2FFunctions%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="read-resource.html"><span class="token function">readResource</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">request<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-read-resource-request/index.html">ReadResourceRequest</a><span class="token punctuation">, </span></span><span class="parameter ">options<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-request-options/index.html">RequestOptions</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-read-resource-result/index.html">ReadResourceResult</a><span class="token operator">?</span></div><div class="brief "><p class="paragraph">Reads a resource from the server by its URI.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1729417824%2FFunctions%2F-251573632" anchor-label="removeNotificationHandler" id="-1729417824%2FFunctions%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-protocol/remove-notification-handler.html"><span>remove</span><wbr></wbr><span>Notification</span><wbr></wbr><span><span>Handler</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1729417824%2FFunctions%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-protocol/remove-notification-handler.html"><span class="token function">removeNotificationHandler</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">method<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-method/index.html">Method</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Removes the notification handler for the given method.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="970992336%2FFunctions%2F-251573632" anchor-label="removeRequestHandler" id="970992336%2FFunctions%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-protocol/remove-request-handler.html"><span>remove</span><wbr></wbr><span>Request</span><wbr></wbr><span><span>Handler</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="970992336%2FFunctions%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-protocol/remove-request-handler.html"><span class="token function">removeRequestHandler</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">method<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-method/index.html">Method</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Removes the request handler for the given method.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1039021428%2FFunctions%2F-251573632" anchor-label="request" id="-1039021428%2FFunctions%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="index.html#-1039021428%2FFunctions%2F-251573632"><span><span>request</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1039021428%2FFunctions%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><span class="token operator">&lt;</span><a href="index.html#-1039021428%2FFunctions%2F-251573632">T</a><span class="token operator"> : </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-request-result/index.html">RequestResult</a><span class="token operator">&gt; </span><a href="index.html#-1039021428%2FFunctions%2F-251573632"><span class="token function">request</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">request<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-client-request/index.html">ClientRequest</a><span class="token punctuation">, </span></span><span class="parameter ">options<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-request-options/index.html">RequestOptions</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="index.html#-1039021428%2FFunctions%2F-251573632">T</a></div><div class="brief "><p class="paragraph">Sends a request and wait for a response.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="870811959%2FFunctions%2F-251573632" anchor-label="sendRootsListChanged" id="870811959%2FFunctions%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="send-roots-list-changed.html"><span>send</span><wbr></wbr><span>Roots</span><wbr></wbr><span>List</span><wbr></wbr><span><span>Changed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="870811959%2FFunctions%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="send-roots-list-changed.html"><span class="token function">sendRootsListChanged</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Notifies the server that the list of roots has changed. Typically used if the client is managing some form of hierarchical structure.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="567664440%2FFunctions%2F-251573632" anchor-label="setLoggingLevel" id="567664440%2FFunctions%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="set-logging-level.html"><span>set</span><wbr></wbr><span>Logging</span><wbr></wbr><span><span>Level</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="567664440%2FFunctions%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="set-logging-level.html"><span class="token function">setLoggingLevel</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">level<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-logging-level/index.html">LoggingLevel</a><span class="token punctuation">, </span></span><span class="parameter ">options<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-request-options/index.html">RequestOptions</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-empty-request-result/index.html">EmptyRequestResult</a></div><div class="brief "><p class="paragraph">Sets the logging level on the server.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1818989555%2FFunctions%2F-251573632" anchor-label="setNotificationHandler" id="1818989555%2FFunctions%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-protocol/set-notification-handler.html"><span>set</span><wbr></wbr><span>Notification</span><wbr></wbr><span><span>Handler</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1818989555%2FFunctions%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">fun </span><span class="token operator">&lt;</span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-protocol/set-notification-handler.html">T</a><span class="token operator"> : </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-notification/index.html">Notification</a><span class="token operator">&gt; </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-protocol/set-notification-handler.html"><span class="token function">setNotificationHandler</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">method<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-method/index.html">Method</a><span class="token punctuation">, </span></span><span class="parameter ">handler<span class="token operator">: </span><span class="token punctuation">(</span>notification<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-protocol/set-notification-handler.html">T</a><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><span data-unresolved-link="kotlinx.coroutines/Deferred///PointingToDeclaration/">Deferred</span><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html">Unit</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Registers a handler to invoke when this protocol object receives a notification with the given method.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1123616568%2FFunctions%2F-251573632" anchor-label="setRequestHandler" id="1123616568%2FFunctions%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="index.html#1123616568%2FFunctions%2F-251573632"><span>set</span><wbr></wbr><span>Request</span><wbr></wbr><span><span>Handler</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1123616568%2FFunctions%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">inline </span><span class="token keyword">fun </span><span class="token operator">&lt;</span><a href="index.html#1123616568%2FFunctions%2F-251573632">T</a><span class="token operator"> : </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-request/index.html">Request</a><span class="token operator">&gt; </span><a href="index.html#1123616568%2FFunctions%2F-251573632"><span class="token function">setRequestHandler</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">method<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-method/index.html">Method</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">noinline </span>block<span class="token operator">: </span><span class="token keyword">suspend </span><span class="token punctuation">(</span><a href="index.html#1123616568%2FFunctions%2F-251573632">T</a><span class="token punctuation">, </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-request-handler-extra/index.html">RequestHandlerExtra</a><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-client-result/index.html">ClientResult</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Registers a handler to invoke when this protocol object receives a request with the given method.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="668613705%2FFunctions%2F-251573632" anchor-label="subscribeResource" id="668613705%2FFunctions%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="subscribe-resource.html"><span>subscribe</span><wbr></wbr><span><span>Resource</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="668613705%2FFunctions%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="subscribe-resource.html"><span class="token function">subscribeResource</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">request<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-subscribe-request/index.html">SubscribeRequest</a><span class="token punctuation">, </span></span><span class="parameter ">options<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-request-options/index.html">RequestOptions</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-empty-request-result/index.html">EmptyRequestResult</a></div><div class="brief "><p class="paragraph">Subscribes to resource changes on the server.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="824721431%2FFunctions%2F-251573632" anchor-label="unsubscribeResource" id="824721431%2FFunctions%2F-251573632" data-filterable-set=":/main"></a>
+          <div class="table-row" data-filterable-current=":/main" data-filterable-set=":/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="unsubscribe-resource.html"><span>unsubscribe</span><wbr></wbr><span><span>Resource</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="824721431%2FFunctions%2F-251573632"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="unsubscribe-resource.html"><span class="token function">unsubscribeResource</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">request<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-unsubscribe-request/index.html">UnsubscribeRequest</a><span class="token punctuation">, </span></span><span class="parameter ">options<span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk.shared/-request-options/index.html">RequestOptions</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../io.modelcontextprotocol.kotlin.sdk/-empty-request-result/index.html">EmptyRequestResult</a></div><div class="brief "><p class="paragraph">Unsubscribes from resource changes on the server.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2024 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
+    </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
