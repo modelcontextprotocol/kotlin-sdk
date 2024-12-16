@@ -8,7 +8,7 @@ plugins {
     `maven-publish`
 }
 
-if (project.getSensitiveProperty("libs.sign.key.private") != null) {
+if (project.getSensitiveProperty("SIGNING_KEY_PRIVATE") != null) {
     apply(plugin = "signing")
 }
 
@@ -39,10 +39,10 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.debug)
 }
 
-val spaceUsername = System.getenv("SPACE_PACKAGES_USERNAME")
+val ossrhUsername = System.getenv("OSSRH_USERNAME")
     ?: project.findProperty("kotlin.mcp.sdk.packages.username") as String?
 
-val spacePassword = System.getenv("SPACE_PACKAGES_PASSWORD")
+val ossrhPassword = System.getenv("OSSRH_TOKEN")
     ?: project.findProperty("kotlin.mcp.sdk.packages.password") as String?
 
 val sources = tasks.create<Jar>("sourcesJar") {
@@ -53,11 +53,10 @@ val sources = tasks.create<Jar>("sourcesJar") {
 publishing {
     repositories {
         maven {
-            url = uri("https://maven.pkg.jetbrains.space/public/p/kotlin-mcp-sdk/sdk")
-            name = "Space"
+            name = "OSSRH"
             credentials {
-                username = spaceUsername
-                password = spacePassword
+                username = ossrhUsername
+                password = ossrhPassword
             }
         }
     }
@@ -85,29 +84,29 @@ publishing {
 fun MavenPom.configureMavenCentralMetadata() {
     name by project.name
     description by "Kotlin implementation of the Model Context Protocol (MCP)"
-    url by "https://github.com/JetBrains/mcp-kotlin-sdk"
+    url by "https://github.com/modelcontextprotocol/kotlin-sdk"
 
     licenses {
         license {
-            name by "The Apache Software License, Version 2.0"
-            url by "https://www.apache.org/licenses/LICENSE-2.0.txt"
+            name by "MIT License"
+            url by "https://github.com/modelcontextprotocol/kotlin-sdk/blob/main/LICENSE"
             distribution by "repo"
         }
     }
 
     developers {
         developer {
-            id by "JetBrains"
-            name by "JetBrains Team"
-            organization by "JetBrains"
-            organizationUrl by "https://www.jetbrains.com"
+            id by "Anthropic"
+            name by "Anthropic Team"
+            organization by "Anthropic"
+            organizationUrl by "https://www.anthropic.com"
         }
     }
 
     scm {
-        url by "https://github.com/JetBrains/mcp-kotlin-sdk"
-        connection by "scm:git:git://github.com/JetBrains/mcp-kotlin-sdk.git"
-        developerConnection by "scm:git:git@github.com:JetBrains/mcp-kotlin-sdk.git"
+        url by "https://github.com/modelcontextprotocol/kotlin-sdk"
+        connection by "scm:git:git://github.com/modelcontextprotocol/kotlin-sdk.git"
+        developerConnection by "scm:git:git@github.com:modelcontextprotocol/kotlin-sdk.git"
     }
 }
 
@@ -192,7 +191,7 @@ dokka {
     dokkaSourceSets.main {
         sourceLink {
             localDirectory.set(file("src/main/kotlin"))
-            remoteUrl("https://github.com/JetBrains/mcp-kotlin-sdk")
+            remoteUrl("https://github.com/modelcontextprotocol/kotlin-sdk")
             remoteLineSuffix.set("#L")
             documentedVisibilities(VisibilityModifier.Public)
         }
