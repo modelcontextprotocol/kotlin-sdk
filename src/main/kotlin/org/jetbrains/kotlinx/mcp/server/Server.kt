@@ -32,22 +32,22 @@ public class ServerOptions(
  * @param options Configuration options for the server.
  * @param onCloseCallback A callback invoked when the server connection closes.
  */
-open class Server(
+public open class Server(
     private val serverInfo: Implementation,
     options: ServerOptions,
-    var onCloseCallback: (() -> Unit)? = null
+    public var onCloseCallback: (() -> Unit)? = null
 ) : Protocol<ServerRequest, ServerNotification, ServerResult>(options) {
 
     /**
      * The client's reported capabilities after initialization.
      */
-    var clientCapabilities: ClientCapabilities? = null
+    public var clientCapabilities: ClientCapabilities? = null
         private set
 
     /**
      * The client's version information after initialization.
      */
-    var clientVersion: Implementation? = null
+    public var clientVersion: Implementation? = null
         private set
     private val capabilities: ServerCapabilities = options.capabilities
 
@@ -59,7 +59,7 @@ open class Server(
      * A callback invoked when the server has completed the initialization sequence.
      * After initialization, the server is ready to handle requests.
      */
-    var onInitialized: (() -> Unit)? = null
+    public var onInitialized: (() -> Unit)? = null
 
     init {
         logger.debug { "Initializing MCP server with capabilities: $capabilities" }
@@ -125,7 +125,7 @@ open class Server(
      * @param handler A suspend function that handles executing the tool when called by the client.
      * @throws IllegalStateException If the server does not support tools.
      */
-    fun addTool(
+    public fun addTool(
         name: String,
         description: String,
         inputSchema: Tool.Input = Tool.Input(),
@@ -145,7 +145,7 @@ open class Server(
      * @param toolsToAdd A list of [RegisteredTool] objects representing the tools to register.
      * @throws IllegalStateException If the server does not support tools.
      */
-    fun addTools(toolsToAdd: List<RegisteredTool>) {
+    public fun addTools(toolsToAdd: List<RegisteredTool>) {
         if (capabilities.tools == null) {
             logger.error { "Failed to add tools: Server does not support tools capability" }
             throw IllegalStateException("Server does not support tools capability.")
@@ -164,7 +164,7 @@ open class Server(
      * @param promptProvider A suspend function that returns the prompt content when requested by the client.
      * @throws IllegalStateException If the server does not support prompts.
      */
-    fun addPrompt(prompt: Prompt, promptProvider: suspend (GetPromptRequest) -> GetPromptResult) {
+    public fun addPrompt(prompt: Prompt, promptProvider: suspend (GetPromptRequest) -> GetPromptResult) {
         if (capabilities.prompts == null) {
             logger.error { "Failed to add prompt '${prompt.name}': Server does not support prompts capability" }
             throw IllegalStateException("Server does not support prompts capability.")
@@ -182,7 +182,7 @@ open class Server(
      * @param promptProvider A suspend function that returns the prompt content when requested.
      * @throws IllegalStateException If the server does not support prompts.
      */
-    fun addPrompt(
+    public fun addPrompt(
         name: String,
         description: String? = null,
         arguments: List<PromptArgument>? = null,
@@ -198,7 +198,7 @@ open class Server(
      * @param promptsToAdd A list of [RegisteredPrompt] objects representing the prompts to register.
      * @throws IllegalStateException If the server does not support prompts.
      */
-    fun addPrompts(promptsToAdd: List<RegisteredPrompt>) {
+    public fun addPrompts(promptsToAdd: List<RegisteredPrompt>) {
         if (capabilities.prompts == null) {
             logger.error { "Failed to add prompts: Server does not support prompts capability" }
             throw IllegalStateException("Server does not support prompts capability.")
@@ -220,7 +220,7 @@ open class Server(
      * @param readHandler A suspend function that returns the resource content when read by the client.
      * @throws IllegalStateException If the server does not support resources.
      */
-    fun addResource(
+    public fun addResource(
         uri: String,
         name: String,
         description: String,
@@ -241,7 +241,7 @@ open class Server(
      * @param resourcesToAdd A list of [RegisteredResource] objects representing the resources to register.
      * @throws IllegalStateException If the server does not support resources.
      */
-    fun addResources(resourcesToAdd: List<RegisteredResource>) {
+    public fun addResources(resourcesToAdd: List<RegisteredResource>) {
         if (capabilities.resources == null) {
             logger.error { "Failed to add resources: Server does not support resources capability" }
             throw IllegalStateException("Server does not support resources capability.")
@@ -259,7 +259,7 @@ open class Server(
      * @return The result of the ping request.
      * @throws IllegalStateException If for some reason the method is not supported or the connection is closed.
      */
-    suspend fun ping(): EmptyRequestResult {
+    public suspend fun ping(): EmptyRequestResult {
         return request<EmptyRequestResult>(PingRequest())
     }
 
@@ -271,7 +271,7 @@ open class Server(
      * @return The created message result.
      * @throws IllegalStateException If the server does not support sampling or if the request fails.
      */
-    suspend fun createMessage(
+    public suspend fun createMessage(
         params: CreateMessageRequest,
         options: RequestOptions? = null
     ): CreateMessageResult {
@@ -287,7 +287,7 @@ open class Server(
      * @return The list of roots.
      * @throws IllegalStateException If the server or client does not support roots.
      */
-    suspend fun listRoots(
+    public suspend fun listRoots(
         params: JsonObject = EmptyJsonObject,
         options: RequestOptions? = null
     ): ListRootsResult {
@@ -300,7 +300,7 @@ open class Server(
      *
      * @param params The logging message notification parameters.
      */
-    suspend fun sendLoggingMessage(params: LoggingMessageNotification) {
+    public suspend fun sendLoggingMessage(params: LoggingMessageNotification) {
         logger.trace { "Sending logging message: ${params.data}" }
         notification(params)
     }
@@ -310,7 +310,7 @@ open class Server(
      *
      * @param params Details of the updated resource.
      */
-    suspend fun sendResourceUpdated(params: ResourceUpdatedNotification) {
+    public suspend fun sendResourceUpdated(params: ResourceUpdatedNotification) {
         logger.debug { "Sending resource updated notification for: ${params.uri}" }
         notification(params)
     }
@@ -318,7 +318,7 @@ open class Server(
     /**
      * Sends a notification to the client indicating that the list of resources has changed.
      */
-    suspend fun sendResourceListChanged() {
+    public suspend fun sendResourceListChanged() {
         logger.debug { "Sending resource list changed notification" }
         notification(ResourceListChangedNotification())
     }
@@ -326,7 +326,7 @@ open class Server(
     /**
      * Sends a notification to the client indicating that the list of tools has changed.
      */
-    suspend fun sendToolListChanged() {
+    public suspend fun sendToolListChanged() {
         logger.debug { "Sending tool list changed notification" }
         notification(ToolListChangedNotification())
     }
@@ -334,7 +334,7 @@ open class Server(
     /**
      * Sends a notification to the client indicating that the list of prompts has changed.
      */
-    suspend fun sendPromptListChanged() {
+    public suspend fun sendPromptListChanged() {
         logger.debug { "Sending prompt list changed notification" }
         notification(PromptListChangedNotification())
     }
@@ -543,7 +543,7 @@ open class Server(
  * @property tool The tool definition.
  * @property handler A suspend function to handle the tool call requests.
  */
-data class RegisteredTool(
+public data class RegisteredTool(
     val tool: Tool,
     val handler: suspend (CallToolRequest) -> CallToolResult
 )
@@ -554,7 +554,7 @@ data class RegisteredTool(
  * @property prompt The prompt definition.
  * @property messageProvider A suspend function that returns the prompt content when requested by the client.
  */
-data class RegisteredPrompt(
+public data class RegisteredPrompt(
     val prompt: Prompt,
     val messageProvider: suspend (GetPromptRequest) -> GetPromptResult
 )
@@ -565,7 +565,7 @@ data class RegisteredPrompt(
  * @property resource The resource definition.
  * @property readHandler A suspend function to handle read requests for this resource.
  */
-data class RegisteredResource(
+public data class RegisteredResource(
     val resource: Resource,
     val readHandler: suspend (ReadResourceRequest) -> ReadResourceResult
 )

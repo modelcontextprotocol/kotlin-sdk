@@ -527,14 +527,14 @@ public open class Progress(
  * An out-of-band notification used to inform the receiver of a progress update for a long-running request.
  */
 @Serializable
-data class ProgressNotification(
+public data class ProgressNotification(
     override val progress: Int,
     /**
      * The progress token,
      * which was given in the initial request,
      * used to associate this notification with the request that is proceeding.
      */
-    val progressToken: ProgressToken,
+    public val progressToken: ProgressToken,
     @Suppress("PropertyName") val _meta: JsonObject = EmptyJsonObject,
     override val total: Double?,
 ) : ClientNotification, ServerNotification, ProgressBase {

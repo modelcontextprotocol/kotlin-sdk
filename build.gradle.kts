@@ -179,7 +179,7 @@ abstract class GenerateLibVersionTask @Inject constructor(
             """
             package org.jetbrains.kotlinx.mcp
 
-            const val LIB_VERSION = "$libVersion"
+            public const val LIB_VERSION: String = "$libVersion"
 
             """.trimIndent()
         )
