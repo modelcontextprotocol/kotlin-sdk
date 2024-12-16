@@ -1,11 +1,11 @@
-package org.jetbrains.kotlinx.mcp.server
+package io.modelcontextprotocol.kotlin.sdk.server
 
-import org.jetbrains.kotlinx.mcp.Implementation
-import org.jetbrains.kotlinx.mcp.ServerCapabilities
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
-import org.jetbrains.kotlinx.mcp.LIB_VERSION
-import org.jetbrains.kotlinx.mcp.shared.IMPLEMENTATION_NAME
+import io.modelcontextprotocol.kotlin.sdk.Implementation
+import io.modelcontextprotocol.kotlin.sdk.LIB_VERSION
+import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.shared.IMPLEMENTATION_NAME
 
 /**
  * Registers a WebSocket route that establishes an MCP (Model Context Protocol) server session.

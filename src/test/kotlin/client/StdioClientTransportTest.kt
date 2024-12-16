@@ -1,7 +1,7 @@
 package client
 
 import kotlinx.coroutines.test.runTest
-import org.jetbrains.kotlinx.mcp.client.StdioClientTransport
+import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
 import org.junit.jupiter.api.Test
 
 class StdioClientTransportTest : BaseTransportTest() {

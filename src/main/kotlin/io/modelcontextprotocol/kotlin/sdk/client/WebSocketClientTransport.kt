@@ -1,12 +1,12 @@
-package org.jetbrains.kotlinx.mcp.client
+package io.modelcontextprotocol.kotlin.sdk.client
 
 import io.ktor.client.*
 import io.ktor.client.plugins.websocket.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.websocket.*
-import org.jetbrains.kotlinx.mcp.shared.MCP_SUBPROTOCOL
-import org.jetbrains.kotlinx.mcp.shared.WebSocketMcpTransport
+import io.modelcontextprotocol.kotlin.sdk.shared.MCP_SUBPROTOCOL
+import io.modelcontextprotocol.kotlin.sdk.shared.WebSocketMcpTransport
 import kotlin.properties.Delegates
 
 /**

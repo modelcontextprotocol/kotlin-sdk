@@ -1,9 +1,9 @@
 package client
 
-import org.jetbrains.kotlinx.mcp.JSONRPCMessage
-import org.jetbrains.kotlinx.mcp.Request
+import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.Request
 import org.junit.jupiter.api.Test
-import org.jetbrains.kotlinx.mcp.shared.McpJson
+import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
 
 class TypesTest {
 

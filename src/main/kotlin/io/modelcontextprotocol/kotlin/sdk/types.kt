@@ -1,13 +1,13 @@
 @file:Suppress("unused", "EnumEntryName")
 
-package org.jetbrains.kotlinx.mcp
+package io.modelcontextprotocol.kotlin.sdk
 
+import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
-import org.jetbrains.kotlinx.mcp.shared.McpJson
 import java.util.concurrent.atomic.AtomicLong
 
 public const val LATEST_PROTOCOL_VERSION: String = "2024-11-05"

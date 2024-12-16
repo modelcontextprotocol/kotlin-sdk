@@ -1,12 +1,12 @@
-package org.jetbrains.kotlinx.mcp.server
+package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.jetbrains.kotlinx.mcp.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.shared.ReadBuffer
+import io.modelcontextprotocol.kotlin.sdk.shared.Transport
+import io.modelcontextprotocol.kotlin.sdk.shared.serializeMessage
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
-import org.jetbrains.kotlinx.mcp.shared.ReadBuffer
-import org.jetbrains.kotlinx.mcp.shared.Transport
-import org.jetbrains.kotlinx.mcp.shared.serializeMessage
 import java.io.BufferedInputStream
 import java.io.PrintStream
 import java.util.concurrent.atomic.AtomicBoolean

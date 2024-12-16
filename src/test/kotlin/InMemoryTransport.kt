@@ -1,5 +1,5 @@
-import org.jetbrains.kotlinx.mcp.JSONRPCMessage
-import org.jetbrains.kotlinx.mcp.shared.Transport
+import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.shared.Transport
 
 /**
  * In-memory transport for creating clients and servers that talk to each other within the same process.

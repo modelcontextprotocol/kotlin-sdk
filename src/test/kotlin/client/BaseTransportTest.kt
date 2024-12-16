@@ -1,11 +1,11 @@
 package client
 
-import org.jetbrains.kotlinx.mcp.InitializedNotification
-import org.jetbrains.kotlinx.mcp.JSONRPCMessage
-import org.jetbrains.kotlinx.mcp.PingRequest
+import io.modelcontextprotocol.kotlin.sdk.InitializedNotification
+import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.PingRequest
+import io.modelcontextprotocol.kotlin.sdk.shared.Transport
+import io.modelcontextprotocol.kotlin.sdk.toJSON
 import kotlinx.coroutines.CompletableDeferred
-import org.jetbrains.kotlinx.mcp.shared.Transport
-import org.jetbrains.kotlinx.mcp.toJSON
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -34,8 +34,7 @@ abstract class BaseTransportTest {
         }
 
         val messages = listOf<JSONRPCMessage>(
-            PingRequest().toJSON(),
-            InitializedNotification().toJSON()
+            PingRequest().toJSON(), InitializedNotification().toJSON()
         )
 
         val readMessages = mutableListOf<JSONRPCMessage>()

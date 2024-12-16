@@ -1,12 +1,13 @@
-package org.jetbrains.kotlinx.mcp.server
+package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.serialization.json.JsonObject
-import org.jetbrains.kotlinx.mcp.*
-import org.jetbrains.kotlinx.mcp.shared.Protocol
-import org.jetbrains.kotlinx.mcp.shared.ProtocolOptions
-import org.jetbrains.kotlinx.mcp.shared.RequestOptions
+import io.modelcontextprotocol.kotlin.sdk.*
+import io.modelcontextprotocol.kotlin.sdk.shared.Protocol
+import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions
+import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 
 private val logger = KotlinLogging.logger {}
 

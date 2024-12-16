@@ -9,15 +9,15 @@ import io.ktor.server.sse.ServerSSESession
 import io.ktor.server.sse.sse
 import io.ktor.util.AttributeKey
 import io.ktor.util.Attributes
+import io.modelcontextprotocol.kotlin.sdk.server.SSEServerTransport
 import kotlinx.coroutines.CompletableDeferred
-import org.jetbrains.kotlinx.mcp.Implementation
-import org.jetbrains.kotlinx.mcp.LIB_VERSION
-import org.jetbrains.kotlinx.mcp.ServerCapabilities
-import org.jetbrains.kotlinx.mcp.server.SESSION_ID_PARAM
-import org.jetbrains.kotlinx.mcp.server.SSEServerTransport
-import org.jetbrains.kotlinx.mcp.server.Server
-import org.jetbrains.kotlinx.mcp.server.ServerOptions
-import org.jetbrains.kotlinx.mcp.shared.IMPLEMENTATION_NAME
+import io.modelcontextprotocol.kotlin.sdk.Implementation
+import io.modelcontextprotocol.kotlin.sdk.LIB_VERSION
+import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.server.SESSION_ID_PARAM
+import io.modelcontextprotocol.kotlin.sdk.server.Server
+import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
+import io.modelcontextprotocol.kotlin.sdk.shared.IMPLEMENTATION_NAME
 
 typealias IncomingHandler = suspend RoutingContext.(forward: suspend () -> Unit) -> Unit
 

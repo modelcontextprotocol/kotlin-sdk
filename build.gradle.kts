@@ -16,7 +16,7 @@ tasks.withType<PublishToMavenRepository>().configureEach {
     dependsOn(tasks.withType<Sign>())
 }
 
-group = "org.jetbrains.kotlinx"
+group = "io.modelcontextprotocol"
 version = "0.1.0"
 
 repositories {
@@ -168,7 +168,7 @@ abstract class GenerateLibVersionTask @Inject constructor(
 ) : DefaultTask() {
     @TaskAction
     fun generate() {
-        val sourceFile = File(sourcesDir.resolve("org/jetbrains/kotlinx/mcp"), "LibVersion.kt")
+        val sourceFile = File(sourcesDir.resolve("io/modelcontextprotocol/kotlin/sdk"), "LibVersion.kt")
 
         if (!sourceFile.exists()) {
             sourceFile.parentFile.mkdirs()
@@ -177,7 +177,7 @@ abstract class GenerateLibVersionTask @Inject constructor(
 
         sourceFile.writeText(
             """
-            package org.jetbrains.kotlinx.mcp
+            package io.modelcontextprotocol.kotlin.sdk
 
             public const val LIB_VERSION: String = "$libVersion"
 

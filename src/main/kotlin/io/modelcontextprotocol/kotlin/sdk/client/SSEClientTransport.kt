@@ -1,15 +1,15 @@
-package org.jetbrains.kotlinx.mcp.client
+package io.modelcontextprotocol.kotlin.sdk.client
 
-import org.jetbrains.kotlinx.mcp.JSONRPCMessage
 import io.ktor.client.*
 import io.ktor.client.plugins.sse.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
+import io.modelcontextprotocol.kotlin.sdk.shared.Transport
 import kotlinx.coroutines.*
 import kotlinx.serialization.encodeToString
-import org.jetbrains.kotlinx.mcp.shared.McpJson
-import org.jetbrains.kotlinx.mcp.shared.Transport
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.properties.Delegates
 import kotlin.time.Duration

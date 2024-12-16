@@ -1,17 +1,17 @@
 package server
 
-import org.jetbrains.kotlinx.mcp.InitializedNotification
-import org.jetbrains.kotlinx.mcp.JSONRPCMessage
-import org.jetbrains.kotlinx.mcp.PingRequest
+import io.modelcontextprotocol.kotlin.sdk.InitializedNotification
+import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.PingRequest
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.kotlinx.mcp.server.StdioServerTransport
+import io.modelcontextprotocol.kotlin.sdk.server.StdioServerTransport
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.jetbrains.kotlinx.mcp.shared.ReadBuffer
-import org.jetbrains.kotlinx.mcp.shared.serializeMessage
-import org.jetbrains.kotlinx.mcp.toJSON
+import io.modelcontextprotocol.kotlin.sdk.shared.ReadBuffer
+import io.modelcontextprotocol.kotlin.sdk.shared.serializeMessage
+import io.modelcontextprotocol.kotlin.sdk.toJSON
 import java.io.*
 
 class StdioServerTransportTest {

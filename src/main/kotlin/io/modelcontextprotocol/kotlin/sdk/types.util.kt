@@ -1,6 +1,6 @@
-package org.jetbrains.kotlinx.mcp
+package io.modelcontextprotocol.kotlin.sdk
 
-import org.jetbrains.kotlinx.mcp.LoggingMessageNotification.SetLevelRequest
+import io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification.SetLevelRequest
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer

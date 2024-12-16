@@ -1,9 +1,9 @@
-package org.jetbrains.kotlinx.mcp.server
+package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.ktor.http.*
 import io.ktor.server.websocket.*
-import org.jetbrains.kotlinx.mcp.shared.MCP_SUBPROTOCOL
-import org.jetbrains.kotlinx.mcp.shared.WebSocketMcpTransport
+import io.modelcontextprotocol.kotlin.sdk.shared.MCP_SUBPROTOCOL
+import io.modelcontextprotocol.kotlin.sdk.shared.WebSocketMcpTransport
 
 /**
  * Server-side implementation of the MCP (Model Context Protocol) transport over WebSocket.

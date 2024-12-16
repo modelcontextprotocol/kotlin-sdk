@@ -1,10 +1,10 @@
-package org.jetbrains.kotlinx.mcp.shared
+package io.modelcontextprotocol.kotlin.sdk.shared
 
-import org.jetbrains.kotlinx.mcp.JSONRPCMessage
 import io.ktor.websocket.Frame
 import io.ktor.websocket.WebSocketSession
 import io.ktor.websocket.close
 import io.ktor.websocket.readText
+import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.InternalCoroutinesApi

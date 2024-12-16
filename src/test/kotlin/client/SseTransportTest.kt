@@ -10,7 +10,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import mcpSse
 import mcpSseTransport
-import org.jetbrains.kotlinx.mcp.client.mcpSseTransport
+import io.modelcontextprotocol.kotlin.sdk.client.mcpSseTransport
 import org.junit.jupiter.api.Test
 
 private const val PORT = 8080

@@ -1,6 +1,6 @@
-package org.jetbrains.kotlinx.mcp.shared
+package io.modelcontextprotocol.kotlin.sdk.shared
 
-import org.jetbrains.kotlinx.mcp.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 
 /**
  * Describes the minimal contract for a MCP transport that a client or server can communicate over.

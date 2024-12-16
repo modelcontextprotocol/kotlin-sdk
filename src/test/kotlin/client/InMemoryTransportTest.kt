@@ -1,10 +1,10 @@
 package client
 
 import InMemoryTransport
-import org.jetbrains.kotlinx.mcp.InitializedNotification
-import org.jetbrains.kotlinx.mcp.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.InitializedNotification
+import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.kotlinx.mcp.toJSON
+import io.modelcontextprotocol.kotlin.sdk.toJSON
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

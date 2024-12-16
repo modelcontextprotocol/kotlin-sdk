@@ -1,7 +1,7 @@
-package org.jetbrains.kotlinx.mcp.shared
+package io.modelcontextprotocol.kotlin.sdk.shared
 
-import org.jetbrains.kotlinx.mcp.JSONRPCMessage
 import io.ktor.utils.io.core.*
+import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import kotlinx.io.Buffer
 import kotlinx.io.indexOf
 import kotlinx.io.readString
