@@ -52,8 +52,8 @@ val sources = tasks.create<Jar>("sourcesJar") {
 
 publishing {
     repositories {
-        maven {
-            name = "OSSRH"
+        maven(url = "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+            name = "ossrh"
             credentials {
                 username = ossrhUsername
                 password = ossrhPassword
