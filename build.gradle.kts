@@ -40,10 +40,10 @@ dependencies {
 }
 
 val ossrhUsername = System.getenv("OSSRH_USERNAME")
-    ?: project.findProperty("kotlin.mcp.sdk.packages.username") as String?
+    ?: project.findProperty("OSSRH_USERNAME") as String?
 
 val ossrhPassword = System.getenv("OSSRH_TOKEN")
-    ?: project.findProperty("kotlin.mcp.sdk.packages.password") as String?
+    ?: project.findProperty("OSSRH_TOKEN") as String?
 
 val sources = tasks.create<Jar>("sourcesJar") {
     from(sourceSets["main"].allSource)
