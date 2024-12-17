@@ -28,8 +28,8 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           server-id: ossrh # Value of the distributionManagement/repository/id field of the pom.xml
-          server-username: OSSRH_USERNAME
-          server-password: OSSRH_TOKEN
+          server-username: JRELEASER_MAVENCENTRAL_USERNAME
+          server-password: JRELEASER_MAVENCENTRAL_PASSWORD
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
@@ -38,10 +38,10 @@ jobs:
         run: ./gradlew build
 
       - name: Publish to OSSRH repository
-        run: ./gradlew publish
+        run: ./gradlew jreleaserPublish
         env:
-          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-          OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
-          SIGNING_KEY_ID: ${{ secrets.SIGNING_KEY_ID }}
-          SIGNING_KEY_PRIVATE: ${{ secrets.SIGNING_KEY_PRIVATE }}
-          SIGNING_PASSPHRASE: ${{ secrets.SIGNING_PASSPHRASE }}
+          JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          JRELEASER_MAVENCENTRAL_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+          JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
+          JRELEASER_GPG_SECRET_KEY: ${{ secrets.GPG_SECRET_KEY }}
+          JRELEASER_GPG_PASSPHRASE: ${{ secrets.SIGNING_PASSPHRASE }}

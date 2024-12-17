@@ -1,19 +1,13 @@
 import org.jetbrains.dokka.gradle.engine.parameters.VisibilityModifier
 import org.jetbrains.kotlin.gradle.dsl.ExplicitApiMode
+import org.jreleaser.model.Active
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.dokka)
+    alias(libs.plugins.jreleaser)
     `maven-publish`
-}
-
-if (project.getSensitiveProperty("SIGNING_KEY_PRIVATE") != null) {
-    apply(plugin = "signing")
-}
-
-tasks.withType<PublishToMavenRepository>().configureEach {
-    dependsOn(tasks.withType<Sign>())
 }
 
 group = "io.modelcontextprotocol"
@@ -39,28 +33,12 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.debug)
 }
 
-val ossrhUsername = System.getenv("OSSRH_USERNAME")
-    ?: project.findProperty("OSSRH_USERNAME") as String?
-
-val ossrhPassword = System.getenv("OSSRH_TOKEN")
-    ?: project.findProperty("OSSRH_TOKEN") as String?
-
 val sources = tasks.create<Jar>("sourcesJar") {
     from(sourceSets["main"].allSource)
     archiveClassifier.set("sources")
 }
 
 publishing {
-    repositories {
-        maven(url = "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-            name = "ossrh"
-            credentials {
-                username = ossrhUsername
-                password = ossrhPassword
-            }
-        }
-    }
-
     publications {
         create<MavenPublication>("maven") {
             groupId = project.group.toString()
@@ -78,6 +56,28 @@ publishing {
         signPublicationIfKeyPresent()
         artifact(javadocJar)
         artifact(sources)
+    }
+
+    repositories {
+        maven(url = layout.buildDirectory.dir("staging-deploy"))
+    }
+}
+
+jreleaser {
+    signing {
+        active.set(Active.ALWAYS)
+        armored = true
+    }
+    deploy {
+        maven {
+            mavenCentral {
+                val ossrh by creating {
+                    active.set(Active.ALWAYS)
+                    url.set("https://central.sonatype.com/api/v1/publisher")
+                    stagingRepository("target/staging-deploy")
+                }
+            }
+        }
     }
 }
 
