@@ -120,9 +120,9 @@ fun configureEmptyJavadocArtifact(): org.gradle.jvm.tasks.Jar {
 }
 
 fun MavenPublication.signPublicationIfKeyPresent() {
-    val keyId = project.getSensitiveProperty("libs.sign.key.id")
-    val signingKey = project.getSensitiveProperty("libs.sign.key.private")
-    val signingKeyPassphrase = project.getSensitiveProperty("libs.sign.passphrase")
+    val keyId = project.getSensitiveProperty("SIGNING_KEY_ID")
+    val signingKey = project.getSensitiveProperty("SIGNING_KEY_PRIVATE")
+    val signingKeyPassphrase = project.getSensitiveProperty("SIGNING_PASSPHRASE")
 
     if (!signingKey.isNullOrBlank()) {
         the<SigningExtension>().apply {
