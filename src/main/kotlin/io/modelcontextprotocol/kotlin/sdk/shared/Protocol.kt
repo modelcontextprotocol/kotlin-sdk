@@ -87,7 +87,7 @@ public data class RequestOptions(
     val onProgress: ProgressCallback? = null,
 
     /**
-     * A timeout for this request. If exceeded, an org.jetbrains.kotlinx.mcp.McpError with code `RequestTimeout`
+     * A timeout for this request. If exceeded, an McpError with code `RequestTimeout`
      * will be raised from request().
      *
      * If not specified, `DEFAULT_REQUEST_TIMEOUT` will be used as the timeout.

@@ -91,7 +91,7 @@ fun configureServer(): Server {
 
     // Add a tool
     server.addTool(
-        name = "Test org.jetbrains.kotlinx.mcp.Tool",
+        name = "Test io.modelcontextprotocol.kotlin.sdk.Tool",
         description = "A test tool",
         inputSchema = Tool.Input()
     ) { request ->

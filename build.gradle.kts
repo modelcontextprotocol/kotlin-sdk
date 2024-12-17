@@ -150,7 +150,7 @@ infix fun <T> Property<T>.by(value: T) {
 tasks.create<Jar>("localJar") {
     dependsOn(tasks.jar)
 
-    archiveFileName = "kotlinx-mcp-sdk.jar"
+    archiveFileName = "kotlin-sdk.jar"
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from(configurations.runtimeClasspath.map {
         it.map { if (it.isDirectory) it else zipTree(it) }

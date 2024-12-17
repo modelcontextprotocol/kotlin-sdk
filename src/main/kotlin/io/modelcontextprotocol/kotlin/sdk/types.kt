@@ -503,7 +503,7 @@ public sealed interface ProgressBase {
     public val total: Double?
 }
 
-/* org.jetbrains.kotlinx.mcp.Progress notifications */
+/* Progress notifications */
 /**
  * Represents a progress notification.
  *
@@ -1099,7 +1099,7 @@ public enum class LoggingLevel {
 }
 
 /**
- * org.jetbrains.kotlinx.mcp.Notification of a log message passed from server to client.
+ * Notification of a log message passed from server to client.
  * If no logging level request has been sent from the client,
  * the server MAY decide which messages to send automatically.
  */
