@@ -28,8 +28,8 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           server-id: ossrh # Value of the distributionManagement/repository/id field of the pom.xml
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_PASSWORD
+          server-username: OSSRH_USERNAME
+          server-password: OSSRH_TOKEN
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
