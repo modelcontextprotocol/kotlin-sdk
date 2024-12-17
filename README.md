@@ -38,9 +38,9 @@ dependencies {
 ### Creating a Client
 
 ```kotlin
-import io.modelcontextprotocol.kotlin.sdk.mcp.client.Client
-import io.modelcontextprotocol.kotlin.sdk.mcp.client.StdioClientTransport
-import io.modelcontextprotocol.kotlin.sdk.mcp.Implementation
+import io.modelcontextprotocol.kotlin.sdk.client.Client
+import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
+import io.modelcontextprotocol.kotlin.sdk.Implementation
 
 val client = Client(
     clientInfo = Implementation(
@@ -69,10 +69,10 @@ val resourceContent = client.readResource(
 ### Creating a Server
 
 ```kotlin
-import io.modelcontextprotocol.kotlin.sdk.mcp.server.Server
-import io.modelcontextprotocol.kotlin.sdk.mcp.server.ServerOptions
-import io.modelcontextprotocol.kotlin.sdk.mcp.server.StdioServerTransport
-import io.modelcontextprotocol.kotlin.sdk.mcp.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.server.Server
+import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
+import io.modelcontextprotocol.kotlin.sdk.server.StdioServerTransport
+import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 
 val server = Server(
     serverInfo = Implementation(
@@ -116,7 +116,7 @@ server.connect(transport)
 
 ```kotlin
 import io.ktor.server.application.*
-import io.modelcontextprotocol.kotlin.sdk.mcp.server.MCP
+import io.modelcontextprotocol.kotlin.sdk.server.MCP
 
 fun Application.module() {
     MCP {
