@@ -37,7 +37,7 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew build
 
-      - name: Publish to GitHub Packages
+      - name: Publish to OSSRH repository
         run: ./gradlew publish
         env:
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
