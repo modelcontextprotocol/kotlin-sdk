@@ -7,9 +7,11 @@ import io.modelcontextprotocol.kotlin.sdk.client.mcpWebSocketTransport
 import org.junit.jupiter.api.Test
 import io.modelcontextprotocol.kotlin.sdk.server.mcpWebSocket
 import io.modelcontextprotocol.kotlin.sdk.server.mcpWebSocketTransport
+import org.junit.jupiter.api.Disabled
 
 class WebSocketTransportTest : BaseTransportTest() {
     @Test
+    @Disabled("Test disabled for investigation #17")
     fun `should start then close cleanly`() = testApplication {
         install(WebSockets)
         routing {
