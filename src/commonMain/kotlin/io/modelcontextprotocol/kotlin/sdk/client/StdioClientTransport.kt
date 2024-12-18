@@ -5,14 +5,18 @@ import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.shared.ReadBuffer
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
 import io.modelcontextprotocol.kotlin.sdk.shared.serializeMessage
+import kotlinx.atomicfu.AtomicBoolean
+import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
-import java.io.InputStream
-import java.io.OutputStream
-import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.io.Buffer
+import kotlinx.io.Sink
+import kotlinx.io.Source
+import kotlinx.io.buffered
+import kotlinx.io.readByteArray
+import kotlinx.io.writeString
 import kotlin.coroutines.CoroutineContext
-import kotlin.text.Charsets.UTF_8
 
 /**
  * A transport implementation for JSON-RPC communication that leverages standard input and output streams.
@@ -24,8 +28,8 @@ import kotlin.text.Charsets.UTF_8
  * @param output The output stream where messages are sent.
  */
 public class StdioClientTransport(
-    private val input: InputStream,
-    private val output: OutputStream
+    private val input: Source,
+    private val output: Sink
 ) : Transport {
     private val logger = KotlinLogging.logger {}
     private val ioCoroutineContext: CoroutineContext = Dispatchers.IO
@@ -33,7 +37,7 @@ public class StdioClientTransport(
         CoroutineScope(ioCoroutineContext + SupervisorJob())
     }
     private var job: Job? = null
-    private var initialized = AtomicBoolean(false)
+    private val initialized: AtomicBoolean = atomic(false)
     private val sendChannel = Channel<JSONRPCMessage>(Channel.UNLIMITED)
     private val readBuffer = ReadBuffer()
 
@@ -48,28 +52,26 @@ public class StdioClientTransport(
 
         logger.debug { "Starting StdioClientTransport..." }
 
-        val outputStream = output.bufferedWriter(UTF_8)
+        val outputStream = output.buffered()
 
         job = scope.launch(CoroutineName("StdioClientTransport.IO#${hashCode()}")) {
             val readJob = launch {
                 logger.debug { "Read coroutine started." }
                 try {
-                    val buffer = ByteArray(8192)
-                    while (isActive) {
-                        val bytesRead = input.read(buffer)
-                        if (bytesRead == -1) break
-                        if (bytesRead > 0) {
-                            readBuffer.append(buffer.copyOf(bytesRead))
-                            processReadBuffer()
+                    input.use {
+                        while (isActive) {
+                            val buffer = Buffer()
+                            val bytesRead = input.readAtMostTo(buffer, 8192)
+                            if (bytesRead == -1L) break
+                            if (bytesRead > 0L) {
+                                readBuffer.append(buffer.readByteArray())
+                                processReadBuffer()
+                            }
                         }
                     }
-                } catch (e: CancellationException) {
-                    throw e
                 } catch (e: Exception) {
                     onError?.invoke(e)
                     logger.error(e) { "Error reading from input stream" }
-                } finally {
-                    input.close()
                 }
             }
 
@@ -78,7 +80,7 @@ public class StdioClientTransport(
                 try {
                     sendChannel.consumeEach { message ->
                         val json = serializeMessage(message)
-                        outputStream.write(json)
+                        outputStream.writeString(json)
                         outputStream.flush()
                     }
                 } catch (e: Throwable) {
@@ -98,7 +100,7 @@ public class StdioClientTransport(
     }
 
     override suspend fun send(message: JSONRPCMessage) {
-        if (!initialized.get()) {
+        if (!initialized.value) {
             error("Transport not started")
         }
 

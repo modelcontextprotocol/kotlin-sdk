@@ -5,6 +5,9 @@ import io.modelcontextprotocol.kotlin.sdk.ListToolsResult
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
 import kotlinx.coroutines.test.runTest
+import kotlinx.io.asSink
+import kotlinx.io.asSource
+import kotlinx.io.buffered
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.net.Socket
@@ -14,7 +17,10 @@ class ClientIntegrationTest {
     fun createTransport(): StdioClientTransport {
         val socket = Socket("localhost", 3000)
 
-        return StdioClientTransport(socket.inputStream, socket.outputStream)
+        return StdioClientTransport(
+            socket.inputStream.asSource().buffered(),
+            socket.outputStream.asSink().buffered()
+        )
     }
 
     @Disabled("This test requires a running server")

@@ -1,5 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification.SetLevelRequest
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -11,6 +12,8 @@ import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
+
+private val logger = KotlinLogging.logger {}
 
 internal object ErrorCodeSerializer : KSerializer<ErrorCode> {
     override val descriptor: SerialDescriptor =
@@ -194,9 +197,8 @@ internal object NotificationPolymorphicSerializer :
 internal object RequestPolymorphicSerializer :
     JsonContentPolymorphicSerializer<Request>(Request::class) {
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<Request> {
-        val method = element.jsonObject.getOrDefault("method", null)?.jsonPrimitive?.content ?: run {
-            System.err.println("No method in $element")
-            Throwable().printStackTrace(System.err)
+        val method = element.jsonObject.getOrElse("method") { null }?.jsonPrimitive?.content ?: run {
+            logger.error { "No method in $element" }
             error("No method in $element")
         }
 

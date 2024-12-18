@@ -3,12 +3,14 @@
 package io.modelcontextprotocol.kotlin.sdk
 
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
+import kotlinx.atomicfu.AtomicLong
+import kotlinx.atomicfu.atomic
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
-import java.util.concurrent.atomic.AtomicLong
+import kotlin.jvm.JvmInline
 
 public const val LATEST_PROTOCOL_VERSION: String = "2024-11-05"
 
@@ -19,7 +21,7 @@ public val SUPPORTED_PROTOCOL_VERSIONS: Array<String> = arrayOf(
 
 public const val JSONRPC_VERSION: String = "2.0"
 
-private val REQUEST_MESSAGE_ID = AtomicLong(0L)
+private val REQUEST_MESSAGE_ID: AtomicLong = atomic(0L)
 
 /**
  * A progress token, used to associate progress notifications with the original request.

@@ -1,41 +1,26 @@
+@file:OptIn(ExperimentalKotlinGradlePluginApi::class)
+
 import org.jetbrains.dokka.gradle.engine.parameters.VisibilityModifier
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.ExplicitApiMode
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jreleaser.model.Active
 
 plugins {
-    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.dokka)
     alias(libs.plugins.jreleaser)
+    id("org.jetbrains.kotlinx.atomicfu") version "0.26.1"
     `maven-publish`
 }
 
 group = "io.modelcontextprotocol"
 version = "0.2.0"
 
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    api(libs.kotlinx.serialization.json)
-    api(libs.ktor.client.cio)
-    api(libs.ktor.server.cio)
-    api(libs.ktor.server.sse)
-    api(libs.ktor.server.websockets)
-
-    implementation(libs.kotlin.logging)
-
-    testImplementation(libs.kotlin.test)
-    testImplementation(libs.mockk)
-    testImplementation(libs.ktor.server.test.host)
-    testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.kotlinx.coroutines.debug)
-}
-
-val sources = tasks.create<Jar>("sourcesJar") {
-    from(sourceSets["main"].allSource)
-    archiveClassifier.set("sources")
+val mainSourcesJar = tasks.register<Jar>("mainSourcesJar") {
+    archiveClassifier = "sources"
+    from(kotlin.sourceSets.getByName("commonMain").kotlin)
 }
 
 publishing {
@@ -45,7 +30,7 @@ publishing {
             artifactId = project.name
             version = project.version.toString()
 
-            from(components["java"])
+            from(components["kotlin"])
         }
     }
 
@@ -55,7 +40,7 @@ publishing {
         pom.configureMavenCentralMetadata()
         signPublicationIfKeyPresent()
         artifact(javadocJar)
-        artifact(sources)
+        artifact(mainSourcesJar)
     }
 
     repositories {
@@ -164,17 +149,17 @@ infix fun <T> Property<T>.by(value: T) {
     set(value)
 }
 
-tasks.create<Jar>("localJar") {
-    dependsOn(tasks.jar)
+//tasks.create<Jar>("localJar") {
+//    dependsOn(tasks.jar)
+//
+//    archiveFileName = "kotlin-sdk.jar"
+//    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+//    from(configurations.runtimeClasspath.map {
+//        it.map { if (it.isDirectory) it else zipTree(it) }
+//    })
+//}
 
-    archiveFileName = "kotlin-sdk.jar"
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    from(configurations.runtimeClasspath.map {
-        it.map { if (it.isDirectory) it else zipTree(it) }
-    })
-}
-
-tasks.test {
+tasks.withType<Test>().configureEach {
     useJUnitPlatform()
 }
 
@@ -205,7 +190,7 @@ abstract class GenerateLibVersionTask @Inject constructor(
 dokka {
     moduleName.set("MCP Kotlin SDK")
 
-    dokkaSourceSets.main {
+    dokkaSourceSets.configureEach {
         sourceLink {
             localDirectory.set(file("src/main/kotlin"))
             remoteUrl("https://github.com/modelcontextprotocol/kotlin-sdk")
@@ -224,13 +209,42 @@ val generateLibVersionTask =
     tasks.register<GenerateLibVersionTask>("generateLibVersion", version.toString(), sourcesDir)
 
 kotlin {
+    jvm {
+        compilerOptions {
+            jvmTarget = JvmTarget.JVM_17
+        }
+    }
+
     explicitApi = ExplicitApiMode.Strict
 
     jvmToolchain(21)
 
     sourceSets {
-        main {
+        val commonMain by getting {
             kotlin.srcDir(generateLibVersionTask.map { it.sourcesDir })
+            dependencies {
+                api(libs.kotlinx.serialization.json)
+                api(libs.ktor.client.cio)
+                api(libs.ktor.server.cio)
+                api(libs.ktor.server.sse)
+                api(libs.ktor.server.websockets)
+
+                implementation(libs.kotlin.logging)
+            }
+        }
+
+        val commonTest by getting {
+            dependencies {
+                implementation(libs.kotlin.test)
+                implementation(libs.ktor.server.test.host)
+                implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.kotlinx.coroutines.debug)
+            }
+        }
+        val jvmTest by getting {
+            dependencies {
+                implementation(libs.mockk)
+            }
         }
     }
 }

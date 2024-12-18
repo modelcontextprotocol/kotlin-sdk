@@ -5,11 +5,18 @@ import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.shared.ReadBuffer
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
 import io.modelcontextprotocol.kotlin.sdk.shared.serializeMessage
+import kotlinx.atomicfu.AtomicBoolean
+import kotlinx.atomicfu.atomic
+import kotlinx.atomicfu.locks.ReentrantLock
+import kotlinx.atomicfu.locks.withLock
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
-import java.io.BufferedInputStream
-import java.io.PrintStream
-import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.io.Buffer
+import kotlinx.io.Sink
+import kotlinx.io.Source
+import kotlinx.io.buffered
+import kotlinx.io.readByteArray
+import kotlinx.io.writeString
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -18,8 +25,8 @@ import kotlin.coroutines.CoroutineContext
  * Reads from System.in and writes to System.out.
  */
 public class StdioServerTransport(
-    private val inputStream: BufferedInputStream = BufferedInputStream(System.`in`),
-    outputStream: PrintStream = System.out
+    private val inputStream: Source, //BufferedInputStream = BufferedInputStream(System.`in`),
+    outputStream: Sink //PrintStream = System.out
 ) : Transport {
     private val logger = KotlinLogging.logger {}
     override var onClose: (() -> Unit)? = null
@@ -27,13 +34,14 @@ public class StdioServerTransport(
     override var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
 
     private val readBuffer = ReadBuffer()
-    private var initialized = AtomicBoolean(false)
+    private val initialized: AtomicBoolean = atomic(false)
     private var readingJob: Job? = null
 
     private val coroutineContext: CoroutineContext = Dispatchers.IO + SupervisorJob()
     private val scope = CoroutineScope(coroutineContext)
     private val readChannel = Channel<ByteArray>(Channel.UNLIMITED)
-    private val outputWriter = outputStream.bufferedWriter()
+    private val outputWriter = outputStream.buffered()
+    private val lock = ReentrantLock()
 
     override suspend fun start() {
         if (!initialized.compareAndSet(false, true)) {
@@ -42,16 +50,16 @@ public class StdioServerTransport(
 
         // Launch a coroutine to read from stdin
         readingJob = scope.launch {
-            val buf = ByteArray(8192)
+            val buf = Buffer()
             try {
                 while (isActive) {
-                    val bytesRead = inputStream.read(buf)
-                    if (bytesRead == -1) {
+                    val bytesRead = inputStream.readAtMostTo(buf, 8192)
+                    if (bytesRead == -1L) {
                         // EOF reached
                         break
                     }
                     if (bytesRead > 0) {
-                        val chunk = buf.copyOf(bytesRead)
+                        val chunk = buf.readByteArray()
                         readChannel.send(chunk)
                     }
                 }
@@ -109,9 +117,9 @@ public class StdioServerTransport(
 
     override suspend fun send(message: JSONRPCMessage) {
         val json = serializeMessage(message)
-        synchronized(outputWriter) {
+        lock.withLock {
             // You may need to add Content-Length headers before the message if using the LSP framing protocol
-            outputWriter.write(json)
+            outputWriter.writeString(json)
             outputWriter.flush()
         }
     }

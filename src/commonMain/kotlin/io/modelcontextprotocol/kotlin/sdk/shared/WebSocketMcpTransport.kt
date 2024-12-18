@@ -5,6 +5,8 @@ import io.ktor.websocket.WebSocketSession
 import io.ktor.websocket.close
 import io.ktor.websocket.readText
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
+import kotlinx.atomicfu.AtomicBoolean
+import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.InternalCoroutinesApi
@@ -13,7 +15,6 @@ import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
-import java.util.concurrent.atomic.AtomicBoolean
 
 internal const val MCP_SUBPROTOCOL = "mcp"
 
@@ -26,7 +27,7 @@ public abstract class WebSocketMcpTransport : Transport {
         CoroutineScope(session.coroutineContext + SupervisorJob())
     }
 
-    private val initialized = AtomicBoolean(false)
+    private val initialized: AtomicBoolean = atomic(false)
     /**
      * The WebSocket session used for communication.
      */
@@ -86,7 +87,7 @@ public abstract class WebSocketMcpTransport : Transport {
     }
 
     override suspend fun send(message: JSONRPCMessage) {
-        if (!initialized.get()) {
+        if (!initialized.value) {
             error("Not connected")
         }
 
@@ -94,7 +95,7 @@ public abstract class WebSocketMcpTransport : Transport {
     }
 
     override suspend fun close() {
-        if (!initialized.get()) {
+        if (!initialized.value) {
             error("Not connected")
         }
 

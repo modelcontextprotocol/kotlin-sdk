@@ -12,6 +12,11 @@ import org.junit.jupiter.api.Test
 import io.modelcontextprotocol.kotlin.sdk.shared.ReadBuffer
 import io.modelcontextprotocol.kotlin.sdk.shared.serializeMessage
 import io.modelcontextprotocol.kotlin.sdk.toJSON
+import kotlinx.io.Sink
+import kotlinx.io.Source
+import kotlinx.io.asSink
+import kotlinx.io.asSource
+import kotlinx.io.buffered
 import java.io.*
 
 class StdioServerTransportTest {
@@ -21,8 +26,8 @@ class StdioServerTransportTest {
     private lateinit var output: ByteArrayOutputStream
 
     // We'll store the wrapped streams that meet the constructor requirements
-    private lateinit var bufferedInput: BufferedInputStream
-    private lateinit var printOutput: PrintStream
+    private lateinit var bufferedInput: Source
+    private lateinit var printOutput: Sink
 
     @BeforeEach
     fun setUp() {
@@ -40,11 +45,9 @@ class StdioServerTransportTest {
             }
         }
 
-        // Wrap input in BufferedInputStream
-        bufferedInput = BufferedInputStream(input)
+        bufferedInput = input.asSource().buffered()
 
-        // Wrap output in PrintStream
-        printOutput = PrintStream(output, true)
+        printOutput = output.asSink().buffered()
     }
 
     @Test

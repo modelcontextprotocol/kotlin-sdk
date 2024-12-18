@@ -48,7 +48,7 @@ class ClientTest {
     @Test
     fun `should initialize with matching protocol version`() = runTest {
         var initialied = false
-        var clientTransport = object : Transport {
+        val clientTransport = object : Transport {
             override suspend fun start() {}
 
             override suspend fun send(message: JSONRPCMessage) {
@@ -98,7 +98,7 @@ class ClientTest {
     @Test
     fun `should initialize with supported older protocol version`() = runTest {
         val OLD_VERSION = SUPPORTED_PROTOCOL_VERSIONS[1]
-        var clientTransport = object : Transport {
+        val clientTransport = object : Transport {
             override suspend fun start() {}
 
             override suspend fun send(message: JSONRPCMessage) {
@@ -445,7 +445,7 @@ class ClientTest {
                     // Just delay here, if timeout is 0 on client side this won't return in time
                     kotlinx.coroutines.delay(100)
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // If aborted, just rethrow or return early
             }
             ListResourcesResult(resources = emptyList())

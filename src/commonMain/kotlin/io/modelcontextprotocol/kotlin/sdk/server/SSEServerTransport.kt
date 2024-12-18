@@ -8,9 +8,10 @@ import io.ktor.server.sse.*
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
+import kotlinx.atomicfu.AtomicBoolean
+import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.job
 import kotlinx.serialization.encodeToString
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -25,7 +26,7 @@ public class SSEServerTransport(
     private val endpoint: String,
     private val session: ServerSSESession,
 ) : Transport {
-    private val initialized = AtomicBoolean(false)
+    private val initialized: AtomicBoolean = atomic(false)
 
     @OptIn(ExperimentalUuidApi::class)
     public val sessionId: String = Uuid.random().toString()
@@ -63,7 +64,7 @@ public class SSEServerTransport(
      * This should be called when a POST request is made to send a message to the server.
      */
     public suspend fun handlePostMessage(call: ApplicationCall) {
-        if (!initialized.get()) {
+        if (!initialized.value) {
             val message = "SSE connection not established"
             call.respondText(message, status = HttpStatusCode.InternalServerError)
             onError?.invoke(IllegalStateException(message))
@@ -112,7 +113,7 @@ public class SSEServerTransport(
     }
 
     override suspend fun send(message: JSONRPCMessage) {
-        if (!initialized.get()) {
+        if (!initialized.value) {
             throw error("Not connected")
         }
 
