@@ -6,7 +6,6 @@ import io.ktor.server.application.*
 import io.ktor.server.cio.*
 import io.ktor.server.engine.*
 import io.ktor.server.routing.*
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import mcpSse
 import mcpSseTransport
@@ -41,8 +40,6 @@ class SseTransportTest : BaseTransportTest() {
 
     @Test
     fun `should read messages`() = runTest {
-        val clientFinished = CompletableDeferred<Unit>()
-
         val server = embeddedServer(CIO, port = PORT) {
             install(io.ktor.server.sse.SSE)
             routing {

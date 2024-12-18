@@ -1,7 +1,7 @@
 [versions]
 # plugins version
 kotlin = "2.0.21"
-dokka = "2.0.0-Beta"
+dokka = "2.0.0"
 
 # libraries version
 serialization = "1.7.3"
@@ -14,10 +14,9 @@ jreleaser = "1.15.0"
 [libraries]
 # Kotlinx libraries
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
-kotlin-logging = { group = "io.github.oshai", name = "kotlin-logging-jvm", version.ref = "logging" }
+kotlin-logging = { group = "io.github.oshai", name = "kotlin-logging", version.ref = "logging" }
 
 # Ktor
-ktor-client-apache = { group = "io.ktor", name = "ktor-client-apache", version.ref = "ktor" }
 ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktor" }
 ktor-server-sse = { group = "io.ktor", name = "ktor-server-sse", version.ref = "ktor" }
 ktor-server-websockets = { group = "io.ktor", name = "ktor-server-websockets", version.ref = "ktor" }
@@ -33,7 +32,7 @@ mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 
 
 [plugins]
-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 jreleaser = { id = "org.jreleaser", version.ref = "jreleaser"}
