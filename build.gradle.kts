@@ -24,23 +24,12 @@ val mainSourcesJar = tasks.register<Jar>("mainSourcesJar") {
 }
 
 publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            groupId = project.group.toString()
-            artifactId = project.name
-            version = project.version.toString()
-
-            from(components["kotlin"])
-        }
-    }
-
     val javadocJar = configureEmptyJavadocArtifact()
 
     publications.withType(MavenPublication::class).all {
         pom.configureMavenCentralMetadata()
         signPublicationIfKeyPresent()
         artifact(javadocJar)
-        artifact(mainSourcesJar)
     }
 
     repositories {
@@ -149,16 +138,6 @@ infix fun <T> Property<T>.by(value: T) {
     set(value)
 }
 
-//tasks.create<Jar>("localJar") {
-//    dependsOn(tasks.jar)
-//
-//    archiveFileName = "kotlin-sdk.jar"
-//    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-//    from(configurations.runtimeClasspath.map {
-//        it.map { if (it.isDirectory) it else zipTree(it) }
-//    })
-//}
-
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
 }
@@ -220,7 +199,7 @@ kotlin {
     jvmToolchain(21)
 
     sourceSets {
-        val commonMain by getting {
+        commonMain {
             kotlin.srcDir(generateLibVersionTask.map { it.sourcesDir })
             dependencies {
                 api(libs.kotlinx.serialization.json)
@@ -233,7 +212,7 @@ kotlin {
             }
         }
 
-        val commonTest by getting {
+        commonTest {
             dependencies {
                 implementation(libs.kotlin.test)
                 implementation(libs.ktor.server.test.host)
@@ -241,7 +220,8 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.debug)
             }
         }
-        val jvmTest by getting {
+
+        jvmTest {
             dependencies {
                 implementation(libs.mockk)
             }
