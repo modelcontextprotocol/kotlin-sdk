@@ -2,6 +2,9 @@ package client
 
 import kotlinx.coroutines.test.runTest
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
+import kotlinx.io.asSink
+import kotlinx.io.asSource
+import kotlinx.io.buffered
 import org.junit.jupiter.api.Test
 
 class StdioClientTransportTest : BaseTransportTest() {
@@ -11,8 +14,8 @@ class StdioClientTransportTest : BaseTransportTest() {
         val processBuilder = ProcessBuilder("/usr/bin/tee")
         val process = processBuilder.start()
 
-        val input = process.inputStream
-        val output = process.outputStream
+        val input = process.inputStream.asSource().buffered()
+        val output = process.outputStream.asSink().buffered()
 
         val client = StdioClientTransport(
             input = input,
@@ -29,8 +32,8 @@ class StdioClientTransportTest : BaseTransportTest() {
         val processBuilder = ProcessBuilder("/usr/bin/tee")
         val process = processBuilder.start()
 
-        val input = process.inputStream
-        val output = process.outputStream
+        val input = process.inputStream.asSource().buffered()
+        val output = process.outputStream.asSink().buffered()
 
         val client = StdioClientTransport(
             input = input,

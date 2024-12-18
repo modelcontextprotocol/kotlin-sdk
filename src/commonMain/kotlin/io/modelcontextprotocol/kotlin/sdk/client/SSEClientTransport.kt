@@ -8,9 +8,10 @@ import io.ktor.http.*
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
+import kotlinx.atomicfu.AtomicBoolean
+import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.*
 import kotlinx.serialization.encodeToString
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.properties.Delegates
 import kotlin.time.Duration
 
@@ -28,7 +29,7 @@ public class SSEClientTransport(
         CoroutineScope(session.coroutineContext + SupervisorJob())
     }
 
-    private val initialized = AtomicBoolean(false)
+    private val initialized: AtomicBoolean = atomic(false)
     private var session: ClientSSESession by Delegates.notNull()
     private val endpoint = CompletableDeferred<String>()
 
@@ -127,7 +128,7 @@ public class SSEClientTransport(
     }
 
     override suspend fun close() {
-        if (!initialized.get()) {
+        if (!initialized.value) {
             error("SSEClientTransport is not initialized!")
         }
 
