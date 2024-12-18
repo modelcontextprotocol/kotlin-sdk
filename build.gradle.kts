@@ -11,7 +11,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.dokka)
     alias(libs.plugins.jreleaser)
-    id("org.jetbrains.kotlinx.atomicfu") version "0.26.1"
+    alias(libs.plugins.atomicfu)
     `maven-publish`
 }
 
