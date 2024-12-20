@@ -1003,6 +1003,7 @@ public data class Tool(
     @Serializable
     public data class Input(
         val properties: JsonObject = EmptyJsonObject,
+        val required: List<String>? = null,
     ) {
         val type: String = "object"
     }
