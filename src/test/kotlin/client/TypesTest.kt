@@ -24,4 +24,24 @@ class TypesTest {
         val line = "{\"result\":{\"content\":[{\"type\":\"text\"}],\"isError\":false},\"jsonrpc\":\"2.0\",\"id\":4}"
         McpJson.decodeFromString<JSONRPCMessage>(line)
     }
+
+    @Test
+    fun testJSONRPCMessageWithStringId() {
+        val line = """
+            {
+              "jsonrpc": "2.0",
+              "method": "initialize",
+              "id": "ebf9f64a-0",
+              "params": {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {},
+                "clientInfo": {
+                  "name": "mcp-java-client",
+                  "version": "0.2.0"
+                }
+              }
+            }
+        """.trimIndent()
+        McpJson.decodeFromString<JSONRPCMessage>(line)
+    }
 }

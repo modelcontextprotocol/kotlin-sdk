@@ -7,6 +7,7 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
@@ -270,3 +271,29 @@ internal object JSONRPCMessagePolymorphicSerializer :
 }
 
 internal val EmptyJsonObject = JsonObject(emptyMap())
+
+public class RequestIdSerializer : KSerializer<RequestId> {
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("RequestId")
+
+    override fun deserialize(decoder: Decoder): RequestId {
+        val jsonDecoder = decoder as? JsonDecoder ?: error("Can only deserialize JSON")
+        val element = jsonDecoder.decodeJsonElement()
+
+        return when (element) {
+            is JsonPrimitive -> when {
+                element.isString -> RequestId.StringId(element.content)
+                element.longOrNull != null -> RequestId.NumberId(element.long)
+                else -> error("Invalid RequestId type")
+            }
+            else -> error("Invalid RequestId format")
+        }
+    }
+
+    override fun serialize(encoder: Encoder, value: RequestId) {
+        val jsonEncoder = encoder as? JsonEncoder ?: error("Can only serialize JSON")
+        when (value) {
+            is RequestId.StringId -> jsonEncoder.encodeString(value.value)
+            is RequestId.NumberId -> jsonEncoder.encodeLong(value.value)
+        }
+    }
+}
