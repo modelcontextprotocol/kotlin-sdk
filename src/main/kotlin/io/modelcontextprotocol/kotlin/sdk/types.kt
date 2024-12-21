@@ -25,7 +25,7 @@ private val REQUEST_MESSAGE_ID = AtomicLong(0L)
  * A progress token, used to associate progress notifications with the original request.
  * Stores message ID.
  */
-public typealias ProgressToken = Long
+public typealias ProgressToken = RequestId
 
 /**
  * An opaque token used to represent a cursor for pagination.
@@ -191,7 +191,14 @@ public data class EmptyRequestResult(
 /**
  * A uniquely identifying ID for a request in JSON-RPC.
  */
-public typealias RequestId = Long
+@Serializable(with = RequestIdSerializer::class)
+public sealed interface RequestId {
+    @Serializable
+    public data class StringId(val value: String) : RequestId
+
+    @Serializable
+    public data class NumberId(val value: Long) : RequestId
+}
 
 /**
  * Represents a JSON-RPC message in the protocol.
@@ -204,7 +211,7 @@ public sealed interface JSONRPCMessage
  */
 @Serializable
 public data class JSONRPCRequest(
-    val id: RequestId = REQUEST_MESSAGE_ID.incrementAndGet(),
+    val id: RequestId = RequestId.NumberId(REQUEST_MESSAGE_ID.incrementAndGet()),
     val method: String,
     val params: JsonElement? = null,
     val jsonrpc: String = JSONRPC_VERSION,

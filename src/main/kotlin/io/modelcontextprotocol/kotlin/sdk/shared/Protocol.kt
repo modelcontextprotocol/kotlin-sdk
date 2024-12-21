@@ -15,6 +15,7 @@ import io.modelcontextprotocol.kotlin.sdk.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.Progress
 import io.modelcontextprotocol.kotlin.sdk.ProgressNotification
 import io.modelcontextprotocol.kotlin.sdk.Request
+import io.modelcontextprotocol.kotlin.sdk.RequestId
 import io.modelcontextprotocol.kotlin.sdk.RequestResult
 import io.modelcontextprotocol.kotlin.sdk.fromJSON
 import io.modelcontextprotocol.kotlin.sdk.toJSON
@@ -119,11 +120,11 @@ public abstract class Protocol<SendRequestT : Request, SendNotificationT : Notif
         mutableMapOf()
 
     @PublishedApi
-    internal val responseHandlers: MutableMap<Long, (response: JSONRPCResponse?, error: Exception?) -> Unit> =
+    internal val responseHandlers: MutableMap<RequestId, (response: JSONRPCResponse?, error: Exception?) -> Unit> =
         mutableMapOf()
 
     @PublishedApi
-    internal val progressHandlers: MutableMap<Long, ProgressCallback> = mutableMapOf()
+    internal val progressHandlers: MutableMap<RequestId, ProgressCallback> = mutableMapOf()
 
     /**
      * Callback for when the connection is closed for any reason.
