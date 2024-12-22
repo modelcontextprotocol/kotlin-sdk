@@ -191,15 +191,15 @@ public abstract class Protocol<SendRequestT : Request, SendNotificationT : Notif
     }
 
     private fun onClose() {
-        val error = McpError(ErrorCode.Defined.ConnectionClosed.code, "Connection closed")
-        for (handler in responseHandlers.values) {
-            handler(null, error)
-        }
-
         responseHandlers.clear()
         progressHandlers.clear()
         transport = null
         onclose()
+
+        val error = McpError(ErrorCode.Defined.ConnectionClosed.code, "Connection closed")
+        for (handler in responseHandlers.values) {
+            handler(null, error)
+        }
     }
 
     private fun onError(error: Throwable) {
