@@ -111,7 +111,7 @@ public open class Server(
      * Called when the server connection is closing.
      * Invokes [onCloseCallback] if set.
      */
-    override fun onclose() {
+    override fun onClose() {
         logger.info { "Server connection closing" }
         onCloseCallback?.invoke()
     }
