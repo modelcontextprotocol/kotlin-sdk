@@ -1,24 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.shared
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.modelcontextprotocol.kotlin.sdk.CancelledNotification
-import io.modelcontextprotocol.kotlin.sdk.EmptyRequestResult
-import io.modelcontextprotocol.kotlin.sdk.ErrorCode
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCError
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCNotification
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCRequest
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCResponse
-import io.modelcontextprotocol.kotlin.sdk.McpError
-import io.modelcontextprotocol.kotlin.sdk.Method
-import io.modelcontextprotocol.kotlin.sdk.Notification
-import io.modelcontextprotocol.kotlin.sdk.PingRequest
-import io.modelcontextprotocol.kotlin.sdk.Progress
-import io.modelcontextprotocol.kotlin.sdk.ProgressNotification
-import io.modelcontextprotocol.kotlin.sdk.Request
-import io.modelcontextprotocol.kotlin.sdk.RequestId
-import io.modelcontextprotocol.kotlin.sdk.RequestResult
-import io.modelcontextprotocol.kotlin.sdk.fromJSON
-import io.modelcontextprotocol.kotlin.sdk.toJSON
+import io.modelcontextprotocol.kotlin.sdk.*
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.TimeoutCancellationException
@@ -107,14 +90,14 @@ internal val COMPLETED = CompletableDeferred(Unit).also { it.complete(Unit) }
  * Implements MCP protocol framing on top of a pluggable transport, including
  * features like request/response linking, notifications, and progress.
  */
-public abstract class Protocol<SendRequestT : Request, SendNotificationT : Notification, SendResultT : RequestResult>(
+public abstract class Protocol(
     @PublishedApi internal val options: ProtocolOptions?,
 ) {
     public var transport: Transport? = null
         private set
 
     @PublishedApi
-    internal val requestHandlers: MutableMap<String, suspend (request: JSONRPCRequest, extra: RequestHandlerExtra) -> SendResultT?> =
+    internal val requestHandlers: MutableMap<String, suspend (request: JSONRPCRequest, extra: RequestHandlerExtra) -> RequestResult?> =
         mutableMapOf()
     public val notificationHandlers: MutableMap<String, suspend (notification: JSONRPCNotification) -> Unit> =
         mutableMapOf()
@@ -143,7 +126,7 @@ public abstract class Protocol<SendRequestT : Request, SendNotificationT : Notif
     /**
      * A handler to invoke for any request types that do not have their own handler installed.
      */
-    public var fallbackRequestHandler: (suspend (request: JSONRPCRequest, extra: RequestHandlerExtra) -> SendResultT?)? =
+    public var fallbackRequestHandler: (suspend (request: JSONRPCRequest, extra: RequestHandlerExtra) -> RequestResult?)? =
         null
 
     /**
@@ -158,8 +141,7 @@ public abstract class Protocol<SendRequestT : Request, SendNotificationT : Notif
         }
 
         setRequestHandler<PingRequest>(Method.Defined.Ping) { request, _ ->
-            @Suppress("UNCHECKED_CAST")
-            EmptyRequestResult() as SendResultT
+            EmptyRequestResult()
         }
     }
 
@@ -344,12 +326,12 @@ public abstract class Protocol<SendRequestT : Request, SendNotificationT : Notif
     public abstract fun assertRequestHandlerCapability(method: Method)
 
     /**
-     * Sends a request and wait for a response.
+     * Sends a request and waits for a response.
      *
      * Do not use this method to emit notifications! Use notification() instead.
      */
     public suspend fun <T : RequestResult> request(
-        request: SendRequestT,
+        request: Request,
         options: RequestOptions? = null,
     ): T {
         LOGGER.trace { "Sending request: ${request.method}" }
@@ -427,7 +409,7 @@ public abstract class Protocol<SendRequestT : Request, SendNotificationT : Notif
     /**
      * Emits a notification, which is a one-way message that does not expect a response.
      */
-    public suspend fun notification(notification: SendNotificationT) {
+    public suspend fun notification(notification: Notification) {
         LOGGER.trace { "Sending notification: ${notification.method}" }
         val transport = this.transport ?: error("Not connected")
         assertNotificationCapability(notification.method)
@@ -446,7 +428,7 @@ public abstract class Protocol<SendRequestT : Request, SendNotificationT : Notif
      */
     public inline fun <reified T : Request> setRequestHandler(
         method: Method,
-        noinline block: suspend (T, RequestHandlerExtra) -> SendResultT?,
+        noinline block: suspend (T, RequestHandlerExtra) -> RequestResult?,
     ) {
         setRequestHandler(typeOf<T>(), method, block)
     }
@@ -455,7 +437,7 @@ public abstract class Protocol<SendRequestT : Request, SendNotificationT : Notif
     internal fun <T : Request> setRequestHandler(
         requestType: KType,
         method: Method,
-        block: suspend (T, RequestHandlerExtra) -> SendResultT?,
+        block: suspend (T, RequestHandlerExtra) -> RequestResult?,
     ) {
         assertRequestHandlerCapability(method)
 
@@ -470,8 +452,7 @@ public abstract class Protocol<SendRequestT : Request, SendNotificationT : Notif
                 EmptyRequestResult()
             }
 
-            @Suppress("UNCHECKED_CAST")
-            response as SendResultT
+            response
         }
     }
 
