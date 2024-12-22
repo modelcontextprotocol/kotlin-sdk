@@ -60,7 +60,7 @@ public class ClientOptions(
  * An MCP client on top of a pluggable transport.
  *
  * The client automatically performs the initialization handshake with the server when [connect] is called.
- * After initialization, [getServerCapabilities] and [getServerVersion] provide details about the connected server.
+ * After initialization, [severCapabilities] and [serverVersion] provide details about the connected server.
  *
  * You can extend this class with custom request/notification/result types if needed.
  *
@@ -72,8 +72,22 @@ public open class Client(
     options: ClientOptions = ClientOptions(),
 ) : Protocol<ClientRequest, ClientNotification, ClientResult>(options) {
 
-    private var serverCapabilities: ServerCapabilities? = null
-    private var serverVersion: Implementation? = null
+    /**
+     * Retrieves the server's reported capabilities after the initialization process completes.
+     *
+     * @return The server's capabilities, or `null` if initialization is not yet complete.
+     */
+    public var serverCapabilities: ServerCapabilities? = null
+        private set
+
+    /**
+     * Retrieves the server's reported version information after initialization.
+     *
+     * @return Information about the server's implementation, or `null` if initialization is not yet complete.
+     */
+    public var serverVersion: Implementation? = null
+        private set
+
     private val capabilities: ClientCapabilities = options.capabilities
 
     protected fun assertCapability(capability: String, method: String) {
@@ -124,23 +138,6 @@ public open class Client(
         }
     }
 
-    /**
-     * Retrieves the server's reported capabilities after the initialization process completes.
-     *
-     * @return The server's capabilities, or `null` if initialization is not yet complete.
-     */
-    public fun getServerCapabilities(): ServerCapabilities? {
-        return serverCapabilities
-    }
-
-    /**
-     * Retrieves the server's reported version information after initialization.
-     *
-     * @return Information about the server's implementation, or `null` if initialization is not yet complete.
-     */
-    public fun getServerVersion(): Implementation? {
-        return serverVersion
-    }
 
     override fun assertCapabilityForMethod(method: Method) {
         when (method) {

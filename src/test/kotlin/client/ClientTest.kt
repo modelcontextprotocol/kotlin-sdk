@@ -144,7 +144,7 @@ class ClientTest {
         client.connect(clientTransport)
         assertEquals(
             Implementation("test", "1.0"),
-            client.getServerVersion()
+            client.serverVersion
         )
     }
 
@@ -250,7 +250,7 @@ class ClientTest {
         ).joinAll()
 
         // Server supports resources and tools, but not prompts
-        val caps = client.getServerCapabilities()
+        val caps = client.serverCapabilities
         assertEquals(ServerCapabilities.Resources(null, null), caps?.resources)
         assertEquals(ServerCapabilities.Tools(null), caps?.tools)
         assertTrue(caps?.prompts == null) // or check that prompts are absent
