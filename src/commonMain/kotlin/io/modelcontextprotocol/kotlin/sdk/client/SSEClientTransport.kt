@@ -33,9 +33,9 @@ public class SSEClientTransport(
     private var session: ClientSSESession by Delegates.notNull()
     private val endpoint = CompletableDeferred<String>()
 
-    override var onClose: (() -> Unit)? = null
-    override var onError: ((Throwable) -> Unit)? = null
-    override var onMessage: (suspend ((JSONRPCMessage) -> Unit))? = null
+    private var _onClose: (() -> Unit) = {}
+    private var _onError: ((Throwable) -> Unit) = {}
+    private var _onMessage: (suspend ((JSONRPCMessage) -> Unit)) = {}
 
     private var job: Job? = null
 
@@ -67,7 +67,7 @@ public class SSEClientTransport(
                 when (event.event) {
                     "error" -> {
                         val e = IllegalStateException("SSE error: ${event.data}")
-                        onError?.invoke(e)
+                        _onError(e)
                         throw e
                     }
 
@@ -84,7 +84,7 @@ public class SSEClientTransport(
 
                             endpoint.complete(maybeEndpoint.toString())
                         } catch (e: Exception) {
-                            onError?.invoke(e)
+                            _onError(e)
                             close()
                             error(e)
                         }
@@ -93,9 +93,9 @@ public class SSEClientTransport(
                     else -> {
                         try {
                             val message = McpJson.decodeFromString<JSONRPCMessage>(event.data ?: "")
-                            onMessage?.invoke(message)
+                            _onMessage(message)
                         } catch (e: Exception) {
-                            onError?.invoke(e)
+                            _onError(e)
                         }
                     }
                 }
@@ -122,7 +122,7 @@ public class SSEClientTransport(
                 error("Error POSTing to endpoint (HTTP ${response.status}): $text")
             }
         } catch (e: Exception) {
-            onError?.invoke(e)
+            _onError(e)
             throw e
         }
     }
@@ -133,7 +133,31 @@ public class SSEClientTransport(
         }
 
         session.cancel()
-        onClose?.invoke()
+        _onClose()
         job?.cancelAndJoin()
+    }
+
+    override fun onClose(block: () -> Unit) {
+        val old = _onClose
+        _onClose = {
+            old()
+            block()
+        }
+    }
+
+    override fun onError(block: (Throwable) -> Unit) {
+        val old = _onError
+        _onError = { e ->
+            old(e)
+            block(e)
+        }
+    }
+
+    override fun onMessage(block: suspend (JSONRPCMessage) -> Unit) {
+        val old = _onMessage
+        _onMessage = { message ->
+            old(message)
+            block(message)
+        }
     }
 }

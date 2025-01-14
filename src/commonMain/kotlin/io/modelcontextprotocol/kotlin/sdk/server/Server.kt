@@ -35,8 +35,9 @@ public class ServerOptions(
 public open class Server(
     private val serverInfo: Implementation,
     options: ServerOptions,
-    public var onCloseCallback: (() -> Unit)? = null
 ) : Protocol(options) {
+    private var _onInitialized: (() -> Unit) = {}
+    private var _onClose: () -> Unit = {}
 
     /**
      * The client's reported capabilities after initialization.
@@ -49,17 +50,12 @@ public open class Server(
      */
     public var clientVersion: Implementation? = null
         private set
+
     private val capabilities: ServerCapabilities = options.capabilities
 
     private val tools = mutableMapOf<String, RegisteredTool>()
     private val prompts = mutableMapOf<String, RegisteredPrompt>()
     private val resources = mutableMapOf<String, RegisteredResource>()
-
-    /**
-     * A callback invoked when the server has completed the initialization sequence.
-     * After initialization, the server is ready to handle requests.
-     */
-    public var onInitialized: (() -> Unit)? = null
 
     init {
         logger.debug { "Initializing MCP server with capabilities: $capabilities" }
@@ -69,7 +65,7 @@ public open class Server(
             handleInitialize(request)
         }
         setNotificationHandler<InitializedNotification>(Method.Defined.NotificationsInitialized) {
-            onInitialized?.invoke()
+            _onInitialized()
             CompletableDeferred(Unit)
         }
 
@@ -108,12 +104,34 @@ public open class Server(
     }
 
     /**
+     * Registers a callback to be invoked when the server has completed initialization.
+     */
+    public fun onInitalized(block: () -> Unit) {
+        val old = _onInitialized
+        _onInitialized = {
+            old()
+            block()
+        }
+    }
+
+    /**
+     * Registers a callback to be invoked when the server connection is closing.
+     */
+    public fun onClose(block: () -> Unit) {
+        val old = _onClose
+        _onClose = {
+            old()
+            block()
+        }
+    }
+
+    /**
      * Called when the server connection is closing.
      * Invokes [onCloseCallback] if set.
      */
     override fun onClose() {
         logger.info { "Server connection closing" }
-        onCloseCallback?.invoke()
+        _onClose()
     }
 
     /**

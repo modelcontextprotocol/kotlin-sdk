@@ -31,7 +31,7 @@ public interface Transport {
      *
      * This should be invoked when close() is called as well.
      */
-    public var onClose: (() -> Unit)?
+    public fun onClose(block: () -> Unit)
 
     /**
      * Callback for when an error occurs.
@@ -39,10 +39,10 @@ public interface Transport {
      * Note that errors are not necessarily fatal; they are used for reporting any kind of
      * exceptional condition out of band.
      */
-    public var onError: ((Throwable) -> Unit)?
+    public fun onError(block: (Throwable) -> Unit)
 
     /**
      * Callback for when a message (request or response) is received over the connection.
      */
-    public var onMessage: (suspend ((JSONRPCMessage) -> Unit))?
+    public fun onMessage(block: suspend (JSONRPCMessage) -> Unit)
 }
