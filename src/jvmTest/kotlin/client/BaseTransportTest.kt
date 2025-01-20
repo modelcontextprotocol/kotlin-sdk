@@ -13,12 +13,12 @@ import kotlin.test.fail
 
 abstract class BaseTransportTest {
     protected suspend fun testClientOpenClose(client: Transport) {
-        client.onError = { error ->
+        client.onError { error ->
             fail("Unexpected error: $error")
         }
 
         var didClose = false
-        client.onClose = { didClose = true }
+        client.onClose { didClose = true }
 
         client.start()
         assertFalse(didClose, "Transport should not be closed immediately after start")
@@ -28,7 +28,7 @@ abstract class BaseTransportTest {
     }
 
     protected suspend fun testClientRead(client: Transport) {
-        client.onError = { error ->
+        client.onError { error ->
             error.printStackTrace()
             fail("Unexpected error: $error")
         }
@@ -40,7 +40,7 @@ abstract class BaseTransportTest {
         val readMessages = mutableListOf<JSONRPCMessage>()
         val finished = CompletableDeferred<Unit>()
 
-        client.onMessage = { message ->
+        client.onMessage { message ->
             readMessages.add(message)
             if (message == messages.last()) {
                 finished.complete(Unit)

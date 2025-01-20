@@ -6,10 +6,13 @@ import io.ktor.server.application.*
 import io.ktor.server.cio.*
 import io.ktor.server.engine.*
 import io.ktor.server.routing.*
+import io.ktor.server.sse.sse
+import io.ktor.util.collections.ConcurrentMap
 import kotlinx.coroutines.test.runTest
-import mcpSse
-import mcpSseTransport
 import io.modelcontextprotocol.kotlin.sdk.client.mcpSseTransport
+import io.modelcontextprotocol.kotlin.sdk.server.SseServerTransport
+import io.modelcontextprotocol.kotlin.sdk.server.mcpPostEndpoint
+import io.modelcontextprotocol.kotlin.sdk.server.mcpSseTransport
 import org.junit.jupiter.api.Test
 
 private const val PORT = 8080
@@ -19,8 +22,15 @@ class SseTransportTest : BaseTransportTest() {
     fun `should start then close cleanly`() = runTest {
         val server = embeddedServer(CIO, port = PORT) {
             install(io.ktor.server.sse.SSE)
+            val transports = ConcurrentMap<String, SseServerTransport>()
             routing {
-                mcpSse()
+                sse {
+                    mcpSseTransport("", transports).start()
+                }
+
+                post {
+                    mcpPostEndpoint(transports)
+                }
             }
         }.start(wait = false)
 
@@ -42,11 +52,20 @@ class SseTransportTest : BaseTransportTest() {
     fun `should read messages`() = runTest {
         val server = embeddedServer(CIO, port = PORT) {
             install(io.ktor.server.sse.SSE)
+            val transports = ConcurrentMap<String, SseServerTransport>()
             routing {
-                mcpSseTransport {
-                    onMessage = {
-                        send(it)
+                sse {
+                    mcpSseTransport("", transports).apply {
+                        onMessage {
+                            send(it)
+                        }
+
+                        start()
                     }
+                }
+
+                post {
+                    mcpPostEndpoint(transports)
                 }
             }
         }.start(wait = false)

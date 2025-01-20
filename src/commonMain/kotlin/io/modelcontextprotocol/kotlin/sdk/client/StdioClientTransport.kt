@@ -2,8 +2,8 @@ package io.modelcontextprotocol.kotlin.sdk.client
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.ReadBuffer
-import io.modelcontextprotocol.kotlin.sdk.shared.Transport
 import io.modelcontextprotocol.kotlin.sdk.shared.serializeMessage
 import kotlinx.atomicfu.AtomicBoolean
 import kotlinx.atomicfu.atomic
@@ -30,7 +30,7 @@ import kotlin.coroutines.CoroutineContext
 public class StdioClientTransport(
     private val input: Source,
     private val output: Sink
-) : Transport {
+) : AbstractTransport() {
     private val logger = KotlinLogging.logger {}
     private val ioCoroutineContext: CoroutineContext = Dispatchers.IO
     private val scope by lazy {
@@ -40,10 +40,6 @@ public class StdioClientTransport(
     private val initialized: AtomicBoolean = atomic(false)
     private val sendChannel = Channel<JSONRPCMessage>(Channel.UNLIMITED)
     private val readBuffer = ReadBuffer()
-
-    override var onClose: (() -> Unit)? = null
-    override var onError: ((Throwable) -> Unit)? = null
-    override var onMessage: (suspend ((JSONRPCMessage) -> Unit))? = null
 
     override suspend fun start() {
         if (!initialized.compareAndSet(false, true)) {
@@ -70,7 +66,7 @@ public class StdioClientTransport(
                         }
                     }
                 } catch (e: Exception) {
-                    onError?.invoke(e)
+                    _onError.invoke(e)
                     logger.error(e) { "Error reading from input stream" }
                 }
             }
@@ -85,7 +81,7 @@ public class StdioClientTransport(
                     }
                 } catch (e: Throwable) {
                     if (isActive) {
-                        onError?.invoke(e)
+                        _onError.invoke(e)
                         logger.error(e) { "Error writing to output stream" }
                     }
                 } finally {
@@ -95,7 +91,7 @@ public class StdioClientTransport(
 
             readJob.join()
             writeJob.cancelAndJoin()
-            onClose?.invoke()
+            _onClose.invoke()
         }
     }
 
@@ -116,16 +112,16 @@ public class StdioClientTransport(
         output.close()
         readBuffer.clear()
         sendChannel.close()
-        onClose?.invoke()
+        _onClose.invoke()
     }
 
     private suspend fun processReadBuffer() {
         while (true) {
             val msg = readBuffer.readMessage() ?: break
             try {
-                onMessage?.invoke(msg)
+                _onMessage.invoke(msg)
             } catch (e: Throwable) {
-                onError?.invoke(e)
+                _onError.invoke(e)
                 logger.error(e) { "Error processing message." }
             }
         }

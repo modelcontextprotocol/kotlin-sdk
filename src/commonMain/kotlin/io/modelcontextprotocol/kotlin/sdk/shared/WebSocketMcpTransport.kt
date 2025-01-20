@@ -22,7 +22,7 @@ internal const val MCP_SUBPROTOCOL = "mcp"
  * Abstract class representing a WebSocket transport for the Model Context Protocol (MCP).
  * Handles communication over a WebSocket session.
  */
-public abstract class WebSocketMcpTransport : Transport {
+public abstract class WebSocketMcpTransport : AbstractTransport() {
     private val scope by lazy {
         CoroutineScope(session.coroutineContext + SupervisorJob())
     }
@@ -32,10 +32,6 @@ public abstract class WebSocketMcpTransport : Transport {
      * The WebSocket session used for communication.
      */
     protected abstract val session: WebSocketSession
-
-    override var onClose: (() -> Unit)? = null
-    override var onError: ((Throwable) -> Unit)? = null
-    override var onMessage: (suspend ((JSONRPCMessage) -> Unit))? = null
 
     /**
      * Initializes the WebSocket session
@@ -62,15 +58,15 @@ public abstract class WebSocketMcpTransport : Transport {
 
                 if (message !is Frame.Text) {
                     val e = IllegalArgumentException("Expected text frame, got ${message::class.simpleName}: $message")
-                    onError?.invoke(e)
+                    _onError.invoke(e)
                     throw e
                 }
 
                 try {
                     val message = McpJson.decodeFromString<JSONRPCMessage>(message.readText())
-                    onMessage?.invoke(message)
+                    _onMessage.invoke(message)
                 } catch (e: Exception) {
-                    onError?.invoke(e)
+                    _onError.invoke(e)
                     throw e
                 }
             }
@@ -79,9 +75,9 @@ public abstract class WebSocketMcpTransport : Transport {
         @OptIn(InternalCoroutinesApi::class)
         session.coroutineContext.job.invokeOnCompletion {
             if (it != null) {
-                onError?.invoke(it)
+                _onError.invoke(it)
             } else {
-                onClose?.invoke()
+                _onClose.invoke()
             }
         }
     }

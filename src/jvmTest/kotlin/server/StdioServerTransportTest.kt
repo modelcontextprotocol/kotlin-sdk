@@ -54,12 +54,12 @@ class StdioServerTransportTest {
     fun `should start then close cleanly`() {
         runBlocking {
             val server = StdioServerTransport(bufferedInput, printOutput)
-            server.onError = { error ->
+            server.onError { error ->
                 throw error
             }
 
             var didClose = false
-            server.onClose = {
+            server.onClose {
                 didClose = true
             }
 
@@ -75,14 +75,14 @@ class StdioServerTransportTest {
     fun `should not read until started`() {
         runBlocking {
             val server = StdioServerTransport(bufferedInput, printOutput)
-            server.onError = { error ->
+            server.onError { error ->
                 throw error
             }
 
             var didRead = false
             val readMessage = CompletableDeferred<JSONRPCMessage>()
 
-            server.onMessage = { message ->
+            server.onMessage { message ->
                 didRead = true
                 readMessage.complete(message)
             }
@@ -106,7 +106,7 @@ class StdioServerTransportTest {
     fun `should read multiple messages`() {
         runBlocking {
             val server = StdioServerTransport(bufferedInput, printOutput)
-            server.onError = { error ->
+            server.onError { error ->
                 throw error
             }
 
@@ -118,7 +118,7 @@ class StdioServerTransportTest {
             val readMessages = mutableListOf<JSONRPCMessage>()
             val finished = CompletableDeferred<Unit>()
 
-            server.onMessage = { message ->
+            server.onMessage { message ->
                 readMessages.add(message)
                 if (message == messages[1]) {
                     finished.complete(Unit)

@@ -6,8 +6,8 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.sse.*
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
-import io.modelcontextprotocol.kotlin.sdk.shared.Transport
 import kotlinx.atomicfu.AtomicBoolean
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.job
@@ -17,23 +17,22 @@ import kotlin.uuid.Uuid
 
 internal const val SESSION_ID_PARAM = "sessionId"
 
+@Deprecated("Use SseServerTransport instead", ReplaceWith("SseServerTransport"), DeprecationLevel.WARNING)
+public typealias SSEServerTransport = SseServerTransport
+
 /**
  * Server transport for SSE: this will send messages over an SSE connection and receive messages from HTTP POST requests.
  *
  * Creates a new SSE server transport, which will direct the client to POST messages to the relative or absolute URL identified by `_endpoint`.
  */
-public class SSEServerTransport(
+public class SseServerTransport(
     private val endpoint: String,
     private val session: ServerSSESession,
-) : Transport {
+) : AbstractTransport() {
     private val initialized: AtomicBoolean = atomic(false)
 
     @OptIn(ExperimentalUuidApi::class)
     public val sessionId: String = Uuid.random().toString()
-
-    override var onClose: (() -> Unit)? = null
-    override var onError: ((Throwable) -> Unit)? = null
-    override var onMessage: (suspend ((JSONRPCMessage) -> Unit))? = null
 
     /**
      * Handles the initial SSE connection request.
@@ -54,7 +53,7 @@ public class SSEServerTransport(
         try {
             session.coroutineContext.job.join()
         } finally {
-            onClose?.invoke()
+            _onClose.invoke()
         }
     }
 
@@ -67,7 +66,7 @@ public class SSEServerTransport(
         if (!initialized.value) {
             val message = "SSE connection not established"
             call.respondText(message, status = HttpStatusCode.InternalServerError)
-            onError?.invoke(IllegalStateException(message))
+            _onError.invoke(IllegalStateException(message))
         }
 
         val body = try {
@@ -79,7 +78,7 @@ public class SSEServerTransport(
             call.receiveText()
         } catch (e: Exception) {
             call.respondText("Invalid message: ${e.message}", status = HttpStatusCode.BadRequest)
-            onError?.invoke(e)
+            _onError.invoke(e)
             return
         }
 
@@ -100,16 +99,16 @@ public class SSEServerTransport(
     public suspend fun handleMessage(message: String) {
         try {
             val parsedMessage = McpJson.decodeFromString<JSONRPCMessage>(message)
-            onMessage?.invoke(parsedMessage)
+            _onMessage.invoke(parsedMessage)
         } catch (e: Exception) {
-            onError?.invoke(e)
+            _onError.invoke(e)
             throw e
         }
     }
 
     override suspend fun close() {
         session.close()
-        onClose?.invoke()
+        _onClose.invoke()
     }
 
     override suspend fun send(message: JSONRPCMessage) {

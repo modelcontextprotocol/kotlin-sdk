@@ -152,15 +152,15 @@ public abstract class Protocol(
      */
     public open suspend fun connect(transport: Transport) {
         this.transport = transport
-        transport.onClose = {
+        transport.onClose {
             doClose()
         }
 
-        transport.onError = {
+        transport.onError {
             onError(it)
         }
 
-        transport.onMessage = { message ->
+        transport.onMessage { message ->
             when (message) {
                 is JSONRPCResponse -> onResponse(message, null)
                 is JSONRPCRequest -> onRequest(message)

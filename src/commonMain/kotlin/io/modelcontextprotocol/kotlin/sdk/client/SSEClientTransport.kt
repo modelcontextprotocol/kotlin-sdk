@@ -6,8 +6,8 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
-import io.modelcontextprotocol.kotlin.sdk.shared.Transport
 import kotlinx.atomicfu.AtomicBoolean
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.*
@@ -15,16 +15,19 @@ import kotlinx.serialization.encodeToString
 import kotlin.properties.Delegates
 import kotlin.time.Duration
 
+@Deprecated("Use SseClientTransport instead", ReplaceWith("SseClientTransport"), DeprecationLevel.WARNING)
+public typealias SSEClientTransport = SseClientTransport
+
 /**
  * Client transport for SSE: this will connect to a server using Server-Sent Events for receiving
  * messages and make separate POST requests for sending messages.
  */
-public class SSEClientTransport(
+public class SseClientTransport(
     private val client: HttpClient,
     private val urlString: String?,
     private val reconnectionTime: Duration? = null,
     private val requestBuilder: HttpRequestBuilder.() -> Unit = {},
-) : Transport {
+) : AbstractTransport() {
     private val scope by lazy {
         CoroutineScope(session.coroutineContext + SupervisorJob())
     }
@@ -32,10 +35,6 @@ public class SSEClientTransport(
     private val initialized: AtomicBoolean = atomic(false)
     private var session: ClientSSESession by Delegates.notNull()
     private val endpoint = CompletableDeferred<String>()
-
-    private var _onClose: (() -> Unit) = {}
-    private var _onError: ((Throwable) -> Unit) = {}
-    private var _onMessage: (suspend ((JSONRPCMessage) -> Unit)) = {}
 
     private var job: Job? = null
 
@@ -135,29 +134,5 @@ public class SSEClientTransport(
         session.cancel()
         _onClose()
         job?.cancelAndJoin()
-    }
-
-    override fun onClose(block: () -> Unit) {
-        val old = _onClose
-        _onClose = {
-            old()
-            block()
-        }
-    }
-
-    override fun onError(block: (Throwable) -> Unit) {
-        val old = _onError
-        _onError = { e ->
-            old(e)
-            block(e)
-        }
-    }
-
-    override fun onMessage(block: suspend (JSONRPCMessage) -> Unit) {
-        val old = _onMessage
-        _onMessage = { message ->
-            old(message)
-            block(message)
-        }
     }
 }

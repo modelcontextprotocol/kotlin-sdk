@@ -2,8 +2,8 @@ package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.ReadBuffer
-import io.modelcontextprotocol.kotlin.sdk.shared.Transport
 import io.modelcontextprotocol.kotlin.sdk.shared.serializeMessage
 import kotlinx.atomicfu.AtomicBoolean
 import kotlinx.atomicfu.atomic
@@ -27,11 +27,8 @@ import kotlin.coroutines.CoroutineContext
 public class StdioServerTransport(
     private val inputStream: Source, //BufferedInputStream = BufferedInputStream(System.`in`),
     outputStream: Sink //PrintStream = System.out
-) : Transport {
+) : AbstractTransport() {
     private val logger = KotlinLogging.logger {}
-    override var onClose: (() -> Unit)? = null
-    override var onError: ((Throwable) -> Unit)? = null
-    override var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
 
     private val readBuffer = ReadBuffer()
     private val initialized: AtomicBoolean = atomic(false)
@@ -65,7 +62,7 @@ public class StdioServerTransport(
                 }
             } catch (e: Throwable) {
                 logger.error(e) { "Error reading from stdin" }
-                onError?.invoke(e)
+                _onError.invoke(e)
             } finally {
                 // Reached EOF or error, close connection
                 close()
@@ -80,7 +77,7 @@ public class StdioServerTransport(
                     processReadBuffer()
                 }
             } catch (e: Throwable) {
-                onError?.invoke(e)
+                _onError.invoke(e)
             }
         }
     }
@@ -90,16 +87,16 @@ public class StdioServerTransport(
             val message = try {
                 readBuffer.readMessage()
             } catch (e: Throwable) {
-                onError?.invoke(e)
+                _onError.invoke(e)
                 null
             }
 
             if (message == null) break
             // Async invocation broke delivery order
             try {
-                onMessage?.invoke(message)
+                _onMessage.invoke(message)
             } catch (e: Throwable) {
-                onError?.invoke(e)
+                _onError.invoke(e)
             }
         }
     }
@@ -112,7 +109,7 @@ public class StdioServerTransport(
         readChannel.close()
         readBuffer.clear()
 
-        onClose?.invoke()
+        _onClose.invoke()
     }
 
     override suspend fun send(message: JSONRPCMessage) {

@@ -19,7 +19,7 @@ public fun HttpClient.mcpSseTransport(
     urlString: String? = null,
     reconnectionTime: Duration? = null,
     requestBuilder: HttpRequestBuilder.() -> Unit = {},
-): SSEClientTransport = SSEClientTransport(this, urlString, reconnectionTime, requestBuilder)
+): SseClientTransport = SseClientTransport(this, urlString, reconnectionTime, requestBuilder)
 
 /**
  * Creates and connects an MCP client over SSE using the provided HttpClient.

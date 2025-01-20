@@ -37,7 +37,7 @@ import io.modelcontextprotocol.kotlin.sdk.client.ClientOptions
 import org.junit.jupiter.api.Test
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
-import io.modelcontextprotocol.kotlin.sdk.shared.Transport
+import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -48,7 +48,7 @@ class ClientTest {
     @Test
     fun `should initialize with matching protocol version`() = runTest {
         var initialied = false
-        val clientTransport = object : Transport {
+        val clientTransport = object : AbstractTransport() {
             override suspend fun start() {}
 
             override suspend fun send(message: JSONRPCMessage) {
@@ -68,15 +68,11 @@ class ClientTest {
                     result = result
                 )
 
-                onMessage?.invoke(response)
+                _onMessage.invoke(response)
             }
 
             override suspend fun close() {
             }
-
-            override var onClose: (() -> Unit)? = null
-            override var onError: ((Throwable) -> Unit)? = null
-            override var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
         }
 
         val client = Client(
@@ -98,7 +94,7 @@ class ClientTest {
     @Test
     fun `should initialize with supported older protocol version`() = runTest {
         val OLD_VERSION = SUPPORTED_PROTOCOL_VERSIONS[1]
-        val clientTransport = object : Transport {
+        val clientTransport = object : AbstractTransport() {
             override suspend fun start() {}
 
             override suspend fun send(message: JSONRPCMessage) {
@@ -118,15 +114,11 @@ class ClientTest {
                     id = message.id,
                     result = result
                 )
-                onMessage?.invoke(response)
+                _onMessage.invoke(response)
             }
 
             override suspend fun close() {
             }
-
-            override var onClose: (() -> Unit)? = null
-            override var onError: ((Throwable) -> Unit)? = null
-            override var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
         }
 
         val client = Client(
@@ -151,7 +143,7 @@ class ClientTest {
     @Test
     fun `should reject unsupported protocol version`() = runTest {
         var closed = false
-        val clientTransport = object : Transport {
+        val clientTransport = object : AbstractTransport() {
             override suspend fun start() {}
 
             override suspend fun send(message: JSONRPCMessage) {
@@ -172,16 +164,12 @@ class ClientTest {
                     result = result
                 )
 
-                onMessage?.invoke(response)
+                _onMessage.invoke(response)
             }
 
             override suspend fun close() {
                 closed = true
             }
-
-            override var onClose: (() -> Unit)? = null
-            override var onError: ((Throwable) -> Unit)? = null
-            override var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
         }
 
         val client = Client(

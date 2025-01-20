@@ -46,3 +46,38 @@ public interface Transport {
      */
     public fun onMessage(block: suspend (JSONRPCMessage) -> Unit)
 }
+
+/**
+ * Implements [onClose], [onError] and [onMessage] functions of [Transport] providing
+ * corresponding [_onClose], [_onError] and [_onMessage] properties to use for an implementation.
+ */
+@Suppress("PropertyName")
+public abstract class AbstractTransport : Transport {
+    protected var _onClose: (() -> Unit) = {}
+    protected var _onError: ((Throwable) -> Unit) = {}
+    protected var _onMessage: (suspend ((JSONRPCMessage) -> Unit)) = {}
+
+    override fun onClose(block: () -> Unit) {
+        val old = _onClose
+        _onClose = {
+            old()
+            block()
+        }
+    }
+
+    override fun onError(block: (Throwable) -> Unit) {
+        val old = _onError
+        _onError = { e ->
+            old(e)
+            block(e)
+        }
+    }
+
+    override fun onMessage(block: suspend (JSONRPCMessage) -> Unit) {
+        val old = _onMessage
+        _onMessage = { message ->
+            old(message)
+            block(message)
+        }
+    }
+}

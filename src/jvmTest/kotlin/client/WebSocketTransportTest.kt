@@ -33,7 +33,7 @@ class WebSocketTransportTest : BaseTransportTest() {
         install(WebSockets)
         routing {
             mcpWebSocketTransport {
-                onMessage = {
+                onMessage {
                     send(it)
                 }
 
