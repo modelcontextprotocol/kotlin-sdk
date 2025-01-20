@@ -225,6 +225,7 @@ kotlin {
         jvmTest {
             dependencies {
                 implementation(libs.mockk)
+                implementation(libs.slf4j.simple)
             }
         }
     }

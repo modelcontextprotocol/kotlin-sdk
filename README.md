@@ -114,12 +114,13 @@ server.connect(transport)
 
 ### Using SSE Transport
 
+Directly in Ktor's `Application`:
 ```kotlin
 import io.ktor.server.application.*
-import io.modelcontextprotocol.kotlin.sdk.server.MCP
+import io.modelcontextprotocol.kotlin.sdk.server.mcp
 
 fun Application.module() {
-    MCP {
+    mcp {
         Server(
             serverInfo = Implementation(
                 name = "example-sse-server",
@@ -136,6 +137,35 @@ fun Application.module() {
 }
 ```
 
+Inside a custom Ktor's `Route`:
+```kotlin
+import io.ktor.server.application.*
+import io.ktor.server.sse.SSE
+import io.modelcontextprotocol.kotlin.sdk.server.mcp
+
+fun Application.module() {
+    install(SSE)
+
+    routing {
+        route("myRoute") {
+            mcp {
+                Server(
+                    serverInfo = Implementation(
+                        name = "example-sse-server",
+                        version = "1.0.0"
+                    ),
+                    options = ServerOptions(
+                        capabilities = ServerCapabilities(
+                            prompts = ServerCapabilities.Prompts(listChanged = null),
+                            resources = ServerCapabilities.Resources(subscribe = null, listChanged = null)
+                        )
+                    )
+                )
+            }
+        }
+    }
+}
+```
 ## Contributing
 
 Please see the [contribution guide](CONTRIBUTING.md) and the [Code of conduct](CODE_OF_CONDUCT.md) before contributing.
