@@ -2689,37 +2689,25 @@ public final class io/modelcontextprotocol/kotlin/sdk/client/ClientOptions : io/
 	public final fun getCapabilities ()Lio/modelcontextprotocol/kotlin/sdk/ClientCapabilities;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/client/SSEClientTransport : io/modelcontextprotocol/kotlin/sdk/shared/Transport {
+public final class io/modelcontextprotocol/kotlin/sdk/client/KtorClientKt {
+	public static final fun mcpSse-BZiP2OM (Lio/ktor/client/HttpClient;Ljava/lang/String;Lkotlin/time/Duration;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun mcpSse-BZiP2OM$default (Lio/ktor/client/HttpClient;Ljava/lang/String;Lkotlin/time/Duration;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static final fun mcpSseTransport-5_5nbZA (Lio/ktor/client/HttpClient;Ljava/lang/String;Lkotlin/time/Duration;Lkotlin/jvm/functions/Function1;)Lio/modelcontextprotocol/kotlin/sdk/client/SseClientTransport;
+	public static synthetic fun mcpSseTransport-5_5nbZA$default (Lio/ktor/client/HttpClient;Ljava/lang/String;Lkotlin/time/Duration;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/client/SseClientTransport;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/client/SseClientTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport {
 	public synthetic fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Lkotlin/time/Duration;Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public synthetic fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Lkotlin/time/Duration;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun getOnClose ()Lkotlin/jvm/functions/Function0;
-	public fun getOnError ()Lkotlin/jvm/functions/Function1;
-	public fun getOnMessage ()Lkotlin/jvm/functions/Function2;
 	public fun send (Lio/modelcontextprotocol/kotlin/sdk/JSONRPCMessage;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun setOnClose (Lkotlin/jvm/functions/Function0;)V
-	public fun setOnError (Lkotlin/jvm/functions/Function1;)V
-	public fun setOnMessage (Lkotlin/jvm/functions/Function2;)V
 	public fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/client/Sse_ktorKt {
-	public static final fun mcpSse-BZiP2OM (Lio/ktor/client/HttpClient;Ljava/lang/String;Lkotlin/time/Duration;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static synthetic fun mcpSse-BZiP2OM$default (Lio/ktor/client/HttpClient;Ljava/lang/String;Lkotlin/time/Duration;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
-	public static final fun mcpSseTransport-5_5nbZA (Lio/ktor/client/HttpClient;Ljava/lang/String;Lkotlin/time/Duration;Lkotlin/jvm/functions/Function1;)Lio/modelcontextprotocol/kotlin/sdk/client/SSEClientTransport;
-	public static synthetic fun mcpSseTransport-5_5nbZA$default (Lio/ktor/client/HttpClient;Ljava/lang/String;Lkotlin/time/Duration;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/client/SSEClientTransport;
-}
-
-public final class io/modelcontextprotocol/kotlin/sdk/client/StdioClientTransport : io/modelcontextprotocol/kotlin/sdk/shared/Transport {
+public final class io/modelcontextprotocol/kotlin/sdk/client/StdioClientTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport {
 	public fun <init> (Lkotlinx/io/Source;Lkotlinx/io/Sink;)V
 	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun getOnClose ()Lkotlin/jvm/functions/Function0;
-	public fun getOnError ()Lkotlin/jvm/functions/Function1;
-	public fun getOnMessage ()Lkotlin/jvm/functions/Function2;
 	public fun send (Lio/modelcontextprotocol/kotlin/sdk/JSONRPCMessage;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun setOnClose (Lkotlin/jvm/functions/Function0;)V
-	public fun setOnError (Lkotlin/jvm/functions/Function1;)V
-	public fun setOnMessage (Lkotlin/jvm/functions/Function2;)V
 	public fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
@@ -2735,8 +2723,11 @@ public final class io/modelcontextprotocol/kotlin/sdk/client/WebSocketMcpKtorCli
 	public static synthetic fun mcpWebSocketTransport$default (Lio/ktor/client/HttpClient;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/client/WebSocketClientTransport;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/server/McpKtorServerPluginKt {
+public final class io/modelcontextprotocol/kotlin/sdk/server/KtorServerKt {
 	public static final fun MCP (Lio/ktor/server/application/Application;Lkotlin/jvm/functions/Function0;)V
+	public static final fun mcp (Lio/ktor/server/application/Application;Lkotlin/jvm/functions/Function0;)V
+	public static final fun mcp (Lio/ktor/server/routing/Routing;Ljava/lang/String;Lkotlin/jvm/functions/Function0;)V
+	public static final fun mcp (Lio/ktor/server/routing/Routing;Lkotlin/jvm/functions/Function0;)V
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/server/RegisteredPrompt {
@@ -2778,25 +2769,8 @@ public final class io/modelcontextprotocol/kotlin/sdk/server/RegisteredTool {
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/server/SSEServerTransport : io/modelcontextprotocol/kotlin/sdk/shared/Transport {
-	public fun <init> (Ljava/lang/String;Lio/ktor/server/sse/ServerSSESession;)V
-	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun getOnClose ()Lkotlin/jvm/functions/Function0;
-	public fun getOnError ()Lkotlin/jvm/functions/Function1;
-	public fun getOnMessage ()Lkotlin/jvm/functions/Function2;
-	public final fun getSessionId ()Ljava/lang/String;
-	public final fun handleMessage (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public final fun handlePostMessage (Lio/ktor/server/application/ApplicationCall;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun send (Lio/modelcontextprotocol/kotlin/sdk/JSONRPCMessage;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun setOnClose (Lkotlin/jvm/functions/Function0;)V
-	public fun setOnError (Lkotlin/jvm/functions/Function1;)V
-	public fun setOnMessage (Lkotlin/jvm/functions/Function2;)V
-	public fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-}
-
 public class io/modelcontextprotocol/kotlin/sdk/server/Server : io/modelcontextprotocol/kotlin/sdk/shared/Protocol {
-	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/Implementation;Lio/modelcontextprotocol/kotlin/sdk/server/ServerOptions;Lkotlin/jvm/functions/Function0;)V
-	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/Implementation;Lio/modelcontextprotocol/kotlin/sdk/server/ServerOptions;Lkotlin/jvm/functions/Function0;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/Implementation;Lio/modelcontextprotocol/kotlin/sdk/server/ServerOptions;)V
 	public final fun addPrompt (Lio/modelcontextprotocol/kotlin/sdk/Prompt;Lkotlin/jvm/functions/Function2;)V
 	public final fun addPrompt (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Lkotlin/jvm/functions/Function2;)V
 	public static synthetic fun addPrompt$default (Lio/modelcontextprotocol/kotlin/sdk/server/Server;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)V
@@ -2814,19 +2788,17 @@ public class io/modelcontextprotocol/kotlin/sdk/server/Server : io/modelcontextp
 	public static synthetic fun createMessage$default (Lio/modelcontextprotocol/kotlin/sdk/server/Server;Lio/modelcontextprotocol/kotlin/sdk/CreateMessageRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public final fun getClientCapabilities ()Lio/modelcontextprotocol/kotlin/sdk/ClientCapabilities;
 	public final fun getClientVersion ()Lio/modelcontextprotocol/kotlin/sdk/Implementation;
-	public final fun getOnCloseCallback ()Lkotlin/jvm/functions/Function0;
-	public final fun getOnInitialized ()Lkotlin/jvm/functions/Function0;
 	public final fun listRoots (Lkotlinx/serialization/json/JsonObject;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun listRoots$default (Lio/modelcontextprotocol/kotlin/sdk/server/Server;Lkotlinx/serialization/json/JsonObject;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public fun onClose ()V
+	public final fun onClose (Lkotlin/jvm/functions/Function0;)V
+	public final fun onInitalized (Lkotlin/jvm/functions/Function0;)V
 	public final fun ping (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun sendLoggingMessage (Lio/modelcontextprotocol/kotlin/sdk/LoggingMessageNotification;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun sendPromptListChanged (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun sendResourceListChanged (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun sendResourceUpdated (Lio/modelcontextprotocol/kotlin/sdk/ResourceUpdatedNotification;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun sendToolListChanged (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public final fun setOnCloseCallback (Lkotlin/jvm/functions/Function0;)V
-	public final fun setOnInitialized (Lkotlin/jvm/functions/Function0;)V
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/server/ServerOptions : io/modelcontextprotocol/kotlin/sdk/shared/ProtocolOptions {
@@ -2835,16 +2807,20 @@ public final class io/modelcontextprotocol/kotlin/sdk/server/ServerOptions : io/
 	public final fun getCapabilities ()Lio/modelcontextprotocol/kotlin/sdk/ServerCapabilities;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/server/StdioServerTransport : io/modelcontextprotocol/kotlin/sdk/shared/Transport {
+public final class io/modelcontextprotocol/kotlin/sdk/server/SseServerTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport {
+	public fun <init> (Ljava/lang/String;Lio/ktor/server/sse/ServerSSESession;)V
+	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun getSessionId ()Ljava/lang/String;
+	public final fun handleMessage (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun handlePostMessage (Lio/ktor/server/application/ApplicationCall;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun send (Lio/modelcontextprotocol/kotlin/sdk/JSONRPCMessage;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/server/StdioServerTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport {
 	public fun <init> (Lkotlinx/io/Source;Lkotlinx/io/Sink;)V
 	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun getOnClose ()Lkotlin/jvm/functions/Function0;
-	public fun getOnError ()Lkotlin/jvm/functions/Function1;
-	public fun getOnMessage ()Lkotlin/jvm/functions/Function2;
 	public fun send (Lio/modelcontextprotocol/kotlin/sdk/JSONRPCMessage;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun setOnClose (Lkotlin/jvm/functions/Function0;)V
-	public fun setOnError (Lkotlin/jvm/functions/Function1;)V
-	public fun setOnMessage (Lkotlin/jvm/functions/Function2;)V
 	public fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
@@ -2862,6 +2838,16 @@ public final class io/modelcontextprotocol/kotlin/sdk/server/WebSocketMcpKtorSer
 public final class io/modelcontextprotocol/kotlin/sdk/server/WebSocketMcpServerTransport : io/modelcontextprotocol/kotlin/sdk/shared/WebSocketMcpTransport {
 	public fun <init> (Lio/ktor/server/websocket/WebSocketServerSession;)V
 	public synthetic fun getSession ()Lio/ktor/websocket/WebSocketSession;
+}
+
+public abstract class io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport : io/modelcontextprotocol/kotlin/sdk/shared/Transport {
+	public fun <init> ()V
+	protected final fun get_onClose ()Lkotlin/jvm/functions/Function0;
+	protected final fun get_onError ()Lkotlin/jvm/functions/Function1;
+	protected final fun get_onMessage ()Lkotlin/jvm/functions/Function2;
+	public fun onClose (Lkotlin/jvm/functions/Function0;)V
+	public fun onError (Lkotlin/jvm/functions/Function1;)V
+	public fun onMessage (Lkotlin/jvm/functions/Function2;)V
 }
 
 public abstract class io/modelcontextprotocol/kotlin/sdk/shared/Protocol {
@@ -2933,28 +2919,19 @@ public final class io/modelcontextprotocol/kotlin/sdk/shared/RequestOptions {
 
 public abstract interface class io/modelcontextprotocol/kotlin/sdk/shared/Transport {
 	public abstract fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public abstract fun getOnClose ()Lkotlin/jvm/functions/Function0;
-	public abstract fun getOnError ()Lkotlin/jvm/functions/Function1;
-	public abstract fun getOnMessage ()Lkotlin/jvm/functions/Function2;
+	public abstract fun onClose (Lkotlin/jvm/functions/Function0;)V
+	public abstract fun onError (Lkotlin/jvm/functions/Function1;)V
+	public abstract fun onMessage (Lkotlin/jvm/functions/Function2;)V
 	public abstract fun send (Lio/modelcontextprotocol/kotlin/sdk/JSONRPCMessage;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public abstract fun setOnClose (Lkotlin/jvm/functions/Function0;)V
-	public abstract fun setOnError (Lkotlin/jvm/functions/Function1;)V
-	public abstract fun setOnMessage (Lkotlin/jvm/functions/Function2;)V
 	public abstract fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
-public abstract class io/modelcontextprotocol/kotlin/sdk/shared/WebSocketMcpTransport : io/modelcontextprotocol/kotlin/sdk/shared/Transport {
+public abstract class io/modelcontextprotocol/kotlin/sdk/shared/WebSocketMcpTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport {
 	public fun <init> ()V
 	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun getOnClose ()Lkotlin/jvm/functions/Function0;
-	public fun getOnError ()Lkotlin/jvm/functions/Function1;
-	public fun getOnMessage ()Lkotlin/jvm/functions/Function2;
 	protected abstract fun getSession ()Lio/ktor/websocket/WebSocketSession;
 	protected abstract fun initializeSession (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun send (Lio/modelcontextprotocol/kotlin/sdk/JSONRPCMessage;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun setOnClose (Lkotlin/jvm/functions/Function0;)V
-	public fun setOnError (Lkotlin/jvm/functions/Function1;)V
-	public fun setOnMessage (Lkotlin/jvm/functions/Function2;)V
 	public fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
