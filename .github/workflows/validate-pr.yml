@@ -2,6 +2,7 @@ name: Validate PR
 
 # https://github.com/orgs/community/discussions/51120#discussioncomment-8623798
 on:
+  merge_group:
   workflow_dispatch:
   pull_request:
     types: [enqueued]
@@ -9,8 +10,14 @@ on:
 jobs:
   validate-pr:
     runs-on: ubuntu-latest
-    name: Build
+    name: Validate PR
     steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
 
