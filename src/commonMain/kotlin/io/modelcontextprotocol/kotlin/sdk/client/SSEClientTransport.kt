@@ -55,7 +55,18 @@ public class SseClientTransport(
     private var job: Job? = null
 
     private val baseUrl by lazy {
-        session.call.request.url.toString().removeSuffix("/sse")
+        val requestUrl = session.call.request.url.toString()
+        val url = Url(requestUrl)
+        var path = url.encodedPath
+        if (path.isEmpty()) {
+            url.protocolWithAuthority
+        } else if (path.endsWith("/")) {
+            url.protocolWithAuthority + path.removeSuffix("/")
+        } else {
+            // the last item is not a directory, so will not be taken into account
+            path = path.substring(0, path.lastIndexOf("/"))
+            url.protocolWithAuthority + path
+        }
     }
 
     override suspend fun start() {
@@ -95,8 +106,7 @@ public class SseClientTransport(
                             val eventData = event.data ?: ""
 
                             // check url correctness
-                            val maybeEndpoint = Url(baseUrl + eventData)
-
+                            val maybeEndpoint = Url("$baseUrl/${if (eventData.startsWith("/")) eventData.substring(1) else eventData}")
                             endpoint.complete(maybeEndpoint.toString())
                         } catch (e: Exception) {
                             _onError(e)

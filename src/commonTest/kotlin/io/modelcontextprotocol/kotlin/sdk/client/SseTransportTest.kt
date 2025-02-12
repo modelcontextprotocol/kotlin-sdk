@@ -82,4 +82,41 @@ class SseTransportTest : BaseTransportTest() {
         testClientRead(client)
         server.stopSuspend()
     }
+
+    @Test
+    fun `test sse path not root path`() = runTest {
+        val server = embeddedServer(CIO, port = PORT) {
+            install(io.ktor.server.sse.SSE)
+            val transports = ConcurrentMap<String, SseServerTransport>()
+            routing {
+                sse("/sse") {
+                    mcpSseTransport("/messages", transports).apply {
+                        onMessage {
+                            send(it)
+                        }
+
+                        start()
+                    }
+                }
+
+                post("/messages") {
+
+                    mcpPostEndpoint(transports)
+                }
+            }
+        }.start(wait = false)
+
+        val client = HttpClient {
+            install(SSE)
+        }.mcpSseTransport {
+            url {
+                host = "localhost"
+                port = PORT
+                pathSegments = listOf("sse")
+            }
+        }
+
+        testClientRead(client)
+        server.stop()
+    }
 }
