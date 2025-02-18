@@ -1,11 +1,9 @@
 name: Validate PR
 
-# https://github.com/orgs/community/discussions/51120#discussioncomment-8623798
 on:
-  merge_group:
   workflow_dispatch:
   pull_request:
-    types: [enqueued]
+    types: [auto_merge_enabled]
 
 jobs:
   validate-pr:
@@ -23,3 +21,10 @@ jobs:
 
       - name: Clean Build with Gradle
         run: ./gradlew clean build
+
+      - name: Disable Auto-Merge on Fail
+        if: failure()
+        run: gh pr merge --disable-auto "$PR_URL"
+        env:
+          PR_URL: ${{github.event.pull_request.html_url}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
