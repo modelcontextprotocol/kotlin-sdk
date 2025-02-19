@@ -219,6 +219,7 @@ kotlin {
                 implementation(libs.ktor.server.test.host)
                 implementation(libs.kotlinx.coroutines.test)
                 implementation(libs.kotlinx.coroutines.debug)
+                implementation(libs.kotest.assertions.json)
             }
         }
 

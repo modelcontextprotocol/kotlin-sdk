@@ -13,6 +13,7 @@ logging = "7.0.0"
 jreleaser = "1.15.0"
 binaryCompatibilityValidatorPlugin = "0.17.0"
 slf4j = "2.0.16"
+kotest = "5.9.1"
 
 [libraries]
 # Kotlinx libraries
@@ -32,8 +33,7 @@ kotlinx-coroutines-debug = { group = "org.jetbrains.kotlinx", name = "kotlinx-co
 ktor-server-test-host = { group = "io.ktor", name = "ktor-server-test-host", version.ref = "ktor" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
-
-
+kotest-assertions-json = { group = "io.kotest", name = "kotest-assertions-json", version.ref = "kotest" }
 
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
