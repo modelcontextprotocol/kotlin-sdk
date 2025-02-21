@@ -24,6 +24,7 @@ import io.modelcontextprotocol.kotlin.sdk.Role
 import io.modelcontextprotocol.kotlin.sdk.SUPPORTED_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.TextContent
+import io.modelcontextprotocol.kotlin.sdk.Tool
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
@@ -38,6 +39,7 @@ import org.junit.jupiter.api.Test
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
+import org.junit.jupiter.api.assertInstanceOf
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -494,5 +496,79 @@ class ClientTest {
         }
     }
 
+    @Test
+    fun `JSONRPCRequest with ToolsList method and default params returns list of tools`() = runTest {
+        val serverOptions = ServerOptions(
+            capabilities = ServerCapabilities(
+                tools = ServerCapabilities.Tools(null)
+            )
+        )
+        val server = Server(
+            Implementation(name = "test server", version = "1.0"),
+            serverOptions
+        )
+
+        server.setRequestHandler<InitializeRequest>(Method.Defined.Initialize) { request, _ ->
+            InitializeResult(
+                protocolVersion = LATEST_PROTOCOL_VERSION,
+                capabilities = ServerCapabilities(
+                    resources = ServerCapabilities.Resources(null, null),
+                    tools = ServerCapabilities.Tools(null)
+                ),
+                serverInfo = Implementation(name = "test", version = "1.0")
+            )
+        }
+        val serverListToolsResult = ListToolsResult(
+            tools = listOf(
+                Tool(
+                    name = "testTool",
+                    description = "testTool description",
+                    inputSchema = Tool.Input()
+                )
+            ), nextCursor = null
+        )
+
+        server.setRequestHandler<ListToolsRequest>(Method.Defined.ToolsList) { request, _ ->
+            serverListToolsResult
+        }
+
+        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
+
+        val client = Client(
+            clientInfo = Implementation(name = "test client", version = "1.0"),
+            options = ClientOptions(
+                capabilities = ClientCapabilities(sampling = EmptyJsonObject),
+            )
+        )
+
+        var receivedMessage: JSONRPCMessage? = null
+        clientTransport.onMessage { msg ->
+            receivedMessage = msg
+        }
+
+        listOf(
+            launch {
+                client.connect(clientTransport)
+            },
+            launch {
+                server.connect(serverTransport)
+            }
+        ).joinAll()
+
+        val serverCapabilities = client.serverCapabilities
+        assertEquals(ServerCapabilities.Tools(null), serverCapabilities?.tools)
+
+        val request = JSONRPCRequest(
+            method = Method.Defined.ToolsList.value
+        )
+        clientTransport.send(request)
+
+        assertInstanceOf<JSONRPCResponse>(receivedMessage)
+        val receivedAsResponse = receivedMessage as JSONRPCResponse
+        assertEquals(request.id, receivedAsResponse.id)
+        assertEquals(request.jsonrpc, receivedAsResponse.jsonrpc)
+        assertEquals(serverListToolsResult, receivedAsResponse.result)
+        assertEquals(null, receivedAsResponse.error)
+    }
 
 }
