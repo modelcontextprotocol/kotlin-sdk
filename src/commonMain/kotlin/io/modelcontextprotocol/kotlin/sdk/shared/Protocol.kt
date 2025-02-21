@@ -440,7 +440,7 @@ public abstract class Protocol(
         val serializer = McpJson.serializersModule.serializer(requestType)
 
         requestHandlers[method.value] = { request, extraHandler ->
-            val result = request.params?.let { McpJson.decodeFromJsonElement(serializer, it) }
+            val result = McpJson.decodeFromJsonElement(serializer, request.params)
             val response = if (result != null) {
                 @Suppress("UNCHECKED_CAST")
                 block(result as T, extraHandler)

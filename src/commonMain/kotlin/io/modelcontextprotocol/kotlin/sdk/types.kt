@@ -215,7 +215,7 @@ public sealed interface JSONRPCMessage
 public data class JSONRPCRequest(
     val id: RequestId = RequestId.NumberId(REQUEST_MESSAGE_ID.incrementAndGet()),
     val method: String,
-    val params: JsonElement? = null,
+    val params: JsonElement = EmptyJsonObject,
     val jsonrpc: String = JSONRPC_VERSION,
 ) : JSONRPCMessage
 
