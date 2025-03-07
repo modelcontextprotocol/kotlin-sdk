@@ -91,7 +91,7 @@ fun configureServer(): Server {
 
     // Add a tool
     server.addTool(
-        name = "Test io.modelcontextprotocol.kotlin.sdk.Tool",
+        name = "kotlin-sdk-tool",
         description = "A test tool",
         inputSchema = Tool.Input()
     ) { request ->
@@ -128,7 +128,6 @@ fun runMcpServerUsingStdio() {
 
     runBlocking {
         server.connect(transport)
-        println("Server running on stdio")
         val done = Job()
         server.onCloseCallback = {
             done.complete()
