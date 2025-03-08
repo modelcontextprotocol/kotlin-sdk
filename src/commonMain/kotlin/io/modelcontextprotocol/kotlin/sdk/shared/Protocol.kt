@@ -209,7 +209,7 @@ public abstract class Protocol(
         if (handler === null) {
             LOGGER.trace { "No handler found for request: ${request.method}" }
             try {
-                transport!!.send(
+                transport?.send(
                     JSONRPCResponse(
                         id = request.id,
                         error = JSONRPCError(
@@ -229,24 +229,30 @@ public abstract class Protocol(
             val result = handler(request, RequestHandlerExtra())
             LOGGER.trace { "Request handled successfully: ${request.method} (id: ${request.id})" }
 
-            val response = JSONRPCResponse(
-                id = request.id,
-                result = result
+            transport?.send(
+                JSONRPCResponse(
+                    id = request.id,
+                    result = result
+                )
             )
-            transport!!.send(response)
 
         } catch (cause: Throwable) {
             LOGGER.error(cause) { "Error handling request: ${request.method} (id: ${request.id})" }
 
-            transport!!.send(
-                JSONRPCResponse(
-                    id = request.id,
-                    error = JSONRPCError(
-                        ErrorCode.Defined.InternalError,
-                        message = cause.message ?: "Internal error",
+            try {
+                transport?.send(
+                    JSONRPCResponse(
+                        id = request.id,
+                        error = JSONRPCError(
+                            code = ErrorCode.Defined.InternalError,
+                            message = cause.message ?: "Internal error"
+                        )
                     )
                 )
-            )
+            } catch (sendError: Throwable) {
+                LOGGER.error(sendError) { "Failed to send error response for request: ${request.method} (id: ${request.id})" }
+                // Optionally implement fallback behavior here
+            }
         }
     }
 
@@ -385,7 +391,7 @@ public abstract class Protocol(
         try {
             withTimeout(timeout) {
                 LOGGER.trace { "Sending request message with id: $messageId" }
-                this@Protocol.transport!!.send(message)
+                this@Protocol.transport?.send(message)
             }
             return result.await()
         } catch (cause: TimeoutCancellationException) {
