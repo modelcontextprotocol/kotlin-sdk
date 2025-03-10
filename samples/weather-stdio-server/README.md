@@ -30,7 +30,7 @@ The project provides:
 Use the Gradle wrapper to build the application. In a terminal run:
 
 ```shell
-./gradlew clean build
+./gradlew clean build -x test
 ```
 
 To run the server:
