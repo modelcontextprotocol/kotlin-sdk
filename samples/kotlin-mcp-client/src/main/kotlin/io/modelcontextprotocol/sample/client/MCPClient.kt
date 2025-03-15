@@ -9,12 +9,13 @@ import com.anthropic.models.ToolUnion
 import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
+import kotlinx.coroutines.runBlocking
 import kotlinx.io.asSink
 import kotlinx.io.asSource
 import kotlinx.io.buffered
 import kotlin.jvm.optionals.getOrNull
 
-class MCPClient {
+class MCPClient : AutoCloseable {
     private val anthropic = AnthropicOkHttpClient.fromEnv()
     private val mcp: Client = Client(clientInfo = Implementation(name = "mcp-client-cli", version = "1.0.0"))
     private val messageParamsBuilder: MessageCreateParams.Builder = MessageCreateParams.builder()
@@ -132,7 +133,10 @@ class MCPClient {
         }
     }
 
-    suspend fun close() {
-        mcp.close()
+    override fun close() {
+        runBlocking {
+            mcp.close()
+            anthropic.close()
+        }
     }
 }
