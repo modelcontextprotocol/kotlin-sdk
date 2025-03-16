@@ -17,7 +17,7 @@ private val logger = KotlinLogging.logger {}
 
 internal object ErrorCodeSerializer : KSerializer<ErrorCode> {
     override val descriptor: SerialDescriptor =
-        PrimitiveSerialDescriptor("io.modelcontextprotocol.kotlin.sdk.ErrorCode", PrimitiveKind.STRING)
+        PrimitiveSerialDescriptor("io.modelcontextprotocol.kotlin.sdk.ErrorCode", PrimitiveKind.INT)
 
     @OptIn(ExperimentalSerializationApi::class)
     override fun serialize(encoder: Encoder, value: ErrorCode) {
@@ -25,9 +25,9 @@ internal object ErrorCodeSerializer : KSerializer<ErrorCode> {
     }
 
     override fun deserialize(decoder: Decoder): ErrorCode {
-        val decodedString = decoder.decodeInt()
-        return ErrorCode.Defined.entries.firstOrNull { it.code == decodedString }
-            ?: ErrorCode.Unknown(decodedString)
+        val decodedInt = decoder.decodeInt()
+        return ErrorCode.Defined.entries.firstOrNull { it.code == decodedInt }
+            ?: ErrorCode.Unknown(decodedInt)
     }
 }
 
