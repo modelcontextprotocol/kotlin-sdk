@@ -76,10 +76,10 @@ public class SseClientTransport(
 
                     "endpoint" -> {
                         try {
-                            val eventData = event.data?.removePrefix("/") ?: ""
+                            val eventData = event.data ?: ""
 
                             // check url correctness
-                            val maybeEndpoint = Url("$baseUrl/$eventData")
+                            val maybeEndpoint = Url(baseUrl + eventData)
 
                             endpoint.complete(maybeEndpoint.toString())
                         } catch (e: Exception) {
