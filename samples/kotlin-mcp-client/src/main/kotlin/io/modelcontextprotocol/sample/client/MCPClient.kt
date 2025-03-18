@@ -6,12 +6,14 @@ import com.anthropic.models.messages.*
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.modelcontextprotocol.kotlin.sdk.Implementation
+import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
 import kotlinx.coroutines.runBlocking
 import kotlinx.io.asSink
 import kotlinx.io.asSource
 import kotlinx.io.buffered
+import kotlinx.serialization.json.JsonObject
 import kotlin.jvm.optionals.getOrNull
 
 class MCPClient : AutoCloseable {
@@ -27,6 +29,12 @@ class MCPClient : AutoCloseable {
 
     // List of tools offered by the server
     private lateinit var tools: List<ToolUnion>
+
+    private fun JsonObject.toJsonValue(): JsonValue {
+        val mapper = ObjectMapper()
+        val node = mapper.readTree(this.toString())
+        return JsonValue.fromJsonNode(node)
+    }
 
     // Connect to the server using the path to the server
     suspend fun connectToServer(serverScriptPath: String) {
@@ -63,16 +71,13 @@ class MCPClient : AutoCloseable {
                         .description(tool.description ?: "")
                         .inputSchema(
                             Tool.InputSchema.builder()
-                                .properties(JsonValue.from(tool.inputSchema.properties))
-                                .putAdditionalProperty(
-                                    "required",
-                                    JsonValue.from(tool.inputSchema.required ?: emptyList<String>())
-                                )
+                                .type(JsonValue.from(tool.inputSchema.type))
+                                .properties(tool.inputSchema.properties.toJsonValue())
+                                .putAdditionalProperty("required", JsonValue.from(tool.inputSchema.required))
                                 .build()
                         )
                         .build()
                 )
-
             } ?: emptyList()
             println("Connected to server with tools: ${tools.joinToString(", ") { it.tool().get().name() }}")
         } catch (e: Exception) {
@@ -108,12 +113,13 @@ class MCPClient : AutoCloseable {
                 // If the response indicates a tool use, process it further
                 content.isToolUse() -> {
                     val toolName = content.toolUse().get().name()
-                    val toolArgs = content.toolUse().get()._additionalProperties()
+                    val toolArgs =
+                        content.toolUse().get()._input().convert(object : TypeReference<Map<String, JsonValue>>() {})
 
                     // Call the tool with provided arguments
                     val result = mcp.callTool(
                         name = toolName,
-                        arguments = toolArgs
+                        arguments = toolArgs ?: emptyMap()
                     )
                     finalText.add("[Calling tool $toolName with args $toolArgs]")
 
@@ -121,7 +127,13 @@ class MCPClient : AutoCloseable {
                     messages.add(
                         MessageParam.builder()
                             .role(MessageParam.Role.USER)
-                            .content(result?.content.toString())
+                            .content(
+                                """
+                                        "type": "tool_result",
+                                        "tool_name": $toolName,
+                                        "result": ${result?.content?.joinToString("\n") { (it as TextContent).text ?: "" }}
+                                    """.trimIndent()
+                            )
                             .build()
                     )
 
