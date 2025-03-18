@@ -2,10 +2,9 @@ package io.modelcontextprotocol.sample.client
 
 import com.anthropic.client.okhttp.AnthropicOkHttpClient
 import com.anthropic.core.JsonValue
-import com.anthropic.models.MessageCreateParams
-import com.anthropic.models.MessageParam
-import com.anthropic.models.Tool
-import com.anthropic.models.ToolUnion
+import com.anthropic.models.messages.*
+import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.databind.ObjectMapper
 import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
@@ -23,8 +22,8 @@ class MCPClient : AutoCloseable {
     private val mcp: Client = Client(clientInfo = Implementation(name = "mcp-client-cli", version = "1.0.0"))
 
     private val messageParamsBuilder: MessageCreateParams.Builder = MessageCreateParams.builder()
-        .model("claude-3-5-sonnet-20241022")
-        .maxTokens(1000)
+        .model(Model.CLAUDE_3_5_SONNET_20241022)
+        .maxTokens(1024)
 
     // List of tools offered by the server
     private lateinit var tools: List<ToolUnion>

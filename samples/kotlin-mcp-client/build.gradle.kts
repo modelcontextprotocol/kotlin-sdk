@@ -14,7 +14,7 @@ version = "0.1.0"
 
 val mcpVersion = "0.3.0"
 val slf4jVersion = "2.0.9"
-val anthropicVersion = "0.7.0"
+val anthropicVersion = "0.8.0"
 
 dependencies {
     implementation("io.modelcontextprotocol:kotlin-sdk:$mcpVersion")
