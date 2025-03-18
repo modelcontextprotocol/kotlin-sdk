@@ -10,7 +10,6 @@ import io.modelcontextprotocol.kotlin.sdk.*
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.StdioServerTransport
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.runBlocking
 import kotlinx.io.asSink
@@ -19,8 +18,6 @@ import kotlinx.serialization.json.*
 
 // Main function to run the MCP server
 fun `run mcp server`() {
-    val def = CompletableDeferred<Unit>()
-
     // Base URL for the Weather API
     val baseUrl = "https://api.weather.gov"
 
@@ -52,7 +49,7 @@ fun `run mcp server`() {
         ServerOptions(
             capabilities = ServerCapabilities(tools = ServerCapabilities.Tools(listChanged = true))
         )
-    ) { def.complete(Unit) }
+    )
 
     // Register a tool to fetch weather alerts by state
     server.addTool(
