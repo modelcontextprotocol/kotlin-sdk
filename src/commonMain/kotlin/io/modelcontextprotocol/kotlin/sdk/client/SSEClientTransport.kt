@@ -39,7 +39,7 @@ public class SseClientTransport(
     private var job: Job? = null
 
     private val baseUrl by lazy {
-        session.call.request.url.toString().removeSuffix("/")
+        session.call.request.url.toString().removeSuffix("/sse")
     }
 
     override suspend fun start() {
@@ -52,7 +52,7 @@ public class SseClientTransport(
 
         session = urlString?.let {
             client.sseSession(
-                urlString = it,
+                urlString = "$it/sse",
                 reconnectionTime = reconnectionTime,
                 block = requestBuilder,
             )
@@ -79,7 +79,7 @@ public class SseClientTransport(
                             val eventData = event.data ?: ""
 
                             // check url correctness
-                            val maybeEndpoint = Url("$baseUrl/$eventData")
+                            val maybeEndpoint = Url(baseUrl + eventData)
 
                             endpoint.complete(maybeEndpoint.toString())
                         } catch (e: Exception) {
