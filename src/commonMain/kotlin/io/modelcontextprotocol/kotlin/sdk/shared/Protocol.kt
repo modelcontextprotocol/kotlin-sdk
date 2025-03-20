@@ -186,18 +186,28 @@ public abstract class Protocol(
 
     private suspend fun onNotification(notification: JSONRPCNotification) {
         LOGGER.trace { "Received notification: ${notification.method}" }
-        val function = notificationHandlers[notification.method]
+
+        // Ensure method is in params if it's a JsonObject
+        val processedNotification = if (notification.params is JsonObject && !notification.params.containsKey("method")) {
+            notification.copy(
+                params = JsonObject(notification.params as JsonObject + ("method" to JsonPrimitive(notification.method)))
+            )
+        } else {
+            notification
+        }
+
+        val function = notificationHandlers[processedNotification.method]
         val property = fallbackNotificationHandler
         val handler = function ?: property
 
         if (handler == null) {
-            LOGGER.trace { "No handler found for notification: ${notification.method}" }
+            LOGGER.trace { "No handler found for notification: ${processedNotification.method}" }
             return
         }
         try {
-            handler(notification)
+            handler(processedNotification)
         } catch (cause: Throwable) {
-            LOGGER.error(cause) { "Error handling notification: ${notification.method}" }
+            LOGGER.error(cause) { "Error handling notification: ${processedNotification.method}" }
             onError(cause)
         }
     }
