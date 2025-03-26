@@ -14,6 +14,8 @@ The Model Context Protocol allows applications to provide context for LLMs in a 
 ## Samples
 
 - [kotlin-mcp-server](./samples/kotlin-mcp-server): shows how to set up a Kotlin MCP server with different tools and other features.
+- [weather-stdio-server](./samples/weather-stdio-server): shows how to build a Kotlin MCP server providing weather forecast and alerts using STDIO transport.
+- [kotlin-mcp-client](./samples/kotlin-mcp-client): demonstrates building an interactive Kotlin MCP client that connects to an MCP server via STDIO and integrates with Anthropic’s API.
 
 ## Installation
 
