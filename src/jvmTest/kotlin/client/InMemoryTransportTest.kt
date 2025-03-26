@@ -96,11 +96,9 @@ class InMemoryTransportTest {
             clientTransport.close()
 
             assertThrows<IllegalStateException> {
-                runBlocking {
-                    clientTransport.send(
-                        InitializedNotification().toJSON()
-                    )
-                }
+                clientTransport.send(
+                    InitializedNotification().toJSON()
+                )
             }
         }
     }

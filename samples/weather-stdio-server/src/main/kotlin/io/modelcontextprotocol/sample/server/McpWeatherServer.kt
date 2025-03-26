@@ -121,7 +121,7 @@ fun `run mcp server`() {
     runBlocking {
         server.connect(transport)
         val done = Job()
-        server.onCloseCallback = {
+        server.onClose {
             done.complete()
         }
         done.join()

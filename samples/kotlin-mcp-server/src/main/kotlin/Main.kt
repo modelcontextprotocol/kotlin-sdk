@@ -14,12 +14,11 @@ import io.modelcontextprotocol.kotlin.sdk.PromptMessage
 import io.modelcontextprotocol.kotlin.sdk.Role
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.Tool
-import io.modelcontextprotocol.kotlin.sdk.server.MCP
-import io.modelcontextprotocol.kotlin.sdk.server.SSEServerTransport
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
+import io.modelcontextprotocol.kotlin.sdk.server.SseServerTransport
 import io.modelcontextprotocol.kotlin.sdk.server.StdioServerTransport
-import kotlinx.coroutines.CompletableDeferred
+import io.modelcontextprotocol.kotlin.sdk.server.mcp
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.runBlocking
 import kotlinx.io.asSink
@@ -48,8 +47,6 @@ fun main(args: Array<String>) {
 }
 
 fun configureServer(): Server {
-    val def = CompletableDeferred<Unit>()
-
     val server = Server(
         Implementation(
             name = "mcp-kotlin test server",
@@ -61,10 +58,7 @@ fun configureServer(): Server {
                 resources = ServerCapabilities.Resources(subscribe = true, listChanged = true),
                 tools = ServerCapabilities.Tools(listChanged = true),
             )
-        ),
-        onCloseCallback = {
-            def.complete(Unit)
-        }
+        )
     )
 
     server.addPrompt(
@@ -129,7 +123,7 @@ fun runMcpServerUsingStdio() {
     runBlocking {
         server.connect(transport)
         val done = Job()
-        server.onCloseCallback = {
+        server.onClose {
             done.complete()
         }
         done.join()
@@ -146,7 +140,7 @@ fun runSseMcpServerWithPlainConfiguration(port: Int): Unit = runBlocking {
         install(SSE)
         routing {
             sse("/sse") {
-                val transport = SSEServerTransport("/message", this)
+                val transport = SseServerTransport("/message", this)
                 val server = configureServer()
 
                 // For SSE, you can also add prompts/tools/resources if needed:
@@ -154,7 +148,7 @@ fun runSseMcpServerWithPlainConfiguration(port: Int): Unit = runBlocking {
 
                 servers[transport.sessionId] = server
 
-                server.onCloseCallback = {
+                server.onClose {
                     println("Server closed")
                     servers.remove(transport.sessionId)
                 }
@@ -164,7 +158,7 @@ fun runSseMcpServerWithPlainConfiguration(port: Int): Unit = runBlocking {
             post("/message") {
                 println("Received Message")
                 val sessionId: String = call.request.queryParameters["sessionId"]!!
-                val transport = servers[sessionId]?.transport as? SSEServerTransport
+                val transport = servers[sessionId]?.transport as? SseServerTransport
                 if (transport == null) {
                     call.respond(HttpStatusCode.NotFound, "Session not found")
                     return@post
@@ -189,8 +183,8 @@ fun runSseMcpServerUsingKtorPlugin(port: Int): Unit = runBlocking {
     println("Use inspector to connect to the http://localhost:$port/sse")
 
     embeddedServer(CIO, host = "0.0.0.0", port = port) {
-        MCP {
-            return@MCP configureServer()
+        mcp {
+            return@mcp configureServer()
         }
     }.start(wait = true)
 }

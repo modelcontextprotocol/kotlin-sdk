@@ -30,7 +30,6 @@ public class ServerOptions(
  *
  * @param serverInfo Information about this server implementation (name, version).
  * @param options Configuration options for the server.
- * @param onCloseCallback A callback invoked when the server connection closes.
  */
 public open class Server(
     private val serverInfo: Implementation,
@@ -127,7 +126,6 @@ public open class Server(
 
     /**
      * Called when the server connection is closing.
-     * Invokes [onCloseCallback] if set.
      */
     override fun onClose() {
         logger.info { "Server connection closing" }

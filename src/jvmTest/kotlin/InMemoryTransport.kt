@@ -1,6 +1,5 @@
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
-import io.modelcontextprotocol.kotlin.sdk.shared.Transport
 
 /**
  * In-memory transport for creating clients and servers that talk to each other within the same process.
