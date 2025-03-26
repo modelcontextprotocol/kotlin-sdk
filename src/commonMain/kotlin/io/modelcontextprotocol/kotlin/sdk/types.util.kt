@@ -3,7 +3,6 @@ package io.modelcontextprotocol.kotlin.sdk
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification.SetLevelRequest
 import kotlinx.serialization.DeserializationStrategy
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
@@ -17,17 +16,16 @@ private val logger = KotlinLogging.logger {}
 
 internal object ErrorCodeSerializer : KSerializer<ErrorCode> {
     override val descriptor: SerialDescriptor =
-        PrimitiveSerialDescriptor("io.modelcontextprotocol.kotlin.sdk.ErrorCode", PrimitiveKind.STRING)
+        PrimitiveSerialDescriptor("io.modelcontextprotocol.kotlin.sdk.ErrorCode", PrimitiveKind.INT)
 
-    @OptIn(ExperimentalSerializationApi::class)
     override fun serialize(encoder: Encoder, value: ErrorCode) {
         encoder.encodeInt(value.code)
     }
 
     override fun deserialize(decoder: Decoder): ErrorCode {
-        val decodedString = decoder.decodeInt()
-        return ErrorCode.Defined.entries.firstOrNull { it.code == decodedString }
-            ?: ErrorCode.Unknown(decodedString)
+        val decodedInt = decoder.decodeInt()
+        return ErrorCode.Defined.entries.firstOrNull { it.code == decodedInt }
+            ?: ErrorCode.Unknown(decodedInt)
     }
 }
 
@@ -35,7 +33,6 @@ internal object RequestMethodSerializer : KSerializer<Method> {
     override val descriptor: SerialDescriptor =
         PrimitiveSerialDescriptor("io.modelcontextprotocol.kotlin.sdk.Method", PrimitiveKind.STRING)
 
-    @OptIn(ExperimentalSerializationApi::class)
     override fun serialize(encoder: Encoder, value: Method) {
         encoder.encodeString(value.value)
     }
@@ -51,7 +48,6 @@ internal object StopReasonSerializer : KSerializer<StopReason> {
     override val descriptor: SerialDescriptor =
         PrimitiveSerialDescriptor("io.modelcontextprotocol.kotlin.sdk.StopReason", PrimitiveKind.STRING)
 
-    @OptIn(ExperimentalSerializationApi::class)
     override fun serialize(encoder: Encoder, value: StopReason) {
         encoder.encodeString(value.value)
     }
