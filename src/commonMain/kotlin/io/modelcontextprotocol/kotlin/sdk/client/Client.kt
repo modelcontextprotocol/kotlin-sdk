@@ -102,7 +102,7 @@ public open class Client(
         } catch (error: Throwable) {
             close()
             if (error !is CancellationException) {
-                throw IllegalStateException("Error connecting to transport", error)
+                throw IllegalStateException("Error connecting to transport: ${error.message}")
             } else {
                 throw error
             }
