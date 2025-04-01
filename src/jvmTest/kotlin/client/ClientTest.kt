@@ -49,13 +49,13 @@ import kotlin.test.fail
 class ClientTest {
     @Test
     fun `should initialize with matching protocol version`() = runTest {
-        var initialied = false
+        var initialised = false
         val clientTransport = object : AbstractTransport() {
             override suspend fun start() {}
 
             override suspend fun send(message: JSONRPCMessage) {
                 if (message !is JSONRPCRequest) return
-                initialied = true
+                initialised = true
                 val result = InitializeResult(
                     protocolVersion = LATEST_PROTOCOL_VERSION,
                     capabilities = ServerCapabilities(),
@@ -90,7 +90,7 @@ class ClientTest {
         )
 
         client.connect(clientTransport)
-        assertTrue(initialied)
+        assertTrue(initialised)
     }
 
     @Test
