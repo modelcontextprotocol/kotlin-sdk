@@ -58,16 +58,12 @@ fun `run mcp server`() {
             Get weather alerts for a US state. Input is Two-letter US state code (e.g. CA, NY)
         """.trimIndent(),
         inputSchema = Tool.Input(
-            properties = JsonObject(
-                mapOf(
-                    "state" to JsonObject(
-                        mapOf(
-                            "type" to JsonPrimitive("string"),
-                            "description" to JsonPrimitive("Two-letter US state code (e.g. CA, NY)")
-                        )
-                    ),
-                )
-            ),
+            properties = buildJsonObject {
+                putJsonObject("state") {
+                    put("type", "string")
+                    put("description", "Two-letter US state code (e.g. CA, NY)")
+                }
+            },
             required = listOf("state")
         )
     ) { request ->
@@ -90,12 +86,14 @@ fun `run mcp server`() {
             Get weather forecast for a specific latitude/longitude
         """.trimIndent(),
         inputSchema = Tool.Input(
-            properties = JsonObject(
-                mapOf(
-                    "latitude" to JsonObject(mapOf("type" to JsonPrimitive("number"))),
-                    "longitude" to JsonObject(mapOf("type" to JsonPrimitive("number"))),
-                )
-            ),
+            properties = buildJsonObject {
+                putJsonObject("latitude") {
+                    put("type", "number")
+                }
+                putJsonObject("longitude") {
+                    put("type", "number")
+                }
+            },
             required = listOf("latitude", "longitude")
         )
     ) { request ->
