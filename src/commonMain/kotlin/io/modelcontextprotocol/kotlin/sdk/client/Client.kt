@@ -103,9 +103,10 @@ public open class Client(
             close()
             if (error !is CancellationException) {
                 throw IllegalStateException("Error connecting to transport: ${error.message}")
-            } else {
-                throw error
             }
+
+            throw error
+
         }
     }
 
