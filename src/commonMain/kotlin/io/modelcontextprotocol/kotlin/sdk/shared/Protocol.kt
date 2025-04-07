@@ -187,10 +187,12 @@ public abstract class Protocol(
     private suspend fun onNotification(notification: JSONRPCNotification) {
         LOGGER.trace { "Received notification: ${notification.method}" }
 
-        // Ensure method is in params if it's a JsonObject
+        // Some MCP clients (like Cursor) don't include the "method" key in the params object
+        // This ensures method is always available in params when it's a JsonObject,
+        // preventing NPEs during notification routing and processing
         val processedNotification = if (notification.params is JsonObject && !notification.params.containsKey("method")) {
             notification.copy(
-                params = JsonObject(notification.params as JsonObject + ("method" to JsonPrimitive(notification.method)))
+                params = JsonObject(notification.params + ("method" to JsonPrimitive(notification.method)))
             )
         } else {
             notification
