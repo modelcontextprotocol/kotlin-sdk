@@ -899,8 +899,8 @@ public sealed interface PromptMessageContent {
 /**
  * Represents prompt message content that is either text or an image.
  */
-@Serializable(with = PromptMessageContentTextOrImagePolymorphicSerializer::class)
-public sealed interface PromptMessageContentTextOrImage : PromptMessageContent
+@Serializable(with = PromptMessageContentMultimodalPolymorphicSerializer::class)
+public sealed interface PromptMessageContentMultimodal : PromptMessageContent
 
 /**
  * Text provided to or from an LLM.
@@ -911,7 +911,7 @@ public data class TextContent(
      * The text content of the message.
      */
     val text: String? = null,
-) : PromptMessageContentTextOrImage {
+) : PromptMessageContentMultimodal {
     override val type: String = TYPE
 
     public companion object {
@@ -933,7 +933,7 @@ public data class ImageContent(
      * The MIME type of the image. Different providers may support different image types.
      */
     val mimeType: String,
-) : PromptMessageContentTextOrImage {
+) : PromptMessageContentMultimodal {
     override val type: String = TYPE
 
     public companion object {
@@ -942,12 +942,35 @@ public data class ImageContent(
 }
 
 /**
+ * Audio provided to or from an LLM.
+ */
+@Serializable
+public data class AudioContent(
+    /**
+     * The base64-encoded audio data.
+     */
+    val data: String,
+
+    /**
+     * The MIME type of the audio. Different providers may support different audio types.
+     */
+    val mimeType: String,
+) : PromptMessageContentMultimodal {
+    override val type: String = TYPE
+
+    public companion object {
+        public const val TYPE: String = "audio"
+    }
+}
+
+
+/**
  * An image provided to or from an LLM.
  */
 @Serializable
 public data class UnknownContent(
     override val type: String,
-) : PromptMessageContentTextOrImage
+) : PromptMessageContentMultimodal
 
 /**
  * The contents of a resource, embedded into a prompt or tool call result.
@@ -1217,7 +1240,7 @@ public class ModelPreferences(
 @Serializable
 public data class SamplingMessage(
     val role: Role,
-    val content: PromptMessageContentTextOrImage,
+    val content: PromptMessageContentMultimodal,
 )
 
 /**
@@ -1299,7 +1322,7 @@ public data class CreateMessageResult(
      */
     val stopReason: StopReason? = null,
     val role: Role,
-    val content: PromptMessageContentTextOrImage,
+    val content: PromptMessageContentMultimodal,
     override val _meta: JsonObject = EmptyJsonObject,
 ) : ClientResult
 
