@@ -2,6 +2,7 @@ package io.modelcontextprotocol.kotlin.sdk
 
 import io.kotest.assertions.json.shouldEqualJson
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
+import kotlinx.atomicfu.atomicArrayOfNulls
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
@@ -33,6 +34,7 @@ class ToolSerializationTest {
     val getWeatherTool = Tool(
         name = "get_weather",
         description = "Get the current weather in a given location",
+        annotations = null,
         inputSchema = Tool.Input(
             properties = buildJsonObject {
                 put("location", buildJsonObject {
