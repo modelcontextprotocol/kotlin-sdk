@@ -295,3 +295,23 @@ public class RequestIdSerializer : KSerializer<RequestId> {
         }
     }
 }
+
+/**
+ * Creates a [CallToolResult] with single [TextContent] and [meta].
+ */
+public fun CallToolResult.Companion.ok(content: String, meta: JsonObject = EmptyJsonObject): CallToolResult =
+    CallToolResult(
+        content = listOf(TextContent(content)),
+        isError = false,
+        _meta = meta
+    )
+
+/**
+ * Creates a [CallToolResult] with single [TextContent] and [meta], with `isError` being true.
+ */
+public fun CallToolResult.Companion.error(content: String, meta: JsonObject = EmptyJsonObject): CallToolResult =
+    CallToolResult(
+        content = listOf(TextContent(content)),
+        isError = true,
+        _meta = meta
+    )
