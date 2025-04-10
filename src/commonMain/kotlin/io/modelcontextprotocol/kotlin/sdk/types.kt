@@ -884,7 +884,7 @@ public sealed interface PromptMessageContent {
 }
 
 /**
- * Represents prompt message content that is either text or an image.
+ * Represents prompt message content that is either text, image or audio.
  */
 @Serializable(with = PromptMessageContentMultimodalPolymorphicSerializer::class)
 public sealed interface PromptMessageContentMultimodal : PromptMessageContent
@@ -952,7 +952,7 @@ public data class AudioContent(
 
 
 /**
- * An image provided to or from an LLM.
+ * Unknown content provided to or from an LLM.
  */
 @Serializable
 public data class UnknownContent(
