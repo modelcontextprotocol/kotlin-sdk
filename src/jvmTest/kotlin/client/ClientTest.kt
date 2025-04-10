@@ -580,6 +580,7 @@ class ClientTest {
                 Tool(
                     name = "testTool",
                     description = "testTool description",
+                    annotations = null,
                     inputSchema = Tool.Input()
                 )
             ), nextCursor = null
