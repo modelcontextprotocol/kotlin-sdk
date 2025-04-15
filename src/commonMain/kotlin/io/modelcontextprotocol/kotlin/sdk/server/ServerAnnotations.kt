@@ -1,5 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
+import io.ktor.util.rootCause
 import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
 import io.modelcontextprotocol.kotlin.sdk.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.TextContent
@@ -9,6 +10,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
+import java.lang.reflect.InvocationTargetException
 import kotlin.reflect.KCallable
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
@@ -127,8 +129,10 @@ public fun <T : Any> Server.registerToolFromAnnotatedFunction(
 
                  // Call the function using callBy
                  function.callBy(arguments)
-             } catch (e: Exception) {
+             } catch (e: IllegalArgumentException) {
                  throw IllegalArgumentException("Error invoking function ${function.name}: ${e.message}", e)
+             } catch (e: InvocationTargetException) {
+                 throw e.targetException
              }
 
             // Handle the result
