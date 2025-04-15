@@ -16,9 +16,11 @@ import kotlin.reflect.KParameter
 import kotlin.reflect.KType
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.hasAnnotation
+import kotlin.reflect.full.instanceParameter
 import kotlin.reflect.full.valueParameters
 import kotlin.reflect.typeOf
 import kotlin.text.get
+import kotlin.text.set
 
 /**
  * Extension function to register tools from class methods annotated with [McpTool].
@@ -104,17 +106,30 @@ public fun <T : Any> Server.registerToolFromAnnotatedFunction(
     ) { request ->
         try {
 
-            // Use reflection to call the annotated function with the provided arguments
-            val result = try {
-                val arguments = function.valueParameters.map { param ->
-                    val paramName = param.name ?: "param${param.index}"
-                    val jsonValue = request.arguments[paramName]
-                    convertJsonValueToKotlinType(jsonValue, param.type)
-                }
-                function.call(instance, *arguments.toTypedArray())
-            } catch (e: Exception) {
-                throw IllegalArgumentException("Error invoking function ${function.name}: ${e.message}", e)
-            }
+             // Use reflection to call the annotated function with the provided arguments
+             val result = try {
+                 val arguments = mutableMapOf<KParameter, Any?>()
+
+                 // Map instance parameter if required
+                 function.instanceParameter?.let { arguments[it] = instance }
+
+                 // Map value parameters
+                 function.valueParameters.forEach { param ->
+                     val paramName = param.name ?: "param${param.index}"
+                     val jsonValue = request.arguments[paramName]
+                     // Use the provided value or the default value if the parameter is optional
+                     if (jsonValue != null) {
+                         arguments[param] = convertJsonValueToKotlinType(jsonValue, param.type)
+                     } else if (!param.isOptional) {
+                         throw IllegalArgumentException("Missing required parameter: $paramName")
+                     }
+                 }
+
+                 // Call the function using callBy
+                 function.callBy(arguments)
+             } catch (e: Exception) {
+                 throw IllegalArgumentException("Error invoking function ${function.name}: ${e.message}", e)
+             }
 
             // Handle the result
             when (result) {
