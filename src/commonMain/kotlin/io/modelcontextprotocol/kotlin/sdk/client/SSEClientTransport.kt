@@ -8,10 +8,10 @@ import io.ktor.http.*
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
-import kotlinx.atomicfu.AtomicBoolean
-import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.*
 import kotlinx.serialization.encodeToString
+import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.properties.Delegates
 import kotlin.time.Duration
 
@@ -22,6 +22,7 @@ public typealias SSEClientTransport = SseClientTransport
  * Client transport for SSE: this will connect to a server using Server-Sent Events for receiving
  * messages and make separate POST requests for sending messages.
  */
+@OptIn(ExperimentalAtomicApi::class)
 public class SseClientTransport(
     private val client: HttpClient,
     private val urlString: String?,
@@ -32,7 +33,7 @@ public class SseClientTransport(
         CoroutineScope(session.coroutineContext + SupervisorJob())
     }
 
-    private val initialized: AtomicBoolean = atomic(false)
+    private val initialized: AtomicBoolean = AtomicBoolean(false)
     private var session: ClientSSESession by Delegates.notNull()
     private val endpoint = CompletableDeferred<String>()
 
@@ -127,7 +128,7 @@ public class SseClientTransport(
     }
 
     override suspend fun close() {
-        if (!initialized.value) {
+        if (!initialized.load()) {
             error("SSEClientTransport is not initialized!")
         }
 

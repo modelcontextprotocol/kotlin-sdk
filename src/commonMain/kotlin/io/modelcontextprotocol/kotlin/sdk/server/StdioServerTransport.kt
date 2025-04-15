@@ -11,12 +11,9 @@ import kotlinx.atomicfu.locks.ReentrantLock
 import kotlinx.atomicfu.locks.withLock
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
-import kotlinx.io.Buffer
-import kotlinx.io.Sink
-import kotlinx.io.Source
-import kotlinx.io.buffered
-import kotlinx.io.readByteArray
-import kotlinx.io.writeString
+import kotlinx.io.*
+import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -24,14 +21,15 @@ import kotlin.coroutines.CoroutineContext
  *
  * Reads from System.in and writes to System.out.
  */
+@OptIn(ExperimentalAtomicApi::class)
 public class StdioServerTransport(
-    private val inputStream: Source, //BufferedInputStream = BufferedInputStream(System.`in`),
-    outputStream: Sink //PrintStream = System.out
+    private val inputStream: Source,
+    outputStream: Sink
 ) : AbstractTransport() {
     private val logger = KotlinLogging.logger {}
 
     private val readBuffer = ReadBuffer()
-    private val initialized: AtomicBoolean = atomic(false)
+    private val initialized: AtomicBoolean = AtomicBoolean(false)
     private var readingJob: Job? = null
 
     private val coroutineContext: CoroutineContext = Dispatchers.IO + SupervisorJob()
@@ -41,7 +39,7 @@ public class StdioServerTransport(
     private val lock = ReentrantLock()
 
     override suspend fun start() {
-        if (!initialized.compareAndSet(false, true)) {
+        if (!initialized.compareAndSet(expectedValue = false, newValue = true)) {
             error("StdioServerTransport already started!")
         }
 
@@ -102,7 +100,7 @@ public class StdioServerTransport(
     }
 
     override suspend fun close() {
-        if (!initialized.compareAndSet(true, false)) return
+        if (!initialized.compareAndSet(expectedValue = true, newValue = false)) return
 
         // Cancel reading job and close channel
         readingJob?.cancel() // ToDO("was cancel and join")
