@@ -27,7 +27,7 @@ class ServerAnnotationsTest {
 
     // Sample annotated class for testing
     class TestToolsProvider {
-        
+
         @McpTool(
             name = "echo_string",
             description = "Echoes back the input string"
@@ -37,7 +37,7 @@ class ServerAnnotationsTest {
         ): String {
             return "Echoed: $input"
         }
-        
+
         @McpTool(
             name = "failing_tool",
             description = "A tool that always fails"
@@ -67,7 +67,7 @@ class ServerAnnotationsTest {
         ): CallToolResult {
             return CallToolResult(content = listOf(TextContent("Default name test: $input")))
         }
-        
+
         @McpTool(
             name = "test_optional",
             description = "Tests optional parameters"
@@ -95,13 +95,13 @@ class ServerAnnotationsTest {
                          "Float: $floatParam, List size: ${listParam.size}"
             return CallToolResult(content = listOf(TextContent(result)))
         }
-        
+
         @McpTool(
             name = "type_override",
             description = "Test explicit type overrides"
         )
         fun testTypeOverride(
-            @McpParam(description = "Parameter with explicit type", type = "object") 
+            @McpParam(description = "Parameter with explicit type", type = "object")
             complexParam: String
         ): String {
             return "Received parameter: $complexParam"
@@ -116,7 +116,7 @@ class ServerAnnotationsTest {
         ): String {
             return "Processed: $input"
         }
-        
+
         @McpTool(
             name = "return_string_list",
             description = "Returns a list of strings"

@@ -18,6 +18,7 @@ import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.valueParameters
 import kotlin.reflect.typeOf
+import kotlin.text.get
 
 /**
  * Extension function to register tools from class methods annotated with [McpTool].
@@ -34,6 +35,8 @@ public inline fun <reified T : Any> Server.registerAnnotatedTools(instance: T) {
         .filter { it.hasAnnotation<McpTool>() }
         .forEach { function ->
             val annotation = function.findAnnotation<McpTool>()!!
+//            val functionResult = function.call(instance, 2.0, 3.0)
+//            print(functionResult)
             registerToolFromAnnotatedFunction(instance, function, annotation)
         }
 }
@@ -100,13 +103,19 @@ public fun <T : Any> Server.registerToolFromAnnotatedFunction(
         inputSchema = inputSchema
     ) { request ->
         try {
-            // Note: In a real implementation, we would use reflection to call the function
-            // However, due to limitations in Kotlin reflection in Kotlin/Common, we use a workaround
-            // This code is not used in tests - the tests use a mocked version of the Tools mechanism
-            
-            // Placeholder for reflection-based function call - not actually executed in tests
-            val result = CallToolResult(content = listOf(TextContent("Operation completed")), isError = false)
-            
+
+            // Use reflection to call the annotated function with the provided arguments
+            val result = try {
+                val arguments = function.valueParameters.map { param ->
+                    val paramName = param.name ?: "param${param.index}"
+                    val jsonValue = request.arguments[paramName]
+                    convertJsonValueToKotlinType(jsonValue, param.type)
+                }
+                function.call(instance, *arguments.toTypedArray())
+            } catch (e: Exception) {
+                throw IllegalArgumentException("Error invoking function ${function.name}: ${e.message}", e)
+            }
+
             // Handle the result
             when (result) {
                 is CallToolResult -> result
