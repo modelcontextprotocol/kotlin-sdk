@@ -1,26 +1,12 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
-import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
-import io.modelcontextprotocol.kotlin.sdk.CallToolResult
-import io.modelcontextprotocol.kotlin.sdk.Implementation
-import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
-import io.modelcontextprotocol.kotlin.sdk.TextContent
-import io.modelcontextprotocol.kotlin.sdk.Tool
+import io.modelcontextprotocol.kotlin.sdk.*
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
-import kotlinx.serialization.json.putJsonObject
-import kotlin.RuntimeException
+import kotlinx.serialization.json.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import kotlin.reflect.KFunction
-import kotlin.reflect.KParameter
-import kotlin.reflect.full.findAnnotation
-import kotlin.reflect.full.functions
 
 @Suppress("UNUSED_PARAMETER")
 class ServerAnnotationsTest {
@@ -135,93 +121,14 @@ class ServerAnnotationsTest {
             capabilities = ServerCapabilities(tools = ServerCapabilities.Tools(listChanged = true))
         )
         val server = Server(Implementation("test", "1.0.0"), serverOptions)
-        
-        // Instead of using reflection with registerAnnotatedTools, we'll register tools directly
-        
-        // Register mock tools that mimic what registerAnnotatedTools would do
-        server.addTool(
-            name = "echo_string",
-            description = "Echoes back the input string",
-            inputSchema = Tool.Input(
-                properties = buildJsonObject {
-                    putJsonObject("input") {
-                        put("type", "string")
-                        put("description", "The string to echo")
-                    }
-                },
-                required = listOf("input")
-            )
-        ) { request ->
-            val input = (request.arguments["input"] as? JsonPrimitive)?.content ?: ""
-            CallToolResult(content = listOf(TextContent("Echoed: $input")))
-        }
-        
-        server.addTool(
-            name = "add_numbers",
-            description = "Adds two numbers together",
-            inputSchema = Tool.Input(
-                properties = buildJsonObject {
-                    putJsonObject("a") {
-                        put("type", "number")
-                        put("description", "First number")
-                    }
-                    putJsonObject("b") {
-                        put("type", "number")
-                        put("description", "Second number")
-                    }
-                },
-                required = listOf("a", "b")
-            )
-        ) { request ->
-            val a = (request.arguments["a"] as? Number)?.toDouble() ?: 0.0
-            val b = (request.arguments["b"] as? Number)?.toDouble() ?: 0.0
-            CallToolResult(content = listOf(TextContent("Sum: ${a + b}")))
-        }
-        
-        server.addTool(
-            name = "testDefaultName",
-            description = "Test with default name",
-            inputSchema = Tool.Input(
-                properties = buildJsonObject {
-                    putJsonObject("input") {
-                        put("type", "string")
-                    }
-                },
-                required = listOf("input")
-            )
-        ) { request ->
-            val input = (request.arguments["input"] as? JsonPrimitive)?.content ?: ""
-            CallToolResult(content = listOf(TextContent("Default name test: $input")))
-        }
-        
-        server.addTool(
-            name = "test_optional",
-            description = "Tests optional parameters",
-            inputSchema = Tool.Input(
-                properties = buildJsonObject {
-                    putJsonObject("required") {
-                        put("type", "string")
-                        put("description", "Required parameter")
-                    }
-                    putJsonObject("optional") {
-                        put("type", "string")
-                        put("description", "Optional parameter")
-                    }
-                },
-                required = listOf("required")
-            )
-        ) { request ->
-            val required = (request.arguments["required"] as? JsonPrimitive)?.content ?: ""
-            val optional = (request.arguments["optional"] as? JsonPrimitive)?.content ?: "default value"
-            CallToolResult(content = listOf(TextContent("Required: $required, Optional: $optional")))
-        }
-        
+        server.registerAnnotatedTools(TestToolsProvider())
+
         // Get the list of registered tools
         val toolsResult = server.handleListTools()
         val registeredTools = toolsResult.tools
         
         // Verify that tools were properly registered 
-        assertEquals(4, registeredTools.size, "Should have registered 4 tools")
+        assertEquals(9, registeredTools.size, "Should have registered 9 tools")
         
         // Check echo_string tool
         val echoTool = registeredTools.find { it.name == "echo_string" }
@@ -250,8 +157,8 @@ class ServerAnnotationsTest {
         val multiTypesTool = registeredTools.find { it.name == "test_multiple_types" }
         assertNotNull(multiTypesTool, "test_multiple_types tool should be registered")
         assertEquals(
-            listOf("stringParam", "intParam", "boolParam"),
-            multiTypesTool.inputSchema.required?.sorted()
+            setOf("stringParam", "intParam", "boolParam"),
+            multiTypesTool.inputSchema.required?.sorted()!!.toSet()
         )
         
         // Check parameter type inference
