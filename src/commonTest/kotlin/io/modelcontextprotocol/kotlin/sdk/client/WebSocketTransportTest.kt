@@ -1,17 +1,16 @@
-package client
+package io.modelcontextprotocol.kotlin.sdk.client
 
-import io.ktor.server.testing.*
-import io.ktor.server.websocket.*
-import kotlinx.coroutines.CompletableDeferred
-import io.modelcontextprotocol.kotlin.sdk.client.mcpWebSocketTransport
-import org.junit.jupiter.api.Test
+import io.ktor.server.testing.testApplication
+import io.ktor.server.websocket.WebSockets
 import io.modelcontextprotocol.kotlin.sdk.server.mcpWebSocket
 import io.modelcontextprotocol.kotlin.sdk.server.mcpWebSocketTransport
-import org.junit.jupiter.api.Disabled
+import kotlinx.coroutines.CompletableDeferred
+import kotlin.test.Ignore
+import kotlin.test.Test
 
 class WebSocketTransportTest : BaseTransportTest() {
     @Test
-    @Disabled("Test disabled for investigation #17")
+    @Ignore // "Test disabled for investigation #17"
     fun `should start then close cleanly`() = testApplication {
         install(WebSockets)
         routing {
@@ -26,7 +25,7 @@ class WebSocketTransportTest : BaseTransportTest() {
     }
 
     @Test
-    @Disabled("Test disabled for investigation #17")
+    @Ignore // "Test disabled for investigation #17"
     fun `should read messages`() = testApplication {
         val clientFinished = CompletableDeferred<Unit>()
 

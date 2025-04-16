@@ -1,7 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
-import io.ktor.http.*
-import io.ktor.server.websocket.*
+import io.ktor.http.HttpHeaders
+import io.ktor.server.websocket.WebSocketServerSession
 import io.modelcontextprotocol.kotlin.sdk.shared.MCP_SUBPROTOCOL
 import io.modelcontextprotocol.kotlin.sdk.shared.WebSocketMcpTransport
 

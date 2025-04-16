@@ -1,4 +1,4 @@
-package client
+package io.modelcontextprotocol.kotlin.sdk.client
 
 import io.modelcontextprotocol.kotlin.sdk.InitializedNotification
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
