@@ -5,9 +5,9 @@ import io.modelcontextprotocol.kotlin.sdk.CreateMessageRequest
 import io.modelcontextprotocol.kotlin.sdk.CreateMessageResult
 import io.modelcontextprotocol.kotlin.sdk.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.Implementation
-import InMemoryTransport
 import io.mockk.coEvery
 import io.mockk.spyk
+import io.modelcontextprotocol.kotlin.sdk.InMemoryTransport
 import io.modelcontextprotocol.kotlin.sdk.InitializeRequest
 import io.modelcontextprotocol.kotlin.sdk.InitializeResult
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage

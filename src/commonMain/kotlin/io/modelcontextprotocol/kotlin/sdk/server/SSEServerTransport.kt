@@ -1,10 +1,13 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
-import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.sse.*
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.encodeURLPath
+import io.ktor.server.application.ApplicationCall
+import io.ktor.server.request.contentType
+import io.ktor.server.request.receiveText
+import io.ktor.server.response.respondText
+import io.ktor.server.sse.ServerSSESession
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
@@ -41,7 +44,7 @@ public class SseServerTransport(
      * This should be called when a GET request is made to establish the SSE stream.
      */
     override suspend fun start() {
-        if (!initialized.compareAndSet(false, true)) {
+        if (!initialized.compareAndSet(expectedValue = false, newValue = true)) {
             throw error("SSEServerTransport already started! If using Server class, note that connect() calls start() automatically.")
         }
 

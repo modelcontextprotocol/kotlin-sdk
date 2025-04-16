@@ -2,12 +2,22 @@ package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.internal.IODispatcher
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.ReadBuffer
 import io.modelcontextprotocol.kotlin.sdk.shared.serializeMessage
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
-import kotlinx.io.*
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.io.Buffer
+import kotlinx.io.Sink
+import kotlinx.io.Source
+import kotlinx.io.buffered
+import kotlinx.io.readByteArray
+import kotlinx.io.writeString
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.CoroutineContext
@@ -29,7 +39,7 @@ public class StdioServerTransport(
     private var readingJob: Job? = null
     private var sendingJob: Job? = null
 
-    private val coroutineContext: CoroutineContext = Dispatchers.IO + SupervisorJob()
+    private val coroutineContext: CoroutineContext = IODispatcher + SupervisorJob()
     private val scope = CoroutineScope(coroutineContext)
     private val readChannel = Channel<ByteArray>(Channel.UNLIMITED)
     private val writeChannel = Channel<JSONRPCMessage>(Channel.UNLIMITED)

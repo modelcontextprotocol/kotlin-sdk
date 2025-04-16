@@ -13,6 +13,7 @@ import kotlinx.serialization.json.encodeToJsonElement
 import kotlin.concurrent.atomics.AtomicLong
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.concurrent.atomics.incrementAndFetch
+import kotlin.jvm.JvmInline
 
 public const val LATEST_PROTOCOL_VERSION: String = "2024-11-05"
 
@@ -1492,6 +1493,7 @@ public class RootsListChangedNotification : ClientNotification {
  * @property message The error message.
  * @property data Additional error data as a JSON object.
  */
-public class McpError(public val code: Int, message: String, public val data: JsonObject = EmptyJsonObject) : Exception() {
+public class McpError(public val code: Int, message: String, public val data: JsonObject = EmptyJsonObject) :
+    Exception() {
     override val message: String = "MCP error ${code}: $message"
 }

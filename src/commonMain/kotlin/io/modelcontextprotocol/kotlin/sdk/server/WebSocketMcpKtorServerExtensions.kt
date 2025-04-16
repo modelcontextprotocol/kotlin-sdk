@@ -1,7 +1,8 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
-import io.ktor.server.routing.*
-import io.ktor.server.websocket.*
+import io.ktor.server.routing.Route
+import io.ktor.server.websocket.WebSocketServerSession
+import io.ktor.server.websocket.webSocket
 import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.LIB_VERSION
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities

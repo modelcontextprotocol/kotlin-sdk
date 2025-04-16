@@ -2,13 +2,25 @@ package io.modelcontextprotocol.kotlin.sdk.client
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.internal.IODispatcher
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.ReadBuffer
 import io.modelcontextprotocol.kotlin.sdk.shared.serializeMessage
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineName
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
-import kotlinx.io.*
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.io.Buffer
+import kotlinx.io.Sink
+import kotlinx.io.Source
+import kotlinx.io.buffered
+import kotlinx.io.readByteArray
+import kotlinx.io.writeString
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.CoroutineContext
@@ -28,7 +40,7 @@ public class StdioClientTransport(
     private val output: Sink
 ) : AbstractTransport() {
     private val logger = KotlinLogging.logger {}
-    private val ioCoroutineContext: CoroutineContext = Dispatchers.IO
+    private val ioCoroutineContext: CoroutineContext = IODispatcher
     private val scope by lazy {
         CoroutineScope(ioCoroutineContext + SupervisorJob())
     }
@@ -38,7 +50,7 @@ public class StdioClientTransport(
     private val readBuffer = ReadBuffer()
 
     override suspend fun start() {
-        if (!initialized.compareAndSet(false, true)) {
+        if (!initialized.compareAndSet(expectedValue = false, newValue = true)) {
             error("StdioClientTransport already started!")
         }
 
@@ -100,7 +112,7 @@ public class StdioClientTransport(
     }
 
     override suspend fun close() {
-        if (!initialized.compareAndSet(true, false)) {
+        if (!initialized.compareAndSet(expectedValue = true, newValue = false)) {
             error("Transport is already closed")
         }
         job?.cancelAndJoin()

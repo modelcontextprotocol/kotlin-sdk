@@ -1,6 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.shared
 
-import io.ktor.utils.io.core.*
+import io.ktor.utils.io.core.writeFully
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import kotlinx.io.Buffer
 import kotlinx.io.indexOf

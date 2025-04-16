@@ -1,5 +1,6 @@
 package client
 
+import io.modelcontextprotocol.kotlin.sdk.client.BaseTransportTest
 import kotlinx.coroutines.test.runTest
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
 import kotlinx.io.asSink
