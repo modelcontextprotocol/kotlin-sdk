@@ -5,6 +5,7 @@ import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.ExplicitApiMode
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jreleaser.model.Active
+import org.gradle.jvm.toolchain.JavaLanguageVersion
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
@@ -196,7 +197,9 @@ kotlin {
 
     explicitApi = ExplicitApiMode.Strict
 
-    jvmToolchain(21)
+    jvmToolchain {
+        languageVersion = JavaLanguageVersion.of(17) // Downgrade to JDK 17 which is more likely to be available
+    }
 
     sourceSets {
         commonMain {
@@ -209,6 +212,7 @@ kotlin {
                 api(libs.ktor.server.websockets)
 
                 implementation(libs.kotlin.logging)
+                implementation(libs.kotlin.reflect)
             }
         }
 
@@ -219,6 +223,7 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.test)
                 implementation(libs.kotlinx.coroutines.debug)
                 implementation(libs.kotest.assertions.json)
+                implementation(libs.kotlin.reflect)
             }
         }
 
@@ -230,3 +235,5 @@ kotlin {
         }
     }
 }
+
+
