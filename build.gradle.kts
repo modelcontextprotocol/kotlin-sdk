@@ -12,7 +12,6 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.dokka)
     alias(libs.plugins.jreleaser)
-    alias(libs.plugins.atomicfu)
     `maven-publish`
     alias(libs.plugins.kotlinx.binary.compatibility.validator)
 }

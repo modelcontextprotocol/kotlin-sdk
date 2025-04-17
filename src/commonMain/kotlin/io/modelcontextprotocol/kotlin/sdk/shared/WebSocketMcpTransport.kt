@@ -1,20 +1,12 @@
 package io.modelcontextprotocol.kotlin.sdk.shared
 
-import io.ktor.websocket.Frame
-import io.ktor.websocket.WebSocketSession
-import io.ktor.websocket.close
-import io.ktor.websocket.readText
+import io.ktor.websocket.*
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
-import kotlinx.atomicfu.AtomicBoolean
-import kotlinx.atomicfu.atomic
-import kotlinx.coroutines.CoroutineName
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.InternalCoroutinesApi
-import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
-import kotlinx.coroutines.job
-import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
+import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 internal const val MCP_SUBPROTOCOL = "mcp"
 
@@ -22,12 +14,13 @@ internal const val MCP_SUBPROTOCOL = "mcp"
  * Abstract class representing a WebSocket transport for the Model Context Protocol (MCP).
  * Handles communication over a WebSocket session.
  */
+@OptIn(ExperimentalAtomicApi::class)
 public abstract class WebSocketMcpTransport : AbstractTransport() {
     private val scope by lazy {
         CoroutineScope(session.coroutineContext + SupervisorJob())
     }
 
-    private val initialized: AtomicBoolean = atomic(false)
+    private val initialized: AtomicBoolean = AtomicBoolean(false)
     /**
      * The WebSocket session used for communication.
      */
@@ -83,7 +76,7 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
     }
 
     override suspend fun send(message: JSONRPCMessage) {
-        if (!initialized.value) {
+        if (!initialized.load()) {
             error("Not connected")
         }
 
@@ -91,7 +84,7 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
     }
 
     override suspend fun close() {
-        if (!initialized.value) {
+        if (!initialized.load()) {
             error("Not connected")
         }
 
