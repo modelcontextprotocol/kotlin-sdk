@@ -512,6 +512,11 @@ public sealed interface ProgressBase {
      * Total number of items to a process (or total progress required), if known.
      */
     public val total: Double?
+
+    /**
+     * An optional message describing the current progress.
+     */
+    public val message: String?
 }
 
 /* Progress notifications */
@@ -532,6 +537,11 @@ public open class Progress(
      * Total number of items to a process (or total progress required), if known.
      */
     override val total: Double?,
+
+    /**
+     * An optional message describing the current progress.
+     */
+    override val message: String?,
 ) : ProgressBase
 
 /**
@@ -548,6 +558,7 @@ public data class ProgressNotification(
     public val progressToken: ProgressToken,
     @Suppress("PropertyName") val _meta: JsonObject = EmptyJsonObject,
     override val total: Double?,
+    override val message: String?,
 ) : ClientNotification, ServerNotification, ProgressBase {
     override val method: Method = Method.Defined.NotificationsProgress
 }
