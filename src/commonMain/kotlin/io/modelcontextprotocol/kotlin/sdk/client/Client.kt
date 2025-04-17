@@ -10,6 +10,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * Options for configuring the MCP client.
@@ -100,7 +101,12 @@ public open class Client(
             notification(InitializedNotification())
         } catch (error: Throwable) {
             close()
+            if (error !is CancellationException) {
+                throw IllegalStateException("Error connecting to transport: ${error.message}")
+            }
+
             throw error
+
         }
     }
 

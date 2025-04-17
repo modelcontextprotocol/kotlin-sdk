@@ -6,6 +6,8 @@ import io.modelcontextprotocol.kotlin.sdk.CreateMessageResult
 import io.modelcontextprotocol.kotlin.sdk.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.Implementation
 import InMemoryTransport
+import io.mockk.coEvery
+import io.mockk.spyk
 import io.modelcontextprotocol.kotlin.sdk.InitializeRequest
 import io.modelcontextprotocol.kotlin.sdk.InitializeResult
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
@@ -49,13 +51,13 @@ import kotlin.test.fail
 class ClientTest {
     @Test
     fun `should initialize with matching protocol version`() = runTest {
-        var initialied = false
+        var initialised = false
         val clientTransport = object : AbstractTransport() {
             override suspend fun start() {}
 
             override suspend fun send(message: JSONRPCMessage) {
                 if (message !is JSONRPCRequest) return
-                initialied = true
+                initialised = true
                 val result = InitializeResult(
                     protocolVersion = LATEST_PROTOCOL_VERSION,
                     capabilities = ServerCapabilities(),
@@ -90,7 +92,7 @@ class ClientTest {
         )
 
         client.connect(clientTransport)
-        assertTrue(initialied)
+        assertTrue(initialised)
     }
 
     @Test
@@ -185,6 +187,61 @@ class ClientTest {
         assertFailsWith<IllegalStateException>("Server's protocol version is not supported: invalid-version") {
             client.connect(clientTransport)
         }
+
+        assertTrue(closed)
+    }
+
+    @Test
+    fun `should reject due to non cancellation exception`() = runTest {
+        var closed = false
+        val clientTransport = object : AbstractTransport() {
+            override suspend fun start() {}
+
+            override suspend fun send(message: JSONRPCMessage) {
+                if (message !is JSONRPCRequest) return
+                check(message.method == Method.Defined.Initialize.value)
+
+                val result = InitializeResult(
+                    protocolVersion = LATEST_PROTOCOL_VERSION,
+                    capabilities = ServerCapabilities(),
+                    serverInfo = Implementation(
+                        name = "test",
+                        version = "1.0"
+                    )
+                )
+
+                val response = JSONRPCResponse(
+                    id = message.id,
+                    result = result
+                )
+
+                _onMessage.invoke(response)
+            }
+
+            override suspend fun close() {
+                closed = true
+            }
+        }
+
+        val mockClient = spyk(
+            Client(
+                clientInfo = Implementation(
+                    name = "test client",
+                    version = "1.0"
+                ),
+                options = ClientOptions()
+            )
+        )
+
+        coEvery{
+            mockClient.request<InitializeResult>(any())
+        } throws IllegalStateException("Test error")
+
+        val exception = assertFailsWith<IllegalStateException> {
+            mockClient.connect(clientTransport)
+        }
+
+        assertEquals("Error connecting to transport: Test error", exception.message)
 
         assertTrue(closed)
     }
