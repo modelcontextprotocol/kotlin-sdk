@@ -486,10 +486,10 @@ class ClientTest {
 
         server.setRequestHandler<ListResourcesRequest>(Method.Defined.ResourcesList) { _, extra ->
             // Simulate a delayed response
-            // Wait ~100ms unless cancelled
+            // Wait ~100ms unless canceled
             try {
                 kotlinx.coroutines.withTimeout(100L) {
-                    // Just delay here, if timeout is 0 on client side this won't return in time
+                    // Just delay here, if timeout is 0 on the client side, this won't return in time
                     kotlinx.coroutines.delay(100)
                 }
             } catch (_: Exception) {

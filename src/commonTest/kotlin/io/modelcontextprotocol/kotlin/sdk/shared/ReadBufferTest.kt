@@ -28,12 +28,12 @@ class ReadBufferTest {
     fun `should only yield a message after a newline`() {
         val readBuffer = ReadBuffer()
 
-        // Append message without newline
+        // Append message without a newline
         val messageBytes = json.encodeToString(testMessage).encodeToByteArray()
         readBuffer.append(messageBytes)
         assertNull(readBuffer.readMessage())
 
-        // Append newline and verify message is now available
+        // Append a newline and verify message is now available
         readBuffer.append("\n".encodeToByteArray())
         assertEquals(testMessage, readBuffer.readMessage())
         assertNull(readBuffer.readMessage())

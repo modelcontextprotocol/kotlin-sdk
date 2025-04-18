@@ -45,7 +45,7 @@ public class SseServerTransport(
      */
     override suspend fun start() {
         if (!initialized.compareAndSet(expectedValue = false, newValue = true)) {
-            throw error("SSEServerTransport already started! If using Server class, note that connect() calls start() automatically.")
+            error("SSEServerTransport already started! If using Server class, note that connect() calls start() automatically.")
         }
 
         // Send the endpoint event
@@ -117,7 +117,7 @@ public class SseServerTransport(
 
     override suspend fun send(message: JSONRPCMessage) {
         if (!initialized.load()) {
-            throw error("Not connected")
+            error("Not connected")
         }
 
         session.send(

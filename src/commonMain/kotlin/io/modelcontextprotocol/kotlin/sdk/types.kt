@@ -185,7 +185,7 @@ internal fun JSONRPCNotification.fromJSON(): Notification {
 public sealed interface RequestResult : WithMeta
 
 /**
- * An empty result for a request, containing optional metadata.
+ * An empty result for a request containing optional metadata.
  *
  * @param _meta Additional metadata for the response. Defaults to an empty JSON object.
  */
@@ -494,7 +494,8 @@ public class InitializedNotification : ClientNotification {
 
 /* Ping */
 /**
- * A ping, issued by either the server or the client, to check that the other party is still alive. The receiver must promptly respond, or else may be disconnected.
+ * A ping, issued by either the server or the client, to check that the other party is still alive.
+ * The receiver must promptly respond, or else it may be disconnected.
  */
 @Serializable
 public class PingRequest : ServerRequest, ClientRequest {

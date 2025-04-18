@@ -68,7 +68,8 @@ public open class ProtocolOptions(
      * considered a logic error to mis-specify those.
      *
      * Currently, this defaults to false, for backwards compatibility with SDK versions
-     * that did not advertise capabilities correctly. In future, this will default to true.
+     * that did not advertise capabilities correctly.
+     * In the future, this will default to true.
      */
     public var enforceStrictCapabilities: Boolean = false,
 
@@ -139,7 +140,8 @@ public abstract class Protocol(
     /**
      * Callback for when an error occurs.
      *
-     * Note that errors are not necessarily fatal they are used for reporting any kind of exceptional condition out of band.
+     * Note that errors are not necessarily fatal they are used
+     * for reporting any kind of exceptional condition out of a band.
      */
     public open fun onError(error: Throwable) {}
 
