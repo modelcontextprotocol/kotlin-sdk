@@ -41,7 +41,7 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
     protected abstract suspend fun initializeSession()
 
     override suspend fun start() {
-        if (!initialized.compareAndSet(false, true)) {
+        if (!initialized.compareAndSet(expectedValue = false, newValue = true)) {
             error(
                 "WebSocketClientTransport already started! " +
                         "If using Client class, note that connect() calls start() automatically.",

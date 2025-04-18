@@ -8,10 +8,13 @@ import io.modelcontextprotocol.kotlin.sdk.shared.ReadBuffer
 import io.modelcontextprotocol.kotlin.sdk.shared.serializeMessage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.io.Buffer
 import kotlinx.io.Sink
 import kotlinx.io.Source
@@ -123,15 +126,26 @@ public class StdioServerTransport(
     override suspend fun close() {
         if (!initialized.compareAndSet(expectedValue = true, newValue = false)) return
 
-        // Cancel reading job and close channel
-        readingJob?.cancel() // ToDO("was cancel and join")
-        sendingJob?.cancel()
+        withContext(NonCancellable) {
+            writeChannel.close()
+            sendingJob?.cancelAndJoin()
 
-        readChannel.close()
-        writeChannel.close()
-        readBuffer.clear()
+            runCatching {
+                inputStream.close()
+            }.onFailure { logger.warn(it) { "Failed to close stdin" } }
 
-        _onClose.invoke()
+            readingJob?.cancel()
+
+            readChannel.close()
+            readBuffer.clear()
+
+            runCatching {
+                outputWriter.flush()
+                outputWriter.close()
+            }.onFailure { logger.warn(it) { "Failed to close stdout" } }
+
+            _onClose.invoke()
+        }
     }
 
     override suspend fun send(message: JSONRPCMessage) {

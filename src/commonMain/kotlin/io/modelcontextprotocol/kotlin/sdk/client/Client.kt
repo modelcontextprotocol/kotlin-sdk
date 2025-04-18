@@ -59,7 +59,7 @@ public class ClientOptions(
  * An MCP client on top of a pluggable transport.
  *
  * The client automatically performs the initialization handshake with the server when [connect] is called.
- * After initialization, [severCapabilities] and [serverVersion] provide details about the connected server.
+ * After initialization, [serverCapabilities] and [serverVersion] provide details about the connected server.
  *
  * You can extend this class with custom request/notification/result types if needed.
  *
@@ -167,9 +167,7 @@ public open class Client(
             Method.Defined.ResourcesUnsubscribe,
                 -> {
                 val resCaps = serverCapabilities?.resources
-                if (resCaps == null) {
-                    throw IllegalStateException("Server does not support resources (required for $method)")
-                }
+                    ?: error("Server does not support resources (required for $method)")
 
                 if (method == Method.Defined.ResourcesSubscribe && resCaps.subscribe != true) {
                     throw IllegalStateException(

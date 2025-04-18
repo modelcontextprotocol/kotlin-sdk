@@ -59,7 +59,7 @@ public class SseClientTransport(
     }
 
     override suspend fun start() {
-        if (!initialized.compareAndSet(false, true)) {
+        if (!initialized.compareAndSet(expectedValue = false, newValue = true)) {
             error(
                 "SSEClientTransport already started! " +
                         "If using Client class, note that connect() calls start() automatically.",
