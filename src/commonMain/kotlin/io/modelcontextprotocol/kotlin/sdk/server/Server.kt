@@ -143,7 +143,7 @@ public open class Server(
     /**
      * Registers a callback to be invoked when the server has completed initialization.
      */
-    public fun onInitalized(block: () -> Unit) {
+    public fun onInitialized(block: () -> Unit) {
         val old = _onInitialized
         _onInitialized = {
             old()
@@ -171,7 +171,7 @@ public open class Server(
     }
 
     /**
-     * Registers a single tool. This tool can then be called by the client.
+     * Registers a single tool. The client can then call this tool.
      *
      * @param name The name of the tool.
      * @param description A human-readable description of what the tool does.
@@ -266,7 +266,7 @@ public open class Server(
     }
 
     /**
-     * Registers a single prompt. The prompt can then be retrieved by the client.
+     * Registers a single prompt. The client can then retrieve the prompt.
      *
      * @param prompt A [Prompt] object describing the prompt.
      * @param promptProvider A suspend function that returns the prompt content when requested by the client.
@@ -373,7 +373,7 @@ public open class Server(
     }
 
     /**
-     * Registers a single resource. The resource content can then be read by the client.
+     * Registers a single resource. The client can then read the resource content.
      *
      * @param uri The URI of the resource.
      * @param name A human-readable name for the resource.
