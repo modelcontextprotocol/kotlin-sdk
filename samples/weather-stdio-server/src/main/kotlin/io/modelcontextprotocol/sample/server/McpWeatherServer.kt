@@ -67,12 +67,9 @@ fun `run mcp server`() {
             required = listOf("state")
         )
     ) { request ->
-        val state = request.arguments["state"]?.jsonPrimitive?.content
-        if (state == null) {
-            return@addTool CallToolResult(
-                content = listOf(TextContent("The 'state' parameter is required."))
-            )
-        }
+        val state = request.arguments["state"]?.jsonPrimitive?.content ?: return@addTool CallToolResult(
+            content = listOf(TextContent("The 'state' parameter is required."))
+        )
 
         val alerts = httpClient.getAlerts(state)
 

@@ -4,7 +4,7 @@ import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import kotlinx.coroutines.CompletableDeferred
 
 /**
- * Describes the minimal contract for a MCP transport that a client or server can communicate over.
+ * Describes the minimal contract for MCP transport that a client or server can communicate over.
  */
 public interface Transport {
     /**
@@ -38,7 +38,7 @@ public interface Transport {
      * Callback for when an error occurs.
      *
      * Note that errors are not necessarily fatal; they are used for reporting any kind of
-     * exceptional condition out of band.
+     * exceptional condition out of a band.
      */
     public fun onError(block: (Throwable) -> Unit)
 

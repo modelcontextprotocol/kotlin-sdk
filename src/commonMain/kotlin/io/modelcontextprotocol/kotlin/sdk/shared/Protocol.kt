@@ -1,14 +1,35 @@
 package io.modelcontextprotocol.kotlin.sdk.shared
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.modelcontextprotocol.kotlin.sdk.*
+import io.modelcontextprotocol.kotlin.sdk.CancelledNotification
+import io.modelcontextprotocol.kotlin.sdk.EmptyRequestResult
+import io.modelcontextprotocol.kotlin.sdk.ErrorCode
+import io.modelcontextprotocol.kotlin.sdk.JSONRPCError
+import io.modelcontextprotocol.kotlin.sdk.JSONRPCNotification
+import io.modelcontextprotocol.kotlin.sdk.JSONRPCRequest
+import io.modelcontextprotocol.kotlin.sdk.JSONRPCResponse
+import io.modelcontextprotocol.kotlin.sdk.McpError
+import io.modelcontextprotocol.kotlin.sdk.Method
+import io.modelcontextprotocol.kotlin.sdk.Notification
+import io.modelcontextprotocol.kotlin.sdk.PingRequest
+import io.modelcontextprotocol.kotlin.sdk.Progress
+import io.modelcontextprotocol.kotlin.sdk.ProgressNotification
+import io.modelcontextprotocol.kotlin.sdk.Request
+import io.modelcontextprotocol.kotlin.sdk.RequestId
+import io.modelcontextprotocol.kotlin.sdk.RequestResult
+import io.modelcontextprotocol.kotlin.sdk.fromJSON
+import io.modelcontextprotocol.kotlin.sdk.toJSON
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.*
+import kotlinx.serialization.json.ClassDiscriminatorMode
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.serializer
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
@@ -48,7 +69,8 @@ public open class ProtocolOptions(
      * considered a logic error to mis-specify those.
      *
      * Currently, this defaults to false, for backwards compatibility with SDK versions
-     * that did not advertise capabilities correctly. In future, this will default to true.
+     * that did not advertise capabilities correctly.
+     * In the future, this will default to true.
      */
     public var enforceStrictCapabilities: Boolean = false,
 
@@ -119,7 +141,8 @@ public abstract class Protocol(
     /**
      * Callback for when an error occurs.
      *
-     * Note that errors are not necessarily fatal they are used for reporting any kind of exceptional condition out of band.
+     * Note that errors are not necessarily fatal they are used
+     * for reporting any kind of exceptional condition out of a band.
      */
     public open fun onError(error: Throwable) {}
 

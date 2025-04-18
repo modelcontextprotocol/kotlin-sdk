@@ -1,9 +1,17 @@
 package io.modelcontextprotocol.kotlin.sdk.shared
 
-import io.ktor.websocket.*
+import io.ktor.websocket.Frame
+import io.ktor.websocket.WebSocketSession
+import io.ktor.websocket.close
+import io.ktor.websocket.readText
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineName
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.InternalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
+import kotlinx.coroutines.job
+import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -21,6 +29,7 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
     }
 
     private val initialized: AtomicBoolean = AtomicBoolean(false)
+
     /**
      * The WebSocket session used for communication.
      */
@@ -32,7 +41,7 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
     protected abstract suspend fun initializeSession()
 
     override suspend fun start() {
-        if (!initialized.compareAndSet(false, true)) {
+        if (!initialized.compareAndSet(expectedValue = false, newValue = true)) {
             error(
                 "WebSocketClientTransport already started! " +
                         "If using Client class, note that connect() calls start() automatically.",
