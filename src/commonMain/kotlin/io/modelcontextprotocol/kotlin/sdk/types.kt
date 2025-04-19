@@ -239,7 +239,7 @@ public data class JSONRPCNotification(
  */
 @Serializable
 public class JSONRPCResponse(
-    public val id: RequestId,
+    public val id: RequestId?,
     public val jsonrpc: String = JSONRPC_VERSION,
     public val result: RequestResult? = null,
     public val error: JSONRPCError? = null,
