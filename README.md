@@ -1,10 +1,19 @@
 # MCP Kotlin SDK
 
-Kotlin implementation of the [Model Context Protocol](https://modelcontextprotocol.io) (MCP), providing both client and server capabilities for integrating with LLM surfaces.
+[![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-blueviolet?logo=kotlin)](https://kotlinlang.org/docs/multiplatform.html)
+[![Platforms](https://img.shields.io/badge/Platforms-JVM%20%7C%20Wasm%2FJS%20%7C%20Native%20(iOS%2FiOS%20Simulator)-blue)](https://kotlinlang.org/docs/multiplatform.html)
+[![Maven Central](https://img.shields.io/maven-central/v/io.modelcontextprotocol/kotlin-sdk.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:io.modelcontextprotocol%20a:kotlin-sdk)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+Kotlin Multiplatform implementation of the [Model Context Protocol](https://modelcontextprotocol.io) (MCP),
+providing both client and server capabilities for integrating with LLM surfaces across various platforms.
 
 ## Overview
 
-The Model Context Protocol allows applications to provide context for LLMs in a standardized way, separating the concerns of providing context from the actual LLM interaction. This Kotlin SDK implements the full MCP specification, making it easy to:
+The Model Context Protocol allows applications to provide context for LLMs in a standardized way,
+separating the concerns of providing context from the actual LLM interaction.
+This SDK implements the MCP specification for Kotlin,
+enabling you to build applications that can communicate using MCP on the JVM, WebAssembly and iOS.
 
 - Build MCP clients that can connect to any MCP server
 - Create MCP servers that expose resources, prompts and tools
@@ -13,7 +22,7 @@ The Model Context Protocol allows applications to provide context for LLMs in a 
 
 ## Samples
 
-- [kotlin-mcp-server](./samples/kotlin-mcp-server): shows how to set up a Kotlin MCP server with different tools and other features.
+- [kotlin-mcp-server](./samples/kotlin-mcp-server): demonstrates a multiplatform (JVM, Wasm) MCP server setup with various features and transports.
 - [weather-stdio-server](./samples/weather-stdio-server): shows how to build a Kotlin MCP server providing weather forecast and alerts using STDIO transport.
 - [kotlin-mcp-client](./samples/kotlin-mcp-client): demonstrates building an interactive Kotlin MCP client that connects to an MCP server via STDIO and integrates with Anthropic’s API.
 
@@ -31,7 +40,8 @@ Add the dependency:
 
 ```kotlin
 dependencies {
-    implementation("io.modelcontextprotocol:kotlin-sdk:0.5.0")
+    // Use the badge above for the latest version
+    implementation("io.modelcontextprotocol:kotlin-sdk:$mcpVersion")
 }
 ```
 
