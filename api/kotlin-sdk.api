@@ -2794,6 +2794,12 @@ public class io/modelcontextprotocol/kotlin/sdk/server/Server : io/modelcontextp
 	public final fun onClose (Lkotlin/jvm/functions/Function0;)V
 	public final fun onInitalized (Lkotlin/jvm/functions/Function0;)V
 	public final fun ping (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun removePrompt (Ljava/lang/String;)Z
+	public final fun removePrompts (Ljava/util/List;)I
+	public final fun removeResource (Ljava/lang/String;)Z
+	public final fun removeResources (Ljava/util/List;)I
+	public final fun removeTool (Ljava/lang/String;)Z
+	public final fun removeTools (Ljava/util/List;)I
 	public final fun sendLoggingMessage (Lio/modelcontextprotocol/kotlin/sdk/LoggingMessageNotification;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun sendPromptListChanged (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun sendResourceListChanged (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
