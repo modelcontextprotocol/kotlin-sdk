@@ -20,6 +20,7 @@ dependencies {
     implementation("io.modelcontextprotocol:kotlin-sdk:$mcpVersion")
     implementation("org.slf4j:slf4j-nop:$slf4jVersion")
     implementation("com.anthropic:anthropic-java:$anthropicVersion")
+
 }
 
 tasks.test {

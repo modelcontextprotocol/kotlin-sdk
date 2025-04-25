@@ -1,3 +1,7 @@
+
+
+
+
 package io.modelcontextprotocol.sample.server
 
 import io.ktor.client.*
@@ -15,6 +19,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.io.asSink
 import kotlinx.io.buffered
 import kotlinx.serialization.json.*
+
+import java.io.File
 
 // Main function to run the MCP server
 fun `run mcp server`() {
@@ -47,9 +53,16 @@ fun `run mcp server`() {
             version = "1.0.0" // Version of the implementation
         ),
         ServerOptions(
-            capabilities = ServerCapabilities(tools = ServerCapabilities.Tools(listChanged = true))
+            capabilities = ServerCapabilities(
+                tools = ServerCapabilities.Tools(listChanged = true),
+                resources = ServerCapabilities.Resources( subscribe = true,listChanged = true)
+            )
         )
     )
+
+
+
+
 
     // Register a tool to fetch weather alerts by state
     server.addTool(
@@ -110,6 +123,76 @@ fun `run mcp server`() {
         CallToolResult(content = forecast.map { TextContent(it) })
     }
 
+
+
+
+
+//    val textFilePath = "/C://Users//developer//Downloads//kotlin-sdk//samples//weather-stdio-server//src//main//kotlin//io//modelcontextprotocol//sample//server//resources//who_guidelines_nutritional_interventions_anc.txt"
+//    val resourceFolderPath = "C:\\Users\\developer\\Downloads\\kotlin-sdk\\samples\\weather-stdio-server\\src\\main\\kotlin\\io\\modelcontextprotocol\\sample\\server\\resources"
+//    val resourceDir = File(resourceFolderPath)
+//
+//    if(!resourceDir.exists() || !resourceDir.isDirectory){
+//        throw RuntimeException("Resource directory not found: $resourceFolderPath")
+//    }
+//
+//    resourceDir.listFiles{ file -> file.extension == "txt"}?.forEach{file ->
+//        val name = file.nameWithoutExtension.replace('_',' ').replaceFirstChar{it.uppercase()}
+//        val uri = "file://${file.absolutePath.replace("\\","/")}"
+//        val description = "Guideline section: $name"
+//
+//        server.addResource(
+//            uri = uri,
+//            name = name,
+//            description = description,
+//            mimeType = "text/plain"
+//        ){
+//            request ->
+//            val content = file.readText()
+//            println("content: ${content}")
+//            println("Serving resource: $name")
+//            ReadResourceResult(
+//                contents = listOf(
+//                    TextResourceContents(
+//                        text = content,
+//                        uri = request.uri,
+//                        mimeType = "text/plain"
+//                    )
+//                )
+//            )
+//
+//
+//        }
+//    }
+
+//
+//    val textFilePath = "C:\\Users\\developer\\Downloads\\kotlin-sdk\\samples\\weather-stdio-server\\src\\main\\kotlin\\io\\modelcontextprotocol\\sample\\server\\resources\\who_guidelines_nutritional_interventions_anc.txt"
+//    val textFile = File(textFilePath)
+//    val resourceUri = "file:///C:/Users/developer/Downloads/kotlin-sdk/samples/weather-stdio-server/src/main/kotlin/io/modelcontextprotocol/sample/server/resources/who_guidelines_nutritional_interventions_anc.txt"
+//    // Handle resources/list request
+//    server.addResource(
+//        uri = resourceUri,
+//        name = "WHO Nutritional Interventions Guidelines",
+//        description = "WHO guidelines on nutritional interventions for antenatal care",
+//        mimeType = "text/plain"
+//    ) { request ->
+//        if (!textFile.exists()) {
+//            throw RuntimeException("Resource file not found: $textFilePath")
+//        }
+//        val content = textFile.readText()
+//        println("content: ${content}")
+//        ReadResourceResult(
+//            contents = listOf(
+//                TextResourceContents(
+//                    text = content,
+//                    uri = request.uri,
+//                    mimeType = "text/plain"
+//                )
+//            )
+//        )
+//    }
+
+
+
     // Create a transport using standard IO for server communication
     val transport = StdioServerTransport(
         System.`in`.asInput(),
@@ -125,3 +208,6 @@ fun `run mcp server`() {
         done.join()
     }
 }
+
+
+
