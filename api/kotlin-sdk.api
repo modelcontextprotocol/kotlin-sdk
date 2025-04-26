@@ -2492,6 +2492,13 @@ public final class io/modelcontextprotocol/kotlin/sdk/TypesKt {
 	public static final fun getSUPPORTED_PROTOCOL_VERSIONS ()[Ljava/lang/String;
 }
 
+public final class io/modelcontextprotocol/kotlin/sdk/Types_utilKt {
+	public static final fun error (Lio/modelcontextprotocol/kotlin/sdk/CallToolResult$Companion;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/CallToolResult;
+	public static synthetic fun error$default (Lio/modelcontextprotocol/kotlin/sdk/CallToolResult$Companion;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/CallToolResult;
+	public static final fun ok (Lio/modelcontextprotocol/kotlin/sdk/CallToolResult$Companion;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/CallToolResult;
+	public static synthetic fun ok$default (Lio/modelcontextprotocol/kotlin/sdk/CallToolResult$Companion;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/CallToolResult;
+}
+
 public final class io/modelcontextprotocol/kotlin/sdk/UnknownContent : io/modelcontextprotocol/kotlin/sdk/PromptMessageContentTextOrImage {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/UnknownContent$Companion;
 	public fun <init> (Ljava/lang/String;)V
