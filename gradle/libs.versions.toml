@@ -1,8 +1,7 @@
 [versions]
 # plugins version
-kotlin = "2.0.21"
+kotlin = "2.1.20"
 dokka = "2.0.0"
-atomicfu = "0.26.1"
 
 # libraries version
 serialization = "1.7.3"
@@ -40,5 +39,4 @@ kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref 
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 jreleaser = { id = "org.jreleaser", version.ref = "jreleaser"}
-atomicfu = { id = "org.jetbrains.kotlinx.atomicfu", version.ref = "atomicfu" }
 kotlinx-binary-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibilityValidatorPlugin" }
