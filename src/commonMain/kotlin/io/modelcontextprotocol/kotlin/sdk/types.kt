@@ -3,14 +3,14 @@
 package io.modelcontextprotocol.kotlin.sdk
 
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
-import kotlinx.atomicfu.AtomicLong
-import kotlinx.atomicfu.atomic
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
-import kotlin.jvm.JvmInline
+import kotlin.concurrent.atomics.AtomicLong
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.concurrent.atomics.incrementAndFetch
 
 public const val LATEST_PROTOCOL_VERSION: String = "2024-11-05"
 
@@ -21,7 +21,8 @@ public val SUPPORTED_PROTOCOL_VERSIONS: Array<String> = arrayOf(
 
 public const val JSONRPC_VERSION: String = "2.0"
 
-private val REQUEST_MESSAGE_ID: AtomicLong = atomic(0L)
+@OptIn(ExperimentalAtomicApi::class)
+private val REQUEST_MESSAGE_ID: AtomicLong = AtomicLong(0L)
 
 /**
  * A progress token, used to associate progress notifications with the original request.
@@ -132,7 +133,7 @@ internal fun Request.toJSON(): JSONRPCRequest {
  */
 internal fun JSONRPCRequest.fromJSON(): Request? {
     val serializer = selectRequestDeserializer(method)
-    val params = params ?: return null
+    val params = params
     return McpJson.decodeFromJsonElement<Request>(serializer, params)
 }
 
@@ -211,9 +212,10 @@ public sealed interface JSONRPCMessage
 /**
  * A request that expects a response.
  */
+@OptIn(ExperimentalAtomicApi::class)
 @Serializable
 public data class JSONRPCRequest(
-    val id: RequestId = RequestId.NumberId(REQUEST_MESSAGE_ID.incrementAndGet()),
+    val id: RequestId = RequestId.NumberId(REQUEST_MESSAGE_ID.incrementAndFetch()),
     val method: String,
     val params: JsonElement = EmptyJsonObject,
     val jsonrpc: String = JSONRPC_VERSION,

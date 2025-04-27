@@ -8,10 +8,10 @@ import io.ktor.server.sse.*
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
-import kotlinx.atomicfu.AtomicBoolean
-import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.job
 import kotlinx.serialization.encodeToString
+import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -25,11 +25,12 @@ public typealias SSEServerTransport = SseServerTransport
  *
  * Creates a new SSE server transport, which will direct the client to POST messages to the relative or absolute URL identified by `_endpoint`.
  */
+@OptIn(ExperimentalAtomicApi::class)
 public class SseServerTransport(
     private val endpoint: String,
     private val session: ServerSSESession,
 ) : AbstractTransport() {
-    private val initialized: AtomicBoolean = atomic(false)
+    private val initialized: AtomicBoolean = AtomicBoolean(false)
 
     @OptIn(ExperimentalUuidApi::class)
     public val sessionId: String = Uuid.random().toString()
@@ -63,7 +64,7 @@ public class SseServerTransport(
      * This should be called when a POST request is made to send a message to the server.
      */
     public suspend fun handlePostMessage(call: ApplicationCall) {
-        if (!initialized.value) {
+        if (!initialized.load()) {
             val message = "SSE connection not established"
             call.respondText(message, status = HttpStatusCode.InternalServerError)
             _onError.invoke(IllegalStateException(message))
@@ -112,7 +113,7 @@ public class SseServerTransport(
     }
 
     override suspend fun send(message: JSONRPCMessage) {
-        if (!initialized.value) {
+        if (!initialized.load()) {
             throw error("Not connected")
         }
 
