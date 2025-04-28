@@ -1,7 +1,3 @@
-
-
-
-
 package io.modelcontextprotocol.sample.server
 
 import io.ktor.client.*
@@ -20,7 +16,10 @@ import kotlinx.io.asSink
 import kotlinx.io.buffered
 import kotlinx.serialization.json.*
 
-import java.io.File
+import java.nio.file.Files
+import java.nio.file.Paths
+
+//import java.io.File
 
 // Main function to run the MCP server
 fun `run mcp server`() {
@@ -59,10 +58,6 @@ fun `run mcp server`() {
             )
         )
     )
-
-
-
-
 
     // Register a tool to fetch weather alerts by state
     server.addTool(
@@ -123,75 +118,34 @@ fun `run mcp server`() {
         CallToolResult(content = forecast.map { TextContent(it) })
     }
 
+    val files = listOf(
+//        Triple("file:///C:/Users/tanu0/Downloads/kotlin-sdk/samples/weather-stdio-server/src/main/kotlin/io/modelcontextprotocol/sample/server/context-files/Iron_folic_acid_supplements_who_guidelines.txt", "Iron folic acid supplement by who for pregnant women", "C:\\Users\\tanu0\\Downloads\\kotlin-sdk\\samples\\weather-stdio-server\\src\\main\\kotlin\\io\\modelcontextprotocol\\sample\\server\\context-files\\Iron_folic_acid_supplements_who_guidelines.txt"),
+//        Triple("file:///C:/Users/tanu0/Downloads/kotlin-sdk/samples/weather-stdio-server/src/main/kotlin/io/modelcontextprotocol/sample/server/context-files/nutritional_intervention_who_guidelines.txt", "nutritional intervention guidelines by WHO", "C:\\Users\\tanu0\\Downloads\\kotlin-sdk\\samples\\weather-stdio-server\\src\\main\\kotlin\\io\\modelcontextprotocol\\sample\\server\\context-files\\nutritional_intervention_who_guidelines.txt"),
+        Triple("file:///C:/Users/developer/Downloads/kotlin-sdk/samples/weather-stdio-server/src/main/kotlin/io/modelcontextprotocol/sample/server/resources/who_ANC_Guideline_Calcium_supplements.txt", "who ANC Guideline Calcium supplements", "C:\\Users\\developer\\Downloads\\kotlin-sdk\\samples\\weather-stdio-server\\src\\main\\kotlin\\io\\modelcontextprotocol\\sample\\server\\resources\\who_ANC_Guideline_Calcium_supplements.txt"),
+        Triple("file:///C:/Users/developer/Downloads/kotlin-sdk/samples/weather-stdio-server/src/main/kotlin/io/modelcontextprotocol/sample/server/resources/who_ANC_Guideline_Zinc_supplements.txt", "who ANC Guideline Zinc supplements", "C:\\Users\\developer\\Downloads\\kotlin-sdk\\samples\\weather-stdio-server\\src\\main\\kotlin\\io\\modelcontextprotocol\\sample\\server\\resources\\who_ANC_Guideline_Zinc_supplements.txt"),
+        Triple("file:///C:/Users/developer/Downloads/kotlin-sdk/samples/weather-stdio-server/src/main/kotlin/io/modelcontextprotocol/sample/server/resources/who_ANC_Guideline_Vitamin_A_Supplements.txt", "who ANC Guideline Vitamin A Supplements", "C:\\Users\\developer\\Downloads\\kotlin-sdk\\samples\\weather-stdio-server\\src\\main\\kotlin\\io\\modelcontextprotocol\\sample\\server\\resources\\who_ANC_Guideline_Vitamin_A_Supplements.txt"),
+        Triple("file:///C:/Users/developer/Downloads/kotlin-sdk/samples/weather-stdio-server/src/main/kotlin/io/modelcontextprotocol/sample/server/resources/who_guidelines_nutritional_interventions_anc.txt", "who guidelines nutritional interventions anc", "C:\\Users\\developer\\Downloads\\kotlin-sdk\\samples\\weather-stdio-server\\src\\main\\kotlin\\io\\modelcontextprotocol\\sample\\server\\resources\\who_guidelines_nutritional_interventions_anc.txt")
+    )
 
-
-
-
-//    val textFilePath = "/C://Users//developer//Downloads//kotlin-sdk//samples//weather-stdio-server//src//main//kotlin//io//modelcontextprotocol//sample//server//resources//who_guidelines_nutritional_interventions_anc.txt"
-//    val resourceFolderPath = "C:\\Users\\developer\\Downloads\\kotlin-sdk\\samples\\weather-stdio-server\\src\\main\\kotlin\\io\\modelcontextprotocol\\sample\\server\\resources"
-//    val resourceDir = File(resourceFolderPath)
-//
-//    if(!resourceDir.exists() || !resourceDir.isDirectory){
-//        throw RuntimeException("Resource directory not found: $resourceFolderPath")
-//    }
-//
-//    resourceDir.listFiles{ file -> file.extension == "txt"}?.forEach{file ->
-//        val name = file.nameWithoutExtension.replace('_',' ').replaceFirstChar{it.uppercase()}
-//        val uri = "file://${file.absolutePath.replace("\\","/")}"
-//        val description = "Guideline section: $name"
-//
-//        server.addResource(
-//            uri = uri,
-//            name = name,
-//            description = description,
-//            mimeType = "text/plain"
-//        ){
-//            request ->
-//            val content = file.readText()
-//            println("content: ${content}")
-//            println("Serving resource: $name")
-//            ReadResourceResult(
-//                contents = listOf(
-//                    TextResourceContents(
-//                        text = content,
-//                        uri = request.uri,
-//                        mimeType = "text/plain"
-//                    )
-//                )
-//            )
-//
-//
-//        }
-//    }
-
-//
-//    val textFilePath = "C:\\Users\\developer\\Downloads\\kotlin-sdk\\samples\\weather-stdio-server\\src\\main\\kotlin\\io\\modelcontextprotocol\\sample\\server\\resources\\who_guidelines_nutritional_interventions_anc.txt"
-//    val textFile = File(textFilePath)
-//    val resourceUri = "file:///C:/Users/developer/Downloads/kotlin-sdk/samples/weather-stdio-server/src/main/kotlin/io/modelcontextprotocol/sample/server/resources/who_guidelines_nutritional_interventions_anc.txt"
-//    // Handle resources/list request
-//    server.addResource(
-//        uri = resourceUri,
-//        name = "WHO Nutritional Interventions Guidelines",
-//        description = "WHO guidelines on nutritional interventions for antenatal care",
-//        mimeType = "text/plain"
-//    ) { request ->
-//        if (!textFile.exists()) {
-//            throw RuntimeException("Resource file not found: $textFilePath")
-//        }
-//        val content = textFile.readText()
-//        println("content: ${content}")
-//        ReadResourceResult(
-//            contents = listOf(
-//                TextResourceContents(
-//                    text = content,
-//                    uri = request.uri,
-//                    mimeType = "text/plain"
-//                )
-//            )
-//        )
-//    }
-
-
+    for ((uri, name, path) in files) {
+        server.addResource(
+            uri = uri,
+            name = name,
+            description = "Resource for $name",
+            mimeType = "text/plain"
+        ) { request ->
+            val content = Files.readString(Paths.get(path)) // 🔥 Read from file at runtime
+            ReadResourceResult(
+                contents = listOf(
+                    TextResourceContents(
+                        text = content,
+                        uri = request.uri,
+                        mimeType = "text/plain"
+                    )
+                )
+            )
+        }
+    }
 
     // Create a transport using standard IO for server communication
     val transport = StdioServerTransport(
@@ -208,6 +162,3 @@ fun `run mcp server`() {
         done.join()
     }
 }
-
-
-
