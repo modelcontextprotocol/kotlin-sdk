@@ -24,7 +24,7 @@ public class ReadBuffer {
             -1L -> return null
             0L -> {
                 buffer.skip(1)
-                ""
+                return null
             }
 
             else -> {
