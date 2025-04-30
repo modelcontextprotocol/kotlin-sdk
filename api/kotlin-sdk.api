@@ -2496,6 +2496,13 @@ public final class io/modelcontextprotocol/kotlin/sdk/TypesKt {
 	public static final fun getSUPPORTED_PROTOCOL_VERSIONS ()[Ljava/lang/String;
 }
 
+public final class io/modelcontextprotocol/kotlin/sdk/Types_utilKt {
+	public static final fun error (Lio/modelcontextprotocol/kotlin/sdk/CallToolResult$Companion;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/CallToolResult;
+	public static synthetic fun error$default (Lio/modelcontextprotocol/kotlin/sdk/CallToolResult$Companion;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/CallToolResult;
+	public static final fun ok (Lio/modelcontextprotocol/kotlin/sdk/CallToolResult$Companion;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/CallToolResult;
+	public static synthetic fun ok$default (Lio/modelcontextprotocol/kotlin/sdk/CallToolResult$Companion;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/CallToolResult;
+}
+
 public final class io/modelcontextprotocol/kotlin/sdk/UnknownContent : io/modelcontextprotocol/kotlin/sdk/PromptMessageContentTextOrImage {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/UnknownContent$Companion;
 	public fun <init> (Ljava/lang/String;)V
@@ -2798,6 +2805,12 @@ public class io/modelcontextprotocol/kotlin/sdk/server/Server : io/modelcontextp
 	public final fun onClose (Lkotlin/jvm/functions/Function0;)V
 	public final fun onInitalized (Lkotlin/jvm/functions/Function0;)V
 	public final fun ping (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun removePrompt (Ljava/lang/String;)Z
+	public final fun removePrompts (Ljava/util/List;)I
+	public final fun removeResource (Ljava/lang/String;)Z
+	public final fun removeResources (Ljava/util/List;)I
+	public final fun removeTool (Ljava/lang/String;)Z
+	public final fun removeTools (Ljava/util/List;)I
 	public final fun sendLoggingMessage (Lio/modelcontextprotocol/kotlin/sdk/LoggingMessageNotification;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun sendPromptListChanged (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun sendResourceListChanged (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
