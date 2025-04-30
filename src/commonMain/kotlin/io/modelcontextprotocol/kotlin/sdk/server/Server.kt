@@ -145,6 +145,7 @@ public open class Server(
         name: String,
         description: String,
         inputSchema: Tool.Input = Tool.Input(),
+        toolAnnotations: ToolAnnotations? = null,
         handler: suspend (CallToolRequest) -> CallToolResult
     ) {
         if (capabilities.tools == null) {
@@ -152,7 +153,7 @@ public open class Server(
             throw IllegalStateException("Server does not support tools capability. Enable it in ServerOptions.")
         }
         logger.info { "Registering tool: $name" }
-        tools[name] = RegisteredTool(Tool(name, description, inputSchema), handler)
+        tools[name] = RegisteredTool(Tool(name, description, inputSchema, toolAnnotations), handler)
     }
 
     /**
