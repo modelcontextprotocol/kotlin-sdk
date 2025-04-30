@@ -15,12 +15,24 @@ repositories {
     mavenCentral()
 }
 
+val jvmMainClass = "Main_jvmKt"
+
 kotlin {
     jvmToolchain(17)
     jvm {
         binaries {
             executable {
-                mainClass.set("Main_jvmKt")
+                mainClass.set(jvmMainClass)
+            }
+        }
+        val jvmJar by tasks.getting(org.gradle.jvm.tasks.Jar::class) {
+            duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+            doFirst {
+                manifest {
+                    attributes["Main-Class"] = jvmMainClass
+                }
+
+                from(configurations["jvmRuntimeClasspath"].map { if (it.isDirectory) it else zipTree(it) })
             }
         }
     }
@@ -38,14 +50,4 @@ kotlin {
         }
         wasmJsMain.dependencies {}
     }
-}
-
-tasks.jar {
-    manifest {
-        attributes["Main-Class"] = "MainKt"
-    }
-
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-
-    from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
 }
