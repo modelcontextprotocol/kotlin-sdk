@@ -7,14 +7,24 @@ import io.ktor.server.response.*
 import io.ktor.server.sse.*
 import io.modelcontextprotocol.kotlin.sdk.*
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
+import io.modelcontextprotocol.kotlin.sdk.shared.MCP_SESSION_ID
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlin.collections.HashMap
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
+/**
+ * Server transport for StreamableHttp: this allows server to respond to GET, POST and DELETE requests. Server can optionally make use of Server-Sent Events (SSE) to stream multiple server messages.
+ *
+ * Creates a new StreamableHttp server transport.
+ */
 @OptIn(ExperimentalAtomicApi::class)
 public class StreamableHttpServerTransport(
     private val isStateful: Boolean = false,
@@ -55,7 +65,8 @@ public class StreamableHttpServerTransport(
         }
 
         val streamId = requestToStreamMapping[requestId] ?: error("No connection established for request id $requestId")
-        val correspondingStream = streamMapping[streamId] ?: error("No connection established for request id $requestId")
+        val correspondingStream =
+            streamMapping[streamId] ?: error("No connection established for request id $requestId")
         val correspondingCall = callMapping[streamId] ?: error("No connection established for request id $requestId")
 
         if (!enableJSONResponse) {
@@ -66,32 +77,33 @@ public class StreamableHttpServerTransport(
         }
 
         requestResponseMapping[requestId] = message
-        val relatedIds = requestToStreamMapping.entries.filter { streamMapping[it.value] == correspondingStream }.map { it.key }
+        val relatedIds =
+            requestToStreamMapping.entries.filter { streamMapping[it.value] == correspondingStream }.map { it.key }
         val allResponsesReady = relatedIds.all { requestResponseMapping[it] != null }
 
-        if (allResponsesReady) {
-            if (enableJSONResponse) {
-                correspondingCall.response.headers.append(ContentType.toString(), ContentType.Application.Json.toString())
-                correspondingCall.response.status(HttpStatusCode.OK)
-                if (sessionId != null) {
-                    correspondingCall.response.header("Mcp-Session-Id", sessionId!!)
-                }
-                val responses = relatedIds.map{ requestResponseMapping[it] }
-                if (responses.size == 1) {
-                    correspondingCall.respond(responses[0]!!)
-                } else {
-                    correspondingCall.respond(responses)
-                }
-                callMapping.remove(streamId)
-            } else {
-                correspondingStream.close()
-                streamMapping.remove(streamId)
-            }
+        if (!allResponsesReady) return
 
-            for (id in relatedIds) {
-                requestToStreamMapping.remove(id)
-                requestResponseMapping.remove(id)
+        if (enableJSONResponse) {
+            correspondingCall.response.headers.append(ContentType.toString(), ContentType.Application.Json.toString())
+            correspondingCall.response.status(HttpStatusCode.OK)
+            if (sessionId != null) {
+                correspondingCall.response.header(MCP_SESSION_ID, sessionId!!)
             }
+            val responses = relatedIds.map { requestResponseMapping[it] }
+            if (responses.size == 1) {
+                correspondingCall.respond(responses[0]!!)
+            } else {
+                correspondingCall.respond(responses)
+            }
+            callMapping.remove(streamId)
+        } else {
+            correspondingStream.close()
+            streamMapping.remove(streamId)
+        }
+
+        for (id in relatedIds) {
+            requestToStreamMapping.remove(id)
+            requestResponseMapping.remove(id)
         }
 
     }
@@ -110,47 +122,13 @@ public class StreamableHttpServerTransport(
     @OptIn(ExperimentalUuidApi::class)
     public suspend fun handlePostRequest(call: ApplicationCall, session: ServerSSESession) {
         try {
-            val acceptHeader = call.request.headers["Accept"]?.split(",") ?: listOf()
+            if (!validateHeaders(call)) return
 
-            if (!acceptHeader.contains("text/event-stream") || !acceptHeader.contains("application/json")) {
-                call.response.status(HttpStatusCode.NotAcceptable)
-                call.respond(
-                    JSONRPCResponse(
-                        id = null,
-                        error = JSONRPCError(
-                            code = ErrorCode.Unknown(-32000),
-                            message = "Not Acceptable: Client must accept both application/json and text/event-stream"
-                        )
-                    )
-                )
-                return
-            }
+            val messages = parseBody(call)
 
-            val contentType = call.request.contentType()
-            if (contentType != ContentType.Application.Json) {
-                call.response.status(HttpStatusCode.UnsupportedMediaType)
-                call.respond(
-                    JSONRPCResponse(
-                        id = null,
-                        error = JSONRPCError(
-                            code = ErrorCode.Unknown(-32000),
-                            message = "Unsupported Media Type: Content-Type must be application/json"
-                        )
-                    )
-                )
-                return
-            }
+            if (messages.isEmpty()) return
 
-            val body = call.receiveText()
-            val messages = mutableListOf<JSONRPCMessage>()
-
-            if (body.startsWith("[")) {
-                messages.addAll(McpJson.decodeFromString<List<JSONRPCMessage>>(body))
-            } else {
-                messages.add(McpJson.decodeFromString(body))
-            }
-
-            val hasInitializationRequest = messages.any { it is JSONRPCRequest && it.method == "initialize" }
+            val hasInitializationRequest = messages.any { it is JSONRPCRequest && it.method == Method.Defined.Initialize.value }
             if (hasInitializationRequest) {
                 if (initialized.load() && sessionId != null) {
                     call.response.status(HttpStatusCode.BadRequest)
@@ -184,38 +162,37 @@ public class StreamableHttpServerTransport(
                     sessionId = Uuid.random().toString()
                 }
                 initialized.store(true)
-
-                if (!validateSession(call)) {
-                    return
-                }
-
-                val hasRequests = messages.any { it is JSONRPCRequest }
-                val streamId = Uuid.random().toString()
-
-                if (!hasRequests){
-                    call.respondNullable(HttpStatusCode.Accepted)
-                } else {
-                    if (!enableJSONResponse) {
-                        call.response.headers.append(ContentType.toString(), ContentType.Text.EventStream.toString())
-
-                        if (sessionId != null) {
-                            call.response.header("Mcp-Session-Id", sessionId!!)
-                        }
-                    }
-
-                    for (message in messages) {
-                        if (message is JSONRPCRequest) {
-                            streamMapping[streamId] = session
-                            callMapping[streamId] = call
-                            requestToStreamMapping[message.id] = streamId
-                        }
-                    }
-                }
-                for (message in messages) {
-                    _onMessage.invoke(message)
-                }
             }
 
+            if (!validateSession(call)) {
+                return
+            }
+
+            val hasRequests = messages.any { it is JSONRPCRequest }
+            val streamId = Uuid.random().toString()
+
+            if (!hasRequests) {
+                call.respondNullable(HttpStatusCode.Accepted)
+            } else {
+                if (!enableJSONResponse) {
+                    call.response.headers.append(ContentType.toString(), ContentType.Text.EventStream.toString())
+
+                    if (sessionId != null) {
+                        call.response.header(MCP_SESSION_ID, sessionId!!)
+                    }
+                }
+
+                for (message in messages) {
+                    if (message is JSONRPCRequest) {
+                        streamMapping[streamId] = session
+                        callMapping[streamId] = call
+                        requestToStreamMapping[message.id] = streamId
+                    }
+                }
+            }
+            for (message in messages) {
+                _onMessage.invoke(message)
+            }
         } catch (e: Exception) {
             call.response.status(HttpStatusCode.BadRequest)
             call.respond(
@@ -251,7 +228,7 @@ public class StreamableHttpServerTransport(
         }
 
         if (sessionId != null) {
-            call.response.header("Mcp-Session-Id", sessionId!!)
+            call.response.header(MCP_SESSION_ID, sessionId!!)
         }
 
         if (streamMapping[standalone] != null) {
@@ -281,7 +258,7 @@ public class StreamableHttpServerTransport(
         call.respondNullable(HttpStatusCode.OK)
     }
 
-    public suspend fun validateSession(call: ApplicationCall): Boolean {
+    private suspend fun validateSession(call: ApplicationCall): Boolean {
         if (sessionId == null) {
             return true
         }
@@ -301,4 +278,65 @@ public class StreamableHttpServerTransport(
         }
         return true
     }
+
+    private suspend fun validateHeaders(call: ApplicationCall): Boolean {
+        val acceptHeader = call.request.headers["Accept"]?.split(",") ?: listOf()
+
+        if (!acceptHeader.contains("text/event-stream") || !acceptHeader.contains("application/json")) {
+            call.response.status(HttpStatusCode.NotAcceptable)
+            call.respond(
+                JSONRPCResponse(
+                    id = null,
+                    error = JSONRPCError(
+                        code = ErrorCode.Unknown(-32000),
+                        message = "Not Acceptable: Client must accept both application/json and text/event-stream"
+                    )
+                )
+            )
+            return false
+        }
+
+        val contentType = call.request.contentType()
+        if (contentType != ContentType.Application.Json) {
+            call.response.status(HttpStatusCode.UnsupportedMediaType)
+            call.respond(
+                JSONRPCResponse(
+                    id = null,
+                    error = JSONRPCError(
+                        code = ErrorCode.Unknown(-32000),
+                        message = "Unsupported Media Type: Content-Type must be application/json"
+                    )
+                )
+            )
+            return false
+        }
+
+        return true
+    }
+
+    private suspend fun parseBody(
+        call: ApplicationCall,
+    ): List<JSONRPCMessage> {
+        val messages = mutableListOf<JSONRPCMessage>()
+        when (val body = call.receive<JsonElement>()) {
+            is JsonObject -> messages.add(McpJson.decodeFromJsonElement(body))
+            is JsonArray -> messages.addAll(McpJson.decodeFromJsonElement<List<JSONRPCMessage>>(body))
+            else -> {
+                call.response.status(HttpStatusCode.BadRequest)
+                call.respond(
+                    JSONRPCResponse(
+                        id = null,
+                        error = JSONRPCError(
+                            code = ErrorCode.Defined.InvalidRequest,
+                            message = "Invalid Request: Server already initialized"
+                        )
+                    )
+                )
+                return listOf()
+            }
+        }
+        return messages
+    }
+
+
 }
