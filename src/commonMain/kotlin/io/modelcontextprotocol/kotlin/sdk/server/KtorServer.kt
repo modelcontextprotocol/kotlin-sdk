@@ -22,7 +22,7 @@ public fun Routing.mcp(path: String, block: () -> Server) {
  * Configures the Ktor Application to handle Model Context Protocol (MCP) over Server-Sent Events (SSE).
  */
 @KtorDsl
-public fun Routing.mcp(block: () -> Server) {
+public fun Route.mcp(block: () -> Server) {
     val transports = ConcurrentMap<String, SseServerTransport>()
 
     sse {
