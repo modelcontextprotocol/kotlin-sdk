@@ -113,6 +113,7 @@ public class SseClientTransport(
 
         try {
             val response = client.post(endpoint.getCompleted()) {
+                requestBuilder()
                 headers.append(HttpHeaders.ContentType, ContentType.Application.Json)
                 setBody(McpJson.encodeToString(message))
             }
