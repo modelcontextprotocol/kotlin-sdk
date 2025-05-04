@@ -174,6 +174,60 @@ public open class Server(
     }
 
     /**
+     * Removes a single tool by name.
+     *
+     * @param name The name of the tool to remove.
+     * @return True if the tool was removed, false if it wasn't found.
+     * @throws IllegalStateException If the server does not support tools.
+     */
+    public fun removeTool(name: String): Boolean {
+        if (capabilities.tools == null) {
+            logger.error { "Failed to remove tool '$name': Server does not support tools capability" }
+            throw IllegalStateException("Server does not support tools capability.")
+        }
+        logger.info { "Removing tool: $name" }
+        val removed = tools.remove(name) != null
+        logger.debug {
+            if (removed) {
+                "Tool removed: $name"
+            } else {
+                "Tool not found: $name"
+            }
+        }
+        return removed
+    }
+
+    /**
+     * Removes multiple tools at once.
+     *
+     * @param toolNames A list of tool names to remove.
+     * @return The number of tools that were successfully removed.
+     * @throws IllegalStateException If the server does not support tools.
+     */
+    public fun removeTools(toolNames: List<String>): Int {
+        if (capabilities.tools == null) {
+            logger.error { "Failed to remove tools: Server does not support tools capability" }
+            throw IllegalStateException("Server does not support tools capability.")
+        }
+        logger.info { "Removing ${toolNames.size} tools" }
+        var removedCount = 0
+        for (name in toolNames) {
+            logger.debug { "Removing tool: $name" }
+            if (tools.remove(name) != null) {
+                removedCount++
+            }
+        }
+        logger.info {
+            if (removedCount > 0) {
+              "Removed $removedCount tools"
+            } else {
+              "No tools were removed"
+            }
+        }
+        return removedCount
+    }
+
+    /**
      * Registers a single prompt. The prompt can then be retrieved by the client.
      *
      * @param prompt A [Prompt] object describing the prompt.
@@ -227,6 +281,60 @@ public open class Server(
     }
 
     /**
+     * Removes a single prompt by name.
+     *
+     * @param name The name of the prompt to remove.
+     * @return True if the prompt was removed, false if it wasn't found.
+     * @throws IllegalStateException If the server does not support prompts.
+     */
+    public fun removePrompt(name: String): Boolean {
+        if (capabilities.prompts == null) {
+            logger.error { "Failed to remove prompt '$name': Server does not support prompts capability" }
+            throw IllegalStateException("Server does not support prompts capability.")
+        }
+        logger.info { "Removing prompt: $name" }
+        val removed = prompts.remove(name) != null
+        logger.debug {
+            if (removed) {
+                "Prompt removed: $name"
+            } else {
+                "Prompt not found: $name"
+            }
+        }
+        return removed
+    }
+
+    /**
+     * Removes multiple prompts at once.
+     *
+     * @param promptNames A list of prompt names to remove.
+     * @return The number of prompts that were successfully removed.
+     * @throws IllegalStateException If the server does not support prompts.
+     */
+    public fun removePrompts(promptNames: List<String>): Int {
+        if (capabilities.prompts == null) {
+            logger.error { "Failed to remove prompts: Server does not support prompts capability" }
+            throw IllegalStateException("Server does not support prompts capability.")
+        }
+        logger.info { "Removing ${promptNames.size} prompts" }
+        var removedCount = 0
+        for (name in promptNames) {
+            logger.debug { "Removing prompt: $name" }
+            if (prompts.remove(name) != null) {
+                removedCount++
+            }
+        }
+        logger.info {
+            if (removedCount > 0) {
+                "Removed $removedCount prompts"
+            } else {
+                "No prompts were removed"
+            }
+        }
+        return removedCount
+    }
+
+    /**
      * Registers a single resource. The resource content can then be read by the client.
      *
      * @param uri The URI of the resource.
@@ -267,6 +375,60 @@ public open class Server(
             logger.debug { "Registering resource: ${r.resource.name} (${r.resource.uri})" }
             resources[r.resource.uri] = r
         }
+    }
+
+    /**
+     * Removes a single resource by URI.
+     *
+     * @param uri The URI of the resource to remove.
+     * @return True if the resource was removed, false if it wasn't found.
+     * @throws IllegalStateException If the server does not support resources.
+     */
+    public fun removeResource(uri: String): Boolean {
+        if (capabilities.resources == null) {
+            logger.error { "Failed to remove resource '$uri': Server does not support resources capability" }
+            throw IllegalStateException("Server does not support resources capability.")
+        }
+        logger.info { "Removing resource: $uri" }
+        val removed = resources.remove(uri) != null
+        logger.debug {
+            if (removed) {
+                "Resource removed: $uri"
+            } else {
+                "Resource not found: $uri"
+            }
+        }
+        return removed
+    }
+
+    /**
+     * Removes multiple resources at once.
+     *
+     * @param uris A list of resource URIs to remove.
+     * @return The number of resources that were successfully removed.
+     * @throws IllegalStateException If the server does not support resources.
+     */
+    public fun removeResources(uris: List<String>): Int {
+        if (capabilities.resources == null) {
+            logger.error { "Failed to remove resources: Server does not support resources capability" }
+            throw IllegalStateException("Server does not support resources capability.")
+        }
+        logger.info { "Removing ${uris.size} resources" }
+        var removedCount = 0
+        for (uri in uris) {
+            logger.debug { "Removing resource: $uri" }
+            if (resources.remove(uri) != null) {
+                removedCount++
+            }
+        }
+        logger.info {
+            if (removedCount > 0) {
+                "Removed $removedCount resources"
+            } else {
+                "No resources were removed"
+            }
+        }
+        return removedCount
     }
 
     /**

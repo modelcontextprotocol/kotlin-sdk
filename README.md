@@ -31,7 +31,7 @@ Add the dependency:
 
 ```kotlin
 dependencies {
-    implementation("io.modelcontextprotocol:kotlin-sdk:0.4.0")
+    implementation("io.modelcontextprotocol:kotlin-sdk:0.5.0")
 }
 ```
 
