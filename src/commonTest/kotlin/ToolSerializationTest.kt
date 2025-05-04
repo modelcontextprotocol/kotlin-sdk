@@ -16,7 +16,7 @@ class ToolSerializationTest {
         {
           "name": "get_weather",
           "description": "Get the current weather in a given location",
-          "inputSchema": {
+          "input_schema": {
             "type": "object",
             "properties": {
               "location": {
