@@ -198,7 +198,7 @@ kotlin {
     explicitApi = ExplicitApiMode.Strict
 
     jvmToolchain {
-        languageVersion = JavaLanguageVersion.of(17) // Downgrade to JDK 17 which is more likely to be available
+        languageVersion = JavaLanguageVersion.of(17)
     }
 
     sourceSets {
