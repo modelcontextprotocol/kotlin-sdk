@@ -17,3 +17,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "kotlin-sdk"
 
+
+include("feature.annotation")

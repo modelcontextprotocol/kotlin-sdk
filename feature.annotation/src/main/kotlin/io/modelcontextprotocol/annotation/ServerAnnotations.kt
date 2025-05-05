@@ -1,18 +1,14 @@
-package io.modelcontextprotocol.kotlin.sdk.server
+package io.modelcontextprotocol.annotation
 
-import io.ktor.util.rootCause
-import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
 import io.modelcontextprotocol.kotlin.sdk.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.Tool
-import kotlinx.serialization.json.JsonObject
+import io.modelcontextprotocol.kotlin.sdk.server.Server
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 import java.lang.reflect.InvocationTargetException
-import kotlin.reflect.KCallable
-import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter
 import kotlin.reflect.KType
@@ -20,13 +16,10 @@ import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.instanceParameter
 import kotlin.reflect.full.valueParameters
-import kotlin.reflect.typeOf
-import kotlin.text.get
-import kotlin.text.set
 
 /**
- * Extension function to register tools from class methods annotated with [McpTool].
- * This function will scan the provided class for methods annotated with [McpTool] and register them as tools.
+ * Extension function to register tools from class methods annotated with [io.modelcontextprotocooool.McpTool].
+ * This function will scan the provided class for methods annotated with [io.modelcontextprotocooool.McpTool] and register them as tools.
  *
  * @param instance The instance of the class containing the annotated methods.
  * @param T The type of the class.
@@ -50,7 +43,7 @@ public inline fun <reified T : Any> Server.registerAnnotatedTools(instance: T) {
  *
  * @param instance The instance of the class containing the annotated method.
  * @param function The function to register as a tool.
- * @param annotation The [McpTool] annotation.
+ * @param annotation The [io.modelcontextprotocooool.McpTool] annotation.
  */
 public fun <T : Any> Server.registerToolFromAnnotatedFunction(
     instance: T,

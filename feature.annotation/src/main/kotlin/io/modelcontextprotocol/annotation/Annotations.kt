@@ -1,10 +1,4 @@
-package io.modelcontextprotocol.kotlin.sdk.server
-
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
-import kotlinx.serialization.json.putJsonObject
-import kotlin.reflect.KClass
+package io.modelcontextprotocol.annotation
 
 /**
  * Annotation to define an MCP tool with simplified syntax.
