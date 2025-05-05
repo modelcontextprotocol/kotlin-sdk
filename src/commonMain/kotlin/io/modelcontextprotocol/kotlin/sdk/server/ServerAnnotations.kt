@@ -64,7 +64,7 @@ public fun <T : Any> Server.registerToolFromAnnotatedFunction(
     val properties = buildJsonObject {
         function.valueParameters.forEach { param ->
             val paramAnnotation = param.findAnnotation<McpParam>()
-            val paramName = param.name ?: "param${param.index}"
+            val paramName = param.name ?: "param${function.valueParameters.indexOf(param)}"
             
             putJsonObject(paramName) {
                 val type = when {
@@ -91,7 +91,7 @@ public fun <T : Any> Server.registerToolFromAnnotatedFunction(
                 val paramAnnotation = param.findAnnotation<McpParam>()
                 paramAnnotation?.required != false && !param.isOptional
             }
-            .map { it.name ?: "param${it.index}" }
+            .map { it.name ?: "param${function.valueParameters.indexOf(it)}" }
     }
     
     // Create tool input schema
