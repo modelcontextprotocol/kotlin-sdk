@@ -1046,7 +1046,6 @@ public data class Tool(
     /**
      * A JSON object defining the expected parameters for the tool.
      */
-    @SerialName("input_schema")
     val inputSchema: Input,
 ) {
     @Serializable
