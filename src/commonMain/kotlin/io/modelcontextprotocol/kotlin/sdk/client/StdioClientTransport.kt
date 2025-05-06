@@ -5,17 +5,12 @@ import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.ReadBuffer
 import io.modelcontextprotocol.kotlin.sdk.shared.serializeMessage
-import kotlinx.atomicfu.AtomicBoolean
-import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
-import kotlinx.io.Buffer
-import kotlinx.io.Sink
-import kotlinx.io.Source
-import kotlinx.io.buffered
-import kotlinx.io.readByteArray
-import kotlinx.io.writeString
+import kotlinx.io.*
+import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -27,6 +22,7 @@ import kotlin.coroutines.CoroutineContext
  * @param input The input stream where messages are received.
  * @param output The output stream where messages are sent.
  */
+@OptIn(ExperimentalAtomicApi::class)
 public class StdioClientTransport(
     private val input: Source,
     private val output: Sink
@@ -37,7 +33,7 @@ public class StdioClientTransport(
         CoroutineScope(ioCoroutineContext + SupervisorJob())
     }
     private var job: Job? = null
-    private val initialized: AtomicBoolean = atomic(false)
+    private val initialized: AtomicBoolean = AtomicBoolean(false)
     private val sendChannel = Channel<JSONRPCMessage>(Channel.UNLIMITED)
     private val readBuffer = ReadBuffer()
 
@@ -96,7 +92,7 @@ public class StdioClientTransport(
     }
 
     override suspend fun send(message: JSONRPCMessage) {
-        if (!initialized.value) {
+        if (!initialized.load()) {
             error("Transport not started")
         }
 

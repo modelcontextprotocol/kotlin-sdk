@@ -3,14 +3,14 @@
 package io.modelcontextprotocol.kotlin.sdk
 
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
-import kotlinx.atomicfu.AtomicLong
-import kotlinx.atomicfu.atomic
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
-import kotlin.jvm.JvmInline
+import kotlin.concurrent.atomics.AtomicLong
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.concurrent.atomics.incrementAndFetch
 
 public const val LATEST_PROTOCOL_VERSION: String = "2024-11-05"
 
@@ -21,7 +21,8 @@ public val SUPPORTED_PROTOCOL_VERSIONS: Array<String> = arrayOf(
 
 public const val JSONRPC_VERSION: String = "2.0"
 
-private val REQUEST_MESSAGE_ID: AtomicLong = atomic(0L)
+@OptIn(ExperimentalAtomicApi::class)
+private val REQUEST_MESSAGE_ID: AtomicLong = AtomicLong(0L)
 
 /**
  * A progress token, used to associate progress notifications with the original request.
@@ -132,7 +133,7 @@ internal fun Request.toJSON(): JSONRPCRequest {
  */
 internal fun JSONRPCRequest.fromJSON(): Request? {
     val serializer = selectRequestDeserializer(method)
-    val params = params ?: return null
+    val params = params
     return McpJson.decodeFromJsonElement<Request>(serializer, params)
 }
 
@@ -211,9 +212,10 @@ public sealed interface JSONRPCMessage
 /**
  * A request that expects a response.
  */
+@OptIn(ExperimentalAtomicApi::class)
 @Serializable
 public data class JSONRPCRequest(
-    val id: RequestId = RequestId.NumberId(REQUEST_MESSAGE_ID.incrementAndGet()),
+    val id: RequestId = RequestId.NumberId(REQUEST_MESSAGE_ID.incrementAndFetch()),
     val method: String,
     val params: JsonElement = EmptyJsonObject,
     val jsonrpc: String = JSONRPC_VERSION,
@@ -510,6 +512,11 @@ public sealed interface ProgressBase {
      * Total number of items to a process (or total progress required), if known.
      */
     public val total: Double?
+
+    /**
+     * An optional message describing the current progress.
+     */
+    public val message: String?
 }
 
 /* Progress notifications */
@@ -530,6 +537,11 @@ public open class Progress(
      * Total number of items to a process (or total progress required), if known.
      */
     override val total: Double?,
+
+    /**
+     * An optional message describing the current progress.
+     */
+    override val message: String?,
 ) : ProgressBase
 
 /**
@@ -546,6 +558,7 @@ public data class ProgressNotification(
     public val progressToken: ProgressToken,
     @Suppress("PropertyName") val _meta: JsonObject = EmptyJsonObject,
     override val total: Double?,
+    override val message: String?,
 ) : ClientNotification, ServerNotification, ProgressBase {
     override val method: Method = Method.Defined.NotificationsProgress
 }
@@ -884,10 +897,10 @@ public sealed interface PromptMessageContent {
 }
 
 /**
- * Represents prompt message content that is either text or an image.
+ * Represents prompt message content that is either text, image or audio.
  */
-@Serializable(with = PromptMessageContentTextOrImagePolymorphicSerializer::class)
-public sealed interface PromptMessageContentTextOrImage : PromptMessageContent
+@Serializable(with = PromptMessageContentMultimodalPolymorphicSerializer::class)
+public sealed interface PromptMessageContentMultimodal : PromptMessageContent
 
 /**
  * Text provided to or from an LLM.
@@ -898,7 +911,7 @@ public data class TextContent(
      * The text content of the message.
      */
     val text: String? = null,
-) : PromptMessageContentTextOrImage {
+) : PromptMessageContentMultimodal {
     override val type: String = TYPE
 
     public companion object {
@@ -920,7 +933,7 @@ public data class ImageContent(
      * The MIME type of the image. Different providers may support different image types.
      */
     val mimeType: String,
-) : PromptMessageContentTextOrImage {
+) : PromptMessageContentMultimodal {
     override val type: String = TYPE
 
     public companion object {
@@ -929,12 +942,35 @@ public data class ImageContent(
 }
 
 /**
- * An image provided to or from an LLM.
+ * Audio provided to or from an LLM.
+ */
+@Serializable
+public data class AudioContent(
+    /**
+     * The base64-encoded audio data.
+     */
+    val data: String,
+
+    /**
+     * The MIME type of the audio. Different providers may support different audio types.
+     */
+    val mimeType: String,
+) : PromptMessageContentMultimodal {
+    override val type: String = TYPE
+
+    public companion object {
+        public const val TYPE: String = "audio"
+    }
+}
+
+
+/**
+ * Unknown content provided to or from an LLM.
  */
 @Serializable
 public data class UnknownContent(
     override val type: String,
-) : PromptMessageContentTextOrImage
+) : PromptMessageContentMultimodal
 
 /**
  * The contents of a resource, embedded into a prompt or tool call result.
@@ -1204,7 +1240,7 @@ public class ModelPreferences(
 @Serializable
 public data class SamplingMessage(
     val role: Role,
-    val content: PromptMessageContentTextOrImage,
+    val content: PromptMessageContentMultimodal,
 )
 
 /**
@@ -1286,7 +1322,7 @@ public data class CreateMessageResult(
      */
     val stopReason: StopReason? = null,
     val role: Role,
-    val content: PromptMessageContentTextOrImage,
+    val content: PromptMessageContentMultimodal,
     override val _meta: JsonObject = EmptyJsonObject,
 ) : ClientResult
 

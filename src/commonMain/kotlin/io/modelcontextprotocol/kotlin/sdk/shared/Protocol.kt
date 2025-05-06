@@ -260,6 +260,7 @@ public abstract class Protocol(
         LOGGER.trace { "Received progress notification: token=${notification.progressToken}, progress=${notification.progress}/${notification.total}" }
         val progress = notification.progress
         val total = notification.total
+        val message = notification.message
         val progressToken = notification.progressToken
 
         val handler = progressHandlers[progressToken]
@@ -272,7 +273,7 @@ public abstract class Protocol(
             return
         }
 
-        handler.invoke(Progress(progress, total))
+        handler.invoke(Progress(progress, total, message))
     }
 
     private fun onResponse(response: JSONRPCResponse?, error: JSONRPCError?) {

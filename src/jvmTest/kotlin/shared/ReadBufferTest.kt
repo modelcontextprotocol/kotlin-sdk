@@ -42,6 +42,13 @@ class ReadBufferTest {
     }
 
     @Test
+    fun `skip empty line`() {
+        val readBuffer = ReadBuffer()
+        readBuffer.append("\n".toByteArray(StandardCharsets.UTF_8))
+        assertNull(readBuffer.readMessage())
+    }
+
+    @Test
     fun `should be reusable after clearing`() {
         val readBuffer = ReadBuffer()
 
