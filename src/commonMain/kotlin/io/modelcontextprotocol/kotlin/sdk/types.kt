@@ -1046,6 +1046,7 @@ public data class Tool(
     /**
      * A JSON object defining the expected parameters for the tool.
      */
+    @SerialName("input_schema")
     val inputSchema: Input,
 ) {
     @Serializable
@@ -1053,6 +1054,8 @@ public data class Tool(
         val properties: JsonObject = EmptyJsonObject,
         val required: List<String>? = null,
     ) {
+        @OptIn(ExperimentalSerializationApi::class)
+        @EncodeDefault
         val type: String = "object"
     }
 }
