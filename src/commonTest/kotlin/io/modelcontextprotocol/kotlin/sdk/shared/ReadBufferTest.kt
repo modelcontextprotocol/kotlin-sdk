@@ -42,7 +42,7 @@ class ReadBufferTest {
     @Test
     fun `skip empty line`() {
         val readBuffer = ReadBuffer()
-        readBuffer.append("\n".toByteArray(StandardCharsets.UTF_8))
+        readBuffer.append("\n".toByteArray())
         assertNull(readBuffer.readMessage())
     }
 
