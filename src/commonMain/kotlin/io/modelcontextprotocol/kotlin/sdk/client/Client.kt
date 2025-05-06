@@ -1,7 +1,39 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
-import io.modelcontextprotocol.kotlin.sdk.*
+import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
+import io.modelcontextprotocol.kotlin.sdk.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.CallToolResultBase
+import io.modelcontextprotocol.kotlin.sdk.ClientCapabilities
+import io.modelcontextprotocol.kotlin.sdk.CompatibilityCallToolResult
+import io.modelcontextprotocol.kotlin.sdk.CompleteRequest
+import io.modelcontextprotocol.kotlin.sdk.CompleteResult
+import io.modelcontextprotocol.kotlin.sdk.EmptyRequestResult
+import io.modelcontextprotocol.kotlin.sdk.GetPromptRequest
+import io.modelcontextprotocol.kotlin.sdk.GetPromptResult
+import io.modelcontextprotocol.kotlin.sdk.Implementation
+import io.modelcontextprotocol.kotlin.sdk.InitializeRequest
+import io.modelcontextprotocol.kotlin.sdk.InitializeResult
+import io.modelcontextprotocol.kotlin.sdk.InitializedNotification
+import io.modelcontextprotocol.kotlin.sdk.LATEST_PROTOCOL_VERSION
+import io.modelcontextprotocol.kotlin.sdk.ListPromptsRequest
+import io.modelcontextprotocol.kotlin.sdk.ListPromptsResult
+import io.modelcontextprotocol.kotlin.sdk.ListResourceTemplatesRequest
+import io.modelcontextprotocol.kotlin.sdk.ListResourceTemplatesResult
+import io.modelcontextprotocol.kotlin.sdk.ListResourcesRequest
+import io.modelcontextprotocol.kotlin.sdk.ListResourcesResult
+import io.modelcontextprotocol.kotlin.sdk.ListToolsRequest
+import io.modelcontextprotocol.kotlin.sdk.ListToolsResult
+import io.modelcontextprotocol.kotlin.sdk.LoggingLevel
 import io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification.SetLevelRequest
+import io.modelcontextprotocol.kotlin.sdk.Method
+import io.modelcontextprotocol.kotlin.sdk.PingRequest
+import io.modelcontextprotocol.kotlin.sdk.ReadResourceRequest
+import io.modelcontextprotocol.kotlin.sdk.ReadResourceResult
+import io.modelcontextprotocol.kotlin.sdk.RootsListChangedNotification
+import io.modelcontextprotocol.kotlin.sdk.SUPPORTED_PROTOCOL_VERSIONS
+import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.SubscribeRequest
+import io.modelcontextprotocol.kotlin.sdk.UnsubscribeRequest
 import io.modelcontextprotocol.kotlin.sdk.shared.Protocol
 import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
@@ -27,7 +59,7 @@ public class ClientOptions(
  * An MCP client on top of a pluggable transport.
  *
  * The client automatically performs the initialization handshake with the server when [connect] is called.
- * After initialization, [severCapabilities] and [serverVersion] provide details about the connected server.
+ * After initialization, [serverCapabilities] and [serverVersion] provide details about the connected server.
  *
  * You can extend this class with custom request/notification/result types if needed.
  *
@@ -135,9 +167,7 @@ public open class Client(
             Method.Defined.ResourcesUnsubscribe,
                 -> {
                 val resCaps = serverCapabilities?.resources
-                if (resCaps == null) {
-                    throw IllegalStateException("Server does not support resources (required for $method)")
-                }
+                    ?: error("Server does not support resources (required for $method)")
 
                 if (method == Method.Defined.ResourcesSubscribe && resCaps.subscribe != true) {
                     throw IllegalStateException(

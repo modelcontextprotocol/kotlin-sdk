@@ -1,26 +1,25 @@
-package client
+package io.modelcontextprotocol.kotlin.sdk.client
 
-import io.ktor.client.*
-import io.ktor.client.plugins.sse.*
-import io.ktor.server.application.*
-import io.ktor.server.cio.*
-import io.ktor.server.engine.*
-import io.ktor.server.routing.*
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.sse.SSE
+import io.ktor.server.application.install
+import io.ktor.server.cio.CIO
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.routing.post
+import io.ktor.server.routing.routing
 import io.ktor.server.sse.sse
 import io.ktor.util.collections.ConcurrentMap
-import kotlinx.coroutines.test.runTest
-import io.modelcontextprotocol.kotlin.sdk.client.mcpSseTransport
 import io.modelcontextprotocol.kotlin.sdk.server.SseServerTransport
 import io.modelcontextprotocol.kotlin.sdk.server.mcpPostEndpoint
 import io.modelcontextprotocol.kotlin.sdk.server.mcpSseTransport
-import org.junit.jupiter.api.Test
-
-private const val PORT = 8080
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
 
 class SseTransportTest : BaseTransportTest() {
     @Test
     fun `should start then close cleanly`() = runTest {
-        val server = embeddedServer(CIO, port = PORT) {
+        val port = 8080
+        val server = embeddedServer(CIO, port = port) {
             install(io.ktor.server.sse.SSE)
             val transports = ConcurrentMap<String, SseServerTransport>()
             routing {
@@ -32,25 +31,26 @@ class SseTransportTest : BaseTransportTest() {
                     mcpPostEndpoint(transports)
                 }
             }
-        }.start(wait = false)
+        }.startSuspend(wait = false)
 
         val client = HttpClient {
             install(SSE)
         }.mcpSseTransport {
             url {
                 host = "localhost"
-                port = PORT
+                this.port = port
             }
         }
 
         testClientOpenClose(client)
 
-        server.stop()
+        server.stopSuspend()
     }
 
     @Test
     fun `should read messages`() = runTest {
-        val server = embeddedServer(CIO, port = PORT) {
+        val port = 3003
+        val server = embeddedServer(CIO, port = port) {
             install(io.ktor.server.sse.SSE)
             val transports = ConcurrentMap<String, SseServerTransport>()
             routing {
@@ -68,18 +68,18 @@ class SseTransportTest : BaseTransportTest() {
                     mcpPostEndpoint(transports)
                 }
             }
-        }.start(wait = false)
+        }.startSuspend(wait = false)
 
         val client = HttpClient {
             install(SSE)
         }.mcpSseTransport {
             url {
                 host = "localhost"
-                port = PORT
+                this.port = port
             }
         }
 
         testClientRead(client)
-        server.stop()
+        server.stopSuspend()
     }
 }

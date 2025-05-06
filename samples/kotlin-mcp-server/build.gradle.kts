@@ -1,35 +1,53 @@
+@file:OptIn(ExperimentalWasmDsl::class, ExperimentalKotlinGradlePluginApi::class)
+
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+
 plugins {
-    kotlin("jvm") version "2.1.0"
-    kotlin("plugin.serialization") version "2.1.0"
-    application
+    kotlin("multiplatform") version "2.1.20"
+    kotlin("plugin.serialization") version "2.1.20"
 }
-
-application {
-    mainClass.set("MainKt")
-}
-
 
 group = "org.example"
 version = "0.1.0"
 
-dependencies {
-    implementation("io.modelcontextprotocol:kotlin-sdk:0.5.0")
-    implementation("org.slf4j:slf4j-nop:2.0.9")
+repositories {
+    mavenCentral()
 }
 
-tasks.test {
-    useJUnitPlatform()
-}
+val jvmMainClass = "Main_jvmKt"
+
 kotlin {
-    jvmToolchain(21)
-}
+    jvmToolchain(17)
+    jvm {
+        binaries {
+            executable {
+                mainClass.set(jvmMainClass)
+            }
+        }
+        val jvmJar by tasks.getting(org.gradle.jvm.tasks.Jar::class) {
+            duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+            doFirst {
+                manifest {
+                    attributes["Main-Class"] = jvmMainClass
+                }
 
-tasks.jar {
-    manifest {
-        attributes["Main-Class"] = "MainKt"
+                from(configurations["jvmRuntimeClasspath"].map { if (it.isDirectory) it else zipTree(it) })
+            }
+        }
+    }
+    wasmJs {
+        nodejs()
+        binaries.executable()
     }
 
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-
-    from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
+    sourceSets {
+        commonMain.dependencies {
+            implementation("io.modelcontextprotocol:kotlin-sdk:0.5.0")
+        }
+        jvmMain.dependencies {
+            implementation("org.slf4j:slf4j-nop:2.0.9")
+        }
+        wasmJsMain.dependencies {}
+    }
 }

@@ -89,7 +89,7 @@ class StdioServerTransportTest {
 
             val message = PingRequest().toJSON()
 
-            // Push message before the server started
+            // Push a message before the server started
             val serialized = serializeMessage(message)
             inputWriter.write(serialized)
             inputWriter.flush()

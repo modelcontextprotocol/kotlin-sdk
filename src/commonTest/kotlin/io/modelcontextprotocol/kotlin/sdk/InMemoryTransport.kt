@@ -1,4 +1,5 @@
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
+package io.modelcontextprotocol.kotlin.sdk
+
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 
 /**

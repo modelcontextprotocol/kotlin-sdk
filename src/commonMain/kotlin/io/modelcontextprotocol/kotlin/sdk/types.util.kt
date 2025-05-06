@@ -10,7 +10,16 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.json.*
+import kotlinx.serialization.json.JsonContentPolymorphicSerializer
+import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonEncoder
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
+import kotlinx.serialization.json.longOrNull
 
 private val logger = KotlinLogging.logger {}
 
@@ -285,6 +294,7 @@ public class RequestIdSerializer : KSerializer<RequestId> {
                 element.longOrNull != null -> RequestId.NumberId(element.long)
                 else -> error("Invalid RequestId type")
             }
+
             else -> error("Invalid RequestId format")
         }
     }

@@ -20,6 +20,7 @@ out/
 
 ### Kotlin ###
 .kotlin
+yarn.lock
 
 ### Eclipse ###
 .apt_generated

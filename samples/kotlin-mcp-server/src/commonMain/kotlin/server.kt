@@ -1,50 +1,31 @@
-import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.server.cio.*
-import io.ktor.server.engine.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
-import io.ktor.server.sse.*
-import io.ktor.util.collections.*
-import io.modelcontextprotocol.kotlin.sdk.*
+package shared
+
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.install
+import io.ktor.server.cio.CIO
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.response.respond
+import io.ktor.server.routing.post
+import io.ktor.server.routing.routing
+import io.ktor.server.sse.SSE
+import io.ktor.server.sse.sse
+import io.ktor.util.collections.ConcurrentMap
+import io.modelcontextprotocol.kotlin.sdk.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.GetPromptResult
 import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.PromptArgument
 import io.modelcontextprotocol.kotlin.sdk.PromptMessage
+import io.modelcontextprotocol.kotlin.sdk.ReadResourceResult
 import io.modelcontextprotocol.kotlin.sdk.Role
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.TextContent
+import io.modelcontextprotocol.kotlin.sdk.TextResourceContents
 import io.modelcontextprotocol.kotlin.sdk.Tool
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.SseServerTransport
-import io.modelcontextprotocol.kotlin.sdk.server.StdioServerTransport
 import io.modelcontextprotocol.kotlin.sdk.server.mcp
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.runBlocking
-import kotlinx.io.asSink
-import kotlinx.io.asSource
-import kotlinx.io.buffered
-
-/**
- * Start sse-server mcp on port 3001.
- *
- * @param args
- * - "--stdio": Runs an MCP server using standard input/output.
- * - "--sse-server-ktor <port>": Runs an SSE MCP server using Ktor plugin (default if no argument is provided).
- * - "--sse-server <port>": Runs an SSE MCP server with a plain configuration.
- */
-fun main(args: Array<String>) {
-    val command = args.firstOrNull() ?: "--sse-server-ktor"
-    val port = args.getOrNull(1)?.toIntOrNull() ?: 3001
-    when (command) {
-        "--stdio" -> runMcpServerUsingStdio()
-        "--sse-server-ktor" -> runSseMcpServerUsingKtorPlugin(port)
-        "--sse-server" -> runSseMcpServerWithPlainConfiguration(port)
-        else -> {
-            System.err.println("Unknown command: $command")
-        }
-    }
-}
+import kotlin.collections.set
 
 fun configureServer(): Server {
     val server = Server(
@@ -111,27 +92,7 @@ fun configureServer(): Server {
     return server
 }
 
-fun runMcpServerUsingStdio() {
-    // Note: The server will handle listing prompts, tools, and resources automatically.
-    // The handleListResourceTemplates will return empty as defined in the Server code.
-    val server = configureServer()
-    val transport = StdioServerTransport(
-        inputStream = System.`in`.asSource().buffered(),
-        outputStream = System.out.asSink().buffered()
-    )
-
-    runBlocking {
-        server.connect(transport)
-        val done = Job()
-        server.onClose {
-            done.complete()
-        }
-        done.join()
-        println("Server closed")
-    }
-}
-
-fun runSseMcpServerWithPlainConfiguration(port: Int): Unit = runBlocking {
+suspend fun runSseMcpServerWithPlainConfiguration(port: Int): Unit {
     val servers = ConcurrentMap<String, Server>()
     println("Starting sse server on port $port. ")
     println("Use inspector to connect to the http://localhost:$port/sse")
@@ -167,7 +128,7 @@ fun runSseMcpServerWithPlainConfiguration(port: Int): Unit = runBlocking {
                 transport.handlePostMessage(call)
             }
         }
-    }.start(wait = true)
+    }.startSuspend(wait = true)
 }
 
 /**
@@ -178,7 +139,7 @@ fun runSseMcpServerWithPlainConfiguration(port: Int): Unit = runBlocking {
  * @param port The port number on which the SSE MCP server will listen for client connections.
  * @return Unit This method does not return a value.
  */
-fun runSseMcpServerUsingKtorPlugin(port: Int): Unit = runBlocking {
+suspend fun runSseMcpServerUsingKtorPlugin(port: Int): Unit {
     println("Starting sse server on port $port")
     println("Use inspector to connect to the http://localhost:$port/sse")
 
@@ -186,5 +147,5 @@ fun runSseMcpServerUsingKtorPlugin(port: Int): Unit = runBlocking {
         mcp {
             return@mcp configureServer()
         }
-    }.start(wait = true)
+    }.startSuspend(wait = true)
 }

@@ -1,9 +1,14 @@
-@file:OptIn(ExperimentalKotlinGradlePluginApi::class)
+@file:OptIn(ExperimentalKotlinGradlePluginApi::class, ExperimentalWasmDsl::class)
 
 import org.jetbrains.dokka.gradle.engine.parameters.VisibilityModifier
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.ExplicitApiMode
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinAndroidTarget
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinMetadataTarget
+import org.jetbrains.kotlin.gradle.targets.jvm.KotlinJvmTarget
 import org.jreleaser.model.Active
 
 plugins {
@@ -27,9 +32,11 @@ publishing {
     val javadocJar = configureEmptyJavadocArtifact()
 
     publications.withType(MavenPublication::class).all {
+        if (name.contains("jvm", ignoreCase = true)) {
+            artifact(javadocJar)
+        }
         pom.configureMavenCentralMetadata()
         signPublicationIfKeyPresent()
-        artifact(javadocJar)
     }
 
     repositories {
@@ -53,10 +60,28 @@ jreleaser {
             active.set(Active.ALWAYS)
             mavenCentral {
                 val ossrh by creating {
-                    applyMavenCentralRules = true
                     active.set(Active.ALWAYS)
                     url.set("https://central.sonatype.com/api/v1/publisher")
+                    applyMavenCentralRules = false
+                    maxRetries = 240
                     stagingRepository(layout.buildDirectory.dir("staging-deploy").get().asFile.path)
+                    // workaround: https://github.com/jreleaser/jreleaser/issues/1784
+                    kotlin.targets.forEach { target ->
+                        if (target !is KotlinJvmTarget && target !is KotlinAndroidTarget && target !is KotlinMetadataTarget) {
+                            val klibArtifactId = if (target.platformType == KotlinPlatformType.wasm) {
+                                "${name}-wasm-${target.name.lowercase().substringAfter("wasm")}"
+                            } else {
+                                "${name}-${target.name.lowercase()}"
+                            }
+                            artifactOverride {
+                                artifactId = klibArtifactId
+                                jar = false
+                                verifyPom = false
+                                sourceJar = false
+                                javadocJar = false
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -194,6 +219,14 @@ kotlin {
         }
     }
 
+    iosArm64()
+    iosX64()
+    iosSimulatorArm64()
+
+    wasmJs {
+        nodejs()
+    }
+
     explicitApi = ExplicitApiMode.Strict
 
     jvmToolchain(21)
@@ -217,7 +250,6 @@ kotlin {
                 implementation(libs.kotlin.test)
                 implementation(libs.ktor.server.test.host)
                 implementation(libs.kotlinx.coroutines.test)
-                implementation(libs.kotlinx.coroutines.debug)
                 implementation(libs.kotest.assertions.json)
             }
         }

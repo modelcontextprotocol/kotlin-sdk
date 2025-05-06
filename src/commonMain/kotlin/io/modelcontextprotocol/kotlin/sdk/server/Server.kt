@@ -1,7 +1,45 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.modelcontextprotocol.kotlin.sdk.*
+import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
+import io.modelcontextprotocol.kotlin.sdk.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.ClientCapabilities
+import io.modelcontextprotocol.kotlin.sdk.CreateMessageRequest
+import io.modelcontextprotocol.kotlin.sdk.CreateMessageResult
+import io.modelcontextprotocol.kotlin.sdk.EmptyJsonObject
+import io.modelcontextprotocol.kotlin.sdk.EmptyRequestResult
+import io.modelcontextprotocol.kotlin.sdk.GetPromptRequest
+import io.modelcontextprotocol.kotlin.sdk.GetPromptResult
+import io.modelcontextprotocol.kotlin.sdk.Implementation
+import io.modelcontextprotocol.kotlin.sdk.InitializeRequest
+import io.modelcontextprotocol.kotlin.sdk.InitializeResult
+import io.modelcontextprotocol.kotlin.sdk.InitializedNotification
+import io.modelcontextprotocol.kotlin.sdk.LATEST_PROTOCOL_VERSION
+import io.modelcontextprotocol.kotlin.sdk.ListPromptsRequest
+import io.modelcontextprotocol.kotlin.sdk.ListPromptsResult
+import io.modelcontextprotocol.kotlin.sdk.ListResourceTemplatesRequest
+import io.modelcontextprotocol.kotlin.sdk.ListResourceTemplatesResult
+import io.modelcontextprotocol.kotlin.sdk.ListResourcesRequest
+import io.modelcontextprotocol.kotlin.sdk.ListResourcesResult
+import io.modelcontextprotocol.kotlin.sdk.ListRootsRequest
+import io.modelcontextprotocol.kotlin.sdk.ListRootsResult
+import io.modelcontextprotocol.kotlin.sdk.ListToolsRequest
+import io.modelcontextprotocol.kotlin.sdk.ListToolsResult
+import io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification
+import io.modelcontextprotocol.kotlin.sdk.Method
+import io.modelcontextprotocol.kotlin.sdk.PingRequest
+import io.modelcontextprotocol.kotlin.sdk.Prompt
+import io.modelcontextprotocol.kotlin.sdk.PromptArgument
+import io.modelcontextprotocol.kotlin.sdk.PromptListChangedNotification
+import io.modelcontextprotocol.kotlin.sdk.ReadResourceRequest
+import io.modelcontextprotocol.kotlin.sdk.ReadResourceResult
+import io.modelcontextprotocol.kotlin.sdk.Resource
+import io.modelcontextprotocol.kotlin.sdk.ResourceListChangedNotification
+import io.modelcontextprotocol.kotlin.sdk.ResourceUpdatedNotification
+import io.modelcontextprotocol.kotlin.sdk.SUPPORTED_PROTOCOL_VERSIONS
+import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.Tool
+import io.modelcontextprotocol.kotlin.sdk.ToolListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.shared.Protocol
 import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
@@ -105,7 +143,7 @@ public open class Server(
     /**
      * Registers a callback to be invoked when the server has completed initialization.
      */
-    public fun onInitalized(block: () -> Unit) {
+    public fun onInitialized(block: () -> Unit) {
         val old = _onInitialized
         _onInitialized = {
             old()
@@ -133,7 +171,7 @@ public open class Server(
     }
 
     /**
-     * Registers a single tool. This tool can then be called by the client.
+     * Registers a single tool. The client can then call this tool.
      *
      * @param name The name of the tool.
      * @param description A human-readable description of what the tool does.
@@ -228,7 +266,7 @@ public open class Server(
     }
 
     /**
-     * Registers a single prompt. The prompt can then be retrieved by the client.
+     * Registers a single prompt. The client can then retrieve the prompt.
      *
      * @param prompt A [Prompt] object describing the prompt.
      * @param promptProvider A suspend function that returns the prompt content when requested by the client.
@@ -335,7 +373,7 @@ public open class Server(
     }
 
     /**
-     * Registers a single resource. The resource content can then be read by the client.
+     * Registers a single resource. The client can then read the resource content.
      *
      * @param uri The URI of the resource.
      * @param name A human-readable name for the resource.
