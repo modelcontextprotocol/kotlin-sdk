@@ -105,7 +105,7 @@ public open class Server(
     /**
      * Registers a callback to be invoked when the server has completed initialization.
      */
-    public fun onInitalized(block: () -> Unit) {
+    public fun onInitialized(block: () -> Unit) {
         val old = _onInitialized
         _onInitialized = {
             old()
@@ -539,12 +539,12 @@ public open class Server(
         )
     }
 
-    private suspend fun handleListTools(): ListToolsResult {
+    public suspend fun handleListTools(): ListToolsResult {
         val toolList = tools.values.map { it.tool }
         return ListToolsResult(tools = toolList, nextCursor = null)
     }
 
-    private suspend fun handleCallTool(request: CallToolRequest): CallToolResult {
+    public suspend fun handleCallTool(request: CallToolRequest): CallToolResult {
         logger.debug { "Handling tool call request for tool: ${request.name}" }
         val tool = tools[request.name]
             ?: run {

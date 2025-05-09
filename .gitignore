@@ -49,3 +49,4 @@ bin/
 ### Node.js ###
 node_modules
 dist
+.idea/
