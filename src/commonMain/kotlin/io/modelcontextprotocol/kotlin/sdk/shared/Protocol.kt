@@ -25,8 +25,7 @@ internal const val IMPLEMENTATION_NAME = "mcp-ktor"
 public typealias ProgressCallback = (Progress) -> Unit
 
 @OptIn(ExperimentalSerializationApi::class)
-@PublishedApi
-internal val McpJson: Json by lazy {
+public val McpJson: Json by lazy {
     Json {
         ignoreUnknownKeys = true
         encodeDefaults = true
