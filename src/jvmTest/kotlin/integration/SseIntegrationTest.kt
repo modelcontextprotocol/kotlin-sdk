@@ -23,7 +23,8 @@ class SseIntegrationTest {
         runBlocking {
             val serverEngine = initServer()
             try {
-                assertDoesNotThrow { initClient() }
+                assertDoesNotThrow {  initClient() }
+
             } finally {
                 // Make sure to stop the server
                 serverEngine.stop(1000, 2000)
