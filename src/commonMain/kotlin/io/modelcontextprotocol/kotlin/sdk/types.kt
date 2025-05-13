@@ -1054,6 +1054,8 @@ public data class Tool(
         val properties: JsonObject = EmptyJsonObject,
         val required: List<String>? = null,
     ) {
+        @OptIn(ExperimentalSerializationApi::class)
+        @EncodeDefault
         val type: String = "object"
     }
 }
