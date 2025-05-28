@@ -7,7 +7,7 @@ on:
 
 jobs:
   validate-pr:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     name: Validate PR
     steps:
       - uses: actions/checkout@v4

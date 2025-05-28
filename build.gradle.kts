@@ -223,6 +223,16 @@ kotlin {
     iosX64()
     iosSimulatorArm64()
 
+    js(IR) {
+        nodejs {
+            testTask {
+                useMocha {
+                    timeout = "30s"
+                }
+            }
+        }
+    }
+
     wasmJs {
         nodejs()
     }
