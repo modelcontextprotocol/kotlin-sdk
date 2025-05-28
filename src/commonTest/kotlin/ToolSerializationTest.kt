@@ -3,6 +3,7 @@ package io.modelcontextprotocol.kotlin.sdk
 import io.kotest.assertions.json.shouldEqualJson
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlin.test.Test
@@ -16,7 +17,7 @@ class ToolSerializationTest {
         {
           "name": "get_weather",
           "description": "Get the current weather in a given location",
-          "input_schema": {
+          "inputSchema": {
             "type": "object",
             "properties": {
               "location": {
@@ -54,4 +55,11 @@ class ToolSerializationTest {
         assertEquals(expected = getWeatherTool, actual = tool)
     }
 
+    @Test
+    fun `should always serialize default value`() {
+        val json = Json(from = McpJson) {
+            encodeDefaults = false
+        }
+        json.encodeToString(getWeatherTool) shouldEqualJson getWeatherToolJson
+    }
 }

@@ -5,7 +5,6 @@ package io.modelcontextprotocol.kotlin.sdk
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -1046,7 +1045,6 @@ public data class Tool(
     /**
      * A JSON object defining the expected parameters for the tool.
      */
-    @SerialName("input_schema")
     val inputSchema: Input,
 ) {
     @Serializable
@@ -1054,6 +1052,8 @@ public data class Tool(
         val properties: JsonObject = EmptyJsonObject,
         val required: List<String>? = null,
     ) {
+        @OptIn(ExperimentalSerializationApi::class)
+        @EncodeDefault
         val type: String = "object"
     }
 }
