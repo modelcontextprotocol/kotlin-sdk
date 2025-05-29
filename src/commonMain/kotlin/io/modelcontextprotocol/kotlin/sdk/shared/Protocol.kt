@@ -414,7 +414,7 @@ public abstract class Protocol(
         try {
             withTimeout(timeout) {
                 LOGGER.trace { "Sending request message with id: $messageId" }
-                this@Protocol.transport?.send(message)
+                transport.send(message)
             }
             return result.await()
         } catch (cause: TimeoutCancellationException) {
