@@ -24,6 +24,11 @@ import kotlin.uuid.Uuid
  * Server transport for StreamableHttp: this allows server to respond to GET, POST and DELETE requests. Server can optionally make use of Server-Sent Events (SSE) to stream multiple server messages.
  *
  * Creates a new StreamableHttp server transport.
+ * 
+ * @param isStateful If true, the server will generate and maintain session IDs for each client connection.
+ *                   Session IDs are included in response headers and must be provided by clients in subsequent requests.
+ * @param enableJSONResponse If true, the server will return JSON responses instead of starting an SSE stream.
+ *                          This can be useful for simple request/response scenarios without streaming.
  */
 @OptIn(ExperimentalAtomicApi::class)
 public class StreamableHttpServerTransport(
@@ -38,6 +43,11 @@ public class StreamableHttpServerTransport(
     private val started: AtomicBoolean = AtomicBoolean(false)
     private val initialized: AtomicBoolean = AtomicBoolean(false)
 
+    /**
+     * The current session ID for this transport instance.
+     * This is set during initialization when isStateful is true.
+     * Clients must include this ID in the Mcp-Session-Id header for all subsequent requests.
+     */
     public var sessionId: String? = null
         private set
 
@@ -84,7 +94,7 @@ public class StreamableHttpServerTransport(
         if (!allResponsesReady) return
 
         if (enableJSONResponse) {
-            correspondingCall.response.headers.append(ContentType.toString(), ContentType.Application.Json.toString())
+            correspondingCall.response.headers.append(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             correspondingCall.response.status(HttpStatusCode.OK)
             if (sessionId != null) {
                 correspondingCall.response.header(MCP_SESSION_ID, sessionId!!)
@@ -115,10 +125,23 @@ public class StreamableHttpServerTransport(
         streamMapping.clear()
         requestToStreamMapping.clear()
         requestResponseMapping.clear()
-        // TODO Check if we need to clear the callMapping or if call timeout after awhile
         _onClose.invoke()
     }
 
+    /**
+     * Handles HTTP POST requests for the StreamableHttp transport.
+     * This method processes JSON-RPC messages sent by clients and manages SSE sessions.
+     * 
+     * @param call The Ktor ApplicationCall representing the incoming HTTP request
+     * @param session The ServerSSESession for streaming responses back to the client
+     * 
+     * The method performs the following:
+     * - Validates required headers (Accept and Content-Type)
+     * - Parses JSON-RPC messages from the request body
+     * - Handles initialization requests and session management
+     * - Sets up SSE streams for request/response communication
+     * - Sends appropriate error responses for invalid requests
+     */
     @OptIn(ExperimentalUuidApi::class)
     public suspend fun handlePostRequest(call: ApplicationCall, session: ServerSSESession) {
         try {
@@ -175,7 +198,7 @@ public class StreamableHttpServerTransport(
                 call.respondNullable(HttpStatusCode.Accepted)
             } else {
                 if (!enableJSONResponse) {
-                    call.response.headers.append(ContentType.toString(), ContentType.Text.EventStream.toString())
+                    call.response.headers.append(HttpHeaders.ContentType, ContentType.Text.EventStream.toString())
 
                     if (sessionId != null) {
                         call.response.header(MCP_SESSION_ID, sessionId!!)
@@ -208,9 +231,24 @@ public class StreamableHttpServerTransport(
         }
     }
 
+    /**
+     * Handles HTTP GET requests for establishing standalone SSE streams.
+     * This method sets up a persistent SSE connection for server-initiated messages.
+     * 
+     * @param call The Ktor ApplicationCall representing the incoming HTTP request
+     * @param session The ServerSSESession for streaming messages to the client
+     * 
+     * The method:
+     * - Validates the Accept header includes text/event-stream
+     * - Validates session if stateful mode is enabled
+     * - Ensures only one standalone SSE stream per session
+     * - Sets up the stream for server-initiated notifications
+     */
     public suspend fun handleGetRequest(call: ApplicationCall, session: ServerSSESession) {
-        val acceptHeader = call.request.headers["Accept"]?.split(",") ?: listOf()
-        if (!acceptHeader.contains("text/event-stream")) {
+        val acceptHeader = call.request.headers["Accept"]?.split(",")?.map { it.trim() } ?: listOf()
+        val acceptsEventStream = acceptHeader.any { it == "text/event-stream" || it.startsWith("text/event-stream;") }
+        
+        if (!acceptsEventStream) {
             call.response.status(HttpStatusCode.NotAcceptable)
             call.respond(
                 JSONRPCResponse(
@@ -221,6 +259,7 @@ public class StreamableHttpServerTransport(
                     )
                 )
             )
+            return
         }
 
         if (!validateSession(call)) {
@@ -250,6 +289,18 @@ public class StreamableHttpServerTransport(
         streamMapping[standalone] = session
     }
 
+    /**
+     * Handles HTTP DELETE requests to terminate the transport session.
+     * This method allows clients to gracefully close their connection and clean up server resources.
+     * 
+     * @param call The Ktor ApplicationCall representing the incoming HTTP request
+     * 
+     * The method:
+     * - Validates the session if stateful mode is enabled
+     * - Closes all active SSE streams
+     * - Clears all internal mappings and resources
+     * - Responds with 200 OK on successful termination
+     */
     public suspend fun handleDeleteRequest(call: ApplicationCall) {
         if (!validateSession(call)) {
             return
@@ -280,9 +331,12 @@ public class StreamableHttpServerTransport(
     }
 
     private suspend fun validateHeaders(call: ApplicationCall): Boolean {
-        val acceptHeader = call.request.headers["Accept"]?.split(",") ?: listOf()
+        val acceptHeader = call.request.headers["Accept"]?.split(",")?.map { it.trim() } ?: listOf()
 
-        if (!acceptHeader.contains("text/event-stream") || !acceptHeader.contains("application/json")) {
+        val acceptsEventStream = acceptHeader.any { it == "text/event-stream" || it.startsWith("text/event-stream;") }
+        val acceptsJson = acceptHeader.any { it == "application/json" || it.startsWith("application/json;") }
+        
+        if (!acceptsEventStream || !acceptsJson) {
             call.response.status(HttpStatusCode.NotAcceptable)
             call.respond(
                 JSONRPCResponse(
@@ -328,7 +382,7 @@ public class StreamableHttpServerTransport(
                         id = null,
                         error = JSONRPCError(
                             code = ErrorCode.Defined.InvalidRequest,
-                            message = "Invalid Request: Server already initialized"
+                            message = "Invalid Request: Body must be a JSON object or array"
                         )
                     )
                 )
