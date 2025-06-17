@@ -1,12 +1,12 @@
 package client
 
+import io.mockk.coEvery
+import io.mockk.spyk
 import io.modelcontextprotocol.kotlin.sdk.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.CreateMessageRequest
 import io.modelcontextprotocol.kotlin.sdk.CreateMessageResult
 import io.modelcontextprotocol.kotlin.sdk.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.Implementation
-import io.mockk.coEvery
-import io.mockk.spyk
 import io.modelcontextprotocol.kotlin.sdk.InMemoryTransport
 import io.modelcontextprotocol.kotlin.sdk.InitializeRequest
 import io.modelcontextprotocol.kotlin.sdk.InitializeResult
@@ -23,10 +23,17 @@ import io.modelcontextprotocol.kotlin.sdk.LoggingLevel
 import io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification
 import io.modelcontextprotocol.kotlin.sdk.Method
 import io.modelcontextprotocol.kotlin.sdk.Role
+import io.modelcontextprotocol.kotlin.sdk.Root
+import io.modelcontextprotocol.kotlin.sdk.RootsListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.SUPPORTED_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.Tool
+import io.modelcontextprotocol.kotlin.sdk.client.Client
+import io.modelcontextprotocol.kotlin.sdk.client.ClientOptions
+import io.modelcontextprotocol.kotlin.sdk.server.Server
+import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
+import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
@@ -35,13 +42,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import io.modelcontextprotocol.kotlin.sdk.client.Client
-import io.modelcontextprotocol.kotlin.sdk.client.ClientOptions
 import org.junit.jupiter.api.Test
-import io.modelcontextprotocol.kotlin.sdk.server.Server
-import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
-import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import org.junit.jupiter.api.assertInstanceOf
+import org.junit.jupiter.api.assertThrows
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -628,4 +631,168 @@ class ClientTest {
         assertEquals(null, receivedAsResponse.error)
     }
 
+    @Test
+    fun `listRoots returns list of roots`() = runTest {
+        val client = Client(
+            Implementation(name = "test client", version = "1.0"),
+            ClientOptions(
+                capabilities = ClientCapabilities(
+                    roots = ClientCapabilities.Roots(null)
+                )
+            )
+        )
+
+        val clientRoots = listOf(
+            Root(uri = "file:///test-root", name = "testRoot")
+        )
+
+        client.addRoots(clientRoots)
+
+        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
+
+        val server = Server(
+            serverInfo = Implementation(name = "test server", version = "1.0"),
+            options = ServerOptions(
+                capabilities = ServerCapabilities()
+            )
+        )
+
+        listOf(
+            launch { client.connect(clientTransport) },
+            launch { server.connect(serverTransport) }
+        ).joinAll()
+
+        val clientCapabilities = server.clientCapabilities
+        assertEquals(ClientCapabilities.Roots(null), clientCapabilities?.roots)
+
+        val listRootsResult = server.listRoots()
+
+        assertEquals(listRootsResult.roots, clientRoots)
+    }
+
+    @Test
+    fun `addRoot should throw when roots capability is not supported`() = runTest {
+        val client = Client(
+            Implementation(name = "test client", version = "1.0"),
+            ClientOptions(
+                capabilities = ClientCapabilities()
+            )
+        )
+
+        // Verify that adding a root throws an exception
+        val exception = assertThrows<IllegalStateException> {
+            client.addRoot(uri = "file:///test-root1", name = "testRoot1")
+        }
+        assertEquals("Client does not support roots capability.", exception.message)
+    }
+
+    @Test
+    fun `removeRoot should throw when roots capability is not supported`() = runTest {
+        val client = Client(
+            Implementation(name = "test client", version = "1.0"),
+            ClientOptions(
+                capabilities = ClientCapabilities()
+            )
+        )
+
+        // Verify that removing a root throws an exception
+        val exception = assertThrows<IllegalStateException> {
+            client.removeRoot(uri = "file:///test-root1")
+        }
+        assertEquals("Client does not support roots capability.", exception.message)
+    }
+
+    @Test
+    fun `removeRoot should remove a root`() = runTest {
+        val client = Client(
+            Implementation(name = "test client", version = "1.0"),
+            ClientOptions(
+                capabilities = ClientCapabilities(
+                    roots = ClientCapabilities.Roots(null)
+                )
+            )
+        )
+
+        // Add some roots
+        client.addRoots(
+            listOf(
+                Root(uri = "file:///test-root1", name = "testRoot1"),
+                Root(uri = "file:///test-root2", name = "testRoot2"),
+            )
+        )
+
+        // Remove a root
+        val result = client.removeRoot("file:///test-root1")
+
+        // Verify the root was removed
+        assertTrue(result, "Root should be removed successfully")
+    }
+
+    @Test
+    fun `removeRoots should remove multiple roots`() = runTest {
+        val client = Client(
+            Implementation(name = "test client", version = "1.0"),
+            ClientOptions(
+                capabilities = ClientCapabilities(
+                    roots = ClientCapabilities.Roots(null)
+                )
+            )
+        )
+
+        // Add some roots
+        client.addRoots(
+            listOf(
+                Root(uri = "file:///test-root1", name = "testRoot1"),
+                Root(uri = "file:///test-root2", name = "testRoot2"),
+            )
+        )
+
+        // Remove multiple roots
+        val result = client.removeRoots(
+            listOf("file:///test-root1", "file:///test-root2")
+        )
+
+        // Verify the root was removed
+        assertEquals(2, result, "Both roots should be removed")
+    }
+
+    @Test
+    fun `sendRootsListChanged should notify server`() = runTest {
+        val client = Client(
+            Implementation(name = "test client", version = "1.0"),
+            ClientOptions(
+                capabilities = ClientCapabilities(
+                    roots = ClientCapabilities.Roots(listChanged = true)
+                )
+            )
+        )
+
+        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
+
+        val server = Server(
+            serverInfo = Implementation(name = "test server", version = "1.0"),
+            options = ServerOptions(
+                capabilities = ServerCapabilities()
+            )
+        )
+
+        // Track notifications
+        var rootListChangedNotificationReceived = false
+        server.setNotificationHandler<RootsListChangedNotification>(Method.Defined.NotificationsRootsListChanged) {
+            rootListChangedNotificationReceived = true
+            CompletableDeferred(Unit)
+        }
+
+        listOf(
+            launch { client.connect(clientTransport) },
+            launch { server.connect(serverTransport) }
+        ).joinAll()
+
+        client.sendRootsListChanged()
+
+        assertTrue(
+            rootListChangedNotificationReceived,
+            "Notification should be sent when sendRootsListChanged is called"
+        )
+    }
 }
