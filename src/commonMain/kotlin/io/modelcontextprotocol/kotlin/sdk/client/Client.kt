@@ -1,5 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
 import io.modelcontextprotocol.kotlin.sdk.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.CallToolResultBase
@@ -21,6 +22,7 @@ import io.modelcontextprotocol.kotlin.sdk.ListResourceTemplatesRequest
 import io.modelcontextprotocol.kotlin.sdk.ListResourceTemplatesResult
 import io.modelcontextprotocol.kotlin.sdk.ListResourcesRequest
 import io.modelcontextprotocol.kotlin.sdk.ListResourcesResult
+import io.modelcontextprotocol.kotlin.sdk.ListRootsResult
 import io.modelcontextprotocol.kotlin.sdk.ListToolsRequest
 import io.modelcontextprotocol.kotlin.sdk.ListToolsResult
 import io.modelcontextprotocol.kotlin.sdk.LoggingLevel
@@ -29,6 +31,7 @@ import io.modelcontextprotocol.kotlin.sdk.Method
 import io.modelcontextprotocol.kotlin.sdk.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.ReadResourceRequest
 import io.modelcontextprotocol.kotlin.sdk.ReadResourceResult
+import io.modelcontextprotocol.kotlin.sdk.Root
 import io.modelcontextprotocol.kotlin.sdk.RootsListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.SUPPORTED_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
@@ -43,6 +46,8 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.coroutines.cancellation.CancellationException
+
+private val logger = KotlinLogging.logger {}
 
 /**
  * Options for configuring the MCP client.
@@ -88,6 +93,19 @@ public open class Client(
         private set
 
     private val capabilities: ClientCapabilities = options.capabilities
+
+    private val roots = mutableMapOf<String, Root>()
+
+    init {
+        logger.debug { "Initializing MCP client with capabilities: $capabilities" }
+
+        // Internal handlers for roots
+        if (capabilities.roots != null) {
+            setRequestHandler<ListToolsRequest>(Method.Defined.RootsList) { _, _ ->
+                handleListRoots()
+            }
+        }
+    }
 
     protected fun assertCapability(capability: String, method: String) {
         val caps = serverCapabilities
@@ -450,6 +468,97 @@ public open class Client(
     }
 
     /**
+     * Registers a single root.
+     *
+     * @param uri The URI of the root.
+     * @param name A human-readable name for the root.
+     * @throws IllegalStateException If the client does not support roots.
+     */
+    public fun addRoot(
+        uri: String,
+        name: String,
+    ) {
+        if (capabilities.roots == null) {
+            logger.error { "Failed to add root '$name': Client does not support roots capability" }
+            throw IllegalStateException("Client does not support roots capability.")
+        }
+        logger.info { "Adding root: $name ($uri)" }
+        roots[uri] = Root(uri, name)
+    }
+
+    /**
+     * Registers multiple roots at once.
+     *
+     * @param rootsToAdd A list of [Root] objects to register.
+     * @throws IllegalStateException If the client does not support roots.
+     */
+    public fun addRoots(rootsToAdd: List<Root>) {
+        if (capabilities.roots == null) {
+            logger.error { "Failed to add roots: Client does not support roots capability" }
+            throw IllegalStateException("Client does not support roots capability.")
+        }
+        logger.info { "Adding ${rootsToAdd.size} roots" }
+        for (r in rootsToAdd) {
+            logger.info { "Adding root: ${r.name} (${r.uri})" }
+            roots[r.uri] = r
+        }
+    }
+
+    /**
+     * Removes a single root by URI.
+     *
+     * @param uri The URI of the root to remove.
+     * @return True if the root was removed, false if it wasn't found.
+     * @throws IllegalStateException If the client does not support roots.
+     */
+    public fun removeRoot(uri: String): Boolean {
+        if (capabilities.roots == null) {
+            logger.error { "Failed to remove root '$uri': Client does not support roots capability" }
+            throw IllegalStateException("Client does not support roots capability.")
+        }
+        logger.info { "Removing root: $uri" }
+        val removed = roots.remove(uri) != null
+        logger.debug {
+            if (removed) {
+                "Root removed: $uri"
+            } else {
+                "Root not found: $uri"
+            }
+        }
+        return removed
+    }
+
+    /**
+     * Removes multiple roots at once.
+     *
+     * @param uris A list of root URIs to remove.
+     * @return The number of roots that were successfully removed.
+     * @throws IllegalStateException If the client does not support roots.
+     */
+    public fun removeRoots(uris: List<String>): Int {
+        if (capabilities.roots == null) {
+            logger.error { "Failed to remove roots: Client does not support roots capability" }
+            throw IllegalStateException("Client does not support roots capability.")
+        }
+        logger.info { "Removing ${uris.size} roots" }
+        var removedCount = 0
+        for (uri in uris) {
+            logger.debug { "Removing root: $uri" }
+            if (roots.remove(uri) != null) {
+                removedCount++
+            }
+        }
+        logger.info {
+            if (removedCount > 0) {
+                "Removed $removedCount roots"
+            } else {
+                "No roots were removed"
+            }
+        }
+        return removedCount
+    }
+
+    /**
      * Notifies the server that the list of roots has changed.
      * Typically used if the client is managing some form of hierarchical structure.
      *
@@ -457,5 +566,12 @@ public open class Client(
      */
     public suspend fun sendRootsListChanged() {
         notification(RootsListChangedNotification())
+    }
+
+    // --- Internal Handlers ---
+
+    private suspend fun handleListRoots(): ListRootsResult {
+        val rootList = roots.values.toList()
+        return ListRootsResult(rootList)
     }
 }
