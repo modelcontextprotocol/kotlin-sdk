@@ -2,6 +2,9 @@
 # plugins version
 kotlin = "2.1.20"
 dokka = "2.0.0"
+jreleaser = "1.17.0"
+binaryCompatibilityValidatorPlugin = "0.17.0"
+shadowJar = "8.1.1"
 
 # libraries version
 serialization = "1.7.3"
@@ -9,10 +12,9 @@ coroutines = "1.10.2"
 ktor = "3.1.2"
 mockk = "1.13.13"
 logging = "7.0.0"
-jreleaser = "1.17.0"
-binaryCompatibilityValidatorPlugin = "0.17.0"
 slf4j = "2.0.16"
 kotest = "5.9.1"
+anthropic-java = "2.1.0"
 
 [libraries]
 # Kotlinx libraries
@@ -33,9 +35,16 @@ mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
 kotest-assertions-json = { group = "io.kotest", name = "kotest-assertions-json", version.ref = "kotest" }
 
+# Samples
+slf4j-nop = { module = "org.slf4j:slf4j-nop", version.ref = "slf4j" }
+anthropic-java-sdk = { module = "com.anthropic:anthropic-java", version.ref = "anthropic-java" }
+ktor-client-content-negotiation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
+
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 jreleaser = { id = "org.jreleaser", version.ref = "jreleaser"}
 kotlinx-binary-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibilityValidatorPlugin" }
+shadow = { id = "com.github.johnrengelman.shadow", version.ref = "shadowJar"}

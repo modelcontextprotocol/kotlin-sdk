@@ -17,3 +17,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "kotlin-sdk"
 
+include(":samples:kotlin-mcp-server")
+include(":samples:kotlin-mcp-client")
+include(":samples:weather-stdio-server")

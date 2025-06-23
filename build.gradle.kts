@@ -44,6 +44,22 @@ publishing {
     }
 }
 
+// Exclude samples from publishing and API checks
+subprojects {
+    if (name.startsWith("samples") || path.contains(":samples:")) {
+        tasks.withType<PublishToMavenRepository> {
+            enabled = false
+        }
+        tasks.withType<PublishToMavenLocal> {
+            enabled = false
+        }
+        // Disable API checks for samples
+        tasks.matching { it.name.contains("ApiCheck") }.configureEach {
+            enabled = false
+        }
+    }
+}
+
 jreleaser {
     gitRootSearch = true
     strict.set(true)
@@ -211,6 +227,11 @@ val sourcesDir = File(project.layout.buildDirectory.asFile.get(), "generated-sou
 
 val generateLibVersionTask =
     tasks.register<GenerateLibVersionTask>("generateLibVersion", version.toString(), sourcesDir)
+
+apiValidation {
+    // Exclude sample projects from API validation
+    ignoredProjects.addAll(listOf("kotlin-mcp-server", "kotlin-mcp-client", "weather-stdio-server"))
+}
 
 kotlin {
     jvm {
