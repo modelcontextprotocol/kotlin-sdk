@@ -32,7 +32,7 @@ jobs:
           server-password: JRELEASER_MAVENCENTRAL_PASSWORD
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+        uses: gradle/actions/setup-gradle@ac638b010cf58a27ee6c972d7336334ccaf61c96 # v4.4.1
 
       - name: Verify publication configuration
         run: ./gradlew jreleaserConfig
