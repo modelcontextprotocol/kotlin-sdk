@@ -4,8 +4,8 @@ import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
 plugins {
-    kotlin("multiplatform") version "2.1.20"
-    kotlin("plugin.serialization") version "2.1.20"
+    kotlin("multiplatform")
+    kotlin("plugin.serialization")
 }
 
 group = "org.example"
@@ -43,11 +43,16 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation("io.modelcontextprotocol:kotlin-sdk:0.5.0")
+            implementation(project(":"))
         }
         jvmMain.dependencies {
             implementation("org.slf4j:slf4j-nop:2.0.9")
         }
         wasmJsMain.dependencies {}
     }
+}
+
+// Disable WASM optimization to avoid binaryen issues
+tasks.matching { it.name.contains("WasmJsOptimize") }.configureEach {
+    enabled = false
 }
