@@ -14,7 +14,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/AudioContent : io/modelcon
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/AudioContent$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/AudioContent$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/AudioContent$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/AudioContent;
@@ -22,6 +22,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/AudioContent$$serializ
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/AudioContent;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/AudioContent$Companion {
@@ -44,7 +45,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/BlobResourceContents : io/
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/BlobResourceContents$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/BlobResourceContents$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/BlobResourceContents$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/BlobResourceContents;
@@ -52,6 +53,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/BlobResourceContents$$
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/BlobResourceContents;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/BlobResourceContents$Companion {
@@ -76,7 +78,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/CallToolRequest : io/model
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/CallToolRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/CallToolRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/CallToolRequest$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/CallToolRequest;
@@ -84,6 +86,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/CallToolRequest$$seria
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/CallToolRequest;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/CallToolRequest$Companion {
@@ -99,7 +102,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/CallToolResult : io/modelc
 	public fun isError ()Ljava/lang/Boolean;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/CallToolResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/CallToolResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/CallToolResult$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/CallToolResult;
@@ -107,6 +110,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/CallToolResult$$serial
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/CallToolResult;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/CallToolResult$Companion {
@@ -116,7 +120,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/CallToolResult$Companion {
 public abstract interface class io/modelcontextprotocol/kotlin/sdk/CallToolResultBase : io/modelcontextprotocol/kotlin/sdk/ServerResult {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/CallToolResultBase$Companion;
 	public abstract fun getContent ()Ljava/util/List;
-	public abstract fun isError ()Ljava/lang/Boolean;
+	public fun isError ()Ljava/lang/Boolean;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/CallToolResultBase$Companion {
@@ -145,7 +149,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/CancelledNotification : io
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/CancelledNotification$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/CancelledNotification$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/CancelledNotification$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/CancelledNotification;
@@ -153,6 +157,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/CancelledNotification$
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/CancelledNotification;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/CancelledNotification$Companion {
@@ -177,7 +182,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ClientCapabilities {
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ClientCapabilities$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ClientCapabilities$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ClientCapabilities$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ClientCapabilities;
@@ -185,6 +190,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/ClientCapabilities$$se
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ClientCapabilities;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ClientCapabilities$Companion {
@@ -203,7 +209,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ClientCapabilities$Roots {
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ClientCapabilities$Roots$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ClientCapabilities$Roots$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ClientCapabilities$Roots$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ClientCapabilities$Roots;
@@ -211,6 +217,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/ClientCapabilities$Roo
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ClientCapabilities$Roots;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ClientCapabilities$Roots$Companion {
@@ -246,7 +253,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/CompatibilityCallToolResul
 	public fun isError ()Ljava/lang/Boolean;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/CompatibilityCallToolResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/CompatibilityCallToolResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/CompatibilityCallToolResult$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/CompatibilityCallToolResult;
@@ -254,6 +261,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/CompatibilityCallToolR
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/CompatibilityCallToolResult;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/CompatibilityCallToolResult$Companion {
@@ -278,7 +286,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/CompleteRequest : io/model
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/CompleteRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/CompleteRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/CompleteRequest$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/CompleteRequest;
@@ -286,6 +294,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/CompleteRequest$$seria
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/CompleteRequest;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/CompleteRequest$Argument {
@@ -302,7 +311,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/CompleteRequest$Argument {
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/CompleteRequest$Argument$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/CompleteRequest$Argument$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/CompleteRequest$Argument$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/CompleteRequest$Argument;
@@ -310,6 +319,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/CompleteRequest$Argume
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/CompleteRequest$Argument;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/CompleteRequest$Argument$Companion {
@@ -335,7 +345,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/CompleteResult : io/modelc
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/CompleteResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/CompleteResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/CompleteResult$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/CompleteResult;
@@ -343,6 +353,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/CompleteResult$$serial
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/CompleteResult;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/CompleteResult$Companion {
@@ -357,7 +368,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/CompleteResult$Completion 
 	public final fun getValues ()Ljava/util/List;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/CompleteResult$Completion$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/CompleteResult$Completion$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/CompleteResult$Completion$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/CompleteResult$Completion;
@@ -365,6 +376,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/CompleteResult$Complet
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/CompleteResult$Completion;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/CompleteResult$Completion$Companion {
@@ -401,7 +413,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/CreateMessageRequest : io/
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/CreateMessageRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/CreateMessageRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/CreateMessageRequest$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/CreateMessageRequest;
@@ -409,6 +421,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/CreateMessageRequest$$
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/CreateMessageRequest;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/CreateMessageRequest$Companion {
@@ -450,7 +463,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/CreateMessageResult : io/m
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/CreateMessageResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/CreateMessageResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/CreateMessageResult$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/CreateMessageResult;
@@ -458,6 +471,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/CreateMessageResult$$s
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/CreateMessageResult;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/CreateMessageResult$Companion {
@@ -472,7 +486,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/CustomMeta : io/modelconte
 	public fun get_meta ()Lkotlinx/serialization/json/JsonObject;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/CustomMeta$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/CustomMeta$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/CustomMeta$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/CustomMeta;
@@ -480,6 +494,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/CustomMeta$$serializer
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/CustomMeta;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/CustomMeta$Companion {
@@ -494,7 +509,7 @@ public class io/modelcontextprotocol/kotlin/sdk/CustomRequest : io/modelcontextp
 	public static final synthetic fun write$Self (Lio/modelcontextprotocol/kotlin/sdk/CustomRequest;Lkotlinx/serialization/encoding/CompositeEncoder;Lkotlinx/serialization/descriptors/SerialDescriptor;)V
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/CustomRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/CustomRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/CustomRequest$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/CustomRequest;
@@ -502,6 +517,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/CustomRequest$$seriali
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/CustomRequest;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/CustomRequest$Companion {
@@ -522,7 +538,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/EmbeddedResource : io/mode
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/EmbeddedResource$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/EmbeddedResource$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/EmbeddedResource$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/EmbeddedResource;
@@ -530,6 +546,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/EmbeddedResource$$seri
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/EmbeddedResource;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/EmbeddedResource$Companion {
@@ -550,7 +567,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/EmptyRequestResult : io/mo
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/EmptyRequestResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/EmptyRequestResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/EmptyRequestResult$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/EmptyRequestResult;
@@ -558,6 +575,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/EmptyRequestResult$$se
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/EmptyRequestResult;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/EmptyRequestResult$Companion {
@@ -604,7 +622,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ErrorCode$Unknown : io/mod
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ErrorCode$Unknown$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ErrorCode$Unknown$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ErrorCode$Unknown$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ErrorCode$Unknown;
@@ -612,6 +630,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/ErrorCode$Unknown$$ser
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ErrorCode$Unknown;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ErrorCode$Unknown$Companion {
@@ -636,7 +655,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/GetPromptRequest : io/mode
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/GetPromptRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/GetPromptRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/GetPromptRequest$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/GetPromptRequest;
@@ -644,6 +663,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/GetPromptRequest$$seri
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/GetPromptRequest;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/GetPromptRequest$Companion {
@@ -659,7 +679,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/GetPromptResult : io/model
 	public fun get_meta ()Lkotlinx/serialization/json/JsonObject;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/GetPromptResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/GetPromptResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/GetPromptResult$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/GetPromptResult;
@@ -667,6 +687,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/GetPromptResult$$seria
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/GetPromptResult;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/GetPromptResult$Companion {
@@ -689,7 +710,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ImageContent : io/modelcon
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ImageContent$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ImageContent$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ImageContent$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ImageContent;
@@ -697,6 +718,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/ImageContent$$serializ
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ImageContent;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ImageContent$Companion {
@@ -717,7 +739,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/Implementation {
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/Implementation$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/Implementation$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/Implementation$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/Implementation;
@@ -725,6 +747,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/Implementation$$serial
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/Implementation;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/Implementation$Companion {
@@ -751,7 +774,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/InitializeRequest : io/mod
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/InitializeRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/InitializeRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/InitializeRequest$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/InitializeRequest;
@@ -759,6 +782,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/InitializeRequest$$ser
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/InitializeRequest;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/InitializeRequest$Companion {
@@ -784,7 +808,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/InitializeResult : io/mode
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/InitializeResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/InitializeResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/InitializeResult$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/InitializeResult;
@@ -792,6 +816,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/InitializeResult$$seri
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/InitializeResult;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/InitializeResult$Companion {
@@ -804,7 +829,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/InitializedNotification : 
 	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/Method;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/InitializedNotification$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/InitializedNotification$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/InitializedNotification$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/InitializedNotification;
@@ -812,6 +837,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/InitializedNotificatio
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/InitializedNotification;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/InitializedNotification$Companion {
@@ -835,7 +861,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/JSONRPCError : io/modelcon
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/JSONRPCError$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/JSONRPCError$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/JSONRPCError$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/JSONRPCError;
@@ -843,6 +869,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/JSONRPCError$$serializ
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/JSONRPCError;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/JSONRPCError$Companion {
@@ -874,7 +901,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/JSONRPCNotification : io/m
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/JSONRPCNotification$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/JSONRPCNotification$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/JSONRPCNotification$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/JSONRPCNotification;
@@ -882,6 +909,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/JSONRPCNotification$$s
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/JSONRPCNotification;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/JSONRPCNotification$Companion {
@@ -907,7 +935,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/JSONRPCRequest : io/modelc
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/JSONRPCRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/JSONRPCRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/JSONRPCRequest$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/JSONRPCRequest;
@@ -915,6 +943,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/JSONRPCRequest$$serial
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/JSONRPCRequest;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/JSONRPCRequest$Companion {
@@ -931,7 +960,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/JSONRPCResponse : io/model
 	public final fun getResult ()Lio/modelcontextprotocol/kotlin/sdk/RequestResult;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/JSONRPCResponse$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/JSONRPCResponse$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/JSONRPCResponse$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/JSONRPCResponse;
@@ -939,6 +968,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/JSONRPCResponse$$seria
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/JSONRPCResponse;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/JSONRPCResponse$Companion {
@@ -966,7 +996,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ListPromptsRequest : io/mo
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ListPromptsRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ListPromptsRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ListPromptsRequest$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ListPromptsRequest;
@@ -974,6 +1004,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/ListPromptsRequest$$se
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ListPromptsRequest;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ListPromptsRequest$Companion {
@@ -989,7 +1020,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ListPromptsResult : io/mod
 	public fun get_meta ()Lkotlinx/serialization/json/JsonObject;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ListPromptsResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ListPromptsResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ListPromptsResult$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ListPromptsResult;
@@ -997,6 +1028,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/ListPromptsResult$$ser
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ListPromptsResult;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ListPromptsResult$Companion {
@@ -1019,7 +1051,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ListResourceTemplatesReque
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ListResourceTemplatesRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ListResourceTemplatesRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ListResourceTemplatesRequest$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ListResourceTemplatesRequest;
@@ -1027,6 +1059,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/ListResourceTemplatesR
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ListResourceTemplatesRequest;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ListResourceTemplatesRequest$Companion {
@@ -1042,7 +1075,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ListResourceTemplatesResul
 	public fun get_meta ()Lkotlinx/serialization/json/JsonObject;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ListResourceTemplatesResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ListResourceTemplatesResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ListResourceTemplatesResult$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ListResourceTemplatesResult;
@@ -1050,6 +1083,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/ListResourceTemplatesR
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ListResourceTemplatesResult;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ListResourceTemplatesResult$Companion {
@@ -1073,7 +1107,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ListResourcesRequest : io/
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ListResourcesRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ListResourcesRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ListResourcesRequest$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ListResourcesRequest;
@@ -1081,6 +1115,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/ListResourcesRequest$$
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ListResourcesRequest;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ListResourcesRequest$Companion {
@@ -1096,7 +1131,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ListResourcesResult : io/m
 	public fun get_meta ()Lkotlinx/serialization/json/JsonObject;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ListResourcesResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ListResourcesResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ListResourcesResult$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ListResourcesResult;
@@ -1104,6 +1139,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/ListResourcesResult$$s
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ListResourcesResult;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ListResourcesResult$Companion {
@@ -1119,7 +1155,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ListRootsRequest : io/mode
 	public fun get_meta ()Lkotlinx/serialization/json/JsonObject;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ListRootsRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ListRootsRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ListRootsRequest$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ListRootsRequest;
@@ -1127,6 +1163,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/ListRootsRequest$$seri
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ListRootsRequest;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ListRootsRequest$Companion {
@@ -1141,7 +1178,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ListRootsResult : io/model
 	public fun get_meta ()Lkotlinx/serialization/json/JsonObject;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ListRootsResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ListRootsResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ListRootsResult$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ListRootsResult;
@@ -1149,6 +1186,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/ListRootsResult$$seria
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ListRootsResult;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ListRootsResult$Companion {
@@ -1172,7 +1210,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ListToolsRequest : io/mode
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ListToolsRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ListToolsRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ListToolsRequest$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ListToolsRequest;
@@ -1180,6 +1218,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/ListToolsRequest$$seri
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ListToolsRequest;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ListToolsRequest$Companion {
@@ -1195,7 +1234,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ListToolsResult : io/model
 	public fun get_meta ()Lkotlinx/serialization/json/JsonObject;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ListToolsResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ListToolsResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ListToolsResult$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ListToolsResult;
@@ -1203,6 +1242,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/ListToolsResult$$seria
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ListToolsResult;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ListToolsResult$Companion {
@@ -1248,7 +1288,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/LoggingMessageNotification
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/LoggingMessageNotification$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/LoggingMessageNotification$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/LoggingMessageNotification$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/LoggingMessageNotification;
@@ -1256,6 +1296,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/LoggingMessageNotifica
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/LoggingMessageNotification;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/LoggingMessageNotification$Companion {
@@ -1278,7 +1319,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/LoggingMessageNotification
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/LoggingMessageNotification$SetLevelRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/LoggingMessageNotification$SetLevelRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/LoggingMessageNotification$SetLevelRequest$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/LoggingMessageNotification$SetLevelRequest;
@@ -1286,6 +1327,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/LoggingMessageNotifica
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/LoggingMessageNotification$SetLevelRequest;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/LoggingMessageNotification$SetLevelRequest$Companion {
@@ -1321,7 +1363,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/Method$Custom : io/modelco
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/Method$Custom$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/Method$Custom$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/Method$Custom$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/Method$Custom;
@@ -1329,6 +1371,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/Method$Custom$$seriali
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/Method$Custom;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/Method$Custom$Companion {
@@ -1383,7 +1426,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ModelHint {
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ModelHint$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ModelHint$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ModelHint$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ModelHint;
@@ -1391,6 +1434,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/ModelHint$$serializer 
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ModelHint;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ModelHint$Companion {
@@ -1406,7 +1450,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ModelPreferences {
 	public final fun getSpeedPriority ()Ljava/lang/Double;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ModelPreferences$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ModelPreferences$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ModelPreferences$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ModelPreferences;
@@ -1414,6 +1458,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/ModelPreferences$$seri
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ModelPreferences;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ModelPreferences$Companion {
@@ -1454,7 +1499,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/PingRequest : io/modelcont
 	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/Method;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/PingRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/PingRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/PingRequest$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/PingRequest;
@@ -1462,6 +1507,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/PingRequest$$serialize
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/PingRequest;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/PingRequest$Companion {
@@ -1478,7 +1524,7 @@ public class io/modelcontextprotocol/kotlin/sdk/Progress : io/modelcontextprotoc
 	public static final synthetic fun write$Self (Lio/modelcontextprotocol/kotlin/sdk/Progress;Lkotlinx/serialization/encoding/CompositeEncoder;Lkotlinx/serialization/descriptors/SerialDescriptor;)V
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/Progress$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/Progress$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/Progress$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/Progress;
@@ -1486,6 +1532,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/Progress$$serializer :
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/Progress;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/Progress$Companion {
@@ -1525,7 +1572,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ProgressNotification : io/
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ProgressNotification$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ProgressNotification$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ProgressNotification$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ProgressNotification;
@@ -1533,6 +1580,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/ProgressNotification$$
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ProgressNotification;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ProgressNotification$Companion {
@@ -1547,7 +1595,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/Prompt {
 	public final fun getName ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/Prompt$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/Prompt$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/Prompt$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/Prompt;
@@ -1555,6 +1603,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/Prompt$$serializer : k
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/Prompt;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/Prompt$Companion {
@@ -1577,7 +1626,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/PromptArgument {
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/PromptArgument$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/PromptArgument$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/PromptArgument$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/PromptArgument;
@@ -1585,6 +1634,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/PromptArgument$$serial
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/PromptArgument;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/PromptArgument$Companion {
@@ -1597,7 +1647,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/PromptListChangedNotificat
 	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/Method;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/PromptListChangedNotification$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/PromptListChangedNotification$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/PromptListChangedNotification$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/PromptListChangedNotification;
@@ -1605,6 +1655,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/PromptListChangedNotif
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/PromptListChangedNotification;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/PromptListChangedNotification$Companion {
@@ -1625,7 +1676,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/PromptMessage {
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/PromptMessage$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/PromptMessage$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/PromptMessage$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/PromptMessage;
@@ -1633,6 +1684,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/PromptMessage$$seriali
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/PromptMessage;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/PromptMessage$Companion {
@@ -1670,7 +1722,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/PromptReference : io/model
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/PromptReference$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/PromptReference$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/PromptReference$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/PromptReference;
@@ -1678,6 +1730,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/PromptReference$$seria
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/PromptReference;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/PromptReference$Companion {
@@ -1700,7 +1753,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ReadResourceRequest : io/m
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ReadResourceRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ReadResourceRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ReadResourceRequest$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ReadResourceRequest;
@@ -1708,6 +1761,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/ReadResourceRequest$$s
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ReadResourceRequest;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ReadResourceRequest$Companion {
@@ -1722,7 +1776,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ReadResourceResult : io/mo
 	public fun get_meta ()Lkotlinx/serialization/json/JsonObject;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ReadResourceResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ReadResourceResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ReadResourceResult$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ReadResourceResult;
@@ -1730,6 +1784,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/ReadResourceResult$$se
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ReadResourceResult;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ReadResourceResult$Companion {
@@ -1774,7 +1829,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/RequestId$NumberId : io/mo
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/RequestId$NumberId$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/RequestId$NumberId$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/RequestId$NumberId$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/RequestId$NumberId;
@@ -1782,6 +1837,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/RequestId$NumberId$$se
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/RequestId$NumberId;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/RequestId$NumberId$Companion {
@@ -1800,7 +1856,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/RequestId$StringId : io/mo
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/RequestId$StringId$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/RequestId$StringId$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/RequestId$StringId$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/RequestId$StringId;
@@ -1808,6 +1864,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/RequestId$StringId$$se
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/RequestId$StringId;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/RequestId$StringId$Companion {
@@ -1849,7 +1906,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/Resource {
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/Resource$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/Resource$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/Resource$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/Resource;
@@ -1857,6 +1914,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/Resource$$serializer :
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/Resource;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/Resource$Companion {
@@ -1879,7 +1937,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ResourceListChangedNotific
 	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/Method;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ResourceListChangedNotification$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ResourceListChangedNotification$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ResourceListChangedNotification$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ResourceListChangedNotification;
@@ -1887,6 +1945,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/ResourceListChangedNot
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ResourceListChangedNotification;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ResourceListChangedNotification$Companion {
@@ -1907,7 +1966,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ResourceReference : io/mod
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ResourceReference$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ResourceReference$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ResourceReference$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ResourceReference;
@@ -1915,6 +1974,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/ResourceReference$$ser
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ResourceReference;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ResourceReference$Companion {
@@ -1939,7 +1999,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ResourceTemplate {
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ResourceTemplate$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ResourceTemplate$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ResourceTemplate$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ResourceTemplate;
@@ -1947,6 +2007,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/ResourceTemplate$$seri
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ResourceTemplate;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ResourceTemplate$Companion {
@@ -1969,7 +2030,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ResourceUpdatedNotificatio
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ResourceUpdatedNotification$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ResourceUpdatedNotification$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ResourceUpdatedNotification$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ResourceUpdatedNotification;
@@ -1977,6 +2038,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/ResourceUpdatedNotific
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ResourceUpdatedNotification;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ResourceUpdatedNotification$Companion {
@@ -2010,7 +2072,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/Root {
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/Root$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/Root$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/Root$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/Root;
@@ -2018,6 +2080,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/Root$$serializer : kot
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/Root;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/Root$Companion {
@@ -2030,7 +2093,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/RootsListChangedNotificati
 	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/Method;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/RootsListChangedNotification$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/RootsListChangedNotification$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/RootsListChangedNotification$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/RootsListChangedNotification;
@@ -2038,6 +2101,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/RootsListChangedNotifi
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/RootsListChangedNotification;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/RootsListChangedNotification$Companion {
@@ -2058,7 +2122,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/SamplingMessage {
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/SamplingMessage$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/SamplingMessage$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/SamplingMessage$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/SamplingMessage;
@@ -2066,6 +2130,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/SamplingMessage$$seria
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/SamplingMessage;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/SamplingMessage$Companion {
@@ -2096,7 +2161,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ServerCapabilities {
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ServerCapabilities$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ServerCapabilities$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ServerCapabilities$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ServerCapabilities;
@@ -2104,6 +2169,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/ServerCapabilities$$se
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ServerCapabilities;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ServerCapabilities$Companion {
@@ -2122,7 +2188,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ServerCapabilities$Prompts
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ServerCapabilities$Prompts$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ServerCapabilities$Prompts$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ServerCapabilities$Prompts$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ServerCapabilities$Prompts;
@@ -2130,6 +2196,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/ServerCapabilities$Pro
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ServerCapabilities$Prompts;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ServerCapabilities$Prompts$Companion {
@@ -2150,7 +2217,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ServerCapabilities$Resourc
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ServerCapabilities$Resources$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ServerCapabilities$Resources$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ServerCapabilities$Resources$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ServerCapabilities$Resources;
@@ -2158,6 +2225,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/ServerCapabilities$Res
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ServerCapabilities$Resources;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ServerCapabilities$Resources$Companion {
@@ -2176,7 +2244,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ServerCapabilities$Tools {
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ServerCapabilities$Tools$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ServerCapabilities$Tools$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ServerCapabilities$Tools$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ServerCapabilities$Tools;
@@ -2184,6 +2252,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/ServerCapabilities$Too
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ServerCapabilities$Tools;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ServerCapabilities$Tools$Companion {
@@ -2251,7 +2320,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/StopReason$Other : io/mode
 	public final synthetic fun unbox-impl ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/StopReason$Other$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/StopReason$Other$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/StopReason$Other$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
@@ -2259,6 +2328,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/StopReason$Other$$seri
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
 	public final fun serialize-AuY3eX0 (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/String;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/StopReason$Other$Companion {
@@ -2290,7 +2360,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/SubscribeRequest : io/mode
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/SubscribeRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/SubscribeRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/SubscribeRequest$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/SubscribeRequest;
@@ -2298,6 +2368,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/SubscribeRequest$$seri
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/SubscribeRequest;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/SubscribeRequest$Companion {
@@ -2320,7 +2391,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/TextContent : io/modelcont
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/TextContent$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/TextContent$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/TextContent$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/TextContent;
@@ -2328,6 +2399,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/TextContent$$serialize
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/TextContent;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/TextContent$Companion {
@@ -2350,7 +2422,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/TextResourceContents : io/
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/TextResourceContents$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/TextResourceContents$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/TextResourceContents$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/TextResourceContents;
@@ -2358,6 +2430,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/TextResourceContents$$
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/TextResourceContents;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/TextResourceContents$Companion {
@@ -2380,7 +2453,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/Tool {
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/Tool$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/Tool$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/Tool$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/Tool;
@@ -2388,6 +2461,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/Tool$$serializer : kot
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/Tool;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/Tool$Companion {
@@ -2411,7 +2485,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/Tool$Input {
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/Tool$Input$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/Tool$Input$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/Tool$Input$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/Tool$Input;
@@ -2419,6 +2493,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/Tool$Input$$serializer
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/Tool$Input;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/Tool$Input$Companion {
@@ -2431,7 +2506,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ToolListChangedNotificatio
 	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/Method;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ToolListChangedNotification$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ToolListChangedNotification$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ToolListChangedNotification$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ToolListChangedNotification;
@@ -2439,6 +2514,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/ToolListChangedNotific
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ToolListChangedNotification;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ToolListChangedNotification$Companion {
@@ -2470,7 +2546,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/UnknownContent : io/modelc
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/UnknownContent$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/UnknownContent$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/UnknownContent$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/UnknownContent;
@@ -2478,6 +2554,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/UnknownContent$$serial
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/UnknownContent;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/UnknownContent$Companion {
@@ -2496,7 +2573,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/UnknownMethodRequestOrNoti
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/UnknownMethodRequestOrNotification$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/UnknownMethodRequestOrNotification$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/UnknownMethodRequestOrNotification$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/UnknownMethodRequestOrNotification;
@@ -2504,6 +2581,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/UnknownMethodRequestOr
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/UnknownMethodRequestOrNotification;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/UnknownMethodRequestOrNotification$Companion {
@@ -2522,7 +2600,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/UnknownReference : io/mode
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/UnknownReference$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/UnknownReference$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/UnknownReference$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/UnknownReference;
@@ -2530,6 +2608,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/UnknownReference$$seri
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/UnknownReference;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/UnknownReference$Companion {
@@ -2550,7 +2629,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/UnknownResourceContents : 
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/UnknownResourceContents$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/UnknownResourceContents$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/UnknownResourceContents$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/UnknownResourceContents;
@@ -2558,6 +2637,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/UnknownResourceContent
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/UnknownResourceContents;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/UnknownResourceContents$Companion {
@@ -2580,7 +2660,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/UnsubscribeRequest : io/mo
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/UnsubscribeRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/UnsubscribeRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/UnsubscribeRequest$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/UnsubscribeRequest;
@@ -2588,6 +2668,7 @@ public synthetic class io/modelcontextprotocol/kotlin/sdk/UnsubscribeRequest$$se
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/UnsubscribeRequest;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/UnsubscribeRequest$Companion {
