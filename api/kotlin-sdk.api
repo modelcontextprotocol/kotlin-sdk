@@ -2688,6 +2688,8 @@ public final class io/modelcontextprotocol/kotlin/sdk/WithMeta$Companion {
 public class io/modelcontextprotocol/kotlin/sdk/client/Client : io/modelcontextprotocol/kotlin/sdk/shared/Protocol {
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/Implementation;Lio/modelcontextprotocol/kotlin/sdk/client/ClientOptions;)V
 	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/Implementation;Lio/modelcontextprotocol/kotlin/sdk/client/ClientOptions;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun addRoot (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun addRoots (Ljava/util/List;)V
 	protected final fun assertCapability (Ljava/lang/String;Ljava/lang/String;)V
 	protected fun assertCapabilityForMethod (Lio/modelcontextprotocol/kotlin/sdk/Method;)V
 	protected fun assertNotificationCapability (Lio/modelcontextprotocol/kotlin/sdk/Method;)V
@@ -2715,6 +2717,8 @@ public class io/modelcontextprotocol/kotlin/sdk/client/Client : io/modelcontextp
 	public static synthetic fun ping$default (Lio/modelcontextprotocol/kotlin/sdk/client/Client;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public final fun readResource (Lio/modelcontextprotocol/kotlin/sdk/ReadResourceRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun readResource$default (Lio/modelcontextprotocol/kotlin/sdk/client/Client;Lio/modelcontextprotocol/kotlin/sdk/ReadResourceRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun removeRoot (Ljava/lang/String;)Z
+	public final fun removeRoots (Ljava/util/List;)I
 	public final fun sendRootsListChanged (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun setLoggingLevel (Lio/modelcontextprotocol/kotlin/sdk/LoggingLevel;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun setLoggingLevel$default (Lio/modelcontextprotocol/kotlin/sdk/client/Client;Lio/modelcontextprotocol/kotlin/sdk/LoggingLevel;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
