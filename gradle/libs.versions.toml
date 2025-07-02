@@ -11,7 +11,7 @@ mockk = "1.13.13"
 logging = "7.0.7"
 jreleaser = "1.17.0"
 binaryCompatibilityValidatorPlugin = "0.18.0"
-slf4j = "2.0.16"
+slf4j = "2.0.17"
 kotest = "5.9.1"
 
 [libraries]
