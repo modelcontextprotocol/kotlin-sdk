@@ -39,6 +39,7 @@ import io.modelcontextprotocol.kotlin.sdk.ResourceUpdatedNotification
 import io.modelcontextprotocol.kotlin.sdk.SUPPORTED_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.Tool
+import io.modelcontextprotocol.kotlin.sdk.ToolAnnotations
 import io.modelcontextprotocol.kotlin.sdk.ToolListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.shared.Protocol
 import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions

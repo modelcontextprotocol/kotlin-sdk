@@ -14,7 +14,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/AudioContent : io/modelcon
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/AudioContent$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/AudioContent$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/AudioContent$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/AudioContent;
@@ -1708,14 +1708,6 @@ public final class io/modelcontextprotocol/kotlin/sdk/PromptMessageContentMultim
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
-public abstract interface class io/modelcontextprotocol/kotlin/sdk/PromptMessageContentMultimodal : io/modelcontextprotocol/kotlin/sdk/PromptMessageContent {
-	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/PromptMessageContentMultimodal$Companion;
-}
-
-public final class io/modelcontextprotocol/kotlin/sdk/PromptMessageContentMultimodal$Companion {
-	public final fun serializer ()Lkotlinx/serialization/KSerializer;
-}
-
 public final class io/modelcontextprotocol/kotlin/sdk/PromptReference : io/modelcontextprotocol/kotlin/sdk/Reference {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/PromptReference$Companion;
 	public static final field TYPE Ljava/lang/String;
@@ -2531,7 +2523,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ToolAnnotations {
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class io/modelcontextprotocol/kotlin/sdk/ToolAnnotations$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ToolAnnotations$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations;
