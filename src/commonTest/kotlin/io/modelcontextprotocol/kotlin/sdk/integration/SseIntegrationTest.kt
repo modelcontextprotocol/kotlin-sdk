@@ -2,9 +2,11 @@ package io.modelcontextprotocol.kotlin.sdk.integration
 
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.sse.SSE
+import io.ktor.server.application.install
 import io.ktor.server.cio.CIOApplicationEngine
 import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
+import io.ktor.server.routing.routing
 import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.client.Client
@@ -52,7 +54,12 @@ class SseIntegrationTest {
             ServerOptions(capabilities = ServerCapabilities()),
         )
 
-        return embeddedServer(ServerCIO, host = URL, port = PORT) { mcp { server } }.startSuspend(wait = false)
+        return embeddedServer(ServerCIO, host = URL, port = PORT) { 
+            install(io.ktor.server.sse.SSE)
+            routing { 
+                mcp { server } 
+            } 
+        }.startSuspend(wait = false)
     }
 
     companion object {
