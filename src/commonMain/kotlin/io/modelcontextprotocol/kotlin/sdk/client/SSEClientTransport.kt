@@ -68,7 +68,7 @@ public class SseClientTransport(
 
         session = urlString?.let {
             client.sseSession(
-                urlString = "$it/sse",
+                urlString = it,
                 reconnectionTime = reconnectionTime,
                 block = requestBuilder,
             )
