@@ -6,6 +6,7 @@ import io.ktor.server.application.install
 import io.ktor.server.cio.CIO
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.routing.post
+import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.server.sse.sse
 import io.ktor.util.collections.ConcurrentMap
@@ -76,6 +77,45 @@ class SseTransportTest : BaseTransportTest() {
             url {
                 host = "localhost"
                 this.port = port
+            }
+        }
+
+        testClientRead(client)
+        server.stopSuspend()
+    }
+
+    @Test
+    fun `test sse path not root path`() = runTest {
+        val port = 3007
+        val server = embeddedServer(CIO, port = port) {
+            install(io.ktor.server.sse.SSE)
+            val transports = ConcurrentMap<String, SseServerTransport>()
+            routing {
+                route("/sse") {
+                    sse {
+                        mcpSseTransport("", transports).apply {
+                            onMessage {
+                                send(it)
+                            }
+
+                            start()
+                        }
+                    }
+
+                    post {
+                        mcpPostEndpoint(transports)
+                    }
+                }
+            }
+        }.startSuspend(wait = false)
+
+        val client = HttpClient {
+            install(SSE)
+        }.mcpSseTransport {
+            url {
+                host = "localhost"
+                this.port = port
+                pathSegments = listOf("sse")
             }
         }
 

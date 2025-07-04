@@ -12,6 +12,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.Url
 import io.ktor.http.append
 import io.ktor.http.isSuccess
+import io.ktor.http.protocolWithAuthority
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
@@ -24,7 +25,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToString
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.properties.Delegates
@@ -55,7 +55,18 @@ public class SseClientTransport(
     private var job: Job? = null
 
     private val baseUrl by lazy {
-        session.call.request.url.toString().removeSuffix("/sse")
+        val requestUrl = session.call.request.url.toString()
+        val url = Url(requestUrl)
+        var path = url.encodedPath
+        if (path.isEmpty()) {
+            url.protocolWithAuthority
+        } else if (path.endsWith("/")) {
+            url.protocolWithAuthority + path.removeSuffix("/")
+        } else {
+            // the last item is not a directory, so will not be taken into account
+            path = path.substring(0, path.lastIndexOf("/"))
+            url.protocolWithAuthority + path
+        }
     }
 
     override suspend fun start() {
@@ -68,7 +79,7 @@ public class SseClientTransport(
 
         session = urlString?.let {
             client.sseSession(
-                urlString = "$it/sse",
+                urlString = it,
                 reconnectionTime = reconnectionTime,
                 block = requestBuilder,
             )
@@ -95,8 +106,7 @@ public class SseClientTransport(
                             val eventData = event.data ?: ""
 
                             // check url correctness
-                            val maybeEndpoint = Url(baseUrl + eventData)
-
+                            val maybeEndpoint = Url("$baseUrl/${if (eventData.startsWith("/")) eventData.substring(1) else eventData}")
                             endpoint.complete(maybeEndpoint.toString())
                         } catch (e: Exception) {
                             _onError(e)
