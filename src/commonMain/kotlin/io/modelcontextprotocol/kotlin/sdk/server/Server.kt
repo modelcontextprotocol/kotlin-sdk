@@ -39,6 +39,7 @@ import io.modelcontextprotocol.kotlin.sdk.ResourceUpdatedNotification
 import io.modelcontextprotocol.kotlin.sdk.SUPPORTED_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.Tool
+import io.modelcontextprotocol.kotlin.sdk.ToolAnnotations
 import io.modelcontextprotocol.kotlin.sdk.ToolListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.shared.Protocol
 import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions
@@ -183,6 +184,7 @@ public open class Server(
         name: String,
         description: String,
         inputSchema: Tool.Input = Tool.Input(),
+        toolAnnotations: ToolAnnotations? = null,
         handler: suspend (CallToolRequest) -> CallToolResult
     ) {
         if (capabilities.tools == null) {
@@ -190,7 +192,7 @@ public open class Server(
             throw IllegalStateException("Server does not support tools capability. Enable it in ServerOptions.")
         }
         logger.info { "Registering tool: $name" }
-        tools[name] = RegisteredTool(Tool(name, description, inputSchema), handler)
+        tools[name] = RegisteredTool(Tool(name, description, inputSchema, toolAnnotations), handler)
     }
 
     /**

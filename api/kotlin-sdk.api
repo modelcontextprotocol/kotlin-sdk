@@ -2439,13 +2439,15 @@ public final class io/modelcontextprotocol/kotlin/sdk/TextResourceContents$Compa
 
 public final class io/modelcontextprotocol/kotlin/sdk/Tool {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/Tool$Companion;
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Tool$Input;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Tool$Input;Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Lio/modelcontextprotocol/kotlin/sdk/Tool$Input;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Tool$Input;)Lio/modelcontextprotocol/kotlin/sdk/Tool;
-	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/Tool;Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Tool$Input;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/Tool;
+	public final fun component4 ()Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Tool$Input;Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations;)Lio/modelcontextprotocol/kotlin/sdk/Tool;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/Tool;Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Tool$Input;Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/Tool;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAnnotations ()Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations;
 	public final fun getDescription ()Ljava/lang/String;
 	public final fun getInputSchema ()Lio/modelcontextprotocol/kotlin/sdk/Tool$Input;
 	public final fun getName ()Ljava/lang/String;
@@ -2497,6 +2499,42 @@ public final synthetic class io/modelcontextprotocol/kotlin/sdk/Tool$Input$$seri
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/Tool$Input$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/ToolAnnotations {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Boolean;
+	public final fun component3 ()Ljava/lang/Boolean;
+	public final fun component4 ()Ljava/lang/Boolean;
+	public final fun component5 ()Ljava/lang/Boolean;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDestructiveHint ()Ljava/lang/Boolean;
+	public final fun getIdempotentHint ()Ljava/lang/Boolean;
+	public final fun getOpenWorldHint ()Ljava/lang/Boolean;
+	public final fun getReadOnlyHint ()Ljava/lang/Boolean;
+	public final fun getTitle ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/ToolAnnotations$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/ToolAnnotations$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
@@ -2824,8 +2862,8 @@ public class io/modelcontextprotocol/kotlin/sdk/server/Server : io/modelcontextp
 	public final fun addResource (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function2;)V
 	public static synthetic fun addResource$default (Lio/modelcontextprotocol/kotlin/sdk/server/Server;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)V
 	public final fun addResources (Ljava/util/List;)V
-	public final fun addTool (Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Tool$Input;Lkotlin/jvm/functions/Function2;)V
-	public static synthetic fun addTool$default (Lio/modelcontextprotocol/kotlin/sdk/server/Server;Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Tool$Input;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)V
+	public final fun addTool (Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Tool$Input;Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations;Lkotlin/jvm/functions/Function2;)V
+	public static synthetic fun addTool$default (Lio/modelcontextprotocol/kotlin/sdk/server/Server;Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Tool$Input;Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)V
 	public final fun addTools (Ljava/util/List;)V
 	protected fun assertCapabilityForMethod (Lio/modelcontextprotocol/kotlin/sdk/Method;)V
 	protected fun assertNotificationCapability (Lio/modelcontextprotocol/kotlin/sdk/Method;)V
