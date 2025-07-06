@@ -262,6 +262,14 @@ public open class Client(
                 }
             }
 
+            Method.Defined.ElicitationCreate -> {
+                if (capabilities.elicitation == null) {
+                    throw IllegalStateException(
+                        "Client does not support elicitation capability (required for $method)"
+                    )
+                }
+            }
+
             Method.Defined.Ping -> {
                 // No capability required
             }

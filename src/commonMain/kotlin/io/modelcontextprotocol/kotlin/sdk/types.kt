@@ -98,7 +98,8 @@ public sealed interface Method {
         LoggingSetLevel("logging/setLevel"),
         SamplingCreateMessage("sampling/createMessage"),
         CompletionComplete("completion/complete"),
-        RootsList("roots/list")
+        RootsList("roots/list"),
+        ElicitationCreate("elicitation/create"),
     }
 
     /**
@@ -337,6 +338,10 @@ public data class ClientCapabilities(
      * Present if the client supports listing roots.
      */
     val roots: Roots? = null,
+    /**
+     * Present if the client supports elicitation.
+     */
+    val elicitation: JsonObject? = null,
 ) {
     @Serializable
     public data class Roots(
@@ -1542,6 +1547,48 @@ public class ListRootsResult(
 @Serializable
 public class RootsListChangedNotification : ClientNotification {
     override val method: Method = Method.Defined.NotificationsRootsListChanged
+}
+
+/**
+ * Sent from the server to create an elicitation from the client.
+ */
+@Serializable
+public data class CreateElicitationRequest(
+    public val message: String,
+    public val requestedSchema: RequestedSchema,
+    override val _meta: JsonObject = EmptyJsonObject,
+) : ServerRequest, WithMeta {
+    override val method: Method = Method.Defined.ElicitationCreate
+
+    @Serializable
+    public data class RequestedSchema(
+        val properties: JsonObject = EmptyJsonObject,
+        val required: List<String>? = null,
+    ) {
+        @OptIn(ExperimentalSerializationApi::class)
+        @EncodeDefault
+        val type: String = "object"
+    }
+}
+
+/**
+ * The client's response to an elicitation/create request from the server.
+ */
+@Serializable
+public data class CreateElicitationResult(
+    public val action: Action,
+    public val content: JsonObject? = null,
+    override val _meta: JsonObject = EmptyJsonObject,
+) : ClientResult {
+
+    init {
+        require(action == Action.accept || content == null) {
+            "Content can only be provided for an 'accept' action"
+        }
+    }
+
+    @Serializable
+    public enum class Action { accept, decline, cancel }
 }
 
 /**

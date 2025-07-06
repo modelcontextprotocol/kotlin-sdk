@@ -4,6 +4,9 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
 import io.modelcontextprotocol.kotlin.sdk.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.ClientCapabilities
+import io.modelcontextprotocol.kotlin.sdk.CreateElicitationRequest
+import io.modelcontextprotocol.kotlin.sdk.CreateElicitationRequest.RequestedSchema
+import io.modelcontextprotocol.kotlin.sdk.CreateElicitationResult
 import io.modelcontextprotocol.kotlin.sdk.CreateMessageRequest
 import io.modelcontextprotocol.kotlin.sdk.CreateMessageResult
 import io.modelcontextprotocol.kotlin.sdk.EmptyJsonObject
@@ -525,6 +528,15 @@ public open class Server(
         return request<ListRootsResult>(ListRootsRequest(params), options)
     }
 
+    public suspend fun createElicitation(
+        message: String,
+        requestedSchema: RequestedSchema,
+        options: RequestOptions? = null
+    ): CreateElicitationResult {
+        logger.debug { "Creating elicitation with message: $message" }
+        return request(CreateElicitationRequest(message, requestedSchema), options)
+    }
+
     /**
      * Sends a logging message notification to the client.
      *
@@ -663,6 +675,12 @@ public open class Server(
             "roots/list" -> {
                 if (clientCapabilities?.roots == null) {
                     throw IllegalStateException("Client does not support listing roots (required for ${method.value})")
+                }
+            }
+
+            "elicitation/create" -> {
+                if (clientCapabilities?.elicitation == null) {
+                    throw IllegalStateException("Client does not support elicitation (required for ${method.value})")
                 }
             }
 

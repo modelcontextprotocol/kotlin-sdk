@@ -167,14 +167,16 @@ public final class io/modelcontextprotocol/kotlin/sdk/CancelledNotification$Comp
 public final class io/modelcontextprotocol/kotlin/sdk/ClientCapabilities {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/ClientCapabilities$Companion;
 	public fun <init> ()V
-	public fun <init> (Lkotlinx/serialization/json/JsonObject;Lkotlinx/serialization/json/JsonObject;Lio/modelcontextprotocol/kotlin/sdk/ClientCapabilities$Roots;)V
-	public synthetic fun <init> (Lkotlinx/serialization/json/JsonObject;Lkotlinx/serialization/json/JsonObject;Lio/modelcontextprotocol/kotlin/sdk/ClientCapabilities$Roots;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lkotlinx/serialization/json/JsonObject;Lkotlinx/serialization/json/JsonObject;Lio/modelcontextprotocol/kotlin/sdk/ClientCapabilities$Roots;Lkotlinx/serialization/json/JsonObject;)V
+	public synthetic fun <init> (Lkotlinx/serialization/json/JsonObject;Lkotlinx/serialization/json/JsonObject;Lio/modelcontextprotocol/kotlin/sdk/ClientCapabilities$Roots;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lkotlinx/serialization/json/JsonObject;
 	public final fun component2 ()Lkotlinx/serialization/json/JsonObject;
 	public final fun component3 ()Lio/modelcontextprotocol/kotlin/sdk/ClientCapabilities$Roots;
-	public final fun copy (Lkotlinx/serialization/json/JsonObject;Lkotlinx/serialization/json/JsonObject;Lio/modelcontextprotocol/kotlin/sdk/ClientCapabilities$Roots;)Lio/modelcontextprotocol/kotlin/sdk/ClientCapabilities;
-	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/ClientCapabilities;Lkotlinx/serialization/json/JsonObject;Lkotlinx/serialization/json/JsonObject;Lio/modelcontextprotocol/kotlin/sdk/ClientCapabilities$Roots;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/ClientCapabilities;
+	public final fun component4 ()Lkotlinx/serialization/json/JsonObject;
+	public final fun copy (Lkotlinx/serialization/json/JsonObject;Lkotlinx/serialization/json/JsonObject;Lio/modelcontextprotocol/kotlin/sdk/ClientCapabilities$Roots;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/ClientCapabilities;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/ClientCapabilities;Lkotlinx/serialization/json/JsonObject;Lkotlinx/serialization/json/JsonObject;Lio/modelcontextprotocol/kotlin/sdk/ClientCapabilities$Roots;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/ClientCapabilities;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getElicitation ()Lkotlinx/serialization/json/JsonObject;
 	public final fun getExperimental ()Lkotlinx/serialization/json/JsonObject;
 	public final fun getRoots ()Lio/modelcontextprotocol/kotlin/sdk/ClientCapabilities$Roots;
 	public final fun getSampling ()Lkotlinx/serialization/json/JsonObject;
@@ -380,6 +382,117 @@ public final synthetic class io/modelcontextprotocol/kotlin/sdk/CompleteResult$C
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/CompleteResult$Completion$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest : io/modelcontextprotocol/kotlin/sdk/ServerRequest, io/modelcontextprotocol/kotlin/sdk/WithMeta {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest$Companion;
+	public fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest$RequestedSchema;Lkotlinx/serialization/json/JsonObject;)V
+	public synthetic fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest$RequestedSchema;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest$RequestedSchema;
+	public final fun component3 ()Lkotlinx/serialization/json/JsonObject;
+	public final fun copy (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest$RequestedSchema;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest$RequestedSchema;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMessage ()Ljava/lang/String;
+	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/Method;
+	public final fun getRequestedSchema ()Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest$RequestedSchema;
+	public fun get_meta ()Lkotlinx/serialization/json/JsonObject;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest$RequestedSchema {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest$RequestedSchema$Companion;
+	public fun <init> ()V
+	public fun <init> (Lkotlinx/serialization/json/JsonObject;Ljava/util/List;)V
+	public synthetic fun <init> (Lkotlinx/serialization/json/JsonObject;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lkotlinx/serialization/json/JsonObject;
+	public final fun component2 ()Ljava/util/List;
+	public final fun copy (Lkotlinx/serialization/json/JsonObject;Ljava/util/List;)Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest$RequestedSchema;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest$RequestedSchema;Lkotlinx/serialization/json/JsonObject;Ljava/util/List;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest$RequestedSchema;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getProperties ()Lkotlinx/serialization/json/JsonObject;
+	public final fun getRequired ()Ljava/util/List;
+	public final fun getType ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest$RequestedSchema$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest$RequestedSchema$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest$RequestedSchema;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest$RequestedSchema;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest$RequestedSchema$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/CreateElicitationResult : io/modelcontextprotocol/kotlin/sdk/ClientResult {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationResult$Companion;
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationResult$Action;Lkotlinx/serialization/json/JsonObject;Lkotlinx/serialization/json/JsonObject;)V
+	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationResult$Action;Lkotlinx/serialization/json/JsonObject;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationResult$Action;
+	public final fun component2 ()Lkotlinx/serialization/json/JsonObject;
+	public final fun component3 ()Lkotlinx/serialization/json/JsonObject;
+	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationResult$Action;Lkotlinx/serialization/json/JsonObject;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationResult;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationResult;Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationResult$Action;Lkotlinx/serialization/json/JsonObject;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationResult;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAction ()Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationResult$Action;
+	public final fun getContent ()Lkotlinx/serialization/json/JsonObject;
+	public fun get_meta ()Lkotlinx/serialization/json/JsonObject;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/CreateElicitationResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationResult$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationResult;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationResult;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/CreateElicitationResult$Action : java/lang/Enum {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationResult$Action$Companion;
+	public static final field accept Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationResult$Action;
+	public static final field cancel Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationResult$Action;
+	public static final field decline Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationResult$Action;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationResult$Action;
+	public static fun values ()[Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationResult$Action;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/CreateElicitationResult$Action$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/CreateElicitationResult$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
@@ -1381,6 +1494,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/Method$Custom$Companion {
 public final class io/modelcontextprotocol/kotlin/sdk/Method$Defined : java/lang/Enum, io/modelcontextprotocol/kotlin/sdk/Method {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/Method$Defined$Companion;
 	public static final field CompletionComplete Lio/modelcontextprotocol/kotlin/sdk/Method$Defined;
+	public static final field ElicitationCreate Lio/modelcontextprotocol/kotlin/sdk/Method$Defined;
 	public static final field Initialize Lio/modelcontextprotocol/kotlin/sdk/Method$Defined;
 	public static final field LoggingSetLevel Lio/modelcontextprotocol/kotlin/sdk/Method$Defined;
 	public static final field NotificationsCancelled Lio/modelcontextprotocol/kotlin/sdk/Method$Defined;
@@ -2868,6 +2982,8 @@ public class io/modelcontextprotocol/kotlin/sdk/server/Server : io/modelcontextp
 	protected fun assertCapabilityForMethod (Lio/modelcontextprotocol/kotlin/sdk/Method;)V
 	protected fun assertNotificationCapability (Lio/modelcontextprotocol/kotlin/sdk/Method;)V
 	public fun assertRequestHandlerCapability (Lio/modelcontextprotocol/kotlin/sdk/Method;)V
+	public final fun createElicitation (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest$RequestedSchema;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun createElicitation$default (Lio/modelcontextprotocol/kotlin/sdk/server/Server;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest$RequestedSchema;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public final fun createMessage (Lio/modelcontextprotocol/kotlin/sdk/CreateMessageRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun createMessage$default (Lio/modelcontextprotocol/kotlin/sdk/server/Server;Lio/modelcontextprotocol/kotlin/sdk/CreateMessageRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public final fun getClientCapabilities ()Lio/modelcontextprotocol/kotlin/sdk/ClientCapabilities;
