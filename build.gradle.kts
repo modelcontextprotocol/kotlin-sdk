@@ -14,6 +14,7 @@ import org.jreleaser.model.Active
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.kotlin.atomicfu)
     alias(libs.plugins.dokka)
     alias(libs.plugins.jreleaser)
     `maven-publish`
@@ -246,6 +247,7 @@ kotlin {
             kotlin.srcDir(generateLibVersionTask.map { it.sourcesDir })
             dependencies {
                 api(libs.kotlinx.serialization.json)
+                api(libs.kotlinx.collections.immutable)
                 api(libs.ktor.client.cio)
                 api(libs.ktor.server.cio)
                 api(libs.ktor.server.sse)
