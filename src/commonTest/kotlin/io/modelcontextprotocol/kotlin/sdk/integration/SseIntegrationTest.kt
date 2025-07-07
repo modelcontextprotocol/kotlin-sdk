@@ -26,11 +26,15 @@ class SseIntegrationTest {
     @Test
     fun `client should be able to connect to sse server`() = runTest {
         val serverEngine = initServer()
+        var client: Client? = null
         try {
             withContext(Dispatchers.Default) {
-                assertDoesNotThrow { initClient() }
+                assertDoesNotThrow { client = initClient() }
             }
+        } catch (e: Exception) {
+            fail("Failed to connect client: $e")
         } finally {
+            client?.close()
             // Make sure to stop the server
             serverEngine.stopSuspend(1000, 2000)
         }
@@ -54,11 +58,11 @@ class SseIntegrationTest {
             ServerOptions(capabilities = ServerCapabilities()),
         )
 
-        return embeddedServer(ServerCIO, host = URL, port = PORT) { 
+        return embeddedServer(ServerCIO, host = URL, port = PORT) {
             install(io.ktor.server.sse.SSE)
-            routing { 
-                mcp { server } 
-            } 
+            routing {
+                mcp { server }
+            }
         }.startSuspend(wait = false)
     }
 
