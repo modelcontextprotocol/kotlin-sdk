@@ -88,8 +88,8 @@ public class SseClientTransport(
 
             endpoint.await()
         } catch (e: Exception) {
-            initialized.store(false)
             closeResources()
+            initialized.store(false)
             throw e
         }
     }
