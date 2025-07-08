@@ -239,7 +239,7 @@ public abstract class Protocol(
     private suspend fun onRequest(request: JSONRPCRequest) {
         LOGGER.trace { "Received request: ${request.method} (id: ${request.id})" }
 
-        val handler = _requestHandlers.value[request.method] ?: fallbackRequestHandler
+        val handler = requestHandlers[request.method] ?: fallbackRequestHandler
 
         if (handler === null) {
             LOGGER.trace { "No handler found for request: ${request.method}" }

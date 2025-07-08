@@ -22,6 +22,7 @@ import io.modelcontextprotocol.kotlin.sdk.ListResourceTemplatesRequest
 import io.modelcontextprotocol.kotlin.sdk.ListResourceTemplatesResult
 import io.modelcontextprotocol.kotlin.sdk.ListResourcesRequest
 import io.modelcontextprotocol.kotlin.sdk.ListResourcesResult
+import io.modelcontextprotocol.kotlin.sdk.ListRootsRequest
 import io.modelcontextprotocol.kotlin.sdk.ListRootsResult
 import io.modelcontextprotocol.kotlin.sdk.ListToolsRequest
 import io.modelcontextprotocol.kotlin.sdk.ListToolsResult
@@ -44,7 +45,9 @@ import io.modelcontextprotocol.kotlin.sdk.shared.Transport
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.getAndUpdate
 import kotlinx.atomicfu.update
+import kotlinx.collections.immutable.minus
 import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -105,7 +108,7 @@ public open class Client(
 
         // Internal handlers for roots
         if (capabilities.roots != null) {
-            setRequestHandler<ListToolsRequest>(Method.Defined.RootsList) { _, _ ->
+            setRequestHandler<ListRootsRequest>(Method.Defined.RootsList) { _, _ ->
                 handleListRoots()
             }
         }
@@ -544,12 +547,7 @@ public open class Client(
         }
         logger.info { "Removing ${uris.size} roots" }
 
-        val oldMap = roots.getAndUpdate { current ->
-            uris.fold(current) { map, uri ->
-                logger.debug { "Removing root: $uri" }
-                map.remove(uri)
-            }
-        }
+        val oldMap = roots.getAndUpdate { current -> current - uris.toPersistentSet() }
 
         val removedCount = uris.count { it in oldMap }
 

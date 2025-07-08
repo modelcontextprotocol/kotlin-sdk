@@ -47,7 +47,9 @@ import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.getAndUpdate
 import kotlinx.atomicfu.update
+import kotlinx.collections.immutable.minus
 import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.serialization.json.JsonObject
 
@@ -98,11 +100,11 @@ public open class Server(
     private val _tools = atomic(persistentMapOf<String, RegisteredTool>())
     private val _prompts = atomic(persistentMapOf<String, RegisteredPrompt>())
     private val _resources = atomic(persistentMapOf<String, RegisteredResource>())
-    private val tools: Map<String, RegisteredTool>
+    public val tools: Map<String, RegisteredTool>
         get() = _tools.value
-    private val prompts: Map<String, RegisteredPrompt>
+    public val prompts: Map<String, RegisteredPrompt>
         get() = _prompts.value
-    private val resources: Map<String, RegisteredResource>
+    public val resources: Map<String, RegisteredResource>
         get() = _resources.value
 
     init {
@@ -263,12 +265,7 @@ public open class Server(
         }
         logger.info { "Removing ${toolNames.size} tools" }
 
-        val oldMap = _tools.getAndUpdate { current ->
-            toolNames.fold(current) { map, name ->
-                logger.debug { "Removing tool: $name" }
-                map.remove(name)
-            }
-        }
+        val oldMap = _tools.getAndUpdate { current -> current - toolNames.toPersistentSet() }
 
         val removedCount = toolNames.count { it in oldMap }
         logger.info {
@@ -372,12 +369,7 @@ public open class Server(
         }
         logger.info { "Removing ${promptNames.size} prompts" }
 
-        val oldMap = _prompts.getAndUpdate { current ->
-            promptNames.fold(current) { map, name ->
-                logger.debug { "Removing prompt: $name" }
-                map.remove(name)
-            }
-        }
+        val oldMap = _prompts.getAndUpdate { current -> current - promptNames.toPersistentSet() }
 
         val removedCount = promptNames.count { it in oldMap }
 
@@ -477,12 +469,7 @@ public open class Server(
         }
         logger.info { "Removing ${uris.size} resources" }
 
-        val oldMap = _resources.getAndUpdate { current ->
-            uris.fold(current) { map, uri ->
-                logger.debug { "Removing resource: $uri" }
-                map.remove(uri)
-            }
-        }
+        val oldMap = _resources.getAndUpdate { current -> current - uris.toPersistentSet() }
 
         val removedCount = uris.count { it in oldMap }
 
@@ -611,7 +598,7 @@ public open class Server(
 
     private suspend fun handleCallTool(request: CallToolRequest): CallToolResult {
         logger.debug { "Handling tool call request for tool: ${request.name}" }
-        val tool = tools[request.name]
+        val tool = _tools.value[request.name]
             ?: run {
                 logger.error { "Tool not found: ${request.name}" }
                 throw IllegalArgumentException("Tool not found: ${request.name}")
