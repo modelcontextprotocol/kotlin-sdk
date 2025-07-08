@@ -111,7 +111,7 @@ public class SseClientTransport(
                 val text = response.bodyAsText()
                 error("Error POSTing to endpoint (HTTP ${response.status}): $text")
             }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             _onError(e)
             throw e
         }
@@ -144,7 +144,7 @@ public class SseClientTransport(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             _onError(e)
             throw e
         } finally {
@@ -157,7 +157,7 @@ public class SseClientTransport(
             val path = if (eventData.startsWith("/")) eventData.substring(1) else eventData
             val endpointUrl = Url("$baseUrl/$path")
             endpoint.complete(endpointUrl.toString())
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             _onError(e)
             endpoint.completeExceptionally(e)
             throw e
@@ -177,9 +177,13 @@ public class SseClientTransport(
         if (!initialized.compareAndSet(expectedValue = true, newValue = false)) return
 
         job?.cancelAndJoin()
-        if (::session.isInitialized) session.cancel()
-        if (::scope.isInitialized) scope.cancel()
-        endpoint.cancel()
+        try {
+            if (::session.isInitialized) session.cancel()
+            if (::scope.isInitialized) scope.cancel()
+            endpoint.cancel()
+        } catch (e: Throwable) {
+            _onError(e)
+        }
 
         _onClose()
     }
