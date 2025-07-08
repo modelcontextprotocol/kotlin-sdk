@@ -16,6 +16,7 @@ import io.ktor.http.protocolWithAuthority
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
@@ -24,10 +25,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
+import kotlinx.serialization.SerializationException
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
-import kotlin.properties.Delegates
 import kotlin.time.Duration
 
 @Deprecated("Use SseClientTransport instead", ReplaceWith("SseClientTransport"), DeprecationLevel.WARNING)
@@ -44,97 +46,59 @@ public class SseClientTransport(
     private val reconnectionTime: Duration? = null,
     private val requestBuilder: HttpRequestBuilder.() -> Unit = {},
 ) : AbstractTransport() {
-    private val scope by lazy {
-        CoroutineScope(session.coroutineContext + SupervisorJob())
-    }
-
     private val initialized: AtomicBoolean = AtomicBoolean(false)
-    private var session: ClientSSESession by Delegates.notNull()
     private val endpoint = CompletableDeferred<String>()
 
+    private lateinit var session: ClientSSESession
+    private lateinit var scope: CoroutineScope
     private var job: Job? = null
 
-    private val baseUrl by lazy {
-        val requestUrl = session.call.request.url.toString()
-        val url = Url(requestUrl)
-        var path = url.encodedPath
-        if (path.isEmpty()) {
-            url.protocolWithAuthority
-        } else if (path.endsWith("/")) {
-            url.protocolWithAuthority + path.removeSuffix("/")
-        } else {
-            // the last item is not a directory, so will not be taken into account
-            path = path.substring(0, path.lastIndexOf("/"))
-            url.protocolWithAuthority + path
+    private val baseUrl: String by lazy {
+        session.call.request.url.let { url ->
+            val path = url.encodedPath
+            when {
+                path.isEmpty() -> url.protocolWithAuthority
+                path.endsWith("/") -> url.protocolWithAuthority + path.removeSuffix("/")
+                else -> url.protocolWithAuthority + path.take(path.lastIndexOf("/"))
+            }
         }
     }
 
     override suspend fun start() {
-        if (!initialized.compareAndSet(expectedValue = false, newValue = true)) {
-            error(
-                "SSEClientTransport already started! " +
-                        "If using Client class, note that connect() calls start() automatically.",
-            )
+        check(initialized.compareAndSet(expectedValue = false, newValue = true)) {
+            "SSEClientTransport already started! If using Client class, note that connect() calls start() automatically."
         }
 
-        session = urlString?.let {
-            client.sseSession(
-                urlString = it,
+        try {
+            session = urlString?.let {
+                client.sseSession(
+                    urlString = it,
+                    reconnectionTime = reconnectionTime,
+                    block = requestBuilder,
+                )
+            } ?: client.sseSession(
                 reconnectionTime = reconnectionTime,
                 block = requestBuilder,
             )
-        } ?: client.sseSession(
-            reconnectionTime = reconnectionTime,
-            block = requestBuilder,
-        )
+            scope = CoroutineScope(session.coroutineContext + SupervisorJob())
 
-        job = scope.launch(CoroutineName("SseMcpClientTransport.collect#${hashCode()}")) {
-            session.incoming.collect { event ->
-                when (event.event) {
-                    "error" -> {
-                        val e = IllegalStateException("SSE error: ${event.data}")
-                        _onError(e)
-                        throw e
-                    }
-
-                    "open" -> {
-                        // The connection is open, but we need to wait for the endpoint to be received.
-                    }
-
-                    "endpoint" -> {
-                        try {
-                            val eventData = event.data ?: ""
-
-                            // check url correctness
-                            val maybeEndpoint = Url("$baseUrl/${if (eventData.startsWith("/")) eventData.substring(1) else eventData}")
-                            endpoint.complete(maybeEndpoint.toString())
-                        } catch (e: Exception) {
-                            _onError(e)
-                            close()
-                            error(e)
-                        }
-                    }
-
-                    else -> {
-                        try {
-                            val message = McpJson.decodeFromString<JSONRPCMessage>(event.data ?: "")
-                            _onMessage(message)
-                        } catch (e: Exception) {
-                            _onError(e)
-                        }
-                    }
-                }
+            job = scope.launch(CoroutineName("SseMcpClientTransport.connect#${hashCode()}")) {
+                collectMessages()
             }
-        }
 
-        endpoint.await()
+            endpoint.await()
+        } catch (e: Exception) {
+            closeResources()
+            initialized.store(false)
+            throw e
+        }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun send(message: JSONRPCMessage) {
-        if (!endpoint.isCompleted) {
-            error("Not connected")
-        }
+        check(initialized.load()) { "SseClientTransport is not initialized!" }
+        check(job?.isActive == true) { "SseClientTransport is closed!" }
+        check(endpoint.isCompleted) { "Not connected!" }
 
         try {
             val response = client.post(endpoint.getCompleted()) {
@@ -147,19 +111,80 @@ public class SseClientTransport(
                 val text = response.bodyAsText()
                 error("Error POSTing to endpoint (HTTP ${response.status}): $text")
             }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             _onError(e)
             throw e
         }
     }
 
     override suspend fun close() {
-        if (!initialized.load()) {
-            error("SSEClientTransport is not initialized!")
+        check(initialized.load()) { "SseClientTransport is not initialized!" }
+        closeResources()
+    }
+
+    private suspend fun CoroutineScope.collectMessages() {
+        try {
+            session.incoming.collect { event ->
+                ensureActive()
+
+                when (event.event) {
+                    "error" -> {
+                        val error = IllegalStateException("SSE error: ${event.data}")
+                        _onError(error)
+                        throw error
+                    }
+
+                    "open" -> {
+                        // The connection is open, but we need to wait for the endpoint to be received.
+                    }
+
+                    "endpoint" -> handleEndpoint(event.data.orEmpty())
+                    else -> handleMessage(event.data.orEmpty())
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            _onError(e)
+            throw e
+        } finally {
+            closeResources()
+        }
+    }
+
+    private fun handleEndpoint(eventData: String) {
+        try {
+            val path = if (eventData.startsWith("/")) eventData.substring(1) else eventData
+            val endpointUrl = Url("$baseUrl/$path")
+            endpoint.complete(endpointUrl.toString())
+        } catch (e: Throwable) {
+            _onError(e)
+            endpoint.completeExceptionally(e)
+            throw e
+        }
+    }
+
+    private suspend fun handleMessage(data: String) {
+        try {
+            val message = McpJson.decodeFromString<JSONRPCMessage>(data)
+            _onMessage(message)
+        } catch (e: SerializationException) {
+            _onError(e)
+        }
+    }
+
+    private suspend fun closeResources() {
+        if (!initialized.compareAndSet(expectedValue = true, newValue = false)) return
+
+        job?.cancelAndJoin()
+        try {
+            if (::session.isInitialized) session.cancel()
+            if (::scope.isInitialized) scope.cancel()
+            endpoint.cancel()
+        } catch (e: Throwable) {
+            _onError(e)
         }
 
-        session.cancel()
         _onClose()
-        job?.cancelAndJoin()
     }
 }
