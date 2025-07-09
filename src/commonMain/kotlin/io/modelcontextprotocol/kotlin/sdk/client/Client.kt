@@ -22,6 +22,7 @@ import io.modelcontextprotocol.kotlin.sdk.ListResourceTemplatesRequest
 import io.modelcontextprotocol.kotlin.sdk.ListResourceTemplatesResult
 import io.modelcontextprotocol.kotlin.sdk.ListResourcesRequest
 import io.modelcontextprotocol.kotlin.sdk.ListResourcesResult
+import io.modelcontextprotocol.kotlin.sdk.ListRootsRequest
 import io.modelcontextprotocol.kotlin.sdk.ListRootsResult
 import io.modelcontextprotocol.kotlin.sdk.ListToolsRequest
 import io.modelcontextprotocol.kotlin.sdk.ListToolsResult
@@ -41,6 +42,12 @@ import io.modelcontextprotocol.kotlin.sdk.shared.Protocol
 import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
+import kotlinx.atomicfu.atomic
+import kotlinx.atomicfu.getAndUpdate
+import kotlinx.atomicfu.update
+import kotlinx.collections.immutable.minus
+import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -94,14 +101,14 @@ public open class Client(
 
     private val capabilities: ClientCapabilities = options.capabilities
 
-    private val roots = mutableMapOf<String, Root>()
+    private val roots = atomic(persistentMapOf<String, Root>())
 
     init {
         logger.debug { "Initializing MCP client with capabilities: $capabilities" }
 
         // Internal handlers for roots
         if (capabilities.roots != null) {
-            setRequestHandler<ListToolsRequest>(Method.Defined.RootsList) { _, _ ->
+            setRequestHandler<ListRootsRequest>(Method.Defined.RootsList) { _, _ ->
                 handleListRoots()
             }
         }
@@ -483,7 +490,7 @@ public open class Client(
             throw IllegalStateException("Client does not support roots capability.")
         }
         logger.info { "Adding root: $name ($uri)" }
-        roots[uri] = Root(uri, name)
+        roots.update { current -> current.put(uri, Root(uri, name)) }
     }
 
     /**
@@ -498,10 +505,7 @@ public open class Client(
             throw IllegalStateException("Client does not support roots capability.")
         }
         logger.info { "Adding ${rootsToAdd.size} roots" }
-        for (r in rootsToAdd) {
-            logger.info { "Adding root: ${r.name} (${r.uri})" }
-            roots[r.uri] = r
-        }
+        roots.update { current -> current.putAll(rootsToAdd.associateBy { it.uri }) }
     }
 
     /**
@@ -517,7 +521,8 @@ public open class Client(
             throw IllegalStateException("Client does not support roots capability.")
         }
         logger.info { "Removing root: $uri" }
-        val removed = roots.remove(uri) != null
+        val oldMap = roots.getAndUpdate { current -> current.remove(uri) }
+        val removed = uri in oldMap
         logger.debug {
             if (removed) {
                 "Root removed: $uri"
@@ -541,13 +546,11 @@ public open class Client(
             throw IllegalStateException("Client does not support roots capability.")
         }
         logger.info { "Removing ${uris.size} roots" }
-        var removedCount = 0
-        for (uri in uris) {
-            logger.debug { "Removing root: $uri" }
-            if (roots.remove(uri) != null) {
-                removedCount++
-            }
-        }
+
+        val oldMap = roots.getAndUpdate { current -> current - uris.toPersistentSet() }
+
+        val removedCount = uris.count { it in oldMap }
+
         logger.info {
             if (removedCount > 0) {
                 "Removed $removedCount roots"
@@ -571,7 +574,7 @@ public open class Client(
     // --- Internal Handlers ---
 
     private suspend fun handleListRoots(): ListRootsResult {
-        val rootList = roots.values.toList()
+        val rootList = roots.value.values.toList()
         return ListRootsResult(rootList)
     }
 }

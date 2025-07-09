@@ -4,6 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.plugins.sse.SSE
 import io.ktor.server.application.install
 import io.ktor.server.cio.CIO
+import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
@@ -17,10 +18,12 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 class SseTransportTest : BaseTransportTest() {
+
+    private suspend fun EmbeddedServer<*, *>.actualPort() = engine.resolvedConnectors().first().port
+
     @Test
     fun `should start then close cleanly`() = runTest {
-        val port = 8080
-        val server = embeddedServer(CIO, port = port) {
+        val server = embeddedServer(CIO, port = 0) {
             install(io.ktor.server.sse.SSE)
             val transports = ConcurrentMap<String, SseServerTransport>()
             routing {
@@ -34,24 +37,27 @@ class SseTransportTest : BaseTransportTest() {
             }
         }.startSuspend(wait = false)
 
+        val actualPort = server.actualPort()
+
         val client = HttpClient {
             install(SSE)
         }.mcpSseTransport {
             url {
                 host = "localhost"
-                this.port = port
+                this.port = actualPort
             }
         }
 
-        testClientOpenClose(client)
-
-        server.stopSuspend()
+        try {
+            testClientOpenClose(client)
+        } finally {
+            server.stopSuspend()
+        }
     }
 
     @Test
     fun `should read messages`() = runTest {
-        val port = 3003
-        val server = embeddedServer(CIO, port = port) {
+        val server = embeddedServer(CIO, port = 0) {
             install(io.ktor.server.sse.SSE)
             val transports = ConcurrentMap<String, SseServerTransport>()
             routing {
@@ -71,23 +77,27 @@ class SseTransportTest : BaseTransportTest() {
             }
         }.startSuspend(wait = false)
 
+        val actualPort = server.actualPort()
+
         val client = HttpClient {
             install(SSE)
         }.mcpSseTransport {
             url {
                 host = "localhost"
-                this.port = port
+                this.port = actualPort
             }
         }
 
-        testClientRead(client)
-        server.stopSuspend()
+        try {
+            testClientRead(client)
+        } finally {
+            server.stopSuspend()
+        }
     }
 
     @Test
     fun `test sse path not root path`() = runTest {
-        val port = 3007
-        val server = embeddedServer(CIO, port = port) {
+        val server = embeddedServer(CIO, port = 0) {
             install(io.ktor.server.sse.SSE)
             val transports = ConcurrentMap<String, SseServerTransport>()
             routing {
@@ -109,17 +119,22 @@ class SseTransportTest : BaseTransportTest() {
             }
         }.startSuspend(wait = false)
 
+        val actualPort = server.actualPort()
+
         val client = HttpClient {
             install(SSE)
         }.mcpSseTransport {
             url {
                 host = "localhost"
-                this.port = port
+                this.port = actualPort
                 pathSegments = listOf("sse")
             }
         }
 
-        testClientRead(client)
-        server.stopSuspend()
+        try {
+            testClientRead(client)
+        } finally {
+            server.stopSuspend()
+        }
     }
 }
