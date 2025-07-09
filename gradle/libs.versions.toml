@@ -2,9 +2,11 @@
 # plugins version
 kotlin = "2.2.0"
 dokka = "2.0.0"
+atomicfu = "0.29.0"
 
 # libraries version
 serialization = "1.9.0"
+collections-immutable = "0.4.0"
 coroutines = "1.10.2"
 ktor = "3.2.1"
 mockk = "1.14.4"
@@ -17,6 +19,7 @@ kotest = "5.9.1"
 [libraries]
 # Kotlinx libraries
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
+kotlinx-collections-immutable = { group = "org.jetbrains.kotlinx", name = "kotlinx-collections-immutable", version.ref = "collections-immutable" }
 kotlin-logging = { group = "io.github.oshai", name = "kotlin-logging", version.ref = "logging" }
 
 # Ktor
@@ -36,6 +39,7 @@ kotest-assertions-json = { group = "io.kotest", name = "kotest-assertions-json",
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kotlin-atomicfu = { id = "org.jetbrains.kotlinx.atomicfu", version.ref = "atomicfu" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 jreleaser = { id = "org.jreleaser", version.ref = "jreleaser"}
 kotlinx-binary-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibilityValidatorPlugin" }

@@ -19,12 +19,17 @@ import io.modelcontextprotocol.kotlin.sdk.RequestId
 import io.modelcontextprotocol.kotlin.sdk.RequestResult
 import io.modelcontextprotocol.kotlin.sdk.fromJSON
 import io.modelcontextprotocol.kotlin.sdk.toJSON
+import kotlinx.atomicfu.AtomicRef
+import kotlinx.atomicfu.atomic
+import kotlinx.atomicfu.getAndUpdate
+import kotlinx.atomicfu.update
+import kotlinx.collections.immutable.PersistentMap
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.ClassDiscriminatorMode
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -117,18 +122,25 @@ public abstract class Protocol(
     public var transport: Transport? = null
         private set
 
-    @PublishedApi
-    internal val requestHandlers: MutableMap<String, suspend (request: JSONRPCRequest, extra: RequestHandlerExtra) -> RequestResult?> =
-        mutableMapOf()
-    public val notificationHandlers: MutableMap<String, suspend (notification: JSONRPCNotification) -> Unit> =
-        mutableMapOf()
+    private val _requestHandlers: AtomicRef<PersistentMap<String, suspend (JSONRPCRequest, RequestHandlerExtra) -> RequestResult?>> =
+        atomic(persistentMapOf())
+    public val requestHandlers: Map<String, suspend (request: JSONRPCRequest, extra: RequestHandlerExtra) -> RequestResult?>
+        get() = _requestHandlers.value
 
-    @PublishedApi
-    internal val responseHandlers: MutableMap<RequestId, (response: JSONRPCResponse?, error: Exception?) -> Unit> =
-        mutableMapOf()
+    private val _notificationHandlers =
+        atomic(persistentMapOf<String, suspend (notification: JSONRPCNotification) -> Unit>())
+    public val notificationHandlers: Map<String, suspend (notification: JSONRPCNotification) -> Unit>
+        get() = _notificationHandlers.value
 
-    @PublishedApi
-    internal val progressHandlers: MutableMap<RequestId, ProgressCallback> = mutableMapOf()
+    private val _responseHandlers: AtomicRef<PersistentMap<RequestId, (response: JSONRPCResponse?, error: Exception?) -> Unit>> =
+        atomic(persistentMapOf())
+    public val responseHandlers: Map<RequestId, (response: JSONRPCResponse?, error: Exception?) -> Unit>
+        get() = _responseHandlers.value
+
+    private val _progressHandlers: AtomicRef<PersistentMap<RequestId, ProgressCallback>> =
+        atomic(persistentMapOf())
+    public val progressHandlers: Map<RequestId, ProgressCallback>
+        get() = _progressHandlers.value
 
     /**
      * Callback for when the connection is closed for any reason.
@@ -162,7 +174,7 @@ public abstract class Protocol(
             COMPLETED
         }
 
-        setRequestHandler<PingRequest>(Method.Defined.Ping) { request, _ ->
+        setRequestHandler<PingRequest>(Method.Defined.Ping) { _, _ ->
             EmptyRequestResult()
         }
     }
@@ -195,22 +207,22 @@ public abstract class Protocol(
     }
 
     private fun doClose() {
-        responseHandlers.clear()
-        progressHandlers.clear()
+        val handlersToNotify = _responseHandlers.value.values.toList()
+        _responseHandlers.getAndSet(persistentMapOf())
+        _progressHandlers.getAndSet(persistentMapOf())
         transport = null
         onClose()
 
         val error = McpError(ErrorCode.Defined.ConnectionClosed.code, "Connection closed")
-        for (handler in responseHandlers.values) {
+        for (handler in handlersToNotify) {
             handler(null, error)
         }
     }
 
     private suspend fun onNotification(notification: JSONRPCNotification) {
         LOGGER.trace { "Received notification: ${notification.method}" }
-        val function = notificationHandlers[notification.method]
-        val property = fallbackNotificationHandler
-        val handler = function ?: property
+
+        val handler = notificationHandlers[notification.method] ?: fallbackNotificationHandler
 
         if (handler == null) {
             LOGGER.trace { "No handler found for notification: ${notification.method}" }
@@ -226,6 +238,7 @@ public abstract class Protocol(
 
     private suspend fun onRequest(request: JSONRPCRequest) {
         LOGGER.trace { "Received request: ${request.method} (id: ${request.id})" }
+
         val handler = requestHandlers[request.method] ?: fallbackRequestHandler
 
         if (handler === null) {
@@ -285,7 +298,7 @@ public abstract class Protocol(
         val message = notification.message
         val progressToken = notification.progressToken
 
-        val handler = progressHandlers[progressToken]
+        val handler = _progressHandlers.value[progressToken]
         if (handler == null) {
             val error = Error(
                 "Received a progress notification for an unknown token: ${McpJson.encodeToString(notification)}",
@@ -300,14 +313,24 @@ public abstract class Protocol(
 
     private fun onResponse(response: JSONRPCResponse?, error: JSONRPCError?) {
         val messageId = response?.id
-        val handler = responseHandlers[messageId]
-        if (handler == null) {
+
+        val oldResponseHandlers = _responseHandlers.getAndUpdate { current ->
+            if (messageId != null && messageId in current) {
+                current.remove(messageId)
+            } else {
+                current
+            }
+        }
+
+        val handler = oldResponseHandlers[messageId]
+
+        if (handler != null) {
+            messageId?.let { msg -> _progressHandlers.update { it.remove(msg) } }
+        } else {
             onError(Error("Received a response for an unknown message ID: ${McpJson.encodeToString(response)}"))
             return
         }
 
-        responseHandlers.remove(messageId)
-        progressHandlers.remove(messageId)
         if (response != null) {
             handler(response, null)
         } else {
@@ -317,7 +340,6 @@ public abstract class Protocol(
                 error.message,
                 error.data,
             )
-
             handler(null, error)
         }
     }
@@ -372,31 +394,35 @@ public abstract class Protocol(
 
         if (options?.onProgress != null) {
             LOGGER.trace { "Registering progress handler for request id: $messageId" }
-            progressHandlers[messageId] = options.onProgress
+            _progressHandlers.update { current ->
+                current.put(messageId, options.onProgress)
+            }
         }
 
-        responseHandlers[messageId] = set@{ response, error ->
-            if (error != null) {
-                result.completeExceptionally(error)
-                return@set
-            }
+        _responseHandlers.update { current ->
+            current.put(messageId) { response, error ->
+                if (error != null) {
+                    result.completeExceptionally(error)
+                    return@put
+                }
 
-            if (response?.error != null) {
-                result.completeExceptionally(IllegalStateException(response.error.toString()))
-                return@set
-            }
+                if (response?.error != null) {
+                    result.completeExceptionally(IllegalStateException(response.error.toString()))
+                    return@put
+                }
 
-            try {
-                @Suppress("UNCHECKED_CAST")
-                result.complete(response!!.result as T)
-            } catch (error: Throwable) {
-                result.completeExceptionally(error)
+                try {
+                    @Suppress("UNCHECKED_CAST")
+                    result.complete(response!!.result as T)
+                } catch (error: Throwable) {
+                    result.completeExceptionally(error)
+                }
             }
         }
 
         val cancel: suspend (Throwable) -> Unit = { reason: Throwable ->
-            responseHandlers.remove(messageId)
-            progressHandlers.remove(messageId)
+            _responseHandlers.update { current -> current.remove(messageId) }
+            _progressHandlers.update { current -> current.remove(messageId) }
 
             val notification = CancelledNotification(requestId = messageId, reason = reason.message ?: "Unknown")
 
@@ -468,16 +494,17 @@ public abstract class Protocol(
 
         val serializer = McpJson.serializersModule.serializer(requestType)
 
-        requestHandlers[method.value] = { request, extraHandler ->
-            val result = McpJson.decodeFromJsonElement(serializer, request.params)
-            val response = if (result != null) {
-                @Suppress("UNCHECKED_CAST")
-                block(result as T, extraHandler)
-            } else {
-                EmptyRequestResult()
+        _requestHandlers.update { current ->
+            current.put(method.value) { request, extraHandler ->
+                val result = McpJson.decodeFromJsonElement(serializer, request.params)
+                val response = if (result != null) {
+                    @Suppress("UNCHECKED_CAST")
+                    block(result as T, extraHandler)
+                } else {
+                    EmptyRequestResult()
+                }
+                response
             }
-
-            response
         }
     }
 
@@ -485,7 +512,7 @@ public abstract class Protocol(
      * Removes the request handler for the given method.
      */
     public fun removeRequestHandler(method: Method) {
-        requestHandlers.remove(method.value)
+        _requestHandlers.update { current -> current.remove(method.value) }
     }
 
     /**
@@ -494,9 +521,11 @@ public abstract class Protocol(
      * Note that this will replace any previous notification handler for the same method.
      */
     public fun <T : Notification> setNotificationHandler(method: Method, handler: (notification: T) -> Deferred<Unit>) {
-        notificationHandlers[method.value] = {
-            @Suppress("UNCHECKED_CAST")
-            handler(it.fromJSON() as T)
+        _notificationHandlers.update { current ->
+            current.put(method.value) {
+                @Suppress("UNCHECKED_CAST")
+                handler(it.fromJSON() as T)
+            }
         }
     }
 
@@ -504,6 +533,6 @@ public abstract class Protocol(
      * Removes the notification handler for the given method.
      */
     public fun removeNotificationHandler(method: Method) {
-        notificationHandlers.remove(method.value)
+        _notificationHandlers.update { current -> current.remove(method.value) }
     }
 }

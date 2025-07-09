@@ -44,6 +44,12 @@ import io.modelcontextprotocol.kotlin.sdk.ToolListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.shared.Protocol
 import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
+import kotlinx.atomicfu.atomic
+import kotlinx.atomicfu.getAndUpdate
+import kotlinx.atomicfu.update
+import kotlinx.collections.immutable.minus
+import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.serialization.json.JsonObject
 
@@ -91,9 +97,15 @@ public open class Server(
 
     private val capabilities: ServerCapabilities = options.capabilities
 
-    private val tools = mutableMapOf<String, RegisteredTool>()
-    private val prompts = mutableMapOf<String, RegisteredPrompt>()
-    private val resources = mutableMapOf<String, RegisteredResource>()
+    private val _tools = atomic(persistentMapOf<String, RegisteredTool>())
+    private val _prompts = atomic(persistentMapOf<String, RegisteredPrompt>())
+    private val _resources = atomic(persistentMapOf<String, RegisteredResource>())
+    public val tools: Map<String, RegisteredTool>
+        get() = _tools.value
+    public val prompts: Map<String, RegisteredPrompt>
+        get() = _prompts.value
+    public val resources: Map<String, RegisteredResource>
+        get() = _resources.value
 
     init {
         logger.debug { "Initializing MCP server with capabilities: $capabilities" }
@@ -192,7 +204,9 @@ public open class Server(
             throw IllegalStateException("Server does not support tools capability. Enable it in ServerOptions.")
         }
         logger.info { "Registering tool: $name" }
-        tools[name] = RegisteredTool(Tool(name, description, inputSchema, toolAnnotations), handler)
+        _tools.update { current ->
+            current.put(name, RegisteredTool(Tool(name, description, inputSchema, toolAnnotations), handler))
+        }
     }
 
     /**
@@ -207,10 +221,7 @@ public open class Server(
             throw IllegalStateException("Server does not support tools capability.")
         }
         logger.info { "Registering ${toolsToAdd.size} tools" }
-        for (rt in toolsToAdd) {
-            logger.debug { "Registering tool: ${rt.tool.name}" }
-            tools[rt.tool.name] = rt
-        }
+        _tools.update { current -> current.putAll(toolsToAdd.associateBy { it.tool.name }) }
     }
 
     /**
@@ -226,7 +237,10 @@ public open class Server(
             throw IllegalStateException("Server does not support tools capability.")
         }
         logger.info { "Removing tool: $name" }
-        val removed = tools.remove(name) != null
+
+        val oldMap = _tools.getAndUpdate { current -> current.remove(name) }
+
+        val removed = name in oldMap
         logger.debug {
             if (removed) {
                 "Tool removed: $name"
@@ -250,18 +264,15 @@ public open class Server(
             throw IllegalStateException("Server does not support tools capability.")
         }
         logger.info { "Removing ${toolNames.size} tools" }
-        var removedCount = 0
-        for (name in toolNames) {
-            logger.debug { "Removing tool: $name" }
-            if (tools.remove(name) != null) {
-                removedCount++
-            }
-        }
+
+        val oldMap = _tools.getAndUpdate { current -> current - toolNames.toPersistentSet() }
+
+        val removedCount = toolNames.count { it in oldMap }
         logger.info {
             if (removedCount > 0) {
-              "Removed $removedCount tools"
+                "Removed $removedCount tools"
             } else {
-              "No tools were removed"
+                "No tools were removed"
             }
         }
         return removedCount
@@ -280,7 +291,7 @@ public open class Server(
             throw IllegalStateException("Server does not support prompts capability.")
         }
         logger.info { "Registering prompt: ${prompt.name}" }
-        prompts[prompt.name] = RegisteredPrompt(prompt, promptProvider)
+        _prompts.update { current -> current.put(prompt.name, RegisteredPrompt(prompt, promptProvider)) }
     }
 
     /**
@@ -314,10 +325,7 @@ public open class Server(
             throw IllegalStateException("Server does not support prompts capability.")
         }
         logger.info { "Registering ${promptsToAdd.size} prompts" }
-        for (rp in promptsToAdd) {
-            logger.debug { "Registering prompt: ${rp.prompt.name}" }
-            prompts[rp.prompt.name] = rp
-        }
+        _prompts.update { current -> current.putAll(promptsToAdd.associateBy { it.prompt.name }) }
     }
 
     /**
@@ -333,7 +341,10 @@ public open class Server(
             throw IllegalStateException("Server does not support prompts capability.")
         }
         logger.info { "Removing prompt: $name" }
-        val removed = prompts.remove(name) != null
+
+        val oldMap = _prompts.getAndUpdate { current -> current.remove(name) }
+
+        val removed = name in oldMap
         logger.debug {
             if (removed) {
                 "Prompt removed: $name"
@@ -357,13 +368,11 @@ public open class Server(
             throw IllegalStateException("Server does not support prompts capability.")
         }
         logger.info { "Removing ${promptNames.size} prompts" }
-        var removedCount = 0
-        for (name in promptNames) {
-            logger.debug { "Removing prompt: $name" }
-            if (prompts.remove(name) != null) {
-                removedCount++
-            }
-        }
+
+        val oldMap = _prompts.getAndUpdate { current -> current - promptNames.toPersistentSet() }
+
+        val removedCount = promptNames.count { it in oldMap }
+
         logger.info {
             if (removedCount > 0) {
                 "Removed $removedCount prompts"
@@ -396,7 +405,12 @@ public open class Server(
             throw IllegalStateException("Server does not support resources capability.")
         }
         logger.info { "Registering resource: $name ($uri)" }
-        resources[uri] = RegisteredResource(Resource(uri, name, description, mimeType), readHandler)
+        _resources.update { current ->
+            current.put(
+                uri,
+                RegisteredResource(Resource(uri, name, description, mimeType), readHandler)
+            )
+        }
     }
 
     /**
@@ -411,10 +425,7 @@ public open class Server(
             throw IllegalStateException("Server does not support resources capability.")
         }
         logger.info { "Registering ${resourcesToAdd.size} resources" }
-        for (r in resourcesToAdd) {
-            logger.debug { "Registering resource: ${r.resource.name} (${r.resource.uri})" }
-            resources[r.resource.uri] = r
-        }
+        _resources.update { current -> current.putAll(resourcesToAdd.associateBy { it.resource.uri }) }
     }
 
     /**
@@ -430,7 +441,10 @@ public open class Server(
             throw IllegalStateException("Server does not support resources capability.")
         }
         logger.info { "Removing resource: $uri" }
-        val removed = resources.remove(uri) != null
+
+        val oldMap = _resources.getAndUpdate { current -> current.remove(uri) }
+
+        val removed = uri in oldMap
         logger.debug {
             if (removed) {
                 "Resource removed: $uri"
@@ -454,13 +468,11 @@ public open class Server(
             throw IllegalStateException("Server does not support resources capability.")
         }
         logger.info { "Removing ${uris.size} resources" }
-        var removedCount = 0
-        for (uri in uris) {
-            logger.debug { "Removing resource: $uri" }
-            if (resources.remove(uri) != null) {
-                removedCount++
-            }
-        }
+
+        val oldMap = _resources.getAndUpdate { current -> current - uris.toPersistentSet() }
+
+        val removedCount = uris.count { it in oldMap }
+
         logger.info {
             if (removedCount > 0) {
                 "Removed $removedCount resources"
@@ -586,7 +598,7 @@ public open class Server(
 
     private suspend fun handleCallTool(request: CallToolRequest): CallToolResult {
         logger.debug { "Handling tool call request for tool: ${request.name}" }
-        val tool = tools[request.name]
+        val tool = _tools.value[request.name]
             ?: run {
                 logger.error { "Tool not found: ${request.name}" }
                 throw IllegalArgumentException("Tool not found: ${request.name}")
