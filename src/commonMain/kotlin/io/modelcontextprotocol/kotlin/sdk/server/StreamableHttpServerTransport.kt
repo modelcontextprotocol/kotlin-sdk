@@ -8,7 +8,6 @@ import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.contentType
 import io.ktor.server.request.host
 import io.ktor.server.request.httpMethod
-import io.ktor.server.request.receive
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.header
 import io.ktor.server.response.respond
@@ -30,7 +29,6 @@ import kotlinx.coroutines.job
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlin.concurrent.atomics.AtomicBoolean
@@ -237,7 +235,7 @@ public class StreamableHttpServerTransport(
                 return
             }
 
-            if (call.request.contentType() != ContentType.Application.Json) {
+            if (!call.request.contentType().match(ContentType.Application.Json)) {
                 call.reject(
                     HttpStatusCode.UnsupportedMediaType, ErrorCode.Unknown(-32000),
                     "Unsupported Media Type: Content-Type must be application/json"
