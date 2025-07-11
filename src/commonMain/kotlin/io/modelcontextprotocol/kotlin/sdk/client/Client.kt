@@ -8,6 +8,8 @@ import io.modelcontextprotocol.kotlin.sdk.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.CompatibilityCallToolResult
 import io.modelcontextprotocol.kotlin.sdk.CompleteRequest
 import io.modelcontextprotocol.kotlin.sdk.CompleteResult
+import io.modelcontextprotocol.kotlin.sdk.CreateElicitationRequest
+import io.modelcontextprotocol.kotlin.sdk.CreateElicitationResult
 import io.modelcontextprotocol.kotlin.sdk.EmptyRequestResult
 import io.modelcontextprotocol.kotlin.sdk.GetPromptRequest
 import io.modelcontextprotocol.kotlin.sdk.GetPromptResult
@@ -258,6 +260,14 @@ public open class Client(
                 if (capabilities.roots == null) {
                     throw IllegalStateException(
                         "Client does not support roots capability (required for $method)"
+                    )
+                }
+            }
+
+            Method.Defined.ElicitationCreate -> {
+                if (capabilities.elicitation == null) {
+                    throw IllegalStateException(
+                        "Client does not support elicitation capability (required for $method)"
                     )
                 }
             }
@@ -569,6 +579,24 @@ public open class Client(
      */
     public suspend fun sendRootsListChanged() {
         notification(RootsListChangedNotification())
+    }
+
+    /**
+     * Sets the elicitation handler.
+     *
+     * @param handler The elicitation handler.
+     * @throws IllegalStateException if the client does not support elicitation.
+     */
+    public fun setElicitationHandler(handler: (CreateElicitationRequest) -> CreateElicitationResult) {
+        if (capabilities.elicitation == null) {
+            logger.error { "Failed to set elicitation handler: Client does not support elicitation" }
+            throw IllegalStateException("Client does not support elicitation.")
+        }
+        logger.info { "Setting the elicitation handler" }
+
+        setRequestHandler<CreateElicitationRequest>(Method.Defined.ElicitationCreate) { request, _ ->
+            handler(request)
+        }
     }
 
     // --- Internal Handlers ---

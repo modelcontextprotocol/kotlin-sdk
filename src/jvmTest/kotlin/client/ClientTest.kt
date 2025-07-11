@@ -3,6 +3,8 @@ package client
 import io.mockk.coEvery
 import io.mockk.spyk
 import io.modelcontextprotocol.kotlin.sdk.ClientCapabilities
+import io.modelcontextprotocol.kotlin.sdk.CreateElicitationRequest
+import io.modelcontextprotocol.kotlin.sdk.CreateElicitationResult
 import io.modelcontextprotocol.kotlin.sdk.CreateMessageRequest
 import io.modelcontextprotocol.kotlin.sdk.CreateMessageResult
 import io.modelcontextprotocol.kotlin.sdk.EmptyJsonObject
@@ -42,6 +44,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonObject
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertInstanceOf
 import org.junit.jupiter.api.assertThrows
@@ -795,5 +798,107 @@ class ClientTest {
             rootListChangedNotificationReceived,
             "Notification should be sent when sendRootsListChanged is called"
         )
+    }
+
+    @Test
+    fun `should reject server elicitation when elicitation capability is not supported`() = runTest {
+        val client = Client(
+            Implementation(name = "test client", version = "1.0"),
+            ClientOptions(
+                capabilities = ClientCapabilities()
+            )
+        )
+
+        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
+
+        val server = Server(
+            serverInfo = Implementation(name = "test server", version = "1.0"),
+            options = ServerOptions(
+                capabilities = ServerCapabilities()
+            )
+        )
+
+        listOf(
+            launch { client.connect(clientTransport) },
+            launch { server.connect(serverTransport) }
+        ).joinAll()
+
+        // Verify that creating an elicitation throws an exception
+        val exception = assertThrows<IllegalStateException> {
+            server.createElicitation(
+                message = "Please provide your GitHub username",
+                requestedSchema = CreateElicitationRequest.RequestedSchema(
+                    properties = buildJsonObject {
+                        putJsonObject("name") {
+                            put("type", "string")
+                        }
+                    },
+                    required = listOf("name")
+                )
+            )
+        }
+        assertEquals(
+            "Client does not support elicitation (required for elicitation/create)",
+            exception.message
+        )
+    }
+
+    @Test
+    fun `should handle server elicitation`() = runTest {
+        val client = Client(
+            Implementation(name = "test client", version = "1.0"),
+            ClientOptions(
+                capabilities = ClientCapabilities(
+                    elicitation = EmptyJsonObject,
+                )
+            )
+        )
+
+        val elicitationMessage = "Please provide your GitHub username"
+        val requestedSchema = CreateElicitationRequest.RequestedSchema(
+            properties = buildJsonObject {
+                putJsonObject("name") {
+                    put("type", "string")
+                }
+            },
+            required = listOf("name")
+        )
+
+        val elicitationResultAction = CreateElicitationResult.Action.accept
+        val elicitationResultContent = buildJsonObject {
+            put("name", "octocat")
+        }
+
+        client.setElicitationHandler { request ->
+            assertEquals(elicitationMessage, request.message)
+            assertEquals(requestedSchema, request.requestedSchema)
+
+            CreateElicitationResult(
+                action = elicitationResultAction,
+                content = elicitationResultContent
+            )
+        }
+
+        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
+
+        val server = Server(
+            serverInfo = Implementation(name = "test server", version = "1.0"),
+            options = ServerOptions(
+                capabilities = ServerCapabilities()
+            )
+        )
+
+        listOf(
+            launch { client.connect(clientTransport) },
+            launch { server.connect(serverTransport) }
+        ).joinAll()
+
+        val result = server.createElicitation(
+            message = elicitationMessage,
+            requestedSchema = requestedSchema
+        )
+
+        assertEquals(elicitationResultAction, result.action)
+        assertEquals(elicitationResultContent, result.content)
     }
 }
