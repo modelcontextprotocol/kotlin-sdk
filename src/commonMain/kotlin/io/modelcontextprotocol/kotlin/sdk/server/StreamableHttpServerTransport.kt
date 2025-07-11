@@ -450,7 +450,7 @@ public class StreamableHttpServerTransport(
                         id = null,
                         error = JSONRPCError(
                             code = ErrorCode.Defined.InvalidRequest,
-                            message = "Invalid Request: Server already initialized"
+                            message = "Invalid Request: unable to parse JSON body"
                         )
                     )
                 )
