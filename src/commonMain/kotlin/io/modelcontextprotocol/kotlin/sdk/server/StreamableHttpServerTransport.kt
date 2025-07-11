@@ -9,6 +9,7 @@ import io.ktor.server.request.contentType
 import io.ktor.server.request.host
 import io.ktor.server.request.httpMethod
 import io.ktor.server.request.receive
+import io.ktor.server.request.receiveText
 import io.ktor.server.response.header
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondNullable
@@ -440,15 +441,22 @@ public class StreamableHttpServerTransport(
     }
 
     private suspend fun parseBody(call: ApplicationCall): List<JSONRPCMessage>? {
-        return when (val element = call.receive<JsonElement>()) {
+        val body = call.receiveText()
+        return when (val element = McpJson.parseToJsonElement(body)) {
             is JsonObject -> listOf(McpJson.decodeFromJsonElement(element))
-            is JsonArray -> McpJson.decodeFromJsonElement(element)
+            is JsonArray -> McpJson.decodeFromJsonElement<List<JSONRPCMessage>>(element)
             else -> {
-                call.reject(
-                    HttpStatusCode.BadRequest, ErrorCode.Defined.ParseError,
-                    "Invalid JSON format"
+                call.response.status(HttpStatusCode.BadRequest)
+                call.respond(
+                    JSONRPCResponse(
+                        id = null,
+                        error = JSONRPCError(
+                            code = ErrorCode.Defined.InvalidRequest,
+                            message = "Invalid Request: Server already initialized"
+                        )
+                    )
                 )
-                null
+                return null
             }
         }
     }
@@ -457,7 +465,7 @@ public class StreamableHttpServerTransport(
         if (this == null) return false
 
         val escaped = Regex.escape(mime.toString())
-        val pattern = Regex("""(^|,\s*)$escaped(\s*;|$)""", RegexOption.IGNORE_CASE)
+        val pattern = Regex("""(^|,\s*)$escaped(\s*(;|,|$))""", RegexOption.IGNORE_CASE)
         return pattern.containsMatchIn(this)
     }
 
