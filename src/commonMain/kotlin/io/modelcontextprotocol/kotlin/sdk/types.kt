@@ -1105,7 +1105,10 @@ public data class Tool(
      * A JSON object defining the expected parameters for the tool.
      */
     val inputSchema: Input,
-
+    /**
+     * An optional JSON object defining the expected output schema for the tool.
+     */
+    val outputSchema: Output?,
     /**
      * Optional additional tool information.
      */
@@ -1113,6 +1116,16 @@ public data class Tool(
 ) {
     @Serializable
     public data class Input(
+        val properties: JsonObject = EmptyJsonObject,
+        val required: List<String>? = null,
+    ) {
+        @OptIn(ExperimentalSerializationApi::class)
+        @EncodeDefault
+        val type: String = "object"
+    }
+
+    @Serializable
+    public data class Output(
         val properties: JsonObject = EmptyJsonObject,
         val required: List<String>? = null,
     ) {
@@ -1149,6 +1162,7 @@ public class ListToolsResult(
 @Serializable
 public sealed interface CallToolResultBase : ServerResult {
     public val content: List<PromptMessageContent>
+    public val structuredContent: JsonObject?
     public val isError: Boolean? get() = false
 }
 
@@ -1158,6 +1172,7 @@ public sealed interface CallToolResultBase : ServerResult {
 @Serializable
 public class CallToolResult(
     override val content: List<PromptMessageContent>,
+    override val structuredContent: JsonObject? = null,
     override val isError: Boolean? = false,
     override val _meta: JsonObject = EmptyJsonObject,
 ) : CallToolResultBase
@@ -1168,6 +1183,7 @@ public class CallToolResult(
 @Serializable
 public class CompatibilityCallToolResult(
     override val content: List<PromptMessageContent>,
+    override val structuredContent: JsonObject? = null,
     override val isError: Boolean? = false,
     override val _meta: JsonObject = EmptyJsonObject,
     public val toolResult: JsonObject = EmptyJsonObject,
