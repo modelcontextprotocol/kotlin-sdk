@@ -248,7 +248,7 @@ public abstract class Protocol(
                     JSONRPCResponse(
                         id = request.id,
                         error = JSONRPCError(
-                            ErrorCode.Defined.MethodNotFound,
+                            code = ErrorCode.Defined.MethodNotFound,
                             message = "Server does not support ${request.method}",
                         )
                     )
