@@ -25,6 +25,24 @@ class ToolSerializationTest {
               }
             },
             "required": ["location"]
+          },
+          "outputSchema": {
+            "type": "object",
+            "properties": {
+              "temperature": {
+                "type": "number",
+                "description": "Temperature in celsius"
+              },
+              "conditions": {
+                "type": "string",
+                "description": "Weather conditions description"
+              },
+              "humidity": {
+                "type": "number",
+                "description": "Humidity percentage"
+              }
+            },
+            "required": ["temperature", "conditions", "humidity"]
           }
         }
     """.trimIndent()
@@ -41,6 +59,23 @@ class ToolSerializationTest {
                 })
             },
             required = listOf("location")
+        ),
+        outputSchema = Tool.Output(
+            properties = buildJsonObject {
+                put("temperature", buildJsonObject {
+                    put("type", JsonPrimitive("number"))
+                    put("description", JsonPrimitive("Temperature in celsius"))
+                })
+                put("conditions", buildJsonObject {
+                    put("type", JsonPrimitive("string"))
+                    put("description", JsonPrimitive("Weather conditions description"))
+                })
+                put("humidity", buildJsonObject {
+                    put("type", JsonPrimitive("number"))
+                    put("description", JsonPrimitive("Humidity percentage"))
+                })
+            },
+            required = listOf("temperature", "conditions", "humidity")
         )
     )
 
