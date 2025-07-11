@@ -869,7 +869,7 @@ class ClientTest {
             put("name", "octocat")
         }
 
-        client.setRequestHandler<CreateElicitationRequest>(Method.Defined.ElicitationCreate) { request, _ ->
+        client.setElicitationHandler { request ->
             assertEquals(elicitationMessage, request.message)
             assertEquals(requestedSchema, request.requestedSchema)
 

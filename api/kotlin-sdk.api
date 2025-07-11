@@ -2872,6 +2872,7 @@ public class io/modelcontextprotocol/kotlin/sdk/client/Client : io/modelcontextp
 	public final fun removeRoot (Ljava/lang/String;)Z
 	public final fun removeRoots (Ljava/util/List;)I
 	public final fun sendRootsListChanged (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun setElicitationHandler (Lkotlin/jvm/functions/Function1;)V
 	public final fun setLoggingLevel (Lio/modelcontextprotocol/kotlin/sdk/LoggingLevel;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun setLoggingLevel$default (Lio/modelcontextprotocol/kotlin/sdk/client/Client;Lio/modelcontextprotocol/kotlin/sdk/LoggingLevel;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public final fun subscribeResource (Lio/modelcontextprotocol/kotlin/sdk/SubscribeRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
