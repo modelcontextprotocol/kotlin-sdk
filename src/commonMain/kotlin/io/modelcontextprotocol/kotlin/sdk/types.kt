@@ -244,7 +244,15 @@ public class JSONRPCResponse(
     public val jsonrpc: String = JSONRPC_VERSION,
     public val result: RequestResult? = null,
     public val error: JSONRPCError? = null,
-) : JSONRPCMessage
+) : JSONRPCMessage {
+
+    public fun copy(
+        id: RequestId = this.id,
+        jsonrpc: String = this.jsonrpc,
+        result: RequestResult? = this.result,
+        error: JSONRPCError? = this.error,
+    ): JSONRPCResponse = JSONRPCResponse(id, jsonrpc, result, error)
+}
 
 /**
  * An incomplete set of error codes that may appear in JSON-RPC responses.
