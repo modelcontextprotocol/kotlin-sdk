@@ -125,43 +125,39 @@ public class StreamableHttpClientTransport(
 
         response.headers[MCP_SESSION_ID_HEADER]?.let { sessionId = it }
 
-        if (message is JSONRPCNotification || message is JSONRPCResponse) {
-            if (response.status != HttpStatusCode.Accepted) {
-                val text = response.bodyAsText()
-                val err = StreamableHttpError(response.status.value, text)
-                logger.error(err) { "Client POST request failed." }
-                _onError(err)
-                throw err
+        if (response.status == HttpStatusCode.Accepted) {
+            if (message is JSONRPCNotification && message.method == "notifications/initialized") {
+                startSseSession(onResumptionToken = onResumptionToken)
             }
             return
         }
 
-        when {
-            !response.status.isSuccess() -> {
-                val text = response.bodyAsText()
-                val err = StreamableHttpError(response.status.value, text)
-                logger.error(err) { "Client POST request failed." }
-                _onError(err)
-                throw err
-            }
-
-            response.contentType()?.match(ContentType.Application.Json) ?: false ->
-                response.bodyAsText().takeIf { it.isNotEmpty() }?.let { json ->
-                    runCatching { McpJson.decodeFromString<JSONRPCMessage>(json) }
-                        .onSuccess { _onMessage(it) }
-                        .onFailure(_onError)
-                }
-
-            response.contentType()?.match(ContentType.Text.EventStream) ?: false ->
-                handleInlineSse(
-                    response, onResumptionToken = onResumptionToken,
-                    replayMessageId = if (message is JSONRPCRequest) message.id else null
-                )
+        if (!response.status.isSuccess()) {
+            val error = StreamableHttpError(response.status.value, response.bodyAsText())
+            _onError(error)
+            throw error
         }
 
-        // If client just sent InitializedNotification, open SSE stream
-        if (message is JSONRPCNotification && message.method == "notifications/initialized" && sseSession == null) {
-            startSseSession()
+        when (response.contentType()?.withoutParameters()) {
+            ContentType.Application.Json -> response.bodyAsText().takeIf { it.isNotEmpty() }?.let { json ->
+                runCatching { McpJson.decodeFromString<JSONRPCMessage>(json) }
+                    .onSuccess { _onMessage(it) }
+                    .onFailure(_onError)
+            }
+
+            ContentType.Text.EventStream -> handleInlineSse(
+                response, onResumptionToken = onResumptionToken,
+                replayMessageId = if (message is JSONRPCRequest) message.id else null
+            )
+            else -> {
+                val body = response.bodyAsText()
+                if (response.contentType() == null && body.isBlank()) return
+
+                val ct = response.contentType()?.toString() ?: "<none>"
+                val error = StreamableHttpError(-1, "Unexpected content type: $$ct")
+                _onError(error)
+                throw error
+            }
         }
     }
 
@@ -297,7 +293,6 @@ public class StreamableHttpClientTransport(
     ) {
         logger.trace { "Handling inline SSE from POST response" }
         val channel = response.bodyAsChannel()
-        val reader = channel
 
         val sb = StringBuilder()
         var id: String? = null
@@ -325,8 +320,8 @@ public class StreamableHttpClientTransport(
             sb.clear()
         }
 
-        while (!reader.isClosedForRead) {
-            val line = reader.readUTF8Line() ?: break
+        while (!channel.isClosedForRead) {
+            val line = channel.readUTF8Line() ?: break
             if (line.isEmpty()) {
                 dispatch(sb.toString())
                 continue
@@ -334,7 +329,7 @@ public class StreamableHttpClientTransport(
             when {
                 line.startsWith("id:") -> id = line.substringAfter("id:").trim()
                 line.startsWith("event:") -> eventName = line.substringAfter("event:").trim()
-                line.startsWith("data:") -> sb.appendLine(line.substringAfter("data:").trim())
+                line.startsWith("data:") -> sb.append(line.substringAfter("data:").trim())
             }
         }
     }

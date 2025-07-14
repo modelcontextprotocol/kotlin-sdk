@@ -268,6 +268,7 @@ kotlin {
 
         jvmTest {
             dependencies {
+                implementation(libs.ktor.client.mock)
                 implementation(libs.mockk)
                 implementation(libs.slf4j.simple)
             }
