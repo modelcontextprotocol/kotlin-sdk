@@ -207,6 +207,7 @@ public class StreamableHttpClientTransport(
         }
 
         sessionId = null
+        lastEventId = null
         logger.debug { "Session terminated successfully" }
     }
 
@@ -247,6 +248,7 @@ public class StreamableHttpClientTransport(
 
     private fun applyCommonHeaders(builder: HttpRequestBuilder) {
         builder.headers {
+            append(HttpHeaders.Accept, ContentType.Application.Json.toString())
             sessionId?.let { append(MCP_SESSION_ID_HEADER, it) }
             protocolVersion?.let { append(MCP_PROTOCOL_VERSION_HEADER, it) }
         }
@@ -330,9 +332,9 @@ public class StreamableHttpClientTransport(
                 continue
             }
             when {
-                line.startsWith("id:") -> line.substring(3).trim()
-                line.startsWith("event:") -> eventName = line.substring(6).trim()
-                line.startsWith("data:") -> sb.append(line.substring(5).trim())
+                line.startsWith("id:") -> id = line.substringAfter("id:").trim()
+                line.startsWith("event:") -> eventName = line.substringAfter("event:").trim()
+                line.startsWith("data:") -> sb.appendLine(line.substringAfter("data:").trim())
             }
         }
     }
