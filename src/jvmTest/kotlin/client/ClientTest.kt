@@ -587,7 +587,8 @@ class ClientTest {
                     name = "testTool",
                     description = "testTool description",
                     annotations = null,
-                    inputSchema = Tool.Input()
+                    inputSchema = Tool.Input(),
+                    outputSchema = null
                 )
             ), nextCursor = null
         )

@@ -189,9 +189,27 @@ public open class Server(
     /**
      * Registers a single tool. The client can then call this tool.
      *
+     * @param tool A [Tool] object describing the tool.
+     * @param handler A suspend function that handles executing the tool when called by the client.
+     * @throws IllegalStateException If the server does not support tools.
+     */
+    public fun addTool(tool: Tool, handler: suspend (CallToolRequest) -> CallToolResult) {
+        if (capabilities.tools == null) {
+            logger.error { "Failed to add tool '${tool.name}': Server does not support tools capability" }
+            throw IllegalStateException("Server does not support tools capability. Enable it in ServerOptions.")
+        }
+        logger.info { "Registering tool: ${tool.name}" }
+        _tools.update { current -> current.put(tool.name, RegisteredTool(tool, handler)) }
+    }
+
+    /**
+     * Registers a single tool. The client can then call this tool.
+     *
      * @param name The name of the tool.
      * @param description A human-readable description of what the tool does.
      * @param inputSchema The expected input schema for the tool.
+     * @param outputSchema The optional expected output schema for the tool.
+     * @param toolAnnotations Optional additional tool information.
      * @param handler A suspend function that handles executing the tool when called by the client.
      * @throws IllegalStateException If the server does not support tools.
      */
@@ -199,17 +217,12 @@ public open class Server(
         name: String,
         description: String,
         inputSchema: Tool.Input = Tool.Input(),
+        outputSchema: Tool.Output? = null,
         toolAnnotations: ToolAnnotations? = null,
         handler: suspend (CallToolRequest) -> CallToolResult
     ) {
-        if (capabilities.tools == null) {
-            logger.error { "Failed to add tool '$name': Server does not support tools capability" }
-            throw IllegalStateException("Server does not support tools capability. Enable it in ServerOptions.")
-        }
-        logger.info { "Registering tool: $name" }
-        _tools.update { current ->
-            current.put(name, RegisteredTool(Tool(name, description, inputSchema, toolAnnotations), handler))
-        }
+        val tool = Tool(name, description, inputSchema, outputSchema, toolAnnotations)
+        addTool(tool, handler)
     }
 
     /**
