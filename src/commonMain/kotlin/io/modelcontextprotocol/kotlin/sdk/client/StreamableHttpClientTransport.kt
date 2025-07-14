@@ -6,6 +6,7 @@ import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.sse.ClientSSESession
 import io.ktor.client.plugins.sse.sseSession
 import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.accept
 import io.ktor.client.request.delete
 import io.ktor.client.request.headers
 import io.ktor.client.request.post
@@ -223,7 +224,7 @@ public class StreamableHttpClientTransport(
             ) {
                 method = HttpMethod.Get
                 applyCommonHeaders(this)
-                headers.append(HttpHeaders.Accept, ContentType.Text.EventStream.toString())
+                accept(ContentType.Text.EventStream)
                 (resumptionToken ?: lastEventId)?.let { headers.append(MCP_RESUMPTION_TOKEN_HEADER, it) }
                 requestBuilder()
             }
@@ -244,7 +245,6 @@ public class StreamableHttpClientTransport(
 
     private fun applyCommonHeaders(builder: HttpRequestBuilder) {
         builder.headers {
-            append(HttpHeaders.Accept, ContentType.Application.Json.toString())
             sessionId?.let { append(MCP_SESSION_ID_HEADER, it) }
             protocolVersion?.let { append(MCP_PROTOCOL_VERSION_HEADER, it) }
         }
