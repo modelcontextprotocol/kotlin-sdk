@@ -43,7 +43,7 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation("io.modelcontextprotocol:kotlin-sdk:0.5.0")
+            implementation("io.modelcontextprotocol:kotlin-sdk:0.6.0")
         }
         jvmMain.dependencies {
             implementation("org.slf4j:slf4j-nop:2.0.9")
