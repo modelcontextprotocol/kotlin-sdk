@@ -32,6 +32,7 @@ ktor-server-cio = { group = "io.ktor", name = "ktor-server-cio", version.ref = "
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 ktor-server-test-host = { group = "io.ktor", name = "ktor-server-test-host", version.ref = "ktor" }
+ktor-client-mock = { group = "io.ktor", name = "ktor-client-mock", version.ref = "ktor" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
 kotest-assertions-json = { group = "io.kotest", name = "kotest-assertions-json", version.ref = "kotest" }
