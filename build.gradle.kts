@@ -22,7 +22,7 @@ plugins {
 }
 
 group = "io.modelcontextprotocol"
-version = "0.5.0"
+version = "0.6.0"
 
 val mainSourcesJar = tasks.register<Jar>("mainSourcesJar") {
     archiveClassifier = "sources"
