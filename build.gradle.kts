@@ -67,6 +67,7 @@ jreleaser {
 
                                 if (!pubName.contains("jvm", ignoreCase = true)
                                     && !pubName.contains("metadata", ignoreCase = true)
+                                    && !pubName.contains("kotlinMultiplatform", ignoreCase = true)
                                 ) {
 
                                     artifactOverride {
