@@ -19,7 +19,7 @@ import io.ktor.utils.io.KtorDsl
 private val logger = KotlinLogging.logger {}
 
 @KtorDsl
-public fun Routing.mcp(path: String, block: () -> Server) {
+public fun Routing.mcp(path: String, block: ServerSSESession.() -> Server) {
     route(path) {
         mcp(block)
     }
@@ -29,7 +29,7 @@ public fun Routing.mcp(path: String, block: () -> Server) {
  * Configures the Ktor Application to handle Model Context Protocol (MCP) over Server-Sent Events (SSE).
  */
 @KtorDsl
-public fun Routing.mcp(block: () -> Server) {
+public fun Routing.mcp(block: ServerSSESession.() -> Server) {
     val transports = ConcurrentMap<String, SseServerTransport>()
 
     sse {
@@ -43,12 +43,12 @@ public fun Routing.mcp(block: () -> Server) {
 
 @Suppress("FunctionName")
 @Deprecated("Use mcp() instead", ReplaceWith("mcp(block)"), DeprecationLevel.WARNING)
-public fun Application.MCP(block: () -> Server) {
+public fun Application.MCP(block: ServerSSESession.() -> Server) {
     mcp(block)
 }
 
 @KtorDsl
-public fun Application.mcp(block: () -> Server) {
+public fun Application.mcp(block: ServerSSESession.() -> Server) {
     val transports = ConcurrentMap<String, SseServerTransport>()
 
     install(SSE)
@@ -67,7 +67,7 @@ public fun Application.mcp(block: () -> Server) {
 private suspend fun ServerSSESession.mcpSseEndpoint(
     postEndpoint: String,
     transports: ConcurrentMap<String, SseServerTransport>,
-    block: () -> Server,
+    block: ServerSSESession.() -> Server,
 ) {
     val transport = mcpSseTransport(postEndpoint, transports)
 
