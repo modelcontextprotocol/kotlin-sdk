@@ -12,7 +12,7 @@ ktor = "3.2.1"
 mockk = "1.14.4"
 logging = "7.0.7"
 jreleaser = "1.19.0"
-binaryCompatibilityValidatorPlugin = "0.18.0"
+binaryCompatibilityValidatorPlugin = "0.18.1"
 slf4j = "2.0.17"
 kotest = "5.9.1"
 
