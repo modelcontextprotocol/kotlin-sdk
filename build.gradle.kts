@@ -93,6 +93,7 @@ jreleaser {
 
     release {
         github {
+            changelog.enabled = false
             skipRelease = true
             skipTag = true
             overwrite = false
