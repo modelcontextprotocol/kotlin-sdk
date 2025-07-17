@@ -59,7 +59,7 @@ jreleaser {
                     applyMavenCentralRules = false
                     maxRetries = 240
                     stagingRepository(layout.buildDirectory.dir("staging-deploy").get().asFile.path)
-
+                    // workaround: https://github.com/jreleaser/jreleaser/issues/1784
                     afterEvaluate {
                         publishing.publications.forEach { publication ->
                             if (publication is MavenPublication) {
@@ -71,17 +71,10 @@ jreleaser {
 
                                     artifactOverride {
                                         artifactId = when {
-                                            pubName.contains("wasm", ignoreCase = true) -> {
+                                            pubName.contains("wasm", ignoreCase = true) ->
                                                 "${project.name}-wasm-${pubName.lowercase().substringAfter("wasm")}"
-                                            }
 
-                                            pubName.contains("js", ignoreCase = true) && !pubName.contains("wasm") -> {
-                                                "${project.name}-js"
-                                            }
-
-                                            else -> {
-                                                "${project.name}-${pubName.lowercase()}"
-                                            }
+                                            else -> "${project.name}-${pubName.lowercase()}"
                                         }
                                         jar = false
                                         verifyPom = false
