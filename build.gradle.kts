@@ -220,6 +220,10 @@ kotlin {
         }
     }
 
+    iosArm64()
+    iosX64()
+    iosSimulatorArm64()
+
     js(IR) {
         nodejs {
             testTask {
@@ -233,31 +237,6 @@ kotlin {
     wasmJs {
         nodejs()
     }
-
-    // Tier 1
-    macosX64()
-    macosArm64()
-    iosArm64()
-    iosX64()
-    iosSimulatorArm64()
-
-    // Tier 2
-    linuxX64()
-    linuxArm64()
-    watchosSimulatorArm64()
-    watchosX64()
-//    watchosArm32() not supported by libs.kotlin.logging
-    watchosArm64()
-    tvosSimulatorArm64()
-    tvosX64()
-    tvosArm64()
-
-    // Tier 3
-    androidNativeArm32()
-    androidNativeArm64()
-    androidNativeX86()
-    androidNativeX64()
-    mingwX64()
 
     explicitApi = ExplicitApiMode.Strict
 
@@ -283,6 +262,7 @@ kotlin {
                 implementation(libs.kotlin.test)
                 implementation(libs.ktor.server.test.host)
                 implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.kotest.assertions.json)
             }
         }
 
