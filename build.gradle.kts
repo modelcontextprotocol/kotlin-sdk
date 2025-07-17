@@ -1,14 +1,9 @@
-@file:OptIn(ExperimentalKotlinGradlePluginApi::class, ExperimentalWasmDsl::class)
+@file:OptIn(ExperimentalWasmDsl::class)
 
 import org.jetbrains.dokka.gradle.engine.parameters.VisibilityModifier
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.ExplicitApiMode
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
-import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinAndroidTarget
-import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinMetadataTarget
-import org.jetbrains.kotlin.gradle.targets.jvm.KotlinJvmTarget
 import org.jreleaser.model.Active
 
 plugins {
@@ -18,20 +13,18 @@ plugins {
     alias(libs.plugins.dokka)
     alias(libs.plugins.jreleaser)
     `maven-publish`
+    signing
     alias(libs.plugins.kotlinx.binary.compatibility.validator)
 }
 
 group = "io.modelcontextprotocol"
 version = "0.6.0"
 
-val mainSourcesJar = tasks.register<Jar>("mainSourcesJar") {
-    archiveClassifier = "sources"
-    from(kotlin.sourceSets.getByName("commonMain").kotlin)
+val javadocJar by tasks.registering(Jar::class) {
+    archiveClassifier.set("javadoc")
 }
 
 publishing {
-    val javadocJar = configureEmptyJavadocArtifact()
-
     publications.withType(MavenPublication::class).all {
         if (name.contains("jvm", ignoreCase = true)) {
             artifact(javadocJar)
@@ -66,20 +59,36 @@ jreleaser {
                     applyMavenCentralRules = false
                     maxRetries = 240
                     stagingRepository(layout.buildDirectory.dir("staging-deploy").get().asFile.path)
-                    // workaround: https://github.com/jreleaser/jreleaser/issues/1784
-                    kotlin.targets.forEach { target ->
-                        if (target !is KotlinJvmTarget && target !is KotlinAndroidTarget && target !is KotlinMetadataTarget) {
-                            val klibArtifactId = if (target.platformType == KotlinPlatformType.wasm) {
-                                "${name}-wasm-${target.name.lowercase().substringAfter("wasm")}"
-                            } else {
-                                "${name}-${target.name.lowercase()}"
-                            }
-                            artifactOverride {
-                                artifactId = klibArtifactId
-                                jar = false
-                                verifyPom = false
-                                sourceJar = false
-                                javadocJar = false
+
+                    afterEvaluate {
+                        publishing.publications.forEach { publication ->
+                            if (publication is MavenPublication) {
+                                val pubName = publication.name
+
+                                if (!pubName.contains("jvm", ignoreCase = true)
+                                    && !pubName.contains("metadata", ignoreCase = true)
+                                ) {
+
+                                    artifactOverride {
+                                        artifactId = when {
+                                            pubName.contains("wasm", ignoreCase = true) -> {
+                                                "${project.name}-wasm-${pubName.lowercase().substringAfter("wasm")}"
+                                            }
+
+                                            pubName.contains("js", ignoreCase = true) && !pubName.contains("wasm") -> {
+                                                "${project.name}-js"
+                                            }
+
+                                            else -> {
+                                                "${project.name}-${pubName.lowercase()}"
+                                            }
+                                        }
+                                        jar = false
+                                        verifyPom = false
+                                        sourceJar = false
+                                        javadocJar = false
+                                    }
+                                }
                             }
                         }
                     }
@@ -131,15 +140,6 @@ fun MavenPom.configureMavenCentralMetadata() {
         connection by "scm:git:git://github.com/modelcontextprotocol/kotlin-sdk.git"
         developerConnection by "scm:git:git@github.com:modelcontextprotocol/kotlin-sdk.git"
     }
-}
-
-fun configureEmptyJavadocArtifact(): org.gradle.jvm.tasks.Jar {
-    val javadocJar by project.tasks.creating(Jar::class) {
-        archiveClassifier.set("javadoc")
-        // contents are deliberately left empty
-        // https://central.sonatype.org/publish/requirements/#supply-javadoc-and-sources
-    }
-    return javadocJar
 }
 
 fun MavenPublication.signPublicationIfKeyPresent() {
