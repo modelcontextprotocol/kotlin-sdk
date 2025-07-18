@@ -15,10 +15,11 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.concurrent.atomics.incrementAndFetch
 import kotlin.jvm.JvmInline
 
-public const val LATEST_PROTOCOL_VERSION: String = "2024-11-05"
+public const val LATEST_PROTOCOL_VERSION: String = "2025-03-26"
 
 public val SUPPORTED_PROTOCOL_VERSIONS: Array<String> = arrayOf(
     LATEST_PROTOCOL_VERSION,
+    "2024-11-05",
     "2024-10-07",
 )
 
@@ -240,7 +241,7 @@ public data class JSONRPCNotification(
  */
 @Serializable
 public class JSONRPCResponse(
-    public val id: RequestId,
+    public val id: RequestId?,
     public val jsonrpc: String = JSONRPC_VERSION,
     public val result: RequestResult? = null,
     public val error: JSONRPCError? = null,
@@ -284,10 +285,11 @@ public sealed interface ErrorCode {
  * A response to a request that indicates an error occurred.
  */
 @Serializable
-public data class JSONRPCError(
-    val code: ErrorCode,
-    val message: String,
-    val data: JsonObject = EmptyJsonObject,
+public class JSONRPCError(
+    public val id: RequestId? = null,
+    public val code: ErrorCode,
+    public val message: String,
+    public val data: JsonObject = EmptyJsonObject,
 ) : JSONRPCMessage
 
 /* Cancellation */
