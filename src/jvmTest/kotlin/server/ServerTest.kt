@@ -1,9 +1,12 @@
 package server
 
+import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
 import io.modelcontextprotocol.kotlin.sdk.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.GetPromptResult
 import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.InMemoryTransport
+import io.modelcontextprotocol.kotlin.sdk.LoggingLevel
+import io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification
 import io.modelcontextprotocol.kotlin.sdk.Method
 import io.modelcontextprotocol.kotlin.sdk.Prompt
 import io.modelcontextprotocol.kotlin.sdk.PromptListChangedNotification
@@ -18,8 +21,11 @@ import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
@@ -467,5 +473,49 @@ class ServerTest {
             server.removeResource("test://resource")
         }
         assertEquals("Server does not support resources capability.", exception.message)
+    }
+
+    @Test
+    fun `sendLoggingMessage should throw when logging capability is disabled`() = runTest {
+        // Create server with tools capability
+        val serverOptions = ServerOptions(
+            capabilities = ServerCapabilities(
+                tools = ServerCapabilities.Tools(null),
+                logging = null,
+            )
+        )
+        val server = Server(
+            Implementation(name = "test server", version = "1.0"),
+            serverOptions
+        )
+
+        //Register a tool
+        server.addTool("test-tool", "Represent a tool example") {
+            // Verify that sending a logging message throws an exception
+            val exception = assertThrows<IllegalStateException> {
+                sendLoggingMessage(
+                    LoggingMessageNotification(level = LoggingLevel.alert, data = JsonObject(mapOf("progress" to JsonPrimitive(10))))
+                )
+            }
+            assertEquals("Server does not support logging (required for notifications/message)", exception.message)
+
+            CallToolResult(
+                content = listOf(TextContent("Tool completed successfully."))
+            )
+        }
+
+        // Setup client
+        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
+        val client = Client(
+            clientInfo = Implementation(name = "test client", version = "1.0"),
+        )
+
+        // Connect client and server
+        listOf(
+            launch { server.connect(serverTransport) },
+            launch { client.connect(clientTransport) },
+        ).joinAll()
+
+        client.request<CallToolResult>(CallToolRequest(name = "test-tool"))
     }
 }
