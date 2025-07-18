@@ -70,7 +70,17 @@ jobs:
         run: |
           set -euo pipefail
           
-          DEPLOY_ID=$(grep '^deploymentId=' build/jreleaser/output.properties | cut -d= -f2)
+          if [[ ! -f build/jreleaser/output.properties ]]; then
+            echo "::error title=File Missing::The file 'build/jreleaser/output.properties' does not exist."
+            exit 1
+          fi
+          
+          DEPLOY_ID=$(grep '^deploymentId=' build/jreleaser/output.properties | cut -d= -f2 || true)
+          if [[ -z "$DEPLOY_ID" ]]; then
+            echo "::error title=Missing Deployment ID::The 'deploymentId' key was not found in 'build/jreleaser/output.properties'."
+            exit 1
+          fi
+          
           echo "Portal deploymentId: $DEPLOY_ID"
           
           AUTH=$(printf "%s:%s" "$OSSRH_USERNAME" "$OSSRH_TOKEN" | base64)
