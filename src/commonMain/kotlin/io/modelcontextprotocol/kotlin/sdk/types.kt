@@ -8,8 +8,10 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.jsonObject
 import kotlin.concurrent.atomics.AtomicLong
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.concurrent.atomics.incrementAndFetch
@@ -123,9 +125,10 @@ public sealed interface Request {
  * @return The JSON-RPC request representation.
  */
 internal fun Request.toJSON(): JSONRPCRequest {
+    val encoded = JsonObject(McpJson.encodeToJsonElement(this).jsonObject.minus("method"))
     return JSONRPCRequest(
         method = method.value,
-        params = McpJson.encodeToJsonElement(this),
+        params = encoded,
         jsonrpc = JSONRPC_VERSION,
     )
 }
@@ -135,10 +138,11 @@ internal fun Request.toJSON(): JSONRPCRequest {
  *
  * @return The decoded [Request] or null
  */
-internal fun JSONRPCRequest.fromJSON(): Request? {
-    val serializer = selectRequestDeserializer(method)
-    val params = params
-    return McpJson.decodeFromJsonElement<Request>(serializer, params)
+internal fun JSONRPCRequest.fromJSON(): Request {
+    val requestData = JsonObject(params.jsonObject.plus("method" to JsonPrimitive(method)))
+
+    val deserializer = selectRequestDeserializer(method)
+    return McpJson.decodeFromJsonElement(deserializer, requestData)
 }
 
 /**
@@ -163,7 +167,7 @@ public sealed interface Notification {
  * @return The JSON-RPC notification representation.
  */
 internal fun Notification.toJSON(): JSONRPCNotification {
-    val encoded = McpJson.encodeToJsonElement<Notification>(this)
+    val encoded = JsonObject(McpJson.encodeToJsonElement<Notification>(this).jsonObject.minus("method"))
     return JSONRPCNotification(
         method.value,
         params = encoded
@@ -176,7 +180,8 @@ internal fun Notification.toJSON(): JSONRPCNotification {
  * @return The decoded [Notification].
  */
 internal fun JSONRPCNotification.fromJSON(): Notification {
-    return McpJson.decodeFromJsonElement<Notification>(params)
+    val data = JsonObject(params.jsonObject.plus("method" to JsonPrimitive(method)))
+    return McpJson.decodeFromJsonElement<Notification>(data)
 }
 
 /**
