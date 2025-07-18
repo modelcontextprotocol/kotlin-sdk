@@ -9,7 +9,7 @@ name: Release
 
 on:
   release:
-    types: [created]
+    types: [ created ]
 
 jobs:
   build:
@@ -27,12 +27,9 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-          server-id: ossrh # Value of the distributionManagement/repository/id field of the pom.xml
-          server-username: JRELEASER_MAVENCENTRAL_USERNAME
-          server-password: JRELEASER_MAVENCENTRAL_PASSWORD
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@ac638b010cf58a27ee6c972d7336334ccaf61c96 # v4.4.1
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Verify publication configuration
         run: ./gradlew jreleaserConfig
@@ -53,8 +50,9 @@ jobs:
           JRELEASER_GPG_SECRET_KEY: ${{ secrets.GPG_SECRET_KEY }}
           JRELEASER_GPG_PASSPHRASE: ${{ secrets.SIGNING_PASSPHRASE }}
 
-      - name: Publish to OSSRH repository
-        run: ./gradlew publish jreleaserFullRelease
+      - name: Publish to Maven Central Portal
+        id: publish
+        run: ./gradlew publish jreleaserFullRelease --info --stacktrace -Djreleaser.verbose=true
         env:
           JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           JRELEASER_MAVENCENTRAL_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
@@ -62,3 +60,48 @@ jobs:
           JRELEASER_GPG_SECRET_KEY: ${{ secrets.GPG_SECRET_KEY }}
           JRELEASER_GPG_PASSPHRASE: ${{ secrets.SIGNING_PASSPHRASE }}
           JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Query Central Portal for validation errors
+        if: failure()
+        shell: bash
+        env:
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
+        run: |
+          set -euo pipefail
+          
+          DEPLOY_ID=$(grep '^deploymentId=' build/jreleaser/output.properties | cut -d= -f2)
+          echo "Portal deploymentId: $DEPLOY_ID"
+          
+          AUTH=$(printf "%s:%s" "$OSSRH_USERNAME" "$OSSRH_TOKEN" | base64)
+          echo "::add-mask::$AUTH"
+          
+          STATUS_JSON=$(curl -s \
+            -H "Authorization: Bearer $AUTH" \
+            -H "Content-Type: application/json" \
+            -X POST \
+            "https://central.sonatype.com/api/v1/publisher/status?id=$DEPLOY_ID")
+          
+          echo "$STATUS_JSON" | jq .
+          
+          echo "$STATUS_JSON" | jq -r '.errors[]?.message' |
+            while read -r MSG; do
+              echo "::error title=Sonatype validation::$MSG"
+            done
+          
+          {
+            echo "### Sonatype Central Portal validation result"
+            echo
+            echo '```json'
+            echo "$STATUS_JSON"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload JReleaser artefacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jreleaser-logs
+          path: |
+            build/jreleaser/trace.log
+            build/jreleaser/output.properties
