@@ -465,10 +465,7 @@ public abstract class Protocol(
         val transport = this.transport ?: error("Not connected")
         assertNotificationCapability(notification.method)
 
-        val message = JSONRPCNotification(
-            notification.method.value,
-            params = McpJson.encodeToJsonElement<Notification>(notification) as JsonObject,
-        )
+        val message = notification.toJSON()
         transport.send(message)
     }
 
