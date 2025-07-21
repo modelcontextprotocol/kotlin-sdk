@@ -40,7 +40,7 @@ publishing {
 
 jreleaser {
     gitRootSearch = true
-    strict= true
+    strict = true
 
     signing {
         active = Active.ALWAYS
