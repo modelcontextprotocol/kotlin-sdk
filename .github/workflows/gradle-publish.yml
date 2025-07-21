@@ -85,6 +85,16 @@ jobs:
           
           echo "Portal deploymentId: $DEPLOY_ID"
           
+          if [ -z "$OSSRH_USERNAME" ]; then
+            echo "::error title='OSSRH_USERNAME' is not set."
+            exit 1
+          fi
+  
+          if [ -z "$OSSRH_TOKEN" ]; then
+            echo "::error title='OSSRH_TOKEN' is not set."
+            exit 1
+          fi
+          
           AUTH=$(printf "%s:%s" "$OSSRH_USERNAME" "$OSSRH_TOKEN" | base64)
           echo "::add-mask::$AUTH"
           
