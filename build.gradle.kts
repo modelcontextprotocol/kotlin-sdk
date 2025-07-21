@@ -46,6 +46,7 @@ jreleaser {
         active = Active.ALWAYS
         armored = true
         artifacts = true
+        files = true
     }
 
     deploy {
