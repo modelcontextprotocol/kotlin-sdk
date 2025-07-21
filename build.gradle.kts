@@ -139,7 +139,7 @@ fun MavenPom.configureMavenCentralMetadata() {
 }
 
 fun MavenPublication.signPublicationIfKeyPresent() {
-    val signingKey = project.getSensitiveProperty("SIGNING_KEY_PRIVATE")
+    val signingKey = project.getSensitiveProperty("GPG_SECRET_KEY")
     val signingKeyPassphrase = project.getSensitiveProperty("SIGNING_PASSPHRASE")
 
     if (!signingKey.isNullOrBlank()) {
