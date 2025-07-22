@@ -40,12 +40,13 @@ publishing {
 
 jreleaser {
     gitRootSearch = true
-    strict.set(true)
+    strict = true
 
     signing {
-        active.set(Active.ALWAYS)
-        armored.set(true)
-        artifacts.set(true)
+        active = Active.ALWAYS
+        armored = true
+        artifacts = true
+        files = true
     }
 
     deploy {
@@ -93,6 +94,7 @@ jreleaser {
 
     release {
         github {
+            changelog.enabled = false
             skipRelease = true
             skipTag = true
             overwrite = false
@@ -137,13 +139,12 @@ fun MavenPom.configureMavenCentralMetadata() {
 }
 
 fun MavenPublication.signPublicationIfKeyPresent() {
-    val keyId = project.getSensitiveProperty("SIGNING_KEY_ID")
-    val signingKey = project.getSensitiveProperty("SIGNING_KEY_PRIVATE")
+    val signingKey = project.getSensitiveProperty("GPG_SECRET_KEY")
     val signingKeyPassphrase = project.getSensitiveProperty("SIGNING_PASSPHRASE")
 
     if (!signingKey.isNullOrBlank()) {
         the<SigningExtension>().apply {
-            useInMemoryPgpKeys(keyId, signingKey, signingKeyPassphrase)
+            useInMemoryPgpKeys(signingKey, signingKeyPassphrase)
 
             sign(this@signPublicationIfKeyPresent)
         }
