@@ -1111,6 +1111,10 @@ public data class Tool(
      */
     val name: String,
     /**
+     * The title of the tool.
+     */
+    val title: String?,
+    /**
      * A human-readable description of the tool.
      */
     val description: String?,
