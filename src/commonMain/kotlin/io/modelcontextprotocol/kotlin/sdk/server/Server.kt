@@ -206,6 +206,7 @@ public open class Server(
      * Registers a single tool. The client can then call this tool.
      *
      * @param name The name of the tool.
+     * @param title An optional human-readable name of the tool for display purposes.
      * @param description A human-readable description of what the tool does.
      * @param inputSchema The expected input schema for the tool.
      * @param outputSchema The optional expected output schema for the tool.
@@ -217,11 +218,12 @@ public open class Server(
         name: String,
         description: String,
         inputSchema: Tool.Input = Tool.Input(),
+        title: String? = null,
         outputSchema: Tool.Output? = null,
         toolAnnotations: ToolAnnotations? = null,
         handler: suspend (CallToolRequest) -> CallToolResult
     ) {
-        val tool = Tool(name, description, inputSchema, outputSchema, toolAnnotations)
+        val tool = Tool(name, title, description, inputSchema, outputSchema, toolAnnotations)
         addTool(tool, handler)
     }
 

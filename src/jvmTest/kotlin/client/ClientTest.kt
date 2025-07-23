@@ -585,6 +585,7 @@ class ClientTest {
             tools = listOf(
                 Tool(
                     name = "testTool",
+                    title = "testTool title",
                     description = "testTool description",
                     annotations = null,
                     inputSchema = Tool.Input(),
