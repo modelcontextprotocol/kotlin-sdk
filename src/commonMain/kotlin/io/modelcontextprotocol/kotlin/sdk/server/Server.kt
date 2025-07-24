@@ -221,7 +221,7 @@ public open class Server(
         title: String? = null,
         outputSchema: Tool.Output? = null,
         toolAnnotations: ToolAnnotations? = null,
-        handler: suspend (CallToolRequest) -> CallToolResult
+        handler: suspend Server.(CallToolRequest) -> CallToolResult
     ) {
         val tool = Tool(name, title, description, inputSchema, outputSchema, toolAnnotations)
         addTool(tool, handler)
@@ -303,7 +303,7 @@ public open class Server(
      * @param promptProvider A suspend function that returns the prompt content when requested by the client.
      * @throws IllegalStateException If the server does not support prompts.
      */
-    public fun addPrompt(prompt: Prompt, promptProvider: suspend (GetPromptRequest) -> GetPromptResult) {
+    public fun addPrompt(prompt: Prompt, promptProvider: suspend Server.(GetPromptRequest) -> GetPromptResult) {
         if (capabilities.prompts == null) {
             logger.error { "Failed to add prompt '${prompt.name}': Server does not support prompts capability" }
             throw IllegalStateException("Server does not support prompts capability.")
@@ -325,7 +325,7 @@ public open class Server(
         name: String,
         description: String? = null,
         arguments: List<PromptArgument>? = null,
-        promptProvider: suspend (GetPromptRequest) -> GetPromptResult
+        promptProvider: suspend Server.(GetPromptRequest) -> GetPromptResult
     ) {
         val prompt = Prompt(name = name, description = description, arguments = arguments)
         addPrompt(prompt, promptProvider)
@@ -416,7 +416,7 @@ public open class Server(
         name: String,
         description: String,
         mimeType: String = "text/html",
-        readHandler: suspend (ReadResourceRequest) -> ReadResourceResult
+        readHandler: suspend Server.(ReadResourceRequest) -> ReadResourceResult
     ) {
         if (capabilities.resources == null) {
             logger.error { "Failed to add resource '$name': Server does not support resources capability" }
@@ -631,7 +631,7 @@ public open class Server(
                 throw IllegalArgumentException("Tool not found: ${request.name}")
             }
         logger.trace { "Executing tool ${request.name} with input: ${request.arguments}" }
-        return tool.handler(request)
+        return tool.handler.invoke(this, request)
     }
 
     private suspend fun handleListPrompts(): ListPromptsResult {
@@ -646,7 +646,7 @@ public open class Server(
                 logger.error { "Prompt not found: ${request.name}" }
                 throw IllegalArgumentException("Prompt not found: ${request.name}")
             }
-        return prompt.messageProvider(request)
+        return prompt.messageProvider.invoke(this, request)
     }
 
     private suspend fun handleListResources(): ListResourcesResult {
@@ -661,7 +661,7 @@ public open class Server(
                 logger.error { "Resource not found: ${request.uri}" }
                 throw IllegalArgumentException("Resource not found: ${request.uri}")
             }
-        return resource.readHandler(request)
+        return resource.readHandler.invoke(this, request)
     }
 
     private suspend fun handleListResourceTemplates(): ListResourceTemplatesResult {
@@ -808,7 +808,7 @@ public open class Server(
  */
 public data class RegisteredTool(
     val tool: Tool,
-    val handler: suspend (CallToolRequest) -> CallToolResult
+    val handler: suspend Server.(CallToolRequest) -> CallToolResult
 )
 
 /**
@@ -819,7 +819,7 @@ public data class RegisteredTool(
  */
 public data class RegisteredPrompt(
     val prompt: Prompt,
-    val messageProvider: suspend (GetPromptRequest) -> GetPromptResult
+    val messageProvider: suspend Server.(GetPromptRequest) -> GetPromptResult
 )
 
 /**
@@ -830,5 +830,5 @@ public data class RegisteredPrompt(
  */
 public data class RegisteredResource(
     val resource: Resource,
-    val readHandler: suspend (ReadResourceRequest) -> ReadResourceResult
+    val readHandler: suspend Server.(ReadResourceRequest) -> ReadResourceResult
 )
