@@ -7,6 +7,7 @@ import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.LIB_VERSION
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.shared.IMPLEMENTATION_NAME
+import kotlinx.coroutines.job
 
 /**
  * Registers a WebSocket route that establishes an MCP (Model Context Protocol) server session.
@@ -98,7 +99,15 @@ private suspend fun Route.createMcpServer(
 
     server.connect(transport)
     handler(server)
-    server.close()
+    
+    // Wait for the WebSocket session to complete instead of closing immediately
+    // This keeps the connection alive while the transport handles messages
+    try {
+        // The transport's message handling loop will keep running until the client disconnects
+        session.coroutineContext.job.join()
+    } finally {
+        server.close()
+    }
 }
 
 private fun createMcpTransport(
