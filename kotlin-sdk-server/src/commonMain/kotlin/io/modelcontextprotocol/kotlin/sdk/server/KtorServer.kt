@@ -13,8 +13,12 @@ import io.ktor.server.routing.routing
 import io.ktor.server.sse.SSE
 import io.ktor.server.sse.ServerSSESession
 import io.ktor.server.sse.sse
-import io.ktor.util.collections.ConcurrentMap
 import io.ktor.utils.io.KtorDsl
+import kotlinx.atomicfu.AtomicRef
+import kotlinx.atomicfu.atomic
+import kotlinx.atomicfu.update
+import kotlinx.collections.immutable.PersistentMap
+import kotlinx.collections.immutable.persistentMapOf
 
 private val logger = KotlinLogging.logger {}
 
@@ -30,7 +34,7 @@ public fun Routing.mcp(path: String, block: ServerSSESession.() -> Server) {
  */
 @KtorDsl
 public fun Routing.mcp(block: ServerSSESession.() -> Server) {
-    val transports = ConcurrentMap<String, SseServerTransport>()
+    val transports = atomic(persistentMapOf<String, SseServerTransport>())
 
     sse {
         mcpSseEndpoint("", transports, block)
@@ -49,24 +53,16 @@ public fun Application.MCP(block: ServerSSESession.() -> Server) {
 
 @KtorDsl
 public fun Application.mcp(block: ServerSSESession.() -> Server) {
-    val transports = ConcurrentMap<String, SseServerTransport>()
-
     install(SSE)
 
     routing {
-        sse("/sse") {
-            mcpSseEndpoint("/message", transports, block)
-        }
-
-        post("/message") {
-            mcpPostEndpoint(transports)
-        }
+        mcp(block)
     }
 }
 
-private suspend fun ServerSSESession.mcpSseEndpoint(
+internal suspend fun ServerSSESession.mcpSseEndpoint(
     postEndpoint: String,
-    transports: ConcurrentMap<String, SseServerTransport>,
+    transports: AtomicRef<PersistentMap<String, SseServerTransport>>,
     block: ServerSSESession.() -> Server,
 ) {
     val transport = mcpSseTransport(postEndpoint, transports)
@@ -75,26 +71,28 @@ private suspend fun ServerSSESession.mcpSseEndpoint(
 
     server.onClose {
         logger.info { "Server connection closed for sessionId: ${transport.sessionId}" }
-        transports.remove(transport.sessionId)
+        transports.update { it.remove(transport.sessionId) }
     }
 
-    server.connect(transport)
+    server.connectSession(transport)
+
     logger.debug { "Server connected to transport for sessionId: ${transport.sessionId}" }
 }
 
 internal fun ServerSSESession.mcpSseTransport(
     postEndpoint: String,
-    transports: ConcurrentMap<String, SseServerTransport>,
+    transports: AtomicRef<PersistentMap<String, SseServerTransport>>,
 ): SseServerTransport {
     val transport = SseServerTransport(postEndpoint, this)
-    transports[transport.sessionId] = transport
-
+    transports.update { it.put(transport.sessionId, transport) }
     logger.info { "New SSE connection established and stored with sessionId: ${transport.sessionId}" }
 
     return transport
 }
 
-internal suspend fun RoutingContext.mcpPostEndpoint(transports: ConcurrentMap<String, SseServerTransport>) {
+internal suspend fun RoutingContext.mcpPostEndpoint(
+    transports: AtomicRef<PersistentMap<String, SseServerTransport>>,
+) {
     val sessionId: String = call.request.queryParameters["sessionId"]
         ?: run {
             call.respond(HttpStatusCode.BadRequest, "sessionId query parameter is not provided")
@@ -103,7 +101,7 @@ internal suspend fun RoutingContext.mcpPostEndpoint(transports: ConcurrentMap<St
 
     logger.debug { "Received message for sessionId: $sessionId" }
 
-    val transport = transports[sessionId]
+    val transport = transports.value[sessionId]
     if (transport == null) {
         logger.warn { "Session not found for sessionId: $sessionId" }
         call.respond(HttpStatusCode.NotFound, "Session not found")
