@@ -618,12 +618,12 @@ public open class Server(
         )
     }
 
-    private suspend fun handleListTools(): ListToolsResult {
+    public suspend fun handleListTools(): ListToolsResult {
         val toolList = tools.values.map { it.tool }
         return ListToolsResult(tools = toolList, nextCursor = null)
     }
 
-    private suspend fun handleCallTool(request: CallToolRequest): CallToolResult {
+    public suspend fun handleCallTool(request: CallToolRequest): CallToolResult {
         logger.debug { "Handling tool call request for tool: ${request.name}" }
         val tool = _tools.value[request.name]
             ?: run {
