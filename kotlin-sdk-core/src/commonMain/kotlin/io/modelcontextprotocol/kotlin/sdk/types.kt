@@ -1469,7 +1469,7 @@ public sealed interface Reference {
  * A reference to a resource or resource template definition.
  */
 @Serializable
-public data class ResourceReference(
+public data class ResourceTemplateReference(
     /**
      * The URI or URI template of the resource.
      */

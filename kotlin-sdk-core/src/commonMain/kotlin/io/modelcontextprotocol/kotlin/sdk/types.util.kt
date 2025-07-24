@@ -75,7 +75,7 @@ internal object StopReasonSerializer : KSerializer<StopReason> {
 internal object ReferencePolymorphicSerializer : JsonContentPolymorphicSerializer<Reference>(Reference::class) {
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<Reference> =
         when (element.jsonObject.getValue("type").jsonPrimitive.content) {
-            ResourceReference.TYPE -> ResourceReference.serializer()
+            ResourceTemplateReference.TYPE -> ResourceTemplateReference.serializer()
             PromptReference.TYPE -> PromptReference.serializer()
             else -> UnknownReference.serializer()
         }
