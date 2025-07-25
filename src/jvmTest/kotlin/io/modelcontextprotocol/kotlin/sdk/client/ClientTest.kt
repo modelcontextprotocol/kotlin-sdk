@@ -1,4 +1,4 @@
-package client
+package io.modelcontextprotocol.kotlin.sdk.client
 
 import io.mockk.coEvery
 import io.mockk.spyk
@@ -31,17 +31,17 @@ import io.modelcontextprotocol.kotlin.sdk.SUPPORTED_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.Tool
-import io.modelcontextprotocol.kotlin.sdk.client.Client
-import io.modelcontextprotocol.kotlin.sdk.client.ClientOptions
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
@@ -411,8 +411,10 @@ class ClientTest {
         }
         server.sendLoggingMessage(
             LoggingMessageNotification(
-                level = LoggingLevel.info,
-                data = jsonObject
+                params = LoggingMessageNotification.Params(
+                    level = LoggingLevel.info,
+                    data = jsonObject
+                )
             )
         )
         server.sendResourceListChanged()
@@ -439,7 +441,7 @@ class ClientTest {
             // Simulate delay
             def.complete(Unit)
             try {
-                kotlinx.coroutines.delay(1000)
+                delay(1000)
             } catch (e: CancellationException) {
                 defTimeOut.complete(Unit)
                 throw e
@@ -494,9 +496,9 @@ class ClientTest {
             // Simulate a delayed response
             // Wait ~100ms unless canceled
             try {
-                kotlinx.coroutines.withTimeout(100L) {
+                withTimeout(100L) {
                     // Just delay here, if timeout is 0 on the client side, this won't return in time
-                    kotlinx.coroutines.delay(100)
+                    delay(100)
                 }
             } catch (_: Exception) {
                 // If aborted, just rethrow or return early
@@ -523,7 +525,7 @@ class ClientTest {
 
         // Request with 1 msec timeout should fail immediately
         val ex = assertFailsWith<Exception> {
-            kotlinx.coroutines.withTimeout(1) {
+            withTimeout(1) {
                 client.listResources()
             }
         }

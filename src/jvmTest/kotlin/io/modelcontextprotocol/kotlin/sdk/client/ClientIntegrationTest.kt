@@ -1,9 +1,7 @@
-package client
+package io.modelcontextprotocol.kotlin.sdk.client
 
 import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.ListToolsResult
-import io.modelcontextprotocol.kotlin.sdk.client.Client
-import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.asSink
 import kotlinx.io.asSource
