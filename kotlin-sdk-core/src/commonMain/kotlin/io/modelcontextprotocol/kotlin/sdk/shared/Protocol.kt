@@ -42,7 +42,7 @@ import kotlin.reflect.typeOf
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
-private val LOGGER = KotlinLogging.logger { }
+private val logger = KotlinLogging.logger { }
 
 public const val IMPLEMENTATION_NAME: String = "mcp-ktor"
 
@@ -204,6 +204,7 @@ public abstract class Protocol(
             }
         }
 
+        logger.info { "Starting transport" }
         return transport.start()
     }
 
@@ -221,29 +222,29 @@ public abstract class Protocol(
     }
 
     private suspend fun onNotification(notification: JSONRPCNotification) {
-        LOGGER.trace { "Received notification: ${notification.method}" }
+        logger.trace { "Received notification: ${notification.method}" }
 
         val handler = notificationHandlers[notification.method] ?: fallbackNotificationHandler
 
         if (handler == null) {
-            LOGGER.trace { "No handler found for notification: ${notification.method}" }
+            logger.trace { "No handler found for notification: ${notification.method}" }
             return
         }
         try {
             handler(notification)
         } catch (cause: Throwable) {
-            LOGGER.error(cause) { "Error handling notification: ${notification.method}" }
+            logger.error(cause) { "Error handling notification: ${notification.method}" }
             onError(cause)
         }
     }
 
     private suspend fun onRequest(request: JSONRPCRequest) {
-        LOGGER.trace { "Received request: ${request.method} (id: ${request.id})" }
+        logger.trace { "Received request: ${request.method} (id: ${request.id})" }
 
         val handler = requestHandlers[request.method] ?: fallbackRequestHandler
 
         if (handler === null) {
-            LOGGER.trace { "No handler found for request: ${request.method}" }
+            logger.trace { "No handler found for request: ${request.method}" }
             try {
                 transport?.send(
                     JSONRPCResponse(
@@ -255,7 +256,7 @@ public abstract class Protocol(
                     )
                 )
             } catch (cause: Throwable) {
-                LOGGER.error(cause) { "Error sending method not found response" }
+                logger.error(cause) { "Error sending method not found response" }
                 onError(cause)
             }
             return
@@ -263,7 +264,7 @@ public abstract class Protocol(
 
         try {
             val result = handler(request, RequestHandlerExtra())
-            LOGGER.trace { "Request handled successfully: ${request.method} (id: ${request.id})" }
+            logger.trace { "Request handled successfully: ${request.method} (id: ${request.id})" }
 
             transport?.send(
                 JSONRPCResponse(
@@ -273,7 +274,7 @@ public abstract class Protocol(
             )
 
         } catch (cause: Throwable) {
-            LOGGER.error(cause) { "Error handling request: ${request.method} (id: ${request.id})" }
+            logger.error(cause) { "Error handling request: ${request.method} (id: ${request.id})" }
 
             try {
                 transport?.send(
@@ -286,14 +287,14 @@ public abstract class Protocol(
                     )
                 )
             } catch (sendError: Throwable) {
-                LOGGER.error(sendError) { "Failed to send error response for request: ${request.method} (id: ${request.id})" }
+                logger.error(sendError) { "Failed to send error response for request: ${request.method} (id: ${request.id})" }
                 // Optionally implement fallback behavior here
             }
         }
     }
 
     private fun onProgress(notification: ProgressNotification) {
-        LOGGER.trace { "Received progress notification: token=${notification.params.progressToken}, progress=${notification.params.progress}/${notification.params.total}" }
+        logger.trace { "Received progress notification: token=${notification.params.progressToken}, progress=${notification.params.progress}/${notification.params.total}" }
         val progress = notification.params.progress
         val total = notification.params.total
         val message = notification.params.message
@@ -304,7 +305,7 @@ public abstract class Protocol(
             val error = Error(
                 "Received a progress notification for an unknown token: ${McpJson.encodeToString(notification)}",
             )
-            LOGGER.error { error.message }
+            logger.error { error.message }
             onError(error)
             return
         }
@@ -382,9 +383,9 @@ public abstract class Protocol(
         request: Request,
         options: RequestOptions? = null,
     ): T {
-        LOGGER.trace { "Sending request: ${request.method}" }
+        logger.trace { "Sending request: ${request.method}" }
         val result = CompletableDeferred<T>()
-        val transport = this@Protocol.transport ?: throw Error("Not connected")
+        val transport = transport ?: throw Error("Not connected")
 
         if (this@Protocol.options?.enforceStrictCapabilities == true) {
             assertCapabilityForMethod(request.method)
@@ -394,7 +395,7 @@ public abstract class Protocol(
         val messageId = message.id
 
         if (options?.onProgress != null) {
-            LOGGER.trace { "Registering progress handler for request id: $messageId" }
+            logger.trace { "Registering progress handler for request id: $messageId" }
             _progressHandlers.update { current ->
                 current.put(messageId, options.onProgress)
             }
@@ -427,7 +428,7 @@ public abstract class Protocol(
 
             val notification = CancelledNotification(
                 params = CancelledNotification.Params(
-                    requestId = messageId, 
+                    requestId = messageId,
                     reason = reason.message ?: "Unknown"
                 )
             )
@@ -444,12 +445,12 @@ public abstract class Protocol(
         val timeout = options?.timeout ?: DEFAULT_REQUEST_TIMEOUT
         try {
             withTimeout(timeout) {
-                LOGGER.trace { "Sending request message with id: $messageId" }
+                logger.trace { "Sending request message with id: $messageId" }
                 this@Protocol.transport?.send(message)
             }
             return result.await()
         } catch (cause: TimeoutCancellationException) {
-            LOGGER.error { "Request timed out after ${timeout.inWholeMilliseconds}ms: ${request.method}" }
+            logger.error { "Request timed out after ${timeout.inWholeMilliseconds}ms: ${request.method}" }
             cancel(
                 McpError(
                     ErrorCode.Defined.RequestTimeout.code,
@@ -466,7 +467,7 @@ public abstract class Protocol(
      * Emits a notification, which is a one-way message that does not expect a response.
      */
     public suspend fun notification(notification: Notification) {
-        LOGGER.trace { "Sending notification: ${notification.method}" }
+        logger.trace { "Sending notification: ${notification.method}" }
         val transport = this.transport ?: error("Not connected")
         assertNotificationCapability(notification.method)
 

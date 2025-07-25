@@ -1,12 +1,93 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
-import io.ktor.server.routing.Route
-import io.ktor.server.websocket.WebSocketServerSession
-import io.ktor.server.websocket.webSocket
+import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.server.application.*
+import io.ktor.server.routing.*
+import io.ktor.server.websocket.*
+import io.ktor.utils.io.*
 import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.LIB_VERSION
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.shared.IMPLEMENTATION_NAME
+import kotlinx.coroutines.awaitCancellation
+
+private val logger = KotlinLogging.logger {}
+
+/**
+ * Configures the Ktor Application to handle Model Context Protocol (MCP) over WebSocket.
+ */
+@KtorDsl
+public fun Routing.mcpWebSocket(
+    block: () -> Server
+) {
+    webSocket {
+        mcpWebSocketEndpoint(block)
+    }
+}
+
+/**
+ * Configures the Ktor Application to handle Model Context Protocol (MCP) over WebSocket.
+ */
+@KtorDsl
+public fun Routing.mcpWebSocket(
+    path: String,
+    block: () -> Server
+) {
+
+    webSocket(path) {
+        mcpWebSocketEndpoint(block)
+    }
+}
+
+/**
+ * Configures the Ktor Application to handle Model Context Protocol (MCP) over WebSocket.
+ */
+@KtorDsl
+public fun Application.mcpWebSocket(
+    block: () -> Server
+) {
+    install(WebSockets)
+
+    routing {
+        mcpWebSocket(block)
+    }
+}
+
+/**
+ * Configures the Ktor Application to handle Model Context Protocol (MCP) over WebSocket at the specified path.
+ */
+@KtorDsl
+public fun Application.mcpWebSocket(
+    path: String,
+    block: () -> Server
+) {
+    install(WebSockets)
+
+    routing {
+        mcpWebSocket(path, block)
+    }
+}
+
+internal suspend fun WebSocketServerSession.mcpWebSocketEndpoint(
+    block: () -> Server
+) {
+    logger.info { "Ktor Server establishing new connection" }
+    val transport = createMcpTransport(this)
+    val server = block()
+    var session: ServerSession? = null
+    try {
+        session = server.connectSession(transport)
+        awaitCancellation()
+    } catch (e: CancellationException) {
+        session?.close()
+    }
+}
+
+private fun createMcpTransport(
+    webSocketSession: WebSocketServerSession,
+): WebSocketMcpServerTransport {
+    return WebSocketMcpServerTransport(webSocketSession)
+}
 
 /**
  * Registers a WebSocket route that establishes an MCP (Model Context Protocol) server session.
@@ -14,12 +95,30 @@ import io.modelcontextprotocol.kotlin.sdk.shared.IMPLEMENTATION_NAME
  * @param options Optional server configuration settings for the MCP server.
  * @param handler A suspend function that defines the server's behavior.
  */
+@Deprecated(
+    "Use mcpWebSocket with a lambda that returns a Server instance instead",
+    ReplaceWith("mcpWebSocket { Server(Implementation(name = IMPLEMENTATION_NAME, version = LIB_VERSION), options ?: ServerOptions(capabilities = ServerCapabilities())) }"),
+    DeprecationLevel.WARNING
+)
 public fun Route.mcpWebSocket(
     options: ServerOptions? = null,
     handler: suspend Server.() -> Unit = {},
 ) {
     webSocket {
         createMcpServer(this, options, handler)
+    }
+}
+
+@Deprecated(
+    "Use mcpWebSocket with a lambda that returns a Server instance instead",
+    ReplaceWith("mcpWebSocket(block)"),
+    DeprecationLevel.WARNING
+)
+public fun Route.mcpWebSocket(
+    block: () -> Server
+) {
+    webSocket {
+        block().connect(createMcpTransport(this))
     }
 }
 
@@ -30,6 +129,11 @@ public fun Route.mcpWebSocket(
  * @param options Optional server configuration settings for the MCP server.
  * @param handler A suspend function that defines the server's behavior.
  */
+@Deprecated(
+    "Use mcpWebSocket with a path and a lambda that returns a Server instance instead",
+    ReplaceWith("mcpWebSocket(path) { Server(Implementation(name = IMPLEMENTATION_NAME, version = LIB_VERSION), options ?: ServerOptions(capabilities = ServerCapabilities())) }"),
+    DeprecationLevel.WARNING
+)
 public fun Route.mcpWebSocket(
     path: String,
     options: ServerOptions? = null,
@@ -45,6 +149,11 @@ public fun Route.mcpWebSocket(
  *
  * @param handler A suspend function that defines the behavior of the transport layer.
  */
+@Deprecated(
+    "Use mcpWebSocket with a lambda that returns a Server instance instead",
+    ReplaceWith("mcpWebSocket { Server(Implementation(name = IMPLEMENTATION_NAME, version = LIB_VERSION), ServerOptions(capabilities = ServerCapabilities())) }"),
+    DeprecationLevel.WARNING
+)
 public fun Route.mcpWebSocketTransport(
     handler: suspend WebSocketMcpServerTransport.() -> Unit = {},
 ) {
@@ -62,6 +171,11 @@ public fun Route.mcpWebSocketTransport(
  * @param path The URL path at which to register the WebSocket route.
  * @param handler A suspend function that defines the behavior of the transport layer.
  */
+@Deprecated(
+    "Use mcpWebSocket with a path and a lambda that returns a Server instance instead",
+    ReplaceWith("mcpWebSocket(path) { Server(Implementation(name = IMPLEMENTATION_NAME, version = LIB_VERSION), ServerOptions(capabilities = ServerCapabilities())) }"),
+    DeprecationLevel.WARNING
+)
 public fun Route.mcpWebSocketTransport(
     path: String,
     handler: suspend WebSocketMcpServerTransport.() -> Unit = {},
@@ -74,7 +188,11 @@ public fun Route.mcpWebSocketTransport(
     }
 }
 
-
+@Deprecated(
+    "Use mcpWebSocket with a lambda that returns a Server instance instead",
+    ReplaceWith("mcpWebSocket { Server(Implementation(name = IMPLEMENTATION_NAME, version = LIB_VERSION), options ?: ServerOptions(capabilities = ServerCapabilities())) }"),
+    DeprecationLevel.WARNING
+)
 private suspend fun Route.createMcpServer(
     session: WebSocketServerSession,
     options: ServerOptions?,
@@ -99,10 +217,4 @@ private suspend fun Route.createMcpServer(
     server.connect(transport)
     handler(server)
     server.close()
-}
-
-private fun createMcpTransport(
-    session: WebSocketServerSession,
-): WebSocketMcpServerTransport {
-    return WebSocketMcpServerTransport(session)
 }
