@@ -6,7 +6,7 @@ plugins {
 
 dependencyResolutionManagement {
     repositories {
-        mavenCentral()
         mavenLocal()
+        mavenCentral()
     }
 }

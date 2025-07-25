@@ -5,7 +5,7 @@ rootProject.name = "kotlin-mcp-server"
 
 dependencyResolutionManagement {
   repositories {
-    mavenCentral()
     mavenLocal()
+    mavenCentral()
   }
 }
