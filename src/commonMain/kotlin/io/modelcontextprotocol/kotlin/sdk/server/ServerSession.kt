@@ -92,7 +92,7 @@ public open class ServerSession(
      * Called when the server session is closing.
      */
     override fun onClose() {
-        logger.info { "Server connection closing" }
+        logger.debug { "Server connection closing" }
         _onClose()
     }
 
@@ -322,7 +322,7 @@ public open class ServerSession(
     }
 
     private suspend fun handleInitialize(request: InitializeRequest): InitializeResult {
-        logger.info { "Handling initialize request from client ${request.clientInfo}" }
+        logger.debug { "Handling initialization request from client" }
         clientCapabilities = request.capabilities
         clientVersion = request.clientInfo
 

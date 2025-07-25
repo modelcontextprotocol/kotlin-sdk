@@ -158,14 +158,13 @@ public open class Client(
             serverVersion = result.serverInfo
 
             notification(InitializedNotification())
+        } catch (error: CancellationException) {
+            throw IllegalStateException("Error connecting to transport: ${error.message}")
         } catch (error: Throwable) {
+            logger.error(error) { "Failed to initialize client" }
             close()
-            if (error !is CancellationException) {
-                throw IllegalStateException("Error connecting to transport: ${error.message}")
-            }
 
             throw error
-
         }
     }
 

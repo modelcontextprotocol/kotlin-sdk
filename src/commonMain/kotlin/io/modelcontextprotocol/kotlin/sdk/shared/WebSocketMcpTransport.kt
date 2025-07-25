@@ -1,5 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.shared
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.websocket.Frame
 import io.ktor.websocket.WebSocketSession
 import io.ktor.websocket.close
@@ -12,11 +13,13 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToString
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 internal const val MCP_SUBPROTOCOL = "mcp"
+
+private val logger = KotlinLogging.logger {}
+
 
 /**
  * Abstract class representing a WebSocket transport for the Model Context Protocol (MCP).
@@ -41,6 +44,8 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
     protected abstract suspend fun initializeSession()
 
     override suspend fun start() {
+        logger.debug { "Starting websocket transport" }
+
         if (!initialized.compareAndSet(expectedValue = false, newValue = true)) {
             error(
                 "WebSocketClientTransport already started! " +
@@ -54,7 +59,8 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
             while (true) {
                 val message = try {
                     session.incoming.receive()
-                } catch (_: ClosedReceiveChannelException) {
+                } catch (e: ClosedReceiveChannelException) {
+                    logger.debug { "Closed receive channel, exiting" }
                     return@launch
                 }
 
@@ -85,6 +91,7 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
     }
 
     override suspend fun send(message: JSONRPCMessage) {
+        logger.debug { "Sending message" }
         if (!initialized.load()) {
             error("Not connected")
         }
@@ -97,6 +104,7 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
             error("Not connected")
         }
 
+        logger.debug { "Closing websocket session" }
         session.close()
         session.coroutineContext.job.join()
     }
