@@ -1,10 +1,14 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.HttpClient
 import io.ktor.client.request.HttpRequestBuilder
 import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.LIB_VERSION
 import io.modelcontextprotocol.kotlin.sdk.shared.IMPLEMENTATION_NAME
+
+private val logger = KotlinLogging.logger {}
+
 
 /**
  * Returns a new WebSocket transport for the Model Context Protocol using the provided HttpClient.
@@ -36,6 +40,8 @@ public suspend fun HttpClient.mcpWebSocket(
             version = LIB_VERSION,
         ),
     )
+    logger.debug { "Client started to connect to server" }
     client.connect(transport)
+    logger.debug { "Client finished to connect to server" }
     return client
 }

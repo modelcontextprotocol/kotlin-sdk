@@ -1,7 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.integration
 
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.sse.SSE
 import io.ktor.server.application.ApplicationStopped
 import io.ktor.server.application.install
 import io.ktor.server.cio.CIOApplicationEngine
@@ -17,10 +16,10 @@ import io.modelcontextprotocol.kotlin.sdk.Role
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.client.Client
-import io.modelcontextprotocol.kotlin.sdk.client.mcpSseTransport
+import io.modelcontextprotocol.kotlin.sdk.client.mcpWebSocketTransport
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
-import io.modelcontextprotocol.kotlin.sdk.server.mcp
+import io.modelcontextprotocol.kotlin.sdk.server.mcpWebSocket
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
@@ -28,15 +27,14 @@ import kotlinx.coroutines.withTimeout
 import kotlin.test.Test
 import kotlin.test.assertTrue
 import io.ktor.client.engine.cio.CIO as ClientCIO
-import io.ktor.client.plugins.sse.SSE as ClientSSE
 import io.ktor.server.cio.CIO as ServerCIO
-import io.ktor.server.sse.SSE as ServerSSE
+import io.ktor.server.websocket.WebSockets as ServerWebSockets
+import io.ktor.client.plugins.websocket.WebSockets as ClientWebSocket
 
-private const val URL = "127.0.0.1"
+class WebSocketIntegrationTest {
 
-class SseIntegrationTest {
     @Test
-    fun `client should be able to connect to sse server`() = runTest {
+    fun `client should be able to connect to websocket server 2`() = runTest {
         var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
         var client: Client? = null
 
@@ -56,12 +54,12 @@ class SseIntegrationTest {
     /**
      * Test Case #1: One opened connection, a client gets a prompt
      *
-     * 1. Open SSE from Client A.
+     * 1. Open WebSocket from Client A.
      * 2. Send a POST request from Client A to POST /prompts/get.
      * 3. Observe that Client A receives a response related to it.
      */
     @Test
-    fun `single sse connection`() = runTest {
+    fun `single websocket connection`() = runTest {
         var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
         var client: Client? = null
 
@@ -69,7 +67,7 @@ class SseIntegrationTest {
             withContext(Dispatchers.Default) {
                 withTimeout(1000) {
                     server = initServer()
-                    client = initClient("Client A")
+                    client = initClient()
 
                     val promptA = getPrompt(client, "Client A")
                     assertTrue { "Client A" in promptA }
@@ -84,13 +82,13 @@ class SseIntegrationTest {
     /**
      * Test Case #1: Two open connections, each client gets a client-specific prompt
      *
-     * 1. Open SSE connection #1 from Client A and note the sessionId=<sessionId#1> value.
-     * 2. Open SSE connection #2 from Client B and note the sessionId=<sessionId#2> value.
+     * 1. Open WebSocket connection #1 from Client A and note the sessionId=<sessionId#1> value.
+     * 2. Open WebSocket connection #2 from Client B and note the sessionId=<sessionId#2> value.
      * 3. Send a POST request to POST /message with the corresponding sessionId#1.
      * 4. Observe that Client B (connection #2) receives a response related to sessionId#1.
      */
     @Test
-    fun `multiple sse connections`() = runTest {
+    fun `multiple websocket connections`() = runTest {
         var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
         var clientA: Client? = null
         var clientB: Client? = null
@@ -99,8 +97,8 @@ class SseIntegrationTest {
             withContext(Dispatchers.Default) {
                 withTimeout(1000) {
                     server = initServer()
-                    clientA = initClient("Client A")
-                    clientB = initClient("Client B")
+                    clientA = initClient()
+                    clientB = initClient()
 
                     // Step 3: Send a prompt request from Client A
                     val promptA = getPrompt(clientA, "Client A")
@@ -118,17 +116,18 @@ class SseIntegrationTest {
         }
     }
 
+
     private suspend fun initClient(name: String = ""): Client {
         val client = Client(
             Implementation(name = name, version = "1.0.0")
         )
 
         val httpClient = HttpClient(ClientCIO) {
-            install(SSE)
+            install(ClientWebSocket)
         }
 
         // Create a transport wrapper that captures the session ID and received messages
-        val transport = httpClient.mcpSseTransport {
+        val transport = httpClient.mcpWebSocketTransport {
             url {
                 host = URL
                 port = PORT
@@ -140,9 +139,10 @@ class SseIntegrationTest {
         return client
     }
 
+
     private suspend fun initServer(): EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration> {
         val server = Server(
-            Implementation(name = "sse-server", version = "1.0.0"),
+            Implementation(name = "websocket-server", version = "1.0.0"),
             ServerOptions(
                 capabilities =
                     ServerCapabilities(prompts = ServerCapabilities.Prompts(listChanged = true))
@@ -171,10 +171,10 @@ class SseIntegrationTest {
             )
         }
 
-        val ktorServer = embeddedServer(ServerCIO, host = URL, port = 0) {
-            install(ServerSSE)
+        val ktorServer = embeddedServer(ServerCIO, host = URL, port = PORT) {
+            install(ServerWebSockets)
             routing {
-                mcp { server }
+                mcpWebSocket(block = { server })
             }
         }
 
@@ -198,5 +198,10 @@ class SseIntegrationTest {
 
         return (response?.messages?.first()?.content as? TextContent)?.text
             ?: error("Failed to receive prompt for Client $clientName")
+    }
+
+    companion object {
+        private const val PORT = 3002
+        private const val URL = "localhost"
     }
 }
