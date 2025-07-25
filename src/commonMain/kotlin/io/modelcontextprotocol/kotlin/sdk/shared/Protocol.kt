@@ -292,11 +292,11 @@ public abstract class Protocol(
     }
 
     private fun onProgress(notification: ProgressNotification) {
-        LOGGER.trace { "Received progress notification: token=${notification.progressToken}, progress=${notification.progress}/${notification.total}" }
-        val progress = notification.progress
-        val total = notification.total
-        val message = notification.message
-        val progressToken = notification.progressToken
+        LOGGER.trace { "Received progress notification: token=${notification.params.progressToken}, progress=${notification.params.progress}/${notification.params.total}" }
+        val progress = notification.params.progress
+        val total = notification.params.total
+        val message = notification.params.message
+        val progressToken = notification.params.progressToken
 
         val handler = _progressHandlers.value[progressToken]
         if (handler == null) {
@@ -424,7 +424,12 @@ public abstract class Protocol(
             _responseHandlers.update { current -> current.remove(messageId) }
             _progressHandlers.update { current -> current.remove(messageId) }
 
-            val notification = CancelledNotification(requestId = messageId, reason = reason.message ?: "Unknown")
+            val notification = CancelledNotification(
+                params = CancelledNotification.Params(
+                    requestId = messageId, 
+                    reason = reason.message ?: "Unknown"
+                )
+            )
 
             val serialized = JSONRPCNotification(
                 notification.method.value,

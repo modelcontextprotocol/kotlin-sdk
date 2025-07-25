@@ -2,7 +2,6 @@ package io.modelcontextprotocol.kotlin.sdk
 
 import io.kotest.assertions.json.shouldEqualJson
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
-import kotlinx.serialization.encodeToString
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
