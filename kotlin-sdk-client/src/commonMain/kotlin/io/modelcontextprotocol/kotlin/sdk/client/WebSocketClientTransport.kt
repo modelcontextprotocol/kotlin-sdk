@@ -1,11 +1,12 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.ktor.client.*
-import io.ktor.client.plugins.websocket.*
-import io.ktor.client.request.*
-import io.ktor.http.*
-import io.ktor.websocket.*
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.websocket.webSocketSession
+import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.header
+import io.ktor.http.HttpHeaders
+import io.ktor.websocket.WebSocketSession
 import io.modelcontextprotocol.kotlin.sdk.shared.MCP_SUBPROTOCOL
 import io.modelcontextprotocol.kotlin.sdk.shared.WebSocketMcpTransport
 import kotlin.properties.Delegates
