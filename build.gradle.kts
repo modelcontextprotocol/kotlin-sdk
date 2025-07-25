@@ -12,6 +12,7 @@ plugins {
     alias(libs.plugins.kotlin.atomicfu)
     alias(libs.plugins.dokka)
     alias(libs.plugins.jreleaser)
+    alias(libs.plugins.ktlint)
     `maven-publish`
     signing
     alias(libs.plugins.kotlinx.binary.compatibility.validator)
@@ -66,9 +67,9 @@ jreleaser {
                             if (publication is MavenPublication) {
                                 val pubName = publication.name
 
-                                if (!pubName.contains("jvm", ignoreCase = true)
-                                    && !pubName.contains("metadata", ignoreCase = true)
-                                    && !pubName.contains("kotlinMultiplatform", ignoreCase = true)
+                                if (!pubName.contains("jvm", ignoreCase = true) &&
+                                    !pubName.contains("metadata", ignoreCase = true) &&
+                                    !pubName.contains("kotlinMultiplatform", ignoreCase = true)
                                 ) {
 
                                     artifactOverride {
@@ -188,7 +189,7 @@ abstract class GenerateLibVersionTask @Inject constructor(
 
             public const val LIB_VERSION: String = "$libVersion"
 
-            """.trimIndent()
+            """.trimIndent(),
         )
     }
 }
@@ -275,4 +276,9 @@ kotlin {
             }
         }
     }
+}
+
+ktlint {
+    verbose = true
+    outputToConsole = true
 }

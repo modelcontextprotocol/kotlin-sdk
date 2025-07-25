@@ -80,10 +80,8 @@ public class ClientOptions(
  * @param clientInfo Information about the client implementation (name, version).
  * @param options Configuration options for this client.
  */
-public open class Client(
-    private val clientInfo: Implementation,
-    options: ClientOptions = ClientOptions(),
-) : Protocol(options) {
+public open class Client(private val clientInfo: Implementation, options: ClientOptions = ClientOptions()) :
+    Protocol(options) {
 
     /**
      * Retrieves the server's reported capabilities after the initialization process completes.
@@ -144,13 +142,13 @@ public open class Client(
             val message = InitializeRequest(
                 protocolVersion = LATEST_PROTOCOL_VERSION,
                 capabilities = capabilities,
-                clientInfo = clientInfo
+                clientInfo = clientInfo,
             )
             val result = request<InitializeResult>(message)
 
             if (!SUPPORTED_PROTOCOL_VERSIONS.contains(result.protocolVersion)) {
                 throw IllegalStateException(
-                    "Server's protocol version is not supported: ${result.protocolVersion}"
+                    "Server's protocol version is not supported: ${result.protocolVersion}",
                 )
             }
 
@@ -165,10 +163,8 @@ public open class Client(
             }
 
             throw error
-
         }
     }
-
 
     override fun assertCapabilityForMethod(method: Method) {
         when (method) {
@@ -181,7 +177,7 @@ public open class Client(
             Method.Defined.PromptsGet,
             Method.Defined.PromptsList,
             Method.Defined.CompletionComplete,
-                -> {
+            -> {
                 if (serverCapabilities?.prompts == null) {
                     throw IllegalStateException("Server does not support prompts (required for $method)")
                 }
@@ -192,20 +188,20 @@ public open class Client(
             Method.Defined.ResourcesRead,
             Method.Defined.ResourcesSubscribe,
             Method.Defined.ResourcesUnsubscribe,
-                -> {
+            -> {
                 val resCaps = serverCapabilities?.resources
                     ?: error("Server does not support resources (required for $method)")
 
                 if (method == Method.Defined.ResourcesSubscribe && resCaps.subscribe != true) {
                     throw IllegalStateException(
-                        "Server does not support resource subscriptions (required for $method)"
+                        "Server does not support resource subscriptions (required for $method)",
                     )
                 }
             }
 
             Method.Defined.ToolsCall,
             Method.Defined.ToolsList,
-                -> {
+            -> {
                 if (serverCapabilities?.tools == null) {
                     throw IllegalStateException("Server does not support tools (required for $method)")
                 }
@@ -213,7 +209,7 @@ public open class Client(
 
             Method.Defined.Initialize,
             Method.Defined.Ping,
-                -> {
+            -> {
                 // No specific capability required
             }
 
@@ -228,7 +224,7 @@ public open class Client(
             Method.Defined.NotificationsRootsListChanged -> {
                 if (capabilities.roots?.listChanged != true) {
                     throw IllegalStateException(
-                        "Client does not support roots list changed notifications (required for $method)"
+                        "Client does not support roots list changed notifications (required for $method)",
                     )
                 }
             }
@@ -236,7 +232,7 @@ public open class Client(
             Method.Defined.NotificationsInitialized,
             Method.Defined.NotificationsCancelled,
             Method.Defined.NotificationsProgress,
-                -> {
+            -> {
                 // Always allowed
             }
 
@@ -251,7 +247,7 @@ public open class Client(
             Method.Defined.SamplingCreateMessage -> {
                 if (capabilities.sampling == null) {
                     throw IllegalStateException(
-                        "Client does not support sampling capability (required for $method)"
+                        "Client does not support sampling capability (required for $method)",
                     )
                 }
             }
@@ -259,7 +255,7 @@ public open class Client(
             Method.Defined.RootsList -> {
                 if (capabilities.roots == null) {
                     throw IllegalStateException(
-                        "Client does not support roots capability (required for $method)"
+                        "Client does not support roots capability (required for $method)",
                     )
                 }
             }
@@ -267,7 +263,7 @@ public open class Client(
             Method.Defined.ElicitationCreate -> {
                 if (capabilities.elicitation == null) {
                     throw IllegalStateException(
-                        "Client does not support elicitation capability (required for $method)"
+                        "Client does not support elicitation capability (required for $method)",
                     )
                 }
             }
@@ -280,16 +276,13 @@ public open class Client(
         }
     }
 
-
     /**
      * Sends a ping request to the server to check connectivity.
      *
      * @param options Optional request options.
      * @throws IllegalStateException If the server does not support the ping method (unlikely).
      */
-    public suspend fun ping(options: RequestOptions? = null): EmptyRequestResult {
-        return request<EmptyRequestResult>(PingRequest(), options)
-    }
+    public suspend fun ping(options: RequestOptions? = null): EmptyRequestResult = request(PingRequest(), options)
 
     /**
      * Sends a completion request to the server, typically to generate or complete some content.
@@ -299,9 +292,8 @@ public open class Client(
      * @return The completion result returned by the server, or `null` if none.
      * @throws IllegalStateException If the server does not support prompts or completion.
      */
-    public suspend fun complete(params: CompleteRequest, options: RequestOptions? = null): CompleteResult? {
-        return request<CompleteResult>(params, options)
-    }
+    public suspend fun complete(params: CompleteRequest, options: RequestOptions? = null): CompleteResult =
+        request(params, options)
 
     /**
      * Sets the logging level on the server.
@@ -310,9 +302,8 @@ public open class Client(
      * @param options Optional request options.
      * @throws IllegalStateException If the server does not support logging.
      */
-    public suspend fun setLoggingLevel(level: LoggingLevel, options: RequestOptions? = null): EmptyRequestResult {
-        return request<EmptyRequestResult>(SetLevelRequest(level), options)
-    }
+    public suspend fun setLoggingLevel(level: LoggingLevel, options: RequestOptions? = null): EmptyRequestResult =
+        request(SetLevelRequest(level), options)
 
     /**
      * Retrieves a prompt by name from the server.
@@ -322,9 +313,8 @@ public open class Client(
      * @return The requested prompt details, or `null` if not found.
      * @throws IllegalStateException If the server does not support prompts.
      */
-    public suspend fun getPrompt(request: GetPromptRequest, options: RequestOptions? = null): GetPromptResult? {
-        return request<GetPromptResult>(request, options)
-    }
+    public suspend fun getPrompt(request: GetPromptRequest, options: RequestOptions? = null): GetPromptResult =
+        request(request, options)
 
     /**
      * Lists all available prompts from the server.
@@ -337,9 +327,7 @@ public open class Client(
     public suspend fun listPrompts(
         request: ListPromptsRequest = ListPromptsRequest(),
         options: RequestOptions? = null,
-    ): ListPromptsResult? {
-        return request<ListPromptsResult>(request, options)
-    }
+    ): ListPromptsResult = request(request, options)
 
     /**
      * Lists all available resources from the server.
@@ -352,9 +340,7 @@ public open class Client(
     public suspend fun listResources(
         request: ListResourcesRequest = ListResourcesRequest(),
         options: RequestOptions? = null,
-    ): ListResourcesResult? {
-        return request<ListResourcesResult>(request, options)
-    }
+    ): ListResourcesResult = request(request, options)
 
     /**
      * Lists resource templates available on the server.
@@ -367,9 +353,7 @@ public open class Client(
     public suspend fun listResourceTemplates(
         request: ListResourceTemplatesRequest,
         options: RequestOptions? = null,
-    ): ListResourceTemplatesResult? {
-        return request<ListResourceTemplatesResult>(request, options)
-    }
+    ): ListResourceTemplatesResult = request(request, options)
 
     /**
      * Reads a resource from the server by its URI.
@@ -382,9 +366,7 @@ public open class Client(
     public suspend fun readResource(
         request: ReadResourceRequest,
         options: RequestOptions? = null,
-    ): ReadResourceResult? {
-        return request<ReadResourceResult>(request, options)
-    }
+    ): ReadResourceResult = request(request, options)
 
     /**
      * Subscribes to resource changes on the server.
@@ -396,9 +378,7 @@ public open class Client(
     public suspend fun subscribeResource(
         request: SubscribeRequest,
         options: RequestOptions? = null,
-    ): EmptyRequestResult {
-        return request<EmptyRequestResult>(request, options)
-    }
+    ): EmptyRequestResult = request(request, options)
 
     /**
      * Unsubscribes from resource changes on the server.
@@ -410,9 +390,7 @@ public open class Client(
     public suspend fun unsubscribeResource(
         request: UnsubscribeRequest,
         options: RequestOptions? = null,
-    ): EmptyRequestResult {
-        return request<EmptyRequestResult>(request, options)
-    }
+    ): EmptyRequestResult = request(request, options)
 
     /**
      * Calls a tool on the server by name, passing the specified arguments.
@@ -443,7 +421,7 @@ public open class Client(
 
         val request = CallToolRequest(
             name = name,
-            arguments = JsonObject(jsonArguments)
+            arguments = JsonObject(jsonArguments),
         )
         return callTool(request, compatibility, options)
     }
@@ -461,12 +439,10 @@ public open class Client(
         request: CallToolRequest,
         compatibility: Boolean = false,
         options: RequestOptions? = null,
-    ): CallToolResultBase? {
-        return if (compatibility) {
-            request<CompatibilityCallToolResult>(request, options)
-        } else {
-            request<CallToolResult>(request, options)
-        }
+    ): CallToolResultBase? = if (compatibility) {
+        request<CompatibilityCallToolResult>(request, options)
+    } else {
+        request<CallToolResult>(request, options)
     }
 
     /**
@@ -480,9 +456,7 @@ public open class Client(
     public suspend fun listTools(
         request: ListToolsRequest = ListToolsRequest(),
         options: RequestOptions? = null,
-    ): ListToolsResult? {
-        return request<ListToolsResult>(request, options)
-    }
+    ): ListToolsResult = request(request, options)
 
     /**
      * Registers a single root.
@@ -491,10 +465,7 @@ public open class Client(
      * @param name A human-readable name for the root.
      * @throws IllegalStateException If the client does not support roots.
      */
-    public fun addRoot(
-        uri: String,
-        name: String,
-    ) {
+    public fun addRoot(uri: String, name: String) {
         if (capabilities.roots == null) {
             logger.error { "Failed to add root '$name': Client does not support roots capability" }
             throw IllegalStateException("Client does not support roots capability.")

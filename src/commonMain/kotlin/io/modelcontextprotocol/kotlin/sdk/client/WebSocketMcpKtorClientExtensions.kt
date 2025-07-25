@@ -33,8 +33,8 @@ public suspend fun HttpClient.mcpWebSocket(
     val client = Client(
         Implementation(
             name = IMPLEMENTATION_NAME,
-            version = LIB_VERSION
-        )
+            version = LIB_VERSION,
+        ),
     )
     client.connect(transport)
     return client

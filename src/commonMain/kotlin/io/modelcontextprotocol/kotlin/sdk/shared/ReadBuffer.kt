@@ -5,7 +5,6 @@ import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import kotlinx.io.Buffer
 import kotlinx.io.indexOf
 import kotlinx.io.readString
-import kotlinx.serialization.encodeToString
 
 /**
  * Buffers a continuous stdio stream into discrete JSON-RPC messages.
@@ -22,6 +21,7 @@ public class ReadBuffer {
         var lfIndex = buffer.indexOf('\n'.code.toByte())
         val line = when (lfIndex) {
             -1L -> return null
+
             0L -> {
                 buffer.skip(1)
                 return null
@@ -46,11 +46,6 @@ public class ReadBuffer {
     }
 }
 
-internal fun deserializeMessage(line: String): JSONRPCMessage {
-    return McpJson.decodeFromString<JSONRPCMessage>(line)
-}
+internal fun deserializeMessage(line: String): JSONRPCMessage = McpJson.decodeFromString<JSONRPCMessage>(line)
 
-internal fun serializeMessage(message: JSONRPCMessage): String {
-    return McpJson.encodeToString(message) + "\n"
-}
-
+internal fun serializeMessage(message: JSONRPCMessage): String = McpJson.encodeToString(message) + "\n"

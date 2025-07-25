@@ -3,6 +3,7 @@
 kotlin = "2.2.0"
 dokka = "2.0.0"
 atomicfu = "0.29.0"
+ktlint = "13.0.0"
 
 # libraries version
 serialization = "1.9.0"
@@ -42,5 +43,6 @@ kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref 
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlin-atomicfu = { id = "org.jetbrains.kotlinx.atomicfu", version.ref = "atomicfu" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
-jreleaser = { id = "org.jreleaser", version.ref = "jreleaser"}
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
+jreleaser = { id = "org.jreleaser", version.ref = "jreleaser" }
 kotlinx-binary-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibilityValidatorPlugin" }

@@ -14,10 +14,7 @@ import io.modelcontextprotocol.kotlin.sdk.shared.IMPLEMENTATION_NAME
  * @param options Optional server configuration settings for the MCP server.
  * @param handler A suspend function that defines the server's behavior.
  */
-public fun Route.mcpWebSocket(
-    options: ServerOptions? = null,
-    handler: suspend Server.() -> Unit = {},
-) {
+public fun Route.mcpWebSocket(options: ServerOptions? = null, handler: suspend Server.() -> Unit = {}) {
     webSocket {
         createMcpServer(this, options, handler)
     }
@@ -30,11 +27,7 @@ public fun Route.mcpWebSocket(
  * @param options Optional server configuration settings for the MCP server.
  * @param handler A suspend function that defines the server's behavior.
  */
-public fun Route.mcpWebSocket(
-    path: String,
-    options: ServerOptions? = null,
-    handler: suspend Server.() -> Unit = {},
-) {
+public fun Route.mcpWebSocket(path: String, options: ServerOptions? = null, handler: suspend Server.() -> Unit = {}) {
     webSocket(path) {
         createMcpServer(this, options, handler)
     }
@@ -45,9 +38,7 @@ public fun Route.mcpWebSocket(
  *
  * @param handler A suspend function that defines the behavior of the transport layer.
  */
-public fun Route.mcpWebSocketTransport(
-    handler: suspend WebSocketMcpServerTransport.() -> Unit = {},
-) {
+public fun Route.mcpWebSocketTransport(handler: suspend WebSocketMcpServerTransport.() -> Unit = {}) {
     webSocket {
         val transport = createMcpTransport(this)
         transport.start()
@@ -62,10 +53,7 @@ public fun Route.mcpWebSocketTransport(
  * @param path The URL path at which to register the WebSocket route.
  * @param handler A suspend function that defines the behavior of the transport layer.
  */
-public fun Route.mcpWebSocketTransport(
-    path: String,
-    handler: suspend WebSocketMcpServerTransport.() -> Unit = {},
-) {
+public fun Route.mcpWebSocketTransport(path: String, handler: suspend WebSocketMcpServerTransport.() -> Unit = {}) {
     webSocket(path) {
         val transport = createMcpTransport(this)
         transport.start()
@@ -73,7 +61,6 @@ public fun Route.mcpWebSocketTransport(
         transport.close()
     }
 }
-
 
 private suspend fun Route.createMcpServer(
     session: WebSocketServerSession,
@@ -85,14 +72,14 @@ private suspend fun Route.createMcpServer(
     val server = Server(
         serverInfo = Implementation(
             name = IMPLEMENTATION_NAME,
-            version = LIB_VERSION
+            version = LIB_VERSION,
         ),
         options = options ?: ServerOptions(
             capabilities = ServerCapabilities(
                 prompts = ServerCapabilities.Prompts(listChanged = null),
                 resources = ServerCapabilities.Resources(subscribe = null, listChanged = null),
                 tools = ServerCapabilities.Tools(listChanged = null),
-            )
+            ),
         ),
     )
 
@@ -101,8 +88,5 @@ private suspend fun Route.createMcpServer(
     server.close()
 }
 
-private fun createMcpTransport(
-    session: WebSocketServerSession,
-): WebSocketMcpServerTransport {
-    return WebSocketMcpServerTransport(session)
-}
+private fun createMcpTransport(session: WebSocketServerSession): WebSocketMcpServerTransport =
+    WebSocketMcpServerTransport(session)

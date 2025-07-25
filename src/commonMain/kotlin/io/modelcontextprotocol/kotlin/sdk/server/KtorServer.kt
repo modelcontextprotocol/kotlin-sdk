@@ -69,7 +69,7 @@ private suspend fun ServerSSESession.mcpSseEndpoint(
     transports: ConcurrentMap<String, SseServerTransport>,
     block: () -> Server,
 ) {
-    val transport =  mcpSseTransport(postEndpoint, transports)
+    val transport = mcpSseTransport(postEndpoint, transports)
 
     val server = block()
 
@@ -94,9 +94,7 @@ internal fun ServerSSESession.mcpSseTransport(
     return transport
 }
 
-internal suspend fun RoutingContext.mcpPostEndpoint(
-    transports: ConcurrentMap<String, SseServerTransport>,
-) {
+internal suspend fun RoutingContext.mcpPostEndpoint(transports: ConcurrentMap<String, SseServerTransport>) {
     val sessionId: String = call.request.queryParameters["sessionId"]
         ?: run {
             call.respond(HttpStatusCode.BadRequest, "sessionId query parameter is not provided")

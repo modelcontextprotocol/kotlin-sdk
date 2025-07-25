@@ -12,7 +12,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToString
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
@@ -44,7 +43,7 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
         if (!initialized.compareAndSet(expectedValue = false, newValue = true)) {
             error(
                 "WebSocketClientTransport already started! " +
-                        "If using Client class, note that connect() calls start() automatically.",
+                    "If using Client class, note that connect() calls start() automatically.",
             )
         }
 

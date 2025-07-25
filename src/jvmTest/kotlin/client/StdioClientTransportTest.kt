@@ -1,8 +1,8 @@
 package client
 
 import io.modelcontextprotocol.kotlin.sdk.client.BaseTransportTest
-import kotlinx.coroutines.test.runTest
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
+import kotlinx.coroutines.test.runTest
 import kotlinx.io.asSink
 import kotlinx.io.asSource
 import kotlinx.io.buffered
@@ -20,7 +20,7 @@ class StdioClientTransportTest : BaseTransportTest() {
 
         val client = StdioClientTransport(
             input = input,
-            output = output
+            output = output,
         )
 
         testClientOpenClose(client)
@@ -38,7 +38,7 @@ class StdioClientTransportTest : BaseTransportTest() {
 
         val client = StdioClientTransport(
             input = input,
-            output = output
+            output = output,
         )
 
         testClientRead(client)

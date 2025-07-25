@@ -31,10 +31,7 @@ import kotlin.coroutines.CoroutineContext
  * Reads from System.in and writes to System.out.
  */
 @OptIn(ExperimentalAtomicApi::class)
-public class StdioServerTransport(
-    private val inputStream: Source,
-    outputStream: Sink
-) : AbstractTransport() {
+public class StdioServerTransport(private val inputStream: Source, outputStream: Sink) : AbstractTransport() {
     private val logger = KotlinLogging.logger {}
 
     private val readBuffer = ReadBuffer()

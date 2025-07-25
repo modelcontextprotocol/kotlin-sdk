@@ -4,8 +4,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import kotlin.test.assertNotEquals
 
 class CallToolResultUtilsTest {
 
@@ -16,7 +15,7 @@ class CallToolResultUtilsTest {
 
         assertEquals(1, result.content.size)
         assertEquals(content, (result.content[0] as TextContent).text)
-        assertFalse(result.isError == true)
+        assertNotEquals(result.isError, true)
         assertEquals(EmptyJsonObject, result._meta)
     }
 
@@ -31,7 +30,7 @@ class CallToolResultUtilsTest {
 
         assertEquals(1, result.content.size)
         assertEquals(content, (result.content[0] as TextContent).text)
-        assertFalse(result.isError == true)
+        assertNotEquals(result.isError, true)
         assertEquals(meta, result._meta)
     }
 
@@ -42,7 +41,7 @@ class CallToolResultUtilsTest {
 
         assertEquals(1, result.content.size)
         assertEquals(content, (result.content[0] as TextContent).text)
-        assertTrue(result.isError == true)
+        assertEquals(result.isError, true)
         assertEquals(EmptyJsonObject, result._meta)
     }
 
@@ -57,8 +56,7 @@ class CallToolResultUtilsTest {
 
         assertEquals(1, result.content.size)
         assertEquals(content, (result.content[0] as TextContent).text)
-        assertTrue(result.isError == true)
+        assertEquals(result.isError, true)
         assertEquals(meta, result._meta)
     }
 }
-

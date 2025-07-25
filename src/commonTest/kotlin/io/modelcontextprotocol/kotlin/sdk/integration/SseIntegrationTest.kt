@@ -40,17 +40,13 @@ class SseIntegrationTest {
         }
     }
 
-    private inline fun <T> assertDoesNotThrow(block: () -> T): T {
-        return try {
-            block()
-        } catch (e: Throwable) {
-            fail("Expected no exception, but got: $e")
-        }
+    private inline fun <T> assertDoesNotThrow(block: () -> T): T = try {
+        block()
+    } catch (e: Throwable) {
+        fail("Expected no exception, but got: $e")
     }
 
-    private suspend fun initClient(): Client {
-        return HttpClient(ClientCIO) { install(SSE) }.mcpSse("http://$URL:$PORT")
-    }
+    private suspend fun initClient(): Client = HttpClient(ClientCIO) { install(SSE) }.mcpSse("http://$URL:$PORT")
 
     private suspend fun initServer(): EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration> {
         val server = Server(

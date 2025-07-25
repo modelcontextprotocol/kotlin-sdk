@@ -16,4 +16,3 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "kotlin-sdk"
-

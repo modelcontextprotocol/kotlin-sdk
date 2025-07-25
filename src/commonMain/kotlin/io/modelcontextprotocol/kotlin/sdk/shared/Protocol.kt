@@ -108,7 +108,7 @@ public data class RequestOptions(
 /**
  * Extra data given to request handlers.
  */
-public class RequestHandlerExtra()
+public class RequestHandlerExtra
 
 internal val COMPLETED = CompletableDeferred(Unit).also { it.complete(Unit) }
 
@@ -116,15 +116,20 @@ internal val COMPLETED = CompletableDeferred(Unit).also { it.complete(Unit) }
  * Implements MCP protocol framing on top of a pluggable transport, including
  * features like request/response linking, notifications, and progress.
  */
-public abstract class Protocol(
-    @PublishedApi internal val options: ProtocolOptions?,
-) {
+public abstract class Protocol(@PublishedApi internal val options: ProtocolOptions?) {
     public var transport: Transport? = null
         private set
 
-    private val _requestHandlers: AtomicRef<PersistentMap<String, suspend (JSONRPCRequest, RequestHandlerExtra) -> RequestResult?>> =
+    private val _requestHandlers:
+        AtomicRef<PersistentMap<String, suspend (JSONRPCRequest, RequestHandlerExtra) -> RequestResult?>> =
         atomic(persistentMapOf())
-    public val requestHandlers: Map<String, suspend (request: JSONRPCRequest, extra: RequestHandlerExtra) -> RequestResult?>
+    public val requestHandlers: Map<
+        String,
+        suspend (
+            request: JSONRPCRequest,
+            extra: RequestHandlerExtra,
+        ) -> RequestResult?,
+        >
         get() = _requestHandlers.value
 
     private val _notificationHandlers =
@@ -132,7 +137,8 @@ public abstract class Protocol(
     public val notificationHandlers: Map<String, suspend (notification: JSONRPCNotification) -> Unit>
         get() = _notificationHandlers.value
 
-    private val _responseHandlers: AtomicRef<PersistentMap<RequestId, (response: JSONRPCResponse?, error: Exception?) -> Unit>> =
+    private val _responseHandlers:
+        AtomicRef<PersistentMap<RequestId, (response: JSONRPCResponse?, error: Exception?) -> Unit>> =
         atomic(persistentMapOf())
     public val responseHandlers: Map<RequestId, (response: JSONRPCResponse?, error: Exception?) -> Unit>
         get() = _responseHandlers.value
@@ -160,7 +166,9 @@ public abstract class Protocol(
     /**
      * A handler to invoke for any request types that do not have their own handler installed.
      */
-    public var fallbackRequestHandler: (suspend (request: JSONRPCRequest, extra: RequestHandlerExtra) -> RequestResult?)? =
+    public var fallbackRequestHandler: (
+        suspend (request: JSONRPCRequest, extra: RequestHandlerExtra) -> RequestResult?
+    )? =
         null
 
     /**
@@ -250,8 +258,8 @@ public abstract class Protocol(
                         error = JSONRPCError(
                             ErrorCode.Defined.MethodNotFound,
                             message = "Server does not support ${request.method}",
-                        )
-                    )
+                        ),
+                    ),
                 )
             } catch (cause: Throwable) {
                 LOGGER.error(cause) { "Error sending method not found response" }
@@ -267,10 +275,9 @@ public abstract class Protocol(
             transport?.send(
                 JSONRPCResponse(
                     id = request.id,
-                    result = result
-                )
+                    result = result,
+                ),
             )
-
         } catch (cause: Throwable) {
             LOGGER.error(cause) { "Error handling request: ${request.method} (id: ${request.id})" }
 
@@ -280,19 +287,23 @@ public abstract class Protocol(
                         id = request.id,
                         error = JSONRPCError(
                             code = ErrorCode.Defined.InternalError,
-                            message = cause.message ?: "Internal error"
-                        )
-                    )
+                            message = cause.message ?: "Internal error",
+                        ),
+                    ),
                 )
             } catch (sendError: Throwable) {
-                LOGGER.error(sendError) { "Failed to send error response for request: ${request.method} (id: ${request.id})" }
+                LOGGER.error(sendError) {
+                    "Failed to send error response for request: ${request.method} (id: ${request.id})"
+                }
                 // Optionally implement fallback behavior here
             }
         }
     }
 
     private fun onProgress(notification: ProgressNotification) {
-        LOGGER.trace { "Received progress notification: token=${notification.progressToken}, progress=${notification.progress}/${notification.total}" }
+        LOGGER.trace {
+            "Received progress notification: token=${notification.progressToken}, progress=${notification.progress}/${notification.total}"
+        }
         val progress = notification.progress
         val total = notification.total
         val message = notification.message
@@ -354,21 +365,21 @@ public abstract class Protocol(
     /**
      * A method to check if a capability is supported by the remote side, for the given method to be called.
      *
-     * This should be implemented by subclasses.
+     * Subclasses should implement this.
      */
     protected abstract fun assertCapabilityForMethod(method: Method)
 
     /**
      * A method to check if a notification is supported by the local side, for the given method to be sent.
      *
-     * This should be implemented by subclasses.
+     * Subclasses should implement this.
      */
     protected abstract fun assertNotificationCapability(method: Method)
 
     /**
-     * A method to check if a request handler is supported by the local side, for the given method to be handled.
+     * A method to check if the local side supports a request handler for the given method to be handled.
      *
-     * This should be implemented by subclasses.
+     * Subclasses should implement this.
      */
     public abstract fun assertRequestHandlerCapability(method: Method)
 
@@ -377,10 +388,7 @@ public abstract class Protocol(
      *
      * Do not use this method to emit notifications! Use notification() instead.
      */
-    public suspend fun <T : RequestResult> request(
-        request: Request,
-        options: RequestOptions? = null,
-    ): T {
+    public suspend fun <T : RequestResult> request(request: Request, options: RequestOptions? = null): T {
         LOGGER.trace { "Sending request: ${request.method}" }
         val result = CompletableDeferred<T>()
         val transport = this@Protocol.transport ?: throw Error("Not connected")
@@ -428,12 +436,11 @@ public abstract class Protocol(
 
             val serialized = JSONRPCNotification(
                 notification.method.value,
-                params = McpJson.encodeToJsonElement(notification)
+                params = McpJson.encodeToJsonElement(notification),
             )
             transport.send(serialized)
 
             result.completeExceptionally(reason)
-            Unit
         }
 
         val timeout = options?.timeout ?: DEFAULT_REQUEST_TIMEOUT
@@ -449,7 +456,7 @@ public abstract class Protocol(
                 McpError(
                     ErrorCode.Defined.RequestTimeout.code,
                     "Request timed out",
-                    JsonObject(mutableMapOf("timeout" to JsonPrimitive(timeout.inWholeMilliseconds)))
+                    JsonObject(mutableMapOf("timeout" to JsonPrimitive(timeout.inWholeMilliseconds))),
                 ),
             )
             result.cancel(cause)

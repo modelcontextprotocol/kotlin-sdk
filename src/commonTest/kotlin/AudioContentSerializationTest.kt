@@ -2,7 +2,6 @@ package io.modelcontextprotocol.kotlin.sdk
 
 import io.kotest.assertions.json.shouldEqualJson
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
-import kotlinx.serialization.encodeToString
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -18,7 +17,7 @@ class AudioContentSerializationTest {
 
     private val audioContent = AudioContent(
         data = "base64-encoded-audio-data",
-        mimeType = "audio/wav"
+        mimeType = "audio/wav",
     )
 
     @Test

@@ -88,7 +88,7 @@ class InMemoryTransportTest {
 
         assertFailsWith<IllegalStateException> {
             clientTransport.send(
-                InitializedNotification().toJSON()
+                InitializedNotification().toJSON(),
             )
         }
     }
