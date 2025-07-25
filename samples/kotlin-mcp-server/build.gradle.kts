@@ -11,10 +11,6 @@ plugins {
 group = "org.example"
 version = "0.1.0"
 
-repositories {
-    mavenCentral()
-}
-
 val jvmMainClass = "Main_jvmKt"
 
 kotlin {

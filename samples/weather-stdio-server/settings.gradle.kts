@@ -5,7 +5,8 @@ plugins {
 }
 
 dependencyResolutionManagement {
-    repositories {
-        mavenCentral()
-    }
+  repositories {
+    mavenCentral()
+    mavenLocal()
+  }
 }
