@@ -1,10 +1,16 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.ktor.server.application.*
-import io.ktor.server.routing.*
-import io.ktor.server.websocket.*
-import io.ktor.utils.io.*
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import io.ktor.server.routing.Route
+import io.ktor.server.routing.Routing
+import io.ktor.server.routing.routing
+import io.ktor.server.websocket.WebSocketServerSession
+import io.ktor.server.websocket.WebSockets
+import io.ktor.server.websocket.webSocket
+import io.ktor.utils.io.CancellationException
+import io.ktor.utils.io.KtorDsl
 import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.LIB_VERSION
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities

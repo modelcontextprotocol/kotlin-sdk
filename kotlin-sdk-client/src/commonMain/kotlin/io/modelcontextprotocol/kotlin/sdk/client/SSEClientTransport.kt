@@ -71,7 +71,6 @@ public class SseClientTransport(
         check(initialized.compareAndSet(expectedValue = false, newValue = true)) {
             "SSEClientTransport already started! If using Client class, note that connect() calls start() automatically."
         }
-        logger.info { "Starting SseClientTransport..." }
 
         try {
             session = urlString?.let {
