@@ -33,8 +33,9 @@ abstract class BaseTransportTest {
             fail("Unexpected error: $error")
         }
 
-        val messages = listOf<JSONRPCMessage>(
-            PingRequest().toJSON(), InitializedNotification().toJSON()
+        val messages = listOf(
+            PingRequest().toJSON(),
+            InitializedNotification().toJSON(),
         )
 
         val readMessages = mutableListOf<JSONRPCMessage>()

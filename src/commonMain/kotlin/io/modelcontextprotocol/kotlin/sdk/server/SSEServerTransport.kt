@@ -12,7 +12,6 @@ import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
 import kotlinx.coroutines.job
-import kotlinx.serialization.encodeToString
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.uuid.ExperimentalUuidApi
@@ -29,10 +28,8 @@ public typealias SSEServerTransport = SseServerTransport
  * Creates a new SSE server transport, which will direct the client to POST messages to the relative or absolute URL identified by `_endpoint`.
  */
 @OptIn(ExperimentalAtomicApi::class)
-public class SseServerTransport(
-    private val endpoint: String,
-    private val session: ServerSSESession,
-) : AbstractTransport() {
+public class SseServerTransport(private val endpoint: String, private val session: ServerSSESession) :
+    AbstractTransport() {
     private val initialized: AtomicBoolean = AtomicBoolean(false)
 
     @OptIn(ExperimentalUuidApi::class)
@@ -45,13 +42,15 @@ public class SseServerTransport(
      */
     override suspend fun start() {
         if (!initialized.compareAndSet(expectedValue = false, newValue = true)) {
-            error("SSEServerTransport already started! If using Server class, note that connect() calls start() automatically.")
+            error(
+                "SSEServerTransport already started! If using Server class, note that connect() calls start() automatically.",
+            )
         }
 
         // Send the endpoint event
         session.send(
             event = "endpoint",
-            data = "${endpoint.encodeURLPath()}?$SESSION_ID_PARAM=${sessionId}",
+            data = "${endpoint.encodeURLPath()}?$SESSION_ID_PARAM=$sessionId",
         )
 
         try {

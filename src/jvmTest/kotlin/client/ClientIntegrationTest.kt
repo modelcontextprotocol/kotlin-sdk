@@ -19,7 +19,7 @@ class ClientIntegrationTest {
 
         return StdioClientTransport(
             socket.inputStream.asSource().buffered(),
-            socket.outputStream.asSink().buffered()
+            socket.outputStream.asSink().buffered(),
         )
     }
 
@@ -34,12 +34,10 @@ class ClientIntegrationTest {
         try {
             client.connect(transport)
 
-            val response: ListToolsResult? = client.listTools()
-            println(response?.tools)
-
+            val response: ListToolsResult = client.listTools()
+            println(response.tools)
         } finally {
             transport.close()
         }
     }
-
 }

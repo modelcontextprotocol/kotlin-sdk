@@ -1,0 +1,37 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+max_line_length = 120
+
+[*.json]
+indent_size = 2
+
+[{*.yaml,*.yml}]
+indent_size = 2
+
+[*.{kt,kts}]
+ij_kotlin_code_style_defaults = KOTLIN_OFFICIAL
+
+#  Disable wildcard imports entirely
+ij_kotlin_name_count_to_use_star_import = 2147483647
+ij_kotlin_name_count_to_use_star_import_for_members = 2147483647
+ij_kotlin_packages_to_use_import_on_demand = unset
+
+ktlint_code_style = intellij_idea
+ktlint_experimental = enabled
+ktlint_standard_filename = disabled
+ktlint_standard_no-empty-first-line-in-class-body = disabled
+ktlint_class_signature_rule_force_multiline_when_parameter_count_greater_or_equal_than = 4
+ktlint_function_signature_rule_force_multiline_when_parameter_count_greater_or_equal_than = 4
+ktlint_standard_chain-method-continuation = disabled
+ktlint_ignore_back_ticked_identifier = true
+ktlint_standard_multiline-expression-wrapping = disabled
+ktlint_standard_when-entry-bracing = disabled
+
+[*/build/**/*]
+ktlint = disabled

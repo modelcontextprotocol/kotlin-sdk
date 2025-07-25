@@ -33,16 +33,16 @@ class ServerTest {
         // Create server with tools capability
         val serverOptions = ServerOptions(
             capabilities = ServerCapabilities(
-                tools = ServerCapabilities.Tools(null)
-            )
+                tools = ServerCapabilities.Tools(null),
+            ),
         )
         val server = Server(
             Implementation(name = "test server", version = "1.0"),
-            serverOptions
+            serverOptions,
         )
 
         // Add a tool
-        server.addTool("test-tool", "Test Tool", Tool.Input()) { request ->
+        server.addTool("test-tool", "Test Tool", Tool.Input()) { _ ->
             CallToolResult(listOf(TextContent("Test result")))
         }
 
@@ -68,12 +68,12 @@ class ServerTest {
         // Create server with tools capability
         val serverOptions = ServerOptions(
             capabilities = ServerCapabilities(
-                tools = ServerCapabilities.Tools(null)
-            )
+                tools = ServerCapabilities.Tools(null),
+            ),
         )
         val server = Server(
             Implementation(name = "test server", version = "1.0"),
-            serverOptions
+            serverOptions,
         )
 
         // Setup client
@@ -105,11 +105,11 @@ class ServerTest {
     fun `removeTool should throw when tools capability is not supported`() = runTest {
         // Create server without tools capability
         val serverOptions = ServerOptions(
-            capabilities = ServerCapabilities()
+            capabilities = ServerCapabilities(),
         )
         val server = Server(
             Implementation(name = "test server", version = "1.0"),
-            serverOptions
+            serverOptions,
         )
 
         // Verify that removing a tool throws an exception
@@ -124,19 +124,19 @@ class ServerTest {
         // Create server with tools capability
         val serverOptions = ServerOptions(
             capabilities = ServerCapabilities(
-                tools = ServerCapabilities.Tools(null)
-            )
+                tools = ServerCapabilities.Tools(null),
+            ),
         )
         val server = Server(
             Implementation(name = "test server", version = "1.0"),
-            serverOptions
+            serverOptions,
         )
 
         // Add tools
-        server.addTool("test-tool-1", "Test Tool 1") { request ->
+        server.addTool("test-tool-1", "Test Tool 1") { _ ->
             CallToolResult(listOf(TextContent("Test result 1")))
         }
-        server.addTool("test-tool-2", "Test Tool 2") { request ->
+        server.addTool("test-tool-2", "Test Tool 2") { _ ->
             CallToolResult(listOf(TextContent("Test result 2")))
         }
 
@@ -162,20 +162,20 @@ class ServerTest {
         // Create server with prompts capability
         val serverOptions = ServerOptions(
             capabilities = ServerCapabilities(
-                prompts = ServerCapabilities.Prompts(listChanged = false)
-            )
+                prompts = ServerCapabilities.Prompts(listChanged = false),
+            ),
         )
         val server = Server(
             Implementation(name = "test server", version = "1.0"),
-            serverOptions
+            serverOptions,
         )
 
         // Add a prompt
         val testPrompt = Prompt("test-prompt", "Test Prompt", null)
-        server.addPrompt(testPrompt) { request ->
+        server.addPrompt(testPrompt) { _ ->
             GetPromptResult(
                 description = "Test prompt description",
-                messages = listOf()
+                messages = listOf(),
             )
         }
 
@@ -201,27 +201,27 @@ class ServerTest {
         // Create server with prompts capability
         val serverOptions = ServerOptions(
             capabilities = ServerCapabilities(
-                prompts = ServerCapabilities.Prompts(listChanged = false)
-            )
+                prompts = ServerCapabilities.Prompts(listChanged = false),
+            ),
         )
         val server = Server(
             Implementation(name = "test server", version = "1.0"),
-            serverOptions
+            serverOptions,
         )
 
         // Add prompts
         val testPrompt1 = Prompt("test-prompt-1", "Test Prompt 1", null)
         val testPrompt2 = Prompt("test-prompt-2", "Test Prompt 2", null)
-        server.addPrompt(testPrompt1) { request ->
+        server.addPrompt(testPrompt1) { _ ->
             GetPromptResult(
                 description = "Test prompt description 1",
-                messages = listOf()
+                messages = listOf(),
             )
         }
-        server.addPrompt(testPrompt2) { request ->
+        server.addPrompt(testPrompt2) { _ ->
             GetPromptResult(
                 description = "Test prompt description 2",
-                messages = listOf()
+                messages = listOf(),
             )
         }
 
@@ -247,12 +247,12 @@ class ServerTest {
         // Create server with resources capability
         val serverOptions = ServerOptions(
             capabilities = ServerCapabilities(
-                resources = ServerCapabilities.Resources(null, null)
-            )
+                resources = ServerCapabilities.Resources(null, null),
+            ),
         )
         val server = Server(
             Implementation(name = "test server", version = "1.0"),
-            serverOptions
+            serverOptions,
         )
 
         // Add a resource
@@ -261,8 +261,8 @@ class ServerTest {
             uri = testResourceUri,
             name = "Test Resource",
             description = "A test resource",
-            mimeType = "text/plain"
-        ) { request ->
+            mimeType = "text/plain",
+        ) { _ ->
             ReadResourceResult(
                 contents = listOf(
                     TextResourceContents(
@@ -270,7 +270,7 @@ class ServerTest {
                         uri = testResourceUri,
                         mimeType = "text/plain",
                     ),
-                )
+                ),
             )
         }
 
@@ -296,12 +296,12 @@ class ServerTest {
         // Create server with resources capability
         val serverOptions = ServerOptions(
             capabilities = ServerCapabilities(
-                resources = ServerCapabilities.Resources(null, null)
-            )
+                resources = ServerCapabilities.Resources(null, null),
+            ),
         )
         val server = Server(
             Implementation(name = "test server", version = "1.0"),
-            serverOptions
+            serverOptions,
         )
 
         // Add resources
@@ -311,8 +311,8 @@ class ServerTest {
             uri = testResourceUri1,
             name = "Test Resource 1",
             description = "A test resource 1",
-            mimeType = "text/plain"
-        ) { request ->
+            mimeType = "text/plain",
+        ) { _ ->
             ReadResourceResult(
                 contents = listOf(
                     TextResourceContents(
@@ -320,15 +320,15 @@ class ServerTest {
                         uri = testResourceUri1,
                         mimeType = "text/plain",
                     ),
-                )
+                ),
             )
         }
         server.addResource(
             uri = testResourceUri2,
             name = "Test Resource 2",
             description = "A test resource 2",
-            mimeType = "text/plain"
-        ) { request ->
+            mimeType = "text/plain",
+        ) { _ ->
             ReadResourceResult(
                 contents = listOf(
                     TextResourceContents(
@@ -336,7 +336,7 @@ class ServerTest {
                         uri = testResourceUri2,
                         mimeType = "text/plain",
                     ),
-                )
+                ),
             )
         }
 
@@ -362,12 +362,12 @@ class ServerTest {
         // Create server with prompts capability
         val serverOptions = ServerOptions(
             capabilities = ServerCapabilities(
-                prompts = ServerCapabilities.Prompts(listChanged = false)
-            )
+                prompts = ServerCapabilities.Prompts(listChanged = false),
+            ),
         )
         val server = Server(
             Implementation(name = "test server", version = "1.0"),
-            serverOptions
+            serverOptions,
         )
 
         // Setup client
@@ -399,11 +399,11 @@ class ServerTest {
     fun `removePrompt should throw when prompts capability is not supported`() = runTest {
         // Create server without prompts capability
         val serverOptions = ServerOptions(
-            capabilities = ServerCapabilities()
+            capabilities = ServerCapabilities(),
         )
         val server = Server(
             Implementation(name = "test server", version = "1.0"),
-            serverOptions
+            serverOptions,
         )
 
         // Verify that removing a prompt throws an exception
@@ -418,12 +418,12 @@ class ServerTest {
         // Create server with resources capability
         val serverOptions = ServerOptions(
             capabilities = ServerCapabilities(
-                resources = ServerCapabilities.Resources(null, null)
-            )
+                resources = ServerCapabilities.Resources(null, null),
+            ),
         )
         val server = Server(
             Implementation(name = "test server", version = "1.0"),
-            serverOptions
+            serverOptions,
         )
 
         // Setup client
@@ -434,7 +434,9 @@ class ServerTest {
 
         // Track notifications
         var resourceListChangedNotificationReceived = false
-        client.setNotificationHandler<ResourceListChangedNotification>(Method.Defined.NotificationsResourcesListChanged) {
+        client.setNotificationHandler<ResourceListChangedNotification>(
+            Method.Defined.NotificationsResourcesListChanged,
+        ) {
             resourceListChangedNotificationReceived = true
             CompletableDeferred(Unit)
         }
@@ -448,18 +450,21 @@ class ServerTest {
 
         // Verify the result
         assertFalse(result, "Removing non-existent resource should return false")
-        assertFalse(resourceListChangedNotificationReceived, "No notification should be sent when resource doesn't exist")
+        assertFalse(
+            resourceListChangedNotificationReceived,
+            "No notification should be sent when resource doesn't exist",
+        )
     }
 
     @Test
     fun `removeResource should throw when resources capability is not supported`() = runTest {
         // Create server without resources capability
         val serverOptions = ServerOptions(
-            capabilities = ServerCapabilities()
+            capabilities = ServerCapabilities(),
         )
         val server = Server(
             Implementation(name = "test server", version = "1.0"),
-            serverOptions
+            serverOptions,
         )
 
         // Verify that removing a resource throws an exception

@@ -55,30 +55,42 @@ class ToolSerializationTest {
         annotations = null,
         inputSchema = Tool.Input(
             properties = buildJsonObject {
-                put("location", buildJsonObject {
-                    put("type", JsonPrimitive("string"))
-                    put("description", JsonPrimitive("The city and state, e.g. San Francisco, CA"))
-                })
+                put(
+                    "location",
+                    buildJsonObject {
+                        put("type", JsonPrimitive("string"))
+                        put("description", JsonPrimitive("The city and state, e.g. San Francisco, CA"))
+                    },
+                )
             },
-            required = listOf("location")
+            required = listOf("location"),
         ),
         outputSchema = Tool.Output(
             properties = buildJsonObject {
-                put("temperature", buildJsonObject {
-                    put("type", JsonPrimitive("number"))
-                    put("description", JsonPrimitive("Temperature in celsius"))
-                })
-                put("conditions", buildJsonObject {
-                    put("type", JsonPrimitive("string"))
-                    put("description", JsonPrimitive("Weather conditions description"))
-                })
-                put("humidity", buildJsonObject {
-                    put("type", JsonPrimitive("number"))
-                    put("description", JsonPrimitive("Humidity percentage"))
-                })
+                put(
+                    "temperature",
+                    buildJsonObject {
+                        put("type", JsonPrimitive("number"))
+                        put("description", JsonPrimitive("Temperature in celsius"))
+                    },
+                )
+                put(
+                    "conditions",
+                    buildJsonObject {
+                        put("type", JsonPrimitive("string"))
+                        put("description", JsonPrimitive("Weather conditions description"))
+                    },
+                )
+                put(
+                    "humidity",
+                    buildJsonObject {
+                        put("type", JsonPrimitive("number"))
+                        put("description", JsonPrimitive("Humidity percentage"))
+                    },
+                )
             },
-            required = listOf("temperature", "conditions", "humidity")
-        )
+            required = listOf("temperature", "conditions", "humidity"),
+        ),
     )
 
     //region Serialize
@@ -120,23 +132,35 @@ class ToolSerializationTest {
             name = "get_weather",
             outputSchema = Tool.Output(
                 properties = buildJsonObject {
-                    put("temperature", buildJsonObject {
-                        put("type", JsonPrimitive("number"))
-                        put("description", JsonPrimitive("Temperature in celsius"))
-                    })
-                    put("conditions", buildJsonObject {
-                        put("type", JsonPrimitive("string"))
-                        put("description", JsonPrimitive("Weather conditions description"))
-                    })
-                    put("humidity", buildJsonObject {
-                        put("type", JsonPrimitive("number"))
-                        put("description", JsonPrimitive("Humidity percentage"))
-                    })
+                    put(
+                        "temperature",
+                        buildJsonObject {
+                            put("type", JsonPrimitive("number"))
+                            put("description", JsonPrimitive("Temperature in celsius"))
+                        },
+                    )
+                    put(
+                        "conditions",
+                        buildJsonObject {
+                            put("type", JsonPrimitive("string"))
+                            put("description", JsonPrimitive("Weather conditions description"))
+                        },
+                    )
+                    put(
+                        "humidity",
+                        buildJsonObject {
+                            put("type", JsonPrimitive("number"))
+                            put("description", JsonPrimitive("Humidity percentage"))
+                        },
+                    )
                 },
-                required = listOf("temperature", "conditions", "humidity")
-            )
+                required = listOf("temperature", "conditions", "humidity"),
+            ),
         )
-        val expectedJson = createWeatherToolJson(name = "get_weather", outputSchema = """
+        val expectedJson =
+            createWeatherToolJson(
+                name = "get_weather",
+                outputSchema = """
             {
               "type": "object",
               "properties": {
@@ -155,7 +179,8 @@ class ToolSerializationTest {
               },
               "required": ["temperature", "conditions", "humidity"]
             }
-        """.trimIndent())
+                """.trimIndent(),
+            )
 
         val actualJson = McpJson.encodeToString(weatherTool)
 
@@ -169,21 +194,30 @@ class ToolSerializationTest {
             title = "Get weather",
             outputSchema = Tool.Output(
                 properties = buildJsonObject {
-                    put("temperature", buildJsonObject {
-                        put("type", JsonPrimitive("number"))
-                        put("description", JsonPrimitive("Temperature in celsius"))
-                    })
-                    put("conditions", buildJsonObject {
-                        put("type", JsonPrimitive("string"))
-                        put("description", JsonPrimitive("Weather conditions description"))
-                    })
-                    put("humidity", buildJsonObject {
-                        put("type", JsonPrimitive("number"))
-                        put("description", JsonPrimitive("Humidity percentage"))
-                    })
+                    put(
+                        "temperature",
+                        buildJsonObject {
+                            put("type", JsonPrimitive("number"))
+                            put("description", JsonPrimitive("Temperature in celsius"))
+                        },
+                    )
+                    put(
+                        "conditions",
+                        buildJsonObject {
+                            put("type", JsonPrimitive("string"))
+                            put("description", JsonPrimitive("Weather conditions description"))
+                        },
+                    )
+                    put(
+                        "humidity",
+                        buildJsonObject {
+                            put("type", JsonPrimitive("number"))
+                            put("description", JsonPrimitive("Humidity percentage"))
+                        },
+                    )
                 },
-                required = listOf("temperature", "conditions", "humidity")
-            )
+                required = listOf("temperature", "conditions", "humidity"),
+            ),
         )
         val expectedJson = createWeatherToolJson(
             name = "get_weather",
@@ -207,7 +241,8 @@ class ToolSerializationTest {
               },
               "required": ["temperature", "conditions", "humidity"]
             }
-        """.trimIndent())
+            """.trimIndent(),
+        )
 
         val actualJson = McpJson.encodeToString(weatherTool)
 
@@ -245,7 +280,10 @@ class ToolSerializationTest {
 
     @Test
     fun `should deserialize get_weather tool with outputSchema optional property specified`() {
-        val toolJson = createWeatherToolJson(name = "get_weather", outputSchema = """
+        val toolJson =
+            createWeatherToolJson(
+                name = "get_weather",
+                outputSchema = """
             {
               "type": "object",
               "properties": {
@@ -264,27 +302,37 @@ class ToolSerializationTest {
               },
               "required": ["temperature", "conditions", "humidity"]
             }
-        """.trimIndent())
+                """.trimIndent(),
+            )
 
         val expectedTool = createWeatherTool(
             name = "get_weather",
             outputSchema = Tool.Output(
                 properties = buildJsonObject {
-                    put("temperature", buildJsonObject {
-                        put("type", JsonPrimitive("number"))
-                        put("description", JsonPrimitive("Temperature in celsius"))
-                    })
-                    put("conditions", buildJsonObject {
-                        put("type", JsonPrimitive("string"))
-                        put("description", JsonPrimitive("Weather conditions description"))
-                    })
-                    put("humidity", buildJsonObject {
-                        put("type", JsonPrimitive("number"))
-                        put("description", JsonPrimitive("Humidity percentage"))
-                    })
+                    put(
+                        "temperature",
+                        buildJsonObject {
+                            put("type", JsonPrimitive("number"))
+                            put("description", JsonPrimitive("Temperature in celsius"))
+                        },
+                    )
+                    put(
+                        "conditions",
+                        buildJsonObject {
+                            put("type", JsonPrimitive("string"))
+                            put("description", JsonPrimitive("Weather conditions description"))
+                        },
+                    )
+                    put(
+                        "humidity",
+                        buildJsonObject {
+                            put("type", JsonPrimitive("number"))
+                            put("description", JsonPrimitive("Humidity percentage"))
+                        },
+                    )
                 },
-                required = listOf("temperature", "conditions", "humidity")
-            )
+                required = listOf("temperature", "conditions", "humidity"),
+            ),
         )
 
         val actualTool = McpJson.decodeFromString<Tool>(toolJson)
@@ -316,28 +364,38 @@ class ToolSerializationTest {
               },
               "required": ["temperature", "conditions", "humidity"]
             }
-        """.trimIndent())
+            """.trimIndent(),
+        )
 
         val expectedTool = createWeatherTool(
             name = "get_weather",
             title = "Get weather",
             outputSchema = Tool.Output(
                 properties = buildJsonObject {
-                    put("temperature", buildJsonObject {
-                        put("type", JsonPrimitive("number"))
-                        put("description", JsonPrimitive("Temperature in celsius"))
-                    })
-                    put("conditions", buildJsonObject {
-                        put("type", JsonPrimitive("string"))
-                        put("description", JsonPrimitive("Weather conditions description"))
-                    })
-                    put("humidity", buildJsonObject {
-                        put("type", JsonPrimitive("number"))
-                        put("description", JsonPrimitive("Humidity percentage"))
-                    })
+                    put(
+                        "temperature",
+                        buildJsonObject {
+                            put("type", JsonPrimitive("number"))
+                            put("description", JsonPrimitive("Temperature in celsius"))
+                        },
+                    )
+                    put(
+                        "conditions",
+                        buildJsonObject {
+                            put("type", JsonPrimitive("string"))
+                            put("description", JsonPrimitive("Weather conditions description"))
+                        },
+                    )
+                    put(
+                        "humidity",
+                        buildJsonObject {
+                            put("type", JsonPrimitive("number"))
+                            put("description", JsonPrimitive("Humidity percentage"))
+                        },
+                    )
                 },
-                required = listOf("temperature", "conditions", "humidity")
-            )
+                required = listOf("temperature", "conditions", "humidity"),
+            ),
         )
 
         val actualTool = McpJson.decodeFromString<Tool>(toolJson)
@@ -352,9 +410,8 @@ class ToolSerializationTest {
     private fun createWeatherToolJson(
         name: String = "get_weather",
         title: String? = null,
-        outputSchema: String? = null
+        outputSchema: String? = null,
     ): String {
-
         val stringBuilder = StringBuilder()
 
         stringBuilder
@@ -371,7 +428,8 @@ class ToolSerializationTest {
             .appendLine(",")
             .append("  \"description\": \"Get the current weather in a given location\"")
             .appendLine(",")
-            .append("""
+            .append(
+                """
                 "inputSchema": {
                   "type": "object",
                   "properties": {
@@ -382,20 +440,22 @@ class ToolSerializationTest {
                   },
                   "required": ["location"]
                 }
-            """.trimIndent())
+                """.trimIndent(),
+            )
 
         if (outputSchema != null) {
             stringBuilder
                 .appendLine(",")
-                .append("""
+                .append(
+                    """
                     "outputSchema": $outputSchema
-                """.trimIndent())
+                    """.trimIndent(),
+                )
         }
 
         stringBuilder
             .appendLine()
             .appendLine("}")
-
 
         return stringBuilder.toString().trimIndent()
     }
@@ -403,25 +463,26 @@ class ToolSerializationTest {
     private fun createWeatherTool(
         name: String = "get_weather",
         title: String? = null,
-        outputSchema: Tool.Output? = null
-    ): Tool {
-        return Tool(
-            name = name,
-            title = title,
-            description = "Get the current weather in a given location",
-            annotations = null,
-            inputSchema = Tool.Input(
-                properties = buildJsonObject {
-                    put("location", buildJsonObject {
+        outputSchema: Tool.Output? = null,
+    ): Tool = Tool(
+        name = name,
+        title = title,
+        description = "Get the current weather in a given location",
+        annotations = null,
+        inputSchema = Tool.Input(
+            properties = buildJsonObject {
+                put(
+                    "location",
+                    buildJsonObject {
                         put("type", JsonPrimitive("string"))
                         put("description", JsonPrimitive("The city and state, e.g. San Francisco, CA"))
-                    })
-                },
-                required = listOf("location")
-            ),
-            outputSchema = outputSchema
-        )
-    }
+                    },
+                )
+            },
+            required = listOf("location"),
+        ),
+        outputSchema = outputSchema,
+    )
 
     //endregion Private Methods
 }

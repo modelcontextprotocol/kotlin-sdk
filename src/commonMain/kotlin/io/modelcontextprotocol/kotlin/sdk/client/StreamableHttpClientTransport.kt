@@ -50,10 +50,8 @@ private const val MCP_RESUMPTION_TOKEN_HEADER = "Last-Event-ID"
 /**
  * Error class for Streamable HTTP transport errors.
  */
-public class StreamableHttpError(
-    public val code: Int? = null,
-    message: String? = null
-) : Exception("Streamable HTTP error: $message")
+public class StreamableHttpError(public val code: Int? = null, message: String? = null) :
+    Exception("Streamable HTTP error: $message")
 
 /**
  * Client transport for Streamable HTTP: this implements the MCP Streamable HTTP transport specification.
@@ -102,15 +100,16 @@ public class StreamableHttpClientTransport(
     public suspend fun send(
         message: JSONRPCMessage,
         resumptionToken: String?,
-        onResumptionToken: ((String) -> Unit)? = null
+        onResumptionToken: ((String) -> Unit)? = null,
     ) {
         logger.debug { "Client sending message via POST to $url: ${McpJson.encodeToString(message)}" }
 
         // If we have a resumption token, reconnect the SSE stream with it
         resumptionToken?.let { token ->
             startSseSession(
-                resumptionToken = token, onResumptionToken = onResumptionToken,
-                replayMessageId = if (message is JSONRPCRequest) message.id else null
+                resumptionToken = token,
+                onResumptionToken = onResumptionToken,
+                replayMessageId = if (message is JSONRPCRequest) message.id else null,
             )
             return
         }
@@ -147,9 +146,11 @@ public class StreamableHttpClientTransport(
             }
 
             ContentType.Text.EventStream -> handleInlineSse(
-                response, onResumptionToken = onResumptionToken,
-                replayMessageId = if (message is JSONRPCRequest) message.id else null
+                response,
+                onResumptionToken = onResumptionToken,
+                replayMessageId = if (message is JSONRPCRequest) message.id else null,
             )
+
             else -> {
                 val body = response.bodyAsText()
                 if (response.contentType() == null && body.isBlank()) return
@@ -167,7 +168,7 @@ public class StreamableHttpClientTransport(
         logger.debug { "Client transport closing." }
 
         try {
-            // Try to terminate session if we have one
+            // Try to terminate a session if we have one
             terminateSession()
 
             sseSession?.cancel()
@@ -196,7 +197,7 @@ public class StreamableHttpClientTransport(
         if (!response.status.isSuccess() && response.status != HttpStatusCode.MethodNotAllowed) {
             val error = StreamableHttpError(
                 response.status.value,
-                "Failed to terminate session: ${response.status.description}"
+                "Failed to terminate session: ${response.status.description}",
             )
             logger.error(error) { "Failed to terminate session" }
             _onError(error)
@@ -211,7 +212,7 @@ public class StreamableHttpClientTransport(
     private suspend fun startSseSession(
         resumptionToken: String? = null,
         replayMessageId: RequestId? = null,
-        onResumptionToken: ((String) -> Unit)? = null
+        onResumptionToken: ((String) -> Unit)? = null,
     ) {
         sseSession?.cancel()
         sseJob?.cancelAndJoin()
@@ -253,7 +254,7 @@ public class StreamableHttpClientTransport(
     private suspend fun collectSse(
         session: ClientSSESession,
         replayMessageId: RequestId?,
-        onResumptionToken: ((String) -> Unit)?
+        onResumptionToken: ((String) -> Unit)?,
     ) {
         try {
             session.incoming.collect { event ->
@@ -289,7 +290,7 @@ public class StreamableHttpClientTransport(
     private suspend fun handleInlineSse(
         response: HttpResponse,
         replayMessageId: RequestId?,
-        onResumptionToken: ((String) -> Unit)?
+        onResumptionToken: ((String) -> Unit)?,
     ) {
         logger.trace { "Handling inline SSE from POST response" }
         val channel = response.bodyAsChannel()

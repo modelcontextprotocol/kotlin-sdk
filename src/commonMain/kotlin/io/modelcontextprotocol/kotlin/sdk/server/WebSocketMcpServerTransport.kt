@@ -10,9 +10,7 @@ import io.modelcontextprotocol.kotlin.sdk.shared.WebSocketMcpTransport
  *
  * @property session The WebSocket server session used for communication.
  */
-public class WebSocketMcpServerTransport(
-    override val session: WebSocketServerSession,
-) : WebSocketMcpTransport() {
+public class WebSocketMcpServerTransport(override val session: WebSocketServerSession) : WebSocketMcpTransport() {
     override suspend fun initializeSession() {
         val subprotocol = session.call.request.headers[HttpHeaders.SecWebSocketProtocol]
         if (subprotocol != MCP_SUBPROTOCOL) {

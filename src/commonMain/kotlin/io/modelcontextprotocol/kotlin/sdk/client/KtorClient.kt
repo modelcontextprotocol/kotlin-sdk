@@ -12,7 +12,7 @@ import kotlin.time.Duration
  *
  * @param urlString Optional URL of the MCP server.
  * @param reconnectionTime Optional duration to wait before attempting to reconnect.
- * @param  requestBuilder Optional lambda to configure the HTTP request.
+ * @param requestBuilder Optional lambda to configure the HTTP request.
  * @return A [SSEClientTransport] configured for MCP communication.
  */
 public fun HttpClient.mcpSseTransport(
@@ -38,8 +38,8 @@ public suspend fun HttpClient.mcpSse(
     val client = Client(
         Implementation(
             name = IMPLEMENTATION_NAME,
-            version = LIB_VERSION
-        )
+            version = LIB_VERSION,
+        ),
     )
     client.connect(transport)
     return client

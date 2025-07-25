@@ -4,7 +4,6 @@ import io.ktor.utils.io.charsets.Charsets
 import io.ktor.utils.io.core.toByteArray
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCNotification
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals

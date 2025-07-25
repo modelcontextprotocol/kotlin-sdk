@@ -35,10 +35,7 @@ import kotlin.coroutines.CoroutineContext
  * @param output The output stream where messages are sent.
  */
 @OptIn(ExperimentalAtomicApi::class)
-public class StdioClientTransport(
-    private val input: Source,
-    private val output: Sink
-) : AbstractTransport() {
+public class StdioClientTransport(private val input: Source, private val output: Sink) : AbstractTransport() {
     private val logger = KotlinLogging.logger {}
     private val ioCoroutineContext: CoroutineContext = IODispatcher
     private val scope by lazy {
