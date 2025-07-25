@@ -178,8 +178,8 @@ internal fun selectServerNotificationDeserializer(element: JsonElement): Deseria
         Method.Defined.NotificationsMessage.value -> LoggingMessageNotification.serializer()
         Method.Defined.NotificationsResourcesUpdated.value -> ResourceUpdatedNotification.serializer()
         Method.Defined.NotificationsResourcesListChanged.value -> ResourceListChangedNotification.serializer()
-        Method.Defined.ToolsList.value -> ToolListChangedNotification.serializer()
-        Method.Defined.PromptsList.value -> PromptListChangedNotification.serializer()
+        Method.Defined.NotificationsToolsListChanged.value -> ToolListChangedNotification.serializer()
+        Method.Defined.NotificationsPromptsListChanged.value -> PromptListChangedNotification.serializer()
         else -> null
     }
 }
