@@ -10,8 +10,7 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.server.sse.sse
-import io.ktor.util.collections.ConcurrentMap
-import io.modelcontextprotocol.kotlin.sdk.server.SseServerTransport
+import io.modelcontextprotocol.kotlin.sdk.server.SseTransportManager
 import io.modelcontextprotocol.kotlin.sdk.server.mcpPostEndpoint
 import io.modelcontextprotocol.kotlin.sdk.server.mcpSseTransport
 import kotlinx.coroutines.test.runTest
@@ -25,14 +24,14 @@ class SseTransportTest : BaseTransportTest() {
     fun `should start then close cleanly`() = runTest {
         val server = embeddedServer(CIO, port = 0) {
             install(io.ktor.server.sse.SSE)
-            val transports = ConcurrentMap<String, SseServerTransport>()
+            val transportManager = SseTransportManager()
             routing {
                 sse {
-                    mcpSseTransport("", transports).start()
+                    mcpSseTransport("", transportManager).start()
                 }
 
                 post {
-                    mcpPostEndpoint(transports)
+                    mcpPostEndpoint(transportManager)
                 }
             }
         }.startSuspend(wait = false)
@@ -59,10 +58,10 @@ class SseTransportTest : BaseTransportTest() {
     fun `should read messages`() = runTest {
         val server = embeddedServer(CIO, port = 0) {
             install(io.ktor.server.sse.SSE)
-            val transports = ConcurrentMap<String, SseServerTransport>()
+            val transportManager = SseTransportManager()
             routing {
                 sse {
-                    mcpSseTransport("", transports).apply {
+                    mcpSseTransport("", transportManager).apply {
                         onMessage {
                             send(it)
                         }
@@ -72,7 +71,7 @@ class SseTransportTest : BaseTransportTest() {
                 }
 
                 post {
-                    mcpPostEndpoint(transports)
+                    mcpPostEndpoint(transportManager)
                 }
             }
         }.startSuspend(wait = false)
@@ -99,11 +98,11 @@ class SseTransportTest : BaseTransportTest() {
     fun `test sse path not root path`() = runTest {
         val server = embeddedServer(CIO, port = 0) {
             install(io.ktor.server.sse.SSE)
-            val transports = ConcurrentMap<String, SseServerTransport>()
+            val transportManager = SseTransportManager()
             routing {
                 route("/sse") {
                     sse {
-                        mcpSseTransport("", transports).apply {
+                        mcpSseTransport("", transportManager).apply {
                             onMessage {
                                 send(it)
                             }
@@ -113,7 +112,7 @@ class SseTransportTest : BaseTransportTest() {
                     }
 
                     post {
-                        mcpPostEndpoint(transports)
+                        mcpPostEndpoint(transportManager)
                     }
                 }
             }
