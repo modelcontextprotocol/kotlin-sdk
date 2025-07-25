@@ -194,7 +194,9 @@ public open class Server(
             }
         }
 
+        logger.debug { "Server session connecting to transport" }
         session.connect(transport)
+        logger.debug { "Server session successfully connected to transport" }
         sessions.update { it.add(session) }
 
         _onConnect()

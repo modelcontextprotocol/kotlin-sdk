@@ -8,7 +8,6 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.RoutingContext
 import io.ktor.server.routing.post
-import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.server.sse.SSE
 import io.ktor.server.sse.ServerSSESession
@@ -18,9 +17,23 @@ import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.update
 import kotlinx.collections.immutable.PersistentMap
-import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.toPersistentMap
 
 private val logger = KotlinLogging.logger {}
+
+internal class SseTransportManager(transports: Map<String, SseServerTransport> = emptyMap()) {
+    private val transports: AtomicRef<PersistentMap<String, SseServerTransport>> = atomic(transports.toPersistentMap())
+
+    fun getTransport(sessionId: String): SseServerTransport? = transports.value[sessionId]
+
+    fun addTransport(transport: SseServerTransport) {
+        transports.update { it.put(transport.sessionId, transport) }
+    }
+
+    fun removeTransport(sessionId: String) {
+        transports.update { it.remove(sessionId) }
+    }
+}
 
 @KtorDsl
 public fun Routing.mcp(path: String, block: ServerSSESession.() -> Server) {
@@ -29,26 +42,20 @@ public fun Routing.mcp(path: String, block: ServerSSESession.() -> Server) {
     }
 }
 
-/**
- * Configures the Ktor Application to handle Model Context Protocol (MCP) over Server-Sent Events (SSE).
- */
+/*
+* Configures the Ktor Application to handle Model Context Protocol (MCP) over Server-Sent Events (SSE).
+*/
 @KtorDsl
 public fun Routing.mcp(block: ServerSSESession.() -> Server) {
-    val transports = atomic(persistentMapOf<String, SseServerTransport>())
+    val sseTransportManager = SseTransportManager()
 
     sse {
-        mcpSseEndpoint("", transports, block)
+        mcpSseEndpoint("", sseTransportManager, block)
     }
 
     post {
-        mcpPostEndpoint(transports)
+        mcpPostEndpoint(sseTransportManager)
     }
-}
-
-@Suppress("FunctionName")
-@Deprecated("Use mcp() instead", ReplaceWith("mcp(block)"), DeprecationLevel.WARNING)
-public fun Application.MCP(block: ServerSSESession.() -> Server) {
-    mcp(block)
 }
 
 @KtorDsl
@@ -62,16 +69,16 @@ public fun Application.mcp(block: ServerSSESession.() -> Server) {
 
 internal suspend fun ServerSSESession.mcpSseEndpoint(
     postEndpoint: String,
-    transports: AtomicRef<PersistentMap<String, SseServerTransport>>,
+    sseTransportManager: SseTransportManager,
     block: ServerSSESession.() -> Server,
 ) {
-    val transport = mcpSseTransport(postEndpoint, transports)
+    val transport = mcpSseTransport(postEndpoint, sseTransportManager)
 
     val server = block()
 
     server.onClose {
         logger.info { "Server connection closed for sessionId: ${transport.sessionId}" }
-        transports.update { it.remove(transport.sessionId) }
+        sseTransportManager.removeTransport(transport.sessionId)
     }
 
     server.connectSession(transport)
@@ -81,17 +88,17 @@ internal suspend fun ServerSSESession.mcpSseEndpoint(
 
 internal fun ServerSSESession.mcpSseTransport(
     postEndpoint: String,
-    transports: AtomicRef<PersistentMap<String, SseServerTransport>>,
+    sseTransportManager: SseTransportManager,
 ): SseServerTransport {
     val transport = SseServerTransport(postEndpoint, this)
-    transports.update { it.put(transport.sessionId, transport) }
+    sseTransportManager.addTransport(transport)
     logger.info { "New SSE connection established and stored with sessionId: ${transport.sessionId}" }
 
     return transport
 }
 
 internal suspend fun RoutingContext.mcpPostEndpoint(
-    transports: AtomicRef<PersistentMap<String, SseServerTransport>>,
+    sseTransportManager: SseTransportManager,
 ) {
     val sessionId: String = call.request.queryParameters["sessionId"]
         ?: run {
@@ -101,7 +108,7 @@ internal suspend fun RoutingContext.mcpPostEndpoint(
 
     logger.debug { "Received message for sessionId: $sessionId" }
 
-    val transport = transports.value[sessionId]
+    val transport = sseTransportManager.getTransport(sessionId)
     if (transport == null) {
         logger.warn { "Session not found for sessionId: $sessionId" }
         call.respond(HttpStatusCode.NotFound, "Session not found")

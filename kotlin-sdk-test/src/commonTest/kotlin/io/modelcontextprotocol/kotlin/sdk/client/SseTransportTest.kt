@@ -71,7 +71,7 @@ class SseTransportTest : BaseTransportTest() {
             routing {
                 mcp { mcpServer }
 //                sse {
-//                    mcpSseTransport("", transports).apply {
+//                    mcpSseTransport("", transportManager).apply {
 //                        onMessage {
 //                            send(it)
 //                        }
@@ -81,7 +81,7 @@ class SseTransportTest : BaseTransportTest() {
 //                }
 //
 //                post {
-//                    mcpPostEndpoint(transports)
+//                    mcpPostEndpoint(transportManager)
 //                }
             }
         }.startSuspend(wait = false)
@@ -113,7 +113,7 @@ class SseTransportTest : BaseTransportTest() {
                 mcp("/sse") { mcpServer }
 //                route("/sse") {
 //                    sse {
-//                        mcpSseTransport("", transports).apply {
+//                        mcpSseTransport("", transportManager).apply {
 //                            onMessage {
 //                                send(it)
 //                            }
@@ -123,7 +123,7 @@ class SseTransportTest : BaseTransportTest() {
 //                    }
 //
 //                    post {
-//                        mcpPostEndpoint(transports)
+//                        mcpPostEndpoint(transportManager)
 //                    }
 //                }
             }
