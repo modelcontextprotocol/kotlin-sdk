@@ -15,6 +15,7 @@ class ToolSerializationTest {
     private val getWeatherToolJson = """
         {
           "name": "get_weather",
+          "title": "Get weather",
           "description": "Get the current weather in a given location",
           "inputSchema": {
             "type": "object",
@@ -49,6 +50,7 @@ class ToolSerializationTest {
 
     val getWeatherTool = Tool(
         name = "get_weather",
+        title = "Get weather",
         description = "Get the current weather in a given location",
         annotations = null,
         inputSchema = Tool.Input(
@@ -79,15 +81,11 @@ class ToolSerializationTest {
         )
     )
 
+    //region Serialize
+
     @Test
     fun `should serialize get_weather tool`() {
         McpJson.encodeToString(getWeatherTool) shouldEqualJson getWeatherToolJson
-    }
-
-    @Test
-    fun `should deserialize get_weather tool`() {
-        val tool = McpJson.decodeFromString<Tool>(getWeatherToolJson)
-        assertEquals(expected = getWeatherTool, actual = tool)
     }
 
     @Test
@@ -97,4 +95,333 @@ class ToolSerializationTest {
         }
         json.encodeToString(getWeatherTool) shouldEqualJson getWeatherToolJson
     }
+
+    @Test
+    fun `should serialize get_weather tool without optional properties`() {
+        val weatherTool = createWeatherTool(name = "get_weather")
+        val expectedJson = createWeatherToolJson(name = "get_weather")
+        val actualJson = McpJson.encodeToString(weatherTool)
+
+        actualJson shouldEqualJson expectedJson
+    }
+
+    @Test
+    fun `should serialize get_weather tool with title optional property specified`() {
+        val weatherTool = createWeatherTool(name = "get_weather", title = "Get weather")
+        val expectedJson = createWeatherToolJson(name = "get_weather", title = "Get weather")
+        val actualJson = McpJson.encodeToString(weatherTool)
+
+        actualJson shouldEqualJson expectedJson
+    }
+
+    @Test
+    fun `should serialize get_weather tool with outputSchema optional property specified`() {
+        val weatherTool = createWeatherTool(
+            name = "get_weather",
+            outputSchema = Tool.Output(
+                properties = buildJsonObject {
+                    put("temperature", buildJsonObject {
+                        put("type", JsonPrimitive("number"))
+                        put("description", JsonPrimitive("Temperature in celsius"))
+                    })
+                    put("conditions", buildJsonObject {
+                        put("type", JsonPrimitive("string"))
+                        put("description", JsonPrimitive("Weather conditions description"))
+                    })
+                    put("humidity", buildJsonObject {
+                        put("type", JsonPrimitive("number"))
+                        put("description", JsonPrimitive("Humidity percentage"))
+                    })
+                },
+                required = listOf("temperature", "conditions", "humidity")
+            )
+        )
+        val expectedJson = createWeatherToolJson(name = "get_weather", outputSchema = """
+            {
+              "type": "object",
+              "properties": {
+                "temperature": {
+                  "type": "number",
+                  "description": "Temperature in celsius"
+                },
+                "conditions": {
+                  "type": "string",
+                  "description": "Weather conditions description"
+                },
+                "humidity": {
+                  "type": "number",
+                  "description": "Humidity percentage"
+                }
+              },
+              "required": ["temperature", "conditions", "humidity"]
+            }
+        """.trimIndent())
+
+        val actualJson = McpJson.encodeToString(weatherTool)
+
+        actualJson shouldEqualJson expectedJson
+    }
+
+    @Test
+    fun `should serialize get_weather tool with all properties specified`() {
+        val weatherTool = createWeatherTool(
+            name = "get_weather",
+            title = "Get weather",
+            outputSchema = Tool.Output(
+                properties = buildJsonObject {
+                    put("temperature", buildJsonObject {
+                        put("type", JsonPrimitive("number"))
+                        put("description", JsonPrimitive("Temperature in celsius"))
+                    })
+                    put("conditions", buildJsonObject {
+                        put("type", JsonPrimitive("string"))
+                        put("description", JsonPrimitive("Weather conditions description"))
+                    })
+                    put("humidity", buildJsonObject {
+                        put("type", JsonPrimitive("number"))
+                        put("description", JsonPrimitive("Humidity percentage"))
+                    })
+                },
+                required = listOf("temperature", "conditions", "humidity")
+            )
+        )
+        val expectedJson = createWeatherToolJson(
+            name = "get_weather",
+            title = "Get weather",
+            outputSchema = """
+            {
+              "type": "object",
+              "properties": {
+                "temperature": {
+                  "type": "number",
+                  "description": "Temperature in celsius"
+                },
+                "conditions": {
+                  "type": "string",
+                  "description": "Weather conditions description"
+                },
+                "humidity": {
+                  "type": "number",
+                  "description": "Humidity percentage"
+                }
+              },
+              "required": ["temperature", "conditions", "humidity"]
+            }
+        """.trimIndent())
+
+        val actualJson = McpJson.encodeToString(weatherTool)
+
+        actualJson shouldEqualJson expectedJson
+    }
+
+    //endregion Serialize
+
+    //region Deserialize
+
+    @Test
+    fun `should deserialize get_weather tool`() {
+        val actualTool = McpJson.decodeFromString<Tool>(getWeatherToolJson)
+        assertEquals(expected = getWeatherTool, actual = actualTool)
+    }
+
+    @Test
+    fun `should deserialize get_weather tool without optional properties`() {
+        val toolJson = createWeatherToolJson(name = "get_weather")
+        val expectedTool = createWeatherTool(name = "get_weather")
+        val actualTool = McpJson.decodeFromString<Tool>(toolJson)
+
+        assertEquals(expected = expectedTool, actual = actualTool)
+    }
+
+    @Test
+    fun `should deserialize get_weather tool with title properties specified`() {
+        val toolJson = createWeatherToolJson(name = "get_weather", title = "Get weather")
+        val expectedTool = createWeatherTool(name = "get_weather", title = "Get weather")
+
+        val actualTool = McpJson.decodeFromString<Tool>(toolJson)
+
+        assertEquals(expected = expectedTool, actual = actualTool)
+    }
+
+    @Test
+    fun `should deserialize get_weather tool with outputSchema optional property specified`() {
+        val toolJson = createWeatherToolJson(name = "get_weather", outputSchema = """
+            {
+              "type": "object",
+              "properties": {
+                "temperature": {
+                  "type": "number",
+                  "description": "Temperature in celsius"
+                },
+                "conditions": {
+                  "type": "string",
+                  "description": "Weather conditions description"
+                },
+                "humidity": {
+                  "type": "number",
+                  "description": "Humidity percentage"
+                }
+              },
+              "required": ["temperature", "conditions", "humidity"]
+            }
+        """.trimIndent())
+
+        val expectedTool = createWeatherTool(
+            name = "get_weather",
+            outputSchema = Tool.Output(
+                properties = buildJsonObject {
+                    put("temperature", buildJsonObject {
+                        put("type", JsonPrimitive("number"))
+                        put("description", JsonPrimitive("Temperature in celsius"))
+                    })
+                    put("conditions", buildJsonObject {
+                        put("type", JsonPrimitive("string"))
+                        put("description", JsonPrimitive("Weather conditions description"))
+                    })
+                    put("humidity", buildJsonObject {
+                        put("type", JsonPrimitive("number"))
+                        put("description", JsonPrimitive("Humidity percentage"))
+                    })
+                },
+                required = listOf("temperature", "conditions", "humidity")
+            )
+        )
+
+        val actualTool = McpJson.decodeFromString<Tool>(toolJson)
+
+        assertEquals(expected = expectedTool, actual = actualTool)
+    }
+
+    @Test
+    fun `should deserialize get_weather tool with all properties specified`() {
+        val toolJson = createWeatherToolJson(
+            name = "get_weather",
+            title = "Get weather",
+            outputSchema = """
+            {
+              "type": "object",
+              "properties": {
+                "temperature": {
+                  "type": "number",
+                  "description": "Temperature in celsius"
+                },
+                "conditions": {
+                  "type": "string",
+                  "description": "Weather conditions description"
+                },
+                "humidity": {
+                  "type": "number",
+                  "description": "Humidity percentage"
+                }
+              },
+              "required": ["temperature", "conditions", "humidity"]
+            }
+        """.trimIndent())
+
+        val expectedTool = createWeatherTool(
+            name = "get_weather",
+            title = "Get weather",
+            outputSchema = Tool.Output(
+                properties = buildJsonObject {
+                    put("temperature", buildJsonObject {
+                        put("type", JsonPrimitive("number"))
+                        put("description", JsonPrimitive("Temperature in celsius"))
+                    })
+                    put("conditions", buildJsonObject {
+                        put("type", JsonPrimitive("string"))
+                        put("description", JsonPrimitive("Weather conditions description"))
+                    })
+                    put("humidity", buildJsonObject {
+                        put("type", JsonPrimitive("number"))
+                        put("description", JsonPrimitive("Humidity percentage"))
+                    })
+                },
+                required = listOf("temperature", "conditions", "humidity")
+            )
+        )
+
+        val actualTool = McpJson.decodeFromString<Tool>(toolJson)
+
+        assertEquals(expected = expectedTool, actual = actualTool)
+    }
+
+    //endregion Deserialize
+
+    //region Private Methods
+
+    private fun createWeatherToolJson(
+        name: String = "get_weather",
+        title: String? = null,
+        outputSchema: String? = null
+    ): String {
+
+        val stringBuilder = StringBuilder()
+
+        stringBuilder
+            .appendLine("{")
+            .append("  \"name\": \"$name\"")
+
+        if (title != null) {
+            stringBuilder
+                .appendLine(",")
+                .append("  \"title\": \"$title\"")
+        }
+
+        stringBuilder
+            .appendLine(",")
+            .append("  \"description\": \"Get the current weather in a given location\"")
+            .appendLine(",")
+            .append("""
+                "inputSchema": {
+                  "type": "object",
+                  "properties": {
+                    "location": {
+                      "type": "string",
+                      "description": "The city and state, e.g. San Francisco, CA"
+                    }
+                  },
+                  "required": ["location"]
+                }
+            """.trimIndent())
+
+        if (outputSchema != null) {
+            stringBuilder
+                .appendLine(",")
+                .append("""
+                    "outputSchema": $outputSchema
+                """.trimIndent())
+        }
+
+        stringBuilder
+            .appendLine()
+            .appendLine("}")
+
+
+        return stringBuilder.toString().trimIndent()
+    }
+
+    private fun createWeatherTool(
+        name: String = "get_weather",
+        title: String? = null,
+        outputSchema: Tool.Output? = null
+    ): Tool {
+        return Tool(
+            name = name,
+            title = title,
+            description = "Get the current weather in a given location",
+            annotations = null,
+            inputSchema = Tool.Input(
+                properties = buildJsonObject {
+                    put("location", buildJsonObject {
+                        put("type", JsonPrimitive("string"))
+                        put("description", JsonPrimitive("The city and state, e.g. San Francisco, CA"))
+                    })
+                },
+                required = listOf("location")
+            ),
+            outputSchema = outputSchema
+        )
+    }
+
+    //endregion Private Methods
 }

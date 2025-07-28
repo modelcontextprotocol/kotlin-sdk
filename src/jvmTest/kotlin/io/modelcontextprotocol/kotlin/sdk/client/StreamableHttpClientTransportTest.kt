@@ -1,4 +1,4 @@
-package client
+package io.modelcontextprotocol.kotlin.sdk.client
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -16,7 +16,6 @@ import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.RequestId
-import io.modelcontextprotocol.kotlin.sdk.client.StreamableHttpClientTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
