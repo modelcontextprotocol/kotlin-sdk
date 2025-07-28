@@ -12,14 +12,14 @@ class TypesTest {
     @Test
     fun `should have correct latest protocol version`() {
         assertNotEquals("", LATEST_PROTOCOL_VERSION)
-        assertEquals("2024-11-05", LATEST_PROTOCOL_VERSION)
+        assertEquals("2025-03-26", LATEST_PROTOCOL_VERSION)
     }
 
     @Test
     fun `should have correct supported protocol versions`() {
         assertIs<Array<String>>(SUPPORTED_PROTOCOL_VERSIONS)
         assertTrue(SUPPORTED_PROTOCOL_VERSIONS.contains(LATEST_PROTOCOL_VERSION))
-        assertTrue(SUPPORTED_PROTOCOL_VERSIONS.contains("2024-10-07"))
+        assertTrue(SUPPORTED_PROTOCOL_VERSIONS.contains("2024-11-05"))
         assertEquals(2, SUPPORTED_PROTOCOL_VERSIONS.size)
     }
 
