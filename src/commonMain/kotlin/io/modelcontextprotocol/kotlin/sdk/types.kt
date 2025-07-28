@@ -9,6 +9,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonObject
@@ -125,10 +126,11 @@ public sealed interface Request {
  * @return The JSON-RPC request representation.
  */
 internal fun Request.toJSON(): JSONRPCRequest {
-    val encoded = JsonObject(McpJson.encodeToJsonElement(this).jsonObject.minus("method"))
+    val fullJson = McpJson.encodeToJsonElement(this).jsonObject
+    val params = JsonObject(fullJson.filterKeys { it != "method" })
     return JSONRPCRequest(
         method = method.value,
-        params = encoded,
+        params = params,
         jsonrpc = JSONRPC_VERSION,
     )
 }
@@ -139,8 +141,7 @@ internal fun Request.toJSON(): JSONRPCRequest {
  * @return The decoded [Request] or null
  */
 internal fun JSONRPCRequest.fromJSON(): Request {
-    val requestData = JsonObject(params.jsonObject.plus("method" to JsonPrimitive(method)))
-
+    val requestData = JsonObject(params.jsonObject + ("method" to JsonPrimitive(method)))
     val deserializer = selectRequestDeserializer(method)
     return McpJson.decodeFromJsonElement(deserializer, requestData)
 }
@@ -159,6 +160,7 @@ public open class CustomRequest(override val method: Method) : Request
 @Serializable(with = NotificationPolymorphicSerializer::class)
 public sealed interface Notification {
     public val method: Method
+    public val params: NotificationParams?
 }
 
 /**
@@ -167,10 +169,9 @@ public sealed interface Notification {
  * @return The JSON-RPC notification representation.
  */
 internal fun Notification.toJSON(): JSONRPCNotification {
-    val encoded = JsonObject(McpJson.encodeToJsonElement<Notification>(this).jsonObject.minus("method"))
     return JSONRPCNotification(
-        method.value,
-        params = encoded
+        method = method.value,
+        params = McpJson.encodeToJsonElement(params),
     )
 }
 
@@ -180,7 +181,10 @@ internal fun Notification.toJSON(): JSONRPCNotification {
  * @return The decoded [Notification].
  */
 internal fun JSONRPCNotification.fromJSON(): Notification {
-    val data = JsonObject(params.jsonObject.plus("method" to JsonPrimitive(method)))
+    val data = buildJsonObject {
+        put("method", JsonPrimitive(method))
+        put("params", params)
+    }
     return McpJson.decodeFromJsonElement<Notification>(data)
 }
 
@@ -295,6 +299,12 @@ public data class JSONRPCError(
     val data: JsonObject = EmptyJsonObject,
 ) : JSONRPCMessage
 
+/**
+ * Base interface for notification parameters with optional metadata.
+ */
+@Serializable
+public sealed interface NotificationParams : WithMeta
+
 /* Cancellation */
 /**
  * This notification can be sent by either side to indicate that it is cancelling a previously issued request.
@@ -307,19 +317,24 @@ public data class JSONRPCError(
  */
 @Serializable
 public data class CancelledNotification(
-    /**
-     * The ID of the request to cancel.
-     *
-     * It MUST correspond to the ID of a request previously issued in the same direction.
-     */
-    val requestId: RequestId,
-    /**
-     * An optional string describing the reason for the cancellation. This MAY be logged or presented to the user.
-     */
-    val reason: String?,
-    override val _meta: JsonObject = EmptyJsonObject,
-) : ClientNotification, ServerNotification, WithMeta {
+    override val params: Params,
+) : ClientNotification, ServerNotification {
     override val method: Method = Method.Defined.NotificationsCancelled
+
+    @Serializable
+    public data class Params(
+        /**
+         * The ID of the request to cancel.
+         *
+         * It MUST correspond to the ID of a request previously issued in the same direction.
+         */
+        val requestId: RequestId,
+        /**
+         * An optional string describing the reason for the cancellation. This MAY be logged or presented to the user.
+         */
+        val reason: String? = null,
+        override val _meta: JsonObject = EmptyJsonObject,
+    ) : NotificationParams
 }
 
 /* Initialization */
@@ -408,7 +423,7 @@ public sealed interface ServerResult : RequestResult
  */
 @Serializable
 public data class UnknownMethodRequestOrNotification(
-    override val method: Method,
+    override val method: Method, override val params: NotificationParams? = null,
 ) : ClientNotification, ClientRequest, ServerNotification, ServerRequest
 
 /**
@@ -506,8 +521,15 @@ public data class InitializeResult(
  * This notification is sent from the client to the server after initialization has finished.
  */
 @Serializable
-public class InitializedNotification : ClientNotification {
+public data class InitializedNotification(
+    override val params: Params = Params(),
+) : ClientNotification {
     override val method: Method = Method.Defined.NotificationsInitialized
+
+    @Serializable
+    public data class Params(
+        override val _meta: JsonObject = EmptyJsonObject,
+    ) : NotificationParams
 }
 
 /* Ping */
@@ -528,7 +550,7 @@ public sealed interface ProgressBase {
     /**
      * The progress thus far. This should increase every time progress is made, even if the total is unknown.
      */
-    public val progress: Int
+    public val progress: Double
 
     /**
      * Total number of items to a process (or total progress required), if known.
@@ -553,7 +575,7 @@ public open class Progress(
     /**
      * The progress thus far. This should increase every time progress is made, even if the total is unknown.
      */
-    override val progress: Int,
+    override val progress: Double,
 
     /**
      * Total number of items to a process (or total progress required), if known.
@@ -571,18 +593,32 @@ public open class Progress(
  */
 @Serializable
 public data class ProgressNotification(
-    override val progress: Int,
-    /**
-     * The progress token,
-     * which was given in the initial request,
-     * used to associate this notification with the request that is proceeding.
-     */
-    public val progressToken: ProgressToken,
-    @Suppress("PropertyName") val _meta: JsonObject = EmptyJsonObject,
-    override val total: Double?,
-    override val message: String?,
-) : ClientNotification, ServerNotification, ProgressBase {
+    override val params: Params,
+) : ClientNotification, ServerNotification {
     override val method: Method = Method.Defined.NotificationsProgress
+
+    @Serializable
+    public data class Params(
+        /**
+         * The progress thus far. This should increase every time progress is made, even if the total is unknown.
+         */
+        override val progress: Double,
+        /**
+         * The progress token,
+         * which was given in the initial request,
+         * used to associate this notification with the request that is proceeding.
+         */
+        val progressToken: ProgressToken,
+        /**
+         * Total number of items to process (or total progress required), if known.
+         */
+        override val total: Double? = null,
+        /**
+         * An optional message describing the current progress.
+         */
+        override val message: String? = null,
+        override val _meta: JsonObject = EmptyJsonObject,
+    ) : NotificationParams, ProgressBase
 }
 
 /* Pagination */
@@ -784,8 +820,15 @@ public class ReadResourceResult(
  * Servers may issue this without any previous subscription from the client.
  */
 @Serializable
-public class ResourceListChangedNotification : ServerNotification {
+public data class ResourceListChangedNotification(
+    override val params: Params = Params(),
+) : ServerNotification {
     override val method: Method = Method.Defined.NotificationsResourcesListChanged
+
+    @Serializable
+    public data class Params(
+        override val _meta: JsonObject = EmptyJsonObject,
+    ) : NotificationParams
 }
 
 /**
@@ -821,13 +864,18 @@ public data class UnsubscribeRequest(
  */
 @Serializable
 public data class ResourceUpdatedNotification(
-    /**
-     * The URI of the resource that has been updated. This might be a sub-resource of the one that the client actually subscribed to.
-     */
-    val uri: String,
-    override val _meta: JsonObject = EmptyJsonObject,
-) : ServerNotification, WithMeta {
+    override val params: Params,
+) : ServerNotification {
     override val method: Method = Method.Defined.NotificationsResourcesUpdated
+
+    @Serializable
+    public data class Params(
+        /**
+         * The URI of the resource that has been updated. This might be a sub-resource of the one that the client actually subscribed to.
+         */
+        val uri: String,
+        override val _meta: JsonObject = EmptyJsonObject,
+    ) : NotificationParams
 }
 
 /* Prompts */
@@ -1044,8 +1092,15 @@ public class GetPromptResult(
  * Servers may issue this without any previous subscription from the client.
  */
 @Serializable
-public class PromptListChangedNotification : ServerNotification {
+public data class PromptListChangedNotification(
+    override val params: Params = Params(),
+) : ServerNotification {
     override val method: Method = Method.Defined.NotificationsPromptsListChanged
+
+    @Serializable
+    public data class Params(
+        override val _meta: JsonObject = EmptyJsonObject,
+    ) : NotificationParams
 }
 
 /* Tools */
@@ -1223,8 +1278,15 @@ public data class CallToolRequest(
  * Servers may issue this without any previous subscription from the client.
  */
 @Serializable
-public class ToolListChangedNotification : ServerNotification {
+public data class ToolListChangedNotification(
+    override val params: Params = Params(),
+) : ServerNotification {
     override val method: Method = Method.Defined.NotificationsToolsListChanged
+
+    @Serializable
+    public data class Params(
+        override val _meta: JsonObject = EmptyJsonObject,
+    ) : NotificationParams
 }
 
 /* Logging */
@@ -1252,22 +1314,27 @@ public enum class LoggingLevel {
  */
 @Serializable
 public data class LoggingMessageNotification(
-    /**
-     * The severity of this log message.
-     */
-    val level: LoggingLevel,
+    override val params: Params,
+) : ServerNotification {
+    override val method: Method = Method.Defined.NotificationsMessage
 
-    /**
-     * An optional name of the logger issuing this message.
-     */
-    val logger: String? = null,
+    @Serializable
+    public data class Params(
+        /**
+         * The severity of this log message.
+         */
+        val level: LoggingLevel,
+        /**
+         * An optional name of the logger issuing this message.
+         */
+        val logger: String? = null,
+        /**
+         * The data to be logged, such as a string message or an object. Any JSON serializable type is allowed here.
+         */
+        val data: JsonElement,
+        override val _meta: JsonObject = EmptyJsonObject,
+    ) : NotificationParams
 
-    /**
-     * The data to be logged, such as a string message or an object. Any JSON serializable type is allowed here.
-     */
-    val data: JsonObject = EmptyJsonObject,
-    override val _meta: JsonObject = EmptyJsonObject,
-) : ServerNotification, WithMeta {
     /**
      * A request from the client to the server to enable or adjust logging.
      */
@@ -1281,8 +1348,6 @@ public data class LoggingMessageNotification(
     ) : ClientRequest, WithMeta {
         override val method: Method = Method.Defined.LoggingSetLevel
     }
-
-    override val method: Method = Method.Defined.NotificationsMessage
 }
 
 /* Sampling */
@@ -1578,8 +1643,15 @@ public class ListRootsResult(
  * A notification from the client to the server, informing it that the list of roots has changed.
  */
 @Serializable
-public class RootsListChangedNotification : ClientNotification {
+public data class RootsListChangedNotification(
+    override val params: Params = Params(),
+) : ClientNotification {
     override val method: Method = Method.Defined.NotificationsRootsListChanged
+
+    @Serializable
+    public data class Params(
+        override val _meta: JsonObject = EmptyJsonObject,
+    ) : NotificationParams
 }
 
 /**
