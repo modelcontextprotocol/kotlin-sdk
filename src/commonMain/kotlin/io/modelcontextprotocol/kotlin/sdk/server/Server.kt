@@ -558,7 +558,7 @@ public open class Server(
      * @param params The logging message notification parameters.
      */
     public suspend fun sendLoggingMessage(params: LoggingMessageNotification) {
-        logger.trace { "Sending logging message: ${params.data}" }
+        logger.trace { "Sending logging message: ${params.params.data}" }
         notification(params)
     }
 
@@ -568,7 +568,7 @@ public open class Server(
      * @param params Details of the updated resource.
      */
     public suspend fun sendResourceUpdated(params: ResourceUpdatedNotification) {
-        logger.debug { "Sending resource updated notification for: ${params.uri}" }
+        logger.debug { "Sending resource updated notification for: ${params.params.uri}" }
         notification(params)
     }
 
