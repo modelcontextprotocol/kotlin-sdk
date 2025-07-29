@@ -18,11 +18,11 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.concurrent.atomics.incrementAndFetch
 import kotlin.jvm.JvmInline
 
-public const val LATEST_PROTOCOL_VERSION: String = "2024-11-05"
+public const val LATEST_PROTOCOL_VERSION: String = "2025-03-26"
 
 public val SUPPORTED_PROTOCOL_VERSIONS: Array<String> = arrayOf(
     LATEST_PROTOCOL_VERSION,
-    "2024-10-07",
+    "2024-11-05",
 )
 
 public const val JSONRPC_VERSION: String = "2.0"
@@ -1250,7 +1250,7 @@ public class CallToolResult(
 ) : CallToolResultBase
 
 /**
- * [CallToolResult] extended with backwards compatibility to protocol version 2024-10-07.
+ * [CallToolResult] extended with backwards compatibility to protocol version 2024-11-05.
  */
 @Serializable
 public class CompatibilityCallToolResult(
