@@ -3317,6 +3317,18 @@ public final class io/modelcontextprotocol/kotlin/sdk/server/KtorServerKt {
 	public static final fun mcp (Lio/ktor/server/routing/Routing;Lkotlin/jvm/functions/Function0;)V
 }
 
+public abstract interface annotation class io/modelcontextprotocol/kotlin/sdk/server/McpParam : java/lang/annotation/Annotation {
+	public abstract fun description ()Ljava/lang/String;
+	public abstract fun required ()Z
+	public abstract fun type ()Ljava/lang/String;
+}
+
+public abstract interface annotation class io/modelcontextprotocol/kotlin/sdk/server/McpTool : java/lang/annotation/Annotation {
+	public abstract fun description ()Ljava/lang/String;
+	public abstract fun name ()Ljava/lang/String;
+	public abstract fun required ()[Ljava/lang/String;
+}
+
 public final class io/modelcontextprotocol/kotlin/sdk/server/RegisteredPrompt {
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/Prompt;Lkotlin/jvm/functions/Function2;)V
 	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/Prompt;
@@ -3398,6 +3410,10 @@ public class io/modelcontextprotocol/kotlin/sdk/server/Server : io/modelcontextp
 	public final fun sendResourceListChanged (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun sendResourceUpdated (Lio/modelcontextprotocol/kotlin/sdk/ResourceUpdatedNotification;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun sendToolListChanged (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/server/ServerAnnotationsKt {
+	public static final fun registerToolFromAnnotatedFunction (Lio/modelcontextprotocol/kotlin/sdk/server/Server;Ljava/lang/Object;Lkotlin/reflect/KFunction;Lio/modelcontextprotocol/kotlin/sdk/server/McpTool;)V
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/server/ServerOptions : io/modelcontextprotocol/kotlin/sdk/shared/ProtocolOptions {

@@ -45,13 +45,13 @@ java -jar build/libs/<your-jar-name>.jar
 
 ## Tool Implementation
 
-The project registers two MCP tools using the Kotlin MCP SDK. Below is an overview of the core tool implementations:
+The project provides two different approaches to register MCP tools using the Kotlin MCP SDK:
 
-### 1. Weather Forecast Tool
+### Traditional Approach
 
-This tool fetches the weather forecast for a specific latitude and longitude using the `weather.gov` API.
+The traditional approach uses the `addTool` method to register tools with explicit schema definitions.
 
-Example tool registration in Kotlin:
+#### 1. Weather Forecast Tool
 
 ```kotlin
 server.addTool(
@@ -60,12 +60,14 @@ server.addTool(
             Get weather forecast for a specific latitude/longitude
         """.trimIndent(),
     inputSchema = Tool.Input(
-        properties = JsonObject(
-            mapOf(
-                "latitude" to JsonObject(mapOf("type" to JsonPrimitive("number"))),
-                "longitude" to JsonObject(mapOf("type" to JsonPrimitive("number"))),
-            )
-        ),
+        properties = buildJsonObject {
+            putJsonObject("latitude") {
+                put("type", "number")
+            }
+            putJsonObject("longitude") {
+                put("type", "number")
+            }
+        },
         required = listOf("latitude", "longitude")
     )
 ) { request ->
@@ -73,11 +75,7 @@ server.addTool(
 }
 ```
 
-### 2. Weather Alerts Tool
-
-This tool retrieves active weather alerts for a US state.
-
-Example tool registration in Kotlin:
+#### 2. Weather Alerts Tool
 
 ```kotlin
 server.addTool(
@@ -86,22 +84,71 @@ server.addTool(
         Get weather alerts for a US state. Input is Two-letter US state code (e.g. CA, NY)
     """.trimIndent(),
     inputSchema = Tool.Input(
-        properties = JsonObject(
-            mapOf(
-                "state" to JsonObject(
-                    mapOf(
-                        "type" to JsonPrimitive("string"),
-                        "description" to JsonPrimitive("Two-letter US state code (e.g. CA, NY)")
-                    )
-                ),
-            )
-        ),
+        properties = buildJsonObject {
+            putJsonObject("state") {
+                put("type", "string")
+                put("description", "Two-letter US state code (e.g. CA, NY)")
+            }
+        },
         required = listOf("state")
     )
 ) { request ->
     // Implementation tool
 }
 ```
+
+### Annotation-Based Approach
+
+The project also demonstrates an alternative, more idiomatic approach using Kotlin annotations. This approach simplifies tool definition by leveraging Kotlin's type system and reflection.
+
+To use the annotation-based approach, run the server with:
+```shell
+java -jar build/libs/<your-jar-name>.jar --use-annotations
+```
+
+#### Tool implementation with annotations:
+
+```kotlin
+class WeatherToolsAnnotated(private val httpClient: HttpClient) {
+    
+    @McpTool(
+        name = "get_alerts",
+        description = "Get weather alerts for a US state"
+    )
+    suspend fun getAlerts(
+        @McpParam(
+            description = "Two-letter US state code (e.g. CA, NY)",
+            type = "string"
+        ) state: String
+    ): CallToolResult {
+        // Implementation
+    }
+
+    @McpTool(
+        name = "get_forecast",
+        description = "Get weather forecast for a specific latitude/longitude"
+    )
+    suspend fun getForecast(
+        @McpParam(description = "The latitude coordinate") latitude: Double,
+        @McpParam(description = "The longitude coordinate") longitude: Double
+    ): CallToolResult {
+        // Implementation
+    }
+}
+```
+
+Then register the tools using:
+
+```kotlin
+val weatherTools = WeatherToolsAnnotated(httpClient)
+server.registerAnnotatedTools(weatherTools)
+```
+
+This approach provides several benefits:
+- More idiomatic Kotlin code
+- Parameter types are automatically inferred from Kotlin's type system
+- Reduced boilerplate for tool registration
+- Better IDE support with autocompletion and compile-time checking
 
 ## Client Integration
 
