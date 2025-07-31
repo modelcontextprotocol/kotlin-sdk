@@ -56,6 +56,7 @@ jreleaser {
             mavenCentral {
                 val ossrh by creating {
                     active.set(Active.ALWAYS)
+                    sign = true
                     url.set("https://central.sonatype.com/api/v1/publisher")
                     applyMavenCentralRules = false
                     maxRetries = 240
@@ -92,16 +93,6 @@ jreleaser {
         }
     }
 
-    release {
-        github {
-            changelog.enabled = false
-            skipRelease = true
-            skipTag = true
-            overwrite = false
-            token = "none"
-        }
-    }
-
     checksum {
         individual = false
         artifacts = false
@@ -122,12 +113,17 @@ fun MavenPom.configureMavenCentralMetadata() {
         }
     }
 
+    organization {
+        name by "Anthropic"
+        url by "https://www.anthropic.com"
+    }
+
     developers {
         developer {
-            id by "Anthropic"
-            name by "Anthropic Team"
-            organization by "Anthropic"
-            organizationUrl by "https://www.anthropic.com"
+            id by "JetBrains"
+            name by "JetBrains Team"
+            organization by "JetBrains"
+            organizationUrl by "https://www.jetbrains.com"
         }
     }
 
