@@ -17,3 +17,8 @@ dependencyResolutionManagement {
 
 rootProject.name = "kotlin-sdk"
 
+include(":kotlin-sdk-core")
+include(":kotlin-sdk-client")
+include(":kotlin-sdk-server")
+include(":kotlin-sdk")
+include(":kotlin-sdk-test")

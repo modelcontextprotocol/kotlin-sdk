@@ -1,0 +1,27 @@
+plugins {
+    id("mcp.multiplatform")
+    id("mcp.publishing")
+    id("mcp.dokka")
+    id("mcp.jreleaser")
+    alias(libs.plugins.kotlinx.binary.compatibility.validator)
+}
+
+kotlin {
+    sourceSets {
+        commonMain {
+            dependencies {
+                api(project(":kotlin-sdk-core"))
+                api(libs.ktor.client.cio)
+                implementation(libs.kotlin.logging)
+            }
+        }
+
+        commonTest {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.ktor.client.mock)
+                implementation(libs.kotlinx.coroutines.test)
+            }
+        }
+    }
+}
