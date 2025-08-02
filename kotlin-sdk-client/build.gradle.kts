@@ -1,3 +1,7 @@
+@file:OptIn(ExperimentalWasmDsl::class)
+
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+
 plugins {
     id("mcp.multiplatform")
     id("mcp.publishing")
@@ -7,6 +11,18 @@ plugins {
 }
 
 kotlin {
+    iosArm64(); iosX64(); iosSimulatorArm64()
+    watchosX64(); watchosArm64(); watchosSimulatorArm64()
+    tvosX64(); tvosArm64(); tvosSimulatorArm64()
+    js {
+        browser()
+        nodejs()
+    }
+    wasmJs {
+        browser()
+        nodejs()
+    }
+
     sourceSets {
         commonMain {
             dependencies {

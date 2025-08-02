@@ -31,28 +31,13 @@ val generateLibVersion by tasks.registering {
 
 kotlin {
     jvm {
-        compilerOptions {
-            jvmTarget = JvmTarget.JVM_1_8
-        }
+        compilerOptions.jvmTarget = JvmTarget.JVM_1_8
     }
-
-    iosArm64()
-    iosX64()
-    iosSimulatorArm64()
-
-    js(IR) {
-        nodejs {
-            testTask {
-                useMocha {
-                    timeout = "30s"
-                }
-            }
-        }
-    }
-
-    wasmJs {
-        nodejs()
-    }
+    macosX64(); macosArm64()
+    linuxX64(); linuxArm64()
+    mingwX64()
+    js { nodejs() }
+    wasmJs { nodejs() }
 
     explicitApi = ExplicitApiMode.Strict
     jvmToolchain(21)
