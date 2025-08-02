@@ -1,3 +1,5 @@
+rootProject.name = "kotlin-sdk"
+
 pluginManagement {
     repositories {
         mavenCentral()
@@ -15,10 +17,13 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "kotlin-sdk"
-
 include(":kotlin-sdk-core")
 include(":kotlin-sdk-client")
 include(":kotlin-sdk-server")
 include(":kotlin-sdk")
 include(":kotlin-sdk-test")
+
+// Include sample projects as composite builds
+includeBuild("samples/kotlin-mcp-client")
+includeBuild("samples/kotlin-mcp-server")
+includeBuild("samples/weather-stdio-server")
