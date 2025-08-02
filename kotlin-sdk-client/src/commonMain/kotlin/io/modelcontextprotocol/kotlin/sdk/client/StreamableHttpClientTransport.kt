@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.sse.ClientSSESession
+import io.ktor.client.plugins.sse.SSEClientException
 import io.ktor.client.plugins.sse.sseSession
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.accept
@@ -230,8 +231,8 @@ public class StreamableHttpClientTransport(
                 requestBuilder()
             }
             logger.debug { "Client SSE session started successfully." }
-        } catch (e: ClientRequestException) {
-            if (e.response.status == HttpStatusCode.MethodNotAllowed) {
+        } catch (e: SSEClientException) {
+            if (e.response?.status == HttpStatusCode.MethodNotAllowed) {
                 logger.info { "Server returned 405 for GET/SSE, stream disabled." }
                 return
             }
