@@ -80,12 +80,12 @@ class TypesUtilTest {
 
     // Reference Polymorphic Serializer Tests
     @Test
-    fun `should deserialize ResourceReference polymorphically`() {
+    fun `should deserialize ResourceTemplateReference polymorphically`() {
         val json = """{"type": "ref/resource", "uri": "file:///test.txt"}"""
 
         val decoded = McpJson.decodeFromString<Reference>(json)
 
-        assertIs<ResourceReference>(decoded)
+        assertIs<ResourceTemplateReference>(decoded)
         assertEquals("ref/resource", decoded.type)
         assertEquals("file:///test.txt", decoded.uri)
     }
