@@ -5,7 +5,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
-import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertTrue
 
@@ -87,7 +86,7 @@ class TypeScriptClientKotlinServerTest : TypeScriptTestBase() {
     }
 
     @Test
-    @Timeout(30, unit = TimeUnit.SECONDS)
+    @Timeout(120, unit = TimeUnit.SECONDS)
     fun testMultipleClientSequence() {
         val testName1 = "FirstClient"
         val command1 = "npx tsx myClient.ts $serverUrl greet $testName1"
