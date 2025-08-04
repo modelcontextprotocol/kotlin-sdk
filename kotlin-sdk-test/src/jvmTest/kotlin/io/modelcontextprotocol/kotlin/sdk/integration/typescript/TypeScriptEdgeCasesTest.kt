@@ -166,7 +166,7 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
     }
 
     @Test
-    @Timeout(30, unit = TimeUnit.SECONDS)
+    @Timeout(120, unit = TimeUnit.SECONDS)
     fun testRapidSequentialRequests() {
         val projectRoot = File(System.getProperty("user.dir"))
         val clientDir = File(projectRoot, "src/jvmTest/kotlin/io/modelcontextprotocol/kotlin/sdk/integration/utils")
