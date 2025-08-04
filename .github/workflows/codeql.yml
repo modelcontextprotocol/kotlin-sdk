@@ -53,8 +53,13 @@ jobs:
       - name: Build Kotlin sources
         run: |
           ./gradlew \
-            :build -Pkotlin.incremental=false \
-            --no-daemon --stacktrace --parallel
+            :kotlin-sdk-core:compileKotlinJvm \
+            :kotlin-sdk-client:compileKotlinJvm \
+            :kotlin-sdk-server:compileKotlinJvm \
+            :kotlin-sdk:compileKotlinJvm \
+            :kotlin-sdk-test:compileKotlinJvm \
+            -Pkotlin.incremental=false \
+            --no-daemon --stacktrace
 
       - name: Analyze
         uses: github/codeql-action/analyze@v3

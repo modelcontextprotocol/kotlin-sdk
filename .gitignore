@@ -50,3 +50,7 @@ bin/
 ### Node.js ###
 node_modules
 dist
+
+### SWE agents ###
+.claude/
+.junie/
