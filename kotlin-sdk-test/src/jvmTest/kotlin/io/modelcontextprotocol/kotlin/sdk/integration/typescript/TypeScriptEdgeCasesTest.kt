@@ -64,13 +64,13 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
     fun testSpecialCharacters() {
         val specialChars = "!@#$+-[].,?"
 
-        val tempFile = File(tsClientDir, "special_chars.txt")
+        val tempFile = File.createTempFile("special_chars", ".txt")
         tempFile.writeText(specialChars)
+        tempFile.deleteOnExit()
 
-        val specialCharsCommand = "npx tsx myClient.ts $serverUrl greet \"$(cat special_chars.txt)\""
+        val specialCharsContent = tempFile.readText()
+        val specialCharsCommand = "npx tsx myClient.ts $serverUrl greet \"$specialCharsContent\""
         val specialCharsOutput = executeCommand(specialCharsCommand, tsClientDir)
-
-        tempFile.delete()
 
         assertTrue(
             specialCharsOutput.contains("Hello, $specialChars!"),
@@ -81,16 +81,17 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
             "Client should disconnect cleanly after handling special characters"
         )
     }
-
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
     fun testLargePayload() {
         val largeName = "A".repeat(10 * 1024)
 
-        val tempFile = File(tsClientDir, "large_name.txt")
+        val tempFile = File.createTempFile("large_name", ".txt")
         tempFile.writeText(largeName)
+        tempFile.deleteOnExit()
 
-        val largePayloadCommand = "npx tsx myClient.ts $serverUrl greet \"$(cat large_name.txt)\""
+        val largeNameContent = tempFile.readText()
+        val largePayloadCommand = "npx tsx myClient.ts $serverUrl greet \"$largeNameContent\""
         val largePayloadOutput = executeCommand(largePayloadCommand, tsClientDir)
 
         tempFile.delete()
