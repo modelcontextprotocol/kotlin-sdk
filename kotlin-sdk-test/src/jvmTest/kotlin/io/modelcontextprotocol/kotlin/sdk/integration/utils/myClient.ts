@@ -1,15 +1,27 @@
 // @ts-ignore
-import {Client} from "../../../../../../../resources/typescript-sdk/src/client";
-// @ts-ignore
-import {StreamableHTTPClientTransport} from "../../../../../../../resources/typescript-sdk/src/client/streamableHttp.js";
-
 const args = process.argv.slice(2);
 const serverUrl = args[0] || 'http://localhost:3001/mcp';
 const toolName = args[1];
 const toolArgs = args.slice(2);
 const PROTOCOL_VERSION = "2024-11-05";
 
+// @ts-ignore
 async function main() {
+    // @ts-ignore
+    const sdkDir = process.env.TYPESCRIPT_SDK_DIR;
+    let Client: any;
+    let StreamableHTTPClientTransport: any;
+    if (sdkDir) {
+        // @ts-ignore
+        ({Client} = await import(`${sdkDir}/src/client`));
+        // @ts-ignore
+        ({StreamableHTTPClientTransport} = await import(`${sdkDir}/src/client/streamableHttp.js`));
+    } else {
+        // @ts-ignore
+        ({Client} = await import("../../../../../../../resources/typescript-sdk/src/client"));
+        // @ts-ignore
+        ({StreamableHTTPClientTransport} = await import("../../../../../../../resources/typescript-sdk/src/client/streamableHttp.js"));
+    }
     if (!toolName) {
         console.log('Usage: npx tsx myClient.ts [server-url] <tool-name> [tool-args...]');
         console.log('Using default server URL:', serverUrl);
@@ -44,6 +56,7 @@ async function main() {
         const tool = tools.find((t: { name: string; }) => t.name === toolName);
         if (!tool) {
             console.error(`Tool "${toolName}" not found`);
+            // @ts-ignore
             process.exit(1);
         }
 
@@ -80,6 +93,7 @@ async function main() {
 
     } catch (error) {
         console.error('Error:', error);
+        // @ts-ignore
         process.exit(1);
     } finally {
         await client.close();
@@ -89,5 +103,6 @@ async function main() {
 
 main().catch(error => {
     console.error('Unhandled error:', error);
+    // @ts-ignore
     process.exit(1);
 });

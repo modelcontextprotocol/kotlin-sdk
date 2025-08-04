@@ -3,7 +3,6 @@ build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
-/src/jvmTest/resources/typescript-sdk/
 
 ### IntelliJ IDEA ###
 .idea/modules.xml

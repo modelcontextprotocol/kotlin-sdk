@@ -1,6 +1,5 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.typescript
 
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import java.io.BufferedReader
 import java.io.File
@@ -16,7 +15,11 @@ abstract class TypeScriptTestBase {
 
     companion object {
         @JvmStatic
-        protected val sdkDir = File("src/jvmTest/resources/typescript-sdk")
+        private val tempRootDir: File =
+            java.nio.file.Files.createTempDirectory("typescript-sdk-").toFile().apply { deleteOnExit() }
+
+        @JvmStatic
+        protected val sdkDir: File = File(tempRootDir, "typescript-sdk")
 
         /**
          * clone TypeScript SDK and install dependencies
@@ -27,7 +30,7 @@ abstract class TypeScriptTestBase {
             println("Cloning TypeScript SDK repository")
             if (!sdkDir.exists()) {
                 val cloneCommand =
-                    "git clone --depth 1 https://github.com/modelcontextprotocol/typescript-sdk.git src/jvmTest/resources/typescript-sdk"
+                    "git clone --depth 1 https://github.com/modelcontextprotocol/typescript-sdk.git ${sdkDir.absolutePath}"
                 val process = ProcessBuilder()
                     .command("bash", "-c", cloneCommand)
                     .redirectErrorStream(true)
@@ -43,16 +46,10 @@ abstract class TypeScriptTestBase {
         }
 
         @JvmStatic
-        @AfterAll
-        fun removeTypeScriptSDK() {
-            sdkDir.deleteRecursively()
-        }
-
-        @JvmStatic
         protected fun executeCommand(command: String, workingDir: File): String {
             // Prefer running TypeScript via ts-node to avoid npx network delays on CI
             val process = ProcessBuilder()
-                .command("bash", "-c", command)
+                .command("bash", "-c", "TYPESCRIPT_SDK_DIR='${sdkDir.absolutePath}' $command")
                 .directory(workingDir)
                 .redirectErrorStream(true)
                 .start()
@@ -126,7 +123,7 @@ abstract class TypeScriptTestBase {
 
     protected fun executeCommandAllowingFailure(command: String, workingDir: File, timeoutSeconds: Long = 20): String {
         val process = ProcessBuilder()
-            .command("bash", "-c", command)
+            .command("bash", "-c", "TYPESCRIPT_SDK_DIR='${sdkDir.absolutePath}' $command")
             .directory(workingDir)
             .redirectErrorStream(true)
             .start()
