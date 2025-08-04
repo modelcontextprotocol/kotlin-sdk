@@ -4,8 +4,8 @@ import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
 plugins {
-    kotlin("multiplatform") version "2.1.20"
-    kotlin("plugin.serialization") version "2.1.20"
+    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 group = "org.example"
@@ -43,10 +43,10 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation("io.modelcontextprotocol:kotlin-sdk:0.6.0")
+            implementation(libs.mcp.kotlin)
         }
         jvmMain.dependencies {
-            implementation("org.slf4j:slf4j-nop:2.0.9")
+            implementation(libs.slf4j.simple)
         }
         wasmJsMain.dependencies {}
     }
