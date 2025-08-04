@@ -197,14 +197,14 @@ class KotlinServerForTypeScriptClient {
             val name = (request.arguments["name"] as? JsonPrimitive)?.content ?: "World"
 
             repeat(3) { index ->
-                server.sendLoggingMessage(
-                    LoggingMessageNotification(
-                        level = LoggingLevel.info,
-                        data = buildJsonObject {
-                            put("message", JsonPrimitive("Greeting notification #${index + 1} for $name"))
-                        }
-                    )
-                )
+                val notifJson = buildJsonObject {
+                    put("level", JsonPrimitive("info"))
+                    put("data", buildJsonObject {
+                        put("message", JsonPrimitive("Greeting notification #${index + 1} for $name"))
+                    })
+                }
+                val notif = McpJson.decodeFromJsonElement<LoggingMessageNotification>(notifJson)
+                server.sendLoggingMessage(notif)
             }
 
             CallToolResult(
@@ -232,7 +232,7 @@ class KotlinServerForTypeScriptClient {
                 messages = listOf(
                     PromptMessage(
                         role = Role.user,
-                        content = TextContent("Please greet ${(request.arguments?.get("name") as? JsonPrimitive)?.content ?: "someone"} in a friendly manner.")
+                        content = TextContent("Please greet ${request.arguments?.get("name") ?: "someone"} in a friendly manner.")
                     )
                 )
             )
