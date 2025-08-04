@@ -1,6 +1,6 @@
-package integration.kotlin
+package io.modelcontextprotocol.kotlin.sdk.integration.kotlin
 
-import integration.utils.TestUtils.runTest
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.runTest
 import io.modelcontextprotocol.kotlin.sdk.*
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
@@ -77,7 +77,7 @@ class PromptIntegrationTest : KotlinTestBase() {
             )
         ) { request ->
             val topic = request.arguments?.get("topic") ?: "general knowledge"
-            val includeImage = request.arguments?.get("includeImage")?.toString()?.toBoolean() ?: true
+            val includeImage = request.arguments?.get("includeImage")?.toBoolean() ?: true
 
             val messages = mutableListOf<PromptMessage>()
 
@@ -153,7 +153,7 @@ class PromptIntegrationTest : KotlinTestBase() {
                     PromptMessage(
                         role = Role.assistant,
                         content = TextContent(text = "You're welcome! Let me know if you have more questions about $topic."),
-                    )
+                    ),
                 )
             )
         }
@@ -177,14 +177,13 @@ class PromptIntegrationTest : KotlinTestBase() {
                     name = "optionalArg",
                     description = "Optional argument",
                     required = false,
-                )
+                ),
             )
         ) { request ->
-            val arg1 = request.arguments?.get("requiredArg1")
-                ?: throw IllegalArgumentException("Missing required argument: requiredArg1")
-            val arg2 = request.arguments["requiredArg2"]
-                ?: throw IllegalArgumentException("Missing required argument: requiredArg2")
-            val optArg = request.arguments["optionalArg"] ?: "default"
+            val args = request.arguments ?: emptyMap()
+            val arg1 = args["requiredArg1"] ?: throw IllegalArgumentException("Missing required argument: requiredArg1")
+            val arg2 = args["requiredArg2"] ?: throw IllegalArgumentException("Missing required argument: requiredArg2")
+            val optArg = args["optionalArg"] ?: "default"
 
             GetPromptResult(
                 description = strictPromptDescription,
@@ -196,7 +195,7 @@ class PromptIntegrationTest : KotlinTestBase() {
                     PromptMessage(
                         role = Role.assistant,
                         content = TextContent(text = "I received your arguments: $arg1, $arg2, and $optArg"),
-                    )
+                    ),
                 )
             )
         }
@@ -213,10 +212,10 @@ class PromptIntegrationTest : KotlinTestBase() {
         assertNotNull(testPrompt, "Test prompt should be in the list")
         assertEquals(testPromptDescription, testPrompt.description, "Prompt description should match")
 
-        assertNotNull(testPrompt.arguments, "Prompt arguments should not be null")
-        assertTrue(testPrompt.arguments.isNotEmpty(), "Prompt arguments should not be empty")
+        val arguments = testPrompt.arguments ?: error("Prompt arguments should not be null")
+        assertTrue(arguments.isNotEmpty(), "Prompt arguments should not be empty")
 
-        val nameArg = testPrompt.arguments.find { it.name == "name" }
+        val nameArg = arguments.find { it.name == "name" }
         assertNotNull(nameArg, "Name argument should be in the list")
         assertEquals("The name to greet", nameArg.description, "Argument description should match")
         assertEquals(true, nameArg.required, "Argument required flag should match")
@@ -264,8 +263,8 @@ class PromptIntegrationTest : KotlinTestBase() {
         val strictPrompt = promptsList.prompts.find { it.name == strictPromptName }
         assertNotNull(strictPrompt, "Strict prompt should be in the list")
 
-        assertNotNull(strictPrompt.arguments, "Prompt arguments should not be null")
-        val requiredArgs = strictPrompt.arguments.filter { it.required == true }
+        val argsDef = strictPrompt.arguments ?: error("Prompt arguments should not be null")
+        val requiredArgs = argsDef.filter { it.required == true }
         assertEquals(2, requiredArgs.size, "Strict prompt should have 2 required arguments")
 
         // test missing required arg
@@ -320,9 +319,9 @@ class PromptIntegrationTest : KotlinTestBase() {
         assertNotNull(userMessage, "User message should be in the list")
         val userContent = userMessage.content as? TextContent
         assertNotNull(userContent, "User message content should be TextContent")
-        assertNotNull(userContent.text, "User message text should not be null")
-        assertTrue(userContent.text.contains("value1"), "Message should contain first argument")
-        assertTrue(userContent.text.contains("value2"), "Message should contain second argument")
+        val userText = requireNotNull(userContent.text)
+        assertTrue(userText.contains("value1"), "Message should contain first argument")
+        assertTrue(userText.contains("value2"), "Message should contain second argument")
     }
 
     @Test
@@ -348,15 +347,15 @@ class PromptIntegrationTest : KotlinTestBase() {
         assertNotNull(userMessage, "User message should be in the list")
         val userContent = userMessage.content as? TextContent
         assertNotNull(userContent, "User message content should be TextContent")
-        assertNotNull(userContent.text, "User message text should not be null")
-        assertTrue(userContent.text.contains(topic), "User message should contain the topic")
+        val userText2 = requireNotNull(userContent.text)
+        assertTrue(userText2.contains(topic), "User message should contain the topic")
 
         val assistantMessage = result.messages.find { it.role == Role.assistant }
         assertNotNull(assistantMessage, "Assistant message should be in the list")
         val assistantContent = assistantMessage.content as? TextContent
         assertNotNull(assistantContent, "Assistant message content should be TextContent")
-        assertNotNull(assistantContent.text, "Assistant message text should not be null")
-        assertTrue(assistantContent.text.contains(topic), "Assistant message should contain the topic")
+        val assistantText = requireNotNull(assistantContent.text)
+        assertTrue(assistantText.contains(topic), "Assistant message should contain the topic")
 
         val resultNoImage = client.getPrompt(
             GetPromptRequest(
@@ -402,11 +401,11 @@ class PromptIntegrationTest : KotlinTestBase() {
         for (message in result.messages) {
             val content = message.content as? TextContent
             assertNotNull(content, "Message content should be TextContent")
-            assertNotNull(content.text, "Message text should not be null")
+            val text = requireNotNull(content.text)
 
             // Either the message contains the topic or it's a generic conversation message
-            val containsTopic = content.text.contains(topic)
-            val isGenericMessage = content.text.contains("thank you") || content.text.contains("welcome")
+            val containsTopic = text.contains(topic)
+            val isGenericMessage = text.contains("thank you") || text.contains("welcome")
 
             assertTrue(
                 containsTopic || isGenericMessage,

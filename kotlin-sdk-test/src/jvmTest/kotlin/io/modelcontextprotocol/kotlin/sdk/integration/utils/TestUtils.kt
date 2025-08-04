@@ -1,4 +1,4 @@
-package integration.utils
+package io.modelcontextprotocol.kotlin.sdk.integration.utils
 
 import io.modelcontextprotocol.kotlin.sdk.CallToolResultBase
 import io.modelcontextprotocol.kotlin.sdk.PromptMessageContent

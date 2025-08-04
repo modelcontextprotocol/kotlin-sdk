@@ -1,4 +1,4 @@
-package integration.typescript
+package io.modelcontextprotocol.kotlin.sdk.integration.typescript
 
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*

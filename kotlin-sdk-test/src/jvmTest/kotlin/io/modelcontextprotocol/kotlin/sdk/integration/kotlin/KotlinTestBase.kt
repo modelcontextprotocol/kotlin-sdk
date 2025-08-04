@@ -1,4 +1,4 @@
-package integration.kotlin
+package io.modelcontextprotocol.kotlin.sdk.integration.kotlin
 
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*

@@ -1,7 +1,7 @@
 // @ts-ignore
-import {Client} from "../../../resources/typescript-sdk/src/client";
+import {Client} from "../../../../../../../resources/typescript-sdk/src/client";
 // @ts-ignore
-import {StreamableHTTPClientTransport} from "../../../resources/typescript-sdk/src/client/streamableHttp.js";
+import {StreamableHTTPClientTransport} from "../../../../../../../resources/typescript-sdk/src/client/streamableHttp.js";
 
 const args = process.argv.slice(2);
 const serverUrl = args[0] || 'http://localhost:3001/mcp';

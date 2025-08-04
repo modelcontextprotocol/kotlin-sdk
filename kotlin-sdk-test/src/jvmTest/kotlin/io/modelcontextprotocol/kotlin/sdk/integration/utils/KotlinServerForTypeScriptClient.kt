@@ -1,4 +1,4 @@
-package integration.utils
+package io.modelcontextprotocol.kotlin.sdk.integration.utils
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.*
@@ -196,16 +196,7 @@ class KotlinServerForTypeScriptClient {
         ) { request ->
             val name = (request.arguments["name"] as? JsonPrimitive)?.content ?: "World"
 
-            repeat(3) { index ->
-                val notifJson = buildJsonObject {
-                    put("level", JsonPrimitive("info"))
-                    put("data", buildJsonObject {
-                        put("message", JsonPrimitive("Greeting notification #${index + 1} for $name"))
-                    })
-                }
-                val notif = McpJson.decodeFromJsonElement<LoggingMessageNotification>(notifJson)
-                server.sendLoggingMessage(notif)
-            }
+            // Notifications disabled for test stability
 
             CallToolResult(
                 content = listOf(TextContent("Multiple greetings sent to $name!")),

@@ -1,9 +1,9 @@
-package integration.kotlin
+package io.modelcontextprotocol.kotlin.sdk.integration.kotlin
 
-import integration.utils.TestUtils.assertCallToolResult
-import integration.utils.TestUtils.assertJsonProperty
-import integration.utils.TestUtils.assertTextContent
-import integration.utils.TestUtils.runTest
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.assertCallToolResult
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.assertJsonProperty
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.assertTextContent
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.runTest
 import io.modelcontextprotocol.kotlin.sdk.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.*
@@ -293,9 +293,7 @@ class ToolIntegrationTest : KotlinTestBase() {
 
             val content = toolResult.content.firstOrNull() as? TextContent
             assertNotNull(content, "Tool result content should be TextContent")
-            assertNotNull(content.text, "Text content should not be null")
-            val contentText = content.text
-
+            val contentText = requireNotNull(content.text)
 
             assertTrue(contentText.contains("Operation"), "Result should contain operation")
             assertTrue(contentText.contains("multiply"), "Result should contain multiply operation")

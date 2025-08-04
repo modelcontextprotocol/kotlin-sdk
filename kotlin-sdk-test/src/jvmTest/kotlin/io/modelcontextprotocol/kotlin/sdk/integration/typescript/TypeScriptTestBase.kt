@@ -1,4 +1,4 @@
-package integration.typescript
+package io.modelcontextprotocol.kotlin.sdk.integration.typescript
 
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -6,6 +6,7 @@ import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
 import java.net.ServerSocket
+import java.net.Socket
 import java.util.concurrent.TimeUnit
 
 abstract class TypeScriptTestBase {
@@ -47,12 +48,8 @@ abstract class TypeScriptTestBase {
         @JvmStatic
         protected fun executeCommand(command: String, workingDir: File): String {
             // Prefer running TypeScript via ts-node to avoid npx network delays on CI
-            val adjusted = if (command.contains("npx tsx ")) {
-                command.replaceFirst("npx tsx ", "node --loader ts-node/esm ")
-            } else command
-
             val process = ProcessBuilder()
-                .command("bash", "-c", adjusted)
+                .command("bash", "-c", command)
                 .directory(workingDir)
                 .redirectErrorStream(true)
                 .start()
@@ -68,7 +65,7 @@ abstract class TypeScriptTestBase {
 
             val exitCode = process.waitFor()
             if (exitCode != 0) {
-                throw RuntimeException("Command execution failed with exit code $exitCode: $adjusted\nOutput:\n$output")
+                throw RuntimeException("Command execution failed with exit code $exitCode: $command\nOutput:\n$output")
             }
 
             return output.toString()
@@ -116,7 +113,7 @@ abstract class TypeScriptTestBase {
         val deadline = System.currentTimeMillis() + timeoutSeconds * 1000
         while (System.currentTimeMillis() < deadline) {
             try {
-                java.net.Socket(host, port).use { return true }
+                Socket(host, port).use { return true }
             } catch (_: Exception) {
                 Thread.sleep(100)
             }

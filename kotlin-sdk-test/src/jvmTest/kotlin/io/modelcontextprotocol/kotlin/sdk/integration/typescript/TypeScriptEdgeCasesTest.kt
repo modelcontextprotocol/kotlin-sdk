@@ -1,6 +1,6 @@
-package integration.typescript
+package io.modelcontextprotocol.kotlin.sdk.integration.typescript
 
-import integration.utils.KotlinServerForTypeScriptClient
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.KotlinServerForTypeScriptClient
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -43,7 +43,7 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
     @Timeout(20, unit = TimeUnit.SECONDS)
     fun testErrorHandling() {
         val projectRoot = File(System.getProperty("user.dir"))
-        val clientDir = File(projectRoot, "src/jvmTest/kotlin/integration/utils")
+        val clientDir = File(projectRoot, "src/jvmTest/kotlin/io/modelcontextprotocol/kotlin/sdk/integration/utils")
 
         val nonExistentToolCommand = "npx tsx myClient.ts $serverUrl non-existent-tool"
         val nonExistentToolOutput = executeCommandAllowingFailure(nonExistentToolCommand, clientDir)
@@ -66,7 +66,7 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
     @Timeout(20, unit = TimeUnit.SECONDS)
     fun testSpecialCharacters() {
         val projectRoot = File(System.getProperty("user.dir"))
-        val clientDir = File(projectRoot, "src/jvmTest/kotlin/integration/utils")
+        val clientDir = File(projectRoot, "src/jvmTest/kotlin/io/modelcontextprotocol/kotlin/sdk/integration/utils")
 
         val specialChars = "!@#$+-[].,?"
 
@@ -92,7 +92,7 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
     @Timeout(30, unit = TimeUnit.SECONDS)
     fun testLargePayload() {
         val projectRoot = File(System.getProperty("user.dir"))
-        val clientDir = File(projectRoot, "src/jvmTest/kotlin/integration/utils")
+        val clientDir = File(projectRoot, "src/jvmTest/kotlin/io/modelcontextprotocol/kotlin/sdk/integration/utils")
 
         val largeName = "A".repeat(10 * 1024)
 
@@ -118,7 +118,7 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
     @Timeout(60, unit = TimeUnit.SECONDS)
     fun testComplexConcurrentRequests() {
         val projectRoot = File(System.getProperty("user.dir"))
-        val clientDir = File(projectRoot, "src/jvmTest/kotlin/integration/utils")
+        val clientDir = File(projectRoot, "src/jvmTest/kotlin/io/modelcontextprotocol/kotlin/sdk/integration/utils")
 
         val commands = listOf(
             "npx tsx myClient.ts $serverUrl greet \"Client1\"",
@@ -169,7 +169,7 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
     @Timeout(30, unit = TimeUnit.SECONDS)
     fun testRapidSequentialRequests() {
         val projectRoot = File(System.getProperty("user.dir"))
-        val clientDir = File(projectRoot, "src/jvmTest/kotlin/integration/utils")
+        val clientDir = File(projectRoot, "src/jvmTest/kotlin/io/modelcontextprotocol/kotlin/sdk/integration/utils")
 
         val outputs = (1..10).map { i ->
             val command = "npx tsx myClient.ts $serverUrl greet \"RapidClient$i\""

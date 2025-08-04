@@ -1,6 +1,6 @@
-package integration.typescript
+package io.modelcontextprotocol.kotlin.sdk.integration.typescript
 
-import integration.utils.KotlinServerForTypeScriptClient
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.KotlinServerForTypeScriptClient
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -42,7 +42,7 @@ class TypeScriptClientKotlinServerTest : TypeScriptTestBase() {
     @Timeout(20, unit = TimeUnit.SECONDS)
     fun testToolCall() {
         val projectRoot = File(System.getProperty("user.dir"))
-        val clientDir = File(projectRoot, "src/jvmTest/kotlin/integration/utils")
+        val clientDir = File(projectRoot, "src/jvmTest/kotlin/io/modelcontextprotocol/kotlin/sdk/integration/utils")
 
         // call the "greet" tool
         val testName = "TestUser"
@@ -66,7 +66,7 @@ class TypeScriptClientKotlinServerTest : TypeScriptTestBase() {
     @Timeout(20, unit = TimeUnit.SECONDS)
     fun testToolCallWithSessionManagement() {
         val projectRoot = File(System.getProperty("user.dir"))
-        val clientDir = File(projectRoot, "src/jvmTest/kotlin/integration/utils")
+        val clientDir = File(projectRoot, "src/jvmTest/kotlin/io/modelcontextprotocol/kotlin/sdk/integration/utils")
 
         val testName = "SessionTest"
         val command = "npx tsx myClient.ts $serverUrl greet $testName"
@@ -96,7 +96,7 @@ class TypeScriptClientKotlinServerTest : TypeScriptTestBase() {
     @Timeout(30, unit = TimeUnit.SECONDS)
     fun testMultipleClientSequence() {
         val projectRoot = File(System.getProperty("user.dir"))
-        val clientDir = File(projectRoot, "src/jvmTest/kotlin/integration/utils")
+        val clientDir = File(projectRoot, "src/jvmTest/kotlin/io/modelcontextprotocol/kotlin/sdk/integration/utils")
 
         val testName1 = "FirstClient"
         val command1 = "npx tsx myClient.ts $serverUrl greet $testName1"
@@ -131,7 +131,7 @@ class TypeScriptClientKotlinServerTest : TypeScriptTestBase() {
     @Timeout(30, unit = TimeUnit.SECONDS)
     fun testMultipleClientParallel() {
         val projectRoot = File(System.getProperty("user.dir"))
-        val clientDir = File(projectRoot, "src/jvmTest/kotlin/integration/utils")
+        val clientDir = File(projectRoot, "src/jvmTest/kotlin/io/modelcontextprotocol/kotlin/sdk/integration/utils")
 
         val clientCount = 3
         val clients = listOf(

@@ -1,6 +1,6 @@
-package integration.kotlin
+package io.modelcontextprotocol.kotlin.sdk.integration.kotlin
 
-import integration.utils.TestUtils.runTest
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.runTest
 import io.modelcontextprotocol.kotlin.sdk.*
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
