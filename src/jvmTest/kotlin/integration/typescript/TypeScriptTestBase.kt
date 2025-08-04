@@ -46,8 +46,13 @@ abstract class TypeScriptTestBase {
 
         @JvmStatic
         protected fun executeCommand(command: String, workingDir: File): String {
+            // Prefer running TypeScript via ts-node to avoid npx network delays on CI
+            val adjusted = if (command.contains("npx tsx ")) {
+                command.replaceFirst("npx tsx ", "node --loader ts-node/esm ")
+            } else command
+
             val process = ProcessBuilder()
-                .command("bash", "-c", command)
+                .command("bash", "-c", adjusted)
                 .directory(workingDir)
                 .redirectErrorStream(true)
                 .start()
@@ -63,7 +68,7 @@ abstract class TypeScriptTestBase {
 
             val exitCode = process.waitFor()
             if (exitCode != 0) {
-                throw RuntimeException("Command execution failed with exit code $exitCode: $command\nOutput:\n$output")
+                throw RuntimeException("Command execution failed with exit code $exitCode: $adjusted\nOutput:\n$output")
             }
 
             return output.toString()
@@ -75,17 +80,10 @@ abstract class TypeScriptTestBase {
         }
 
         @JvmStatic
-        protected fun findFreePort(minPort: Int = 3000, maxPort: Int = 4000): Int {
-            for (port in minPort..maxPort) {
-                try {
-                    ServerSocket(port).use {
-                        return port
-                    }
-                } catch (_: Exception) {
-                    // port is in use, try the next one
-                }
+        protected fun findFreePort(): Int {
+            ServerSocket(0).use { socket ->
+                return socket.localPort
             }
-            throw RuntimeException("No free port found between $minPort and $maxPort")
         }
     }
 
