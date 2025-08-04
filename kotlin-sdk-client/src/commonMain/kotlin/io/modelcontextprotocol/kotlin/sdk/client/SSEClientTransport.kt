@@ -139,6 +139,7 @@ public class SseClientTransport(
                     }
 
                     "endpoint" -> handleEndpoint(event.data.orEmpty())
+
                     else -> handleMessage(event.data.orEmpty())
                 }
             }

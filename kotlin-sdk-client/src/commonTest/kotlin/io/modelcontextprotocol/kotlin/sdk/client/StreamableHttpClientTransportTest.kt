@@ -47,7 +47,7 @@ class StreamableHttpClientTransportTest {
         val message = JSONRPCRequest(
             id = RequestId.StringId("test-id"),
             method = "test",
-            params = buildJsonObject { }
+            params = buildJsonObject { },
         )
 
         val transport = createTransport { request ->
@@ -61,7 +61,7 @@ class StreamableHttpClientTransportTest {
 
             respond(
                 content = "",
-                status = HttpStatusCode.Accepted
+                status = HttpStatusCode.Accepted,
             )
         }
 
@@ -76,26 +76,30 @@ class StreamableHttpClientTransportTest {
             id = RequestId.StringId("test-id"),
             method = "initialize",
             params = buildJsonObject {
-                put("clientInfo", buildJsonObject {
-                    put("name", JsonPrimitive("test-client"))
-                    put("version", JsonPrimitive("1.0"))
-                })
+                put(
+                    "clientInfo",
+                    buildJsonObject {
+                        put("name", JsonPrimitive("test-client"))
+                        put("version", JsonPrimitive("1.0"))
+                    },
+                )
                 put("protocolVersion", JsonPrimitive("2025-06-18"))
-            }
+            },
         )
 
         val transport = createTransport { request ->
             when (val msg = McpJson.decodeFromString<JSONRPCMessage>((request.body as TextContent).text)) {
                 is JSONRPCRequest if msg.method == "initialize" -> respond(
-                    content = "", status = HttpStatusCode.OK,
-                    headers = headersOf("mcp-session-id", "test-session-id")
+                    content = "",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf("mcp-session-id", "test-session-id"),
                 )
 
                 is JSONRPCNotification if msg.method == "test" -> {
                     assertEquals("test-session-id", request.headers["mcp-session-id"])
                     respond(
                         content = "",
-                        status = HttpStatusCode.Accepted
+                        status = HttpStatusCode.Accepted,
                     )
                 }
 
@@ -122,7 +126,7 @@ class StreamableHttpClientTransportTest {
             assertEquals("test-session-id", request.headers["mcp-session-id"])
             respond(
                 content = "",
-                status = HttpStatusCode.OK
+                status = HttpStatusCode.OK,
             )
         }
 
@@ -141,7 +145,7 @@ class StreamableHttpClientTransportTest {
             assertEquals(HttpMethod.Delete, request.method)
             respond(
                 content = "",
-                status = HttpStatusCode.MethodNotAllowed
+                status = HttpStatusCode.MethodNotAllowed,
             )
         }
 
@@ -160,7 +164,7 @@ class StreamableHttpClientTransportTest {
             assertEquals("2025-06-18", request.headers["mcp-protocol-version"])
             respond(
                 content = "",
-                status = HttpStatusCode.Accepted
+                status = HttpStatusCode.Accepted,
             )
         }
         transport.protocolVersion = "2025-06-18"
@@ -170,7 +174,8 @@ class StreamableHttpClientTransportTest {
         transport.close()
     }
 
-    @Ignore //Engine doesn't support SSECapability: https://youtrack.jetbrains.com/issue/KTOR-8177/MockEngine-Add-SSE-support
+    // Engine doesn't support SSECapability: https://youtrack.jetbrains.com/issue/KTOR-8177/MockEngine-Add-SSE-support
+    @Ignore
     @Test
     fun testNotificationSchemaE2E() = runTest {
         val receivedMessages = mutableListOf<JSONRPCMessage>()
@@ -182,7 +187,7 @@ class StreamableHttpClientTransportTest {
                     respond(
                         content = "",
                         status = HttpStatusCode.Accepted,
-                        headers = headersOf("mcp-session-id", "notification-test-session")
+                        headers = headersOf("mcp-session-id", "notification-test-session"),
                     )
                 }
 
@@ -193,7 +198,9 @@ class StreamableHttpClientTransportTest {
                         // Server sends various notifications
                         appendLine("event: message")
                         appendLine("id: 1")
-                        appendLine("""data: {"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"upload-123","progress":50,"total":100}}""")
+                        appendLine(
+                            """data: {"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"upload-123","progress":50,"total":100}}""",
+                        )
                         appendLine()
 
                         appendLine("event: message")
@@ -210,8 +217,9 @@ class StreamableHttpClientTransportTest {
                         content = ByteReadChannel(sseContent),
                         status = HttpStatusCode.OK,
                         headers = headersOf(
-                            HttpHeaders.ContentType, ContentType.Text.EventStream.toString()
-                        )
+                            HttpHeaders.ContentType,
+                            ContentType.Text.EventStream.toString(),
+                        ),
                     )
                 }
 
@@ -219,7 +227,7 @@ class StreamableHttpClientTransportTest {
                 HttpMethod.Post -> {
                     respond(
                         content = "",
-                        status = HttpStatusCode.Accepted
+                        status = HttpStatusCode.Accepted,
                     )
                 }
 
@@ -238,11 +246,14 @@ class StreamableHttpClientTransportTest {
             method = "notifications/initialized",
             params = buildJsonObject {
                 put("protocolVersion", JsonPrimitive("1.0"))
-                put("capabilities", buildJsonObject {
-                    put("tools", JsonPrimitive(true))
-                    put("resources", JsonPrimitive(true))
-                })
-            }
+                put(
+                    "capabilities",
+                    buildJsonObject {
+                        put("tools", JsonPrimitive(true))
+                        put("resources", JsonPrimitive(true))
+                    },
+                )
+            },
         )
 
         transport.send(initializedNotification)
@@ -274,25 +285,28 @@ class StreamableHttpClientTransportTest {
                 params = buildJsonObject {
                     put("progressToken", JsonPrimitive("download-456"))
                     put("progress", JsonPrimitive(75))
-                }
+                },
             ),
             JSONRPCNotification(
                 method = "notifications/cancelled",
                 params = buildJsonObject {
                     put("requestId", JsonPrimitive("req-789"))
                     put("reason", JsonPrimitive("user_cancelled"))
-                }
+                },
             ),
             JSONRPCNotification(
                 method = "notifications/message",
                 params = buildJsonObject {
                     put("level", JsonPrimitive("info"))
                     put("message", JsonPrimitive("Operation completed"))
-                    put("data", buildJsonObject {
-                        put("duration", JsonPrimitive(1234))
-                    })
-                }
-            )
+                    put(
+                        "data",
+                        buildJsonObject {
+                            put("duration", JsonPrimitive(1234))
+                        },
+                    )
+                },
+            ),
         )
 
         // Send all client notifications
@@ -305,7 +319,8 @@ class StreamableHttpClientTransportTest {
         transport.close()
     }
 
-    @Ignore // Engine doesn't support SSECapability: https://youtrack.jetbrains.com/issue/KTOR-8177/MockEngine-Add-SSE-support
+    // Engine doesn't support SSECapability: https://youtrack.jetbrains.com/issue/KTOR-8177/MockEngine-Add-SSE-support
+    @Ignore
     @Test
     fun testNotificationWithResumptionToken() = runTest {
         var resumptionTokenReceived: String? = null
@@ -320,15 +335,18 @@ class StreamableHttpClientTransportTest {
                     val sseContent = buildString {
                         appendLine("event: message")
                         appendLine("id: resume-100")
-                        appendLine("""data: {"jsonrpc":"2.0","method":"notifications/resumed","params":{"fromToken":"${lastEventIdSent}"}}""")
+                        appendLine(
+                            """data: {"jsonrpc":"2.0","method":"notifications/resumed","params":{"fromToken":"$lastEventIdSent"}}""",
+                        )
                         appendLine()
                     }
                     respond(
                         content = ByteReadChannel(sseContent),
                         status = HttpStatusCode.OK,
                         headers = headersOf(
-                            HttpHeaders.ContentType, ContentType.Text.EventStream.toString()
-                        )
+                            HttpHeaders.ContentType,
+                            ContentType.Text.EventStream.toString(),
+                        ),
                     )
                 }
 
@@ -344,12 +362,12 @@ class StreamableHttpClientTransportTest {
                 method = "notifications/test",
                 params = buildJsonObject {
                     put("data", JsonPrimitive("test-data"))
-                }
+                },
             ),
             resumptionToken = "previous-token-99",
             onResumptionToken = { token ->
                 resumptionTokenReceived = token
-            }
+            },
         )
 
         // Wait for response

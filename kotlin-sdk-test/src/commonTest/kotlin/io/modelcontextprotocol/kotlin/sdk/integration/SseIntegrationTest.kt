@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.integration
 
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.sse.SSE
 import io.ktor.server.application.install
 import io.ktor.server.cio.CIOApplicationEngine
 import io.ktor.server.engine.EmbeddedServer

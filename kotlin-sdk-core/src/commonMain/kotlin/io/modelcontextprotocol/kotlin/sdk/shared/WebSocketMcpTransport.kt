@@ -43,7 +43,7 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
         if (!initialized.compareAndSet(expectedValue = false, newValue = true)) {
             error(
                 "WebSocketClientTransport already started! " +
-                        "If using Client class, note that connect() calls start() automatically.",
+                    "If using Client class, note that connect() calls start() automatically.",
             )
         }
 

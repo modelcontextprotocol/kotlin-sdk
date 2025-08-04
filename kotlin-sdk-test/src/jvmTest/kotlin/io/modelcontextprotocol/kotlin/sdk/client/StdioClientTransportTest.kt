@@ -19,7 +19,7 @@ class StdioClientTransportTest : BaseTransportTest() {
 
         val client = StdioClientTransport(
             input = input,
-            output = output
+            output = output,
         )
 
         testClientOpenClose(client)
@@ -37,7 +37,7 @@ class StdioClientTransportTest : BaseTransportTest() {
 
         val client = StdioClientTransport(
             input = input,
-            output = output
+            output = output,
         )
 
         testClientRead(client)

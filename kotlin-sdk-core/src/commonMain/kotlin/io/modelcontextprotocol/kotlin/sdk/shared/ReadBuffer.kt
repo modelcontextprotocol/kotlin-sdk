@@ -20,6 +20,7 @@ public class ReadBuffer {
         var lfIndex = buffer.indexOf('\n'.code.toByte())
         val line = when (lfIndex) {
             -1L -> return null
+
             0L -> {
                 buffer.skip(1)
                 return null
@@ -44,11 +45,6 @@ public class ReadBuffer {
     }
 }
 
-internal fun deserializeMessage(line: String): JSONRPCMessage {
-    return McpJson.decodeFromString<JSONRPCMessage>(line)
-}
+internal fun deserializeMessage(line: String): JSONRPCMessage = McpJson.decodeFromString<JSONRPCMessage>(line)
 
-public fun serializeMessage(message: JSONRPCMessage): String {
-    return McpJson.encodeToString(message) + "\n"
-}
-
+public fun serializeMessage(message: JSONRPCMessage): String = McpJson.encodeToString(message) + "\n"
