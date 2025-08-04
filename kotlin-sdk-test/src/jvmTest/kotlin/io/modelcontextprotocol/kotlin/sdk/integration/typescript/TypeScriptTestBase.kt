@@ -11,6 +11,9 @@ import java.util.concurrent.TimeUnit
 
 abstract class TypeScriptTestBase {
 
+    protected val projectRoot: File get() = File(System.getProperty("user.dir"))
+    protected val tsClientDir: File get() = File(projectRoot, "src/jvmTest/kotlin/io/modelcontextprotocol/kotlin/sdk/integration/utils")
+
     companion object {
         @JvmStatic
         protected val sdkDir = File("src/jvmTest/resources/typescript-sdk")
@@ -119,5 +122,24 @@ abstract class TypeScriptTestBase {
             }
         }
         return false
+    }
+
+    protected fun executeCommandAllowingFailure(command: String, workingDir: File, timeoutSeconds: Long = 20): String {
+        val process = ProcessBuilder()
+            .command("bash", "-c", command)
+            .directory(workingDir)
+            .redirectErrorStream(true)
+            .start()
+
+        val output = StringBuilder()
+        process.inputStream.bufferedReader().useLines { lines ->
+            for (line in lines) {
+                println(line)
+                output.append(line).append("\n")
+            }
+        }
+
+        process.waitFor(timeoutSeconds, TimeUnit.SECONDS)
+        return output.toString()
     }
 }

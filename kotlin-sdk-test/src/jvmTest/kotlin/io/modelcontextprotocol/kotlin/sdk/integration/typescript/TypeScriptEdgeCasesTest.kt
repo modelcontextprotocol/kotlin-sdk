@@ -42,11 +42,8 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
     @Test
     @Timeout(20, unit = TimeUnit.SECONDS)
     fun testErrorHandling() {
-        val projectRoot = File(System.getProperty("user.dir"))
-        val clientDir = File(projectRoot, "src/jvmTest/kotlin/io/modelcontextprotocol/kotlin/sdk/integration/utils")
-
         val nonExistentToolCommand = "npx tsx myClient.ts $serverUrl non-existent-tool"
-        val nonExistentToolOutput = executeCommandAllowingFailure(nonExistentToolCommand, clientDir)
+        val nonExistentToolOutput = executeCommandAllowingFailure(nonExistentToolCommand, tsClientDir)
 
         assertTrue(
             nonExistentToolOutput.contains("Tool \"non-existent-tool\" not found"),
@@ -54,7 +51,7 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
         )
 
         val invalidUrlCommand = "npx tsx myClient.ts http://localhost:${port + 1000}/mcp greet TestUser"
-        val invalidUrlOutput = executeCommandAllowingFailure(invalidUrlCommand, clientDir)
+        val invalidUrlOutput = executeCommandAllowingFailure(invalidUrlCommand, tsClientDir)
 
         assertTrue(
             invalidUrlOutput.contains("Error:") || invalidUrlOutput.contains("ECONNREFUSED"),
@@ -65,16 +62,13 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
     @Test
     @Timeout(20, unit = TimeUnit.SECONDS)
     fun testSpecialCharacters() {
-        val projectRoot = File(System.getProperty("user.dir"))
-        val clientDir = File(projectRoot, "src/jvmTest/kotlin/io/modelcontextprotocol/kotlin/sdk/integration/utils")
-
         val specialChars = "!@#$+-[].,?"
 
-        val tempFile = File(clientDir, "special_chars.txt")
+        val tempFile = File(tsClientDir, "special_chars.txt")
         tempFile.writeText(specialChars)
 
         val specialCharsCommand = "npx tsx myClient.ts $serverUrl greet \"$(cat special_chars.txt)\""
-        val specialCharsOutput = executeCommand(specialCharsCommand, clientDir)
+        val specialCharsOutput = executeCommand(specialCharsCommand, tsClientDir)
 
         tempFile.delete()
 
@@ -91,16 +85,13 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
     fun testLargePayload() {
-        val projectRoot = File(System.getProperty("user.dir"))
-        val clientDir = File(projectRoot, "src/jvmTest/kotlin/io/modelcontextprotocol/kotlin/sdk/integration/utils")
-
         val largeName = "A".repeat(10 * 1024)
 
-        val tempFile = File(clientDir, "large_name.txt")
+        val tempFile = File(tsClientDir, "large_name.txt")
         tempFile.writeText(largeName)
 
         val largePayloadCommand = "npx tsx myClient.ts $serverUrl greet \"$(cat large_name.txt)\""
-        val largePayloadOutput = executeCommand(largePayloadCommand, clientDir)
+        val largePayloadOutput = executeCommand(largePayloadCommand, tsClientDir)
 
         tempFile.delete()
 
@@ -117,9 +108,6 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
     @Test
     @Timeout(60, unit = TimeUnit.SECONDS)
     fun testComplexConcurrentRequests() {
-        val projectRoot = File(System.getProperty("user.dir"))
-        val clientDir = File(projectRoot, "src/jvmTest/kotlin/io/modelcontextprotocol/kotlin/sdk/integration/utils")
-
         val commands = listOf(
             "npx tsx myClient.ts $serverUrl greet \"Client1\"",
             "npx tsx myClient.ts $serverUrl multi-greet \"Client2\"",
@@ -131,7 +119,7 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
         val threads = commands.mapIndexed { index, command ->
             Thread {
                 println("Starting client $index")
-                val output = executeCommand(command, clientDir)
+                val output = executeCommand(command, tsClientDir)
                 println("Client $index completed")
 
                 assertTrue(
@@ -168,12 +156,9 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
     @Test
     @Timeout(120, unit = TimeUnit.SECONDS)
     fun testRapidSequentialRequests() {
-        val projectRoot = File(System.getProperty("user.dir"))
-        val clientDir = File(projectRoot, "src/jvmTest/kotlin/io/modelcontextprotocol/kotlin/sdk/integration/utils")
-
         val outputs = (1..10).map { i ->
             val command = "npx tsx myClient.ts $serverUrl greet \"RapidClient$i\""
-            val output = executeCommand(command, clientDir)
+            val output = executeCommand(command, tsClientDir)
 
             assertTrue(
                 output.contains("Connected to server"),
@@ -192,24 +177,5 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
         }
 
         assertEquals(10, outputs.size, "All 10 rapid requests should complete successfully")
-    }
-
-    private fun executeCommandAllowingFailure(command: String, workingDir: File): String {
-        val process = ProcessBuilder()
-            .command("bash", "-c", command)
-            .directory(workingDir)
-            .redirectErrorStream(true)
-            .start()
-
-        val output = StringBuilder()
-        process.inputStream.bufferedReader().useLines { lines ->
-            for (line in lines) {
-                println(line)
-                output.append(line).append("\n")
-            }
-        }
-
-        process.waitFor(20, TimeUnit.SECONDS)
-        return output.toString()
     }
 }

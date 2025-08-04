@@ -41,13 +41,10 @@ class TypeScriptClientKotlinServerTest : TypeScriptTestBase() {
     @Test
     @Timeout(20, unit = TimeUnit.SECONDS)
     fun testToolCall() {
-        val projectRoot = File(System.getProperty("user.dir"))
-        val clientDir = File(projectRoot, "src/jvmTest/kotlin/io/modelcontextprotocol/kotlin/sdk/integration/utils")
-
         // call the "greet" tool
         val testName = "TestUser"
         val command = "npx tsx myClient.ts $serverUrl greet $testName"
-        val output = executeCommand(command, clientDir)
+        val output = executeCommand(command, tsClientDir)
 
         assertTrue(
             output.contains("Hello, $testName!"),
@@ -65,12 +62,9 @@ class TypeScriptClientKotlinServerTest : TypeScriptTestBase() {
     @Test
     @Timeout(20, unit = TimeUnit.SECONDS)
     fun testToolCallWithSessionManagement() {
-        val projectRoot = File(System.getProperty("user.dir"))
-        val clientDir = File(projectRoot, "src/jvmTest/kotlin/io/modelcontextprotocol/kotlin/sdk/integration/utils")
-
         val testName = "SessionTest"
         val command = "npx tsx myClient.ts $serverUrl greet $testName"
-        val output = executeCommand(command, clientDir)
+        val output = executeCommand(command, tsClientDir)
 
         assertTrue(output.contains("Connected to server"), "Client should connect to server")
         assertTrue(
@@ -82,7 +76,7 @@ class TypeScriptClientKotlinServerTest : TypeScriptTestBase() {
 
         val multiGreetName = "NotificationTest"
         val multiGreetCommand = "npx tsx myClient.ts $serverUrl multi-greet $multiGreetName"
-        val multiGreetOutput = executeCommand(multiGreetCommand, clientDir)
+        val multiGreetOutput = executeCommand(multiGreetCommand, tsClientDir)
 
         assertTrue(multiGreetOutput.contains("Connected to server"), "Client should connect to server")
         assertTrue(
@@ -95,12 +89,9 @@ class TypeScriptClientKotlinServerTest : TypeScriptTestBase() {
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
     fun testMultipleClientSequence() {
-        val projectRoot = File(System.getProperty("user.dir"))
-        val clientDir = File(projectRoot, "src/jvmTest/kotlin/io/modelcontextprotocol/kotlin/sdk/integration/utils")
-
         val testName1 = "FirstClient"
         val command1 = "npx tsx myClient.ts $serverUrl greet $testName1"
-        val output1 = executeCommand(command1, clientDir)
+        val output1 = executeCommand(command1, tsClientDir)
 
         assertTrue(output1.contains("Connected to server"), "First client should connect to server")
         assertTrue(output1.contains("Hello, $testName1!"), "Tool response should contain the greeting for first client")
@@ -108,7 +99,7 @@ class TypeScriptClientKotlinServerTest : TypeScriptTestBase() {
 
         val testName2 = "SecondClient"
         val command2 = "npx tsx myClient.ts $serverUrl multi-greet $testName2"
-        val output2 = executeCommand(command2, clientDir)
+        val output2 = executeCommand(command2, tsClientDir)
 
         assertTrue(output2.contains("Connected to server"), "Second client should connect to server")
         assertTrue(
@@ -118,7 +109,7 @@ class TypeScriptClientKotlinServerTest : TypeScriptTestBase() {
         assertTrue(output2.contains("Disconnected from server"), "Second client should disconnect cleanly")
 
         val command3 = "npx tsx myClient.ts $serverUrl"
-        val output3 = executeCommand(command3, clientDir)
+        val output3 = executeCommand(command3, tsClientDir)
 
         assertTrue(output3.contains("Connected to server"), "Third client should connect to server")
         assertTrue(output3.contains("Available utils:"), "Third client should list available utils")
@@ -130,9 +121,6 @@ class TypeScriptClientKotlinServerTest : TypeScriptTestBase() {
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
     fun testMultipleClientParallel() {
-        val projectRoot = File(System.getProperty("user.dir"))
-        val clientDir = File(projectRoot, "src/jvmTest/kotlin/io/modelcontextprotocol/kotlin/sdk/integration/utils")
-
         val clientCount = 3
         val clients = listOf(
             "FirstClient" to "greet",
@@ -154,7 +142,7 @@ class TypeScriptClientKotlinServerTest : TypeScriptTestBase() {
                         "npx tsx myClient.ts $serverUrl $toolName $clientName"
                     }
 
-                    val output = executeCommand(command, clientDir)
+                    val output = executeCommand(command, tsClientDir)
                     synchronized(outputs) {
                         outputs.add(i to output)
                     }
