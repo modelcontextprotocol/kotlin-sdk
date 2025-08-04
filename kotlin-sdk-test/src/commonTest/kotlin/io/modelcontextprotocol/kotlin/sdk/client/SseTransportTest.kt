@@ -5,6 +5,8 @@ import io.ktor.server.application.install
 import io.ktor.server.cio.CIO
 import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
+import io.ktor.server.routing.post
+import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
@@ -110,7 +112,7 @@ class SseTransportTest : BaseTransportTest() {
         val server = embeddedServer(CIO, port = 0) {
             install(ServerSSE)
             routing {
-                mcp("/sse") { mcpServer }
+                mcp { mcpServer }
 //                route("/sse") {
 //                    sse {
 //                        mcpSseTransport("", transportManager).apply {
