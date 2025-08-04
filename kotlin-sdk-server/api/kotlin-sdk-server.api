@@ -3,10 +3,10 @@ public final class io/modelcontextprotocol/kotlin/sdk/LibVersionKt {
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/server/KtorServerKt {
-	public static final fun MCP (Lio/ktor/server/application/Application;Lkotlin/jvm/functions/Function0;)V
-	public static final fun mcp (Lio/ktor/server/application/Application;Lkotlin/jvm/functions/Function0;)V
-	public static final fun mcp (Lio/ktor/server/routing/Routing;Ljava/lang/String;Lkotlin/jvm/functions/Function0;)V
-	public static final fun mcp (Lio/ktor/server/routing/Routing;Lkotlin/jvm/functions/Function0;)V
+	public static final fun MCP (Lio/ktor/server/application/Application;Lkotlin/jvm/functions/Function1;)V
+	public static final fun mcp (Lio/ktor/server/application/Application;Lkotlin/jvm/functions/Function1;)V
+	public static final fun mcp (Lio/ktor/server/routing/Routing;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
+	public static final fun mcp (Lio/ktor/server/routing/Routing;Lkotlin/jvm/functions/Function1;)V
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/server/RegisteredPrompt {
