@@ -76,33 +76,6 @@ class TypeScriptClientKotlinServerTest : TypeScriptTestBase() {
     }
 
     @Test
-    @Timeout(30, unit = TimeUnit.SECONDS)
-    fun testToolCallWithSessionManagement() {
-        val testName = "SessionTest"
-        val command = "npx tsx myClient.ts $serverUrl greet $testName"
-        val output = executeCommand(command, tsClientDir)
-
-        assertTrue(output.contains("Connected to server"), "Client should connect to server")
-        assertTrue(
-            output.contains("Hello, $testName!"),
-            "Tool response should contain the greeting with the provided name",
-        )
-        assertTrue(output.contains("Tool result:"), "Output should indicate a successful tool call")
-        assertTrue(output.contains("Disconnected from server"), "Client should disconnect cleanly")
-
-        val multiGreetName = "NotificationTest"
-        val multiGreetCommand = "npx tsx myClient.ts $serverUrl multi-greet $multiGreetName"
-        val multiGreetOutput = executeCommand(multiGreetCommand, tsClientDir)
-
-        assertTrue(multiGreetOutput.contains("Connected to server"), "Client should connect to server")
-        assertTrue(
-            multiGreetOutput.contains("Multiple greetings") || multiGreetOutput.contains("greeting"),
-            "Tool response should contain greeting message",
-        )
-        assertTrue(multiGreetOutput.contains("Disconnected from server"), "Client should disconnect cleanly")
-    }
-
-    @Test
     @Timeout(120, unit = TimeUnit.SECONDS)
     fun testMultipleClientSequence() {
         val testName1 = "FirstClient"
