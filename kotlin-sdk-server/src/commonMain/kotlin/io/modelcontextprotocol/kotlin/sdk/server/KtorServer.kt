@@ -51,6 +51,12 @@ public fun Routing.mcp(block: () -> Server) {
     }
 }
 
+@Suppress("FunctionName")
+@Deprecated("Use mcp() instead", ReplaceWith("mcp(block)"), DeprecationLevel.ERROR)
+public fun Application.MCP(block: () -> Server) {
+    mcp(block)
+}
+
 @KtorDsl
 public fun Application.mcp(block: () -> Server) {
     install(SSE)
@@ -74,7 +80,7 @@ internal suspend fun ServerSSESession.mcpSseEndpoint(
         sseTransportManager.removeTransport(transport.sessionId)
     }
 
-    server.connectSession(transport)
+    server.connect(transport)
 
     logger.debug { "Server connected to transport for sessionId: ${transport.sessionId}" }
 }
