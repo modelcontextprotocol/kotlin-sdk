@@ -1,10 +1,10 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.kotlin
 
+import io.modelcontextprotocol.kotlin.sdk.*
 import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.assertCallToolResult
 import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.assertJsonProperty
 import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.assertTextContent
 import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.runTest
-import io.modelcontextprotocol.kotlin.sdk.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -159,7 +159,7 @@ class ToolEdgeCasesTest : KotlinTestBase() {
             )
         ) { request ->
             val size = (request.arguments["size"] as? JsonPrimitive)?.content?.toIntOrNull() ?: 1
-            val content = largeToolContent.substring(0, largeToolContent.length.coerceAtMost(size * 1000))
+            val content = largeToolContent.take(largeToolContent.length.coerceAtMost(size * 1000))
 
             CallToolResult(
                 content = listOf(TextContent(text = content)),

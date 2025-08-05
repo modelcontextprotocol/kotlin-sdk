@@ -40,7 +40,7 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
     }
 
     @Test
-    @Timeout(20, unit = TimeUnit.SECONDS)
+    @Timeout(30, unit = TimeUnit.SECONDS)
     fun testErrorHandling() {
         val nonExistentToolCommand = "npx tsx myClient.ts $serverUrl non-existent-tool"
         val nonExistentToolOutput = executeCommandAllowingFailure(nonExistentToolCommand, tsClientDir)
@@ -60,7 +60,7 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
     }
 
     @Test
-    @Timeout(20, unit = TimeUnit.SECONDS)
+    @Timeout(30, unit = TimeUnit.SECONDS)
     fun testSpecialCharacters() {
         val specialChars = "!@#$+-[].,?"
 

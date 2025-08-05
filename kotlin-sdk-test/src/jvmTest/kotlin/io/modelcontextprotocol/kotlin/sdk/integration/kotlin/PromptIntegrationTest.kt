@@ -1,7 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.kotlin
 
-import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.runTest
 import io.modelcontextprotocol.kotlin.sdk.*
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.runTest
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -279,10 +279,7 @@ class PromptIntegrationTest : KotlinTestBase() {
             }
         }
 
-        assertTrue(
-            exception.message?.contains("requiredArg2") == true,
-            "Exception should mention the missing argument"
-        )
+        assertEquals(exception.message?.contains("requiredArg2"), true, "Exception should mention the missing argument")
 
         // test with no args
         val exception2 = assertThrows<IllegalStateException> {
@@ -296,8 +293,9 @@ class PromptIntegrationTest : KotlinTestBase() {
             }
         }
 
-        assertTrue(
-            exception2.message?.contains("requiredArg") == true,
+        assertEquals(
+            exception2.message?.contains("requiredArg"),
+            true,
             "Exception should mention a missing required argument"
         )
 

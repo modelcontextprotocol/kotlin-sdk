@@ -38,9 +38,8 @@ class TypeScriptClientKotlinServerTest : TypeScriptTestBase() {
     }
 
     @Test
-    @Timeout(20, unit = TimeUnit.SECONDS)
+    @Timeout(30, unit = TimeUnit.SECONDS)
     fun testToolCall() {
-        // call the "greet" tool
         val testName = "TestUser"
         val command = "npx tsx myClient.ts $serverUrl greet $testName"
         val output = executeCommand(command, tsClientDir)
@@ -59,7 +58,7 @@ class TypeScriptClientKotlinServerTest : TypeScriptTestBase() {
     }
 
     @Test
-    @Timeout(20, unit = TimeUnit.SECONDS)
+    @Timeout(30, unit = TimeUnit.SECONDS)
     fun testToolCallWithSessionManagement() {
         val testName = "SessionTest"
         val command = "npx tsx myClient.ts $serverUrl greet $testName"

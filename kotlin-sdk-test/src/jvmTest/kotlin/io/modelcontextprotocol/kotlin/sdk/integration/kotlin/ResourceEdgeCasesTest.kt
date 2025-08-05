@@ -1,7 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.kotlin
 
-import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.runTest
 import io.modelcontextprotocol.kotlin.sdk.*
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.runTest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
@@ -113,11 +113,11 @@ class ResourceEdgeCasesTest : KotlinTestBase() {
             )
         }
 
-        server.setRequestHandler<SubscribeRequest>(Method.Defined.ResourcesSubscribe) { request, _ ->
+        server.setRequestHandler<SubscribeRequest>(Method.Defined.ResourcesSubscribe) { _, _ ->
             EmptyRequestResult()
         }
 
-        server.setRequestHandler<UnsubscribeRequest>(Method.Defined.ResourcesUnsubscribe) { request, _ ->
+        server.setRequestHandler<UnsubscribeRequest>(Method.Defined.ResourcesUnsubscribe) { _, _ ->
             EmptyRequestResult()
         }
     }

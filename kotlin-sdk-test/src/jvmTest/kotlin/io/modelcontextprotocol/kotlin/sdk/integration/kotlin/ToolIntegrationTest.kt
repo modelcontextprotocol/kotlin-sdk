@@ -1,10 +1,10 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.kotlin
 
+import io.modelcontextprotocol.kotlin.sdk.*
 import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.assertCallToolResult
 import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.assertJsonProperty
 import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.assertTextContent
 import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.runTest
-import io.modelcontextprotocol.kotlin.sdk.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.*
 import org.junit.jupiter.api.Test
@@ -352,8 +352,9 @@ class ToolIntegrationTest : KotlinTestBase() {
             }
         }
 
-        assertTrue(
-            exception.message?.contains("Exception message") == true,
+        assertEquals(
+            exception.message?.contains("Exception message"),
+            true,
             "Exception message should contain 'Exception message'"
         )
     }
