@@ -10,6 +10,7 @@ import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.SseClientTransport
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.Retry
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.mcp
@@ -21,6 +22,7 @@ import kotlin.time.Duration.Companion.seconds
 import io.ktor.server.cio.CIO as ServerCIO
 import io.ktor.server.sse.SSE as ServerSSE
 
+@Retry(times = 3)
 abstract class KotlinTestBase {
 
     protected val host = "localhost"

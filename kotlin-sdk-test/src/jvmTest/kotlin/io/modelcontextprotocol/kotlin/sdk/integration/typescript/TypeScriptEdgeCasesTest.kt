@@ -23,7 +23,7 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
         killProcessOnPort(port)
         httpServer = KotlinServerForTypeScriptClient()
         httpServer?.start(port)
-        if (!waitForPort("localhost", port, 10)) {
+        if (!waitForPort(port = port)) {
             throw IllegalStateException("Kotlin test server did not become ready on localhost:$port within timeout")
         }
         println("Kotlin server started on port $port")

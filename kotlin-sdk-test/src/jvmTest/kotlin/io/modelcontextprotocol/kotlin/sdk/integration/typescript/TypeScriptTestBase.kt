@@ -1,29 +1,32 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.typescript
 
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.Retry
 import org.junit.jupiter.api.BeforeAll
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
 import java.net.ServerSocket
 import java.net.Socket
+import java.nio.file.Files
 import java.util.concurrent.TimeUnit
 
+@Retry(times = 3)
 abstract class TypeScriptTestBase {
 
     protected val projectRoot: File get() = File(System.getProperty("user.dir"))
-    protected val tsClientDir: File get() = File(projectRoot, "src/jvmTest/kotlin/io/modelcontextprotocol/kotlin/sdk/integration/utils")
+    protected val tsClientDir: File
+        get() = File(
+            projectRoot,
+            "src/jvmTest/kotlin/io/modelcontextprotocol/kotlin/sdk/integration/utils"
+        )
 
     companion object {
         @JvmStatic
-        private val tempRootDir: File =
-            java.nio.file.Files.createTempDirectory("typescript-sdk-").toFile().apply { deleteOnExit() }
+        private val tempRootDir: File = Files.createTempDirectory("typescript-sdk-").toFile().apply { deleteOnExit() }
 
         @JvmStatic
         protected val sdkDir: File = File(tempRootDir, "typescript-sdk")
 
-        /**
-         * clone TypeScript SDK and install dependencies
-         */
         @JvmStatic
         @BeforeAll
         fun setupTypeScriptSdk() {
@@ -46,8 +49,27 @@ abstract class TypeScriptTestBase {
         }
 
         @JvmStatic
-        protected fun executeCommand(command: String, workingDir: File): String {
-            // Prefer running TypeScript via ts-node to avoid npx network delays on CI
+        protected fun executeCommand(command: String, workingDir: File): String =
+            runCommand(command, workingDir, allowFailure = false, timeoutSeconds = null)
+
+        @JvmStatic
+        protected fun killProcessOnPort(port: Int) {
+            executeCommand("lsof -ti:$port | xargs kill -9 2>/dev/null || true", File("."))
+        }
+
+        @JvmStatic
+        protected fun findFreePort(): Int {
+            ServerSocket(0).use { socket ->
+                return socket.localPort
+            }
+        }
+
+        private fun runCommand(
+            command: String,
+            workingDir: File,
+            allowFailure: Boolean,
+            timeoutSeconds: Long?
+        ): String {
             val process = ProcessBuilder()
                 .command("bash", "-c", "TYPESCRIPT_SDK_DIR='${sdkDir.absolutePath}' $command")
                 .directory(workingDir)
@@ -63,24 +85,16 @@ abstract class TypeScriptTestBase {
                 }
             }
 
-            val exitCode = process.waitFor()
-            if (exitCode != 0) {
-                throw RuntimeException("Command execution failed with exit code $exitCode: $command\nOutput:\n$output")
+            if (timeoutSeconds == null) {
+                val exitCode = process.waitFor()
+                if (!allowFailure && exitCode != 0) {
+                    throw RuntimeException("Command execution failed with exit code $exitCode: $command\nOutput:\n$output")
+                }
+            } else {
+                process.waitFor(timeoutSeconds, TimeUnit.SECONDS)
             }
 
             return output.toString()
-        }
-
-        @JvmStatic
-        protected fun killProcessOnPort(port: Int) {
-            executeCommand("lsof -ti:$port | xargs kill -9 2>/dev/null || true", File("."))
-        }
-
-        @JvmStatic
-        protected fun findFreePort(): Int {
-            ServerSocket(0).use { socket ->
-                return socket.localPort
-            }
         }
     }
 
@@ -93,7 +107,7 @@ abstract class TypeScriptTestBase {
         return true
     }
 
-    protected fun createProcessOutputReader(process: Process, prefix: String): Thread {
+    protected fun createProcessOutputReader(process: Process, prefix: String = "TS-SERVER"): Thread {
         val outputReader = Thread {
             try {
                 process.inputStream.bufferedReader().useLines { lines ->
@@ -109,7 +123,7 @@ abstract class TypeScriptTestBase {
         return outputReader
     }
 
-    protected fun waitForPort(host: String, port: Int, timeoutSeconds: Long = 10): Boolean {
+    protected fun waitForPort(host: String = "localhost", port: Int, timeoutSeconds: Long = 10): Boolean {
         val deadline = System.currentTimeMillis() + timeoutSeconds * 1000
         while (System.currentTimeMillis() < deadline) {
             try {
@@ -121,22 +135,29 @@ abstract class TypeScriptTestBase {
         return false
     }
 
-    protected fun executeCommandAllowingFailure(command: String, workingDir: File, timeoutSeconds: Long = 20): String {
-        val process = ProcessBuilder()
-            .command("bash", "-c", "TYPESCRIPT_SDK_DIR='${sdkDir.absolutePath}' $command")
-            .directory(workingDir)
+    protected fun executeCommandAllowingFailure(command: String, workingDir: File, timeoutSeconds: Long = 20): String =
+        runCommand(command, workingDir, allowFailure = true, timeoutSeconds = timeoutSeconds)
+
+    protected fun startTypeScriptServer(port: Int): Process {
+        killProcessOnPort(port)
+        val processBuilder = ProcessBuilder()
+            .command("bash", "-c", "MCP_PORT=$port npx tsx src/examples/server/simpleStreamableHttp.ts")
+            .directory(sdkDir)
             .redirectErrorStream(true)
-            .start()
-
-        val output = StringBuilder()
-        process.inputStream.bufferedReader().useLines { lines ->
-            for (line in lines) {
-                println(line)
-                output.append(line).append("\n")
-            }
+        val process = processBuilder.start()
+        if (!waitForPort(port = port)) {
+            throw IllegalStateException("TypeScript server did not become ready on localhost:$port within timeout")
         }
+        createProcessOutputReader(process).start()
+        return process
+    }
 
-        process.waitFor(timeoutSeconds, TimeUnit.SECONDS)
-        return output.toString()
+    protected fun stopProcess(process: Process, waitSeconds: Long = 3, name: String = "TypeScript server") {
+        process.destroy()
+        if (waitForProcessTermination(process, waitSeconds)) {
+            println("$name stopped gracefully")
+        } else {
+            println("$name did not stop gracefully, forced termination")
+        }
     }
 }

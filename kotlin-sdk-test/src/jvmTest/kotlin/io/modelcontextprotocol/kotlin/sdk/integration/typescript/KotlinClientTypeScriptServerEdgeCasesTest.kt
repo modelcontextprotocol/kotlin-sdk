@@ -30,27 +30,12 @@ class KotlinClientTypeScriptServerEdgeCasesTest : TypeScriptTestBase() {
     fun setUp() {
         port = findFreePort()
         serverUrl = "http://$host:$port/mcp"
-        killProcessOnPort(port)
-        println("Starting TypeScript server on port $port")
-        val processBuilder = ProcessBuilder()
-            .command("bash", "-c", "MCP_PORT=$port npx tsx src/examples/server/simpleStreamableHttp.ts")
-            .directory(sdkDir)
-            .redirectErrorStream(true)
-
-        tsServerProcess = processBuilder.start()
-        if (!waitForPort(host, port, 10)) {
-            throw IllegalStateException("TypeScript server did not become ready on $host:$port within timeout")
-        }
+        tsServerProcess = startTypeScriptServer(port)
         println("TypeScript server started on port $port")
-
-        // print TypeScript server process output
-        val outputReader = createProcessOutputReader(tsServerProcess, "TS-SERVER")
-        outputReader.start()
     }
 
     @AfterEach
     fun tearDown() {
-        // close the client
         if (::client.isInitialized) {
             try {
                 runBlocking {
@@ -63,16 +48,10 @@ class KotlinClientTypeScriptServerEdgeCasesTest : TypeScriptTestBase() {
             }
         }
 
-        // terminate TypeScript server
         if (::tsServerProcess.isInitialized) {
             try {
                 println("Stopping TypeScript server")
-                tsServerProcess.destroy()
-                if (waitForProcessTermination(tsServerProcess, 3)) {
-                    println("TypeScript server stopped gracefully")
-                } else {
-                    println("TypeScript server did not stop gracefully, forced termination")
-                }
+                stopProcess(tsServerProcess)
             } catch (e: Exception) {
                 println("Warning: Error during TypeScript server stop: ${e.message}")
             }
