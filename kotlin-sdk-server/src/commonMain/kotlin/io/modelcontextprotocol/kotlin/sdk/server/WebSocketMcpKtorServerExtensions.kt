@@ -82,7 +82,7 @@ internal suspend fun WebSocketServerSession.mcpWebSocketEndpoint(
     val server = block()
     var session: ServerSession? = null
     try {
-        session = server.connectSession(transport)
+        session = server.connect(transport)
         awaitCancellation()
     } catch (e: CancellationException) {
         session?.close()
