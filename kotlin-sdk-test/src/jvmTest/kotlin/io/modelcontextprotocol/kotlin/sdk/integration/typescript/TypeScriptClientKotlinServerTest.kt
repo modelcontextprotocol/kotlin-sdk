@@ -59,6 +59,24 @@ class TypeScriptClientKotlinServerTest : TypeScriptTestBase() {
 
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
+    fun testNotifications() {
+        val name = "NotifUser"
+        val command = "npx tsx myClient.ts $serverUrl multi-greet $name"
+        val output = executeCommand(command, tsClientDir)
+
+        assertTrue(
+            output.contains("Multiple greetings") || output.contains("greeting"),
+            "Tool response should contain greeting message",
+        )
+        // verify that the server sent 3 notifications
+        assertTrue(
+            output.contains("\"notificationCount\": 3") || output.contains("notificationCount: 3"),
+            "Structured content should indicate that 3 notifications were emitted by the server.\nOutput:\n$output",
+        )
+    }
+
+    @Test
+    @Timeout(30, unit = TimeUnit.SECONDS)
     fun testToolCallWithSessionManagement() {
         val testName = "SessionTest"
         val command = "npx tsx myClient.ts $serverUrl greet $testName"
