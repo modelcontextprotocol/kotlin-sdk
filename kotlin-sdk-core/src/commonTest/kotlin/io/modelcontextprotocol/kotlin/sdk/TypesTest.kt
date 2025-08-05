@@ -104,7 +104,7 @@ class TypesTest {
     fun `should validate image content`() {
         val imageContent = ImageContent(
             data = "aGVsbG8=", // base64 encoded "hello"
-            mimeType = "image/png"
+            mimeType = "image/png",
         )
 
         assertEquals("image", imageContent.type)
@@ -116,7 +116,7 @@ class TypesTest {
     fun `should serialize and deserialize image content correctly`() {
         val imageContent = ImageContent(
             data = "dGVzdA==", // base64 encoded "test"
-            mimeType = "image/jpeg"
+            mimeType = "image/jpeg",
         )
 
         val json = McpJson.encodeToString<PromptMessageContent>(imageContent)
@@ -132,7 +132,7 @@ class TypesTest {
     fun `should validate audio content`() {
         val audioContent = AudioContent(
             data = "aGVsbG8=", // base64 encoded "hello"
-            mimeType = "audio/mp3"
+            mimeType = "audio/mp3",
         )
 
         assertEquals("audio", audioContent.type)
@@ -144,7 +144,7 @@ class TypesTest {
     fun `should serialize and deserialize audio content correctly`() {
         val audioContent = AudioContent(
             data = "YXVkaW8=", // base64 encoded "audio"
-            mimeType = "audio/wav"
+            mimeType = "audio/wav",
         )
 
         val json = McpJson.encodeToString<PromptMessageContent>(audioContent)
@@ -161,7 +161,7 @@ class TypesTest {
         val resource = TextResourceContents(
             text = "File contents",
             uri = "file:///path/to/file.txt",
-            mimeType = "text/plain"
+            mimeType = "text/plain",
         )
         val embeddedResource = EmbeddedResource(resource = resource)
 
@@ -174,7 +174,7 @@ class TypesTest {
         val resource = BlobResourceContents(
             blob = "YmluYXJ5ZGF0YQ==",
             uri = "file:///path/to/binary.dat",
-            mimeType = "application/octet-stream"
+            mimeType = "application/octet-stream",
         )
         val embeddedResource = EmbeddedResource(resource = resource)
 
@@ -206,7 +206,7 @@ class TypesTest {
         val textContent = TextContent(text = "Hello, assistant!")
         val promptMessage = PromptMessage(
             role = Role.user,
-            content = textContent
+            content = textContent,
         )
 
         assertEquals(Role.user, promptMessage.role)
@@ -219,12 +219,12 @@ class TypesTest {
         val resource = TextResourceContents(
             text = "Primary application entry point",
             uri = "file:///project/src/main.rs",
-            mimeType = "text/x-rust"
+            mimeType = "text/x-rust",
         )
         val embeddedResource = EmbeddedResource(resource = resource)
         val promptMessage = PromptMessage(
             role = Role.assistant,
-            content = embeddedResource
+            content = embeddedResource,
         )
 
         assertEquals(Role.assistant, promptMessage.role)
@@ -240,11 +240,11 @@ class TypesTest {
     fun `should serialize and deserialize prompt message correctly`() {
         val imageContent = ImageContent(
             data = "aW1hZ2VkYXRh", // base64 encoded "imagedata"
-            mimeType = "image/png"
+            mimeType = "image/png",
         )
         val promptMessage = PromptMessage(
             role = Role.assistant,
-            content = imageContent
+            content = imageContent,
         )
 
         val json = McpJson.encodeToString(promptMessage)
@@ -267,17 +267,17 @@ class TypesTest {
                     resource = TextResourceContents(
                         text = "fn main() {}",
                         uri = "file:///project/src/main.rs",
-                        mimeType = "text/x-rust"
-                    )
+                        mimeType = "text/x-rust",
+                    ),
                 ),
                 EmbeddedResource(
                     resource = TextResourceContents(
                         text = "pub mod lib;",
                         uri = "file:///project/src/lib.rs",
-                        mimeType = "text/x-rust"
-                    )
-                )
-            )
+                        mimeType = "text/x-rust",
+                    ),
+                ),
+            ),
         )
 
         assertEquals(3, toolResult.content.size)
@@ -300,9 +300,9 @@ class TypesTest {
         val toolResult = CallToolResult(
             content = listOf(
                 TextContent(text = "Operation completed"),
-                ImageContent(data = "aW1hZ2U=", mimeType = "image/png")
+                ImageContent(data = "aW1hZ2U=", mimeType = "image/png"),
             ),
-            isError = false
+            isError = false,
         )
 
         val json = McpJson.encodeToString(toolResult)
@@ -319,7 +319,7 @@ class TypesTest {
     fun `should validate CompleteRequest with prompt reference`() {
         val request = CompleteRequest(
             ref = PromptReference(name = "greeting"),
-            argument = CompleteRequest.Argument(name = "name", value = "A")
+            argument = CompleteRequest.Argument(name = "name", value = "A"),
         )
 
         assertEquals("completion/complete", request.method.value)
@@ -334,7 +334,7 @@ class TypesTest {
     fun `should validate CompleteRequest with resource reference`() {
         val request = CompleteRequest(
             ref = ResourceReference(uri = "github://repos/{owner}/{repo}"),
-            argument = CompleteRequest.Argument(name = "repo", value = "t")
+            argument = CompleteRequest.Argument(name = "repo", value = "t"),
         )
 
         assertEquals("completion/complete", request.method.value)
@@ -349,7 +349,7 @@ class TypesTest {
     fun `should serialize and deserialize CompleteRequest correctly`() {
         val request = CompleteRequest(
             ref = PromptReference(name = "test"),
-            argument = CompleteRequest.Argument(name = "arg", value = "")
+            argument = CompleteRequest.Argument(name = "arg", value = ""),
         )
 
         val json = McpJson.encodeToString(request)
@@ -367,7 +367,7 @@ class TypesTest {
     fun `should validate CompleteRequest with complex URIs`() {
         val request = CompleteRequest(
             ref = ResourceReference(uri = "api://v1/{tenant}/{resource}/{id}"),
-            argument = CompleteRequest.Argument(name = "id", value = "123")
+            argument = CompleteRequest.Argument(name = "id", value = "123"),
         )
 
         val resourceRef = request.ref as ResourceReference

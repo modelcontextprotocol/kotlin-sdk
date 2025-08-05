@@ -64,10 +64,8 @@ private val logger = KotlinLogging.logger {}
  * @property capabilities The capabilities this server supports.
  * @property enforceStrictCapabilities Whether to strictly enforce capabilities when interacting with clients.
  */
-public class ServerOptions(
-    public val capabilities: ServerCapabilities,
-    enforceStrictCapabilities: Boolean = true,
-) : ProtocolOptions(enforceStrictCapabilities = enforceStrictCapabilities)
+public class ServerOptions(public val capabilities: ServerCapabilities, enforceStrictCapabilities: Boolean = true) :
+    ProtocolOptions(enforceStrictCapabilities = enforceStrictCapabilities)
 
 /**
  * An MCP server on top of a pluggable transport.
@@ -79,11 +77,11 @@ public class ServerOptions(
  * @param serverInfo Information about this server implementation (name, version).
  * @param options Configuration options for the server.
  */
-public open class Server(
-    private val serverInfo: Implementation,
-    options: ServerOptions,
-) : Protocol(options) {
+public open class Server(private val serverInfo: Implementation, options: ServerOptions) : Protocol(options) {
+    @Suppress("ktlint:standard:backing-property-naming")
     private var _onInitialized: (() -> Unit) = {}
+
+    @Suppress("ktlint:standard:backing-property-naming")
     private var _onClose: () -> Unit = {}
 
     /**
@@ -221,7 +219,7 @@ public open class Server(
         title: String? = null,
         outputSchema: Tool.Output? = null,
         toolAnnotations: ToolAnnotations? = null,
-        handler: suspend (CallToolRequest) -> CallToolResult
+        handler: suspend (CallToolRequest) -> CallToolResult,
     ) {
         val tool = Tool(name, title, description, inputSchema, outputSchema, toolAnnotations)
         addTool(tool, handler)
@@ -325,7 +323,7 @@ public open class Server(
         name: String,
         description: String? = null,
         arguments: List<PromptArgument>? = null,
-        promptProvider: suspend (GetPromptRequest) -> GetPromptResult
+        promptProvider: suspend (GetPromptRequest) -> GetPromptResult,
     ) {
         val prompt = Prompt(name = name, description = description, arguments = arguments)
         addPrompt(prompt, promptProvider)
@@ -416,7 +414,7 @@ public open class Server(
         name: String,
         description: String,
         mimeType: String = "text/html",
-        readHandler: suspend (ReadResourceRequest) -> ReadResourceResult
+        readHandler: suspend (ReadResourceRequest) -> ReadResourceResult,
     ) {
         if (capabilities.resources == null) {
             logger.error { "Failed to add resource '$name': Server does not support resources capability" }
@@ -426,7 +424,7 @@ public open class Server(
         _resources.update { current ->
             current.put(
                 uri,
-                RegisteredResource(Resource(uri, name, description, mimeType), readHandler)
+                RegisteredResource(Resource(uri, name, description, mimeType), readHandler),
             )
         }
     }
@@ -507,9 +505,7 @@ public open class Server(
      * @return The result of the ping request.
      * @throws IllegalStateException If for some reason the method is not supported or the connection is closed.
      */
-    public suspend fun ping(): EmptyRequestResult {
-        return request<EmptyRequestResult>(PingRequest())
-    }
+    public suspend fun ping(): EmptyRequestResult = request<EmptyRequestResult>(PingRequest())
 
     /**
      * Creates a message using the server's sampling capability.
@@ -521,7 +517,7 @@ public open class Server(
      */
     public suspend fun createMessage(
         params: CreateMessageRequest,
-        options: RequestOptions? = null
+        options: RequestOptions? = null,
     ): CreateMessageResult {
         logger.debug { "Creating message with params: $params" }
         return request<CreateMessageResult>(params, options)
@@ -537,7 +533,7 @@ public open class Server(
      */
     public suspend fun listRoots(
         params: JsonObject = EmptyJsonObject,
-        options: RequestOptions? = null
+        options: RequestOptions? = null,
     ): ListRootsResult {
         logger.debug { "Listing roots with params: $params" }
         return request<ListRootsResult>(ListRootsRequest(params), options)
@@ -546,7 +542,7 @@ public open class Server(
     public suspend fun createElicitation(
         message: String,
         requestedSchema: RequestedSchema,
-        options: RequestOptions? = null
+        options: RequestOptions? = null,
     ): CreateElicitationResult {
         logger.debug { "Creating elicitation with message: $message" }
         return request(CreateElicitationRequest(message, requestedSchema), options)
@@ -607,14 +603,16 @@ public open class Server(
         val protocolVersion = if (SUPPORTED_PROTOCOL_VERSIONS.contains(requestedVersion)) {
             requestedVersion
         } else {
-            logger.warn { "Client requested unsupported protocol version $requestedVersion, falling back to $LATEST_PROTOCOL_VERSION" }
+            logger.warn {
+                "Client requested unsupported protocol version $requestedVersion, falling back to $LATEST_PROTOCOL_VERSION"
+            }
             LATEST_PROTOCOL_VERSION
         }
 
         return InitializeResult(
             protocolVersion = protocolVersion,
             capabilities = capabilities,
-            serverInfo = serverInfo
+            serverInfo = serverInfo,
         )
     }
 
@@ -723,26 +721,34 @@ public open class Server(
             }
 
             "notifications/resources/updated",
-            "notifications/resources/list_changed" -> {
+            "notifications/resources/list_changed",
+            -> {
                 if (capabilities.resources == null) {
-                    throw IllegalStateException("Server does not support notifying about resources (required for ${method.value})")
+                    throw IllegalStateException(
+                        "Server does not support notifying about resources (required for ${method.value})",
+                    )
                 }
             }
 
             "notifications/tools/list_changed" -> {
                 if (capabilities.tools == null) {
-                    throw IllegalStateException("Server does not support notifying of tool list changes (required for ${method.value})")
+                    throw IllegalStateException(
+                        "Server does not support notifying of tool list changes (required for ${method.value})",
+                    )
                 }
             }
 
             "notifications/prompts/list_changed" -> {
                 if (capabilities.prompts == null) {
-                    throw IllegalStateException("Server does not support notifying of prompt list changes (required for ${method.value})")
+                    throw IllegalStateException(
+                        "Server does not support notifying of prompt list changes (required for ${method.value})",
+                    )
                 }
             }
 
             "notifications/cancelled",
-            "notifications/progress" -> {
+            "notifications/progress",
+            -> {
                 // Always allowed
             }
         }
@@ -772,7 +778,8 @@ public open class Server(
             }
 
             "prompts/get",
-            "prompts/list" -> {
+            "prompts/list",
+            -> {
                 if (capabilities.prompts == null) {
                     throw IllegalStateException("Server does not support prompts (required for $method)")
                 }
@@ -780,14 +787,16 @@ public open class Server(
 
             "resources/list",
             "resources/templates/list",
-            "resources/read" -> {
+            "resources/read",
+            -> {
                 if (capabilities.resources == null) {
                     throw IllegalStateException("Server does not support resources (required for $method)")
                 }
             }
 
             "tools/call",
-            "tools/list" -> {
+            "tools/list",
+            -> {
                 if (capabilities.tools == null) {
                     throw IllegalStateException("Server does not support tools (required for $method)")
                 }
@@ -806,10 +815,7 @@ public open class Server(
  * @property tool The tool definition.
  * @property handler A suspend function to handle the tool call requests.
  */
-public data class RegisteredTool(
-    val tool: Tool,
-    val handler: suspend (CallToolRequest) -> CallToolResult
-)
+public data class RegisteredTool(val tool: Tool, val handler: suspend (CallToolRequest) -> CallToolResult)
 
 /**
  * A wrapper class representing a registered prompt on the server.
@@ -819,7 +825,7 @@ public data class RegisteredTool(
  */
 public data class RegisteredPrompt(
     val prompt: Prompt,
-    val messageProvider: suspend (GetPromptRequest) -> GetPromptResult
+    val messageProvider: suspend (GetPromptRequest) -> GetPromptResult,
 )
 
 /**
@@ -830,5 +836,5 @@ public data class RegisteredPrompt(
  */
 public data class RegisteredResource(
     val resource: Resource,
-    val readHandler: suspend (ReadResourceRequest) -> ReadResourceResult
+    val readHandler: suspend (ReadResourceRequest) -> ReadResourceResult,
 )

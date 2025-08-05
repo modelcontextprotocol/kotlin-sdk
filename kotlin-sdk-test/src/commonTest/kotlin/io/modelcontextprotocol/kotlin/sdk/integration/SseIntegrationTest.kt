@@ -43,9 +43,9 @@ class SseIntegrationTest {
         }
     }
 
-    private suspend fun initClient(port: Int): Client {
-        return HttpClient(ClientCIO) { install(ClientSSE) }.mcpSse("http://$URL:$port")
-    }
+    private suspend fun initClient(port: Int): Client = HttpClient(ClientCIO) {
+        install(ClientSSE)
+    }.mcpSse("http://$URL:$port")
 
     private suspend fun initServer(): EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration> {
         val server = Server(

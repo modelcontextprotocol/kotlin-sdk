@@ -30,9 +30,9 @@ class SseTransportTest : BaseTransportTest() {
         mcpServer = Server(
             serverInfo = Implementation(
                 name = "test-server",
-                version = "1.0"
+                version = "1.0",
             ),
-            options = ServerOptions(ServerCapabilities())
+            options = ServerOptions(ServerCapabilities()),
         )
     }
 

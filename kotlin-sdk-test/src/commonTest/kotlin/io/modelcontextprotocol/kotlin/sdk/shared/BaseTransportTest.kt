@@ -33,7 +33,8 @@ abstract class BaseTransportTest {
         }
 
         val messages = listOf<JSONRPCMessage>(
-            PingRequest().toJSON(), InitializedNotification().toJSON()
+            PingRequest().toJSON(),
+            InitializedNotification().toJSON(),
         )
 
         val readMessages = mutableListOf<JSONRPCMessage>()

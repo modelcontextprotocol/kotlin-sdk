@@ -17,7 +17,7 @@ class AudioContentSerializationTest {
 
     private val audioContent = AudioContent(
         data = "base64-encoded-audio-data",
-        mimeType = "audio/wav"
+        mimeType = "audio/wav",
     )
 
     @Test

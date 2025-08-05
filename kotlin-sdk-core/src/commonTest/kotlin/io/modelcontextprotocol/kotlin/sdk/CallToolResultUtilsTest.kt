@@ -61,4 +61,3 @@ class CallToolResultUtilsTest {
         assertEquals(meta, result._meta)
     }
 }
-

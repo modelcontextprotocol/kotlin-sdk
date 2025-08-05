@@ -66,13 +66,13 @@ class ClientTest {
                     capabilities = ServerCapabilities(),
                     serverInfo = Implementation(
                         name = "test",
-                        version = "1.0"
-                    )
+                        version = "1.0",
+                    ),
                 )
 
                 val response = JSONRPCResponse(
                     id = message.id,
-                    result = result
+                    result = result,
                 )
 
                 _onMessage.invoke(response)
@@ -85,13 +85,13 @@ class ClientTest {
         val client = Client(
             clientInfo = Implementation(
                 name = "test client",
-                version = "1.0"
+                version = "1.0",
             ),
             options = ClientOptions(
                 capabilities = ClientCapabilities(
-                    sampling = EmptyJsonObject
-                )
-            )
+                    sampling = EmptyJsonObject,
+                ),
+            ),
         )
 
         client.connect(clientTransport)
@@ -100,7 +100,7 @@ class ClientTest {
 
     @Test
     fun `should initialize with supported older protocol version`() = runTest {
-        val OLD_VERSION = SUPPORTED_PROTOCOL_VERSIONS[1]
+        val oldVersion = SUPPORTED_PROTOCOL_VERSIONS[1]
         val clientTransport = object : AbstractTransport() {
             override suspend fun start() {}
 
@@ -109,17 +109,17 @@ class ClientTest {
                 check(message.method == Method.Defined.Initialize.value)
 
                 val result = InitializeResult(
-                    protocolVersion = OLD_VERSION,
+                    protocolVersion = oldVersion,
                     capabilities = ServerCapabilities(),
                     serverInfo = Implementation(
                         name = "test",
-                        version = "1.0"
-                    )
+                        version = "1.0",
+                    ),
                 )
 
                 val response = JSONRPCResponse(
                     id = message.id,
-                    result = result
+                    result = result,
                 )
                 _onMessage.invoke(response)
             }
@@ -131,19 +131,19 @@ class ClientTest {
         val client = Client(
             clientInfo = Implementation(
                 name = "test client",
-                version = "1.0"
+                version = "1.0",
             ),
             options = ClientOptions(
                 capabilities = ClientCapabilities(
-                    sampling = EmptyJsonObject
-                )
-            )
+                    sampling = EmptyJsonObject,
+                ),
+            ),
         )
 
         client.connect(clientTransport)
         assertEquals(
             Implementation("test", "1.0"),
-            client.serverVersion
+            client.serverVersion,
         )
     }
 
@@ -162,13 +162,13 @@ class ClientTest {
                     capabilities = ServerCapabilities(),
                     serverInfo = Implementation(
                         name = "test",
-                        version = "1.0"
-                    )
+                        version = "1.0",
+                    ),
                 )
 
                 val response = JSONRPCResponse(
                     id = message.id,
-                    result = result
+                    result = result,
                 )
 
                 _onMessage.invoke(response)
@@ -182,9 +182,9 @@ class ClientTest {
         val client = Client(
             clientInfo = Implementation(
                 name = "test client",
-                version = "1.0"
+                version = "1.0",
             ),
-            options = ClientOptions()
+            options = ClientOptions(),
         )
 
         assertFailsWith<IllegalStateException>("Server's protocol version is not supported: invalid-version") {
@@ -214,9 +214,9 @@ class ClientTest {
         val client = Client(
             clientInfo = Implementation(
                 name = "test client",
-                version = "1.0"
+                version = "1.0",
             ),
-            options = ClientOptions()
+            options = ClientOptions(),
         )
 
         val exception = assertFailsWith<IllegalStateException> {
@@ -233,12 +233,12 @@ class ClientTest {
         val serverOptions = ServerOptions(
             capabilities = ServerCapabilities(
                 resources = ServerCapabilities.Resources(null, null),
-                tools = ServerCapabilities.Tools(null)
-            )
+                tools = ServerCapabilities.Tools(null),
+            ),
         )
         val server = Server(
             Implementation(name = "test server", version = "1.0"),
-            serverOptions
+            serverOptions,
         )
 
         server.setRequestHandler<InitializeRequest>(Method.Defined.Initialize) { _, _ ->
@@ -246,9 +246,9 @@ class ClientTest {
                 protocolVersion = LATEST_PROTOCOL_VERSION,
                 capabilities = ServerCapabilities(
                     resources = ServerCapabilities.Resources(null, null),
-                    tools = ServerCapabilities.Tools(null)
+                    tools = ServerCapabilities.Tools(null),
                 ),
-                serverInfo = Implementation(name = "test", version = "1.0")
+                serverInfo = Implementation(name = "test", version = "1.0"),
             )
         }
 
@@ -266,7 +266,7 @@ class ClientTest {
             clientInfo = Implementation(name = "test client", version = "1.0"),
             options = ClientOptions(
                 capabilities = ClientCapabilities(sampling = EmptyJsonObject),
-            )
+            ),
         )
 
         listOf(
@@ -275,7 +275,7 @@ class ClientTest {
             },
             launch {
                 server.connect(serverTransport)
-            }
+            },
         ).joinAll()
 
         // Server supports resources and tools, but not prompts
@@ -299,16 +299,16 @@ class ClientTest {
     fun `should respect client notification capabilities`() = runTest {
         val server = Server(
             Implementation(name = "test server", version = "1.0"),
-            ServerOptions(capabilities = ServerCapabilities())
+            ServerOptions(capabilities = ServerCapabilities()),
         )
 
         val client = Client(
             clientInfo = Implementation(name = "test client", version = "1.0"),
             options = ClientOptions(
                 capabilities = ClientCapabilities(
-                    roots = ClientCapabilities.Roots(listChanged = true)
-                )
-            )
+                    roots = ClientCapabilities.Roots(listChanged = true),
+                ),
+            ),
         )
 
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
@@ -321,7 +321,7 @@ class ClientTest {
             launch {
                 server.connect(serverTransport)
                 println("Server connected")
-            }
+            },
         ).joinAll()
 
         // This should not throw because the client supports roots.listChanged
@@ -333,7 +333,7 @@ class ClientTest {
             options = ClientOptions(
                 capabilities = ClientCapabilities(),
                 //                enforceStrictCapabilities = true // TODO()
-            )
+            ),
         )
 
         clientWithoutCapability.connect(clientTransport)
@@ -354,16 +354,16 @@ class ClientTest {
             ServerOptions(
                 capabilities = ServerCapabilities(
                     logging = EmptyJsonObject,
-                    resources = ServerCapabilities.Resources(listChanged = true, subscribe = null)
-                )
-            )
+                    resources = ServerCapabilities.Resources(listChanged = true, subscribe = null),
+                ),
+            ),
         )
 
         val client = Client(
             clientInfo = Implementation(name = "test client", version = "1.0"),
             options = ClientOptions(
-                capabilities = ClientCapabilities()
-            )
+                capabilities = ClientCapabilities(),
+            ),
         )
 
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
@@ -376,7 +376,7 @@ class ClientTest {
             launch {
                 server.connect(serverTransport)
                 println("Server connected")
-            }
+            },
         ).joinAll()
 
         // These should not throw
@@ -389,9 +389,9 @@ class ClientTest {
             LoggingMessageNotification(
                 params = LoggingMessageNotification.Params(
                     level = LoggingLevel.info,
-                    data = jsonObject
-                )
-            )
+                    data = jsonObject,
+                ),
+            ),
         )
         server.sendResourceListChanged()
 
@@ -410,10 +410,10 @@ class ClientTest {
                 capabilities = ServerCapabilities(
                     resources = ServerCapabilities.Resources(
                         listChanged = null,
-                        subscribe = null
-                    )
-                )
-            )
+                        subscribe = null,
+                    ),
+                ),
+            ),
         )
 
         val def = CompletableDeferred<Unit>()
@@ -435,7 +435,7 @@ class ClientTest {
 
         val client = Client(
             clientInfo = Implementation(name = "test client", version = "1.0"),
-            options = ClientOptions(capabilities = ClientCapabilities())
+            options = ClientOptions(capabilities = ClientCapabilities()),
         )
 
         listOf(
@@ -446,7 +446,7 @@ class ClientTest {
             launch {
                 server.connect(serverTransport)
                 println("Server connected")
-            }
+            },
         ).joinAll()
 
         val defCancel = CompletableDeferred<Unit>()
@@ -472,10 +472,10 @@ class ClientTest {
                 capabilities = ServerCapabilities(
                     resources = ServerCapabilities.Resources(
                         listChanged = null,
-                        subscribe = null
-                    )
-                )
-            )
+                        subscribe = null,
+                    ),
+                ),
+            ),
         )
 
         server.setRequestHandler<ListResourcesRequest>(Method.Defined.ResourcesList) { _, _ ->
@@ -495,7 +495,7 @@ class ClientTest {
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
         val client = Client(
             clientInfo = Implementation(name = "test client", version = "1.0"),
-            options = ClientOptions(capabilities = ClientCapabilities())
+            options = ClientOptions(capabilities = ClientCapabilities()),
         )
 
         listOf(
@@ -506,7 +506,7 @@ class ClientTest {
             launch {
                 server.connect(serverTransport)
                 println("Server connected")
-            }
+            },
         ).joinAll()
 
         // Request with 1 msec timeout should fail immediately
@@ -523,13 +523,13 @@ class ClientTest {
         val client = Client(
             clientInfo = Implementation(
                 name = "test client",
-                version = "1.0"
+                version = "1.0",
             ),
             options = ClientOptions(
                 capabilities = ClientCapabilities(
-                    sampling = EmptyJsonObject
-                )
-            )
+                    sampling = EmptyJsonObject,
+                ),
+            ),
         )
 
         client.setRequestHandler<CreateMessageRequest>(Method.Defined.SamplingCreateMessage) { _, _ ->
@@ -537,8 +537,8 @@ class ClientTest {
                 model = "test-model",
                 role = Role.assistant,
                 content = TextContent(
-                    text = "Test response"
-                )
+                    text = "Test response",
+                ),
             )
         }
 
@@ -551,12 +551,12 @@ class ClientTest {
     fun `JSONRPCRequest with ToolsList method and default params returns list of tools`() = runTest {
         val serverOptions = ServerOptions(
             capabilities = ServerCapabilities(
-                tools = ServerCapabilities.Tools(null)
-            )
+                tools = ServerCapabilities.Tools(null),
+            ),
         )
         val server = Server(
             Implementation(name = "test server", version = "1.0"),
-            serverOptions
+            serverOptions,
         )
 
         server.setRequestHandler<InitializeRequest>(Method.Defined.Initialize) { _, _ ->
@@ -564,9 +564,9 @@ class ClientTest {
                 protocolVersion = LATEST_PROTOCOL_VERSION,
                 capabilities = ServerCapabilities(
                     resources = ServerCapabilities.Resources(null, null),
-                    tools = ServerCapabilities.Tools(null)
+                    tools = ServerCapabilities.Tools(null),
                 ),
-                serverInfo = Implementation(name = "test", version = "1.0")
+                serverInfo = Implementation(name = "test", version = "1.0"),
             )
         }
         val serverListToolsResult = ListToolsResult(
@@ -577,9 +577,10 @@ class ClientTest {
                     description = "testTool description",
                     annotations = null,
                     inputSchema = Tool.Input(),
-                    outputSchema = null
-                )
-            ), nextCursor = null
+                    outputSchema = null,
+                ),
+            ),
+            nextCursor = null,
         )
 
         server.setRequestHandler<ListToolsRequest>(Method.Defined.ToolsList) { _, _ ->
@@ -592,7 +593,7 @@ class ClientTest {
             clientInfo = Implementation(name = "test client", version = "1.0"),
             options = ClientOptions(
                 capabilities = ClientCapabilities(sampling = EmptyJsonObject),
-            )
+            ),
         )
 
         var receivedMessage: JSONRPCMessage? = null
@@ -606,14 +607,14 @@ class ClientTest {
             },
             launch {
                 server.connect(serverTransport)
-            }
+            },
         ).joinAll()
 
         val serverCapabilities = client.serverCapabilities
         assertEquals(ServerCapabilities.Tools(null), serverCapabilities?.tools)
 
         val request = JSONRPCRequest(
-            method = Method.Defined.ToolsList.value
+            method = Method.Defined.ToolsList.value,
         )
         clientTransport.send(request)
 
@@ -631,13 +632,13 @@ class ClientTest {
             Implementation(name = "test client", version = "1.0"),
             ClientOptions(
                 capabilities = ClientCapabilities(
-                    roots = ClientCapabilities.Roots(null)
-                )
-            )
+                    roots = ClientCapabilities.Roots(null),
+                ),
+            ),
         )
 
         val clientRoots = listOf(
-            Root(uri = "file:///test-root", name = "testRoot")
+            Root(uri = "file:///test-root", name = "testRoot"),
         )
 
         client.addRoots(clientRoots)
@@ -647,13 +648,13 @@ class ClientTest {
         val server = Server(
             serverInfo = Implementation(name = "test server", version = "1.0"),
             options = ServerOptions(
-                capabilities = ServerCapabilities()
-            )
+                capabilities = ServerCapabilities(),
+            ),
         )
 
         listOf(
             launch { client.connect(clientTransport) },
-            launch { server.connect(serverTransport) }
+            launch { server.connect(serverTransport) },
         ).joinAll()
 
         val clientCapabilities = server.clientCapabilities
@@ -669,8 +670,8 @@ class ClientTest {
         val client = Client(
             Implementation(name = "test client", version = "1.0"),
             ClientOptions(
-                capabilities = ClientCapabilities()
-            )
+                capabilities = ClientCapabilities(),
+            ),
         )
 
         // Verify that adding a root throws an exception
@@ -685,8 +686,8 @@ class ClientTest {
         val client = Client(
             Implementation(name = "test client", version = "1.0"),
             ClientOptions(
-                capabilities = ClientCapabilities()
-            )
+                capabilities = ClientCapabilities(),
+            ),
         )
 
         // Verify that removing a root throws an exception
@@ -702,9 +703,9 @@ class ClientTest {
             Implementation(name = "test client", version = "1.0"),
             ClientOptions(
                 capabilities = ClientCapabilities(
-                    roots = ClientCapabilities.Roots(null)
-                )
-            )
+                    roots = ClientCapabilities.Roots(null),
+                ),
+            ),
         )
 
         // Add some roots
@@ -712,7 +713,7 @@ class ClientTest {
             listOf(
                 Root(uri = "file:///test-root1", name = "testRoot1"),
                 Root(uri = "file:///test-root2", name = "testRoot2"),
-            )
+            ),
         )
 
         // Remove a root
@@ -728,9 +729,9 @@ class ClientTest {
             Implementation(name = "test client", version = "1.0"),
             ClientOptions(
                 capabilities = ClientCapabilities(
-                    roots = ClientCapabilities.Roots(null)
-                )
-            )
+                    roots = ClientCapabilities.Roots(null),
+                ),
+            ),
         )
 
         // Add some roots
@@ -738,12 +739,12 @@ class ClientTest {
             listOf(
                 Root(uri = "file:///test-root1", name = "testRoot1"),
                 Root(uri = "file:///test-root2", name = "testRoot2"),
-            )
+            ),
         )
 
         // Remove multiple roots
         val result = client.removeRoots(
-            listOf("file:///test-root1", "file:///test-root2")
+            listOf("file:///test-root1", "file:///test-root2"),
         )
 
         // Verify the root was removed
@@ -756,9 +757,9 @@ class ClientTest {
             Implementation(name = "test client", version = "1.0"),
             ClientOptions(
                 capabilities = ClientCapabilities(
-                    roots = ClientCapabilities.Roots(listChanged = true)
-                )
-            )
+                    roots = ClientCapabilities.Roots(listChanged = true),
+                ),
+            ),
         )
 
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
@@ -766,8 +767,8 @@ class ClientTest {
         val server = Server(
             serverInfo = Implementation(name = "test server", version = "1.0"),
             options = ServerOptions(
-                capabilities = ServerCapabilities()
-            )
+                capabilities = ServerCapabilities(),
+            ),
         )
 
         // Track notifications
@@ -779,14 +780,14 @@ class ClientTest {
 
         listOf(
             launch { client.connect(clientTransport) },
-            launch { server.connect(serverTransport) }
+            launch { server.connect(serverTransport) },
         ).joinAll()
 
         client.sendRootsListChanged()
 
         assertTrue(
             rootListChangedNotificationReceived,
-            "Notification should be sent when sendRootsListChanged is called"
+            "Notification should be sent when sendRootsListChanged is called",
         )
     }
 
@@ -795,8 +796,8 @@ class ClientTest {
         val client = Client(
             Implementation(name = "test client", version = "1.0"),
             ClientOptions(
-                capabilities = ClientCapabilities()
-            )
+                capabilities = ClientCapabilities(),
+            ),
         )
 
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
@@ -804,13 +805,13 @@ class ClientTest {
         val server = Server(
             serverInfo = Implementation(name = "test server", version = "1.0"),
             options = ServerOptions(
-                capabilities = ServerCapabilities()
-            )
+                capabilities = ServerCapabilities(),
+            ),
         )
 
         listOf(
             launch { client.connect(clientTransport) },
-            launch { server.connect(serverTransport) }
+            launch { server.connect(serverTransport) },
         ).joinAll()
 
         // Verify that creating an elicitation throws an exception
@@ -823,13 +824,13 @@ class ClientTest {
                             put("type", "string")
                         }
                     },
-                    required = listOf("name")
-                )
+                    required = listOf("name"),
+                ),
             )
         }
         assertEquals(
             "Client does not support elicitation (required for elicitation/create)",
-            exception.message
+            exception.message,
         )
     }
 
@@ -840,8 +841,8 @@ class ClientTest {
             ClientOptions(
                 capabilities = ClientCapabilities(
                     elicitation = EmptyJsonObject,
-                )
-            )
+                ),
+            ),
         )
 
         val elicitationMessage = "Please provide your GitHub username"
@@ -851,7 +852,7 @@ class ClientTest {
                     put("type", "string")
                 }
             },
-            required = listOf("name")
+            required = listOf("name"),
         )
 
         val elicitationResultAction = CreateElicitationResult.Action.accept
@@ -865,7 +866,7 @@ class ClientTest {
 
             CreateElicitationResult(
                 action = elicitationResultAction,
-                content = elicitationResultContent
+                content = elicitationResultContent,
             )
         }
 
@@ -874,18 +875,18 @@ class ClientTest {
         val server = Server(
             serverInfo = Implementation(name = "test server", version = "1.0"),
             options = ServerOptions(
-                capabilities = ServerCapabilities()
-            )
+                capabilities = ServerCapabilities(),
+            ),
         )
 
         listOf(
             launch { client.connect(clientTransport) },
-            launch { server.connect(serverTransport) }
+            launch { server.connect(serverTransport) },
         ).joinAll()
 
         val result = server.createElicitation(
             message = elicitationMessage,
-            requestedSchema = requestedSchema
+            requestedSchema = requestedSchema,
         )
 
         assertEquals(elicitationResultAction, result.action)
