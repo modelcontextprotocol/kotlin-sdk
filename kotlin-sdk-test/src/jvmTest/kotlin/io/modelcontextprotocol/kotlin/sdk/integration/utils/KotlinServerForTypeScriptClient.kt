@@ -256,7 +256,7 @@ class KotlinServerForTypeScriptClient {
                 io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification(
                     io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification.Params(
                         level = io.modelcontextprotocol.kotlin.sdk.LoggingLevel.info,
-                        data = JsonPrimitive("Preparing greeting for $name")
+                        data = JsonPrimitive("Preparing greeting for $name"),
                     )
                 )
             )
@@ -264,7 +264,7 @@ class KotlinServerForTypeScriptClient {
                 io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification(
                     io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification.Params(
                         level = io.modelcontextprotocol.kotlin.sdk.LoggingLevel.info,
-                        data = JsonPrimitive("Halfway there for $name")
+                        data = JsonPrimitive("Halfway there for $name"),
                     )
                 )
             )
@@ -272,7 +272,7 @@ class KotlinServerForTypeScriptClient {
                 io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification(
                     io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification.Params(
                         level = io.modelcontextprotocol.kotlin.sdk.LoggingLevel.info,
-                        data = JsonPrimitive("Done sending greetings to $name")
+                        data = JsonPrimitive("Done sending greetings to $name"),
                     )
                 )
             )
