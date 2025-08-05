@@ -12,7 +12,9 @@ import io.ktor.server.request.receiveText
 import io.ktor.server.response.header
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
+import io.ktor.server.response.respondTextWriter
 import io.ktor.server.routing.delete
+import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import io.modelcontextprotocol.kotlin.sdk.CallToolResult
@@ -66,6 +68,20 @@ class KotlinServerForTypeScriptClient {
 
         server = embeddedServer(CIO, port = port) {
             routing {
+                get("/mcp") {
+                    val sessionId = call.request.header("mcp-session-id")
+                    if (sessionId == null) {
+                        call.respond(HttpStatusCode.BadRequest, "Missing mcp-session-id header")
+                        return@get
+                    }
+                    val transport = serverTransports[sessionId]
+                    if (transport == null) {
+                        call.respond(HttpStatusCode.BadRequest, "Invalid mcp-session-id")
+                        return@get
+                    }
+                    transport.stream(call)
+                }
+
                 post("/mcp") {
                     val sessionId = call.request.header("mcp-session-id")
                     val requestBody = call.receiveText()
@@ -235,6 +251,32 @@ class KotlinServerForTypeScriptClient {
         ) { request ->
             val name = (request.arguments["name"] as? JsonPrimitive)?.content ?: "World"
 
+            server.sendToolListChanged()
+            server.sendLoggingMessage(
+                io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification(
+                    io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification.Params(
+                        level = io.modelcontextprotocol.kotlin.sdk.LoggingLevel.info,
+                        data = JsonPrimitive("Preparing greeting for $name")
+                    )
+                )
+            )
+            server.sendLoggingMessage(
+                io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification(
+                    io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification.Params(
+                        level = io.modelcontextprotocol.kotlin.sdk.LoggingLevel.info,
+                        data = JsonPrimitive("Halfway there for $name")
+                    )
+                )
+            )
+            server.sendLoggingMessage(
+                io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification(
+                    io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification.Params(
+                        level = io.modelcontextprotocol.kotlin.sdk.LoggingLevel.info,
+                        data = JsonPrimitive("Done sending greetings to $name")
+                    )
+                )
+            )
+
             CallToolResult(
                 content = listOf(TextContent("Multiple greetings sent to $name!")),
                 structuredContent = buildJsonObject {
@@ -296,6 +338,30 @@ class HttpServerTransport(private val sessionId: String) : AbstractTransport() {
     private val logger = KotlinLogging.logger {}
     private val pendingResponses = ConcurrentHashMap<String, CompletableDeferred<JSONRPCMessage>>()
     private val messageQueue = Channel<JSONRPCMessage>(Channel.UNLIMITED)
+
+    suspend fun stream(call: ApplicationCall) {
+        logger.debug { "Starting SSE stream for session: $sessionId" }
+        call.response.header("Cache-Control", "no-cache")
+        call.response.header("Connection", "keep-alive")
+        call.respondTextWriter(ContentType.Text.EventStream) {
+            try {
+                while (true) {
+                    val result = messageQueue.receiveCatching()
+                    val msg = result.getOrNull() ?: break
+                    val json = McpJson.encodeToString(msg)
+                    write("event: message\n")
+                    write("data: ")
+                    write(json)
+                    write("\n\n")
+                    flush()
+                }
+            } catch (e: Exception) {
+                logger.warn(e) { "SSE stream terminated for session: $sessionId" }
+            } finally {
+                logger.debug { "SSE stream closed for session: $sessionId" }
+            }
+        }
+    }
 
     suspend fun handleRequest(call: ApplicationCall, requestBody: JsonElement) {
         try {

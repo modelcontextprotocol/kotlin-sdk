@@ -44,6 +44,20 @@ async function main() {
         await client.connect(transport, {protocolVersion: PROTOCOL_VERSION});
         console.log('Connected to server');
 
+        try {
+            if (typeof (client as any).on === 'function') {
+                (client as any).on('notification', (n: any) => {
+                    try {
+                        const method = (n && (n.method || (n.params && n.params.method))) || 'unknown';
+                        console.log('Notification:', method, JSON.stringify(n));
+                    } catch {
+                        console.log('Notification: <unparsable>');
+                    }
+                });
+            }
+        } catch {
+        }
+
         const toolsResult = await client.listTools();
         const tools = toolsResult.tools;
         console.log('Available utils:', tools.map((t: { name: any; }) => t.name).join(', '));
