@@ -5,8 +5,6 @@ import io.ktor.server.application.install
 import io.ktor.server.cio.CIO
 import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
-import io.ktor.server.routing.post
-import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
@@ -72,19 +70,6 @@ class SseTransportTest : BaseTransportTest() {
             install(ServerSSE)
             routing {
                 mcp { mcpServer }
-//                sse {
-//                    mcpSseTransport("", transportManager).apply {
-//                        onMessage {
-//                            send(it)
-//                        }
-//
-//                        start()
-//                    }
-//                }
-//
-//                post {
-//                    mcpPostEndpoint(transportManager)
-//                }
             }
         }.startSuspend(wait = false)
 
@@ -113,21 +98,6 @@ class SseTransportTest : BaseTransportTest() {
             install(ServerSSE)
             routing {
                 mcp { mcpServer }
-//                route("/sse") {
-//                    sse {
-//                        mcpSseTransport("", transportManager).apply {
-//                            onMessage {
-//                                send(it)
-//                            }
-//
-//                            start()
-//                        }
-//                    }
-//
-//                    post {
-//                        mcpPostEndpoint(transportManager)
-//                    }
-//                }
             }
         }.startSuspend(wait = false)
 
