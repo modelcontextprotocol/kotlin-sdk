@@ -26,12 +26,17 @@ publishing {
                 }
             }
 
+            organization {
+                name = "Anthropic"
+                url = "https://www.anthropic.com"
+            }
+
             developers {
                 developer {
-                    id = "Anthropic"
-                    name = "Anthropic Team"
-                    organization = "Anthropic"
-                    organizationUrl = "https://www.anthropic.com"
+                    id = "JetBrains"
+                    name = "JetBrains Team"
+                    organization = "JetBrains"
+                    organizationUrl = "https://www.jetbrains.com"
                 }
             }
 

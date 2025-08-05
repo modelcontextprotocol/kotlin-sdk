@@ -22,6 +22,7 @@ jreleaser {
             active = Active.ALWAYS
             mavenCentral.create("ossrh") {
                 active = Active.ALWAYS
+                sign = true
                 url = "https://central.sonatype.com/api/v1/publisher"
                 applyMavenCentralRules = false
                 maxRetries = 240
@@ -53,14 +54,6 @@ jreleaser {
                         }
                     }
                 }
-            }
-        }
-
-        release {
-            github {
-                enabled = false
-                skipRelease = true
-                skipTag = true
             }
         }
 
