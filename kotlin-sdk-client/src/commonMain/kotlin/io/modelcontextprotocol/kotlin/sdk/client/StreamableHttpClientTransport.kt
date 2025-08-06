@@ -2,7 +2,6 @@ package io.modelcontextprotocol.kotlin.sdk.client
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.sse.ClientSSESession
 import io.ktor.client.plugins.sse.SSEClientException
 import io.ktor.client.plugins.sse.sseSession
