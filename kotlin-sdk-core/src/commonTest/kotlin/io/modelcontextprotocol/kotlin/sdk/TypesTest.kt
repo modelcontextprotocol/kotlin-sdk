@@ -30,21 +30,21 @@ class TypesTest {
 
     // Reference Tests
     @Test
-    fun `should validate ResourceReference`() {
-        val resourceRef = ResourceReference(uri = "file:///path/to/file.txt")
+    fun `should validate ResourceTemplateReference`() {
+        val resourceRef = ResourceTemplateReference(uri = "file:///path/to/file.txt")
 
         assertEquals("ref/resource", resourceRef.type)
         assertEquals("file:///path/to/file.txt", resourceRef.uri)
     }
 
     @Test
-    fun `should serialize and deserialize ResourceReference correctly`() {
-        val resourceRef = ResourceReference(uri = "https://example.com/resource")
+    fun `should serialize and deserialize ResourceTemplateReference correctly`() {
+        val resourceRef = ResourceTemplateReference(uri = "https://example.com/resource")
 
         val json = McpJson.encodeToString<Reference>(resourceRef)
         val decoded = McpJson.decodeFromString<Reference>(json)
 
-        assertIs<ResourceReference>(decoded)
+        assertIs<ResourceTemplateReference>(decoded)
         assertEquals("ref/resource", decoded.type)
         assertEquals("https://example.com/resource", decoded.uri)
     }
@@ -333,12 +333,12 @@ class TypesTest {
     @Test
     fun `should validate CompleteRequest with resource reference`() {
         val request = CompleteRequest(
-            ref = ResourceReference(uri = "github://repos/{owner}/{repo}"),
+            ref = ResourceTemplateReference(uri = "github://repos/{owner}/{repo}"),
             argument = CompleteRequest.Argument(name = "repo", value = "t"),
         )
 
         assertEquals("completion/complete", request.method.value)
-        assertIs<ResourceReference>(request.ref)
+        assertIs<ResourceTemplateReference>(request.ref)
         val resourceRef = request.ref
         assertEquals("github://repos/{owner}/{repo}", resourceRef.uri)
         assertEquals("repo", request.argument.name)
@@ -366,11 +366,11 @@ class TypesTest {
     @Test
     fun `should validate CompleteRequest with complex URIs`() {
         val request = CompleteRequest(
-            ref = ResourceReference(uri = "api://v1/{tenant}/{resource}/{id}"),
+            ref = ResourceTemplateReference(uri = "api://v1/{tenant}/{resource}/{id}"),
             argument = CompleteRequest.Argument(name = "id", value = "123"),
         )
 
-        val resourceRef = request.ref as ResourceReference
+        val resourceRef = request.ref as ResourceTemplateReference
         assertEquals("api://v1/{tenant}/{resource}/{id}", resourceRef.uri)
         assertEquals("id", request.argument.name)
         assertEquals("123", request.argument.value)
