@@ -26,6 +26,8 @@ import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCResponse
+import io.modelcontextprotocol.kotlin.sdk.LoggingLevel
+import io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification
 import io.modelcontextprotocol.kotlin.sdk.PromptArgument
 import io.modelcontextprotocol.kotlin.sdk.PromptMessage
 import io.modelcontextprotocol.kotlin.sdk.ReadResourceResult
@@ -253,25 +255,25 @@ class KotlinServerForTypeScriptClient {
 
             server.sendToolListChanged()
             server.sendLoggingMessage(
-                io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification(
-                    io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification.Params(
-                        level = io.modelcontextprotocol.kotlin.sdk.LoggingLevel.info,
+                LoggingMessageNotification(
+                    LoggingMessageNotification.Params(
+                        level = LoggingLevel.info,
                         data = JsonPrimitive("Preparing greeting for $name"),
                     ),
                 ),
             )
             server.sendLoggingMessage(
-                io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification(
-                    io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification.Params(
-                        level = io.modelcontextprotocol.kotlin.sdk.LoggingLevel.info,
+                LoggingMessageNotification(
+                    LoggingMessageNotification.Params(
+                        level = LoggingLevel.info,
                         data = JsonPrimitive("Halfway there for $name"),
                     ),
                 ),
             )
             server.sendLoggingMessage(
-                io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification(
-                    io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification.Params(
-                        level = io.modelcontextprotocol.kotlin.sdk.LoggingLevel.info,
+                LoggingMessageNotification(
+                    LoggingMessageNotification.Params(
+                        level = LoggingLevel.info,
                         data = JsonPrimitive("Done sending greetings to $name"),
                     ),
                 ),
