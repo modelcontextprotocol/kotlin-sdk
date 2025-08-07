@@ -173,7 +173,9 @@ abstract class TypeScriptTestBase {
         killProcessOnPort(port)
 
         if (!sdkDir.exists() || !sdkDir.isDirectory) {
-            throw IllegalStateException("TypeScript SDK directory does not exist or is not accessible: ${sdkDir.absolutePath}")
+            throw IllegalStateException(
+                "TypeScript SDK directory does not exist or is not accessible: ${sdkDir.absolutePath}",
+            )
         }
 
         val isWindows = System.getProperty("os.name").lowercase().contains("windows")
