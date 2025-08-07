@@ -710,6 +710,14 @@ public data class Resource(
      * The MIME type of this resource, if known.
      */
     val mimeType: String?,
+    /**
+     * The optional human-readable name of this resource for display purposes.
+     */
+    val title: String? = null,
+    /**
+     * The optional size of this resource in bytes, if known.
+     */
+    val size: Long? = null,
 )
 
 /**
@@ -738,6 +746,10 @@ public data class ResourceTemplate(
      * The MIME type for all resources that match this template. This should only be included if all resources matching this template have the same type.
      */
     val mimeType: String?,
+    /**
+     * The optional human-readable name of this resource for display purposes.
+     */
+    val title: String? = null,
 )
 
 /**
