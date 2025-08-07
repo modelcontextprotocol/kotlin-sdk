@@ -31,11 +31,16 @@ abstract class TypeScriptTestBase {
         @BeforeAll
         fun setupTypeScriptSdk() {
             println("Cloning TypeScript SDK repository")
+
             if (!sdkDir.exists()) {
-                val cloneCommand =
-                    "git clone --depth 1 https://github.com/modelcontextprotocol/typescript-sdk.git ${sdkDir.absolutePath}"
-                val process = ProcessBuilder()
-                    .command("bash", "-c", cloneCommand)
+                val process = ProcessBuilder(
+                    "git",
+                    "clone",
+                    "--depth",
+                    "1",
+                    "https://github.com/modelcontextprotocol/typescript-sdk.git",
+                    sdkDir.absolutePath,
+                )
                     .redirectErrorStream(true)
                     .start()
                 val exitCode = process.waitFor()
@@ -54,7 +59,13 @@ abstract class TypeScriptTestBase {
 
         @JvmStatic
         protected fun killProcessOnPort(port: Int) {
-            executeCommand("lsof -ti:$port | xargs kill -9 2>/dev/null || true", File("."))
+            val isWindows = System.getProperty("os.name").lowercase().contains("windows")
+            val killCommand = if (isWindows) {
+                "netstat -ano | findstr :$port | for /f \"tokens=5\" %a in ('more') do taskkill /F /PID %a 2>nul || echo No process found"
+            } else {
+                "lsof -ti:$port | xargs kill -9 2>/dev/null || true"
+            }
+            runCommand(killCommand, File("."), allowFailure = true, timeoutSeconds = null)
         }
 
         @JvmStatic
@@ -70,8 +81,26 @@ abstract class TypeScriptTestBase {
             allowFailure: Boolean,
             timeoutSeconds: Long?,
         ): String {
-            val process = ProcessBuilder()
-                .command("bash", "-c", "TYPESCRIPT_SDK_DIR='${sdkDir.absolutePath}' $command")
+            if (!workingDir.exists()) {
+                if (!workingDir.mkdirs()) {
+                    throw RuntimeException("Failed to create working directory: ${workingDir.absolutePath}")
+                }
+            }
+
+            if (!workingDir.isDirectory || !workingDir.canRead()) {
+                throw RuntimeException("Working directory is not accessible: ${workingDir.absolutePath}")
+            }
+
+            val isWindows = System.getProperty("os.name").lowercase().contains("windows")
+            val processBuilder = if (isWindows) {
+                ProcessBuilder()
+                    .command("cmd.exe", "/c", "set TYPESCRIPT_SDK_DIR=${sdkDir.absolutePath} && $command")
+            } else {
+                ProcessBuilder()
+                    .command("bash", "-c", "TYPESCRIPT_SDK_DIR='${sdkDir.absolutePath}' $command")
+            }
+
+            val process = processBuilder
                 .directory(workingDir)
                 .redirectErrorStream(true)
                 .start()
@@ -89,7 +118,7 @@ abstract class TypeScriptTestBase {
                 val exitCode = process.waitFor()
                 if (!allowFailure && exitCode != 0) {
                     throw RuntimeException(
-                        "Command execution failed with exit code $exitCode: $command\nOutput:\n$output",
+                        "Command execution failed with exit code $exitCode: $command\nWorking dir: ${workingDir.absolutePath}\nOutput:\n$output",
                     )
                 }
             } else {
@@ -142,11 +171,25 @@ abstract class TypeScriptTestBase {
 
     protected fun startTypeScriptServer(port: Int): Process {
         killProcessOnPort(port)
-        val processBuilder = ProcessBuilder()
-            .command("bash", "-c", "MCP_PORT=$port npx tsx src/examples/server/simpleStreamableHttp.ts")
+
+        if (!sdkDir.exists() || !sdkDir.isDirectory) {
+            throw IllegalStateException("TypeScript SDK directory does not exist or is not accessible: ${sdkDir.absolutePath}")
+        }
+
+        val isWindows = System.getProperty("os.name").lowercase().contains("windows")
+        val processBuilder = if (isWindows) {
+            ProcessBuilder()
+                .command("cmd.exe", "/c", "set MCP_PORT=$port && npx tsx src/examples/server/simpleStreamableHttp.ts")
+        } else {
+            ProcessBuilder()
+                .command("bash", "-c", "MCP_PORT=$port npx tsx src/examples/server/simpleStreamableHttp.ts")
+        }
+
+        val process = processBuilder
             .directory(sdkDir)
             .redirectErrorStream(true)
-        val process = processBuilder.start()
+            .start()
+
         if (!waitForPort(port = port)) {
             throw IllegalStateException("TypeScript server did not become ready on localhost:$port within timeout")
         }
