@@ -1,12 +1,46 @@
+public final class io/modelcontextprotocol/kotlin/sdk/Annotations {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/Annotations$Companion;
+	public fun <init> (Ljava/util/List;Lkotlin/time/Instant;Ljava/lang/Double;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun component2 ()Lkotlin/time/Instant;
+	public final fun component3 ()Ljava/lang/Double;
+	public final fun copy (Ljava/util/List;Lkotlin/time/Instant;Ljava/lang/Double;)Lio/modelcontextprotocol/kotlin/sdk/Annotations;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/Annotations;Ljava/util/List;Lkotlin/time/Instant;Ljava/lang/Double;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/Annotations;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAudience ()Ljava/util/List;
+	public final fun getLastModified ()Lkotlin/time/Instant;
+	public final fun getPriority ()Ljava/lang/Double;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/Annotations$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/Annotations$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/Annotations;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/Annotations;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/Annotations$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
 public final class io/modelcontextprotocol/kotlin/sdk/AudioContent : io/modelcontextprotocol/kotlin/sdk/PromptMessageContentMultimodal {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/AudioContent$Companion;
 	public static final field TYPE Ljava/lang/String;
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Annotations;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Annotations;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/AudioContent;
-	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/AudioContent;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/AudioContent;
+	public final fun component3 ()Lio/modelcontextprotocol/kotlin/sdk/Annotations;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Annotations;)Lio/modelcontextprotocol/kotlin/sdk/AudioContent;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/AudioContent;Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Annotations;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/AudioContent;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAnnotations ()Lio/modelcontextprotocol/kotlin/sdk/Annotations;
 	public final fun getData ()Ljava/lang/String;
 	public final fun getMimeType ()Ljava/lang/String;
 	public fun getType ()Ljava/lang/String;
@@ -671,11 +705,14 @@ public final class io/modelcontextprotocol/kotlin/sdk/CustomRequest$Companion {
 public final class io/modelcontextprotocol/kotlin/sdk/EmbeddedResource : io/modelcontextprotocol/kotlin/sdk/PromptMessageContent {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/EmbeddedResource$Companion;
 	public static final field TYPE Ljava/lang/String;
-	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/ResourceContents;)V
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/ResourceContents;Lio/modelcontextprotocol/kotlin/sdk/Annotations;)V
+	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/ResourceContents;Lio/modelcontextprotocol/kotlin/sdk/Annotations;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/ResourceContents;
-	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/ResourceContents;)Lio/modelcontextprotocol/kotlin/sdk/EmbeddedResource;
-	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/EmbeddedResource;Lio/modelcontextprotocol/kotlin/sdk/ResourceContents;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/EmbeddedResource;
+	public final fun component2 ()Lio/modelcontextprotocol/kotlin/sdk/Annotations;
+	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/ResourceContents;Lio/modelcontextprotocol/kotlin/sdk/Annotations;)Lio/modelcontextprotocol/kotlin/sdk/EmbeddedResource;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/EmbeddedResource;Lio/modelcontextprotocol/kotlin/sdk/ResourceContents;Lio/modelcontextprotocol/kotlin/sdk/Annotations;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/EmbeddedResource;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAnnotations ()Lio/modelcontextprotocol/kotlin/sdk/Annotations;
 	public final fun getResource ()Lio/modelcontextprotocol/kotlin/sdk/ResourceContents;
 	public fun getType ()Ljava/lang/String;
 	public fun hashCode ()I
@@ -841,12 +878,15 @@ public final class io/modelcontextprotocol/kotlin/sdk/GetPromptResult$Companion 
 public final class io/modelcontextprotocol/kotlin/sdk/ImageContent : io/modelcontextprotocol/kotlin/sdk/PromptMessageContentMultimodal {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/ImageContent$Companion;
 	public static final field TYPE Ljava/lang/String;
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Annotations;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Annotations;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/ImageContent;
-	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/ImageContent;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/ImageContent;
+	public final fun component3 ()Lio/modelcontextprotocol/kotlin/sdk/Annotations;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Annotations;)Lio/modelcontextprotocol/kotlin/sdk/ImageContent;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/ImageContent;Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Annotations;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/ImageContent;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAnnotations ()Lio/modelcontextprotocol/kotlin/sdk/Annotations;
 	public final fun getData ()Ljava/lang/String;
 	public final fun getMimeType ()Ljava/lang/String;
 	public fun getType ()Ljava/lang/String;
@@ -2180,17 +2220,24 @@ public final class io/modelcontextprotocol/kotlin/sdk/RequestResult$Companion {
 
 public final class io/modelcontextprotocol/kotlin/sdk/Resource {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/Resource$Companion;
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Lio/modelcontextprotocol/kotlin/sdk/Annotations;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Lio/modelcontextprotocol/kotlin/sdk/Annotations;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/Resource;
-	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/Resource;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/Resource;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/lang/Long;
+	public final fun component7 ()Lio/modelcontextprotocol/kotlin/sdk/Annotations;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Lio/modelcontextprotocol/kotlin/sdk/Annotations;)Lio/modelcontextprotocol/kotlin/sdk/Resource;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/Resource;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Lio/modelcontextprotocol/kotlin/sdk/Annotations;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/Resource;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAnnotations ()Lio/modelcontextprotocol/kotlin/sdk/Annotations;
 	public final fun getDescription ()Ljava/lang/String;
 	public final fun getMimeType ()Ljava/lang/String;
 	public final fun getName ()Ljava/lang/String;
+	public final fun getSize ()Ljava/lang/Long;
+	public final fun getTitle ()Ljava/lang/String;
 	public final fun getUri ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -2283,17 +2330,22 @@ public final class io/modelcontextprotocol/kotlin/sdk/ResourceListChangedNotific
 
 public final class io/modelcontextprotocol/kotlin/sdk/ResourceTemplate {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/ResourceTemplate$Companion;
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Annotations;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Annotations;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/ResourceTemplate;
-	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/ResourceTemplate;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/ResourceTemplate;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Lio/modelcontextprotocol/kotlin/sdk/Annotations;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Annotations;)Lio/modelcontextprotocol/kotlin/sdk/ResourceTemplate;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/ResourceTemplate;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Annotations;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/ResourceTemplate;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAnnotations ()Lio/modelcontextprotocol/kotlin/sdk/Annotations;
 	public final fun getDescription ()Ljava/lang/String;
 	public final fun getMimeType ()Ljava/lang/String;
 	public final fun getName ()Ljava/lang/String;
+	public final fun getTitle ()Ljava/lang/String;
 	public final fun getUriTemplate ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -2775,12 +2827,14 @@ public final class io/modelcontextprotocol/kotlin/sdk/TextContent : io/modelcont
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/TextContent$Companion;
 	public static final field TYPE Ljava/lang/String;
 	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Annotations;)V
+	public synthetic fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Annotations;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/TextContent;
-	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/TextContent;Ljava/lang/String;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/TextContent;
+	public final fun component2 ()Lio/modelcontextprotocol/kotlin/sdk/Annotations;
+	public final fun copy (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Annotations;)Lio/modelcontextprotocol/kotlin/sdk/TextContent;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/TextContent;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Annotations;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/TextContent;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAnnotations ()Lio/modelcontextprotocol/kotlin/sdk/Annotations;
 	public final fun getText ()Ljava/lang/String;
 	public fun getType ()Ljava/lang/String;
 	public fun hashCode ()I
