@@ -84,10 +84,10 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
         )
     }
 
+    // skip on windows as it can't handle long commands
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
     @EnabledOnOs(OS.MAC, OS.LINUX)
-    // skip on windows as it can't handle long commands
     fun testLargePayload() {
         val largeName = "A".repeat(10 * 1024)
 
