@@ -8,14 +8,21 @@ const PROTOCOL_VERSION = "2024-11-05";
 // @ts-ignore
 async function main() {
     // @ts-ignore
-    const sdkDir = process.env.TYPESCRIPT_SDK_DIR;
+    const sdkDirRaw = process.env.TYPESCRIPT_SDK_DIR;
+    const sdkDir = sdkDirRaw ? sdkDirRaw.trim() : undefined;
     let Client: any;
     let StreamableHTTPClientTransport: any;
     if (sdkDir) {
         // @ts-ignore
-        ({Client} = await import(`${sdkDir}/src/client`));
+        const path = await import('path');
         // @ts-ignore
-        ({StreamableHTTPClientTransport} = await import(`${sdkDir}/src/client/streamableHttp.js`));
+        const { pathToFileURL } = await import('url');
+        const clientUrl = pathToFileURL(path.join(sdkDir, 'src', 'client', 'index.ts')).href;
+        const streamUrl = pathToFileURL(path.join(sdkDir, 'src', 'client', 'streamableHttp.js')).href;
+        // @ts-ignore
+        ({ Client } = await import(clientUrl));
+        // @ts-ignore
+        ({ StreamableHTTPClientTransport } = await import(streamUrl));
     } else {
         // @ts-ignore
         ({Client} = await import("../../../../../../../resources/typescript-sdk/src/client"));

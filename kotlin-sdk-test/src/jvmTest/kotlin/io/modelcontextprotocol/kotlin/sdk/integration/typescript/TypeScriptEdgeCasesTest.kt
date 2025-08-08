@@ -5,6 +5,8 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import org.junit.jupiter.api.condition.EnabledOnOs
+import org.junit.jupiter.api.condition.OS
 import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
@@ -84,6 +86,8 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
 
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
+    @EnabledOnOs(OS.MAC, OS.LINUX)
+    // skip on windows as it can't handle long commands
     fun testLargePayload() {
         val largeName = "A".repeat(10 * 1024)
 
