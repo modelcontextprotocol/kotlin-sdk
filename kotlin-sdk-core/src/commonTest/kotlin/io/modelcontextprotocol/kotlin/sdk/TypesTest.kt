@@ -6,6 +6,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 class TypesTest {
 
@@ -234,6 +236,23 @@ class TypesTest {
         assertEquals("Primary application entry point", textResource.text)
         assertEquals("file:///project/src/main.rs", textResource.uri)
         assertEquals("text/x-rust", textResource.mimeType)
+    }
+
+    @OptIn(ExperimentalTime::class)
+    @Test
+    fun `should serialize and deserialize annotations correctly`() {
+        val annotations = Annotations(
+            audience = listOf(Role.assistant),
+            lastModified = Instant.parse("2025-06-18T00:00:00Z"),
+            priority = 0.5,
+        )
+
+        val json = McpJson.encodeToString(annotations)
+        val decoded = McpJson.decodeFromString<Annotations>(json)
+
+        assertEquals(listOf(Role.assistant), decoded.audience)
+        assertEquals(Instant.parse("2025-06-18T00:00:00Z"), decoded.lastModified)
+        assertEquals(0.5, decoded.priority)
     }
 
     @Test
