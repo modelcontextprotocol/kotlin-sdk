@@ -44,6 +44,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(libs.mcp.kotlin)
+            implementation(libs.ktor.server.cio)
         }
         jvmMain.dependencies {
             implementation(libs.slf4j.simple)
