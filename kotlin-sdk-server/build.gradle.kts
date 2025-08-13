@@ -11,7 +11,7 @@ kotlin {
         commonMain {
             dependencies {
                 api(project(":kotlin-sdk-core"))
-                api(libs.ktor.server.cio)
+                api(libs.ktor.server.core)
                 api(libs.ktor.server.sse)
                 implementation(libs.kotlin.logging)
             }
