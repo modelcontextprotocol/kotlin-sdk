@@ -33,7 +33,7 @@ kotlin {
         commonMain {
             dependencies {
                 api(project(":kotlin-sdk-core"))
-                api(libs.ktor.client.cio)
+                api(libs.ktor.client.core)
                 implementation(libs.kotlin.logging)
             }
         }
