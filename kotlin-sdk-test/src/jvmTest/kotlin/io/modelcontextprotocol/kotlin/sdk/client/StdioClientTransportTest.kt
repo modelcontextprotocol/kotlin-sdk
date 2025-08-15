@@ -45,4 +45,24 @@ class StdioClientTransportTest : BaseTransportTest() {
         process.waitFor()
         process.destroy()
     }
+
+    @Test
+    fun `should ignore first output messages`() = runTest {
+        val processBuilder = ProcessBuilder("/usr/bin/tee")
+        val process = processBuilder.start()
+        process.outputStream.write("Stdio server started".toByteArray())
+
+        val input = process.inputStream.asSource().buffered()
+        val output = process.outputStream.asSink().buffered()
+
+        val client = StdioClientTransport(
+            input = input,
+            output = output,
+        )
+
+        testClientRead(client)
+
+        process.waitFor()
+        process.destroy()
+    }
 }
