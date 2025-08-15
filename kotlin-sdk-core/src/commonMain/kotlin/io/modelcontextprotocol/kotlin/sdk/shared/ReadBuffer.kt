@@ -1,5 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.shared
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import kotlinx.io.Buffer
 import kotlinx.io.indexOf
@@ -9,6 +10,9 @@ import kotlinx.io.readString
  * Buffers a continuous stdio stream into discrete JSON-RPC messages.
  */
 public class ReadBuffer {
+
+    private val logger = KotlinLogging.logger { }
+
     private val buffer: Buffer = Buffer()
 
     public fun append(chunk: ByteArray) {
@@ -37,7 +41,13 @@ public class ReadBuffer {
                 string
             }
         }
-        return deserializeMessage(line)
+        try {
+            return deserializeMessage(line)
+        } catch (e: Exception) {
+            logger.error(e) { "Failed to deserialize message from line: $line\nSkipping..." }
+        }
+
+        return null
     }
 
     public fun clear() {
