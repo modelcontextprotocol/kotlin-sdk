@@ -12,13 +12,16 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteReadChannel
+import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.RequestId
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -27,6 +30,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.test.fail
 import kotlin.time.Duration.Companion.seconds
 
 class StreamableHttpClientTransportTest {
@@ -379,5 +383,45 @@ class StreamableHttpClientTransportTest {
         // Verify new resumption token was received
         assertEquals("resume-100", resumptionTokenReceived)
         transport.close()
+    }
+
+    @Test
+    fun testClientConnectWithInvalidJson() = runTest {
+        // Transport under test: respond with invalid JSON for the initialize request
+        val transport = createTransport { _ ->
+            respond(
+                "this is not valid json",
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+            )
+        }
+
+        val client = Client(
+            clientInfo = Implementation(
+                name = "test-client",
+                version = "1.0",
+            ),
+        )
+
+        runCatching {
+            // Real time-keeping is needed; otherwise Protocol will always throw TimeoutCancellationException in tests
+            withTimeout(5.seconds) {
+                client.connect(transport)
+            }
+
+        }.onSuccess {
+            fail("Expected client.connect to fail on invalid JSON response")
+        }.onFailure { e ->
+            when (e) {
+                is TimeoutCancellationException -> fail("Client connect caused a hang", e)
+                is IllegalStateException -> {
+                    // Expected behavior: connect finishes and fails with an exception.
+                }
+
+                else -> fail("Unexpected exception during client.connect", e)
+            }
+        }.also {
+            transport.close()
+        }
     }
 }
