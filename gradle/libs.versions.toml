@@ -15,7 +15,7 @@ logging = "7.0.7"
 jreleaser = "1.19.0"
 binaryCompatibilityValidatorPlugin = "0.18.1"
 slf4j = "2.0.17"
-kotest = "5.9.1"
+kotest = "6.0.0"
 
 # Samples
 mcp-kotlin = "0.6.0"
