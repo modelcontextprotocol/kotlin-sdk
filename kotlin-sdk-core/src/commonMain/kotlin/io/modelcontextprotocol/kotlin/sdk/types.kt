@@ -17,6 +17,8 @@ import kotlin.concurrent.atomics.AtomicLong
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.concurrent.atomics.incrementAndFetch
 import kotlin.jvm.JvmInline
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 public const val LATEST_PROTOCOL_VERSION: String = "2025-03-26"
 
@@ -710,6 +712,18 @@ public data class Resource(
      * The MIME type of this resource, if known.
      */
     val mimeType: String?,
+    /**
+     * The optional human-readable name of this resource for display purposes.
+     */
+    val title: String? = null,
+    /**
+     * The optional size of this resource in bytes, if known.
+     */
+    val size: Long? = null,
+    /**
+     * Optional annotations for the client.
+     */
+    val annotations: Annotations? = null,
 )
 
 /**
@@ -738,6 +752,14 @@ public data class ResourceTemplate(
      * The MIME type for all resources that match this template. This should only be included if all resources matching this template have the same type.
      */
     val mimeType: String?,
+    /**
+     * The optional human-readable name of this resource for display purposes.
+     */
+    val title: String? = null,
+    /**
+     * Optional annotations for the client.
+     */
+    val annotations: Annotations? = null,
 )
 
 /**
@@ -971,6 +993,11 @@ public data class TextContent(
      * The text content of the message.
      */
     val text: String? = null,
+
+    /**
+     * Optional annotations for the client.
+     */
+    val annotations: Annotations? = null,
 ) : PromptMessageContentMultimodal {
     override val type: String = TYPE
 
@@ -993,6 +1020,11 @@ public data class ImageContent(
      * The MIME type of the image. Different providers may support different image types.
      */
     val mimeType: String,
+
+    /**
+     * Optional annotations for the client.
+     */
+    val annotations: Annotations? = null,
 ) : PromptMessageContentMultimodal {
     override val type: String = TYPE
 
@@ -1015,6 +1047,11 @@ public data class AudioContent(
      * The MIME type of the audio. Different providers may support different audio types.
      */
     val mimeType: String,
+
+    /**
+     * Optional annotations for the client.
+     */
+    val annotations: Annotations? = null,
 ) : PromptMessageContentMultimodal {
     override val type: String = TYPE
 
@@ -1033,7 +1070,17 @@ public data class UnknownContent(override val type: String) : PromptMessageConte
  * The contents of a resource, embedded into a prompt or tool call result.
  */
 @Serializable
-public data class EmbeddedResource(val resource: ResourceContents) : PromptMessageContent {
+public data class EmbeddedResource(
+    /**
+     * The contents of the embedded resource.
+     */
+    val resource: ResourceContents,
+
+    /**
+     * Optional annotations for the client.
+     */
+    val annotations: Annotations? = null,
+) : PromptMessageContent {
     override val type: String = TYPE
 
     public companion object {
@@ -1049,6 +1096,34 @@ public data class EmbeddedResource(val resource: ResourceContents) : PromptMessa
 public enum class Role {
     user,
     assistant,
+}
+
+/**
+ * Optional annotations for the client.
+ * The client can use annotations to inform how objects are used or displayed.
+ */
+@Serializable
+public data class Annotations(
+    /**
+     * Describes who the intended customer of this object or data is.
+     */
+    val audience: List<Role>?,
+    /**
+     * The moment the resource was last modified.
+     */
+    @OptIn(ExperimentalTime::class)
+    val lastModified: Instant?,
+    /**
+     * Describes how important this data is for operating the server.
+     *
+     * A value of 1.0 means "most important", and indicates that the data is effectively required,
+     * while 0.0 means "less important", and indicates that the data is entirely optional.
+     */
+    val priority: Double?,
+) {
+    init {
+        require(priority == null || priority in 0.0..1.0) { "Priority must be between 0.0 and 1.0" }
+    }
 }
 
 /**
