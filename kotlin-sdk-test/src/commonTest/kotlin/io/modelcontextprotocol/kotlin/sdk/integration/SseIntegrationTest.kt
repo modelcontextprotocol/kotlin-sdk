@@ -28,11 +28,11 @@ import kotlinx.coroutines.withTimeout
 import kotlin.test.Test
 import kotlin.test.assertTrue
 import io.ktor.client.engine.cio.CIO as ClientCIO
-import io.ktor.client.plugins.sse.SSE as ClientSSE
 import io.ktor.server.cio.CIO as ServerCIO
 import io.ktor.server.sse.SSE as ServerSSE
 
 private const val URL = "127.0.0.1"
+private const val PORT = 0
 
 class SseIntegrationTest {
     @Test
@@ -171,7 +171,7 @@ class SseIntegrationTest {
             )
         }
 
-        val ktorServer = embeddedServer(ServerCIO, host = URL, port = 0) {
+        val ktorServer = embeddedServer(ServerCIO, host = URL, port = PORT) {
             install(ServerSSE)
             routing {
                 mcp { server }

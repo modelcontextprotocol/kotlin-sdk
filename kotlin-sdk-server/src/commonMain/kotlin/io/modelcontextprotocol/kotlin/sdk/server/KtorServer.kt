@@ -8,6 +8,7 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.RoutingContext
 import io.ktor.server.routing.post
+import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.server.sse.SSE
 import io.ktor.server.sse.ServerSSESession
@@ -60,7 +61,7 @@ public fun Routing.mcp(block: ServerSSESession.() -> Server) {
 
 @Suppress("FunctionName")
 @Deprecated("Use mcp() instead", ReplaceWith("mcp(block)"), DeprecationLevel.ERROR)
-public fun Application.MCP(block: () -> Server) {
+public fun Application.MCP(block: ServerSSESession.() -> Server) {
     mcp(block)
 }
 
