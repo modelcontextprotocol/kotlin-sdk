@@ -20,7 +20,6 @@ public const val MCP_SUBPROTOCOL: String = "mcp"
 
 private val logger = KotlinLogging.logger {}
 
-
 /**
  * Abstract class representing a WebSocket transport for the Model Context Protocol (MCP).
  * Handles communication over a WebSocket session.

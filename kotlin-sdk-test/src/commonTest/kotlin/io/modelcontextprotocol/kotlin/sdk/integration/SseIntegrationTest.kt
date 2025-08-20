@@ -120,7 +120,7 @@ class SseIntegrationTest {
 
     private suspend fun initClient(name: String = ""): Client {
         val client = Client(
-            Implementation(name = name, version = "1.0.0")
+            Implementation(name = name, version = "1.0.0"),
         )
 
         val httpClient = HttpClient(ClientCIO) {
@@ -144,8 +144,7 @@ class SseIntegrationTest {
         val server = Server(
             Implementation(name = "sse-server", version = "1.0.0"),
             ServerOptions(
-                capabilities =
-                    ServerCapabilities(prompts = ServerCapabilities.Prompts(listChanged = true))
+                capabilities = ServerCapabilities(prompts = ServerCapabilities.Prompts(listChanged = true)),
             ),
         )
 
@@ -156,18 +155,18 @@ class SseIntegrationTest {
                 PromptArgument(
                     name = "client",
                     description = "Client name who requested a prompt",
-                    required = true
-                )
-            )
+                    required = true,
+                ),
+            ),
         ) { request ->
             GetPromptResult(
                 "Prompt for ${request.name}",
                 messages = listOf(
                     PromptMessage(
                         role = Role.user,
-                        content = TextContent("Prompt for client ${request.arguments?.get("client")}")
-                    )
-                )
+                        content = TextContent("Prompt for client ${request.arguments?.get("client")}"),
+                    ),
+                ),
             )
         }
 
@@ -192,8 +191,8 @@ class SseIntegrationTest {
         val response = client.getPrompt(
             GetPromptRequest(
                 "prompt",
-                arguments = mapOf("client" to clientName)
-            )
+                arguments = mapOf("client" to clientName),
+            ),
         )
 
         return (response?.messages?.first()?.content as? TextContent)?.text

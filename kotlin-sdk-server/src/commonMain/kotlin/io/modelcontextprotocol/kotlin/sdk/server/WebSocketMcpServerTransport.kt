@@ -6,7 +6,6 @@ import io.ktor.server.websocket.WebSocketServerSession
 import io.modelcontextprotocol.kotlin.sdk.shared.MCP_SUBPROTOCOL
 import io.modelcontextprotocol.kotlin.sdk.shared.WebSocketMcpTransport
 
-
 private val logger = KotlinLogging.logger {}
 
 /**
