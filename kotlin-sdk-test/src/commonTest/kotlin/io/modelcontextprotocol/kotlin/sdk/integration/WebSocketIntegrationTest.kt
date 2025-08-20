@@ -27,9 +27,9 @@ import kotlinx.coroutines.withTimeout
 import kotlin.test.Test
 import kotlin.test.assertTrue
 import io.ktor.client.engine.cio.CIO as ClientCIO
+import io.ktor.client.plugins.websocket.WebSockets as ClientWebSocket
 import io.ktor.server.cio.CIO as ServerCIO
 import io.ktor.server.websocket.WebSockets as ServerWebSockets
-import io.ktor.client.plugins.websocket.WebSockets as ClientWebSocket
 
 class WebSocketIntegrationTest {
 
@@ -116,10 +116,9 @@ class WebSocketIntegrationTest {
         }
     }
 
-
     private suspend fun initClient(name: String = ""): Client {
         val client = Client(
-            Implementation(name = name, version = "1.0.0")
+            Implementation(name = name, version = "1.0.0"),
         )
 
         val httpClient = HttpClient(ClientCIO) {
@@ -139,13 +138,11 @@ class WebSocketIntegrationTest {
         return client
     }
 
-
     private suspend fun initServer(): EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration> {
         val server = Server(
             Implementation(name = "websocket-server", version = "1.0.0"),
             ServerOptions(
-                capabilities =
-                    ServerCapabilities(prompts = ServerCapabilities.Prompts(listChanged = true))
+                capabilities = ServerCapabilities(prompts = ServerCapabilities.Prompts(listChanged = true)),
             ),
         )
 
@@ -156,18 +153,18 @@ class WebSocketIntegrationTest {
                 PromptArgument(
                     name = "client",
                     description = "Client name who requested a prompt",
-                    required = true
-                )
-            )
+                    required = true,
+                ),
+            ),
         ) { request ->
             GetPromptResult(
                 "Prompt for ${request.name}",
                 messages = listOf(
                     PromptMessage(
                         role = Role.user,
-                        content = TextContent("Prompt for client ${request.arguments?.get("client")}")
-                    )
-                )
+                        content = TextContent("Prompt for client ${request.arguments?.get("client")}"),
+                    ),
+                ),
             )
         }
 
@@ -192,8 +189,8 @@ class WebSocketIntegrationTest {
         val response = client.getPrompt(
             GetPromptRequest(
                 "prompt",
-                arguments = mapOf("client" to clientName)
-            )
+                arguments = mapOf("client" to clientName),
+            ),
         )
 
         return (response?.messages?.first()?.content as? TextContent)?.text

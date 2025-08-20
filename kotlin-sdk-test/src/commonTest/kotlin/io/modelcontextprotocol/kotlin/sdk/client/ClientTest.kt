@@ -33,13 +33,6 @@ import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.ServerSession
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.InMemoryTransport
-import kotlin.coroutines.cancellation.CancellationException
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
-import kotlin.test.assertTrue
-import kotlin.test.fail
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
@@ -51,6 +44,13 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
+import kotlin.test.fail
 
 class ClientTest {
     @Test
@@ -268,9 +268,9 @@ class ClientTest {
                 protocolVersion = LATEST_PROTOCOL_VERSION,
                 capabilities = ServerCapabilities(
                     resources = ServerCapabilities.Resources(null, null),
-                    tools = ServerCapabilities.Tools(null)
+                    tools = ServerCapabilities.Tools(null),
                 ),
-                serverInfo = Implementation(name = "test", version = "1.0")
+                serverInfo = Implementation(name = "test", version = "1.0"),
             )
         }
 
@@ -459,7 +459,6 @@ class ClientTest {
             fail("Shouldn't have been called")
         }
 
-
         val defCancel = CompletableDeferred<Unit>()
         val job = launch {
             try {
@@ -579,7 +578,7 @@ class ClientTest {
             clientInfo = Implementation(name = "test client", version = "1.0"),
             options = ClientOptions(
                 capabilities = ClientCapabilities(sampling = EmptyJsonObject),
-            )
+            ),
         )
 
         var receivedMessage: JSONRPCMessage? = null
@@ -597,7 +596,7 @@ class ClientTest {
             launch {
                 serverSessionResult.complete(server.connect(serverTransport))
                 println("Server connected")
-            }
+            },
         ).joinAll()
 
         val serverSession = serverSessionResult.await()
@@ -805,7 +804,6 @@ class ClientTest {
         // Track notifications
         var rootListChangedNotificationReceived = false
 
-
         val serverSessionResult = CompletableDeferred<ServerSession>()
 
         listOf(
@@ -820,7 +818,9 @@ class ClientTest {
         ).joinAll()
 
         val serverSession = serverSessionResult.await()
-        serverSession.setNotificationHandler<RootsListChangedNotification>(Method.Defined.NotificationsRootsListChanged) {
+        serverSession.setNotificationHandler<RootsListChangedNotification>(
+            Method.Defined.NotificationsRootsListChanged,
+        ) {
             rootListChangedNotificationReceived = true
             CompletableDeferred(Unit)
         }
