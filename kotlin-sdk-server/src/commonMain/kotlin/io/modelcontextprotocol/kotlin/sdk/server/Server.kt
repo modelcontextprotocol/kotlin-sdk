@@ -152,8 +152,8 @@ public open class Server(
      * Registers a callback to be invoked when the server has completed initialization.
      */
     @Deprecated(
-        "Will be removed with Protocol inheritance. Use onConnect instead.",
-        ReplaceWith("onConnect"),
+        "Initialization moved to ServerSession, use ServerSession.onInitialized instead.",
+        ReplaceWith("ServerSession.onInitialized"),
         DeprecationLevel.WARNING
     )
     public fun onInitialized(block: () -> Unit) {
