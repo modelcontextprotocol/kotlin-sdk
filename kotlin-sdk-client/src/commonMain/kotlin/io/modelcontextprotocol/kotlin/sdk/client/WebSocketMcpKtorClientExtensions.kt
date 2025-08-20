@@ -9,7 +9,6 @@ import io.modelcontextprotocol.kotlin.sdk.shared.IMPLEMENTATION_NAME
 
 private val logger = KotlinLogging.logger {}
 
-
 /**
  * Returns a new WebSocket transport for the Model Context Protocol using the provided HttpClient.
  *

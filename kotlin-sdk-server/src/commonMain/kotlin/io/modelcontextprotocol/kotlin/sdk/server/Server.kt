@@ -54,10 +54,7 @@ public class ServerOptions(public val capabilities: ServerCapabilities, enforceS
  * @param serverInfo Information about this server implementation (name, version).
  * @param options Configuration options for the server.
  */
-public open class Server(
-    private val serverInfo: Implementation,
-    private val options: ServerOptions,
-) {
+public open class Server(private val serverInfo: Implementation, private val options: ServerOptions) {
     private val sessions = atomic(persistentListOf<ServerSession>())
 
     @Suppress("ktlint:standard:backing-property-naming")
@@ -154,7 +151,7 @@ public open class Server(
     @Deprecated(
         "Initialization moved to ServerSession, use ServerSession.onInitialized instead.",
         ReplaceWith("ServerSession.onInitialized"),
-        DeprecationLevel.WARNING
+        DeprecationLevel.WARNING,
     )
     public fun onInitialized(block: () -> Unit) {
         val old = _onInitialized
