@@ -104,14 +104,11 @@ internal fun ServerSSESession.mcpSseTransport(
     return transport
 }
 
-internal suspend fun RoutingContext.mcpPostEndpoint(
-    sseTransportManager: SseTransportManager,
-) {
-    val sessionId: String = call.request.queryParameters["sessionId"]
-        ?: run {
-            call.respond(HttpStatusCode.BadRequest, "sessionId query parameter is not provided")
-            return
-        }
+internal suspend fun RoutingContext.mcpPostEndpoint(sseTransportManager: SseTransportManager) {
+    val sessionId: String = call.request.queryParameters["sessionId"] ?: run {
+        call.respond(HttpStatusCode.BadRequest, "sessionId query parameter is not provided")
+        return
+    }
 
     logger.debug { "Received message for sessionId: $sessionId" }
 

@@ -161,7 +161,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
             close()
 
             if (error !is CancellationException) {
-                throw IllegalStateException("Error connecting to transport: ${error.message}")
+                throw IllegalStateException("Error connecting to transport: ${error.message}", error)
             }
 
             throw error
