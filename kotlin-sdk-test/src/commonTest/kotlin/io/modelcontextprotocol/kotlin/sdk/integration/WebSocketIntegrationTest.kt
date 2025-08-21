@@ -42,7 +42,8 @@ class WebSocketIntegrationTest {
             withContext(Dispatchers.Default) {
                 withTimeout(1000) {
                     server = initServer()
-                    client = initClient()
+                    val port = server.engine.resolvedConnectors().first().port
+                    client = initClient(serverPort = port)
                 }
             }
         } finally {
@@ -67,7 +68,8 @@ class WebSocketIntegrationTest {
             withContext(Dispatchers.Default) {
                 withTimeout(1000) {
                     server = initServer()
-                    client = initClient()
+                    val port = server.engine.resolvedConnectors().first().port
+                    client = initClient("Client A", port)
 
                     val promptA = getPrompt(client, "Client A")
                     assertTrue { "Client A" in promptA }
@@ -97,8 +99,9 @@ class WebSocketIntegrationTest {
             withContext(Dispatchers.Default) {
                 withTimeout(1000) {
                     server = initServer()
-                    clientA = initClient()
-                    clientB = initClient()
+                    val port = server.engine.resolvedConnectors().first().port
+                    clientA = initClient("Client A", port)
+                    clientB = initClient("Client B",port)
 
                     // Step 3: Send a prompt request from Client A
                     val promptA = getPrompt(clientA, "Client A")
@@ -116,7 +119,7 @@ class WebSocketIntegrationTest {
         }
     }
 
-    private suspend fun initClient(name: String = ""): Client {
+    private suspend fun initClient(name: String = "", serverPort: Int): Client {
         val client = Client(
             Implementation(name = name, version = "1.0.0"),
         )
@@ -129,7 +132,7 @@ class WebSocketIntegrationTest {
         val transport = httpClient.mcpWebSocketTransport {
             url {
                 host = URL
-                port = PORT
+                port = serverPort
             }
         }
 
@@ -193,12 +196,12 @@ class WebSocketIntegrationTest {
             ),
         )
 
-        return (response?.messages?.first()?.content as? TextContent)?.text
+        return (response.messages.first().content as? TextContent)?.text
             ?: error("Failed to receive prompt for Client $clientName")
     }
 
     companion object {
-        private const val PORT = 3002
-        private const val URL = "localhost"
+        private const val PORT = 0
+        private const val URL = "127.0.0.1"
     }
 }
