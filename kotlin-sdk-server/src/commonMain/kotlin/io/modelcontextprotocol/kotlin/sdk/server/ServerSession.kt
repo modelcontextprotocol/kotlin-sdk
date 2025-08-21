@@ -210,12 +210,14 @@ public open class ServerSession(private val serverInfo: Implementation, options:
 
             Defined.RootsList -> {
                 if (clientCapabilities?.roots == null) {
+                    logger.error { "Client capability assertion failed: listing roots not supported" }
                     throw IllegalStateException("Client does not support listing roots (required for ${method.value})")
                 }
             }
 
             Defined.ElicitationCreate -> {
                 if (clientCapabilities?.elicitation == null) {
+                    logger.error { "Client capability assertion failed: elicitation not supported" }
                     throw IllegalStateException("Client does not support elicitation (required for ${method.value})")
                 }
             }
@@ -225,7 +227,7 @@ public open class ServerSession(private val serverInfo: Implementation, options:
             }
 
             else -> {
-                throw IllegalStateException("Server does not support $method")
+                // For notifications not specifically listed, no assertion by default
             }
         }
     }
@@ -257,7 +259,7 @@ public open class ServerSession(private val serverInfo: Implementation, options:
                 }
             }
 
-            Defined.NotificationsResourcesListChanged -> {
+            Defined.NotificationsToolsListChanged -> {
                 if (serverCapabilities.tools == null) {
                     throw IllegalStateException(
                         "Server does not support notifying of tool list changes (required for ${method.value})",
@@ -280,7 +282,7 @@ public open class ServerSession(private val serverInfo: Implementation, options:
             }
 
             else -> {
-                throw IllegalStateException("Server does not support $method or it's not a notification method")
+                // For notifications not specifically listed, no assertion by default
             }
         }
     }
@@ -340,7 +342,7 @@ public open class ServerSession(private val serverInfo: Implementation, options:
             }
 
             else -> {
-                throw IllegalStateException("Server does not support $method or it's not a request handler method")
+                // For notifications not specifically listed, no assertion by default
             }
         }
     }
