@@ -31,9 +31,6 @@ import io.ktor.client.engine.cio.CIO as ClientCIO
 import io.ktor.server.cio.CIO as ServerCIO
 import io.ktor.server.sse.SSE as ServerSSE
 
-private const val URL = "127.0.0.1"
-private const val PORT = 0
-
 class SseIntegrationTest {
     @Test
     fun `client should be able to connect to sse server`() = runTest {
@@ -44,7 +41,8 @@ class SseIntegrationTest {
             withContext(Dispatchers.Default) {
                 withTimeout(1000) {
                     server = initServer()
-                    client = initClient()
+                    val port = server.engine.resolvedConnectors().first().port
+                    client = initClient(serverPort=port)
                 }
             }
         } finally {
@@ -64,12 +62,12 @@ class SseIntegrationTest {
     fun `single sse connection`() = runTest {
         var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
         var client: Client? = null
-
         try {
             withContext(Dispatchers.Default) {
                 withTimeout(1000) {
                     server = initServer()
-                    client = initClient("Client A")
+                    val port = server.engine.resolvedConnectors().first().port
+                    client = initClient("Client A", port)
 
                     val promptA = getPrompt(client, "Client A")
                     assertTrue { "Client A" in promptA }
@@ -99,8 +97,10 @@ class SseIntegrationTest {
             withContext(Dispatchers.Default) {
                 withTimeout(1000) {
                     server = initServer()
-                    clientA = initClient("Client A")
-                    clientB = initClient("Client B")
+                    val port = server.engine.resolvedConnectors().first().port
+
+                    clientA = initClient("Client A", port)
+                    clientB = initClient("Client B", port)
 
                     // Step 3: Send a prompt request from Client A
                     val promptA = getPrompt(clientA, "Client A")
@@ -118,7 +118,7 @@ class SseIntegrationTest {
         }
     }
 
-    private suspend fun initClient(name: String = ""): Client {
+    private suspend fun initClient(name: String = "", serverPort: Int): Client {
         val client = Client(
             Implementation(name = name, version = "1.0.0"),
         )
@@ -131,7 +131,7 @@ class SseIntegrationTest {
         val transport = httpClient.mcpSseTransport {
             url {
                 host = URL
-                port = PORT
+                port = serverPort
             }
         }
 
@@ -195,7 +195,12 @@ class SseIntegrationTest {
             ),
         )
 
-        return (response?.messages?.first()?.content as? TextContent)?.text
+        return (response.messages.first().content as? TextContent)?.text
             ?: error("Failed to receive prompt for Client $clientName")
+    }
+
+    companion object {
+        private const val URL = "127.0.0.1"
+        private const val PORT = 0
     }
 }
