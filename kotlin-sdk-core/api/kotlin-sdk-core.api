@@ -29,7 +29,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/Annotations$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/AudioContent : io/modelcontextprotocol/kotlin/sdk/PromptMessageContentMultimodal {
+public final class io/modelcontextprotocol/kotlin/sdk/AudioContent : io/modelcontextprotocol/kotlin/sdk/ContentBlock, io/modelcontextprotocol/kotlin/sdk/CreateMessageResultContent, io/modelcontextprotocol/kotlin/sdk/SamplingMessageContent {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/AudioContent$Companion;
 	public static final field TYPE Ljava/lang/String;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Annotations;)V
@@ -450,6 +450,15 @@ public final class io/modelcontextprotocol/kotlin/sdk/CompleteResult$Completion$
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public abstract interface class io/modelcontextprotocol/kotlin/sdk/ContentBlock {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/ContentBlock$Companion;
+	public abstract fun getType ()Ljava/lang/String;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/ContentBlock$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
 public final class io/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest : io/modelcontextprotocol/kotlin/sdk/ServerRequest, io/modelcontextprotocol/kotlin/sdk/WithMeta {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest$Companion;
 	public fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest$RequestedSchema;Lkotlinx/serialization/json/JsonObject;)V
@@ -622,17 +631,17 @@ public final class io/modelcontextprotocol/kotlin/sdk/CreateMessageRequest$Inclu
 
 public final class io/modelcontextprotocol/kotlin/sdk/CreateMessageResult : io/modelcontextprotocol/kotlin/sdk/ClientResult {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/CreateMessageResult$Companion;
-	public fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/StopReason;Lio/modelcontextprotocol/kotlin/sdk/Role;Lio/modelcontextprotocol/kotlin/sdk/PromptMessageContentMultimodal;Lkotlinx/serialization/json/JsonObject;)V
-	public synthetic fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/StopReason;Lio/modelcontextprotocol/kotlin/sdk/Role;Lio/modelcontextprotocol/kotlin/sdk/PromptMessageContentMultimodal;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/StopReason;Lio/modelcontextprotocol/kotlin/sdk/Role;Lio/modelcontextprotocol/kotlin/sdk/CreateMessageResultContent;Lkotlinx/serialization/json/JsonObject;)V
+	public synthetic fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/StopReason;Lio/modelcontextprotocol/kotlin/sdk/Role;Lio/modelcontextprotocol/kotlin/sdk/CreateMessageResultContent;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Lio/modelcontextprotocol/kotlin/sdk/StopReason;
 	public final fun component3 ()Lio/modelcontextprotocol/kotlin/sdk/Role;
-	public final fun component4 ()Lio/modelcontextprotocol/kotlin/sdk/PromptMessageContentMultimodal;
+	public final fun component4 ()Lio/modelcontextprotocol/kotlin/sdk/CreateMessageResultContent;
 	public final fun component5 ()Lkotlinx/serialization/json/JsonObject;
-	public final fun copy (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/StopReason;Lio/modelcontextprotocol/kotlin/sdk/Role;Lio/modelcontextprotocol/kotlin/sdk/PromptMessageContentMultimodal;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/CreateMessageResult;
-	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/CreateMessageResult;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/StopReason;Lio/modelcontextprotocol/kotlin/sdk/Role;Lio/modelcontextprotocol/kotlin/sdk/PromptMessageContentMultimodal;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/CreateMessageResult;
+	public final fun copy (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/StopReason;Lio/modelcontextprotocol/kotlin/sdk/Role;Lio/modelcontextprotocol/kotlin/sdk/CreateMessageResultContent;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/CreateMessageResult;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/CreateMessageResult;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/StopReason;Lio/modelcontextprotocol/kotlin/sdk/Role;Lio/modelcontextprotocol/kotlin/sdk/CreateMessageResultContent;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/CreateMessageResult;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getContent ()Lio/modelcontextprotocol/kotlin/sdk/PromptMessageContentMultimodal;
+	public final fun getContent ()Lio/modelcontextprotocol/kotlin/sdk/CreateMessageResultContent;
 	public final fun getModel ()Ljava/lang/String;
 	public final fun getRole ()Lio/modelcontextprotocol/kotlin/sdk/Role;
 	public final fun getStopReason ()Lio/modelcontextprotocol/kotlin/sdk/StopReason;
@@ -653,6 +662,14 @@ public final synthetic class io/modelcontextprotocol/kotlin/sdk/CreateMessageRes
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/CreateMessageResult$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public abstract interface class io/modelcontextprotocol/kotlin/sdk/CreateMessageResultContent : io/modelcontextprotocol/kotlin/sdk/ContentBlock {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/CreateMessageResultContent$Companion;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/CreateMessageResultContent$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
@@ -702,7 +719,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/CustomRequest$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/EmbeddedResource : io/modelcontextprotocol/kotlin/sdk/PromptMessageContent {
+public final class io/modelcontextprotocol/kotlin/sdk/EmbeddedResource : io/modelcontextprotocol/kotlin/sdk/ContentBlock {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/EmbeddedResource$Companion;
 	public static final field TYPE Ljava/lang/String;
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/ResourceContents;Lio/modelcontextprotocol/kotlin/sdk/Annotations;)V
@@ -875,7 +892,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/GetPromptResult$Companion 
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/ImageContent : io/modelcontextprotocol/kotlin/sdk/PromptMessageContentMultimodal {
+public final class io/modelcontextprotocol/kotlin/sdk/ImageContent : io/modelcontextprotocol/kotlin/sdk/ContentBlock, io/modelcontextprotocol/kotlin/sdk/CreateMessageResultContent, io/modelcontextprotocol/kotlin/sdk/SamplingMessageContent {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/ImageContent$Companion;
 	public static final field TYPE Ljava/lang/String;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Annotations;)V
@@ -1994,13 +2011,13 @@ public final class io/modelcontextprotocol/kotlin/sdk/PromptListChangedNotificat
 
 public final class io/modelcontextprotocol/kotlin/sdk/PromptMessage {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/PromptMessage$Companion;
-	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/Role;Lio/modelcontextprotocol/kotlin/sdk/PromptMessageContent;)V
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/Role;Lio/modelcontextprotocol/kotlin/sdk/ContentBlock;)V
 	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/Role;
-	public final fun component2 ()Lio/modelcontextprotocol/kotlin/sdk/PromptMessageContent;
-	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/Role;Lio/modelcontextprotocol/kotlin/sdk/PromptMessageContent;)Lio/modelcontextprotocol/kotlin/sdk/PromptMessage;
-	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/PromptMessage;Lio/modelcontextprotocol/kotlin/sdk/Role;Lio/modelcontextprotocol/kotlin/sdk/PromptMessageContent;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/PromptMessage;
+	public final fun component2 ()Lio/modelcontextprotocol/kotlin/sdk/ContentBlock;
+	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/Role;Lio/modelcontextprotocol/kotlin/sdk/ContentBlock;)Lio/modelcontextprotocol/kotlin/sdk/PromptMessage;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/PromptMessage;Lio/modelcontextprotocol/kotlin/sdk/Role;Lio/modelcontextprotocol/kotlin/sdk/ContentBlock;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/PromptMessage;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getContent ()Lio/modelcontextprotocol/kotlin/sdk/PromptMessageContent;
+	public final fun getContent ()Lio/modelcontextprotocol/kotlin/sdk/ContentBlock;
 	public final fun getRole ()Lio/modelcontextprotocol/kotlin/sdk/Role;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -2018,23 +2035,6 @@ public final synthetic class io/modelcontextprotocol/kotlin/sdk/PromptMessage$$s
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/PromptMessage$Companion {
-	public final fun serializer ()Lkotlinx/serialization/KSerializer;
-}
-
-public abstract interface class io/modelcontextprotocol/kotlin/sdk/PromptMessageContent {
-	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/PromptMessageContent$Companion;
-	public abstract fun getType ()Ljava/lang/String;
-}
-
-public final class io/modelcontextprotocol/kotlin/sdk/PromptMessageContent$Companion {
-	public final fun serializer ()Lkotlinx/serialization/KSerializer;
-}
-
-public abstract interface class io/modelcontextprotocol/kotlin/sdk/PromptMessageContentMultimodal : io/modelcontextprotocol/kotlin/sdk/PromptMessageContent {
-	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/PromptMessageContentMultimodal$Companion;
-}
-
-public final class io/modelcontextprotocol/kotlin/sdk/PromptMessageContentMultimodal$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
@@ -2558,13 +2558,13 @@ public final class io/modelcontextprotocol/kotlin/sdk/RootsListChangedNotificati
 
 public final class io/modelcontextprotocol/kotlin/sdk/SamplingMessage {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/SamplingMessage$Companion;
-	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/Role;Lio/modelcontextprotocol/kotlin/sdk/PromptMessageContentMultimodal;)V
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/Role;Lio/modelcontextprotocol/kotlin/sdk/SamplingMessageContent;)V
 	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/Role;
-	public final fun component2 ()Lio/modelcontextprotocol/kotlin/sdk/PromptMessageContentMultimodal;
-	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/Role;Lio/modelcontextprotocol/kotlin/sdk/PromptMessageContentMultimodal;)Lio/modelcontextprotocol/kotlin/sdk/SamplingMessage;
-	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/SamplingMessage;Lio/modelcontextprotocol/kotlin/sdk/Role;Lio/modelcontextprotocol/kotlin/sdk/PromptMessageContentMultimodal;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/SamplingMessage;
+	public final fun component2 ()Lio/modelcontextprotocol/kotlin/sdk/SamplingMessageContent;
+	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/Role;Lio/modelcontextprotocol/kotlin/sdk/SamplingMessageContent;)Lio/modelcontextprotocol/kotlin/sdk/SamplingMessage;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/SamplingMessage;Lio/modelcontextprotocol/kotlin/sdk/Role;Lio/modelcontextprotocol/kotlin/sdk/SamplingMessageContent;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/SamplingMessage;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getContent ()Lio/modelcontextprotocol/kotlin/sdk/PromptMessageContentMultimodal;
+	public final fun getContent ()Lio/modelcontextprotocol/kotlin/sdk/SamplingMessageContent;
 	public final fun getRole ()Lio/modelcontextprotocol/kotlin/sdk/Role;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -2582,6 +2582,14 @@ public final synthetic class io/modelcontextprotocol/kotlin/sdk/SamplingMessage$
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/SamplingMessage$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public abstract interface class io/modelcontextprotocol/kotlin/sdk/SamplingMessageContent : io/modelcontextprotocol/kotlin/sdk/ContentBlock {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/SamplingMessageContent$Companion;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/SamplingMessageContent$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
@@ -2823,7 +2831,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/SubscribeRequest$Companion
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/TextContent : io/modelcontextprotocol/kotlin/sdk/PromptMessageContentMultimodal {
+public final class io/modelcontextprotocol/kotlin/sdk/TextContent : io/modelcontextprotocol/kotlin/sdk/ContentBlock, io/modelcontextprotocol/kotlin/sdk/CreateMessageResultContent, io/modelcontextprotocol/kotlin/sdk/SamplingMessageContent {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/TextContent$Companion;
 	public static final field TYPE Ljava/lang/String;
 	public fun <init> ()V
@@ -3100,7 +3108,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/Types_utilKt {
 	public static synthetic fun ok$default (Lio/modelcontextprotocol/kotlin/sdk/CallToolResult$Companion;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/CallToolResult;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/UnknownContent : io/modelcontextprotocol/kotlin/sdk/PromptMessageContentMultimodal {
+public final class io/modelcontextprotocol/kotlin/sdk/UnknownContent : io/modelcontextprotocol/kotlin/sdk/ContentBlock, io/modelcontextprotocol/kotlin/sdk/CreateMessageResultContent, io/modelcontextprotocol/kotlin/sdk/SamplingMessageContent {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/UnknownContent$Companion;
 	public fun <init> (Ljava/lang/String;)V
 	public final fun component1 ()Ljava/lang/String;

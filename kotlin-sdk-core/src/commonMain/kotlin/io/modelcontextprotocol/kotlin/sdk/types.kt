@@ -971,18 +971,24 @@ public data class GetPromptRequest(
 }
 
 /**
- * Represents the content of a prompt message.
+ * Represents the types of a ContentBlock
  */
-@Serializable(with = PromptMessageContentPolymorphicSerializer::class)
-public sealed interface PromptMessageContent {
+@Serializable(with = ContentBlockPolymorphicSerializer::class)
+public sealed interface ContentBlock {
     public val type: String
 }
 
 /**
- * Represents prompt message content that is either text, image or audio.
+ * Represents content for the CreateMessageResult
  */
-@Serializable(with = PromptMessageContentMultimodalPolymorphicSerializer::class)
-public sealed interface PromptMessageContentMultimodal : PromptMessageContent
+@Serializable(with = CreateMessageResultContentMultimodalPolymorphicSerializer::class)
+public sealed interface CreateMessageResultContent : ContentBlock
+
+/**
+ * Represents content for the SamplingMessage
+ */
+@Serializable(with = SamplingMessageContentMultimodalPolymorphicSerializer::class)
+public sealed interface SamplingMessageContent : ContentBlock
 
 /**
  * Text provided to or from an LLM.
@@ -998,7 +1004,9 @@ public data class TextContent(
      * Optional annotations for the client.
      */
     val annotations: Annotations? = null,
-) : PromptMessageContentMultimodal {
+) : ContentBlock,
+    CreateMessageResultContent,
+    SamplingMessageContent {
     override val type: String = TYPE
 
     public companion object {
@@ -1025,7 +1033,9 @@ public data class ImageContent(
      * Optional annotations for the client.
      */
     val annotations: Annotations? = null,
-) : PromptMessageContentMultimodal {
+) : ContentBlock,
+    CreateMessageResultContent,
+    SamplingMessageContent {
     override val type: String = TYPE
 
     public companion object {
@@ -1052,7 +1062,9 @@ public data class AudioContent(
      * Optional annotations for the client.
      */
     val annotations: Annotations? = null,
-) : PromptMessageContentMultimodal {
+) : ContentBlock,
+    CreateMessageResultContent,
+    SamplingMessageContent {
     override val type: String = TYPE
 
     public companion object {
@@ -1064,7 +1076,10 @@ public data class AudioContent(
  * Unknown content provided to or from an LLM.
  */
 @Serializable
-public data class UnknownContent(override val type: String) : PromptMessageContentMultimodal
+public data class UnknownContent(override val type: String) :
+    ContentBlock,
+    CreateMessageResultContent,
+    SamplingMessageContent
 
 /**
  * The contents of a resource, embedded into a prompt or tool call result.
@@ -1080,7 +1095,7 @@ public data class EmbeddedResource(
      * Optional annotations for the client.
      */
     val annotations: Annotations? = null,
-) : PromptMessageContent {
+) : ContentBlock {
     override val type: String = TYPE
 
     public companion object {
@@ -1130,7 +1145,7 @@ public data class Annotations(
  * Describes a message returned as part of a prompt.
  */
 @Serializable
-public data class PromptMessage(val role: Role, val content: PromptMessageContent)
+public data class PromptMessage(val role: Role, val content: ContentBlock)
 
 /**
  * The server's response to a prompts/get request from the client.
@@ -1282,7 +1297,7 @@ public class ListToolsResult(
  */
 @Serializable
 public sealed interface CallToolResultBase : ServerResult {
-    public val content: List<PromptMessageContent>
+    public val content: List<ContentBlock>
     public val structuredContent: JsonObject?
     public val isError: Boolean? get() = false
 }
@@ -1292,7 +1307,7 @@ public sealed interface CallToolResultBase : ServerResult {
  */
 @Serializable
 public class CallToolResult(
-    override val content: List<PromptMessageContent>,
+    override val content: List<ContentBlock>,
     override val structuredContent: JsonObject? = null,
     override val isError: Boolean? = false,
     override val _meta: JsonObject = EmptyJsonObject,
@@ -1303,7 +1318,7 @@ public class CallToolResult(
  */
 @Serializable
 public class CompatibilityCallToolResult(
-    override val content: List<PromptMessageContent>,
+    override val content: List<ContentBlock>,
     override val structuredContent: JsonObject? = null,
     override val isError: Boolean? = false,
     override val _meta: JsonObject = EmptyJsonObject,
@@ -1448,7 +1463,7 @@ public class ModelPreferences(
  * Describes a message issued to or received from an LLM API.
  */
 @Serializable
-public data class SamplingMessage(val role: Role, val content: PromptMessageContentMultimodal)
+public data class SamplingMessage(val role: Role, val content: SamplingMessageContent)
 
 /**
  * A request from the server to sample an LLM via the client.
@@ -1530,7 +1545,7 @@ public data class CreateMessageResult(
      */
     val stopReason: StopReason? = null,
     val role: Role,
-    val content: PromptMessageContentMultimodal,
+    val content: CreateMessageResultContent,
     override val _meta: JsonObject = EmptyJsonObject,
 ) : ClientResult
 

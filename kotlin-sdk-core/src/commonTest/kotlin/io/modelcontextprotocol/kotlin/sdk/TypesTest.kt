@@ -94,8 +94,8 @@ class TypesTest {
     fun `should serialize and deserialize text content correctly`() {
         val textContent = TextContent(text = "Test message")
 
-        val json = McpJson.encodeToString<PromptMessageContent>(textContent)
-        val decoded = McpJson.decodeFromString<PromptMessageContent>(json)
+        val json = McpJson.encodeToString<ContentBlock>(textContent)
+        val decoded = McpJson.decodeFromString<ContentBlock>(json)
 
         assertIs<TextContent>(decoded)
         assertEquals("text", decoded.type)
@@ -121,8 +121,8 @@ class TypesTest {
             mimeType = "image/jpeg",
         )
 
-        val json = McpJson.encodeToString<PromptMessageContent>(imageContent)
-        val decoded = McpJson.decodeFromString<PromptMessageContent>(json)
+        val json = McpJson.encodeToString<ContentBlock>(imageContent)
+        val decoded = McpJson.decodeFromString<ContentBlock>(json)
 
         assertIs<ImageContent>(decoded)
         assertEquals("image", decoded.type)
@@ -149,8 +149,8 @@ class TypesTest {
             mimeType = "audio/wav",
         )
 
-        val json = McpJson.encodeToString<PromptMessageContent>(audioContent)
-        val decoded = McpJson.decodeFromString<PromptMessageContent>(json)
+        val json = McpJson.encodeToString<ContentBlock>(audioContent)
+        val decoded = McpJson.decodeFromString<ContentBlock>(json)
 
         assertIs<AudioContent>(decoded)
         assertEquals("audio", decoded.type)
@@ -180,8 +180,8 @@ class TypesTest {
         )
         val embeddedResource = EmbeddedResource(resource = resource)
 
-        val json = McpJson.encodeToString<PromptMessageContent>(embeddedResource)
-        val decoded = McpJson.decodeFromString<PromptMessageContent>(json)
+        val json = McpJson.encodeToString<ContentBlock>(embeddedResource)
+        val decoded = McpJson.decodeFromString<ContentBlock>(json)
 
         assertIs<EmbeddedResource>(decoded)
         assertEquals("resource", decoded.type)
@@ -196,7 +196,7 @@ class TypesTest {
     fun `should handle unknown content type`() {
         val unknownJson = """{"type": "unknown_type"}"""
 
-        val decoded = McpJson.decodeFromString<PromptMessageContent>(unknownJson)
+        val decoded = McpJson.decodeFromString<ContentBlock>(unknownJson)
 
         assertIs<UnknownContent>(decoded)
         assertEquals("unknown_type", decoded.type)
