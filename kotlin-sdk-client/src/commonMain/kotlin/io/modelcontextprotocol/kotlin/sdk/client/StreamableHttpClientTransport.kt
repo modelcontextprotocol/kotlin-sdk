@@ -142,7 +142,10 @@ public class StreamableHttpClientTransport(
             ContentType.Application.Json -> response.bodyAsText().takeIf { it.isNotEmpty() }?.let { json ->
                 runCatching { McpJson.decodeFromString<JSONRPCMessage>(json) }
                     .onSuccess { _onMessage(it) }
-                    .onFailure(_onError)
+                    .onFailure {
+                        _onError(it)
+                        throw it
+                    }
             }
 
             ContentType.Text.EventStream -> handleInlineSse(
@@ -313,7 +316,10 @@ public class StreamableHttpClientTransport(
                             _onMessage(msg)
                         }
                     }
-                    .onFailure(_onError)
+                    .onFailure {
+                        _onError(it)
+                        throw it
+                    }
             }
             // reset
             id = null
