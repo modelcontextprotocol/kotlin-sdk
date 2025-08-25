@@ -225,6 +225,7 @@ private fun selectClientResultDeserializer(element: JsonElement): Deserializatio
     return when {
         jsonObject.contains("model") -> CreateMessageResult.serializer()
         jsonObject.contains("roots") -> ListRootsResult.serializer()
+        jsonObject.contains("action") -> CreateElicitationResult.serializer()
         else -> null
     }
 }
