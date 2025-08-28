@@ -44,7 +44,17 @@ public class ReadBuffer {
         try {
             return deserializeMessage(line)
         } catch (e: Exception) {
-            logger.error(e) { "Failed to deserialize message from line: $line\nSkipping..." }
+            logger.error(e) { "Failed to deserialize message from line: $line\nAttempting to recover..." }
+            // if there is a non-JSON object prefix, try to parse from the first '{' onward.
+            val braceIndex = line.indexOf('{')
+            if (braceIndex != -1) {
+                val trimmed = line.substring(braceIndex)
+                try {
+                    return deserializeMessage(trimmed)
+                } catch (ignored: Exception) {
+                    logger.error(ignored) { "Recovery failed for line: $line\nSkipping..." }
+                }
+            }
         }
 
         return null
