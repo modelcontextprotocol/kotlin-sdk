@@ -52,7 +52,7 @@ public class ReadBuffer {
                 try {
                     return deserializeMessage(trimmed)
                 } catch (ignored: Exception) {
-                    logger.error(ignored) { "Recovery failed for line: $line\nSkipping..." }
+                    logger.error(ignored) { "Deserialization failed for line: $line\nSkipping..." }
                 }
             }
         }
