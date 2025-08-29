@@ -3,11 +3,11 @@ name: Validate PR
 on:
   workflow_dispatch:
   pull_request:
-    branches: [main]
+    branches: [ main ]
 
 concurrency:
-    group: ${{ github.workflow }}-${{ github.ref }}
-    cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   validate-pr:
@@ -15,16 +15,25 @@ jobs:
     name: Validate PR
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
       - name: Clean Build with Gradle
         run: ./gradlew clean build
+
+      - name: Upload JUnit test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-results
+          path: '**/build/test-results/test/*.xml'
 
       - name: Disable Auto-Merge on Fail
         if: failure()

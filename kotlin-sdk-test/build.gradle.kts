@@ -3,6 +3,11 @@ plugins {
 }
 
 kotlin {
+    jvm {
+        testRuns["test"].executionTask.configure {
+            useJUnitPlatform()
+        }
+    }
     sourceSets {
         commonTest {
             dependencies {
