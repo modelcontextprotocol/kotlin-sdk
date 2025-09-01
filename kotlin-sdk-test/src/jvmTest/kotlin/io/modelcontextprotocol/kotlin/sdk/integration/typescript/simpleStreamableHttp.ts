@@ -30,7 +30,6 @@ async function main() {
     } = await importFromSdk<any>('src/types.ts');
     const {InMemoryEventStore} = await importFromSdk<any>('src/examples/shared/inMemoryEventStore.ts');
     const {setupAuthServer} = await importFromSdk<any>('src/examples/server/demoInMemoryOAuthProvider.ts');
-    const {OAuthMetadata} = await importFromSdk<any>('src/shared/auth.ts');
     const {checkResourceAllowed} = await importFromSdk<any>('src/shared/auth-utils.ts');
 
     // Check for OAuth flag
