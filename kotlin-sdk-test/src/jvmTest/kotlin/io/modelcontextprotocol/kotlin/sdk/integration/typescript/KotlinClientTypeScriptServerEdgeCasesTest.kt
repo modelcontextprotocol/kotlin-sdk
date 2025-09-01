@@ -208,20 +208,15 @@ class KotlinClientTypeScriptServerEdgeCasesTest : TypeScriptTestBase() {
                     "name" to JsonObject(mapOf("nested" to JsonPrimitive("value"))),
                 )
 
-                try {
-                    val result = client.callTool("greet", invalidArguments)
-                    assertNotNull(result, "Tool call result should not be null")
-
-                    val callResult = result as CallToolResult
-                    val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
-                    assertNotNull(textContent, "Text content should be present in the result")
-                } catch (e: Exception) {
-                    assertTrue(
-                        e.message?.contains("invalid") == true ||
-                            e.message?.contains("error") == true,
-                        "Exception should indicate invalid arguments: ${e.message}",
-                    )
+                val exception = assertThrows<IllegalStateException> {
+                    client.callTool("greet", invalidArguments)
                 }
+
+                assertTrue(
+                    exception.message?.contains("invalid") == true ||
+                        exception.message?.contains("error") == true,
+                    "Exception should indicate invalid arguments: ${exception.message}",
+                )
             }
         }
     }
