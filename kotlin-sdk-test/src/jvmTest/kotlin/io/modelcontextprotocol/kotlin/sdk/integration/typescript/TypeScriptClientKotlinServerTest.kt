@@ -1,5 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.typescript
 
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.runTest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -38,7 +39,7 @@ class TypeScriptClientKotlinServerTest : TypeScriptTestBase() {
 
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
-    fun testToolCall() {
+    fun testToolCall() = runTest {
         val testName = "TestUser"
         val command = "npx tsx myClient.ts $serverUrl greet $testName"
         val output = executeCommand(command, tsClientDir)
@@ -58,7 +59,7 @@ class TypeScriptClientKotlinServerTest : TypeScriptTestBase() {
 
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
-    fun testNotifications() {
+    fun testNotifications() = runTest {
         val name = "NotifUser"
         val command = "npx tsx myClient.ts $serverUrl multi-greet $name"
         val output = executeCommand(command, tsClientDir)
@@ -76,7 +77,7 @@ class TypeScriptClientKotlinServerTest : TypeScriptTestBase() {
 
     @Test
     @Timeout(120, unit = TimeUnit.SECONDS)
-    fun testMultipleClientSequence() {
+    fun testMultipleClientSequence() = runTest {
         val testName1 = "FirstClient"
         val command1 = "npx tsx myClient.ts $serverUrl greet $testName1"
         val output1 = executeCommand(command1, tsClientDir)
@@ -108,7 +109,7 @@ class TypeScriptClientKotlinServerTest : TypeScriptTestBase() {
 
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
-    fun testMultipleClientParallel() {
+    fun testMultipleClientParallel() = runTest {
         val clientCount = 3
         val clients = listOf(
             "FirstClient" to "greet",

@@ -129,157 +129,142 @@ class ResourceEdgeCasesTest : KotlinTestBase() {
     }
 
     @Test
-    fun testBinaryResource() {
-        runTest {
-            val result = client.readResource(ReadResourceRequest(uri = binaryResourceUri))
+    fun testBinaryResource() = runTest {
+        val result = client.readResource(ReadResourceRequest(uri = binaryResourceUri))
 
-            assertNotNull(result, "Read resource result should not be null")
-            assertTrue(result.contents.isNotEmpty(), "Resource contents should not be empty")
+        assertNotNull(result, "Read resource result should not be null")
+        assertTrue(result.contents.isNotEmpty(), "Resource contents should not be empty")
 
-            val content = result.contents.firstOrNull() as? BlobResourceContents
-            assertNotNull(content, "Resource content should be BlobResourceContents")
-            assertEquals(binaryResourceContent, content.blob, "Binary resource content should match")
-            assertEquals("image/png", content.mimeType, "MIME type should match")
-        }
+        val content = result.contents.firstOrNull() as? BlobResourceContents
+        assertNotNull(content, "Resource content should be BlobResourceContents")
+        assertEquals(binaryResourceContent, content.blob, "Binary resource content should match")
+        assertEquals("image/png", content.mimeType, "MIME type should match")
     }
 
     @Test
-    fun testLargeResource() {
-        runTest {
-            val result = client.readResource(ReadResourceRequest(uri = largeResourceUri))
+    fun testLargeResource() = runTest {
+        val result = client.readResource(ReadResourceRequest(uri = largeResourceUri))
 
-            assertNotNull(result, "Read resource result should not be null")
-            assertTrue(result.contents.isNotEmpty(), "Resource contents should not be empty")
+        assertNotNull(result, "Read resource result should not be null")
+        assertTrue(result.contents.isNotEmpty(), "Resource contents should not be empty")
 
-            val content = result.contents.firstOrNull() as? TextResourceContents
-            assertNotNull(content, "Resource content should be TextResourceContents")
-            assertEquals(100_000, content.text.length, "Large resource content length should match")
-            assertEquals("X".repeat(100_000), content.text, "Large resource content should match")
-        }
+        val content = result.contents.firstOrNull() as? TextResourceContents
+        assertNotNull(content, "Resource content should be TextResourceContents")
+        assertEquals(100_000, content.text.length, "Large resource content length should match")
+        assertEquals("X".repeat(100_000), content.text, "Large resource content should match")
     }
 
     @Test
-    fun testInvalidResourceUri() {
-        runTest {
-            val invalidUri = "test://nonexistent.txt"
+    fun testInvalidResourceUri() = runTest {
+        val invalidUri = "test://nonexistent.txt"
 
-            val exception = assertThrows<Exception> {
-                runBlocking {
-                    client.readResource(ReadResourceRequest(uri = invalidUri))
-                }
+        val exception = assertThrows<IllegalStateException> {
+            runBlocking {
+                client.readResource(ReadResourceRequest(uri = invalidUri))
             }
+        }
 
-            assertTrue(
-                exception.message?.contains("not found") == true ||
-                    exception.message?.contains("invalid") == true ||
-                    exception.message?.contains("error") == true,
-                "Exception should indicate resource not found or invalid URI",
+        val msg = exception.message ?: ""
+        val expectedMessage =
+            "JSONRPCError(code=InternalError, message=Resource not found: test://nonexistent.txt, data={})"
+
+        assertEquals(expectedMessage, msg, "Unexpected error message for invalid resource URI")
+    }
+
+    @Test
+    fun testDynamicResource() = runTest {
+        val initialResult = client.readResource(ReadResourceRequest(uri = dynamicResourceUri))
+        assertNotNull(initialResult, "Initial read result should not be null")
+        val initialContent = (initialResult.contents.firstOrNull() as? TextResourceContents)?.text
+        assertEquals("Original content", initialContent, "Initial content should match")
+
+        // update resource
+        dynamicResourceContent.set(true)
+
+        val updatedResult = client.readResource(ReadResourceRequest(uri = dynamicResourceUri))
+        assertNotNull(updatedResult, "Updated read result should not be null")
+        val updatedContent = (updatedResult.contents.firstOrNull() as? TextResourceContents)?.text
+        assertEquals("Updated content", updatedContent, "Updated content should match")
+    }
+
+    @Test
+    fun testResourceAddAndRemove() = runTest {
+        val initialList = client.listResources()
+        assertNotNull(initialList, "Initial list result should not be null")
+        val initialCount = initialList.resources.size
+
+        val newResourceUri = "test://new-resource.txt"
+        server.addResource(
+            uri = newResourceUri,
+            name = "New Resource",
+            description = "A newly added resource",
+            mimeType = "text/plain",
+        ) { request ->
+            ReadResourceResult(
+                contents = listOf(
+                    TextResourceContents(
+                        text = "New resource content",
+                        uri = request.uri,
+                        mimeType = "text/plain",
+                    ),
+                ),
             )
         }
+
+        val updatedList = client.listResources()
+        assertNotNull(updatedList, "Updated list result should not be null")
+        val updatedCount = updatedList.resources.size
+
+        assertEquals(initialCount + 1, updatedCount, "Resource count should increase by 1")
+        val newResource = updatedList.resources.find { it.uri == newResourceUri }
+        assertNotNull(newResource, "New resource should be in the list")
+
+        server.removeResource(newResourceUri)
+
+        val finalList = client.listResources()
+        assertNotNull(finalList, "Final list result should not be null")
+        val finalCount = finalList.resources.size
+
+        assertEquals(initialCount, finalCount, "Resource count should return to initial value")
+        val removedResource = finalList.resources.find { it.uri == newResourceUri }
+        assertEquals(null, removedResource, "Resource should be removed from the list")
     }
 
     @Test
-    fun testDynamicResource() {
-        runTest {
-            val initialResult = client.readResource(ReadResourceRequest(uri = dynamicResourceUri))
-            assertNotNull(initialResult, "Initial read result should not be null")
-            val initialContent = (initialResult.contents.firstOrNull() as? TextResourceContents)?.text
-            assertEquals("Original content", initialContent, "Initial content should match")
+    fun testConcurrentResourceOperations() = runTest {
+        val concurrentCount = 10
+        val results = mutableListOf<ReadResourceResult?>()
 
-            // update resource
-            dynamicResourceContent.set(true)
+        runBlocking {
+            repeat(concurrentCount) { index ->
+                launch {
+                    val uri = when (index % 3) {
+                        0 -> testResourceUri
+                        1 -> binaryResourceUri
+                        else -> largeResourceUri
+                    }
 
-            val updatedResult = client.readResource(ReadResourceRequest(uri = dynamicResourceUri))
-            assertNotNull(updatedResult, "Updated read result should not be null")
-            val updatedContent = (updatedResult.contents.firstOrNull() as? TextResourceContents)?.text
-            assertEquals("Updated content", updatedContent, "Updated content should match")
-        }
-    }
-
-    @Test
-    fun testResourceAddAndRemove() {
-        runTest {
-            val initialList = client.listResources()
-            assertNotNull(initialList, "Initial list result should not be null")
-            val initialCount = initialList.resources.size
-
-            val newResourceUri = "test://new-resource.txt"
-            server.addResource(
-                uri = newResourceUri,
-                name = "New Resource",
-                description = "A newly added resource",
-                mimeType = "text/plain",
-            ) { request ->
-                ReadResourceResult(
-                    contents = listOf(
-                        TextResourceContents(
-                            text = "New resource content",
-                            uri = request.uri,
-                            mimeType = "text/plain",
-                        ),
-                    ),
-                )
-            }
-
-            val updatedList = client.listResources()
-            assertNotNull(updatedList, "Updated list result should not be null")
-            val updatedCount = updatedList.resources.size
-
-            assertEquals(initialCount + 1, updatedCount, "Resource count should increase by 1")
-            val newResource = updatedList.resources.find { it.uri == newResourceUri }
-            assertNotNull(newResource, "New resource should be in the list")
-
-            server.removeResource(newResourceUri)
-
-            val finalList = client.listResources()
-            assertNotNull(finalList, "Final list result should not be null")
-            val finalCount = finalList.resources.size
-
-            assertEquals(initialCount, finalCount, "Resource count should return to initial value")
-            val removedResource = finalList.resources.find { it.uri == newResourceUri }
-            assertEquals(null, removedResource, "Resource should be removed from the list")
-        }
-    }
-
-    @Test
-    fun testConcurrentResourceOperations() {
-        runTest {
-            val concurrentCount = 10
-            val results = mutableListOf<ReadResourceResult?>()
-
-            runBlocking {
-                repeat(concurrentCount) { index ->
-                    launch {
-                        val uri = when (index % 3) {
-                            0 -> testResourceUri
-                            1 -> binaryResourceUri
-                            else -> largeResourceUri
-                        }
-
-                        val result = client.readResource(ReadResourceRequest(uri = uri))
-                        synchronized(results) {
-                            results.add(result)
-                        }
+                    val result = client.readResource(ReadResourceRequest(uri = uri))
+                    synchronized(results) {
+                        results.add(result)
                     }
                 }
             }
+        }
 
-            assertEquals(concurrentCount, results.size, "All concurrent operations should complete")
-            results.forEach { result ->
-                assertNotNull(result, "Result should not be null")
-                assertTrue(result.contents.isNotEmpty(), "Result contents should not be empty")
-            }
+        assertEquals(concurrentCount, results.size, "All concurrent operations should complete")
+        results.forEach { result ->
+            assertNotNull(result, "Result should not be null")
+            assertTrue(result.contents.isNotEmpty(), "Result contents should not be empty")
         }
     }
 
     @Test
-    fun testSubscribeAndUnsubscribe() {
-        runTest {
-            val subscribeResult = client.subscribeResource(SubscribeRequest(uri = testResourceUri))
-            assertNotNull(subscribeResult, "Subscribe result should not be null")
+    fun testSubscribeAndUnsubscribe() = runTest {
+        val subscribeResult = client.subscribeResource(SubscribeRequest(uri = testResourceUri))
+        assertNotNull(subscribeResult, "Subscribe result should not be null")
 
-            val unsubscribeResult = client.unsubscribeResource(UnsubscribeRequest(uri = testResourceUri))
-            assertNotNull(unsubscribeResult, "Unsubscribe result should not be null")
-        }
+        val unsubscribeResult = client.unsubscribeResource(UnsubscribeRequest(uri = testResourceUri))
+        assertNotNull(unsubscribeResult, "Unsubscribe result should not be null")
     }
 }

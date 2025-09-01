@@ -123,7 +123,7 @@ class PromptEdgeCasesTest : KotlinTestBase() {
             )
         }
 
-        // Very large prompt
+        // very large prompt
         server.addPrompt(
             name = largePromptName,
             description = largePromptDescription,
@@ -183,230 +183,210 @@ class PromptEdgeCasesTest : KotlinTestBase() {
     }
 
     @Test
-    fun testBasicPrompt() {
-        runTest {
-            val testName = "Alice"
-            val result = client.getPrompt(
-                GetPromptRequest(
-                    name = basicPromptName,
-                    arguments = mapOf("name" to testName),
-                ),
-            )
+    fun testBasicPrompt() = runTest {
+        val testName = "Alice"
+        val result = client.getPrompt(
+            GetPromptRequest(
+                name = basicPromptName,
+                arguments = mapOf("name" to testName),
+            ),
+        )
 
-            assertNotNull(result, "Get prompt result should not be null")
-            assertEquals(basicPromptDescription, result.description, "Prompt description should match")
+        assertNotNull(result, "Get prompt result should not be null")
+        assertEquals(basicPromptDescription, result.description, "Prompt description should match")
 
-            assertEquals(2, result.messages.size, "Prompt should have 2 messages")
+        assertEquals(2, result.messages.size, "Prompt should have 2 messages")
 
-            val userMessage = result.messages.find { it.role == Role.user }
-            assertNotNull(userMessage, "User message should be in the list")
-            val userContent = userMessage.content as? TextContent
-            assertNotNull(userContent, "User message content should be TextContent")
-            assertEquals("Hello, $testName!", userContent.text, "User message content should match")
+        val userMessage = result.messages.find { it.role == Role.user }
+        assertNotNull(userMessage, "User message should be in the list")
+        val userContent = userMessage.content as? TextContent
+        assertNotNull(userContent, "User message content should be TextContent")
+        assertEquals("Hello, $testName!", userContent.text, "User message content should match")
 
-            val assistantMessage = result.messages.find { it.role == Role.assistant }
-            assertNotNull(assistantMessage, "Assistant message should be in the list")
-            val assistantContent = assistantMessage.content as? TextContent
-            assertNotNull(assistantContent, "Assistant message content should be TextContent")
-            assertEquals(
-                "Greetings, $testName! How can I assist you today?",
-                assistantContent.text,
-                "Assistant message content should match",
-            )
-        }
+        val assistantMessage = result.messages.find { it.role == Role.assistant }
+        assertNotNull(assistantMessage, "Assistant message should be in the list")
+        val assistantContent = assistantMessage.content as? TextContent
+        assertNotNull(assistantContent, "Assistant message content should be TextContent")
+        assertEquals(
+            "Greetings, $testName! How can I assist you today?",
+            assistantContent.text,
+            "Assistant message content should match",
+        )
     }
 
     @Test
-    fun testComplexPromptWithManyArguments() {
-        runTest {
-            val arguments = (1..10).associate { i -> "arg$i" to "value$i" }
+    fun testComplexPromptWithManyArguments() = runTest {
+        val arguments = (1..10).associate { i -> "arg$i" to "value$i" }
 
-            val result = client.getPrompt(
-                GetPromptRequest(
-                    name = complexPromptName,
-                    arguments = arguments,
-                ),
-            )
+        val result = client.getPrompt(
+            GetPromptRequest(
+                name = complexPromptName,
+                arguments = arguments,
+            ),
+        )
 
-            assertNotNull(result, "Get prompt result should not be null")
-            assertEquals(complexPromptDescription, result.description, "Prompt description should match")
+        assertNotNull(result, "Get prompt result should not be null")
+        assertEquals(complexPromptDescription, result.description, "Prompt description should match")
 
-            assertEquals(2, result.messages.size, "Prompt should have 2 messages")
+        assertEquals(2, result.messages.size, "Prompt should have 2 messages")
 
-            val userMessage = result.messages.find { it.role == Role.user }
-            assertNotNull(userMessage, "User message should be in the list")
-            val userContent = userMessage.content as? TextContent
-            assertNotNull(userContent, "User message content should be TextContent")
+        val userMessage = result.messages.find { it.role == Role.user }
+        assertNotNull(userMessage, "User message should be in the list")
+        val userContent = userMessage.content as? TextContent
+        assertNotNull(userContent, "User message content should be TextContent")
 
-            // verify all arguments
-            val text = userContent.text ?: ""
-            for (i in 1..10) {
-                assertTrue(text.contains("arg$i=value$i"), "Message should contain arg$i=value$i")
+        // verify all arguments
+        val text = userContent.text ?: ""
+        for (i in 1..10) {
+            assertTrue(text.contains("arg$i=value$i"), "Message should contain arg$i=value$i")
+        }
+
+        val assistantMessage = result.messages.find { it.role == Role.assistant }
+        assertNotNull(assistantMessage, "Assistant message should be in the list")
+        val assistantContent = assistantMessage.content as? TextContent
+        assertNotNull(assistantContent, "Assistant message content should be TextContent")
+        assertEquals(
+            "Received 10 arguments",
+            assistantContent.text,
+            "Assistant message should indicate 10 arguments",
+        )
+    }
+
+    @Test
+    fun testLargePrompt() = runTest {
+        val result = client.getPrompt(
+            GetPromptRequest(
+                name = largePromptName,
+                arguments = mapOf("size" to "1"),
+            ),
+        )
+
+        assertNotNull(result, "Get prompt result should not be null")
+        assertEquals(largePromptDescription, result.description, "Prompt description should match")
+
+        assertEquals(2, result.messages.size, "Prompt should have 2 messages")
+
+        val assistantMessage = result.messages.find { it.role == Role.assistant }
+        assertNotNull(assistantMessage, "Assistant message should be in the list")
+        val assistantContent = assistantMessage.content as? TextContent
+        assertNotNull(assistantContent, "Assistant message content should be TextContent")
+        val text = assistantContent.text ?: ""
+        assertEquals(100_000, text.length, "Assistant message should be 100KB in size")
+    }
+
+    @Test
+    fun testSpecialCharacters() = runTest {
+        val result = client.getPrompt(
+            GetPromptRequest(
+                name = specialCharsPromptName,
+                arguments = mapOf("special" to specialCharsContent),
+            ),
+        )
+
+        assertNotNull(result, "Get prompt result should not be null")
+        assertEquals(specialCharsPromptDescription, result.description, "Prompt description should match")
+
+        assertEquals(2, result.messages.size, "Prompt should have 2 messages")
+
+        val userMessage = result.messages.find { it.role == Role.user }
+        assertNotNull(userMessage, "User message should be in the list")
+        val userContent = userMessage.content as? TextContent
+        assertNotNull(userContent, "User message content should be TextContent")
+        val userText = userContent.text ?: ""
+        assertTrue(userText.contains(specialCharsContent), "User message should contain special characters")
+
+        val assistantMessage = result.messages.find { it.role == Role.assistant }
+        assertNotNull(assistantMessage, "Assistant message should be in the list")
+        val assistantContent = assistantMessage.content as? TextContent
+        assertNotNull(assistantContent, "Assistant message content should be TextContent")
+        val assistantText = assistantContent.text ?: ""
+        assertTrue(
+            assistantText.contains(specialCharsContent),
+            "Assistant message should contain special characters",
+        )
+    }
+
+    @Test
+    fun testMissingRequiredArguments() = runTest {
+        val exception = assertThrows<IllegalStateException> {
+            runBlocking {
+                client.getPrompt(
+                    GetPromptRequest(
+                        name = complexPromptName,
+                        arguments = mapOf("arg4" to "value4", "arg5" to "value5"),
+                    ),
+                )
             }
-
-            val assistantMessage = result.messages.find { it.role == Role.assistant }
-            assertNotNull(assistantMessage, "Assistant message should be in the list")
-            val assistantContent = assistantMessage.content as? TextContent
-            assertNotNull(assistantContent, "Assistant message content should be TextContent")
-            assertEquals(
-                "Received 10 arguments",
-                assistantContent.text,
-                "Assistant message should indicate 10 arguments",
-            )
         }
+
+        val msg = exception.message ?: ""
+        val expectedMessage = "JSONRPCError(code=InternalError, message=Missing required argument: arg1, data={})"
+
+        assertEquals(expectedMessage, msg, "Unexpected error message for missing required argument")
     }
 
     @Test
-    fun testLargePrompt() {
-        runTest {
-            val result = client.getPrompt(
-                GetPromptRequest(
-                    name = largePromptName,
-                    arguments = mapOf("size" to "1"),
-                ),
-            )
+    fun testConcurrentPromptRequests() = runTest {
+        val concurrentCount = 10
+        val results = mutableListOf<GetPromptResult?>()
 
-            assertNotNull(result, "Get prompt result should not be null")
-            assertEquals(largePromptDescription, result.description, "Prompt description should match")
+        runBlocking {
+            repeat(concurrentCount) { index ->
+                launch {
+                    val promptName = when (index % 4) {
+                        0 -> basicPromptName
+                        1 -> complexPromptName
+                        2 -> largePromptName
+                        else -> specialCharsPromptName
+                    }
 
-            assertEquals(2, result.messages.size, "Prompt should have 2 messages")
+                    val arguments = when (promptName) {
+                        basicPromptName -> mapOf("name" to "User$index")
+                        complexPromptName -> mapOf("arg1" to "v1", "arg2" to "v2", "arg3" to "v3")
+                        largePromptName -> mapOf("size" to "1")
+                        else -> mapOf("special" to "!@#$%^&*()")
+                    }
 
-            val assistantMessage = result.messages.find { it.role == Role.assistant }
-            assertNotNull(assistantMessage, "Assistant message should be in the list")
-            val assistantContent = assistantMessage.content as? TextContent
-            assertNotNull(assistantContent, "Assistant message content should be TextContent")
-            val text = assistantContent.text ?: ""
-            assertEquals(100_000, text.length, "Assistant message should be 100KB in size")
-        }
-    }
-
-    @Test
-    fun testSpecialCharacters() {
-        runTest {
-            val result = client.getPrompt(
-                GetPromptRequest(
-                    name = specialCharsPromptName,
-                    arguments = mapOf("special" to specialCharsContent),
-                ),
-            )
-
-            assertNotNull(result, "Get prompt result should not be null")
-            assertEquals(specialCharsPromptDescription, result.description, "Prompt description should match")
-
-            assertEquals(2, result.messages.size, "Prompt should have 2 messages")
-
-            val userMessage = result.messages.find { it.role == Role.user }
-            assertNotNull(userMessage, "User message should be in the list")
-            val userContent = userMessage.content as? TextContent
-            assertNotNull(userContent, "User message content should be TextContent")
-            val userText = userContent.text ?: ""
-            assertTrue(userText.contains(specialCharsContent), "User message should contain special characters")
-
-            val assistantMessage = result.messages.find { it.role == Role.assistant }
-            assertNotNull(assistantMessage, "Assistant message should be in the list")
-            val assistantContent = assistantMessage.content as? TextContent
-            assertNotNull(assistantContent, "Assistant message content should be TextContent")
-            val assistantText = assistantContent.text ?: ""
-            assertTrue(
-                assistantText.contains(specialCharsContent),
-                "Assistant message should contain special characters",
-            )
-        }
-    }
-
-    @Test
-    fun testMissingRequiredArguments() {
-        runTest {
-            val exception = assertThrows<Exception> {
-                runBlocking {
-                    client.getPrompt(
+                    val result = client.getPrompt(
                         GetPromptRequest(
-                            name = complexPromptName,
-                            arguments = mapOf("arg4" to "value4", "arg5" to "value5"),
+                            name = promptName,
+                            arguments = arguments,
                         ),
                     )
-                }
-            }
 
-            assertTrue(
-                exception.message?.contains("arg1") == true ||
-                    exception.message?.contains("arg2") == true ||
-                    exception.message?.contains("arg3") == true ||
-                    exception.message?.contains("required") == true,
-                "Exception should mention missing required arguments",
-            )
-        }
-    }
-
-    @Test
-    fun testConcurrentPromptRequests() {
-        runTest {
-            val concurrentCount = 10
-            val results = mutableListOf<GetPromptResult?>()
-
-            runBlocking {
-                repeat(concurrentCount) { index ->
-                    launch {
-                        val promptName = when (index % 4) {
-                            0 -> basicPromptName
-                            1 -> complexPromptName
-                            2 -> largePromptName
-                            else -> specialCharsPromptName
-                        }
-
-                        val arguments = when (promptName) {
-                            basicPromptName -> mapOf("name" to "User$index")
-                            complexPromptName -> mapOf("arg1" to "v1", "arg2" to "v2", "arg3" to "v3")
-                            largePromptName -> mapOf("size" to "1")
-                            else -> mapOf("special" to "!@#$%^&*()")
-                        }
-
-                        val result = client.getPrompt(
-                            GetPromptRequest(
-                                name = promptName,
-                                arguments = arguments,
-                            ),
-                        )
-
-                        synchronized(results) {
-                            results.add(result)
-                        }
+                    synchronized(results) {
+                        results.add(result)
                     }
                 }
             }
+        }
 
-            assertEquals(concurrentCount, results.size, "All concurrent operations should complete")
+        assertEquals(concurrentCount, results.size, "All concurrent operations should complete")
 
-            results.forEach { result ->
-                assertNotNull(result, "Result should not be null")
-                assertTrue(result.messages.isNotEmpty(), "Result messages should not be empty")
-            }
+        results.forEach { result ->
+            assertNotNull(result, "Result should not be null")
+            assertTrue(result.messages.isNotEmpty(), "Result messages should not be empty")
         }
     }
 
     @Test
-    fun testNonExistentPrompt() {
-        runTest {
-            val nonExistentPromptName = "non-existent-prompt"
+    fun testNonExistentPrompt() = runTest {
+        val nonExistentPromptName = "non-existent-prompt"
 
-            val exception = assertThrows<Exception> {
-                runBlocking {
-                    client.getPrompt(
-                        GetPromptRequest(
-                            name = nonExistentPromptName,
-                            arguments = mapOf("name" to "Test"),
-                        ),
-                    )
-                }
+        val exception = assertThrows<IllegalStateException> {
+            runBlocking {
+                client.getPrompt(
+                    GetPromptRequest(
+                        name = nonExistentPromptName,
+                        arguments = mapOf("name" to "Test"),
+                    ),
+                )
             }
-
-            assertTrue(
-                exception.message?.contains("not found") == true ||
-                    exception.message?.contains("does not exist") == true ||
-                    exception.message?.contains("unknown") == true ||
-                    exception.message?.contains("error") == true,
-                "Exception should indicate prompt not found",
-            )
         }
+
+        val msg = exception.message ?: ""
+        val expectedMessage = "JSONRPCError(code=InternalError, message=Prompt not found: non-existent-prompt, data={})"
+
+        assertEquals(expectedMessage, msg, "Unexpected error message for non-existent prompt")
     }
 }

@@ -7,6 +7,7 @@ import io.modelcontextprotocol.kotlin.sdk.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.mcpStreamableHttp
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.runTest
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -70,183 +71,182 @@ class KotlinClientTypeScriptServerEdgeCasesTest : TypeScriptTestBase() {
 
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
-    fun testNonExistentTool() {
-        runBlocking {
-            withContext(Dispatchers.IO) {
-                client = HttpClient(CIO) {
-                    install(SSE)
-                }.mcpStreamableHttp(serverUrl)
+    fun testNonExistentTool() = runTest {
+        withContext(Dispatchers.IO) {
+            client = HttpClient(CIO) {
+                install(SSE)
+            }.mcpStreamableHttp(serverUrl)
 
-                val nonExistentToolName = "non-existent-tool"
-                val arguments = mapOf("name" to "TestUser")
+            val nonExistentToolName = "non-existent-tool"
+            val arguments = mapOf("name" to "TestUser")
 
-                val exception = assertThrows<Exception> {
-                    client.callTool(nonExistentToolName, arguments)
-                }
-
-                val errorMessage = exception.message ?: ""
-                assertTrue(
-                    errorMessage.contains("not found") ||
-                        errorMessage.contains("unknown") ||
-                        errorMessage.contains("error"),
-                    "Exception should indicate tool not found: $errorMessage",
-                )
+            val exception = assertThrows<IllegalStateException> {
+                client.callTool(nonExistentToolName, arguments)
             }
+
+            val expectedMessage =
+                "JSONRPCError(code=InvalidParams, message=MCP error -32602: Tool non-existent-tool not found, data={})"
+            assertEquals(
+                expectedMessage,
+                exception.message,
+                "Unexpected error message for non-existent tool",
+            )
         }
     }
 
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
-    fun testSpecialCharactersInArguments() {
-        runBlocking {
-            withContext(Dispatchers.IO) {
-                client = HttpClient(CIO) {
-                    install(SSE)
-                }.mcpStreamableHttp(serverUrl)
+    fun testSpecialCharactersInArguments() = runTest {
+        withContext(Dispatchers.IO) {
+            client = HttpClient(CIO) {
+                install(SSE)
+            }.mcpStreamableHttp(serverUrl)
 
-                val specialChars = "!@#$%^&*()_+{}[]|\\:;\"'<>,.?/"
-                val arguments = mapOf("name" to specialChars)
+            val specialChars = "!@#$%^&*()_+{}[]|\\:;\"'<>,.?/"
+            val arguments = mapOf("name" to specialChars)
 
-                val result = client.callTool("greet", arguments)
-                assertNotNull(result, "Tool call result should not be null")
+            val result = client.callTool("greet", arguments)
+            assertNotNull(result, "Tool call result should not be null")
 
-                val callResult = result as CallToolResult
-                val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
-                assertNotNull(textContent, "Text content should be present in the result")
+            val callResult = result as CallToolResult
+            val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
+            assertNotNull(textContent, "Text content should be present in the result")
 
-                val text = textContent.text ?: ""
-                assertTrue(
-                    text.contains(specialChars),
-                    "Tool response should contain the special characters",
-                )
-            }
+            val text = textContent.text ?: ""
+            assertTrue(
+                text.contains(specialChars),
+                "Tool response should contain the special characters",
+            )
         }
     }
 
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
-    fun testLargePayload() {
-        runBlocking {
-            withContext(Dispatchers.IO) {
-                client = HttpClient(CIO) {
-                    install(SSE)
-                }.mcpStreamableHttp(serverUrl)
+    fun testLargePayload() = runTest {
+        withContext(Dispatchers.IO) {
+            client = HttpClient(CIO) {
+                install(SSE)
+            }.mcpStreamableHttp(serverUrl)
 
-                val largeName = "A".repeat(10 * 1024)
-                val arguments = mapOf("name" to largeName)
+            val largeName = "A".repeat(10 * 1024)
+            val arguments = mapOf("name" to largeName)
 
-                val result = client.callTool("greet", arguments)
-                assertNotNull(result, "Tool call result should not be null")
+            val result = client.callTool("greet", arguments)
+            assertNotNull(result, "Tool call result should not be null")
 
-                val callResult = result as CallToolResult
-                val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
-                assertNotNull(textContent, "Text content should be present in the result")
+            val callResult = result as CallToolResult
+            val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
+            assertNotNull(textContent, "Text content should be present in the result")
 
-                val text = textContent.text ?: ""
-                assertTrue(
-                    text.contains("Hello,") && text.contains("A"),
-                    "Tool response should contain the greeting with the large name",
-                )
-            }
+            val text = textContent.text ?: ""
+            assertTrue(
+                text.contains("Hello,") && text.contains("A"),
+                "Tool response should contain the greeting with the large name",
+            )
         }
     }
 
     @Test
     @Timeout(60, unit = TimeUnit.SECONDS)
-    fun testConcurrentRequests() {
-        runBlocking {
-            withContext(Dispatchers.IO) {
-                client = HttpClient(CIO) {
-                    install(SSE)
-                }.mcpStreamableHttp(serverUrl)
+    fun testConcurrentRequests() = runTest {
+        withContext(Dispatchers.IO) {
+            client = HttpClient(CIO) {
+                install(SSE)
+            }.mcpStreamableHttp(serverUrl)
 
-                val concurrentCount = 5
-                val results = mutableListOf<Deferred<String>>()
+            val concurrentCount = 5
+            val results = mutableListOf<Deferred<String>>()
 
-                for (i in 1..concurrentCount) {
-                    val deferred = async {
-                        val name = "ConcurrentClient$i"
-                        val arguments = mapOf("name" to name)
-
-                        val result = client.callTool("greet", arguments)
-                        assertNotNull(result, "Tool call result should not be null for client $i")
-
-                        val callResult = result as CallToolResult
-                        val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
-                        assertNotNull(textContent, "Text content should be present for client $i")
-
-                        textContent.text ?: ""
-                    }
-                    results.add(deferred)
-                }
-
-                val responses = results.awaitAll()
-
-                for (i in 1..concurrentCount) {
-                    val expectedName = "ConcurrentClient$i"
-                    val matchingResponses = responses.filter { it.contains("Hello, $expectedName!") }
-                    assertEquals(
-                        1,
-                        matchingResponses.size,
-                        "Should have exactly one response for $expectedName",
-                    )
-                }
-            }
-        }
-    }
-
-    @Test
-    @Timeout(30, unit = TimeUnit.SECONDS)
-    fun testInvalidArguments() {
-        runBlocking {
-            withContext(Dispatchers.IO) {
-                client = HttpClient(CIO) {
-                    install(SSE)
-                }.mcpStreamableHttp(serverUrl)
-
-                val invalidArguments = mapOf(
-                    "name" to JsonObject(mapOf("nested" to JsonPrimitive("value"))),
-                )
-
-                val exception = assertThrows<IllegalStateException> {
-                    client.callTool("greet", invalidArguments)
-                }
-
-                assertTrue(
-                    exception.message?.contains("invalid") == true ||
-                        exception.message?.contains("error") == true,
-                    "Exception should indicate invalid arguments: ${exception.message}",
-                )
-            }
-        }
-    }
-
-    @Test
-    @Timeout(30, unit = TimeUnit.SECONDS)
-    fun testMultipleToolCalls() {
-        runBlocking {
-            withContext(Dispatchers.IO) {
-                client = HttpClient(CIO) {
-                    install(SSE)
-                }.mcpStreamableHttp(serverUrl)
-
-                repeat(10) { i ->
-                    val name = "SequentialClient$i"
+            for (i in 1..concurrentCount) {
+                val deferred = async {
+                    val name = "ConcurrentClient$i"
                     val arguments = mapOf("name" to name)
 
                     val result = client.callTool("greet", arguments)
-                    assertNotNull(result, "Tool call result should not be null for call $i")
+                    assertNotNull(result, "Tool call result should not be null for client $i")
 
                     val callResult = result as CallToolResult
                     val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
-                    assertNotNull(textContent, "Text content should be present for call $i")
+                    assertNotNull(textContent, "Text content should be present for client $i")
 
-                    assertEquals(
-                        "Hello, $name!",
-                        textContent.text,
-                        "Tool response should contain the greeting with the provided name",
-                    )
+                    textContent.text ?: ""
                 }
+                results.add(deferred)
+            }
+
+            val responses = results.awaitAll()
+
+            for (i in 1..concurrentCount) {
+                val expectedName = "ConcurrentClient$i"
+                val matchingResponses = responses.filter { it.contains("Hello, $expectedName!") }
+                assertEquals(
+                    1,
+                    matchingResponses.size,
+                    "Should have exactly one response for $expectedName",
+                )
+            }
+        }
+    }
+
+    @Test
+    @Timeout(30, unit = TimeUnit.SECONDS)
+    fun testInvalidArguments() = runTest {
+        withContext(Dispatchers.IO) {
+            client = HttpClient(CIO) {
+                install(SSE)
+            }.mcpStreamableHttp(serverUrl)
+
+            val invalidArguments = mapOf(
+                "name" to JsonObject(mapOf("nested" to JsonPrimitive("value"))),
+            )
+
+            val exception = assertThrows<IllegalStateException> {
+                client.callTool("greet", invalidArguments)
+            }
+
+            val msg = exception.message ?: ""
+            val expectedMessage = """
+                    JSONRPCError(code=InvalidParams, message=MCP error -32602: Invalid arguments for tool greet: [
+                      {
+                        "code": "invalid_type",
+                        "expected": "string",
+                        "received": "object",
+                        "path": [
+                          "name"
+                        ],
+                        "message": "Expected string, received object"
+                      }
+                    ], data={})
+                """.trimIndent()
+
+            assertEquals(expectedMessage, msg, "Unexpected error message for invalid arguments")
+        }
+    }
+
+    @Test
+    @Timeout(30, unit = TimeUnit.SECONDS)
+    fun testMultipleToolCalls() = runTest {
+        withContext(Dispatchers.IO) {
+            client = HttpClient(CIO) {
+                install(SSE)
+            }.mcpStreamableHttp(serverUrl)
+
+            repeat(10) { i ->
+                val name = "SequentialClient$i"
+                val arguments = mapOf("name" to name)
+
+                val result = client.callTool("greet", arguments)
+                assertNotNull(result, "Tool call result should not be null for call $i")
+
+                val callResult = result as CallToolResult
+                val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
+                assertNotNull(textContent, "Text content should be present for call $i")
+
+                assertEquals(
+                    "Hello, $name!",
+                    textContent.text,
+                    "Tool response should contain the greeting with the provided name",
+                )
             }
         }
     }

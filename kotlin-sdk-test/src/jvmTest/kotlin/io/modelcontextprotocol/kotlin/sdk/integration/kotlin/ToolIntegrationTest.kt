@@ -403,20 +403,19 @@ class ToolIntegrationTest : KotlinTestBase() {
 
         val exceptionArgs = mapOf(
             "errorType" to "exception",
-            "message" to "Exception message",
+            "message" to "My exception message",
         )
 
-        val exception = assertThrows<Exception> {
+        val exception = assertThrows<IllegalStateException> {
             runBlocking {
                 client.callTool(errorToolName, exceptionArgs)
             }
         }
 
-        assertEquals(
-            exception.message?.contains("Exception message"),
-            true,
-            "Exception message should contain 'Exception message'",
-        )
+        val msg = exception.message ?: ""
+        val expectedMessage = "JSONRPCError(code=InternalError, message=My exception message, data={})"
+
+        assertEquals(expectedMessage, msg, "Unexpected error message for exception")
     }
 
     @Test

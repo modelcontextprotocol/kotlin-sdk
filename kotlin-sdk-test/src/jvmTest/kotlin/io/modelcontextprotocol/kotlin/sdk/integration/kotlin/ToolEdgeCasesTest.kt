@@ -281,225 +281,208 @@ class ToolEdgeCasesTest : KotlinTestBase() {
     }
 
     @Test
-    fun testBasicTool() {
-        runTest {
-            val testText = "Hello, world!"
-            val arguments = mapOf("text" to testText)
+    fun testBasicTool() = runTest {
+        val testText = "Hello, world!"
+        val arguments = mapOf("text" to testText)
 
-            val result = client.callTool(basicToolName, arguments)
+        val result = client.callTool(basicToolName, arguments)
 
-            val toolResult = assertCallToolResult(result)
-            assertTextContent(toolResult.content.firstOrNull(), "Echo: $testText")
+        val toolResult = assertCallToolResult(result)
+        assertTextContent(toolResult.content.firstOrNull(), "Echo: $testText")
 
-            val structuredContent = toolResult.structuredContent as JsonObject
-            assertJsonProperty(structuredContent, "result", testText)
-        }
+        val structuredContent = toolResult.structuredContent as JsonObject
+        assertJsonProperty(structuredContent, "result", testText)
     }
 
     @Test
-    fun testComplexNestedSchema() {
-        runTest {
-            val userJson = buildJsonObject {
-                put("name", JsonPrimitive("John Doe"))
-                put("age", JsonPrimitive(30))
-                put(
-                    "address",
-                    buildJsonObject {
-                        put("street", JsonPrimitive("123 Main St"))
-                        put("city", JsonPrimitive("New York"))
-                        put("country", JsonPrimitive("USA"))
-                    },
-                )
-            }
-
-            val optionsJson = buildJsonArray {
-                add(JsonPrimitive("option1"))
-                add(JsonPrimitive("option2"))
-                add(JsonPrimitive("option3"))
-            }
-
-            val arguments = buildJsonObject {
-                put("user", userJson)
-                put("options", optionsJson)
-            }
-
-            val result = client.callTool(
-                CallToolRequest(
-                    name = complexToolName,
-                    arguments = arguments,
-                ),
+    fun testComplexNestedSchema() = runTest {
+        val userJson = buildJsonObject {
+            put("name", JsonPrimitive("John Doe"))
+            put("age", JsonPrimitive(30))
+            put(
+                "address",
+                buildJsonObject {
+                    put("street", JsonPrimitive("123 Main St"))
+                    put("city", JsonPrimitive("New York"))
+                    put("country", JsonPrimitive("USA"))
+                },
             )
-
-            val toolResult = assertCallToolResult(result)
-            val content = toolResult.content.firstOrNull() as? TextContent
-            assertNotNull(content, "Tool result content should be TextContent")
-            val text = content.text ?: ""
-
-            assertTrue(text.contains("John Doe"), "Result should contain the name")
-            assertTrue(text.contains("30"), "Result should contain the age")
-            assertTrue(text.contains("123 Main St"), "Result should contain the street")
-            assertTrue(text.contains("New York"), "Result should contain the city")
-            assertTrue(text.contains("USA"), "Result should contain the country")
-            assertTrue(text.contains("option1"), "Result should contain option1")
-            assertTrue(text.contains("option2"), "Result should contain option2")
-            assertTrue(text.contains("option3"), "Result should contain option3")
-
-            val structuredContent = toolResult.structuredContent as JsonObject
-            assertJsonProperty(structuredContent, "name", "John Doe")
-            assertJsonProperty(structuredContent, "age", 30)
-
-            val address = structuredContent["address"] as? JsonObject
-            assertNotNull(address, "Address should be present in structured content")
-            assertJsonProperty(address, "street", "123 Main St")
-            assertJsonProperty(address, "city", "New York")
-            assertJsonProperty(address, "country", "USA")
-
-            val options = structuredContent["options"] as? JsonArray
-            assertNotNull(options, "Options should be present in structured content")
-            assertEquals(3, options.size, "Options should have 3 items")
         }
+
+        val optionsJson = buildJsonArray {
+            add(JsonPrimitive("option1"))
+            add(JsonPrimitive("option2"))
+            add(JsonPrimitive("option3"))
+        }
+
+        val arguments = buildJsonObject {
+            put("user", userJson)
+            put("options", optionsJson)
+        }
+
+        val result = client.callTool(
+            CallToolRequest(
+                name = complexToolName,
+                arguments = arguments,
+            ),
+        )
+
+        val toolResult = assertCallToolResult(result)
+        val content = toolResult.content.firstOrNull() as? TextContent
+        assertNotNull(content, "Tool result content should be TextContent")
+        val text = content.text ?: ""
+
+        assertTrue(text.contains("John Doe"), "Result should contain the name")
+        assertTrue(text.contains("30"), "Result should contain the age")
+        assertTrue(text.contains("123 Main St"), "Result should contain the street")
+        assertTrue(text.contains("New York"), "Result should contain the city")
+        assertTrue(text.contains("USA"), "Result should contain the country")
+        assertTrue(text.contains("option1"), "Result should contain option1")
+        assertTrue(text.contains("option2"), "Result should contain option2")
+        assertTrue(text.contains("option3"), "Result should contain option3")
+
+        val structuredContent = toolResult.structuredContent as JsonObject
+        assertJsonProperty(structuredContent, "name", "John Doe")
+        assertJsonProperty(structuredContent, "age", 30)
+
+        val address = structuredContent["address"] as? JsonObject
+        assertNotNull(address, "Address should be present in structured content")
+        assertJsonProperty(address, "street", "123 Main St")
+        assertJsonProperty(address, "city", "New York")
+        assertJsonProperty(address, "country", "USA")
+
+        val options = structuredContent["options"] as? JsonArray
+        assertNotNull(options, "Options should be present in structured content")
+        assertEquals(3, options.size, "Options should have 3 items")
     }
 
     @Test
-    fun testLargeResponse() {
-        runTest {
-            val size = 10
-            val arguments = mapOf("size" to size)
+    fun testLargeResponse() = runTest {
+        val size = 10
+        val arguments = mapOf("size" to size)
 
-            val result = client.callTool(largeToolName, arguments)
+        val result = client.callTool(largeToolName, arguments)
 
-            val toolResult = assertCallToolResult(result)
-            val content = toolResult.content.firstOrNull() as? TextContent
-            assertNotNull(content, "Tool result content should be TextContent")
-            val text = content.text ?: ""
+        val toolResult = assertCallToolResult(result)
+        val content = toolResult.content.firstOrNull() as? TextContent
+        assertNotNull(content, "Tool result content should be TextContent")
+        val text = content.text ?: ""
 
-            assertEquals(10000, text.length, "Response should be 10KB in size")
+        assertEquals(10000, text.length, "Response should be 10KB in size")
 
-            val structuredContent = toolResult.structuredContent as JsonObject
-            assertJsonProperty(structuredContent, "size", 10000)
-        }
+        val structuredContent = toolResult.structuredContent as JsonObject
+        assertJsonProperty(structuredContent, "size", 10000)
     }
 
     @Test
-    fun testSlowTool() {
-        runTest {
-            val delay = 500
-            val arguments = mapOf("delay" to delay)
+    fun testSlowTool() = runTest {
+        val delay = 500
+        val arguments = mapOf("delay" to delay)
 
-            val startTime = System.currentTimeMillis()
-            val result = client.callTool(slowToolName, arguments)
-            val endTime = System.currentTimeMillis()
+        val startTime = System.currentTimeMillis()
+        val result = client.callTool(slowToolName, arguments)
+        val endTime = System.currentTimeMillis()
 
-            val toolResult = assertCallToolResult(result)
-            val content = toolResult.content.firstOrNull() as? TextContent
-            assertNotNull(content, "Tool result content should be TextContent")
-            val text = content.text ?: ""
+        val toolResult = assertCallToolResult(result)
+        val content = toolResult.content.firstOrNull() as? TextContent
+        assertNotNull(content, "Tool result content should be TextContent")
+        val text = content.text ?: ""
 
-            assertTrue(text.contains("${delay}ms"), "Result should mention the delay")
-            assertTrue(endTime - startTime >= delay, "Tool should take at least the specified delay")
+        assertTrue(text.contains("${delay}ms"), "Result should mention the delay")
+        assertTrue(endTime - startTime >= delay, "Tool should take at least the specified delay")
 
-            val structuredContent = toolResult.structuredContent as JsonObject
-            assertJsonProperty(structuredContent, "delay", delay)
-        }
+        val structuredContent = toolResult.structuredContent as JsonObject
+        assertJsonProperty(structuredContent, "delay", delay)
     }
 
     @Test
-    fun testSpecialCharacters() {
-        runTest {
-            val arguments = mapOf("special" to specialCharsContent)
+    fun testSpecialCharacters() = runTest {
+        val arguments = mapOf("special" to specialCharsContent)
 
-            val result = client.callTool(specialCharsToolName, arguments)
+        val result = client.callTool(specialCharsToolName, arguments)
 
-            val toolResult = assertCallToolResult(result)
-            val content = toolResult.content.firstOrNull() as? TextContent
-            assertNotNull(content, "Tool result content should be TextContent")
-            val text = content.text ?: ""
+        val toolResult = assertCallToolResult(result)
+        val content = toolResult.content.firstOrNull() as? TextContent
+        assertNotNull(content, "Tool result content should be TextContent")
+        val text = content.text ?: ""
 
-            assertTrue(text.contains(specialCharsContent), "Result should contain the special characters")
+        assertTrue(text.contains(specialCharsContent), "Result should contain the special characters")
 
-            val structuredContent = toolResult.structuredContent as JsonObject
-            val special = structuredContent["special"]?.toString()?.trim('"')
+        val structuredContent = toolResult.structuredContent as JsonObject
+        val special = structuredContent["special"]?.toString()?.trim('"')
 
-            assertNotNull(special, "Special characters should be in structured content")
-            assertTrue(text.contains(specialCharsContent), "Special characters should be in the content")
-        }
+        assertNotNull(special, "Special characters should be in structured content")
+        assertTrue(text.contains(specialCharsContent), "Special characters should be in the content")
     }
 
     @Test
-    fun testConcurrentToolCalls() {
-        runTest {
-            val concurrentCount = 10
-            val results = mutableListOf<CallToolResultBase?>()
+    fun testConcurrentToolCalls() = runTest {
+        val concurrentCount = 10
+        val results = mutableListOf<CallToolResultBase?>()
 
-            runBlocking {
-                repeat(concurrentCount) { index ->
-                    launch {
-                        val toolName = when (index % 5) {
-                            0 -> basicToolName
-                            1 -> complexToolName
-                            2 -> largeToolName
-                            3 -> slowToolName
-                            else -> specialCharsToolName
-                        }
+        runBlocking {
+            repeat(concurrentCount) { index ->
+                launch {
+                    val toolName = when (index % 5) {
+                        0 -> basicToolName
+                        1 -> complexToolName
+                        2 -> largeToolName
+                        3 -> slowToolName
+                        else -> specialCharsToolName
+                    }
 
-                        val arguments = when (toolName) {
-                            basicToolName -> mapOf("text" to "Concurrent call $index")
+                    val arguments = when (toolName) {
+                        basicToolName -> mapOf("text" to "Concurrent call $index")
 
-                            complexToolName -> mapOf(
-                                "user" to mapOf(
-                                    "name" to "User $index",
-                                    "age" to 20 + index,
-                                    "address" to mapOf(
-                                        "street" to "Street $index",
-                                        "city" to "City $index",
-                                        "country" to "Country $index",
-                                    ),
+                        complexToolName -> mapOf(
+                            "user" to mapOf(
+                                "name" to "User $index",
+                                "age" to 20 + index,
+                                "address" to mapOf(
+                                    "street" to "Street $index",
+                                    "city" to "City $index",
+                                    "country" to "Country $index",
                                 ),
-                            )
+                            ),
+                        )
 
-                            largeToolName -> mapOf("size" to 1)
+                        largeToolName -> mapOf("size" to 1)
 
-                            slowToolName -> mapOf("delay" to 100)
+                        slowToolName -> mapOf("delay" to 100)
 
-                            else -> mapOf("special" to "!@#$%^&*()")
-                        }
+                        else -> mapOf("special" to "!@#$%^&*()")
+                    }
 
-                        val result = client.callTool(toolName, arguments)
+                    val result = client.callTool(toolName, arguments)
 
-                        synchronized(results) {
-                            results.add(result)
-                        }
+                    synchronized(results) {
+                        results.add(result)
                     }
                 }
             }
+        }
 
-            assertEquals(concurrentCount, results.size, "All concurrent operations should complete")
-            results.forEach { result ->
-                assertNotNull(result, "Result should not be null")
-                assertTrue(result.content.isNotEmpty(), "Result content should not be empty")
-            }
+        assertEquals(concurrentCount, results.size, "All concurrent operations should complete")
+        results.forEach { result ->
+            assertNotNull(result, "Result should not be null")
+            assertTrue(result.content.isNotEmpty(), "Result content should not be empty")
         }
     }
 
     @Test
-    fun testNonExistentTool() {
-        runTest {
-            val nonExistentToolName = "non-existent-tool"
-            val arguments = mapOf("text" to "Test")
+    fun testNonExistentTool() = runTest {
+        val nonExistentToolName = "non-existent-tool"
+        val arguments = mapOf("text" to "Test")
 
-            val exception = assertThrows<Exception> {
-                runBlocking {
-                    client.callTool(nonExistentToolName, arguments)
-                }
+        val exception = assertThrows<IllegalStateException> {
+            runBlocking {
+                client.callTool(nonExistentToolName, arguments)
             }
-
-            assertTrue(
-                exception.message?.contains("not found") == true ||
-                    exception.message?.contains("does not exist") == true ||
-                    exception.message?.contains("unknown") == true ||
-                    exception.message?.contains("error") == true,
-                "Exception should indicate tool not found",
-            )
         }
+
+        val msg = exception.message ?: ""
+        val expectedMessage = "JSONRPCError(code=InternalError, message=Tool not found: non-existent-tool, data={})"
+
+        assertEquals(expectedMessage, msg, "Unexpected error message for non-existent tool")
     }
 }

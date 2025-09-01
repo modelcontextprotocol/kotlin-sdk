@@ -1,5 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.typescript
 
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.runTest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -42,7 +43,7 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
 
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
-    fun testErrorHandling() {
+    fun testErrorHandling() = runTest {
         val nonExistentToolCommand = "npx tsx myClient.ts $serverUrl non-existent-tool"
         val nonExistentToolOutput = executeCommandAllowingFailure(nonExistentToolCommand, tsClientDir)
 
@@ -62,7 +63,7 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
 
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
-    fun testSpecialCharacters() {
+    fun testSpecialCharacters() = runTest {
         val specialChars = "!@#$+-[].,?"
 
         val tempFile = File.createTempFile("special_chars", ".txt")
@@ -87,7 +88,7 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
     @EnabledOnOs(OS.MAC, OS.LINUX)
-    fun testLargePayload() {
+    fun testLargePayload() = runTest {
         val largeName = "A".repeat(10 * 1024)
 
         val tempFile = File.createTempFile("large_name", ".txt")
@@ -112,7 +113,7 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
 
     @Test
     @Timeout(60, unit = TimeUnit.SECONDS)
-    fun testComplexConcurrentRequests() {
+    fun testComplexConcurrentRequests() = runTest {
         val commands = listOf(
             "npx tsx myClient.ts $serverUrl greet \"Client1\"",
             "npx tsx myClient.ts $serverUrl multi-greet \"Client2\"",
@@ -160,7 +161,7 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
 
     @Test
     @Timeout(120, unit = TimeUnit.SECONDS)
-    fun testRapidSequentialRequests() {
+    fun testRapidSequentialRequests() = runTest {
         val outputs = (1..10).map { i ->
             val command = "npx tsx myClient.ts $serverUrl greet \"RapidClient$i\""
             val output = executeCommand(command, tsClientDir)
