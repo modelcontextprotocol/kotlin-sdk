@@ -179,23 +179,35 @@ abstract class TypeScriptTestBase {
         }
 
         val isWindows = System.getProperty("os.name").lowercase().contains("windows")
+        val localServerPath = File(tsClientDir, "simpleStreamableHttp.ts").absolutePath
         val processBuilder = if (isWindows) {
             ProcessBuilder()
-                .command("cmd.exe", "/c", "set MCP_PORT=$port && npx tsx src/examples/server/simpleStreamableHttp.ts")
+                .command(
+                    "cmd.exe",
+                    "/c",
+                    "set MCP_PORT=$port && set NODE_PATH=${sdkDir.absolutePath}\\node_modules && npx --prefix \"${sdkDir.absolutePath}\" tsx \"$localServerPath\""
+                )
         } else {
             ProcessBuilder()
-                .command("bash", "-c", "MCP_PORT=$port npx tsx src/examples/server/simpleStreamableHttp.ts")
+                .command(
+                    "bash",
+                    "-c",
+                    "MCP_PORT=$port NODE_PATH='${sdkDir.absolutePath}/node_modules' npx --prefix '${sdkDir.absolutePath}' tsx \"$localServerPath\""
+                )
         }
 
+        processBuilder.environment()["TYPESCRIPT_SDK_DIR"] = sdkDir.absolutePath
+
         val process = processBuilder
-            .directory(sdkDir)
+            .directory(tsClientDir)
             .redirectErrorStream(true)
             .start()
 
-        if (!waitForPort(port = port)) {
+        createProcessOutputReader(process).start()
+
+        if (!waitForPort(port = port, timeoutSeconds = 20)) {
             throw IllegalStateException("TypeScript server did not become ready on localhost:$port within timeout")
         }
-        createProcessOutputReader(process).start()
         return process
     }
 
