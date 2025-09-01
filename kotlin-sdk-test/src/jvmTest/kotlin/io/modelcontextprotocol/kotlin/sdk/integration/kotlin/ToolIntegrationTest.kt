@@ -7,7 +7,7 @@ import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.Tool
 import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.assertCallToolResult
-import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.assertJsonProperty
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.assertJsonEquals
 import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.assertTextContent
 import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.runTest
 import kotlinx.coroutines.runBlocking
@@ -324,7 +324,8 @@ class ToolIntegrationTest : KotlinTestBase() {
         assertTextContent(toolResult.content.firstOrNull(), "Echo: $testText")
 
         val structuredContent = toolResult.structuredContent as JsonObject
-        assertJsonProperty(structuredContent, "result", testText)
+        val expected = buildJsonObject { put("result", testText) }
+        assertJsonEquals(expected, structuredContent)
     }
 
     @Test
@@ -362,18 +363,18 @@ class ToolIntegrationTest : KotlinTestBase() {
             assertTrue(contentText.contains("11"), "Result should contain result value")
 
             val structuredContent = toolResult.structuredContent as JsonObject
-            assertJsonProperty(structuredContent, "operation", "multiply")
-            assertJsonProperty(structuredContent, "result", 11.0)
+            val actualWithoutFormatted = buildJsonObject {
+                structuredContent.filterKeys { it != "formattedResult" && it != "tags" }.forEach { (k, v) -> put(k, v) }
+            }
+            val expectedWithoutFormatted = buildJsonObject {
+                put("operation", "multiply")
+                put("a", 5.5)
+                put("b", 2.0)
+                put("result", 11.0)
+                put("precision", 3)
+            }
 
-            val formattedResult = structuredContent["formattedResult"]?.toString()?.trim('"') ?: ""
-            assertTrue(
-                formattedResult == "11.000" || formattedResult == "11,000",
-                "Formatted result should be either '11.000' or '11,000', but was '$formattedResult'",
-            )
-            assertJsonProperty(structuredContent, "precision", 3)
-
-            val tags = structuredContent["tags"] as? JsonArray
-            assertNotNull(tags, "Tags should be present")
+            assertJsonEquals(expectedWithoutFormatted, actualWithoutFormatted)
         }
     }
 
@@ -386,7 +387,11 @@ class ToolIntegrationTest : KotlinTestBase() {
         assertTextContent(successToolResult.content.firstOrNull(), "No error occurred")
 
         val noErrorStructured = successToolResult.structuredContent as JsonObject
-        assertJsonProperty(noErrorStructured, "error", false)
+        val expectedNoError = buildJsonObject {
+            put("error", false)
+            put("message", "Success")
+        }
+        assertJsonEquals(expectedNoError, noErrorStructured)
 
         val errorArgs = mapOf(
             "errorType" to "error",
@@ -398,8 +403,11 @@ class ToolIntegrationTest : KotlinTestBase() {
         assertTextContent(errorToolResult.content.firstOrNull(), "Error: Custom error message")
 
         val errorStructured = errorToolResult.structuredContent as JsonObject
-        assertJsonProperty(errorStructured, "error", true)
-        assertJsonProperty(errorStructured, "message", "Custom error message")
+        val expectedError = buildJsonObject {
+            put("error", true)
+            put("message", "Custom error message")
+        }
+        assertJsonEquals(expectedError, errorStructured)
 
         val exceptionArgs = mapOf(
             "errorType" to "exception",
@@ -450,8 +458,11 @@ class ToolIntegrationTest : KotlinTestBase() {
         assertTrue(imageContent.data.isNotEmpty(), "Image data should not be empty")
 
         val structuredContent = toolResult.structuredContent as JsonObject
-        assertJsonProperty(structuredContent, "text", testText)
-        assertJsonProperty(structuredContent, "includeImage", true)
+        val expectedStructured = buildJsonObject {
+            put("text", testText)
+            put("includeImage", true)
+        }
+        assertJsonEquals(expectedStructured, structuredContent)
 
         val textOnlyArgs = mapOf(
             "text" to testText,

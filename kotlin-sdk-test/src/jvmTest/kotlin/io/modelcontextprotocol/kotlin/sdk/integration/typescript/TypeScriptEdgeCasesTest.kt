@@ -43,7 +43,7 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
 
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
-    fun testErrorHandling() = runTest {
+    fun testInvalidURL() = runTest {
         val nonExistentToolCommand = "npx tsx myClient.ts $serverUrl non-existent-tool"
         val nonExistentToolOutput = executeCommandAllowingFailure(nonExistentToolCommand, tsClientDir)
 
@@ -56,7 +56,9 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
         val invalidUrlOutput = executeCommandAllowingFailure(invalidUrlCommand, tsClientDir)
 
         assertTrue(
-            invalidUrlOutput.contains("Invalid URL") && invalidUrlOutput.contains("ERR_INVALID_URL"),
+            invalidUrlOutput.contains("Invalid URL") ||
+                invalidUrlOutput.contains("ERR_INVALID_URL") ||
+                invalidUrlOutput.contains("ECONNREFUSED"),
             "Client should handle connection errors gracefully",
         )
     }

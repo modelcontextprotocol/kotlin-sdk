@@ -6,8 +6,10 @@ import io.modelcontextprotocol.kotlin.sdk.TextContent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import io.kotest.assertions.json.*
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -35,57 +37,17 @@ object TestUtils {
         return result
     }
 
-    /**
-     * Asserts that a JSON property has the expected string value.
-     */
-    fun assertJsonProperty(
-        json: JsonObject,
-        property: String,
-        expectedValue: String,
-        message: String = "",
-    ) {
-        assertEquals(expectedValue, json[property]?.toString()?.trim('"'), "${message}$property should match")
+    // Use Kotest JSON assertions to compare whole JSON structures.
+    fun assertJsonEquals(expectedJson: String, actual: JsonElement, message: String = "") {
+        val prefix = if (message.isNotEmpty()) "$message\n" else ""
+        (actual.toString()).shouldEqualJson(prefix + expectedJson)
     }
 
-    /**
-     * Asserts that a JSON property has the expected numeric value.
-     */
-    fun assertJsonProperty(
-        json: JsonObject,
-        property: String,
-        expectedValue: Number,
-        message: String = "",
-    ) {
-        when (expectedValue) {
-            is Int -> assertEquals(
-                expectedValue,
-                (json[property] as? JsonPrimitive)?.content?.toIntOrNull(),
-                "${message}$property should match",
-            )
-
-            is Double -> assertEquals(
-                expectedValue,
-                (json[property] as? JsonPrimitive)?.content?.toDoubleOrNull(),
-                "${message}$property should match",
-            )
-
-            else -> assertEquals(
-                expectedValue.toString(),
-                json[property]?.toString()?.trim('"'),
-                "${message}$property should match",
-            )
-        }
+    fun assertJsonEquals(expected: JsonElement, actual: JsonElement) {
+        (actual.toString()).shouldEqualJson(expected.toString())
     }
 
-    /**
-     * Asserts that a JSON property has the expected boolean value.
-     */
-    fun assertJsonProperty(
-        json: JsonObject,
-        property: String,
-        expectedValue: Boolean,
-        message: String = "",
-    ) {
-        assertEquals(expectedValue.toString(), json[property].toString(), "${message}$property should match")
+    fun assertIsJsonArray(actual: JsonElement) {
+        actual.toString().shouldBeJsonArray()
     }
 }

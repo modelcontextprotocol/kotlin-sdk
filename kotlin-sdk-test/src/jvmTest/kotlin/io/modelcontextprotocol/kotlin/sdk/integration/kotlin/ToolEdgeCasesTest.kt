@@ -7,7 +7,7 @@ import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.Tool
 import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.assertCallToolResult
-import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.assertJsonProperty
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.assertJsonEquals
 import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.assertTextContent
 import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.runTest
 import kotlinx.coroutines.delay
@@ -291,7 +291,8 @@ class ToolEdgeCasesTest : KotlinTestBase() {
         assertTextContent(toolResult.content.firstOrNull(), "Echo: $testText")
 
         val structuredContent = toolResult.structuredContent as JsonObject
-        assertJsonProperty(structuredContent, "result", testText)
+        val expected = buildJsonObject { put("result", testText) }
+        assertJsonEquals(expected, structuredContent)
     }
 
     @Test
@@ -342,18 +343,19 @@ class ToolEdgeCasesTest : KotlinTestBase() {
         assertTrue(text.contains("option3"), "Result should contain option3")
 
         val structuredContent = toolResult.structuredContent as JsonObject
-        assertJsonProperty(structuredContent, "name", "John Doe")
-        assertJsonProperty(structuredContent, "age", 30)
-
-        val address = structuredContent["address"] as? JsonObject
-        assertNotNull(address, "Address should be present in structured content")
-        assertJsonProperty(address, "street", "123 Main St")
-        assertJsonProperty(address, "city", "New York")
-        assertJsonProperty(address, "country", "USA")
-
-        val options = structuredContent["options"] as? JsonArray
-        assertNotNull(options, "Options should be present in structured content")
-        assertEquals(3, options.size, "Options should have 3 items")
+        val expectedStructured = buildJsonObject {
+            put("name", "John Doe")
+            put("age", 30)
+            put("address", buildJsonObject {
+                put("street", "123 Main St")
+                put("city", "New York")
+                put("country", "USA")
+            })
+            put("options", buildJsonArray {
+                add("option1"); add("option2"); add("option3")
+            })
+        }
+        assertJsonEquals(expectedStructured, structuredContent)
     }
 
     @Test
@@ -371,7 +373,8 @@ class ToolEdgeCasesTest : KotlinTestBase() {
         assertEquals(10000, text.length, "Response should be 10KB in size")
 
         val structuredContent = toolResult.structuredContent as JsonObject
-        assertJsonProperty(structuredContent, "size", 10000)
+        val expected = buildJsonObject { put("size", 10000) }
+        assertJsonEquals(expected, structuredContent)
     }
 
     @Test
@@ -392,7 +395,8 @@ class ToolEdgeCasesTest : KotlinTestBase() {
         assertTrue(endTime - startTime >= delay, "Tool should take at least the specified delay")
 
         val structuredContent = toolResult.structuredContent as JsonObject
-        assertJsonProperty(structuredContent, "delay", delay)
+        val expected = buildJsonObject { put("delay", delay) }
+        assertJsonEquals(expected, structuredContent)
     }
 
     @Test
@@ -409,10 +413,11 @@ class ToolEdgeCasesTest : KotlinTestBase() {
         assertTrue(text.contains(specialCharsContent), "Result should contain the special characters")
 
         val structuredContent = toolResult.structuredContent as JsonObject
-        val special = structuredContent["special"]?.toString()?.trim('"')
-
-        assertNotNull(special, "Special characters should be in structured content")
-        assertTrue(text.contains(specialCharsContent), "Special characters should be in the content")
+        val expected = buildJsonObject {
+            put("special", specialCharsContent)
+            put("length", specialCharsContent.length)
+        }
+        assertJsonEquals(expected, structuredContent)
     }
 
     @Test
