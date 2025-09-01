@@ -56,7 +56,7 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
         val invalidUrlOutput = executeCommandAllowingFailure(invalidUrlCommand, tsClientDir)
 
         assertTrue(
-            invalidUrlOutput.contains("Error:") || invalidUrlOutput.contains("ECONNREFUSED"),
+            invalidUrlOutput.contains("Invalid URL") && invalidUrlOutput.contains("ERR_INVALID_URL"),
             "Client should handle connection errors gracefully",
         )
     }
