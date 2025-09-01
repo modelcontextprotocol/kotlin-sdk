@@ -368,7 +368,7 @@ class ToolEdgeCasesTest : KotlinTestBase() {
             {
               "size" : 10000
             }
-        """.trimIndent()
+            """.trimIndent()
 
             actualContent shouldEqualJson expectedContent
         }
@@ -394,7 +394,7 @@ class ToolEdgeCasesTest : KotlinTestBase() {
             {
               "delay" : 500
             }
-        """.trimIndent()
+            """.trimIndent()
 
             actualContent shouldEqualJson expectedContent
         }
@@ -419,7 +419,7 @@ class ToolEdgeCasesTest : KotlinTestBase() {
               "special" : "!@#$%^&*()_+{}|:\"<>?~`-=[]\\;',./\n\t",
               "length" : 34
             }
-        """.trimIndent()
+            """.trimIndent()
 
             actualContent shouldEqualJson expectedContent
         }
