@@ -1,18 +1,16 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.kotlin
 
+import io.kotest.assertions.json.shouldEqualJson
 import io.modelcontextprotocol.kotlin.sdk.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.CallToolResultBase
 import io.modelcontextprotocol.kotlin.sdk.ImageContent
 import io.modelcontextprotocol.kotlin.sdk.PromptMessageContent
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.Tool
-import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.assertCallToolResult
-import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.assertJsonEquals
-import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.assertTextContent
 import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.runTest
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
@@ -305,6 +303,7 @@ class ToolIntegrationTest : KotlinTestBase() {
         assertTrue(result.tools.isNotEmpty(), "Tools list should not be empty")
 
         val testTool = result.tools.find { it.name == testToolName }
+
         assertNotNull(testTool, "Test tool should be in the list")
         assertEquals(
             testToolDescription,
@@ -314,18 +313,20 @@ class ToolIntegrationTest : KotlinTestBase() {
     }
 
     @Test
-    fun testCallTool() = runTest {
-        val testText = "Hello, world!"
-        val arguments = mapOf("text" to testText)
+    fun testCallTool() {
+        runTest {
+            val testText = "Hello, world!"
+            val arguments = mapOf("text" to testText)
 
-        val result = client.callTool(testToolName, arguments)
+            val result = client.callTool(testToolName, arguments) as CallToolResultBase
 
-        val toolResult = assertCallToolResult(result)
-        assertTextContent(toolResult.content.firstOrNull(), "Echo: $testText")
+            val actualContent = result.structuredContent.toString()
+            val expectedContent = """
+                {"result":"Hello, world!"}
+            """.trimIndent()
 
-        val structuredContent = toolResult.structuredContent as JsonObject
-        val expected = buildJsonObject { put("result", testText) }
-        assertJsonEquals(expected, structuredContent)
+            actualContent.shouldEqualJson(expectedContent)
+        }
     }
 
     @Test
@@ -345,36 +346,22 @@ class ToolIntegrationTest : KotlinTestBase() {
                 "tags" to listOf("test", "calculator", "integration"),
             )
 
-            val result = client.callTool(complexToolName, arguments)
+            val result = client.callTool(complexToolName, arguments) as CallToolResultBase
 
-            val toolResult = assertCallToolResult(result)
+            val actualContent = result.structuredContent.toString()
+            val expectedContent = """
+                {
+                  "operation" : "multiply",
+                  "a" : 5.5,
+                  "b" : 2.0,
+                  "result" : 11.0,
+                  "formattedResult" : "11,000",
+                  "precision" : 3,
+                  "tags" : [ ]
+                }
+            """.trimIndent()
 
-            val content = toolResult.content.firstOrNull() as? TextContent
-            assertNotNull(content, "Tool result content should be TextContent")
-            val contentText = requireNotNull(content.text)
-
-            assertTrue(contentText.contains("Operation"), "Result should contain operation")
-            assertTrue(
-                contentText.contains("multiply"),
-                "Result should contain multiply operation",
-            )
-            assertTrue(contentText.contains("5.5"), "Result should contain first operand")
-            assertTrue(contentText.contains("2.0"), "Result should contain second operand")
-            assertTrue(contentText.contains("11"), "Result should contain result value")
-
-            val structuredContent = toolResult.structuredContent as JsonObject
-            val actualWithoutFormatted = buildJsonObject {
-                structuredContent.filterKeys { it != "formattedResult" && it != "tags" }.forEach { (k, v) -> put(k, v) }
-            }
-            val expectedWithoutFormatted = buildJsonObject {
-                put("operation", "multiply")
-                put("a", 5.5)
-                put("b", 2.0)
-                put("result", 11.0)
-                put("precision", 3)
-            }
-
-            assertJsonEquals(expectedWithoutFormatted, actualWithoutFormatted)
+            actualContent.shouldEqualJson(expectedContent)
         }
     }
 
@@ -383,31 +370,31 @@ class ToolIntegrationTest : KotlinTestBase() {
         val successArgs = mapOf("errorType" to "none")
         val successResult = client.callTool(errorToolName, successArgs)
 
-        val successToolResult = assertCallToolResult(successResult, "No error: ")
-        assertTextContent(successToolResult.content.firstOrNull(), "No error occurred")
+        val actualContent = successResult?.structuredContent.toString()
+        val expectedContent = """
+            {
+              "error" : false,
+              "message" : "Success"
+            }
+        """.trimIndent()
 
-        val noErrorStructured = successToolResult.structuredContent as JsonObject
-        val expectedNoError = buildJsonObject {
-            put("error", false)
-            put("message", "Success")
-        }
-        assertJsonEquals(expectedNoError, noErrorStructured)
+        actualContent.shouldEqualJson(expectedContent)
 
         val errorArgs = mapOf(
             "errorType" to "error",
             "message" to "Custom error message",
         )
-        val errorResult = client.callTool(errorToolName, errorArgs)
+        val errorResult = client.callTool(errorToolName, errorArgs) as CallToolResultBase
 
-        val errorToolResult = assertCallToolResult(errorResult, "Error: ")
-        assertTextContent(errorToolResult.content.firstOrNull(), "Error: Custom error message")
+        val actualError = errorResult.structuredContent.toString()
+        val expectedError = """
+            {
+              "error" : true,
+              "message" : "Custom error message"
+            }
+        """.trimIndent()
 
-        val errorStructured = errorToolResult.structuredContent as JsonObject
-        val expectedError = buildJsonObject {
-            put("error", true)
-            put("message", "Custom error message")
-        }
-        assertJsonEquals(expectedError, errorStructured)
+        actualError.shouldEqualJson(expectedError)
 
         val exceptionArgs = mapOf(
             "errorType" to "exception",
@@ -434,16 +421,15 @@ class ToolIntegrationTest : KotlinTestBase() {
             "includeImage" to true,
         )
 
-        val result = client.callTool(multiContentToolName, arguments)
+        val result = client.callTool(multiContentToolName, arguments) as CallToolResultBase
 
-        val toolResult = assertCallToolResult(result)
         assertEquals(
             2,
-            toolResult.content.size,
+            result.content.size,
             "Tool result should have 2 content items",
         )
 
-        val textContent = toolResult.content.firstOrNull { it is TextContent } as? TextContent
+        val textContent = result.content.firstOrNull { it is TextContent } as? TextContent
         assertNotNull(textContent, "Result should contain TextContent")
         assertNotNull(textContent.text, "Text content should not be null")
         assertEquals(
@@ -452,32 +438,32 @@ class ToolIntegrationTest : KotlinTestBase() {
             "Text content should match",
         )
 
-        val imageContent = toolResult.content.firstOrNull { it is ImageContent } as? ImageContent
+        val imageContent = result.content.firstOrNull { it is ImageContent } as? ImageContent
         assertNotNull(imageContent, "Result should contain ImageContent")
         assertEquals("image/png", imageContent.mimeType, "Image MIME type should match")
         assertTrue(imageContent.data.isNotEmpty(), "Image data should not be empty")
 
-        val structuredContent = toolResult.structuredContent as JsonObject
-        val expectedStructured = buildJsonObject {
-            put("text", testText)
-            put("includeImage", true)
-        }
-        assertJsonEquals(expectedStructured, structuredContent)
+        val actualContent = result.structuredContent.toString()
+        val expectedContent = """
+            {
+              "text" : "Test multi-content",
+              "includeImage" : true
+            }
+        """.trimIndent()
+
+        actualContent.shouldEqualJson(expectedContent)
 
         val textOnlyArgs = mapOf(
             "text" to testText,
             "includeImage" to false,
         )
 
-        val textOnlyResult = client.callTool(multiContentToolName, textOnlyArgs)
+        val textOnlyResult = client.callTool(multiContentToolName, textOnlyArgs) as CallToolResultBase
 
-        val textOnlyToolResult = assertCallToolResult(textOnlyResult, "Text-only: ")
         assertEquals(
             1,
-            textOnlyToolResult.content.size,
+            textOnlyResult.content.size,
             "Text-only result should have 1 content item",
         )
-
-        assertTextContent(textOnlyToolResult.content.firstOrNull(), "Text content: $testText")
     }
 }

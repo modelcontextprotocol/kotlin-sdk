@@ -1,14 +1,12 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.kotlin
 
+import io.kotest.assertions.json.shouldEqualJson
 import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
 import io.modelcontextprotocol.kotlin.sdk.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.CallToolResultBase
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.Tool
-import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.assertCallToolResult
-import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.assertJsonEquals
-import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.assertTextContent
 import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.runTest
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -281,143 +279,150 @@ class ToolEdgeCasesTest : KotlinTestBase() {
     }
 
     @Test
-    fun testBasicTool() = runTest {
-        val testText = "Hello, world!"
-        val arguments = mapOf("text" to testText)
+    fun testBasicTool() {
+        runTest {
+            val testText = "Hello, world!"
+            val arguments = mapOf("text" to testText)
 
-        val result = client.callTool(basicToolName, arguments)
+            val result = client.callTool(basicToolName, arguments) as CallToolResultBase
 
-        val toolResult = assertCallToolResult(result)
-        assertTextContent(toolResult.content.firstOrNull(), "Echo: $testText")
+            val expectedToolResult = "[TextContent(text=Echo: Hello, world!, annotations=null)]"
+            assertEquals(expectedToolResult, result.content.toString(), "Unexpected tool result")
 
-        val structuredContent = toolResult.structuredContent as JsonObject
-        val expected = buildJsonObject { put("result", testText) }
-        assertJsonEquals(expected, structuredContent)
+            val actualContent = result.structuredContent.toString()
+            val expectedContent = """
+                {
+                  "result" : "Hello, world!"
+                }
+            """.trimIndent()
+
+            actualContent.shouldEqualJson(expectedContent)
+        }
     }
 
     @Test
-    fun testComplexNestedSchema() = runTest {
-        val userJson = buildJsonObject {
-            put("name", JsonPrimitive("John Doe"))
-            put("age", JsonPrimitive(30))
-            put(
-                "address",
-                buildJsonObject {
-                    put("street", JsonPrimitive("123 Main St"))
-                    put("city", JsonPrimitive("New York"))
-                    put("country", JsonPrimitive("USA"))
-                },
-            )
+    fun testComplexNestedSchema() {
+        runTest {
+            val userJson = buildJsonObject {
+                put("name", JsonPrimitive("John Galt"))
+                put("age", JsonPrimitive(30))
+                put(
+                    "address",
+                    buildJsonObject {
+                        put("street", JsonPrimitive("123 Main St"))
+                        put("city", JsonPrimitive("New York"))
+                        put("country", JsonPrimitive("USA"))
+                    },
+                )
+            }
+
+            val optionsJson = buildJsonArray {
+                add(JsonPrimitive("option1"))
+                add(JsonPrimitive("option2"))
+                add(JsonPrimitive("option3"))
+            }
+
+            val arguments = buildJsonObject {
+                put("user", userJson)
+                put("options", optionsJson)
+            }
+
+            val result = client.callTool(
+                CallToolRequest(
+                    name = complexToolName,
+                    arguments = arguments,
+                ),
+            ) as CallToolResultBase
+
+            val actualContent = result.structuredContent.toString()
+            val expectedContent = """
+                {
+                  "name" : "John Galt",
+                  "age" : 30,
+                  "address" : {
+                    "street" : "123 Main St",
+                    "city" : "New York",
+                    "country" : "USA"
+                  },
+                  "options" : [ "option1", "option2", "option3" ]
+                }
+            """.trimIndent()
+
+            actualContent.shouldEqualJson(expectedContent)
         }
-
-        val optionsJson = buildJsonArray {
-            add(JsonPrimitive("option1"))
-            add(JsonPrimitive("option2"))
-            add(JsonPrimitive("option3"))
-        }
-
-        val arguments = buildJsonObject {
-            put("user", userJson)
-            put("options", optionsJson)
-        }
-
-        val result = client.callTool(
-            CallToolRequest(
-                name = complexToolName,
-                arguments = arguments,
-            ),
-        )
-
-        val toolResult = assertCallToolResult(result)
-        val content = toolResult.content.firstOrNull() as? TextContent
-        assertNotNull(content, "Tool result content should be TextContent")
-        val text = content.text ?: ""
-
-        assertTrue(text.contains("John Doe"), "Result should contain the name")
-        assertTrue(text.contains("30"), "Result should contain the age")
-        assertTrue(text.contains("123 Main St"), "Result should contain the street")
-        assertTrue(text.contains("New York"), "Result should contain the city")
-        assertTrue(text.contains("USA"), "Result should contain the country")
-        assertTrue(text.contains("option1"), "Result should contain option1")
-        assertTrue(text.contains("option2"), "Result should contain option2")
-        assertTrue(text.contains("option3"), "Result should contain option3")
-
-        val structuredContent = toolResult.structuredContent as JsonObject
-        val expectedStructured = buildJsonObject {
-            put("name", "John Doe")
-            put("age", 30)
-            put("address", buildJsonObject {
-                put("street", "123 Main St")
-                put("city", "New York")
-                put("country", "USA")
-            })
-            put("options", buildJsonArray {
-                add("option1"); add("option2"); add("option3")
-            })
-        }
-        assertJsonEquals(expectedStructured, structuredContent)
     }
 
     @Test
-    fun testLargeResponse() = runTest {
-        val size = 10
-        val arguments = mapOf("size" to size)
+    fun testLargeResponse() {
+        runTest {
+            val size = 10
+            val arguments = mapOf("size" to size)
 
-        val result = client.callTool(largeToolName, arguments)
+            val result = client.callTool(largeToolName, arguments) as CallToolResultBase
 
-        val toolResult = assertCallToolResult(result)
-        val content = toolResult.content.firstOrNull() as? TextContent
-        assertNotNull(content, "Tool result content should be TextContent")
-        val text = content.text ?: ""
+            val content = result.content.firstOrNull() as TextContent
+            assertNotNull(content, "Tool result content should be TextContent")
 
-        assertEquals(10000, text.length, "Response should be 10KB in size")
+            val actualContent = result.structuredContent.toString()
+            val expectedContent = """
+            {
+              "size" : 10000
+            }
+        """.trimIndent()
 
-        val structuredContent = toolResult.structuredContent as JsonObject
-        val expected = buildJsonObject { put("size", 10000) }
-        assertJsonEquals(expected, structuredContent)
-    }
-
-    @Test
-    fun testSlowTool() = runTest {
-        val delay = 500
-        val arguments = mapOf("delay" to delay)
-
-        val startTime = System.currentTimeMillis()
-        val result = client.callTool(slowToolName, arguments)
-        val endTime = System.currentTimeMillis()
-
-        val toolResult = assertCallToolResult(result)
-        val content = toolResult.content.firstOrNull() as? TextContent
-        assertNotNull(content, "Tool result content should be TextContent")
-        val text = content.text ?: ""
-
-        assertTrue(text.contains("${delay}ms"), "Result should mention the delay")
-        assertTrue(endTime - startTime >= delay, "Tool should take at least the specified delay")
-
-        val structuredContent = toolResult.structuredContent as JsonObject
-        val expected = buildJsonObject { put("delay", delay) }
-        assertJsonEquals(expected, structuredContent)
-    }
-
-    @Test
-    fun testSpecialCharacters() = runTest {
-        val arguments = mapOf("special" to specialCharsContent)
-
-        val result = client.callTool(specialCharsToolName, arguments)
-
-        val toolResult = assertCallToolResult(result)
-        val content = toolResult.content.firstOrNull() as? TextContent
-        assertNotNull(content, "Tool result content should be TextContent")
-        val text = content.text ?: ""
-
-        assertTrue(text.contains(specialCharsContent), "Result should contain the special characters")
-
-        val structuredContent = toolResult.structuredContent as JsonObject
-        val expected = buildJsonObject {
-            put("special", specialCharsContent)
-            put("length", specialCharsContent.length)
+            actualContent.shouldEqualJson(expectedContent)
         }
-        assertJsonEquals(expected, structuredContent)
+    }
+
+    @Test
+    fun testSlowTool() {
+        runTest {
+            val delay = 500
+            val arguments = mapOf("delay" to delay)
+
+            val startTime = System.currentTimeMillis()
+            val result = client.callTool(slowToolName, arguments) as CallToolResultBase
+            val endTime = System.currentTimeMillis()
+
+            val content = result.content.firstOrNull() as? TextContent
+            assertNotNull(content, "Tool result content should be TextContent")
+
+            assertTrue(endTime - startTime >= delay, "Tool should take at least the specified delay")
+
+            val actualContent = result.structuredContent.toString()
+            val expectedContent = """
+            {
+              "delay" : 500
+            }
+        """.trimIndent()
+
+            actualContent.shouldEqualJson(expectedContent)
+        }
+    }
+
+    @Test
+    fun testSpecialCharacters() {
+        runTest {
+            val arguments = mapOf("special" to specialCharsContent)
+
+            val result = client.callTool(specialCharsToolName, arguments) as CallToolResultBase
+
+            val content = result.content.firstOrNull() as? TextContent
+            assertNotNull(content, "Tool result content should be TextContent")
+            val text = content.text ?: ""
+
+            assertTrue(text.contains(specialCharsContent), "Result should contain the special characters")
+
+            val actualContent = result.structuredContent.toString()
+            val expectedContent = """
+            {
+              "special" : "!@#$%^&*()_+{}|:\"<>?~`-=[]\\;',./\n\t",
+              "length" : 34
+            }
+        """.trimIndent()
+
+            actualContent.shouldEqualJson(expectedContent)
+        }
     }
 
     @Test

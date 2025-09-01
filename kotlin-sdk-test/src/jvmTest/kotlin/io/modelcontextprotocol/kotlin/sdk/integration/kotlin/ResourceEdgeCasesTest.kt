@@ -260,11 +260,13 @@ class ResourceEdgeCasesTest : KotlinTestBase() {
     }
 
     @Test
-    fun testSubscribeAndUnsubscribe() = runTest {
-        val subscribeResult = client.subscribeResource(SubscribeRequest(uri = testResourceUri))
-        assertNotNull(subscribeResult, "Subscribe result should not be null")
+    fun testSubscribeAndUnsubscribe() {
+        runTest {
+            val subscribeResult = client.subscribeResource(SubscribeRequest(uri = testResourceUri))
+            assertNotNull(subscribeResult, "Subscribe result should not be null")
 
-        val unsubscribeResult = client.unsubscribeResource(UnsubscribeRequest(uri = testResourceUri))
-        assertNotNull(unsubscribeResult, "Unsubscribe result should not be null")
+            val unsubscribeResult = client.unsubscribeResource(UnsubscribeRequest(uri = testResourceUri))
+            assertNotNull(unsubscribeResult, "Unsubscribe result should not be null")
+        }
     }
 }
