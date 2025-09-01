@@ -1,6 +1,12 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.typescript
 
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.sse.SSE
+import io.modelcontextprotocol.kotlin.sdk.client.Client
+import io.modelcontextprotocol.kotlin.sdk.client.mcpStreamableHttp
 import io.modelcontextprotocol.kotlin.sdk.integration.utils.Retry
+import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.BeforeAll
 import java.io.BufferedReader
 import java.io.File
@@ -9,6 +15,7 @@ import java.net.ServerSocket
 import java.net.Socket
 import java.nio.file.Files
 import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.seconds
 
 @Retry(times = 3)
 abstract class TypeScriptTestBase {
@@ -129,7 +136,7 @@ abstract class TypeScriptTestBase {
         }
     }
 
-    protected fun waitForProcessTermination(process: Process, timeoutSeconds: Long): Boolean {
+    private fun waitForProcessTermination(process: Process, timeoutSeconds: Long): Boolean {
         if (process.isAlive && !process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
             process.destroyForcibly()
             process.waitFor(2, TimeUnit.SECONDS)
@@ -138,7 +145,7 @@ abstract class TypeScriptTestBase {
         return true
     }
 
-    protected fun createProcessOutputReader(process: Process, prefix: String = "TS-SERVER"): Thread {
+    private fun createProcessOutputReader(process: Process, prefix: String = "TS-SERVER"): Thread {
         val outputReader = Thread {
             try {
                 process.inputStream.bufferedReader().useLines { lines ->
@@ -217,6 +224,22 @@ abstract class TypeScriptTestBase {
             println("$name stopped gracefully")
         } else {
             println("$name did not stop gracefully, forced termination")
+        }
+    }
+
+    private suspend fun newClient(serverUrl: String): Client =
+        HttpClient(CIO) { install(SSE) }.mcpStreamableHttp(serverUrl)
+
+    protected suspend fun <T> withClient(serverUrl: String, block: suspend (Client) -> T): T {
+        val client = newClient(serverUrl)
+        return try {
+            withTimeout(20.seconds) { block(client) }
+        } finally {
+            try {
+                withTimeout(3.seconds) { client.close() }
+            } catch (_: Exception) {
+                // ignore errors
+            }
         }
     }
 }

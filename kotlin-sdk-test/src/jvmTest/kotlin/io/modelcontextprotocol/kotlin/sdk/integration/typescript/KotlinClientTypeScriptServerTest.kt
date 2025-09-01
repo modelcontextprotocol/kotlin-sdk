@@ -64,92 +64,81 @@ class KotlinClientTypeScriptServerTest : TypeScriptTestBase() {
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
     fun testKotlinClientConnectsToTypeScriptServer() = runTest {
-        client = HttpClient(CIO) {
-            install(SSE)
-        }.mcpStreamableHttp(serverUrl)
+        withClient(serverUrl) { client ->
+            assertNotNull(client, "Client should be initialized")
 
-        assertNotNull(client, "Client should be initialized")
+            val pingResult = client.ping()
+            assertNotNull(pingResult, "Ping result should not be null")
 
-        val pingResult = client.ping()
-        assertNotNull(pingResult, "Ping result should not be null")
-
-        val serverImpl = client.serverVersion
-        assertNotNull(serverImpl, "Server implementation should not be null")
-        println("Connected to TypeScript server: ${serverImpl.name} v${serverImpl.version}")
+            val serverImpl = client.serverVersion
+            assertNotNull(serverImpl, "Server implementation should not be null")
+            println("Connected to TypeScript server: ${serverImpl.name} v${serverImpl.version}")
+        }
     }
 
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
     fun testListTools() = runTest {
-        client = HttpClient(CIO) {
-            install(SSE)
-        }.mcpStreamableHttp(serverUrl)
+        withClient(serverUrl) { client ->
+            val result = client.listTools()
+            assertNotNull(result, "Tools list should not be null")
+            assertTrue(result.tools.isNotEmpty(), "Tools list should not be empty")
 
-        val result = client.listTools()
-        assertNotNull(result, "Tools list should not be null")
-        assertTrue(result.tools.isNotEmpty(), "Tools list should not be empty")
+            // Verify specific utils are available
+            val toolNames = result.tools.map { it.name }
+            assertTrue(toolNames.contains("greet"), "Greet tool should be available")
+            assertTrue(toolNames.contains("multi-greet"), "Multi-greet tool should be available")
+            assertTrue(toolNames.contains("collect-user-info"), "Collect-user-info tool should be available")
 
-        // Verify specific utils are available
-        val toolNames = result.tools.map { it.name }
-        assertTrue(toolNames.contains("greet"), "Greet tool should be available")
-        assertTrue(toolNames.contains("multi-greet"), "Multi-greet tool should be available")
-        assertTrue(toolNames.contains("collect-user-info"), "Collect-user-info tool should be available")
-
-        println("Available utils: ${toolNames.joinToString()}")
+            println("Available utils: ${toolNames.joinToString()}")
+        }
     }
 
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
     fun testToolCall() = runTest {
-        client = HttpClient(CIO) {
-            install(SSE)
-        }.mcpStreamableHttp(serverUrl)
+        withClient(serverUrl) { client ->
+            val testName = "TestUser"
+            val arguments = mapOf("name" to testName)
 
-        val testName = "TestUser"
-        val arguments = mapOf("name" to testName)
+            val result = client.callTool("greet", arguments)
+            assertNotNull(result, "Tool call result should not be null")
 
-        val result = client.callTool("greet", arguments)
-        assertNotNull(result, "Tool call result should not be null")
-
-        val callResult = result as CallToolResult
-        val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
-        assertNotNull(textContent, "Text content should be present in the result")
-        assertEquals(
-            "Hello, $testName!",
-            textContent.text,
-            "Tool response should contain the greeting with the provided name",
-        )
+            val callResult = result as CallToolResult
+            val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
+            assertNotNull(textContent, "Text content should be present in the result")
+            assertEquals(
+                "Hello, $testName!",
+                textContent.text,
+                "Tool response should contain the greeting with the provided name",
+            )
+        }
     }
 
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
     fun testMultipleClients() = runTest {
-        // First client connection
-        val client1 = HttpClient(CIO) {
-            install(SSE)
-        }.mcpStreamableHttp(serverUrl)
+        val client1 = newClient(serverUrl)
+        val client2 = newClient(serverUrl)
+        try {
+            val tools1 = client1.listTools()
+            assertNotNull(tools1, "Tools list for first client should not be null")
+            assertTrue(tools1.tools.isNotEmpty(), "Tools list for first client should not be empty")
 
-        val tools1 = client1.listTools()
-        assertNotNull(tools1, "Tools list for first client should not be null")
-        assertTrue(tools1.tools.isNotEmpty(), "Tools list for first client should not be empty")
+            val tools2 = client2.listTools()
+            assertNotNull(tools2, "Tools list for second client should not be null")
+            assertTrue(tools2.tools.isNotEmpty(), "Tools list for second client should not be empty")
 
-        val client2 = HttpClient(CIO) {
-            install(SSE)
-        }.mcpStreamableHttp(serverUrl)
+            val toolNames1 = tools1.tools.map { it.name }
+            val toolNames2 = tools2.tools.map { it.name }
 
-        val tools2 = client2.listTools()
-        assertNotNull(tools2, "Tools list for second client should not be null")
-        assertTrue(tools2.tools.isNotEmpty(), "Tools list for second client should not be empty")
-
-        val toolNames1 = tools1.tools.map { it.name }
-        val toolNames2 = tools2.tools.map { it.name }
-
-        assertTrue(toolNames1.contains("greet"), "Greet tool should be available to first client")
-        assertTrue(toolNames1.contains("multi-greet"), "Multi-greet tool should be available to first client")
-        assertTrue(toolNames2.contains("greet"), "Greet tool should be available to second client")
-        assertTrue(toolNames2.contains("multi-greet"), "Multi-greet tool should be available to second client")
-
-        client1.close()
-        client2.close()
+            assertTrue(toolNames1.contains("greet"), "Greet tool should be available to first client")
+            assertTrue(toolNames1.contains("multi-greet"), "Multi-greet tool should be available to first client")
+            assertTrue(toolNames2.contains("greet"), "Greet tool should be available to second client")
+            assertTrue(toolNames2.contains("multi-greet"), "Multi-greet tool should be available to second client")
+        } finally {
+            client1.close()
+            client2.close()
+        }
     }
 }
