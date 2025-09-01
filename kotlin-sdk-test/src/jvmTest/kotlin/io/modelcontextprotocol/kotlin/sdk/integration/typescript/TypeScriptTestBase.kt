@@ -17,7 +17,7 @@ abstract class TypeScriptTestBase {
     protected val tsClientDir: File
         get() = File(
             projectRoot,
-            "src/jvmTest/kotlin/io/modelcontextprotocol/kotlin/sdk/integration/utils",
+            "src/jvmTest/kotlin/io/modelcontextprotocol/kotlin/sdk/integration/typescript",
         )
 
     companion object {

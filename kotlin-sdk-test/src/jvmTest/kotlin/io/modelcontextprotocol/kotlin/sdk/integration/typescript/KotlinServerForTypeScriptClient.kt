@@ -1,4 +1,4 @@
-package io.modelcontextprotocol.kotlin.sdk.integration.utils
+package io.modelcontextprotocol.kotlin.sdk.integration.typescript
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.ContentType
