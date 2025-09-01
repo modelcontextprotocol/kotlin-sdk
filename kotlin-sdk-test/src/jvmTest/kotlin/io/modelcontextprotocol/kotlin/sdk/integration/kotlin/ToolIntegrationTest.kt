@@ -325,7 +325,7 @@ class ToolIntegrationTest : KotlinTestBase() {
                 {"result":"Hello, world!"}
             """.trimIndent()
 
-            actualContent.shouldEqualJson(expectedContent)
+            actualContent shouldEqualJson expectedContent
         }
     }
 
@@ -361,7 +361,7 @@ class ToolIntegrationTest : KotlinTestBase() {
                 }
             """.trimIndent()
 
-            actualContent.shouldEqualJson(expectedContent)
+            actualContent shouldEqualJson expectedContent
         }
     }
 
@@ -378,7 +378,7 @@ class ToolIntegrationTest : KotlinTestBase() {
             }
         """.trimIndent()
 
-        actualContent.shouldEqualJson(expectedContent)
+        actualContent shouldEqualJson expectedContent
 
         val errorArgs = mapOf(
             "errorType" to "error",
@@ -394,7 +394,7 @@ class ToolIntegrationTest : KotlinTestBase() {
             }
         """.trimIndent()
 
-        actualError.shouldEqualJson(expectedError)
+        actualError shouldEqualJson expectedError
 
         val exceptionArgs = mapOf(
             "errorType" to "exception",
@@ -451,7 +451,7 @@ class ToolIntegrationTest : KotlinTestBase() {
             }
         """.trimIndent()
 
-        actualContent.shouldEqualJson(expectedContent)
+        actualContent shouldEqualJson expectedContent
 
         val textOnlyArgs = mapOf(
             "text" to testText,

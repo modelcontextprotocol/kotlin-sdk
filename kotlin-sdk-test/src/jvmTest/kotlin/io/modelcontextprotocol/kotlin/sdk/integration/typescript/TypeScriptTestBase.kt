@@ -57,12 +57,8 @@ abstract class TypeScriptTestBase {
             }
 
             println("Installing TypeScript SDK dependencies")
-            executeCommand("npm install", sdkDir)
+            executeCommand("npm install", sdkDir, allowFailure = false, timeoutSeconds = null)
         }
-
-        @JvmStatic
-        protected fun executeCommand(command: String, workingDir: File): String =
-            runCommand(command, workingDir, allowFailure = false, timeoutSeconds = null)
 
         @JvmStatic
         protected fun killProcessOnPort(port: Int) {
@@ -72,7 +68,7 @@ abstract class TypeScriptTestBase {
             } else {
                 "lsof -ti:$port | xargs kill -9 2>/dev/null || true"
             }
-            runCommand(killCommand, File("."), allowFailure = true, timeoutSeconds = null)
+            executeCommand(killCommand, File("."), allowFailure = true, timeoutSeconds = null)
         }
 
         @JvmStatic
@@ -82,11 +78,12 @@ abstract class TypeScriptTestBase {
             }
         }
 
-        private fun runCommand(
+        @JvmStatic
+        protected fun executeCommand(
             command: String,
             workingDir: File,
-            allowFailure: Boolean,
-            timeoutSeconds: Long?,
+            allowFailure: Boolean = false,
+            timeoutSeconds: Long? = null,
         ): String {
             if (!workingDir.exists()) {
                 if (!workingDir.mkdirs()) {
@@ -174,7 +171,7 @@ abstract class TypeScriptTestBase {
     }
 
     protected fun executeCommandAllowingFailure(command: String, workingDir: File, timeoutSeconds: Long = 20): String =
-        runCommand(command, workingDir, allowFailure = true, timeoutSeconds = timeoutSeconds)
+        executeCommand(command, workingDir, allowFailure = true, timeoutSeconds = timeoutSeconds)
 
     protected fun startTypeScriptServer(port: Int): Process {
         killProcessOnPort(port)
@@ -227,7 +224,7 @@ abstract class TypeScriptTestBase {
         }
     }
 
-    private suspend fun newClient(serverUrl: String): Client =
+    protected suspend fun newClient(serverUrl: String): Client =
         HttpClient(CIO) { install(SSE) }.mcpStreamableHttp(serverUrl)
 
     protected suspend fun <T> withClient(serverUrl: String, block: suspend (Client) -> T): T {

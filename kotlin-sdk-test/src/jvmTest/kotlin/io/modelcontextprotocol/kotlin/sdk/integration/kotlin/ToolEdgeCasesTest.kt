@@ -296,7 +296,7 @@ class ToolEdgeCasesTest : KotlinTestBase() {
                 }
             """.trimIndent()
 
-            actualContent.shouldEqualJson(expectedContent)
+            actualContent shouldEqualJson expectedContent
         }
     }
 
@@ -348,7 +348,7 @@ class ToolEdgeCasesTest : KotlinTestBase() {
                 }
             """.trimIndent()
 
-            actualContent.shouldEqualJson(expectedContent)
+            actualContent shouldEqualJson expectedContent
         }
     }
 
@@ -370,7 +370,7 @@ class ToolEdgeCasesTest : KotlinTestBase() {
             }
         """.trimIndent()
 
-            actualContent.shouldEqualJson(expectedContent)
+            actualContent shouldEqualJson expectedContent
         }
     }
 
@@ -396,7 +396,7 @@ class ToolEdgeCasesTest : KotlinTestBase() {
             }
         """.trimIndent()
 
-            actualContent.shouldEqualJson(expectedContent)
+            actualContent shouldEqualJson expectedContent
         }
     }
 
@@ -421,7 +421,7 @@ class ToolEdgeCasesTest : KotlinTestBase() {
             }
         """.trimIndent()
 
-            actualContent.shouldEqualJson(expectedContent)
+            actualContent shouldEqualJson expectedContent
         }
     }
 
