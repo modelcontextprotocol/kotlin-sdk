@@ -18,6 +18,9 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.text.DecimalFormat
+import java.text.DecimalFormatSymbols
+import java.util.Locale
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -161,7 +164,10 @@ class ToolIntegrationTest : KotlinTestBase() {
                 else -> 0.0
             }
 
-            val formattedResult = "%.${precision}f".format(result)
+            val pattern = if (precision > 0) "0." + "0".repeat(precision) else "0"
+            val symbols = DecimalFormatSymbols(Locale.US).apply { decimalSeparator = ',' }
+            val df = DecimalFormat(pattern, symbols).apply { isGroupingUsed = false }
+            val formattedResult = df.format(result)
 
             val textContent = if (showSteps) {
                 "Operation: $operation\nA: $a\nB: $b\nResult: $formattedResult\nTags: ${
