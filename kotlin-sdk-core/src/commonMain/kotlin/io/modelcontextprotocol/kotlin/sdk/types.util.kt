@@ -89,6 +89,7 @@ internal object ContentBlockPolymorphicSerializer :
             TextContent.TYPE -> TextContent.serializer()
             EmbeddedResource.TYPE -> EmbeddedResource.serializer()
             AudioContent.TYPE -> AudioContent.serializer()
+            ResourceLink.TYPE -> ResourceLink.serializer()
             else -> UnknownContent.serializer()
         }
 }
