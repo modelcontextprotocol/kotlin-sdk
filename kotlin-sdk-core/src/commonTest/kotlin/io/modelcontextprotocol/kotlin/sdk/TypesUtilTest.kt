@@ -148,6 +148,28 @@ class TypesUtilTest {
     }
 
     @Test
+    fun `should deserialize ResourceLink polymorphically`() {
+        val json = """
+            {
+              "type": "resource_link",
+              "uri": "file:///project/src/main.rs",
+              "name": "main.rs",
+              "description": "Primary application entry point",
+              "mimeType": "text/x-rust"
+            }
+        """.trimIndent()
+
+        val decoded = McpJson.decodeFromString<ContentBlock>(json)
+
+        assertIs<ResourceLink>(decoded)
+        assertEquals("resource_link", decoded.type)
+        assertEquals("file:///project/src/main.rs", decoded.uri)
+        assertEquals("main.rs", decoded.name)
+        assertEquals("Primary application entry point", decoded.description)
+        assertEquals("text/x-rust", decoded.mimeType)
+    }
+
+    @Test
     fun `should deserialize EmbeddedResource polymorphically`() {
         val json =
             """{"type": "resource", "resource": {"uri": "file:///test.txt", "mimeType": "text/plain", "text": "content"}}"""
