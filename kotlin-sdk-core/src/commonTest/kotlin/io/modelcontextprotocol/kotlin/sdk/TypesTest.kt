@@ -159,6 +159,52 @@ class TypesTest {
     }
 
     @Test
+    fun `should validate resource link content`() {
+        val resourceLink = ResourceLink(
+            mimeType = "application/pdf",
+            description = "This pdf is meant to be a resource link test",
+            name = "file01",
+            size = 76859L,
+            title = "This is a pdf",
+            uri = "file:///path/to/my_file.pdf",
+        )
+
+        with(resourceLink) {
+            assertEquals("application/pdf", mimeType)
+            assertEquals("This pdf is meant to be a resource link test", description)
+            assertEquals("file01", name)
+            assertEquals(76859L, size)
+            assertEquals("This is a pdf", title)
+            assertEquals("file:///path/to/my_file.pdf", uri)
+        }
+    }
+
+    @Test
+    fun `should serialize and deserialize resource link correctly`() {
+        val resourceLink = ResourceLink(
+            mimeType = "application/pdf",
+            description = "This pdf is meant to be a resource link test",
+            name = "file01",
+            size = 76859L,
+            title = "This is a pdf",
+            uri = "file:///path/to/my_file.pdf",
+        )
+
+        val json = McpJson.encodeToString<ContentBlock>(resourceLink)
+        val decoded = McpJson.decodeFromString<ContentBlock>(json)
+
+        assertIs<ResourceLink>(decoded)
+        with(resourceLink) {
+            assertEquals("application/pdf", mimeType)
+            assertEquals("This pdf is meant to be a resource link test", description)
+            assertEquals("file01", name)
+            assertEquals(76859L, size)
+            assertEquals("This is a pdf", title)
+            assertEquals("file:///path/to/my_file.pdf", uri)
+        }
+    }
+
+    @Test
     fun `should validate embedded resource content`() {
         val resource = TextResourceContents(
             text = "File contents",
