@@ -81,6 +81,8 @@ See [How to Write a Git Commit Message](https://chris.beams.io/posts/git-commit/
 * Run `./gradlew test` to test the module and speed up development.
 * Run `./gradlew build` to build the project, which also runs all the tests.
 
+*note*: when you change the data model, you might need to regenerate the .api files by running `./gradlew apiDump`.
+
 ## Contacting maintainers
 
 * If something cannot be done, not convenient, or does not work &mdash; submit an [issue](#submitting-issues).
