@@ -970,13 +970,22 @@ public data class GetPromptRequest(
     override val method: Method = Method.Defined.PromptsGet
 }
 
+@Deprecated("For backwards compatibility; use ContentBlock instead", ReplaceWith("ContentBlock"))
+public sealed interface PromptMessageContent {
+    public val type: String
+}
+
+@Deprecated(
+    "For backwards compatibility; use CreateMessageResultContent or SamplingMessageContent instead",
+    ReplaceWith("CreateMessageResultContent"),
+)
+public sealed interface PromptMessageContentMultimodal : PromptMessageContent
+
 /**
  * Represents the types of a ContentBlock
  */
 @Serializable(with = ContentBlockPolymorphicSerializer::class)
-public sealed interface ContentBlock {
-    public val type: String
-}
+public sealed interface ContentBlock : PromptMessageContent
 
 /**
  * Represents content for the CreateMessageResult
