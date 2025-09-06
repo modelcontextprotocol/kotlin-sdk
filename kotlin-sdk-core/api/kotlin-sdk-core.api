@@ -450,9 +450,8 @@ public final class io/modelcontextprotocol/kotlin/sdk/CompleteResult$Completion$
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
-public abstract interface class io/modelcontextprotocol/kotlin/sdk/ContentBlock {
+public abstract interface class io/modelcontextprotocol/kotlin/sdk/ContentBlock : io/modelcontextprotocol/kotlin/sdk/PromptMessageContent {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/ContentBlock$Companion;
-	public abstract fun getType ()Ljava/lang/String;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/ContentBlock$Companion {
@@ -2039,20 +2038,10 @@ public final class io/modelcontextprotocol/kotlin/sdk/PromptMessage$Companion {
 }
 
 public abstract interface class io/modelcontextprotocol/kotlin/sdk/PromptMessageContent {
-	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/PromptMessageContent$Companion;
 	public abstract fun getType ()Ljava/lang/String;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/PromptMessageContent$Companion {
-	public final fun serializer ()Lkotlinx/serialization/KSerializer;
-}
-
 public abstract interface class io/modelcontextprotocol/kotlin/sdk/PromptMessageContentMultimodal : io/modelcontextprotocol/kotlin/sdk/PromptMessageContent {
-	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/PromptMessageContentMultimodal$Companion;
-}
-
-public final class io/modelcontextprotocol/kotlin/sdk/PromptMessageContentMultimodal$Companion {
-	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/PromptReference : io/modelcontextprotocol/kotlin/sdk/Reference {
