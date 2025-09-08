@@ -1,8 +1,7 @@
-@file:Suppress("unused", "EnumEntryName")
-
 package io.modelcontextprotocol.kotlin.sdk
 
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
+import kotlinx.datetime.Instant
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
@@ -17,8 +16,6 @@ import kotlin.concurrent.atomics.AtomicLong
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.concurrent.atomics.incrementAndFetch
 import kotlin.jvm.JvmInline
-import kotlin.time.ExperimentalTime
-import kotlin.time.Instant
 
 public const val LATEST_PROTOCOL_VERSION: String = "2025-03-26"
 
@@ -302,6 +299,7 @@ public data class JSONRPCError(val code: ErrorCode, val message: String, val dat
 public sealed interface NotificationParams : WithMeta
 
 /* Cancellation */
+
 /**
  * This notification can be sent by either side to indicate that it is cancelling a previously issued request.
  *
@@ -334,6 +332,7 @@ public data class CancelledNotification(override val params: Params) :
 }
 
 /* Initialization */
+
 /**
  * Describes the name and version of an MCP implementation.
  */
@@ -527,6 +526,7 @@ public data class InitializedNotification(override val params: Params = Params()
 }
 
 /* Ping */
+
 /**
  * A ping, issued by either the server or the client, to check that the other party is still alive.
  * The receiver must promptly respond, or else it may be disconnected.
@@ -560,6 +560,7 @@ public sealed interface ProgressBase {
 }
 
 /* Progress notifications */
+
 /**
  * Represents a progress notification.
  *
@@ -619,6 +620,7 @@ public data class ProgressNotification(override val params: Params) :
 }
 
 /* Pagination */
+
 /**
  * Represents a request supporting pagination.
  */
@@ -646,6 +648,7 @@ public sealed interface PaginatedResult : RequestResult {
 }
 
 /* Resources */
+
 /**
  * The contents of a specific resource or sub-resource.
  */
@@ -888,6 +891,7 @@ public data class ResourceUpdatedNotification(override val params: Params) : Ser
 }
 
 /* Prompts */
+
 /**
  * Describes an argument that a prompt can accept.
  */
@@ -1111,7 +1115,6 @@ public data class Annotations(
     /**
      * The moment the resource was last modified.
      */
-    @OptIn(ExperimentalTime::class)
     val lastModified: Instant?,
     /**
      * Describes how important this data is for operating the server.
@@ -1158,6 +1161,7 @@ public data class PromptListChangedNotification(override val params: Params = Pa
 }
 
 /* Tools */
+
 /**
  * Additional properties describing a Tool to clients.
  *
@@ -1336,6 +1340,7 @@ public data class ToolListChangedNotification(override val params: Params = Para
 }
 
 /* Logging */
+
 /**
  * The severity of a log message.
  */
@@ -1395,6 +1400,7 @@ public data class LoggingMessageNotification(override val params: Params) : Serv
 }
 
 /* Sampling */
+
 /**
  * Hints to use for model selection.
  */
@@ -1486,8 +1492,13 @@ public data class CreateMessageRequest(
     WithMeta {
     override val method: Method = Method.Defined.SamplingCreateMessage
 
+    @Suppress("EnumEntryName")
     @Serializable
-    public enum class IncludeContext { none, thisServer, allServers }
+    public enum class IncludeContext {
+        none,
+        thisServer,
+        allServers,
+    }
 }
 
 @Serializable(with = StopReasonSerializer::class)
@@ -1614,7 +1625,6 @@ public data class CompleteRequest(
 @Serializable
 public data class CompleteResult(val completion: Completion, override val _meta: JsonObject = EmptyJsonObject) :
     ServerResult {
-    @Suppress("CanBeParameter")
     @Serializable
     public class Completion(
         /**
@@ -1639,6 +1649,7 @@ public data class CompleteResult(val completion: Completion, override val _meta:
 }
 
 /* Roots */
+
 /**
  * Represents a root directory or file that the server can operate on.
  */
@@ -1729,6 +1740,7 @@ public data class CreateElicitationResult(
     }
 
     @Serializable
+    @Suppress("EnumEntryName")
     public enum class Action { accept, decline, cancel }
 }
 

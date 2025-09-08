@@ -34,6 +34,7 @@ kotlin {
             dependencies {
                 api(libs.kotlinx.serialization.json)
                 api(libs.kotlinx.coroutines.core)
+                api(libs.kotlinx.datetime)
                 api(libs.kotlinx.io.core)
                 api(libs.ktor.server.websockets)
                 api(libs.kotlinx.collections.immutable)

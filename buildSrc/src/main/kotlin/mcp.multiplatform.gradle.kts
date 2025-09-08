@@ -3,6 +3,7 @@
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.ExplicitApiMode
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_1
 
 plugins {
     kotlin("multiplatform")
@@ -24,18 +25,40 @@ val generateLibVersion by tasks.registering {
 
             public const val LIB_VERSION: String = "${project.version}"
             
-            """.trimIndent()
+            """.trimIndent(),
         )
     }
 }
 
 kotlin {
-    jvm {
-        compilerOptions.jvmTarget = JvmTarget.JVM_1_8
+
+    compilerOptions {
+        languageVersion = KOTLIN_2_1
+        apiVersion = KOTLIN_2_1
+        // TODO: allWarningsAsErrors = true
+        extraWarnings = true
+        freeCompilerArgs =
+            listOf(
+                "-Xwhen-guards",
+            )
     }
-    macosX64(); macosArm64()
-    linuxX64(); linuxArm64()
+    coreLibrariesVersion = "2.1.21"
+
+    jvm {
+        compilerOptions {
+            jvmTarget = JvmTarget.JVM_1_8
+            javaParameters = true
+        }
+    }
+
+    macosX64()
+    macosArm64()
+
+    linuxX64()
+    linuxArm64()
+
     mingwX64()
+
     js { nodejs() }
     wasmJs { nodejs() }
 

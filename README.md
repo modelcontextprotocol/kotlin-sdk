@@ -1,7 +1,8 @@
 # MCP Kotlin SDK
 
+[![Kotlin](https://img.shields.io/badge/kotlin-2.1-blue.svg?logo=kotlin)](http://kotlinlang.org)
 [![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-blueviolet?logo=kotlin)](https://kotlinlang.org/docs/multiplatform.html)
-[![Platforms](https://img.shields.io/badge/Platforms-JVM%20%7C%20Wasm%2FJS%20%7C%20Native%20(iOS%2FiOS%20Simulator)-blue)](https://kotlinlang.org/docs/multiplatform.html)
+[![Platforms](https://img.shields.io/badge/Platforms-JVM%20%7C%20Wasm%2FJS%20%7C%20Native-blue)](https://kotlinlang.org/docs/multiplatform.html)
 [![Maven Central](https://img.shields.io/maven-central/v/io.modelcontextprotocol/kotlin-sdk.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:io.modelcontextprotocol%20a:kotlin-sdk)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 

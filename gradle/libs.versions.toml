@@ -1,21 +1,22 @@
 [versions]
 # plugins version
-kotlin = "2.2.0"
+kotlin = "2.1.21"
 dokka = "2.0.0"
-atomicfu = "0.29.0"
+atomicfu = "0.28.0"
 ktlint = "13.0.0"
 
 # libraries version
-serialization = "1.9.0"
+binaryCompatibilityValidatorPlugin = "0.18.1"
 collections-immutable = "0.4.0"
 coroutines = "1.10.2"
-kotlinx-io = "0.8.0"
+jreleaser = "1.19.0"
+kotest = "5.9.1"
+kotlinx-datetime = "0.6.2"
+kotlinx-io = "0.7.0"
 ktor = "3.2.3"
 logging = "7.0.7"
-jreleaser = "1.19.0"
-binaryCompatibilityValidatorPlugin = "0.18.1"
+serialization = "1.8.1"
 slf4j = "2.0.17"
-kotest = "5.9.1"
 
 # Samples
 mcp-kotlin = "0.6.0"
@@ -31,11 +32,13 @@ dokka-gradle = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref
 jreleaser-gradle = { module = "org.jreleaser:jreleaser-gradle-plugin", version.ref = "jreleaser" }
 
 # Kotlinx libraries
-kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
-kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
-kotlinx-io-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-io-core", version.ref = "kotlinx-io" }
-kotlinx-collections-immutable = { group = "org.jetbrains.kotlinx", name = "kotlinx-collections-immutable", version.ref = "collections-immutable" }
 kotlin-logging = { group = "io.github.oshai", name = "kotlin-logging", version.ref = "logging" }
+kotlinx-collections-immutable = { group = "org.jetbrains.kotlinx", name = "kotlinx-collections-immutable", version.ref = "collections-immutable" }
+kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
+kotlinx-io-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-io-core", version.ref = "kotlinx-io" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
+
 
 # Ktor
 ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktor" }

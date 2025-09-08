@@ -1,13 +1,13 @@
 package io.modelcontextprotocol.kotlin.sdk
 
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 import kotlin.time.ExperimentalTime
-import kotlin.time.Instant
 
 class TypesTest {
 

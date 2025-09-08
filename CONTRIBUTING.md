@@ -73,6 +73,8 @@ See [How to Write a Git Commit Message](https://chris.beams.io/posts/git-commit/
 
 * To build MCP Kotlin SDK, JDK version 21 or higher is required. Make sure this is your default JDK (`JAVA_HOME` is set
   accordingly)
+* To build for MacOS/iOS targets, Xcode/Command Line Tools should be installed. See Apple Developer [documentation](https://developer.apple.com/documentation/xcode/downloading-and-installing-additional-xcode-components) for details.
+* To build JS/Wasm targets, [Node.js](https://nodejs.org/) must be installed.
 * The project can be opened in IntelliJ IDEA without additional prerequisites.
 
 ### Building MCP Kotlin SDK from source
