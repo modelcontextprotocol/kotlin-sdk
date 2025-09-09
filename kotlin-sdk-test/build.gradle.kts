@@ -15,6 +15,15 @@ kotlin {
                 implementation(kotlin("test"))
                 implementation(libs.ktor.server.test.host)
                 implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.kotest.assertions.json)
+            }
+        }
+        jvmTest {
+            dependencies {
+                implementation(kotlin("test-junit5"))
+                implementation(libs.kotlin.logging)
+                implementation(libs.ktor.server.cio)
+                implementation(libs.ktor.client.cio)
             }
         }
     }
