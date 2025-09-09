@@ -1,7 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.integration
 
 import io.ktor.client.HttpClient
-import io.ktor.server.application.ApplicationStopped
 import io.ktor.server.application.install
 import io.ktor.server.cio.CIOApplicationEngine
 import io.ktor.server.engine.EmbeddedServer
@@ -20,12 +19,12 @@ import io.modelcontextprotocol.kotlin.sdk.client.mcpWebSocketTransport
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.mcpWebSocket
+import kotlin.test.Test
+import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
-import kotlin.test.Test
-import kotlin.test.assertTrue
 import io.ktor.client.engine.cio.CIO as ClientCIO
 import io.ktor.client.plugins.websocket.WebSockets as ClientWebSocket
 import io.ktor.server.cio.CIO as ServerCIO
@@ -34,21 +33,19 @@ import io.ktor.server.websocket.WebSockets as ServerWebSockets
 class WebSocketIntegrationTest {
 
     @Test
-    fun `client should be able to connect to websocket server 2`() = runTest {
+    fun `client should be able to connect to websocket server 2`() = runTest(timeout = 5.seconds) {
         var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
         var client: Client? = null
 
         try {
             withContext(Dispatchers.Default) {
-                withTimeout(1000) {
-                    server = initServer()
-                    val port = server.engine.resolvedConnectors().first().port
-                    client = initClient(serverPort = port)
-                }
+                server = initServer()
+                val port = server.engine.resolvedConnectors().first().port
+                client = initClient(serverPort = port)
             }
         } finally {
             client?.close()
-            server?.stop(1000, 2000)
+            server?.stopSuspend(1000, 2000)
         }
     }
 
@@ -60,24 +57,22 @@ class WebSocketIntegrationTest {
      * 3. Observe that Client A receives a response related to it.
      */
     @Test
-    fun `single websocket connection`() = runTest {
+    fun `single websocket connection`() = runTest(timeout = 5.seconds) {
         var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
         var client: Client? = null
 
         try {
             withContext(Dispatchers.Default) {
-                withTimeout(1000) {
-                    server = initServer()
-                    val port = server.engine.resolvedConnectors().first().port
-                    client = initClient("Client A", port)
+                server = initServer()
+                val port = server.engine.resolvedConnectors().first().port
+                client = initClient("Client A", port)
 
-                    val promptA = getPrompt(client, "Client A")
-                    assertTrue { "Client A" in promptA }
-                }
+                val promptA = getPrompt(client, "Client A")
+                assertTrue { "Client A" in promptA }
             }
         } finally {
             client?.close()
-            server?.stop(1000, 2000)
+            server?.stopSuspend(1000, 2000)
         }
     }
 
@@ -90,32 +85,30 @@ class WebSocketIntegrationTest {
      * 4. Observe that Client B (connection #2) receives a response related to sessionId#1.
      */
     @Test
-    fun `multiple websocket connections`() = runTest {
+    fun `multiple websocket connections`() = runTest(timeout = 5.seconds) {
         var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
         var clientA: Client? = null
         var clientB: Client? = null
 
         try {
             withContext(Dispatchers.Default) {
-                withTimeout(1000) {
-                    server = initServer()
-                    val port = server.engine.resolvedConnectors().first().port
-                    clientA = initClient("Client A", port)
-                    clientB = initClient("Client B",port)
+                server = initServer()
+                val port = server.engine.resolvedConnectors().first().port
+                clientA = initClient("Client A", port)
+                clientB = initClient("Client B", port)
 
-                    // Step 3: Send a prompt request from Client A
-                    val promptA = getPrompt(clientA, "Client A")
-                    //  Step 4: Send a prompt request from Client B
-                    val promptB = getPrompt(clientB, "Client B")
+                // Step 3: Send a prompt request from Client A
+                val promptA = getPrompt(clientA, "Client A")
+                //  Step 4: Send a prompt request from Client B
+                val promptB = getPrompt(clientB, "Client B")
 
-                    assertTrue { "Client A" in promptA }
-                    assertTrue { "Client B" in promptB }
-                }
+                assertTrue { "Client A" in promptA }
+                assertTrue { "Client B" in promptB }
             }
         } finally {
             clientA?.close()
             clientB?.close()
-            server?.stop(1000, 2000)
+            server?.stopSuspend(1000, 2000)
         }
     }
 
@@ -176,10 +169,6 @@ class WebSocketIntegrationTest {
             routing {
                 mcpWebSocket(block = { server })
             }
-        }
-
-        ktorServer.monitor.subscribe(ApplicationStopped) {
-            println("SD -- [T] ktor server has been stopped")
         }
 
         return ktorServer.startSuspend(wait = false)
