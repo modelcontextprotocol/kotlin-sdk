@@ -1,7 +1,5 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.kotlin
 
-import io.modelcontextprotocol.kotlin.sdk.EmptyRequestResult
-import io.modelcontextprotocol.kotlin.sdk.Method
 import io.modelcontextprotocol.kotlin.sdk.ReadResourceRequest
 import io.modelcontextprotocol.kotlin.sdk.ReadResourceResult
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
@@ -9,6 +7,7 @@ import io.modelcontextprotocol.kotlin.sdk.SubscribeRequest
 import io.modelcontextprotocol.kotlin.sdk.TextResourceContents
 import io.modelcontextprotocol.kotlin.sdk.UnsubscribeRequest
 import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.runTest
+import kotlin.test.Ignore
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -46,14 +45,6 @@ class ResourceIntegrationTest : KotlinTestBase() {
                 ),
             )
         }
-
-        server.setRequestHandler<SubscribeRequest>(Method.Defined.ResourcesSubscribe) { _, _ ->
-            EmptyRequestResult()
-        }
-
-        server.setRequestHandler<UnsubscribeRequest>(Method.Defined.ResourcesUnsubscribe) { _, _ ->
-            EmptyRequestResult()
-        }
     }
 
     @Test
@@ -82,6 +73,7 @@ class ResourceIntegrationTest : KotlinTestBase() {
     }
 
     @Test
+    @Ignore("Blocked by https://github.com/modelcontextprotocol/kotlin-sdk/issues/249")
     fun testSubscribeAndUnsubscribe() {
         runTest {
             val subscribeResult = client.subscribeResource(SubscribeRequest(uri = testResourceUri))

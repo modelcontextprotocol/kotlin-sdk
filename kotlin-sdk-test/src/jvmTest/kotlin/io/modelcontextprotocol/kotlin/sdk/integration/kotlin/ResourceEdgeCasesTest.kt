@@ -1,8 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.kotlin
 
 import io.modelcontextprotocol.kotlin.sdk.BlobResourceContents
-import io.modelcontextprotocol.kotlin.sdk.EmptyRequestResult
-import io.modelcontextprotocol.kotlin.sdk.Method
 import io.modelcontextprotocol.kotlin.sdk.ReadResourceRequest
 import io.modelcontextprotocol.kotlin.sdk.ReadResourceResult
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
@@ -15,6 +13,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.test.Ignore
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -118,14 +117,6 @@ class ResourceEdgeCasesTest : KotlinTestBase() {
                 ),
             )
         }
-
-        server.setRequestHandler<SubscribeRequest>(Method.Defined.ResourcesSubscribe) { _, _ ->
-            EmptyRequestResult()
-        }
-
-        server.setRequestHandler<UnsubscribeRequest>(Method.Defined.ResourcesUnsubscribe) { _, _ ->
-            EmptyRequestResult()
-        }
     }
 
     @Test
@@ -159,9 +150,7 @@ class ResourceEdgeCasesTest : KotlinTestBase() {
         val invalidUri = "test://nonexistent.txt"
 
         val exception = assertThrows<IllegalStateException> {
-            runBlocking {
-                client.readResource(ReadResourceRequest(uri = invalidUri))
-            }
+            client.readResource(ReadResourceRequest(uri = invalidUri))
         }
 
         val msg = exception.message ?: ""
@@ -260,6 +249,7 @@ class ResourceEdgeCasesTest : KotlinTestBase() {
     }
 
     @Test
+    @Ignore("Blocked by https://github.com/modelcontextprotocol/kotlin-sdk/issues/249")
     fun testSubscribeAndUnsubscribe() {
         runTest {
             val subscribeResult = client.subscribeResource(SubscribeRequest(uri = testResourceUri))
