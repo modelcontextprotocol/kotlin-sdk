@@ -254,32 +254,6 @@ class KotlinServerForTsClient {
         ) { request ->
             val name = (request.arguments["name"] as? JsonPrimitive)?.content ?: "World"
 
-            server.sendToolListChanged()
-            server.sendLoggingMessage(
-                LoggingMessageNotification(
-                    LoggingMessageNotification.Params(
-                        level = LoggingLevel.info,
-                        data = JsonPrimitive("Preparing greeting for $name"),
-                    ),
-                ),
-            )
-            server.sendLoggingMessage(
-                LoggingMessageNotification(
-                    LoggingMessageNotification.Params(
-                        level = LoggingLevel.info,
-                        data = JsonPrimitive("Halfway there for $name"),
-                    ),
-                ),
-            )
-            server.sendLoggingMessage(
-                LoggingMessageNotification(
-                    LoggingMessageNotification.Params(
-                        level = LoggingLevel.info,
-                        data = JsonPrimitive("Done sending greetings to $name"),
-                    ),
-                ),
-            )
-
             CallToolResult(
                 content = listOf(TextContent("Multiple greetings sent to $name!")),
                 structuredContent = buildJsonObject {
