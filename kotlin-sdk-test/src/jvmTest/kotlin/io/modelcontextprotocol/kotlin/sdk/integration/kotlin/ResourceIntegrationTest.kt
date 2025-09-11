@@ -7,8 +7,8 @@ import io.modelcontextprotocol.kotlin.sdk.SubscribeRequest
 import io.modelcontextprotocol.kotlin.sdk.TextResourceContents
 import io.modelcontextprotocol.kotlin.sdk.UnsubscribeRequest
 import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.runTest
-import kotlin.test.Ignore
 import org.junit.jupiter.api.Test
+import kotlin.test.Ignore
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
