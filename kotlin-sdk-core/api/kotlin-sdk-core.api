@@ -2328,35 +2328,6 @@ public final class io/modelcontextprotocol/kotlin/sdk/ResourceListChangedNotific
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/ResourceReference : io/modelcontextprotocol/kotlin/sdk/Reference {
-	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/ResourceReference$Companion;
-	public static final field TYPE Ljava/lang/String;
-	public fun <init> (Ljava/lang/String;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/ResourceReference;
-	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/ResourceReference;Ljava/lang/String;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/ResourceReference;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun getType ()Ljava/lang/String;
-	public final fun getUri ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final synthetic class io/modelcontextprotocol/kotlin/sdk/ResourceReference$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
-	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/ResourceReference$$serializer;
-	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
-	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/ResourceReference;
-	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
-	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
-	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/ResourceReference;)V
-	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
-}
-
-public final class io/modelcontextprotocol/kotlin/sdk/ResourceReference$Companion {
-	public final fun serializer ()Lkotlinx/serialization/KSerializer;
-}
-
 public final class io/modelcontextprotocol/kotlin/sdk/ResourceTemplate {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/ResourceTemplate$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Annotations;)V
