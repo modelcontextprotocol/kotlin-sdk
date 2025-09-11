@@ -3,7 +3,7 @@ package io.modelcontextprotocol.kotlin.sdk.integration.typescript
 import io.modelcontextprotocol.kotlin.sdk.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.client.Client
-import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.runTest
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.AfterEach
@@ -59,7 +59,7 @@ class KotlinClientTypeScriptServerTest : TypeScriptTestBase() {
 
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
-    fun testKotlinClientConnectsToTypeScriptServer() = runTest {
+    fun testKotlinClientConnectsToTypeScriptServer(): Unit = runBlocking(Dispatchers.IO) {
         withClient(serverUrl) { client ->
             assertNotNull(client, "Client should be initialized")
 
@@ -74,7 +74,7 @@ class KotlinClientTypeScriptServerTest : TypeScriptTestBase() {
 
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
-    fun testListTools() = runTest {
+    fun testListTools(): Unit = runBlocking(Dispatchers.IO) {
         withClient(serverUrl) { client ->
             val result = client.listTools()
             assertNotNull(result, "Tools list should not be null")
@@ -92,7 +92,7 @@ class KotlinClientTypeScriptServerTest : TypeScriptTestBase() {
 
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
-    fun testToolCall() = runTest {
+    fun testToolCall(): Unit = runBlocking(Dispatchers.IO) {
         withClient(serverUrl) { client ->
             val testName = "TestUser"
             val arguments = mapOf("name" to testName)
@@ -113,7 +113,7 @@ class KotlinClientTypeScriptServerTest : TypeScriptTestBase() {
 
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
-    fun testMultipleClients() = runTest {
+    fun testMultipleClients(): Unit = runBlocking(Dispatchers.IO) {
         val client1 = newClient(serverUrl)
         val client2 = newClient(serverUrl)
         try {

@@ -9,7 +9,7 @@ import io.modelcontextprotocol.kotlin.sdk.PromptMessageContent
 import io.modelcontextprotocol.kotlin.sdk.Role
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.TextContent
-import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.runTest
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -19,7 +19,6 @@ import kotlin.test.assertTrue
 
 class PromptIntegrationTest : KotlinTestBase() {
 
-    override val port = 3004
     private val testPromptName = "greeting"
     private val testPromptDescription = "A simple greeting prompt"
     private val complexPromptName = "multimodal-prompt"
@@ -219,7 +218,7 @@ class PromptIntegrationTest : KotlinTestBase() {
     }
 
     @Test
-    fun testListPrompts() = runTest {
+    fun testListPrompts() = runBlocking(Dispatchers.IO) {
         val result = client.listPrompts()
 
         assertNotNull(result, "List prompts result should not be null")
@@ -247,7 +246,7 @@ class PromptIntegrationTest : KotlinTestBase() {
     }
 
     @Test
-    fun testGetPrompt() = runTest {
+    fun testGetPrompt() = runBlocking(Dispatchers.IO) {
         val testName = "Alice"
         val result = client.getPrompt(
             GetPromptRequest(
@@ -290,7 +289,7 @@ class PromptIntegrationTest : KotlinTestBase() {
     }
 
     @Test
-    fun testMissingRequiredArguments() = runTest {
+    fun testMissingRequiredArguments() = runBlocking(Dispatchers.IO) {
         val promptsList = client.listPrompts()
         assertNotNull(promptsList, "Prompts list should not be null")
         val strictPrompt = promptsList.prompts.find { it.name == strictPromptName }
@@ -364,7 +363,7 @@ class PromptIntegrationTest : KotlinTestBase() {
     }
 
     @Test
-    fun testComplexContentTypes() = runTest {
+    fun testComplexContentTypes() = runBlocking(Dispatchers.IO) {
         val topic = "artificial intelligence"
         val result = client.getPrompt(
             GetPromptRequest(
@@ -418,7 +417,7 @@ class PromptIntegrationTest : KotlinTestBase() {
     }
 
     @Test
-    fun testMultipleMessagesAndRoles() = runTest {
+    fun testMultipleMessagesAndRoles() = runBlocking(Dispatchers.IO) {
         val topic = "climate change"
         val result = client.getPrompt(
             GetPromptRequest(

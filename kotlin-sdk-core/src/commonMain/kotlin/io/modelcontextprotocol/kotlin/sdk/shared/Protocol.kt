@@ -36,11 +36,10 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.serializer
-import kotlin.collections.get
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 private val LOGGER = KotlinLogging.logger { }
 
@@ -85,7 +84,7 @@ public open class ProtocolOptions(
 /**
  * The default request timeout.
  */
-public val DEFAULT_REQUEST_TIMEOUT: Duration = 60000.milliseconds
+public val DEFAULT_REQUEST_TIMEOUT: Duration = 60.seconds
 
 /**
  * Options that can be given per request.
