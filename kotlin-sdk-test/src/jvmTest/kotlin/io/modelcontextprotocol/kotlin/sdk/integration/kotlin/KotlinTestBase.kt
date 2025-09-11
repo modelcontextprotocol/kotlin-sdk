@@ -17,6 +17,7 @@ import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.mcp
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import org.awaitility.kotlin.await
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import kotlin.time.Duration.Companion.seconds
@@ -27,7 +28,7 @@ import io.ktor.server.sse.SSE as ServerSSE
 abstract class KotlinTestBase {
 
     protected val host = "localhost"
-    protected abstract val port: Int
+    protected var port: Int = 0
 
     protected lateinit var server: Server
     protected lateinit var client: Client
@@ -39,6 +40,12 @@ abstract class KotlinTestBase {
     @BeforeEach
     fun setUp() {
         setupServer()
+        await
+            .ignoreExceptions()
+            .until {
+                port = runBlocking { serverEngine.engine.resolvedConnectors().first().port }
+                port != 0
+            }
         runBlocking {
             setupClient()
         }

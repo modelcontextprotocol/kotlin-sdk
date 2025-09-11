@@ -3,7 +3,7 @@ package io.modelcontextprotocol.kotlin.sdk.integration.typescript
 import io.modelcontextprotocol.kotlin.sdk.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.client.Client
-import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.runTest
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
@@ -64,7 +64,7 @@ class KotlinClientTypeScriptServerEdgeCasesTest : TypeScriptTestBase() {
 
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
-    fun testNonExistentTool() = runTest {
+    fun testNonExistentTool(): Unit = runBlocking(Dispatchers.IO) {
         withClient(serverUrl) { client ->
             val nonExistentToolName = "non-existent-tool"
             val arguments = mapOf("name" to "TestUser")
@@ -85,7 +85,7 @@ class KotlinClientTypeScriptServerEdgeCasesTest : TypeScriptTestBase() {
 
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
-    fun testSpecialCharactersInArguments() = runTest {
+    fun testSpecialCharactersInArguments(): Unit = runBlocking(Dispatchers.IO) {
         withClient(serverUrl) { client ->
             val specialChars = "!@#$%^&*()_+{}[]|\\:;\"'<>,.?/"
             val arguments = mapOf("name" to specialChars)
@@ -107,7 +107,7 @@ class KotlinClientTypeScriptServerEdgeCasesTest : TypeScriptTestBase() {
 
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
-    fun testLargePayload() = runTest {
+    fun testLargePayload(): Unit = runBlocking(Dispatchers.IO) {
         withClient(serverUrl) { client ->
             val largeName = "A".repeat(10 * 1024)
             val arguments = mapOf("name" to largeName)
@@ -129,7 +129,7 @@ class KotlinClientTypeScriptServerEdgeCasesTest : TypeScriptTestBase() {
 
     @Test
     @Timeout(60, unit = TimeUnit.SECONDS)
-    fun testConcurrentRequests() = runTest {
+    fun testConcurrentRequests(): Unit = runBlocking(Dispatchers.IO) {
         withClient(serverUrl) { client ->
             val concurrentCount = 5
             val responses = kotlinx.coroutines.coroutineScope {
@@ -165,7 +165,7 @@ class KotlinClientTypeScriptServerEdgeCasesTest : TypeScriptTestBase() {
 
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
-    fun testInvalidArguments() = runTest {
+    fun testInvalidArguments(): Unit = runBlocking(Dispatchers.IO) {
         withClient(serverUrl) { client ->
             val invalidArguments = mapOf(
                 "name" to JsonObject(mapOf("nested" to JsonPrimitive("value"))),
@@ -196,7 +196,7 @@ class KotlinClientTypeScriptServerEdgeCasesTest : TypeScriptTestBase() {
 
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
-    fun testMultipleToolCalls() = runTest {
+    fun testMultipleToolCalls(): Unit = runBlocking(Dispatchers.IO) {
         withClient(serverUrl) { client ->
             repeat(10) { i ->
                 val name = "SequentialClient$i"

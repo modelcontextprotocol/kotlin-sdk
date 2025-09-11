@@ -17,6 +17,7 @@ jreleaser = "1.19.0"
 binaryCompatibilityValidatorPlugin = "0.18.1"
 slf4j = "2.0.17"
 kotest = "5.9.1"
+awaitility = "4.3.0"
 
 # Samples
 mcp-kotlin = "0.7.0"
@@ -34,6 +35,7 @@ jreleaser-gradle = { module = "org.jreleaser:jreleaser-gradle-plugin", version.r
 # Kotlinx libraries
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-coroutines-core-wasm = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core-wasm-js", version.ref = "coroutines" }
 kotlinx-io-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-io-core", version.ref = "kotlinx-io" }
 kotlinx-collections-immutable = { group = "org.jetbrains.kotlinx", name = "kotlinx-collections-immutable", version.ref = "collections-immutable" }
 kotlin-logging = { group = "io.github.oshai", name = "kotlin-logging", version.ref = "logging" }
@@ -45,11 +47,12 @@ ktor-server-websockets = { group = "io.ktor", name = "ktor-server-websockets", v
 ktor-server-core = { group = "io.ktor", name = "ktor-server-core", version.ref = "ktor" }
 
 # Testing
-kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
-ktor-server-test-host = { group = "io.ktor", name = "ktor-server-test-host", version.ref = "ktor" }
-ktor-client-mock = { group = "io.ktor", name = "ktor-client-mock", version.ref = "ktor" }
-slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
+awaitility = { group = "org.awaitility", name = "awaitility-kotlin", version.ref = "awaitility" }
 kotest-assertions-json = { group = "io.kotest", name = "kotest-assertions-json", version.ref = "kotest" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
+ktor-client-mock = { group = "io.ktor", name = "ktor-client-mock", version.ref = "ktor" }
+ktor-server-test-host = { group = "io.ktor", name = "ktor-server-test-host", version.ref = "ktor" }
+slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
 
 # Samples
 ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktor" }

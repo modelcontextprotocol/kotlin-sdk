@@ -25,21 +25,20 @@ import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.SseServerTransport
 import io.modelcontextprotocol.kotlin.sdk.server.mcp
-import kotlin.collections.set
 
 fun configureServer(): Server {
     val server = Server(
         Implementation(
             name = "mcp-kotlin test server",
-            version = "0.1.0"
+            version = "0.1.0",
         ),
         ServerOptions(
             capabilities = ServerCapabilities(
                 prompts = ServerCapabilities.Prompts(listChanged = true),
                 resources = ServerCapabilities.Resources(subscribe = true, listChanged = true),
                 tools = ServerCapabilities.Tools(listChanged = true),
-            )
-        )
+            ),
+        ),
     )
 
     server.addPrompt(
@@ -49,18 +48,20 @@ fun configureServer(): Server {
             PromptArgument(
                 name = "Project Name",
                 description = "Project name for the new project",
-                required = true
-            )
-        )
+                required = true,
+            ),
+        ),
     ) { request ->
         GetPromptResult(
             "Description for ${request.name}",
             messages = listOf(
                 PromptMessage(
                     role = Role.user,
-                    content = TextContent("Develop a kotlin project named <name>${request.arguments?.get("Project Name")}</name>")
-                )
-            )
+                    content = TextContent(
+                        "Develop a kotlin project named <name>${request.arguments?.get("Project Name")}</name>",
+                    ),
+                ),
+            ),
         )
     }
 
@@ -68,10 +69,10 @@ fun configureServer(): Server {
     server.addTool(
         name = "kotlin-sdk-tool",
         description = "A test tool",
-        inputSchema = Tool.Input()
+        inputSchema = Tool.Input(),
     ) { request ->
         CallToolResult(
-            content = listOf(TextContent("Hello, world!"))
+            content = listOf(TextContent("Hello, world!")),
         )
     }
 
@@ -80,19 +81,19 @@ fun configureServer(): Server {
         uri = "https://search.com/",
         name = "Web Search",
         description = "Web search engine",
-        mimeType = "text/html"
+        mimeType = "text/html",
     ) { request ->
         ReadResourceResult(
             contents = listOf(
-                TextResourceContents("Placeholder content for ${request.uri}", request.uri, "text/html")
-            )
+                TextResourceContents("Placeholder content for ${request.uri}", request.uri, "text/html"),
+            ),
         )
     }
 
     return server
 }
 
-suspend fun runSseMcpServerWithPlainConfiguration(port: Int): Unit {
+suspend fun runSseMcpServerWithPlainConfiguration(port: Int) {
     val servers = ConcurrentMap<String, Server>()
     println("Starting sse server on port $port. ")
     println("Use inspector to connect to the http://localhost:$port/sse")
@@ -139,7 +140,7 @@ suspend fun runSseMcpServerWithPlainConfiguration(port: Int): Unit {
  * @param port The port number on which the SSE MCP server will listen for client connections.
  * @return Unit This method does not return a value.
  */
-suspend fun runSseMcpServerUsingKtorPlugin(port: Int): Unit {
+suspend fun runSseMcpServerUsingKtorPlugin(port: Int) {
     println("Starting sse server on port $port")
     println("Use inspector to connect to the http://localhost:$port/sse")
 

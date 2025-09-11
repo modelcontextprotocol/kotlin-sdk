@@ -8,7 +8,8 @@ import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.SubscribeRequest
 import io.modelcontextprotocol.kotlin.sdk.TextResourceContents
 import io.modelcontextprotocol.kotlin.sdk.UnsubscribeRequest
-import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.runTest
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -16,7 +17,6 @@ import kotlin.test.assertTrue
 
 class ResourceIntegrationTest : KotlinTestBase() {
 
-    override val port = 3005
     private val testResourceUri = "test://example.txt"
     private val testResourceName = "Test Resource"
     private val testResourceDescription = "A test resource for integration testing"
@@ -57,7 +57,7 @@ class ResourceIntegrationTest : KotlinTestBase() {
     }
 
     @Test
-    fun testListResources() = runTest {
+    fun testListResources() = runBlocking(Dispatchers.IO) {
         val result = client.listResources()
 
         assertNotNull(result, "List resources result should not be null")
@@ -70,7 +70,7 @@ class ResourceIntegrationTest : KotlinTestBase() {
     }
 
     @Test
-    fun testReadResource() = runTest {
+    fun testReadResource() = runBlocking(Dispatchers.IO) {
         val result = client.readResource(ReadResourceRequest(uri = testResourceUri))
 
         assertNotNull(result, "Read resource result should not be null")
@@ -83,7 +83,7 @@ class ResourceIntegrationTest : KotlinTestBase() {
 
     @Test
     fun testSubscribeAndUnsubscribe() {
-        runTest {
+        runBlocking(Dispatchers.IO) {
             val subscribeResult = client.subscribeResource(SubscribeRequest(uri = testResourceUri))
             assertNotNull(subscribeResult, "Subscribe result should not be null")
 

@@ -63,4 +63,13 @@ jreleaser {
             files = false
         }
     }
+
+    release {
+        github {
+            skipRelease = true
+            skipTag = true
+            overwrite = false
+            token = "none"
+        }
+    }
 }

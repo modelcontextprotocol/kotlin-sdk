@@ -8,7 +8,7 @@ import io.modelcontextprotocol.kotlin.sdk.PromptMessageContent
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.Tool
-import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.runTest
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
@@ -26,8 +26,6 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class ToolIntegrationTest : KotlinTestBase() {
-
-    override val port = 3006
     private val testToolName = "echo"
     private val testToolDescription = "A simple echo tool that returns the input text"
     private val complexToolName = "calculator"
@@ -302,7 +300,7 @@ class ToolIntegrationTest : KotlinTestBase() {
     }
 
     @Test
-    fun testListTools() = runTest {
+    fun testListTools(): Unit = runBlocking(Dispatchers.IO) {
         val result = client.listTools()
 
         assertNotNull(result, "List utils result should not be null")
@@ -319,43 +317,40 @@ class ToolIntegrationTest : KotlinTestBase() {
     }
 
     @Test
-    fun testCallTool() {
-        runTest {
-            val testText = "Hello, world!"
-            val arguments = mapOf("text" to testText)
+    fun testCallTool(): Unit = runBlocking(Dispatchers.IO) {
+        val testText = "Hello, world!"
+        val arguments = mapOf("text" to testText)
 
-            val result = client.callTool(testToolName, arguments) as CallToolResultBase
+        val result = client.callTool(testToolName, arguments) as CallToolResultBase
 
-            val actualContent = result.structuredContent.toString()
-            val expectedContent = """
+        val actualContent = result.structuredContent.toString()
+        val expectedContent = """
                 {"result":"Hello, world!"}
-            """.trimIndent()
+        """.trimIndent()
 
-            actualContent shouldEqualJson expectedContent
-        }
+        actualContent shouldEqualJson expectedContent
     }
 
     @Test
-    fun testComplexInputSchemaTool() {
-        runTest {
-            val toolsList = client.listTools()
-            assertNotNull(toolsList, "Tools list should not be null")
-            val calculatorTool = toolsList.tools.find { it.name == complexToolName }
-            assertNotNull(calculatorTool, "Calculator tool should be in the list")
+    fun testComplexInputSchemaTool(): Unit = runBlocking(Dispatchers.IO) {
+        val toolsList = client.listTools()
+        assertNotNull(toolsList, "Tools list should not be null")
+        val calculatorTool = toolsList.tools.find { it.name == complexToolName }
+        assertNotNull(calculatorTool, "Calculator tool should be in the list")
 
-            val arguments = mapOf(
-                "operation" to "multiply",
-                "a" to 5.5,
-                "b" to 2.0,
-                "precision" to 3,
-                "showSteps" to true,
-                "tags" to listOf("test", "calculator", "integration"),
-            )
+        val arguments = mapOf(
+            "operation" to "multiply",
+            "a" to 5.5,
+            "b" to 2.0,
+            "precision" to 3,
+            "showSteps" to true,
+            "tags" to listOf("test", "calculator", "integration"),
+        )
 
-            val result = client.callTool(complexToolName, arguments) as CallToolResultBase
+        val result = client.callTool(complexToolName, arguments) as CallToolResultBase
 
-            val actualContent = result.structuredContent.toString()
-            val expectedContent = """
+        val actualContent = result.structuredContent.toString()
+        val expectedContent = """
                 {
                   "operation" : "multiply",
                   "a" : 5.5,
@@ -365,14 +360,13 @@ class ToolIntegrationTest : KotlinTestBase() {
                   "precision" : 3,
                   "tags" : [ ]
                 }
-            """.trimIndent()
+        """.trimIndent()
 
-            actualContent shouldEqualJson expectedContent
-        }
+        actualContent shouldEqualJson expectedContent
     }
 
     @Test
-    fun testToolErrorHandling() = runTest {
+    fun testToolErrorHandling(): Unit = runBlocking(Dispatchers.IO) {
         val successArgs = mapOf("errorType" to "none")
         val successResult = client.callTool(errorToolName, successArgs)
 
@@ -420,7 +414,7 @@ class ToolIntegrationTest : KotlinTestBase() {
     }
 
     @Test
-    fun testMultiContentTool() = runTest {
+    fun testMultiContentTool(): Unit = runBlocking(Dispatchers.IO) {
         val testText = "Test multi-content"
         val arguments = mapOf(
             "text" to testText,

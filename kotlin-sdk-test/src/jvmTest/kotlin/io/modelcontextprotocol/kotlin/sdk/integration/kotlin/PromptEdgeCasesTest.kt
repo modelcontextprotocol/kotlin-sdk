@@ -7,9 +7,10 @@ import io.modelcontextprotocol.kotlin.sdk.PromptMessage
 import io.modelcontextprotocol.kotlin.sdk.Role
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.TextContent
-import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.runTest
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
@@ -17,8 +18,6 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class PromptEdgeCasesTest : KotlinTestBase() {
-
-    override val port = 3008
 
     private val basicPromptName = "basic-prompt"
     private val basicPromptDescription = "A basic prompt for testing"
@@ -183,7 +182,7 @@ class PromptEdgeCasesTest : KotlinTestBase() {
     }
 
     @Test
-    fun testBasicPrompt() = runTest {
+    fun testBasicPrompt() = runBlocking(Dispatchers.IO) {
         val testName = "Alice"
         val result = client.getPrompt(
             GetPromptRequest(
@@ -215,7 +214,7 @@ class PromptEdgeCasesTest : KotlinTestBase() {
     }
 
     @Test
-    fun testComplexPromptWithManyArguments() = runTest {
+    fun testComplexPromptWithManyArguments() = runBlocking(Dispatchers.IO) {
         val arguments = (1..10).associate { i -> "arg$i" to "value$i" }
 
         val result = client.getPrompt(
@@ -253,7 +252,7 @@ class PromptEdgeCasesTest : KotlinTestBase() {
     }
 
     @Test
-    fun testLargePrompt() = runTest {
+    fun testLargePrompt() = runBlocking(Dispatchers.IO) {
         val result = client.getPrompt(
             GetPromptRequest(
                 name = largePromptName,
@@ -275,7 +274,7 @@ class PromptEdgeCasesTest : KotlinTestBase() {
     }
 
     @Test
-    fun testSpecialCharacters() = runTest {
+    fun testSpecialCharacters() = runBlocking(Dispatchers.IO) {
         val result = client.getPrompt(
             GetPromptRequest(
                 name = specialCharsPromptName,
