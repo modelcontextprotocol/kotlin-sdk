@@ -37,6 +37,7 @@ import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.TextResourceContents
 import io.modelcontextprotocol.kotlin.sdk.Tool
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.port
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
@@ -65,10 +66,10 @@ class KotlinServerForTypeScriptClient {
     private val jsonFormat = Json { ignoreUnknownKeys = true }
     private var server: EmbeddedServer<*, *>? = null
 
-    fun start(port: Int = 3000) {
-        logger.info { "Starting HTTP server on port $port" }
+    fun start(): Int {
+        logger.info { "Starting HTTP server on random port" }
 
-        server = embeddedServer(CIO, port = port) {
+        server = embeddedServer(CIO, port = 0) {
             routing {
                 get("/mcp") {
                     val sessionId = call.request.header("mcp-session-id")
@@ -186,7 +187,9 @@ class KotlinServerForTypeScriptClient {
             }
         }
 
-        server?.start(wait = false)
+        val theServer = requireNotNull(server) { "Server must be created" }
+        theServer.start(wait = false)
+        return theServer.port()
     }
 
     fun stop() {
@@ -357,6 +360,8 @@ class HttpServerTransport(private val sessionId: String) : AbstractTransport() {
                     write("\n\n")
                     flush()
                 }
+            } catch (e: CancellationException) {
+                logger.info(e) { e.message }
             } catch (e: Exception) {
                 logger.warn(e) { "SSE stream terminated for session: $sessionId" }
             } finally {

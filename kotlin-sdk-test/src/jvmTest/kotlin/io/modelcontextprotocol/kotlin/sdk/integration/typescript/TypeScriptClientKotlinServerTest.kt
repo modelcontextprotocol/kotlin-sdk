@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.typescript
 
 import kotlinx.coroutines.test.runTest
+import org.awaitility.kotlin.await
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -8,23 +9,20 @@ import org.junit.jupiter.api.Timeout
 import java.util.concurrent.TimeUnit
 import kotlin.test.Ignore
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.toJavaDuration
 
 class TypeScriptClientKotlinServerTest : TypeScriptTestBase() {
 
-    private var port: Int = 0
     private lateinit var serverUrl: String
     private var httpServer: KotlinServerForTypeScriptClient? = null
 
     @BeforeEach
     fun setUp() {
-        port = findFreePort()
-        serverUrl = "http://localhost:$port/mcp"
-        killProcessOnPort(port)
         httpServer = KotlinServerForTypeScriptClient()
-        httpServer?.start(port)
-        if (!waitForPort(port = port)) {
-            throw IllegalStateException("Kotlin test server did not become ready on localhost:$port within timeout")
-        }
+        val port = httpServer!!.start()
+        serverUrl = "http://localhost:$port/mcp"
         println("Kotlin server started on port $port")
     }
 
@@ -145,10 +143,14 @@ class TypeScriptClientKotlinServerTest : TypeScriptTestBase() {
             }
             threads.add(thread)
             thread.start()
-            Thread.sleep(500)
         }
 
-        threads.forEach { it.join() }
+        await
+            .pollInterval(100.milliseconds.toJavaDuration())
+            .atMost(30.seconds.toJavaDuration())
+            .until {
+                outputs.size == clientCount
+            }
 
         if (exceptions.isNotEmpty()) {
             println(

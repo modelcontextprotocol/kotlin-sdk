@@ -109,7 +109,7 @@ abstract class TypeScriptTestBase {
                 .redirectErrorStream(true)
                 .start()
 
-            val output = StringBuilder()
+            val output = StringBuffer()
             BufferedReader(InputStreamReader(process.inputStream)).use { reader ->
                 var line: String?
                 while (reader.readLine().also { line = it } != null) {
