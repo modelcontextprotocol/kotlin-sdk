@@ -17,7 +17,7 @@ jobs:
     runs-on: macos-latest
     name: Validate PR
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up JDK 21
         uses: actions/setup-java@v5
@@ -32,14 +32,16 @@ jobs:
           cache-read-only: true
 
       - name: Build with Gradle
-        run: ./gradlew clean build
+        run: ./gradlew clean ktlintCheck build koverLog koverHtmlReport
 
-      - name: Upload JUnit test results
+      - name: Upload Reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: junit-results
-          path: '**/build/test-results/test/*.xml'
+          path: |
+            **/build/test-results/test/*.xml
+            build/reports
 
       - name: Disable Auto-Merge on Fail
         if: failure() && github.event_name == 'pull_request'
