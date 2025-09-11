@@ -33,7 +33,7 @@ kotlin {
         commonMain {
             dependencies {
                 api(project(":kotlin-sdk-core"))
-                api(libs.ktor.client.cio)
+                api(libs.ktor.client.core)
                 implementation(libs.kotlin.logging)
             }
         }
@@ -43,6 +43,7 @@ kotlin {
                 implementation(kotlin("test"))
                 implementation(libs.ktor.client.mock)
                 implementation(libs.kotlinx.coroutines.test)
+                runtimeOnly(libs.slf4j.simple)
             }
         }
     }

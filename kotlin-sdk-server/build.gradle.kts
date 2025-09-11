@@ -11,7 +11,7 @@ kotlin {
         commonMain {
             dependencies {
                 api(project(":kotlin-sdk-core"))
-                api(libs.ktor.server.cio)
+                api(libs.ktor.server.core)
                 api(libs.ktor.server.sse)
                 implementation(libs.kotlin.logging)
             }
@@ -21,7 +21,12 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(libs.kotlinx.coroutines.test)
-                implementation(libs.slf4j.simple)
+            }
+        }
+
+        jvmTest {
+            dependencies {
+                runtimeOnly(libs.slf4j.simple)
             }
         }
     }

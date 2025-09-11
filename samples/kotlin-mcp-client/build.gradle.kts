@@ -13,8 +13,9 @@ version = "0.1.0"
 
 dependencies {
     implementation(libs.mcp.kotlin)
-    implementation(libs.slf4j.simple)
+    implementation(libs.ktor.client.cio)
     implementation(libs.anthropic.java)
+    implementation(libs.slf4j.simple)
 }
 
 tasks.test {

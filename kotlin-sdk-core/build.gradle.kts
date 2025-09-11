@@ -47,5 +47,11 @@ kotlin {
                 implementation(libs.kotest.assertions.json)
             }
         }
+
+        jvmTest {
+            dependencies {
+                runtimeOnly(libs.slf4j.simple)
+            }
+        }
     }
 }
