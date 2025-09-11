@@ -53,5 +53,9 @@ kotlin {
                 runtimeOnly(libs.slf4j.simple)
             }
         }
+
+        wasmJsMain.dependencies {
+            api(libs.kotlinx.coroutines.core.wasm) // workaround for wasm server
+        }
     }
 }
