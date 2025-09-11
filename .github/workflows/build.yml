@@ -32,7 +32,7 @@ jobs:
           cache-read-only: true
 
       - name: Build with Gradle
-        run: ./gradlew clean build
+        run: ./gradlew clean ktlintCheck build koverLog koverHtmlReport
 
       - name: Upload Reports
         if: always()
