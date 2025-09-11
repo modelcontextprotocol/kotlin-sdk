@@ -29,7 +29,9 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-java@v5
         with:
@@ -52,14 +54,14 @@ jobs:
 
       - name: Build Kotlin sources
         run: |
-          ./gradlew \
+            ./gradlew \
             :kotlin-sdk-core:compileKotlinJvm \
             :kotlin-sdk-client:compileKotlinJvm \
             :kotlin-sdk-server:compileKotlinJvm \
             :kotlin-sdk:compileKotlinJvm \
             :kotlin-sdk-test:compileKotlinJvm \
             -Pkotlin.incremental=false \
-            --no-daemon --stacktrace
+            --no-daemon --stacktrace --rerun-tasks
 
       - name: Analyze
         uses: github/codeql-action/analyze@v3
