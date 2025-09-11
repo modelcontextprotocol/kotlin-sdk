@@ -20,9 +20,9 @@ dependencies {
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.mcp.kotlin)
-    runtimeOnly(libs.ktor.server.cio)
-    runtimeOnly(libs.ktor.client.cio)
-    runtimeOnly(libs.slf4j.simple)
+    implementation(libs.ktor.server.cio)
+    implementation(libs.ktor.client.cio)
+    implementation(libs.slf4j.simple)
 
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinx.coroutines.test)

@@ -15,7 +15,7 @@ dependencies {
     implementation(libs.mcp.kotlin)
     implementation(libs.ktor.client.cio)
     implementation(libs.anthropic.java)
-    runtimeOnly(libs.slf4j.simple)
+    implementation(libs.slf4j.simple)
 }
 
 tasks.test {
