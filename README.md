@@ -40,8 +40,21 @@ Add the dependency:
 
 ```kotlin
 dependencies {
-    // Use the badge above for the latest version
+    // See the badge above for the latest version
     implementation("io.modelcontextprotocol:kotlin-sdk:$mcpVersion")
+}
+```
+MCP SDK uses [Ktor](https://ktor.io/), but does not come with a specific engine dependency.
+You should add [Ktor client](https://ktor.io/docs/client-dependencies.html#engine-dependency) 
+and/or [Ktor server](https://ktor.io/docs/client-dependencies.html#engine-dependency) dependency 
+to your project yourself, e.g.:
+```kotlin
+dependencies {
+    // for client:
+    implementation("io.ktor:ktor-client-cio:$ktorVersion")
+    // for server:
+    implementation("io.ktor:ktor-server-netty:$ktorVersion")
+    
 }
 ```
 

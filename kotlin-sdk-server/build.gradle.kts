@@ -21,7 +21,12 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(libs.kotlinx.coroutines.test)
-                implementation(libs.slf4j.simple)
+            }
+        }
+
+        jvmTest {
+            dependencies {
+                runtimeOnly(libs.slf4j.simple)
             }
         }
     }

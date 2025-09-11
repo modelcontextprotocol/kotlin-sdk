@@ -13,15 +13,17 @@ repositories {
     mavenCentral()
 }
 
-
 group = "org.example"
 version = "0.1.0"
 
 dependencies {
-    implementation(libs.mcp.kotlin)
-    implementation(libs.slf4j.simple)
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
+    implementation(libs.mcp.kotlin)
+    runtimeOnly(libs.ktor.server.cio)
+    runtimeOnly(libs.ktor.client.cio)
+    runtimeOnly(libs.slf4j.simple)
+
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinx.coroutines.test)
 }
