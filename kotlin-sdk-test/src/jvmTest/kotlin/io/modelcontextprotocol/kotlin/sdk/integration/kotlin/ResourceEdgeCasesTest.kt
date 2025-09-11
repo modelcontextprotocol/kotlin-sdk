@@ -9,9 +9,10 @@ import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.SubscribeRequest
 import io.modelcontextprotocol.kotlin.sdk.TextResourceContents
 import io.modelcontextprotocol.kotlin.sdk.UnsubscribeRequest
-import io.modelcontextprotocol.kotlin.sdk.integration.utils.TestUtils.runTest
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.util.concurrent.atomic.AtomicBoolean
@@ -20,8 +21,6 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class ResourceEdgeCasesTest : KotlinTestBase() {
-
-    override val port = 3007
 
     private val testResourceUri = "test://example.txt"
     private val testResourceName = "Test Resource"
@@ -129,7 +128,7 @@ class ResourceEdgeCasesTest : KotlinTestBase() {
     }
 
     @Test
-    fun testBinaryResource() = runTest {
+    fun testBinaryResource() = runBlocking(Dispatchers.IO) {
         val result = client.readResource(ReadResourceRequest(uri = binaryResourceUri))
 
         assertNotNull(result, "Read resource result should not be null")
@@ -142,7 +141,7 @@ class ResourceEdgeCasesTest : KotlinTestBase() {
     }
 
     @Test
-    fun testLargeResource() = runTest {
+    fun testLargeResource() = runBlocking(Dispatchers.IO) {
         val result = client.readResource(ReadResourceRequest(uri = largeResourceUri))
 
         assertNotNull(result, "Read resource result should not be null")
@@ -172,7 +171,7 @@ class ResourceEdgeCasesTest : KotlinTestBase() {
     }
 
     @Test
-    fun testDynamicResource() = runTest {
+    fun testDynamicResource() = runBlocking(Dispatchers.IO) {
         val initialResult = client.readResource(ReadResourceRequest(uri = dynamicResourceUri))
         assertNotNull(initialResult, "Initial read result should not be null")
         val initialContent = (initialResult.contents.firstOrNull() as? TextResourceContents)?.text
@@ -188,7 +187,7 @@ class ResourceEdgeCasesTest : KotlinTestBase() {
     }
 
     @Test
-    fun testResourceAddAndRemove() = runTest {
+    fun testResourceAddAndRemove() = runBlocking(Dispatchers.IO) {
         val initialList = client.listResources()
         assertNotNull(initialList, "Initial list result should not be null")
         val initialCount = initialList.resources.size
@@ -261,7 +260,7 @@ class ResourceEdgeCasesTest : KotlinTestBase() {
 
     @Test
     fun testSubscribeAndUnsubscribe() {
-        runTest {
+        runBlocking(Dispatchers.IO) {
             val subscribeResult = client.subscribeResource(SubscribeRequest(uri = testResourceUri))
             assertNotNull(subscribeResult, "Subscribe result should not be null")
 
