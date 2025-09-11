@@ -54,11 +54,14 @@ jobs:
 
       - name: Build Kotlin sources
         run: |
-          ./gradlew 
-            jvmMainClasses \
-            jvmTestClasses \
+            ./gradlew \
+            :kotlin-sdk-core:compileKotlinJvm \
+            :kotlin-sdk-client:compileKotlinJvm \
+            :kotlin-sdk-server:compileKotlinJvm \
+            :kotlin-sdk:compileKotlinJvm \
+            :kotlin-sdk-test:compileKotlinJvm \
             -Pkotlin.incremental=false \
-            --no-daemon --stacktrace
+            --no-daemon --stacktrace --rerun-tasks
 
       - name: Analyze
         uses: github/codeql-action/analyze@v3
