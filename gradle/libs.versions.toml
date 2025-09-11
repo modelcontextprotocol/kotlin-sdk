@@ -3,7 +3,7 @@
 kotlin = "2.2.0"
 dokka = "2.0.0"
 atomicfu = "0.29.0"
-ktlint = "13.0.0"
+ktlint = "13.1.0"
 kover = "0.9.1"
 
 # libraries version
