@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   validate-pr:
-    runs-on: macos-latest
+    runs-on: macos-latest-xlarge
     name: Validate PR
     steps:
       - uses: actions/checkout@v5
@@ -33,6 +33,8 @@ jobs:
 
       - name: Build with Gradle
         run: ./gradlew clean ktlintCheck build koverLog koverHtmlReport
+        env:
+          JAVA_OPTS: "-Xmx8g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx6g"
 
       - name: Upload Reports
         if: always()
