@@ -10,8 +10,7 @@ dokka {
         includes.from("Module.md")
 
         pluginsConfiguration.html {
-            footerMessage = "Copyright © 2025 JetBrains s.r.o."
-            customAssets + file("icon.png")
+            footerMessage = "Copyright © 2024-2025 Anthropic, PBC"
         }
 
         sourceLink {
