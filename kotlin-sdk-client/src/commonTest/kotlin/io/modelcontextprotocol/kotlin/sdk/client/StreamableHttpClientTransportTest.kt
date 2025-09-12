@@ -18,9 +18,11 @@ import io.modelcontextprotocol.kotlin.sdk.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.RequestId
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -405,10 +407,11 @@ class StreamableHttpClientTransportTest {
 
         runCatching {
             // Real time-keeping is needed; otherwise Protocol will always throw TimeoutCancellationException in tests
-            withTimeout(5.seconds) {
-                client.connect(transport)
+            withContext(Dispatchers.Default.limitedParallelism(1)) {
+                withTimeout(5.seconds) {
+                    client.connect(transport)
+                }
             }
-
         }.onSuccess {
             fail("Expected client.connect to fail on invalid JSON response")
         }.onFailure { e ->
