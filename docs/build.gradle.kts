@@ -1,6 +1,4 @@
-
 plugins {
-    kotlin("jvm") apply false
     id("mcp.dokka")
 }
 

@@ -5,7 +5,6 @@ interacting with MCP servers.
 
 ## Features
 
-- Cross-platform support for JVM, WebAssembly/JS, and Native (iOS)
+- Cross-platform support for JVM, WASM, JS, and Native
 - Built-in support for multiple transport protocols (stdio, SSE, WebSocket)
-- Full implementation of MCP client specifications
 - Type-safe API for resource management and server interactions
