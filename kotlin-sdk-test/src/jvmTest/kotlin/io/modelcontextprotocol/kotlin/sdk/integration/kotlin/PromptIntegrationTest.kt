@@ -1,11 +1,11 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.kotlin
 
+import io.modelcontextprotocol.kotlin.sdk.ContentBlock
 import io.modelcontextprotocol.kotlin.sdk.GetPromptRequest
 import io.modelcontextprotocol.kotlin.sdk.GetPromptResult
 import io.modelcontextprotocol.kotlin.sdk.ImageContent
 import io.modelcontextprotocol.kotlin.sdk.PromptArgument
 import io.modelcontextprotocol.kotlin.sdk.PromptMessage
-import io.modelcontextprotocol.kotlin.sdk.PromptMessageContent
 import io.modelcontextprotocol.kotlin.sdk.Role
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.TextContent
@@ -93,7 +93,7 @@ class PromptIntegrationTest : KotlinTestBase() {
                 ),
             )
 
-            val assistantContents = mutableListOf<PromptMessageContent>()
+            val assistantContents = mutableListOf<ContentBlock>()
             assistantContents.add(TextContent(text = "I'd be happy to discuss $topic with you."))
 
             if (includeImage) {

@@ -94,8 +94,8 @@ class TypesTest {
     fun `should serialize and deserialize text content correctly`() {
         val textContent = TextContent(text = "Test message")
 
-        val json = McpJson.encodeToString<PromptMessageContent>(textContent)
-        val decoded = McpJson.decodeFromString<PromptMessageContent>(json)
+        val json = McpJson.encodeToString<ContentBlock>(textContent)
+        val decoded = McpJson.decodeFromString<ContentBlock>(json)
 
         assertIs<TextContent>(decoded)
         assertEquals("text", decoded.type)
@@ -121,8 +121,8 @@ class TypesTest {
             mimeType = "image/jpeg",
         )
 
-        val json = McpJson.encodeToString<PromptMessageContent>(imageContent)
-        val decoded = McpJson.decodeFromString<PromptMessageContent>(json)
+        val json = McpJson.encodeToString<ContentBlock>(imageContent)
+        val decoded = McpJson.decodeFromString<ContentBlock>(json)
 
         assertIs<ImageContent>(decoded)
         assertEquals("image", decoded.type)
@@ -149,13 +149,59 @@ class TypesTest {
             mimeType = "audio/wav",
         )
 
-        val json = McpJson.encodeToString<PromptMessageContent>(audioContent)
-        val decoded = McpJson.decodeFromString<PromptMessageContent>(json)
+        val json = McpJson.encodeToString<ContentBlock>(audioContent)
+        val decoded = McpJson.decodeFromString<ContentBlock>(json)
 
         assertIs<AudioContent>(decoded)
         assertEquals("audio", decoded.type)
         assertEquals("YXVkaW8=", decoded.data)
         assertEquals("audio/wav", decoded.mimeType)
+    }
+
+    @Test
+    fun `should validate resource link content`() {
+        val resourceLink = ResourceLink(
+            mimeType = "application/pdf",
+            description = "This pdf is meant to be a resource link test",
+            name = "file01",
+            size = 76859L,
+            title = "This is a pdf",
+            uri = "file:///path/to/my_file.pdf",
+        )
+
+        with(resourceLink) {
+            assertEquals("application/pdf", mimeType)
+            assertEquals("This pdf is meant to be a resource link test", description)
+            assertEquals("file01", name)
+            assertEquals(76859L, size)
+            assertEquals("This is a pdf", title)
+            assertEquals("file:///path/to/my_file.pdf", uri)
+        }
+    }
+
+    @Test
+    fun `should serialize and deserialize resource link correctly`() {
+        val resourceLink = ResourceLink(
+            mimeType = "application/pdf",
+            description = "This pdf is meant to be a resource link test",
+            name = "file01",
+            size = 76859L,
+            title = "This is a pdf",
+            uri = "file:///path/to/my_file.pdf",
+        )
+
+        val json = McpJson.encodeToString<ContentBlock>(resourceLink)
+        val decoded = McpJson.decodeFromString<ContentBlock>(json)
+
+        assertIs<ResourceLink>(decoded)
+        with(decoded) {
+            assertEquals("application/pdf", mimeType)
+            assertEquals("This pdf is meant to be a resource link test", description)
+            assertEquals("file01", name)
+            assertEquals(76859L, size)
+            assertEquals("This is a pdf", title)
+            assertEquals("file:///path/to/my_file.pdf", uri)
+        }
     }
 
     @Test
@@ -180,8 +226,8 @@ class TypesTest {
         )
         val embeddedResource = EmbeddedResource(resource = resource)
 
-        val json = McpJson.encodeToString<PromptMessageContent>(embeddedResource)
-        val decoded = McpJson.decodeFromString<PromptMessageContent>(json)
+        val json = McpJson.encodeToString<ContentBlock>(embeddedResource)
+        val decoded = McpJson.decodeFromString<ContentBlock>(json)
 
         assertIs<EmbeddedResource>(decoded)
         assertEquals("resource", decoded.type)
@@ -196,7 +242,7 @@ class TypesTest {
     fun `should handle unknown content type`() {
         val unknownJson = """{"type": "unknown_type"}"""
 
-        val decoded = McpJson.decodeFromString<PromptMessageContent>(unknownJson)
+        val decoded = McpJson.decodeFromString<ContentBlock>(unknownJson)
 
         assertIs<UnknownContent>(decoded)
         assertEquals("unknown_type", decoded.type)
