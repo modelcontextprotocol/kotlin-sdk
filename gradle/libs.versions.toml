@@ -21,7 +21,7 @@ awaitility = "4.3.0"
 
 # Samples
 mcp-kotlin = "0.7.0"
-anthropic = "0.8.0"
+anthropic = "2.7.0"
 shadow = "8.1.1"
 
 [libraries]
