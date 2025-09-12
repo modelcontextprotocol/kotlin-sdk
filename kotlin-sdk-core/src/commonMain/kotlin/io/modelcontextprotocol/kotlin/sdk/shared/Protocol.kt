@@ -256,7 +256,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                     JSONRPCResponse(
                         id = request.id,
                         error = JSONRPCError(
-                            ErrorCode.Defined.MethodNotFound,
+                            code = ErrorCode.Defined.MethodNotFound,
                             message = "Server does not support ${request.method}",
                         ),
                     ),

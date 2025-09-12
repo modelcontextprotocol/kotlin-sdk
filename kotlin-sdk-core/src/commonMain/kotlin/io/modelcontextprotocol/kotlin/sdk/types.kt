@@ -249,14 +249,14 @@ public data class JSONRPCNotification(
  */
 @Serializable
 public class JSONRPCResponse(
-    public val id: RequestId,
+    public val id: RequestId?,
     public val jsonrpc: String = JSONRPC_VERSION,
     public val result: RequestResult? = null,
     public val error: JSONRPCError? = null,
 ) : JSONRPCMessage {
 
     public fun copy(
-        id: RequestId = this.id,
+        id: RequestId? = this.id,
         jsonrpc: String = this.jsonrpc,
         result: RequestResult? = this.result,
         error: JSONRPCError? = this.error,
@@ -292,8 +292,12 @@ public sealed interface ErrorCode {
  * A response to a request that indicates an error occurred.
  */
 @Serializable
-public data class JSONRPCError(val code: ErrorCode, val message: String, val data: JsonObject = EmptyJsonObject) :
-    JSONRPCMessage
+public data class JSONRPCError(
+    val id: RequestId? = null,
+    val code: ErrorCode,
+    val message: String,
+    val data: JsonObject = EmptyJsonObject,
+) : JSONRPCMessage
 
 /**
  * Base interface for notification parameters with optional metadata.
