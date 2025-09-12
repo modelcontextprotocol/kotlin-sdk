@@ -12,12 +12,12 @@ import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.SseClientTransport
 import io.modelcontextprotocol.kotlin.sdk.integration.utils.Retry
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.port
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.mcp
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
-import org.awaitility.kotlin.await
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import kotlin.time.Duration.Companion.seconds
@@ -40,12 +40,7 @@ abstract class KotlinTestBase {
     @BeforeEach
     fun setUp() {
         setupServer()
-        await
-            .ignoreExceptions()
-            .until {
-                port = runBlocking { serverEngine.engine.resolvedConnectors().first().port }
-                port != 0
-            }
+        port = serverEngine.port()
         runBlocking {
             setupClient()
         }
@@ -74,7 +69,7 @@ abstract class KotlinTestBase {
 
         configureServer()
 
-        serverEngine = embeddedServer(ServerCIO, host = host, port = port) {
+        serverEngine = embeddedServer(ServerCIO, host = host, port = 0) {
             install(ServerSSE)
             routing {
                 mcp { server }
