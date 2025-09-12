@@ -5,9 +5,15 @@ plugins {
 }
 
 dokka {
-    moduleName.set("MCP Kotlin SDK - ${project.name}")
 
     dokkaSourceSets.configureEach {
+        includes.from("Module.md")
+
+        pluginsConfiguration.html {
+            footerMessage = "Copyright © 2025 JetBrains s.r.o."
+            customAssets + file("icon.png")
+        }
+
         sourceLink {
             localDirectory = projectDir.resolve("src")
             remoteUrl("https://github.com/modelcontextprotocol/kotlin-sdk/tree/main/${project.name}/src")
@@ -15,9 +21,39 @@ dokka {
         }
 
         documentedVisibilities(VisibilityModifier.Public)
-    }
 
-    dokkaPublications.html {
-        outputDirectory = rootProject.layout.projectDirectory.dir("docs/${project.name}")
+        externalDocumentationLinks.register("ktor-client") {
+            url("https://api.ktor.io/ktor-client/")
+            packageListUrl("https://api.ktor.io/package-list")
+        }
+
+        externalDocumentationLinks.register("kotlinx-coroutines") {
+            url("https://kotlinlang.org/api/kotlinx.coroutines/")
+            packageListUrl("https://kotlinlang.org/api/kotlinx.coroutines/package-list")
+        }
+
+        externalDocumentationLinks.register("kotlinx-serialization") {
+            url("https://kotlinlang.org/api/kotlinx.serialization/")
+            packageListUrl("https://kotlinlang.org/api/kotlinx.serialization/package-list")
+        }
     }
 }
+//
+// tasks.withType<DokkaTask>().configureEach {
+//    val dokkaBaseConfiguration = """
+//    {
+//      "customAssets": ["${file("assets/my-image.png")}"],
+//      "customStyleSheets": ["${file("assets/my-styles.css")}"],
+//      "footerMessage": "(c) $Insta MyOrg",
+//      "separateInheritedMembers": false,
+//      "templatesDir": "${file("dokka/templates")}",
+//      "mergeImplicitExpectActualDeclarations": false
+//    }
+//    """
+//    pluginsMapConfiguration.set(
+//        mapOf(
+//            // fully qualified plugin name to json configuration
+//            "org.jetbrains.dokka.base.DokkaBase" to dokkaBaseConfiguration,
+//        ),
+//    )
+// }
