@@ -11,4 +11,4 @@ This module includes essential parts for writing MCP server applications.
 * Integration utilities
 
 For detailed usage instructions and examples, please refer to
-the [documentation](https://github.com/modelcontextprotocol/kotlin-sdk).
+the [documentation](https://github.com/modelcontextprotocol/kotlin-sdk/blob/main/README.md).

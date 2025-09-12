@@ -37,22 +37,3 @@ dokka {
         }
     }
 }
-//
-// tasks.withType<DokkaTask>().configureEach {
-//    val dokkaBaseConfiguration = """
-//    {
-//      "customAssets": ["${file("assets/my-image.png")}"],
-//      "customStyleSheets": ["${file("assets/my-styles.css")}"],
-//      "footerMessage": "(c) $Insta MyOrg",
-//      "separateInheritedMembers": false,
-//      "templatesDir": "${file("dokka/templates")}",
-//      "mergeImplicitExpectActualDeclarations": false
-//    }
-//    """
-//    pluginsMapConfiguration.set(
-//        mapOf(
-//            // fully qualified plugin name to json configuration
-//            "org.jetbrains.dokka.base.DokkaBase" to dokkaBaseConfiguration,
-//        ),
-//    )
-// }
