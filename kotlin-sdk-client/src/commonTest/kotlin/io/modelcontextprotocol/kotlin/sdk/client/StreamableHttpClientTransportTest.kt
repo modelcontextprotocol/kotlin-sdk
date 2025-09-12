@@ -417,6 +417,7 @@ class StreamableHttpClientTransportTest {
         }.onFailure { e ->
             when (e) {
                 is TimeoutCancellationException -> fail("Client connect caused a hang", e)
+
                 is IllegalStateException -> {
                     // Expected behavior: connect finishes and fails with an exception.
                 }
