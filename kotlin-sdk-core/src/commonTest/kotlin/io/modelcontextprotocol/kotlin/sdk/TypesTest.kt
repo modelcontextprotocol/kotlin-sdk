@@ -194,7 +194,7 @@ class TypesTest {
         val decoded = McpJson.decodeFromString<ContentBlock>(json)
 
         assertIs<ResourceLink>(decoded)
-        with(resourceLink) {
+        with(decoded) {
             assertEquals("application/pdf", mimeType)
             assertEquals("This pdf is meant to be a resource link test", description)
             assertEquals("file01", name)

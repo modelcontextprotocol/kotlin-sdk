@@ -3,8 +3,8 @@ package io.modelcontextprotocol.kotlin.sdk.integration.kotlin
 import io.kotest.assertions.json.shouldEqualJson
 import io.modelcontextprotocol.kotlin.sdk.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.CallToolResultBase
+import io.modelcontextprotocol.kotlin.sdk.ContentBlock
 import io.modelcontextprotocol.kotlin.sdk.ImageContent
-import io.modelcontextprotocol.kotlin.sdk.PromptMessageContent
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.Tool
@@ -276,7 +276,7 @@ class ToolIntegrationTest : KotlinTestBase() {
             val text = (request.arguments["text"] as? JsonPrimitive)?.content ?: "Default text"
             val includeImage = (request.arguments["includeImage"] as? JsonPrimitive)?.content?.toBoolean() ?: true
 
-            val content = mutableListOf<PromptMessageContent>(
+            val content = mutableListOf<ContentBlock>(
                 TextContent(text = "Text content: $text"),
             )
 
