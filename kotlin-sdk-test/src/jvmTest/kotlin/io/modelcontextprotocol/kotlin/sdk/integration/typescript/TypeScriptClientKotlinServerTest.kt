@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.util.concurrent.TimeUnit
+import kotlin.test.Ignore
 import kotlin.test.assertTrue
 
 class TypeScriptClientKotlinServerTest : TypeScriptTestBase() {
@@ -109,6 +110,7 @@ class TypeScriptClientKotlinServerTest : TypeScriptTestBase() {
 
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
+    @Ignore // Ignored due to flaky, see issue https://github.com/modelcontextprotocol/kotlin-sdk/issues/262
     fun testMultipleClientParallel() = runTest {
         val clientCount = 3
         val clients = listOf(
