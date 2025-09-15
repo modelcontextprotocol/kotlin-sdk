@@ -4,8 +4,6 @@ on:
   release:
     types:
       - published
-  push:
-    branches: [ "main" ]
   # Allow running this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -35,7 +33,7 @@ jobs:
           cache: gradle
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Generate Dokka Site
         run: |-
@@ -44,7 +42,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: docs/build/dokka/html
+          path: build/dokka/html
 
       - name: Deploy to GitHub Pages
         id: deployment

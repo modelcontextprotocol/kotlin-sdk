@@ -23,7 +23,6 @@ include(
     ":kotlin-sdk-server",
     ":kotlin-sdk",
     ":kotlin-sdk-test",
-    ":docs",
 )
 
 // Include sample projects as composite builds
