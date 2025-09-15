@@ -37,7 +37,7 @@ jobs:
 
       - name: Generate Dokka Site
         run: |-
-          ./gradlew :docs:clean :docs:dokkaGenerate
+          ./gradlew clean dokkaGenerate
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
