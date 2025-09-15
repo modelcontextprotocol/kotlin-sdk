@@ -37,12 +37,23 @@ jobs:
           JAVA_OPTS: "-Xmx8g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx6g"
 
       - name: Upload Reports
-        if: always()
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: reports
           path: |
             **/build/reports/
+
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v5
+        if: ${{ !cancelled() }} # always run even if the previous step fails
+        with:
+          report_paths: '**/test-results/**/TEST-*.xml'
+          detailed_summary: true
+          flaky_summary: true
+          include_empty_in_summary: false
+          include_time_in_summary: true
+          annotate_only: true
 
       - name: Disable Auto-Merge on Fail
         if: failure() && github.event_name == 'pull_request'
