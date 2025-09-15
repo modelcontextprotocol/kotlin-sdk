@@ -1,6 +1,6 @@
 [versions]
 # plugins version
-kotlin = "2.2.0"
+kotlin = "2.2.10"
 dokka = "2.0.0"
 atomicfu = "0.29.0"
 ktlint = "13.1.0"
