@@ -9,10 +9,6 @@ application {
     mainClass.set("io.modelcontextprotocol.sample.server.MainKt")
 }
 
-repositories {
-    mavenCentral()
-}
-
 group = "org.example"
 version = "0.1.0"
 
