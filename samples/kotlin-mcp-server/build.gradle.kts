@@ -43,7 +43,7 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.mcp.kotlin)
+            implementation(libs.mcp.kotlin.server)
             implementation(libs.ktor.server.cio)
         }
         jvmMain.dependencies {
