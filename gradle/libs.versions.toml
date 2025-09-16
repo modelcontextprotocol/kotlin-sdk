@@ -5,6 +5,8 @@ dokka = "2.0.0"
 atomicfu = "0.29.0"
 ktlint = "13.1.0"
 kover = "0.9.1"
+mavenPublish = "0.34.0"
+binaryCompatibilityValidatorPlugin = "0.18.1"
 
 # libraries version
 serialization = "1.9.0"
@@ -13,8 +15,6 @@ coroutines = "1.10.2"
 kotlinx-io = "0.8.0"
 ktor = "3.3.0"
 logging = "7.0.13"
-jreleaser = "1.19.0"
-binaryCompatibilityValidatorPlugin = "0.18.1"
 slf4j = "2.0.17"
 kotest = "6.0.3"
 awaitility = "4.3.0"
@@ -30,7 +30,7 @@ kotlin-gradle = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.
 kotlin-serialization = { module = "org.jetbrains.kotlin:kotlin-serialization", version.ref = "kotlin" }
 kotlinx-atomicfu-gradle = { module = "org.jetbrains.kotlinx:atomicfu-gradle-plugin", version.ref = "atomicfu" }
 dokka-gradle = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
-jreleaser-gradle = { module = "org.jreleaser:jreleaser-gradle-plugin", version.ref = "jreleaser" }
+maven-publish = { module = "com.vanniktech:gradle-maven-publish-plugin", version.ref = "mavenPublish" }
 
 # Kotlinx libraries
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
