@@ -19,14 +19,14 @@ jreleaser {
     deploy {
         active = Active.ALWAYS
         maven {
-            active = Active.ALWAYS
+            active = if (project.name.get() == "kotlin-sdk") Active.ALWAYS else Active.NEVER
             mavenCentral.create("ossrh") {
                 active = Active.ALWAYS
                 sign = true
                 url = "https://central.sonatype.com/api/v1/publisher"
                 applyMavenCentralRules = false
                 maxRetries = 240
-                stagingRepository(layout.buildDirectory.dir("staging-deploy").get().asFile.path)
+                stagingRepository(rootProject.layout.buildDirectory.dir("staging-deploy").get().asFile.path)
 
                 // workaround: https://github.com/jreleaser/jreleaser/issues/1784
                 afterEvaluate {
