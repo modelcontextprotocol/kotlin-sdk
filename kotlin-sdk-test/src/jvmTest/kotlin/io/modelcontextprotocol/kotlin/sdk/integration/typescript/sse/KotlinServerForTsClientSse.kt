@@ -1,4 +1,4 @@
-package io.modelcontextprotocol.kotlin.sdk.integration.typescript
+package io.modelcontextprotocol.kotlin.sdk.integration.typescript.sse
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.ContentType
@@ -55,12 +55,13 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonPrimitive
+import org.awaitility.Awaitility.await
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 private val logger = KotlinLogging.logger {}
 
-class KotlinServerForTypeScriptClient {
+class KotlinServerForTsClient {
     private val serverTransports = ConcurrentHashMap<String, HttpServerTransport>()
     private val jsonFormat = Json { ignoreUnknownKeys = true }
     private var server: EmbeddedServer<*, *>? = null
@@ -195,7 +196,7 @@ class KotlinServerForTypeScriptClient {
         server = null
     }
 
-    private fun createMcpServer(): Server {
+    fun createMcpServer(): Server {
         val server = Server(
             Implementation(
                 name = "kotlin-http-server",
@@ -487,6 +488,6 @@ class HttpServerTransport(private val sessionId: String) : AbstractTransport() {
 }
 
 fun main() {
-    val server = KotlinServerForTypeScriptClient()
+    val server = KotlinServerForTsClient()
     server.start()
 }
