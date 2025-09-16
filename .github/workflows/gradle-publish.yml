@@ -33,22 +33,12 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Verify publication configuration
-        run: ./gradlew jreleaserConfig
-        env:
-          JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-          JRELEASER_MAVENCENTRAL_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
-          JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
-          JRELEASER_GPG_SECRET_KEY: ${{ secrets.GPG_SECRET_KEY }}
-          JRELEASER_GPG_PASSPHRASE: ${{ secrets.SIGNING_PASSPHRASE }}
-          JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Clean Build with Gradle
         run: ./gradlew clean build
 
       - name: Publish to Maven Central Portal
         id: publish
-        run: ./gradlew publishToMavenLocal
+        run: ./gradlew publishToMavenCentral --no-configuration-cache
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.OSSRH_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.OSSRH_TOKEN }}
