@@ -10,6 +10,25 @@ plugins {
     alias(libs.plugins.kotlinx.binary.compatibility.validator)
 }
 
+// Generation library versions
+val generateLibVersion by tasks.registering {
+    val outputDir = layout.buildDirectory.dir("generated-sources/libVersion")
+    outputs.dir(outputDir)
+
+    doLast {
+        val sourceFile = outputDir.get().file("io/modelcontextprotocol/kotlin/sdk/LibVersion.kt").asFile
+        sourceFile.parentFile.mkdirs()
+        sourceFile.writeText(
+            """
+            package io.modelcontextprotocol.kotlin.sdk
+
+            public const val LIB_VERSION: String = "${project.version}"
+            
+            """.trimIndent(),
+        )
+    }
+}
+
 kotlin {
     iosArm64()
     iosX64()
@@ -31,6 +50,7 @@ kotlin {
 
     sourceSets {
         commonMain {
+            kotlin.srcDir(generateLibVersion)
             dependencies {
                 api(libs.kotlinx.serialization.json)
                 api(libs.kotlinx.coroutines.core)
