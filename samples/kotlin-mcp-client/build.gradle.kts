@@ -12,7 +12,7 @@ group = "org.example"
 version = "0.1.0"
 
 dependencies {
-    implementation(libs.mcp.kotlin)
+    implementation(libs.mcp.kotlin.client)
     implementation(libs.ktor.client.cio)
     implementation(libs.anthropic.java)
     implementation(libs.slf4j.simple)
