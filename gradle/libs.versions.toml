@@ -1,6 +1,6 @@
 [versions]
 # plugins version
-kotlin = "2.2.0"
+kotlin = "2.2.10"
 dokka = "2.0.0"
 atomicfu = "0.29.0"
 ktlint = "13.1.0"
@@ -11,7 +11,7 @@ serialization = "1.9.0"
 collections-immutable = "0.4.0"
 coroutines = "1.10.2"
 kotlinx-io = "0.8.0"
-ktor = "3.2.3"
+ktor = "3.3.0"
 logging = "7.0.13"
 jreleaser = "1.19.0"
 binaryCompatibilityValidatorPlugin = "0.18.1"
@@ -20,8 +20,8 @@ kotest = "5.9.1"
 awaitility = "4.3.0"
 
 # Samples
-mcp-kotlin = "0.7.0"
-anthropic = "0.8.0"
+mcp-kotlin = "0.7.1"
+anthropic = "2.7.0"
 shadow = "8.1.1"
 
 [libraries]
