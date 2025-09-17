@@ -11,10 +11,6 @@ plugins {
 group = "org.example"
 version = "0.1.0"
 
-repositories {
-    mavenCentral()
-}
-
 val jvmMainClass = "Main_jvmKt"
 
 kotlin {
@@ -43,7 +39,7 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.mcp.kotlin)
+            implementation(libs.mcp.kotlin.server)
             implementation(libs.ktor.server.cio)
         }
         jvmMain.dependencies {

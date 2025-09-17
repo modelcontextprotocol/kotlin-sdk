@@ -12,5 +12,5 @@ dependencies {
     implementation(libs.kotlin.serialization)
     implementation(libs.kotlinx.atomicfu.gradle)
     implementation(libs.dokka.gradle)
-    implementation(libs.jreleaser.gradle)
+    implementation(libs.maven.publish)
 }

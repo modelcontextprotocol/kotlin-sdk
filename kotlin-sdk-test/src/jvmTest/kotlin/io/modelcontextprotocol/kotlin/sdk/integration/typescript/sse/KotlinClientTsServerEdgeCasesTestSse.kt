@@ -1,11 +1,14 @@
-package io.modelcontextprotocol.kotlin.sdk.integration.typescript
+package io.modelcontextprotocol.kotlin.sdk.integration.typescript.sse
 
 import io.modelcontextprotocol.kotlin.sdk.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.client.Client
+import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TransportKind
+import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TsTestBase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonObject
@@ -21,7 +24,9 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
-class KotlinClientTypeScriptServerEdgeCasesTest : TypeScriptTestBase() {
+class KotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
+
+    override val transportKind = TransportKind.SSE
 
     private var port: Int = 0
     private val host = "localhost"
@@ -132,7 +137,7 @@ class KotlinClientTypeScriptServerEdgeCasesTest : TypeScriptTestBase() {
     fun testConcurrentRequests(): Unit = runBlocking(Dispatchers.IO) {
         withClient(serverUrl) { client ->
             val concurrentCount = 5
-            val responses = kotlinx.coroutines.coroutineScope {
+            val responses = coroutineScope {
                 val results = (1..concurrentCount).map { i ->
                     async {
                         val name = "ConcurrentClient$i"

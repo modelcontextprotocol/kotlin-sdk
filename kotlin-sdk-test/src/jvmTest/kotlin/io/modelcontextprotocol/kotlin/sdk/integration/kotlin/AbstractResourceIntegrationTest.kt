@@ -20,7 +20,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-class ResourceEdgeCasesTest : KotlinTestBase() {
+abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
 
     private val testResourceUri = "test://example.txt"
     private val testResourceName = "Test Resource"
@@ -50,6 +50,31 @@ class ResourceEdgeCasesTest : KotlinTestBase() {
     )
 
     override fun configureServer() {
+        server.addResource(
+            uri = testResourceUri,
+            name = testResourceName,
+            description = testResourceDescription,
+            mimeType = "text/plain",
+        ) { request ->
+            ReadResourceResult(
+                contents = listOf(
+                    TextResourceContents(
+                        text = testResourceContent,
+                        uri = request.uri,
+                        mimeType = "text/plain",
+                    ),
+                ),
+            )
+        }
+
+        server.setRequestHandler<SubscribeRequest>(Method.Defined.ResourcesSubscribe) { _, _ ->
+            EmptyRequestResult()
+        }
+
+        server.setRequestHandler<UnsubscribeRequest>(Method.Defined.ResourcesUnsubscribe) { _, _ ->
+            EmptyRequestResult()
+        }
+
         server.addResource(
             uri = testResourceUri,
             name = testResourceName,
@@ -117,13 +142,41 @@ class ResourceEdgeCasesTest : KotlinTestBase() {
                 ),
             )
         }
+    }
 
-        server.setRequestHandler<SubscribeRequest>(Method.Defined.ResourcesSubscribe) { _, _ ->
-            EmptyRequestResult()
-        }
+    @Test
+    fun testListResources() = runBlocking(Dispatchers.IO) {
+        val result = client.listResources()
 
-        server.setRequestHandler<UnsubscribeRequest>(Method.Defined.ResourcesUnsubscribe) { _, _ ->
-            EmptyRequestResult()
+        assertNotNull(result, "List resources result should not be null")
+        assertTrue(result.resources.isNotEmpty(), "Resources list should not be empty")
+
+        val testResource = result.resources.find { it.uri == testResourceUri }
+        assertNotNull(testResource, "Test resource should be in the list")
+        assertEquals(testResourceName, testResource.name, "Resource name should match")
+        assertEquals(testResourceDescription, testResource.description, "Resource description should match")
+    }
+
+    @Test
+    fun testReadResource() = runBlocking(Dispatchers.IO) {
+        val result = client.readResource(ReadResourceRequest(uri = testResourceUri))
+
+        assertNotNull(result, "Read resource result should not be null")
+        assertTrue(result.contents.isNotEmpty(), "Resource contents should not be empty")
+
+        val content = result.contents.firstOrNull() as? TextResourceContents
+        assertNotNull(content, "Resource content should be TextResourceContents")
+        assertEquals(testResourceContent, content.text, "Resource content should match")
+    }
+
+    @Test
+    fun testSubscribeAndUnsubscribe() {
+        runBlocking(Dispatchers.IO) {
+            val subscribeResult = client.subscribeResource(SubscribeRequest(uri = testResourceUri))
+            assertNotNull(subscribeResult, "Subscribe result should not be null")
+
+            val unsubscribeResult = client.unsubscribeResource(UnsubscribeRequest(uri = testResourceUri))
+            assertNotNull(unsubscribeResult, "Unsubscribe result should not be null")
         }
     }
 
@@ -255,17 +308,6 @@ class ResourceEdgeCasesTest : KotlinTestBase() {
         results.forEach { result ->
             assertNotNull(result, "Result should not be null")
             assertTrue(result.contents.isNotEmpty(), "Result contents should not be empty")
-        }
-    }
-
-    @Test
-    fun testSubscribeAndUnsubscribe() {
-        runBlocking(Dispatchers.IO) {
-            val subscribeResult = client.subscribeResource(SubscribeRequest(uri = testResourceUri))
-            assertNotNull(subscribeResult, "Subscribe result should not be null")
-
-            val unsubscribeResult = client.unsubscribeResource(UnsubscribeRequest(uri = testResourceUri))
-            assertNotNull(unsubscribeResult, "Unsubscribe result should not be null")
         }
     }
 }
