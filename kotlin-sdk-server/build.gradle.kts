@@ -2,7 +2,6 @@ plugins {
     id("mcp.multiplatform")
     id("mcp.publishing")
     id("mcp.dokka")
-    id("mcp.jreleaser")
     alias(libs.plugins.kotlinx.binary.compatibility.validator)
 }
 
