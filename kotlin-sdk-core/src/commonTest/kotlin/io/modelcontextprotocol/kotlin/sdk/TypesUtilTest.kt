@@ -111,7 +111,7 @@ class TypesUtilTest {
         assertEquals("unknown_ref", decoded.type)
     }
 
-    // PromptMessageContent Polymorphic Serializer Tests
+    // ContentBlock Polymorphic Serializer Tests
     @Test
     fun `should deserialize TextContent polymorphically`() {
         val json = """{"type": "text", "text": "Hello world"}"""

@@ -1,6 +1,5 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.kotlin
 
-import io.modelcontextprotocol.kotlin.sdk.ContentBlock
 import io.modelcontextprotocol.kotlin.sdk.GetPromptRequest
 import io.modelcontextprotocol.kotlin.sdk.GetPromptResult
 import io.modelcontextprotocol.kotlin.sdk.PromptArgument

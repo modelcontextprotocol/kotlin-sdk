@@ -81,7 +81,7 @@ class TypesTest {
         assertEquals("invalid_type", decoded.type)
     }
 
-    // PromptMessageContent Tests
+    // ContentBlock Tests
     @Test
     fun `should validate text content`() {
         val textContent = TextContent(text = "Hello, world!")
