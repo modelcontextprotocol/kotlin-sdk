@@ -23,6 +23,7 @@ import io.modelcontextprotocol.kotlin.sdk.TextResourceContents
 import io.modelcontextprotocol.kotlin.sdk.Tool
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
+import io.modelcontextprotocol.kotlin.sdk.server.ServerSession
 import io.modelcontextprotocol.kotlin.sdk.server.SseServerTransport
 import io.modelcontextprotocol.kotlin.sdk.server.mcp
 
@@ -94,33 +95,33 @@ fun configureServer(): Server {
 }
 
 suspend fun runSseMcpServerWithPlainConfiguration(port: Int) {
-    val servers = ConcurrentMap<String, Server>()
+    val serverSessions = ConcurrentMap<String, ServerSession>()
     println("Starting sse server on port $port. ")
     println("Use inspector to connect to the http://localhost:$port/sse")
+
+    val server = configureServer()
 
     embeddedServer(CIO, host = "0.0.0.0", port = port) {
         install(SSE)
         routing {
             sse("/sse") {
                 val transport = SseServerTransport("/message", this)
-                val server = configureServer()
 
                 // For SSE, you can also add prompts/tools/resources if needed:
                 // server.addTool(...), server.addPrompt(...), server.addResource(...)
 
-                servers[transport.sessionId] = server
+                val serverSession = server.connect(transport)
+                serverSessions[transport.sessionId] = server.connect(transport)
 
-                server.onClose {
+                serverSession.onClose {
                     println("Server closed")
-                    servers.remove(transport.sessionId)
+                    serverSessions.remove(transport.sessionId)
                 }
-
-                server.connect(transport)
             }
             post("/message") {
                 println("Received Message")
                 val sessionId: String = call.request.queryParameters["sessionId"]!!
-                val transport = servers[sessionId]?.transport as? SseServerTransport
+                val transport = serverSessions[sessionId]?.transport as? SseServerTransport
                 if (transport == null) {
                     call.respond(HttpStatusCode.NotFound, "Session not found")
                     return@post
