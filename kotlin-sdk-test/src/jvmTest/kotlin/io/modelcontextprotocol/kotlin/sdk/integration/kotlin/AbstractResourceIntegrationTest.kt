@@ -66,14 +66,6 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
             )
         }
 
-        server.setRequestHandler<SubscribeRequest>(Method.Defined.ResourcesSubscribe) { _, _ ->
-            EmptyRequestResult()
-        }
-
-        server.setRequestHandler<UnsubscribeRequest>(Method.Defined.ResourcesUnsubscribe) { _, _ ->
-            EmptyRequestResult()
-        }
-
         server.addResource(
             uri = testResourceUri,
             name = testResourceName,
@@ -168,6 +160,7 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
         assertEquals(testResourceContent, content.text, "Resource content should match")
     }
 
+    @Ignore("Blocked by https://github.com/modelcontextprotocol/kotlin-sdk/issues/249")
     @Test
     fun testSubscribeAndUnsubscribe() {
         runBlocking(Dispatchers.IO) {
@@ -210,7 +203,9 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
         val invalidUri = "test://nonexistent.txt"
 
         val exception = assertThrows<IllegalStateException> {
-            client.readResource(ReadResourceRequest(uri = invalidUri))
+            runBlocking {
+                client.readResource(ReadResourceRequest(uri = invalidUri))
+            }
         }
 
         val msg = exception.message ?: ""
@@ -305,18 +300,6 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
         results.forEach { result ->
             assertNotNull(result, "Result should not be null")
             assertTrue(result.contents.isNotEmpty(), "Result contents should not be empty")
-        }
-    }
-
-    @Test
-    @Ignore("Blocked by https://github.com/modelcontextprotocol/kotlin-sdk/issues/249")
-    fun testSubscribeAndUnsubscribe() {
-        runTest {
-            val subscribeResult = client.subscribeResource(SubscribeRequest(uri = testResourceUri))
-            assertNotNull(subscribeResult, "Subscribe result should not be null")
-
-            val unsubscribeResult = client.unsubscribeResource(UnsubscribeRequest(uri = testResourceUri))
-            assertNotNull(unsubscribeResult, "Unsubscribe result should not be null")
         }
     }
 }
