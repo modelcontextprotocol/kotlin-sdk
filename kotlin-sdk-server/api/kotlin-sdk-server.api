@@ -1,7 +1,3 @@
-public final class io/modelcontextprotocol/kotlin/sdk/LibVersionKt {
-	public static final field LIB_VERSION Ljava/lang/String;
-}
-
 public final class io/modelcontextprotocol/kotlin/sdk/server/KtorServerKt {
 	public static final fun MCP (Lio/ktor/server/application/Application;Lkotlin/jvm/functions/Function1;)V
 	public static final fun mcp (Lio/ktor/server/application/Application;Lkotlin/jvm/functions/Function1;)V
