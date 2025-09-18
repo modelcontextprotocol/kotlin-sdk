@@ -5,7 +5,6 @@ plugins {
 }
 
 mavenPublishing {
-    signAllPublications()
     publishToMavenCentral(automaticRelease = true)
 
     pom {
