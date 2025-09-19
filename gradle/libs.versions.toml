@@ -20,7 +20,7 @@ kotest = "6.0.3"
 awaitility = "4.3.0"
 
 # Samples
-mcp-kotlin = "0.7.2-alpha3"
+mcp-kotlin = "0.7.2"
 anthropic = "2.7.0"
 shadow = "8.1.1"
 
