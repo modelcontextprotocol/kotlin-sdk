@@ -46,7 +46,7 @@ mavenPublishing {
 }
 
 private fun Project.configureSigning(mavenPublishing: MavenPublishBaseExtension) {
-    val gpgKeyName = "GPG_SIGNING_KEY"
+    val gpgKeyName = "GPG_SECRET_KEY"
     val gpgPassphraseName = "SIGNING_PASSPHRASE"
     val signingKey = providers.environmentVariable(gpgKeyName)
         .orElse(providers.gradleProperty(gpgKeyName))
