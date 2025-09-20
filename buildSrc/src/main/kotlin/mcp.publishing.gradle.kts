@@ -1,3 +1,5 @@
+import com.vanniktech.maven.publish.MavenPublishBaseExtension
+
 plugins {
     `maven-publish`
     id("com.vanniktech.maven.publish")
@@ -6,6 +8,7 @@ plugins {
 
 mavenPublishing {
     publishToMavenCentral(automaticRelease = true)
+    configureSigning(this)
 
     pom {
         name = project.name
@@ -42,14 +45,8 @@ mavenPublishing {
     }
 }
 
-publishing {
-    repositories {
-        mavenLocal()
-    }
-}
-
-signing {
-    val gpgKeyName = "GPG_SIGNING_KEY"
+private fun Project.configureSigning(mavenPublishing: MavenPublishBaseExtension) {
+    val gpgKeyName = "GPG_SECRET_KEY"
     val gpgPassphraseName = "SIGNING_PASSPHRASE"
     val signingKey = providers.environmentVariable(gpgKeyName)
         .orElse(providers.gradleProperty(gpgKeyName))
@@ -57,7 +54,7 @@ signing {
         .orElse(providers.gradleProperty(gpgPassphraseName))
 
     if (signingKey.isPresent) {
-        useInMemoryPgpKeys(signingKey.get(), signingPassphrase.get())
-        sign(publishing.publications)
+        mavenPublishing.signAllPublications()
+        signing.useInMemoryPgpKeys(signingKey.get(), signingPassphrase.get())
     }
 }
