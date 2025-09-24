@@ -1,6 +1,10 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
+import io.github.oshai.kotlinlogging.KLogger
+import io.github.oshai.kotlinlogging.KLoggingEventBuilder
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.oshai.kotlinlogging.Level
+import io.github.oshai.kotlinlogging.Marker
 import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
 import io.modelcontextprotocol.kotlin.sdk.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.ClientCapabilities
@@ -56,7 +60,7 @@ import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.serialization.json.JsonObject
 
-private val logger = KotlinLogging.logger {}
+private var logger = KotlinLogging.logger{}
 
 /**
  * Configuration options for the MCP server.
@@ -109,6 +113,7 @@ public open class Server(private val serverInfo: Implementation, options: Server
         get() = _resources.value
 
     init {
+
         logger.debug { "Initializing MCP server with capabilities: $capabilities" }
 
         // Core protocol handlers
@@ -804,6 +809,21 @@ public open class Server(private val serverInfo: Implementation, options: Server
 
             "ping", "initialize" -> {
                 // No capability required
+            }
+        }
+    }
+    companion object{
+        fun disableLogging(){
+            logger = object : KLogger {
+                override val name: String
+                    get() = "no"
+
+                override fun at(level: Level, marker: Marker?, block: KLoggingEventBuilder.() -> Unit) {
+                }
+
+                override fun isLoggingEnabledFor(level: Level, marker: Marker?): Boolean {
+                    return false
+                }
             }
         }
     }
