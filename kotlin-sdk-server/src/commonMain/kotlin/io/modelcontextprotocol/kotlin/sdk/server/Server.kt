@@ -59,8 +59,10 @@ import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.serialization.json.JsonObject
+import kotlin.concurrent.Volatile
 
-private var logger = KotlinLogging.logger{}
+@Volatile
+private var logger = KotlinLogging.logger {}
 
 /**
  * Configuration options for the MCP server.
@@ -113,7 +115,6 @@ public open class Server(private val serverInfo: Implementation, options: Server
         get() = _resources.value
 
     init {
-
         logger.debug { "Initializing MCP server with capabilities: $capabilities" }
 
         // Core protocol handlers
@@ -812,8 +813,8 @@ public open class Server(private val serverInfo: Implementation, options: Server
             }
         }
     }
-    companion object{
-        fun disableLogging(){
+    companion object {
+        fun disableLogging() {
             logger = object : KLogger {
                 override val name: String
                     get() = "no"
