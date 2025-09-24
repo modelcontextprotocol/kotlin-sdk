@@ -417,23 +417,17 @@ public open class Client(private val clientInfo: Implementation, options: Client
     public suspend fun callTool(
         name: String,
         arguments: Map<String, Any?>,
+        meta: Map<String, Any?> = emptyMap(),
         compatibility: Boolean = false,
         options: RequestOptions? = null,
     ): CallToolResultBase? {
-        val jsonArguments = arguments.mapValues { (_, value) ->
-            when (value) {
-                is String -> JsonPrimitive(value)
-                is Number -> JsonPrimitive(value)
-                is Boolean -> JsonPrimitive(value)
-                is JsonElement -> value
-                null -> JsonNull
-                else -> JsonPrimitive(value.toString())
-            }
-        }
+        val jsonArguments = convertToJsonMap(arguments)
+        val jsonMeta = convertToJsonMap(meta)
 
         val request = CallToolRequest(
             name = name,
             arguments = JsonObject(jsonArguments),
+            _meta = JsonObject(jsonMeta),
         )
         return callTool(request, compatibility, options)
     }
@@ -588,4 +582,16 @@ public open class Client(private val clientInfo: Implementation, options: Client
         val rootList = roots.value.values.toList()
         return ListRootsResult(rootList)
     }
+
+    private fun convertToJsonMap(map: Map<String, Any?>): Map<String, JsonElement> =
+        map.mapValues { (_, value) ->
+            when (value) {
+                is String -> JsonPrimitive(value)
+                is Number -> JsonPrimitive(value)
+                is Boolean -> JsonPrimitive(value)
+                is JsonElement -> value
+                null -> JsonNull
+                else -> JsonPrimitive(value.toString())
+            }
+        }
 }
