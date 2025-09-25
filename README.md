@@ -111,7 +111,8 @@ val server = Server(
                 listChanged = true
             )
         )
-    )
+    ),
+    instructions = "This server provides example resources and demonstrates MCP capabilities."
 )
 
 // Add a resource
@@ -156,7 +157,8 @@ fun Application.module() {
                     prompts = ServerCapabilities.Prompts(listChanged = null),
                     resources = ServerCapabilities.Resources(subscribe = null, listChanged = null)
                 )
-            )
+            ),
+            instructions = "This SSE server provides prompts and resources via Server-Sent Events."
         )
     }
 }
@@ -184,7 +186,8 @@ fun Application.module() {
                             prompts = ServerCapabilities.Prompts(listChanged = null),
                             resources = ServerCapabilities.Resources(subscribe = null, listChanged = null)
                         )
-                    )
+                    ),
+                    instructions = "Connect via SSE to interact with this MCP server."
                 )
             }
         }
