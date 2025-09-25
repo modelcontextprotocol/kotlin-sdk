@@ -596,17 +596,13 @@ public open class Client(private val clientInfo: Implementation, options: Client
      *
      * Key format: [prefix/]name
      * - Prefix (optional): dot-separated labels + slash
-     * - Labels: start with letter, end with letter/digit, contain letters/digits/hyphens
-     * - Reserved prefixes: those starting with "mcp" or "modelcontextprotocol"
-     * - Name: alphanumeric start/end, may contain hyphens, underscores, dots, alphanumerics
+     * - Reserved prefixes contain "modelcontextprotocol" or "mcp" as complete labels
+     * - Name: alphanumeric start/end, may contain hyphens, underscores, dots (empty allowed)
      */
     private fun validateMetaKeys(keys: Set<String>) {
         for (key in keys) {
             if (!isValidMetaKey(key)) {
-                throw Error(
-                    "Invalid _meta key '$key'. Keys must follow MCP specification format: " +
-                            "[prefix/]name where prefix is dot-separated labels and name is alphanumeric with allowed separators."
-                )
+                throw Error("Invalid _meta key '$key'. Must follow format [prefix/]name with valid labels.")
             }
         }
     }
@@ -629,24 +625,16 @@ public open class Client(private val clientInfo: Implementation, options: Client
 
     private fun isValidMetaPrefix(prefix: String): Boolean {
         if (prefix.isEmpty()) return false
-
-        // Check for reserved prefixes
         val labels = prefix.split('.')
-        if (labels.isNotEmpty()) {
-            val firstLabel = labels[0].lowercase()
-            if (firstLabel == "mcp" || firstLabel == "modelcontextprotocol") {
-                return false
-            }
 
-            // Check for reserved patterns like "*.mcp.*" or "*.modelcontextprotocol.*"
-            for (label in labels) {
-                val lowerLabel = label.lowercase()
-                if (lowerLabel == "mcp" || lowerLabel == "modelcontextprotocol") {
-                    return false
-                }
-            }
+        if (!labels.all { isValidLabel(it) }) {
+            return false
         }
-        return labels.all { isValidLabel(it) }
+
+        return !labels.any { label ->
+            label.equals("modelcontextprotocol", ignoreCase = true) ||
+            label.equals("mcp", ignoreCase = true)
+        }
     }
 
     private fun isValidLabel(label: String): Boolean {
@@ -658,7 +646,9 @@ public open class Client(private val clientInfo: Implementation, options: Client
     }
 
     private fun isValidMetaName(name: String): Boolean {
-        if (name.isEmpty()) return false
+        // Empty names are allowed per MCP specification
+        if (name.isEmpty()) return true
+
         if (!name.first().isLetterOrDigit() || !name.last().isLetterOrDigit()) {
             return false
         }
