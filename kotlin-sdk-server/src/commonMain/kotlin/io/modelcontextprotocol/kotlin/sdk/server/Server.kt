@@ -76,8 +76,13 @@ public class ServerOptions(public val capabilities: ServerCapabilities, enforceS
  *
  * @param serverInfo Information about this server implementation (name, version).
  * @param options Configuration options for the server.
+ * @param instructions Optional instructions from the server to the client about how to use this server.
  */
-public open class Server(private val serverInfo: Implementation, options: ServerOptions) : Protocol(options) {
+public open class Server(
+    private val serverInfo: Implementation,
+    options: ServerOptions,
+    private val instructions: String? = null,
+) : Protocol(options) {
     @Suppress("ktlint:standard:backing-property-naming")
     private var _onInitialized: (() -> Unit) = {}
 
@@ -613,6 +618,7 @@ public open class Server(private val serverInfo: Implementation, options: Server
             protocolVersion = protocolVersion,
             capabilities = capabilities,
             serverInfo = serverInfo,
+            instructions = instructions,
         )
     }
 
