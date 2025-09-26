@@ -14,6 +14,9 @@ val generateLibVersion by tasks.registering {
     val outputDir = layout.buildDirectory.dir("generated-sources/libVersion")
     outputs.dir(outputDir)
 
+    // Capture version at configuration time to avoid configuration cache issues
+    val projectVersion = project.version.toString()
+
     doLast {
         val sourceFile = outputDir.get().file("io/modelcontextprotocol/kotlin/sdk/LibVersion.kt").asFile
         sourceFile.parentFile.mkdirs()
@@ -21,7 +24,7 @@ val generateLibVersion by tasks.registering {
             """
             package io.modelcontextprotocol.kotlin.sdk
 
-            public const val LIB_VERSION: String = "${project.version}"
+            public const val LIB_VERSION: String = "$projectVersion"
             
             """.trimIndent(),
         )
