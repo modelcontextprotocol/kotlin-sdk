@@ -512,6 +512,10 @@ public data class InitializeResult(
     val protocolVersion: String = LATEST_PROTOCOL_VERSION,
     val capabilities: ServerCapabilities = ServerCapabilities(),
     val serverInfo: Implementation,
+    /**
+     * Optional instructions from the server to the client about how to use this server.
+     */
+    val instructions: String? = null,
     override val _meta: JsonObject = EmptyJsonObject,
 ) : ServerResult
 
