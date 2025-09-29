@@ -26,7 +26,7 @@ class RequestSerializerTest {
 
         assertIs<CreateMessageResult>(decoded)
         assertEquals("test-model", decoded.model)
-        assertEquals(Role.assistant, decoded.role)
+        assertEquals(Role.ASSISTANT, decoded.role)
         assertEquals(StopReason.EndTurn, decoded.stopReason)
     }
 
@@ -200,7 +200,7 @@ class RequestSerializerTest {
         assertIs<GetPromptResult>(decoded)
         assertEquals("A test prompt", decoded.description)
         assertEquals(1, decoded.messages.size)
-        assertEquals(Role.user, decoded.messages[0].role)
+        assertEquals(Role.USER, decoded.messages[0].role)
     }
 
     @Test

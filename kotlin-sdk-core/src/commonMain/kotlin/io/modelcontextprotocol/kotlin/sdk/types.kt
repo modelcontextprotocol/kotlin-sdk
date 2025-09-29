@@ -302,6 +302,7 @@ public data class JSONRPCError(val code: ErrorCode, val message: String, val dat
 public sealed interface NotificationParams : WithMeta
 
 /* Cancellation */
+
 /**
  * This notification can be sent by either side to indicate that it is cancelling a previously issued request.
  *
@@ -334,6 +335,7 @@ public data class CancelledNotification(override val params: Params) :
 }
 
 /* Initialization */
+
 /**
  * Describes the name and version of an MCP implementation.
  */
@@ -527,6 +529,7 @@ public data class InitializedNotification(override val params: Params = Params()
 }
 
 /* Ping */
+
 /**
  * A ping, issued by either the server or the client, to check that the other party is still alive.
  * The receiver must promptly respond, or else it may be disconnected.
@@ -560,6 +563,7 @@ public sealed interface ProgressBase {
 }
 
 /* Progress notifications */
+
 /**
  * Represents a progress notification.
  *
@@ -619,6 +623,7 @@ public data class ProgressNotification(override val params: Params) :
 }
 
 /* Pagination */
+
 /**
  * Represents a request supporting pagination.
  */
@@ -646,6 +651,7 @@ public sealed interface PaginatedResult : RequestResult {
 }
 
 /* Resources */
+
 /**
  * The contents of a specific resource or sub-resource.
  */
@@ -888,43 +894,10 @@ public data class ResourceUpdatedNotification(override val params: Params) : Ser
 }
 
 /* Prompts */
-/**
- * Describes an argument that a prompt can accept.
- */
-@Serializable
-public data class PromptArgument(
-    /**
-     * The name of the argument.
-     */
-    val name: String,
-    /**
-     * A human-readable description of the argument.
-     */
-    val description: String?,
-    /**
-     * Whether this argument must be provided.
-     */
-    val required: Boolean?,
-)
 
-/**
- * A prompt or prompt template that the server offers.
- */
-@Serializable
-public class Prompt(
-    /**
-     * The name of the prompt or prompt template.
-     */
-    public val name: String,
-    /**
-     * An optional description of what this prompt provides
-     */
-    public val description: String?,
-    /**
-     * A list of arguments to use for templating the prompt.
-     */
-    public val arguments: List<PromptArgument>?,
-)
+public typealias PromptArgument = io.modelcontextprotocol.kotlin.sdk.models.PromptArgument
+
+public typealias Prompt = io.modelcontextprotocol.kotlin.sdk.models.Prompt
 
 /**
  * Sent from the client to request a list of prompts and prompt templates the server has.
@@ -1088,15 +1061,7 @@ public data class EmbeddedResource(
     }
 }
 
-/**
- * Enum representing the role of a participant.
- */
-@Suppress("EnumEntryName")
-@Serializable
-public enum class Role {
-    user,
-    assistant,
-}
+public typealias Role = io.modelcontextprotocol.kotlin.sdk.models.Role
 
 /**
  * Optional annotations for the client.
@@ -1158,56 +1123,8 @@ public data class PromptListChangedNotification(override val params: Params = Pa
 }
 
 /* Tools */
-/**
- * Additional properties describing a Tool to clients.
- *
- * NOTE: all properties in ToolAnnotations are **hints**.
- * They are not guaranteed to provide a faithful description of
- * tool behavior (including descriptive properties like `title`).
- *
- * Clients should never make tool use decisions based on ToolAnnotations
- * received from untrusted servers.
- */
-@Serializable
-public data class ToolAnnotations(
-    /**
-     * A human-readable title for the tool.
-     */
-    val title: String?,
-    /**
-     * If true, the tool does not modify its environment.
-     *
-     * Default: false
-     */
-    val readOnlyHint: Boolean? = false,
-    /**
-     * If true, the tool may perform destructive updates to its environment.
-     * If false, the tool performs only additive updates.
-     *
-     * (This property is meaningful only when `readOnlyHint == false`)
-     *
-     * Default: true
-     */
-    val destructiveHint: Boolean? = true,
-    /**
-     * If true, calling the tool repeatedly with the same arguments
-     * will have no additional effect on the its environment.
-     *
-     * (This property is meaningful only when `readOnlyHint == false`)
-     *
-     * Default: false
-     */
-    val idempotentHint: Boolean? = false,
-    /**
-     * If true, this tool may interact with an "open world" of external
-     * entities. If false, the tool's domain of interaction is closed.
-     * For example, the world of a web search tool is open, whereas that
-     * of a memory tool is not.
-     *
-     * Default: true
-     */
-    val openWorldHint: Boolean? = true,
-)
+
+public typealias ToolAnnotations = io.modelcontextprotocol.kotlin.sdk.models.ToolAnnotations
 
 /**
  * Definition for a tool the client can call.
@@ -1336,6 +1253,7 @@ public data class ToolListChangedNotification(override val params: Params = Para
 }
 
 /* Logging */
+
 /**
  * The severity of a log message.
  */
@@ -1395,6 +1313,7 @@ public data class LoggingMessageNotification(override val params: Params) : Serv
 }
 
 /* Sampling */
+
 /**
  * Hints to use for model selection.
  */
@@ -1639,6 +1558,7 @@ public data class CompleteResult(val completion: Completion, override val _meta:
 }
 
 /* Roots */
+
 /**
  * Represents a root directory or file that the server can operate on.
  */

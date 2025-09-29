@@ -207,11 +207,11 @@ class TypesTest {
     fun `should validate prompt message with text content`() {
         val textContent = TextContent(text = "Hello, assistant!")
         val promptMessage = PromptMessage(
-            role = Role.user,
+            role = Role.USER,
             content = textContent,
         )
 
-        assertEquals(Role.user, promptMessage.role)
+        assertEquals(Role.USER, promptMessage.role)
         assertEquals(textContent, promptMessage.content)
         assertEquals("text", promptMessage.content.type)
     }
@@ -225,11 +225,11 @@ class TypesTest {
         )
         val embeddedResource = EmbeddedResource(resource = resource)
         val promptMessage = PromptMessage(
-            role = Role.assistant,
+            role = Role.ASSISTANT,
             content = embeddedResource,
         )
 
-        assertEquals(Role.assistant, promptMessage.role)
+        assertEquals(Role.ASSISTANT, promptMessage.role)
         assertEquals("resource", promptMessage.content.type)
         val content = promptMessage.content as EmbeddedResource
         val textResource = content.resource as TextResourceContents
@@ -242,7 +242,7 @@ class TypesTest {
     @Test
     fun `should serialize and deserialize annotations correctly`() {
         val annotations = Annotations(
-            audience = listOf(Role.assistant),
+            audience = listOf(Role.ASSISTANT),
             lastModified = Instant.parse("2025-06-18T00:00:00Z"),
             priority = 0.5,
         )
@@ -250,7 +250,7 @@ class TypesTest {
         val json = McpJson.encodeToString(annotations)
         val decoded = McpJson.decodeFromString<Annotations>(json)
 
-        assertEquals(listOf(Role.assistant), decoded.audience)
+        assertEquals(listOf(Role.ASSISTANT), decoded.audience)
         assertEquals(Instant.parse("2025-06-18T00:00:00Z"), decoded.lastModified)
         assertEquals(0.5, decoded.priority)
     }
@@ -262,14 +262,14 @@ class TypesTest {
             mimeType = "image/png",
         )
         val promptMessage = PromptMessage(
-            role = Role.assistant,
+            role = Role.ASSISTANT,
             content = imageContent,
         )
 
         val json = McpJson.encodeToString(promptMessage)
         val decoded = McpJson.decodeFromString<PromptMessage>(json)
 
-        assertEquals(Role.assistant, decoded.role)
+        assertEquals(Role.ASSISTANT, decoded.role)
         assertIs<ImageContent>(decoded.content)
         val decodedContent = decoded.content
         assertEquals("aW1hZ2VkYXRh", decodedContent.data)

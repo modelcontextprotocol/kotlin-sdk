@@ -169,7 +169,7 @@ class ServerTest {
         )
 
         // Add a prompt
-        val testPrompt = Prompt("test-prompt", "Test Prompt", null)
+        val testPrompt = Prompt(name = "test-prompt", description = "Test Prompt")
         server.addPrompt(testPrompt) {
             GetPromptResult(
                 description = "Test prompt description",
@@ -208,8 +208,8 @@ class ServerTest {
         )
 
         // Add prompts
-        val testPrompt1 = Prompt("test-prompt-1", "Test Prompt 1", null)
-        val testPrompt2 = Prompt("test-prompt-2", "Test Prompt 2", null)
+        val testPrompt1 = Prompt("test-prompt-1", description = "Test Prompt 1")
+        val testPrompt2 = Prompt("test-prompt-2", description = "Test Prompt 2")
         server.addPrompt(testPrompt1) {
             GetPromptResult(
                 description = "Test prompt description 1",

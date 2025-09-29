@@ -43,7 +43,7 @@ openApiGenerate {
     apiPackage = "io.modelcontextprotocol.kotlin.sdk.api"
     generateModelTests = false
     generateModelDocumentation = false
-    cleanupOutput = false
+    cleanupOutput = true
     skipValidateSpec = true // do not validate spec
     library = "multiplatform"
     ignoreFileOverride = "${layout.projectDirectory}/.openapi-generator-ignore"

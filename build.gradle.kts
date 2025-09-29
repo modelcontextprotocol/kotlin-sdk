@@ -43,8 +43,6 @@ kover {
     reports {
         filters {
             includes.classes("io.modelcontextprotocol.kotlin.sdk.*")
-            excludes.classes("io.modelcontextprotocol.kotlin.sdk.models.*") // temporary
-            excludes.classes("io.modelcontextprotocol.kotlin.sdk.models.infrastructure.*") // generated
         }
         total {
             log {

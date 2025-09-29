@@ -4,26 +4,33 @@
 # Use this file to prevent files from being overwritten by the generator.
 # The patterns follow closely to .gitignore or .dockerignore.
 
-# As an example, the C# client generator defines ApiClient.cs.
-# You can make changes and tell OpenAPI Generator to ignore just this file by uncommenting the following line:
+## Do not generate most API and supporting files
 **/auth/**
 **/infrastructure/**
-!**/Base64ByteArray.kt
-!**/Bytes.kt
+#!**/Base64ByteArray.kt
+#!**/Bytes.kt
 
 
 ## Exclude Models which are causing problems
-**/JSONRPCResponse.kt
-**/Result.kt
-**/ListToolsResult.kt
-**/InitializeRequest.kt
-**/InitializeResult.kt
-**/ServerCapabilities.kt
-**/InitializeRequestParams.kt
-**/CreateMessageRequest.kt
-**/CreateMessageRequestParams.kt
-**/ClientCapabilities.kt
-**/Tool.kt
-**/ToolInputSchema.kt
-**/ToolOutputSchema.kt
+**/models/*.kt
+
+#**/JSONRPCResponse.kt
+#**/Result.kt
+#**/ListToolsResult.kt
+#**/InitializeRequest.kt
+#**/InitializeResult.kt
+#**/ServerCapabilities.kt
+#**/InitializeRequestParams.kt
+#**/CreateMessageRequest.kt
+#**/CreateMessageRequestParams.kt
+#**/ClientCapabilities.kt
+#**/Tool.kt
+#**/ToolInputSchema.kt
+#**/ToolOutputSchema.kt
+
+## Explicitly whitelist models
+!**/Role.kt
+!**/Prompt.kt
+!**/PromptArgument.kt
+!**/ToolAnnotations.kt
 
