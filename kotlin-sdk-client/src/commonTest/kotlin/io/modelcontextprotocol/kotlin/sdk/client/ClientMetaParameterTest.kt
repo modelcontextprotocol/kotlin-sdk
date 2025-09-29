@@ -1,12 +1,21 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
+import io.modelcontextprotocol.kotlin.sdk.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.Implementation
+import io.modelcontextprotocol.kotlin.sdk.InitializeResult
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCRequest
+import io.modelcontextprotocol.kotlin.sdk.JSONRPCResponse
+import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.*
-import kotlin.test.*
+import kotlinx.serialization.json.JsonObject
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertContains
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 /**
  * Comprehensive test suite for MCP Client meta parameter functionality
@@ -24,9 +33,11 @@ class ClientMetaParameterTest {
     private val clientInfo = Implementation("test-client", "1.0.0")
 
     @BeforeTest
-    fun setup() {
+    fun setup() = runTest {
         mockTransport = MockTransport()
         client = Client(clientInfo = clientInfo)
+        mockTransport.setupInitializationResponse()
+        client.connect(mockTransport)
     }
 
     @Test
@@ -37,8 +48,6 @@ class ClientMetaParameterTest {
             put("com.company.app/setting", "enabled")
             put("retry_count", 3)
             put("user.preference", true)
-            // Additional edge cases for valid keys
-            put("", "empty-name-allowed") // Empty name is allowed per MCP spec
             put("valid123", "alphanumeric")
             put("multi.dot.name", "multiple-dots")
             put("under_score", "underscore")
@@ -56,7 +65,7 @@ class ClientMetaParameterTest {
     @Test
     fun `should accept edge case valid prefixes and names`() = runTest {
         val edgeCaseValidMeta = buildMap {
-            put("a/", "single-char-prefix-empty-name")
+            put("a/", "single-char-prefix-empty-name") // empty name is allowed
             put("a1-b2/test", "alphanumeric-hyphen-prefix")
             put("long.domain.name.here/config", "long-prefix")
             put("x/a", "minimal-valid-key")
@@ -78,7 +87,10 @@ class ClientMetaParameterTest {
             client.callTool("test-tool", emptyMap(), invalidMeta)
         }
 
-        assertContains(exception.message ?: "", "Invalid _meta key")
+        assertContains(
+            charSequence = exception.message ?: "",
+            other = "Invalid _meta key",
+        )
     }
 
     @Test
@@ -89,7 +101,10 @@ class ClientMetaParameterTest {
             client.callTool("test-tool", emptyMap(), invalidMeta)
         }
 
-        assertContains(exception.message ?: "", "Invalid _meta key")
+        assertContains(
+            charSequence = exception.message ?: "",
+            other = "Invalid _meta key",
+        )
     }
 
     @Test
@@ -101,18 +116,18 @@ class ClientMetaParameterTest {
             "subdomain.mcp.com/config",
             "app.modelcontextprotocol.dev/setting",
             "test.mcp/value",
-            "service.modelcontextprotocol/data"
+            "service.modelcontextprotocol/data",
         )
 
         invalidKeys.forEach { key ->
             val exception = assertFailsWith<Error>(
-                message = "Should reject nested reserved key: $key"
+                message = "Should reject nested reserved key: $key",
             ) {
                 client.callTool("test-tool", emptyMap(), mapOf(key to "value"))
             }
             assertContains(
                 charSequence = exception.message ?: "",
-                other = "Invalid _meta key"
+                other = "Invalid _meta key",
             )
         }
     }
@@ -125,18 +140,18 @@ class ClientMetaParameterTest {
             "mCp/setting",
             "MODELCONTEXTPROTOCOL/data",
             "ModelContextProtocol/value",
-            "modelContextProtocol/test"
+            "modelContextProtocol/test",
         )
 
         invalidKeys.forEach { key ->
             val exception = assertFailsWith<Error>(
-                message = "Should reject case-insensitive reserved key: $key"
+                message = "Should reject case-insensitive reserved key: $key",
             ) {
                 client.callTool("test-tool", emptyMap(), mapOf(key to "value"))
             }
             assertContains(
                 charSequence = exception.message ?: "",
-                other = "Invalid _meta key"
+                other = "Invalid _meta key",
             )
         }
     }
@@ -144,25 +159,24 @@ class ClientMetaParameterTest {
     @Test
     fun `should reject invalid key formats`() = runTest {
         val invalidKeys = listOf(
-            "", // empty key
+            "", // empty key - not allowed at key level
             "/invalid", // starts with slash
-            "invalid/", // ends with slash
             "-invalid", // starts with hyphen
             ".invalid", // starts with dot
             "in valid", // contains space
             "api../test", // consecutive dots
-            "api./test" // label ends with dot
+            "api./test", // label ends with dot
         )
 
         invalidKeys.forEach { key ->
             val exception = assertFailsWith<Error>(
-                message = "Should reject invalid key format: '$key'"
+                message = "Should reject invalid key format: '$key'",
             ) {
                 client.callTool("test-tool", emptyMap(), mapOf(key to "value"))
             }
             assertContains(
                 charSequence = exception.message ?: "",
-                other = "Invalid _meta key"
+                other = "Invalid _meta key",
             )
         }
     }
@@ -172,7 +186,11 @@ class ClientMetaParameterTest {
         val complexMeta = createComplexMetaData()
 
         val result = runCatching {
-            client.callTool("test-tool", emptyMap(), complexMeta)
+            client.callTool(
+                "test-tool",
+                emptyMap(),
+                complexMeta,
+            )
         }
 
         assertTrue(result.isSuccess, "Complex data type conversion should not throw exceptions")
@@ -224,13 +242,19 @@ class ClientMetaParameterTest {
     }
 
     private fun buildNestedConfiguration(): Map<String, Any> = buildMap {
-        put("config", buildMap {
-            put("database", buildMap {
-                put("host", "localhost")
-                put("port", 5432)
-            })
-            put("features", listOf("feature1", "feature2"))
-        })
+        put(
+            "config",
+            buildMap {
+                put(
+                    "database",
+                    buildMap {
+                        put("host", "localhost")
+                        put("port", 5432)
+                    },
+                )
+                put("features", listOf("feature1", "feature2"))
+            },
+        )
     }
 }
 
@@ -246,7 +270,42 @@ class MockTransport : Transport {
 
     override suspend fun send(message: JSONRPCMessage) {
         _sentMessages += message
-        onMessageBlock?.invoke(message)
+
+        // Auto-respond to initialization and tool calls
+        when (message) {
+            is JSONRPCRequest -> {
+                when (message.method) {
+                    "initialize" -> {
+                        val initResponse = JSONRPCResponse(
+                            id = message.id,
+                            result = InitializeResult(
+                                protocolVersion = "2024-11-05",
+                                capabilities = ServerCapabilities(
+                                    tools = ServerCapabilities.Tools(listChanged = null),
+                                ),
+                                serverInfo = Implementation("mock-server", "1.0.0"),
+                            ),
+                        )
+                        onMessageBlock?.invoke(initResponse)
+                    }
+
+                    "tools/call" -> {
+                        val toolResponse = JSONRPCResponse(
+                            id = message.id,
+                            result = CallToolResult(
+                                content = listOf(),
+                                isError = false,
+                            ),
+                        )
+                        onMessageBlock?.invoke(toolResponse)
+                    }
+                }
+            }
+
+            else -> {
+                // Handle other message types if needed
+            }
+        }
     }
 
     override suspend fun close() {
@@ -263,6 +322,10 @@ class MockTransport : Transport {
 
     override fun onError(block: (Throwable) -> Unit) {
         onErrorBlock = block
+    }
+
+    fun setupInitializationResponse() {
+        // This method helps set up the mock for proper initialization
     }
 }
 
