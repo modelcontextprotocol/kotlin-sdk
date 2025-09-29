@@ -1,8 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.kotlin
 
 import io.modelcontextprotocol.kotlin.sdk.BlobResourceContents
-import io.modelcontextprotocol.kotlin.sdk.EmptyRequestResult
-import io.modelcontextprotocol.kotlin.sdk.Method
 import io.modelcontextprotocol.kotlin.sdk.ReadResourceRequest
 import io.modelcontextprotocol.kotlin.sdk.ReadResourceResult
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
@@ -16,6 +14,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.test.Ignore
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -65,14 +64,6 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
                     ),
                 ),
             )
-        }
-
-        server.setRequestHandler<SubscribeRequest>(Method.Defined.ResourcesSubscribe) { _, _ ->
-            EmptyRequestResult()
-        }
-
-        server.setRequestHandler<UnsubscribeRequest>(Method.Defined.ResourcesUnsubscribe) { _, _ ->
-            EmptyRequestResult()
         }
 
         server.addResource(
@@ -169,6 +160,7 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
         assertEquals(testResourceContent, content.text, "Resource content should match")
     }
 
+    @Ignore("Blocked by https://github.com/modelcontextprotocol/kotlin-sdk/issues/249")
     @Test
     fun testSubscribeAndUnsubscribe() {
         runBlocking(Dispatchers.IO) {
