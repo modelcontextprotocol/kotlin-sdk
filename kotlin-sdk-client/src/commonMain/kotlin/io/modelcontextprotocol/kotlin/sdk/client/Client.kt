@@ -615,10 +615,12 @@ public open class Client(private val clientInfo: Implementation, options: Client
                 // No prefix, just validate name
                 isValidMetaName(parts[0])
             }
+
             2 -> {
                 val (prefix, name) = parts
                 isValidMetaPrefix(prefix) && isValidMetaName(name)
             }
+
             else -> false
         }
     }
@@ -633,7 +635,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
 
         return !labels.any { label ->
             label.equals("modelcontextprotocol", ignoreCase = true) ||
-            label.equals("mcp", ignoreCase = true)
+                label.equals("mcp", ignoreCase = true)
         }
     }
 
@@ -655,46 +657,65 @@ public open class Client(private val clientInfo: Implementation, options: Client
         return name.all { it.isLetterOrDigit() || it in setOf('-', '_', '.') }
     }
 
-    private fun convertToJsonMap(map: Map<String, Any?>): Map<String, JsonElement> =
-        map.mapValues { (key, value) ->
-            try {
-                convertToJsonElement(value)
-            } catch (e: Exception) {
-                logger.warn { "Failed to convert value for key '$key': ${e.message}. Using string representation." }
-                JsonPrimitive(value.toString())
-            }
+    private fun convertToJsonMap(map: Map<String, Any?>): Map<String, JsonElement> = map.mapValues { (key, value) ->
+        try {
+            convertToJsonElement(value)
+        } catch (e: Exception) {
+            logger.warn { "Failed to convert value for key '$key': ${e.message}. Using string representation." }
+            JsonPrimitive(value.toString())
         }
+    }
 
     @OptIn(ExperimentalUnsignedTypes::class, ExperimentalSerializationApi::class)
     private fun convertToJsonElement(value: Any?): JsonElement = when (value) {
         null -> JsonNull
+
         is Map<*, *> -> {
             val jsonMap = value.entries.associate { (k, v) ->
                 k.toString() to convertToJsonElement(v)
             }
             JsonObject(jsonMap)
         }
+
         is JsonElement -> value
+
         is String -> JsonPrimitive(value)
+
         is Number -> JsonPrimitive(value)
+
         is Boolean -> JsonPrimitive(value)
+
         is Char -> JsonPrimitive(value.toString())
+
         is Enum<*> -> JsonPrimitive(value.name)
+
         is Collection<*> -> JsonArray(value.map { convertToJsonElement(it) })
+
         is Array<*> -> JsonArray(value.map { convertToJsonElement(it) })
+
         is IntArray -> JsonArray(value.map { JsonPrimitive(it) })
+
         is LongArray -> JsonArray(value.map { JsonPrimitive(it) })
+
         is FloatArray -> JsonArray(value.map { JsonPrimitive(it) })
+
         is DoubleArray -> JsonArray(value.map { JsonPrimitive(it) })
+
         is BooleanArray -> JsonArray(value.map { JsonPrimitive(it) })
+
         is ShortArray -> JsonArray(value.map { JsonPrimitive(it) })
+
         is ByteArray -> JsonArray(value.map { JsonPrimitive(it) })
+
         is CharArray -> JsonArray(value.map { JsonPrimitive(it.toString()) })
 
         // ExperimentalUnsignedTypes
         is UIntArray -> JsonArray(value.map { JsonPrimitive(it) })
+
         is ULongArray -> JsonArray(value.map { JsonPrimitive(it) })
+
         is UShortArray -> JsonArray(value.map { JsonPrimitive(it) })
+
         is UByteArray -> JsonArray(value.map { JsonPrimitive(it) })
 
         else -> {
