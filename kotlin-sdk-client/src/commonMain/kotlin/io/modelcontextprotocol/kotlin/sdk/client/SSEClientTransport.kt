@@ -1,5 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.sse.ClientSSESession
 import io.ktor.client.plugins.sse.sseSession
@@ -46,6 +47,8 @@ public class SseClientTransport(
     private val reconnectionTime: Duration? = null,
     private val requestBuilder: HttpRequestBuilder.() -> Unit = {},
 ) : AbstractTransport() {
+    private val logger = KotlinLogging.logger {}
+
     private val initialized: AtomicBoolean = AtomicBoolean(false)
     private val endpoint = CompletableDeferred<String>()
 
@@ -111,6 +114,8 @@ public class SseClientTransport(
                 val text = response.bodyAsText()
                 error("Error POSTing to endpoint (HTTP ${response.status}): $text")
             }
+
+            logger.debug { "Client successfully sent message via SSE $endpoint" }
         } catch (e: Throwable) {
             _onError(e)
             throw e
@@ -158,6 +163,7 @@ public class SseClientTransport(
             val path = if (eventData.startsWith("/")) eventData.substring(1) else eventData
             val endpointUrl = Url("$baseUrl/$path")
             endpoint.complete(endpointUrl.toString())
+            logger.debug { "Client connected to endpoint: $endpointUrl" }
         } catch (e: Throwable) {
             _onError(e)
             endpoint.completeExceptionally(e)

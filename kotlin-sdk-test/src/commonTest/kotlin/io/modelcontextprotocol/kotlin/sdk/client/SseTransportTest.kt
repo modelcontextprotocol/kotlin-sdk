@@ -70,19 +70,6 @@ class SseTransportTest : BaseTransportTest() {
             install(ServerSSE)
             routing {
                 mcp { mcpServer }
-//                sse {
-//                    mcpSseTransport("", transports).apply {
-//                        onMessage {
-//                            send(it)
-//                        }
-//
-//                        start()
-//                    }
-//                }
-//
-//                post {
-//                    mcpPostEndpoint(transports)
-//                }
             }
         }.startSuspend(wait = false)
 
@@ -110,22 +97,7 @@ class SseTransportTest : BaseTransportTest() {
         val server = embeddedServer(CIO, port = 0) {
             install(ServerSSE)
             routing {
-                mcp("/sse") { mcpServer }
-//                route("/sse") {
-//                    sse {
-//                        mcpSseTransport("", transports).apply {
-//                            onMessage {
-//                                send(it)
-//                            }
-//
-//                            start()
-//                        }
-//                    }
-//
-//                    post {
-//                        mcpPostEndpoint(transports)
-//                    }
-//                }
+                mcp { mcpServer }
             }
         }.startSuspend(wait = false)
 

@@ -48,6 +48,7 @@ ktor-server-core = { group = "io.ktor", name = "ktor-server-core", version.ref =
 
 # Testing
 awaitility = { group = "org.awaitility", name = "awaitility-kotlin", version.ref = "awaitility" }
+kotest-assertions-core = { group = "io.kotest", name = "kotest-assertions-core", version.ref = "kotest" }
 kotest-assertions-json = { group = "io.kotest", name = "kotest-assertions-json", version.ref = "kotest" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 ktor-client-mock = { group = "io.ktor", name = "ktor-client-mock", version.ref = "ktor" }

@@ -114,9 +114,9 @@ fun `run mcp server`() {
     )
 
     runBlocking {
-        server.connect(transport)
+        val session = server.connect(transport)
         val done = Job()
-        server.onClose {
+        session.onClose {
             done.complete()
         }
         done.join()
