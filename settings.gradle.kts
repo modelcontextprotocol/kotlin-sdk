@@ -17,13 +17,17 @@ dependencyResolutionManagement {
     }
 }
 
-include(":kotlin-sdk-core")
-include(":kotlin-sdk-client")
-include(":kotlin-sdk-server")
-include(":kotlin-sdk")
-include(":kotlin-sdk-test")
+include(
+    ":kotlin-sdk-core",
+    ":kotlin-sdk-client",
+    ":kotlin-sdk-server",
+    ":kotlin-sdk",
+    ":kotlin-sdk-test",
+)
 
-// Include sample projects as composite builds
-includeBuild("samples/kotlin-mcp-client")
-includeBuild("samples/kotlin-mcp-server")
-includeBuild("samples/weather-stdio-server")
+// Include sample projects as composite builds if this is the root project
+if (gradle.parent == null) {
+    includeBuild("samples/kotlin-mcp-client")
+    includeBuild("samples/kotlin-mcp-server")
+    includeBuild("samples/weather-stdio-server")
+}

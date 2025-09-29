@@ -1,8 +1,6 @@
 plugins {
     id("mcp.multiplatform")
     id("mcp.publishing")
-    id("mcp.dokka")
-    id("mcp.jreleaser")
 }
 
 kotlin {
