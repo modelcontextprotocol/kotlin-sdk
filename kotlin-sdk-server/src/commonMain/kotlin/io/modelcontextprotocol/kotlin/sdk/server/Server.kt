@@ -53,13 +53,14 @@ public class ServerOptions(public val capabilities: ServerCapabilities, enforceS
  *
  * @param serverInfo Information about this server implementation (name, version).
  * @param options Configuration options for the server.
- * @param instructions Optional instructions from the server to the client about how to use this server.
+ * @param instructionsProvider Optional provider for instructions from the server to the client about how to use
+ * this server. The provider is called each time a new session is started to support dynamic instructions.
  */
 
 public open class Server(
     protected val serverInfo: Implementation,
     protected val options: ServerOptions,
-    protected val instructions: String? = null,
+    protected val instructionsProvider: (() -> String)? = null,
 ) {
     private val sessions = atomic(persistentListOf<ServerSession>())
 
@@ -96,7 +97,7 @@ public open class Server(
      * @return The initialized and connected server session.
      */
     public suspend fun connect(transport: Transport): ServerSession {
-        val session = ServerSession(serverInfo, options, instructions)
+        val session = ServerSession(serverInfo, options, instructionsProvider?.invoke())
 
         // Internal handlers for tools
         if (options.capabilities.tools != null) {

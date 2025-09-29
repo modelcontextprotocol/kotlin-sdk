@@ -479,7 +479,7 @@ class ServerTest {
         val serverOptions = ServerOptions(capabilities = ServerCapabilities())
         val instructions = "This is a test server. Use it for testing purposes only."
 
-        val server = Server(serverInfo, serverOptions, instructions)
+        val server = Server(serverInfo, serverOptions) { instructions }
 
         // The instructions should be stored internally and used in handleInitialize
         // We can't directly access the private field, but we can test it through initialization
@@ -491,7 +491,6 @@ class ServerTest {
 
         assertEquals(instructions, client.serverInstructions)
     }
-
 
     @Test
     fun `Server constructor should work without instructions parameter`() = runTest {
