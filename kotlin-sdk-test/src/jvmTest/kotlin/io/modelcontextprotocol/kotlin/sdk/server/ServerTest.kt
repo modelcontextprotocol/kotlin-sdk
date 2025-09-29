@@ -19,6 +19,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNull
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -485,32 +486,15 @@ class ServerTest {
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
         val client = Client(clientInfo = Implementation(name = "test client", version = "1.0"))
 
-        launch { client.connect(clientTransport) }
-        launch { server.connect(serverTransport) }
+        server.connect(serverTransport)
+        client.connect(clientTransport)
 
-        // The test passes if the server can be created with instructions without throwing
-        assertTrue(true, "Server should accept instructions parameter")
+        assertEquals(instructions, client.serverInstructions)
     }
 
-    @Test
-    fun `Server constructor should work with null instructions`() = runTest {
-        val serverInfo = Implementation(name = "test server", version = "1.0")
-        val serverOptions = ServerOptions(capabilities = ServerCapabilities())
-
-        val server = Server(serverInfo, serverOptions, null)
-
-        // Test that server works with null instructions
-        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-        val client = Client(clientInfo = Implementation(name = "test client", version = "1.0"))
-
-        launch { client.connect(clientTransport) }
-        launch { server.connect(serverTransport) }
-
-        assertTrue(true, "Server should accept null instructions parameter")
-    }
 
     @Test
-    fun `Server constructor should work with default instructions parameter`() = runTest {
+    fun `Server constructor should work without instructions parameter`() = runTest {
         val serverInfo = Implementation(name = "test server", version = "1.0")
         val serverOptions = ServerOptions(capabilities = ServerCapabilities())
 
@@ -520,9 +504,9 @@ class ServerTest {
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
         val client = Client(clientInfo = Implementation(name = "test client", version = "1.0"))
 
-        launch { client.connect(clientTransport) }
-        launch { server.connect(serverTransport) }
+        server.connect(serverTransport)
+        client.connect(clientTransport)
 
-        assertTrue(true, "Server should work with default instructions parameter")
+        assertNull(client.serverInstructions)
     }
 }

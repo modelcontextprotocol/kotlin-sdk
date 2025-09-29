@@ -92,6 +92,13 @@ public open class Client(private val clientInfo: Implementation, options: Client
         private set
 
     /**
+     * Optional human-readable instructions or description for the client.
+     * This can be used to provide context or usage guidelines for users interacting with the client.
+     */
+    public var serverInstructions: String? = null
+        private set
+
+    /**
      * Retrieves the server's reported version information after initialization.
      *
      * @return Information about the server's implementation, or `null` if initialization is not yet complete.
@@ -154,6 +161,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
 
             serverCapabilities = result.capabilities
             serverVersion = result.serverInfo
+            serverInstructions = result.instructions
 
             notification(InitializedNotification())
         } catch (error: Throwable) {
