@@ -157,9 +157,11 @@ public open class Client(private val clientInfo: Implementation, options: Client
 
             notification(InitializedNotification())
         } catch (error: Throwable) {
+            logger.error(error) { "Failed to initialize client: ${error.message}" }
             close()
+
             if (error !is CancellationException) {
-                throw IllegalStateException("Error connecting to transport: ${error.message}")
+                throw IllegalStateException("Error connecting to transport: ${error.message}", error)
             }
 
             throw error
