@@ -92,8 +92,9 @@ public open class Client(private val clientInfo: Implementation, options: Client
         private set
 
     /**
-     * Optional human-readable instructions or description for the client.
-     * This can be used to provide context or usage guidelines for users interacting with the client.
+     * Optional human-readable instructions or description from the server.
+     *
+     * @return Instructions provided by the server, or `null` if none were given or initialization is not yet complete.
      */
     public var serverInstructions: String? = null
         private set
