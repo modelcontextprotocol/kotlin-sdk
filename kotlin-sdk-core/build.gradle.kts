@@ -1,8 +1,6 @@
 @file:OptIn(ExperimentalWasmDsl::class)
 
-import org.jetbrains.dokka.gradle.tasks.DokkaGenerateTask
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 
 plugins {
     id("mcp.multiplatform")
@@ -12,6 +10,7 @@ plugins {
     id("org.openapi.generator") version "7.15.0"
 }
 
+/*
 tasks.withType<KotlinCompilationTask<*>>().configureEach {
     dependsOn(tasks.openApiGenerate)
 }
@@ -30,6 +29,7 @@ tasks.withType<Task>().configureEach {
         dependsOn(tasks.openApiGenerate)
     }
 }
+ */
 
 openApiGenerate {
     val schemaVersion = "2025-03-26" // or "2025-06-18" or "draft"
@@ -38,6 +38,7 @@ openApiGenerate {
         "https://raw.githubusercontent.com/modelcontextprotocol/modelcontextprotocol/refs/tags/$schemaVersion/schema/$schemaVersion/schema.json"
     generatorName = "kotlin"
     remoteInputSpec = schemaUrl
+    outputDir = layout.buildDirectory.dir("generated-sources/openapi").get().asFile.absolutePath
     packageName = "io.modelcontextprotocol.kotlin.sdk.models"
     modelPackage = "io.modelcontextprotocol.kotlin.sdk.models"
     apiPackage = "io.modelcontextprotocol.kotlin.sdk.api"
@@ -108,7 +109,6 @@ kotlin {
     sourceSets {
         commonMain {
             kotlin.srcDir(generateLibVersion)
-            kotlin.srcDir("build/generate-resources/main/src/commonMain/kotlin")
             dependencies {
                 api(libs.kotlinx.serialization.json)
                 api(libs.kotlinx.coroutines.core)
