@@ -62,6 +62,19 @@ public open class Server(
     protected val options: ServerOptions,
     protected val instructionsProvider: (() -> String)? = null,
 ) {
+    /**
+     * Alternative constructor that provides the instructions directly as a string.
+     *
+     * @param serverInfo Information about this server implementation (name, version).
+     * @param options Configuration options for the server.
+     * @param instructions Instructions from the server to the client about how to use this server.
+     */
+    public constructor(
+        serverInfo: Implementation,
+        options: ServerOptions,
+        instructions: String,
+    ) : this(serverInfo, options, { instructions })
+
     private val sessions = atomic(persistentListOf<ServerSession>())
 
     @Suppress("ktlint:standard:backing-property-naming")

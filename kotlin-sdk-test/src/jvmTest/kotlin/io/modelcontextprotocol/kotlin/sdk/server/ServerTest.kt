@@ -474,12 +474,31 @@ class ServerTest {
     }
 
     @Test
+    fun `Server constructor should accept instructions provider parameter`() = runTest {
+        val serverInfo = Implementation(name = "test server", version = "1.0")
+        val serverOptions = ServerOptions(capabilities = ServerCapabilities())
+        val instructions = "This is a test server. Use it for testing purposes only."
+
+        val server = Server(serverInfo, serverOptions, { instructions })
+
+        // The instructions should be stored internally and used in handleInitialize
+        // We can't directly access the private field, but we can test it through initialization
+        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
+        val client = Client(clientInfo = Implementation(name = "test client", version = "1.0"))
+
+        server.connect(serverTransport)
+        client.connect(clientTransport)
+
+        assertEquals(instructions, client.serverInstructions)
+    }
+
+    @Test
     fun `Server constructor should accept instructions parameter`() = runTest {
         val serverInfo = Implementation(name = "test server", version = "1.0")
         val serverOptions = ServerOptions(capabilities = ServerCapabilities())
         val instructions = "This is a test server. Use it for testing purposes only."
 
-        val server = Server(serverInfo, serverOptions) { instructions }
+        val server = Server(serverInfo, serverOptions, instructions)
 
         // The instructions should be stored internally and used in handleInitialize
         // We can't directly access the private field, but we can test it through initialization
