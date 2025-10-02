@@ -81,21 +81,32 @@ internal object ReferencePolymorphicSerializer : JsonContentPolymorphicSerialize
         }
 }
 
-internal object PromptMessageContentPolymorphicSerializer :
-    JsonContentPolymorphicSerializer<PromptMessageContent>(PromptMessageContent::class) {
-    override fun selectDeserializer(element: JsonElement): DeserializationStrategy<PromptMessageContent> =
+internal object ContentBlockPolymorphicSerializer :
+    JsonContentPolymorphicSerializer<ContentBlock>(ContentBlock::class) {
+    override fun selectDeserializer(element: JsonElement): DeserializationStrategy<ContentBlock> =
         when (element.jsonObject.getValue("type").jsonPrimitive.content) {
             ImageContent.TYPE -> ImageContent.serializer()
             TextContent.TYPE -> TextContent.serializer()
             EmbeddedResource.TYPE -> EmbeddedResource.serializer()
             AudioContent.TYPE -> AudioContent.serializer()
+            ResourceLink.TYPE -> ResourceLink.serializer()
             else -> UnknownContent.serializer()
         }
 }
 
-internal object PromptMessageContentMultimodalPolymorphicSerializer :
-    JsonContentPolymorphicSerializer<PromptMessageContentMultimodal>(PromptMessageContentMultimodal::class) {
-    override fun selectDeserializer(element: JsonElement): DeserializationStrategy<PromptMessageContentMultimodal> =
+internal object CreateMessageResultContentMultimodalPolymorphicSerializer :
+    JsonContentPolymorphicSerializer<CreateMessageResultContent>(CreateMessageResultContent::class) {
+    override fun selectDeserializer(element: JsonElement): DeserializationStrategy<CreateMessageResultContent> =
+        when (element.jsonObject.getValue("type").jsonPrimitive.content) {
+            ImageContent.TYPE -> ImageContent.serializer()
+            TextContent.TYPE -> TextContent.serializer()
+            AudioContent.TYPE -> AudioContent.serializer()
+            else -> UnknownContent.serializer()
+        }
+}
+internal object SamplingMessageContentMultimodalPolymorphicSerializer :
+    JsonContentPolymorphicSerializer<SamplingMessageContent>(SamplingMessageContent::class) {
+    override fun selectDeserializer(element: JsonElement): DeserializationStrategy<SamplingMessageContent> =
         when (element.jsonObject.getValue("type").jsonPrimitive.content) {
             ImageContent.TYPE -> ImageContent.serializer()
             TextContent.TYPE -> TextContent.serializer()
