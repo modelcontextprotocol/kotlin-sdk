@@ -32,7 +32,11 @@ import kotlinx.serialization.json.JsonObject
 
 private val logger = KotlinLogging.logger {}
 
-public open class ServerSession(private val serverInfo: Implementation, options: ServerOptions) : Protocol(options) {
+public open class ServerSession(
+    protected val serverInfo: Implementation,
+    options: ServerOptions,
+    protected val instructions: String?,
+) : Protocol(options) {
     @Suppress("ktlint:standard:backing-property-naming")
     private var _onInitialized: (() -> Unit) = {}
 
@@ -366,6 +370,7 @@ public open class ServerSession(private val serverInfo: Implementation, options:
             protocolVersion = protocolVersion,
             capabilities = serverCapabilities,
             serverInfo = serverInfo,
+            instructions = instructions,
         )
     }
 }
