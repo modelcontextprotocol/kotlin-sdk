@@ -18,7 +18,7 @@ plugins {
 }
 
 group = "io.modelcontextprotocol"
-version = "0.6.0"
+version = "0.6.1"
 
 val javadocJar by tasks.registering(Jar::class) {
     archiveClassifier.set("javadoc")
