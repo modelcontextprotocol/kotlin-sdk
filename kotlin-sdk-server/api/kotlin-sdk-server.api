@@ -45,7 +45,9 @@ public final class io/modelcontextprotocol/kotlin/sdk/server/RegisteredTool {
 }
 
 public class io/modelcontextprotocol/kotlin/sdk/server/Server {
-	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/Implementation;Lio/modelcontextprotocol/kotlin/sdk/server/ServerOptions;)V
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/Implementation;Lio/modelcontextprotocol/kotlin/sdk/server/ServerOptions;Ljava/lang/String;)V
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/Implementation;Lio/modelcontextprotocol/kotlin/sdk/server/ServerOptions;Lkotlin/jvm/functions/Function0;)V
+	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/Implementation;Lio/modelcontextprotocol/kotlin/sdk/server/ServerOptions;Lkotlin/jvm/functions/Function0;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun addPrompt (Lio/modelcontextprotocol/kotlin/sdk/Prompt;Lkotlin/jvm/functions/Function2;)V
 	public final fun addPrompt (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Lkotlin/jvm/functions/Function2;)V
 	public static synthetic fun addPrompt$default (Lio/modelcontextprotocol/kotlin/sdk/server/Server;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)V
@@ -59,8 +61,11 @@ public class io/modelcontextprotocol/kotlin/sdk/server/Server {
 	public final fun addTools (Ljava/util/List;)V
 	public final fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun connect (Lio/modelcontextprotocol/kotlin/sdk/shared/Transport;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	protected final fun getInstructionsProvider ()Lkotlin/jvm/functions/Function0;
+	protected final fun getOptions ()Lio/modelcontextprotocol/kotlin/sdk/server/ServerOptions;
 	public final fun getPrompts ()Ljava/util/Map;
 	public final fun getResources ()Ljava/util/Map;
+	protected final fun getServerInfo ()Lio/modelcontextprotocol/kotlin/sdk/Implementation;
 	public final fun getTools ()Ljava/util/Map;
 	public final fun onClose (Lkotlin/jvm/functions/Function0;)V
 	public final fun onConnect (Lkotlin/jvm/functions/Function0;)V
@@ -80,7 +85,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/server/ServerOptions : io/
 }
 
 public class io/modelcontextprotocol/kotlin/sdk/server/ServerSession : io/modelcontextprotocol/kotlin/sdk/shared/Protocol {
-	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/Implementation;Lio/modelcontextprotocol/kotlin/sdk/server/ServerOptions;)V
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/Implementation;Lio/modelcontextprotocol/kotlin/sdk/server/ServerOptions;Ljava/lang/String;)V
 	protected fun assertCapabilityForMethod (Lio/modelcontextprotocol/kotlin/sdk/Method;)V
 	protected fun assertNotificationCapability (Lio/modelcontextprotocol/kotlin/sdk/Method;)V
 	public fun assertRequestHandlerCapability (Lio/modelcontextprotocol/kotlin/sdk/Method;)V
@@ -90,6 +95,8 @@ public class io/modelcontextprotocol/kotlin/sdk/server/ServerSession : io/modelc
 	public static synthetic fun createMessage$default (Lio/modelcontextprotocol/kotlin/sdk/server/ServerSession;Lio/modelcontextprotocol/kotlin/sdk/CreateMessageRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public final fun getClientCapabilities ()Lio/modelcontextprotocol/kotlin/sdk/ClientCapabilities;
 	public final fun getClientVersion ()Lio/modelcontextprotocol/kotlin/sdk/Implementation;
+	protected final fun getInstructions ()Ljava/lang/String;
+	protected final fun getServerInfo ()Lio/modelcontextprotocol/kotlin/sdk/Implementation;
 	public final fun listRoots (Lkotlinx/serialization/json/JsonObject;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun listRoots$default (Lio/modelcontextprotocol/kotlin/sdk/server/ServerSession;Lkotlinx/serialization/json/JsonObject;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public fun onClose ()V
