@@ -101,7 +101,7 @@ suspend fun runSseMcpServerWithPlainConfiguration(port: Int) {
 
     val server = configureServer()
 
-    embeddedServer(CIO, host = "0.0.0.0", port = port) {
+    embeddedServer(CIO, host = "127.0.0.1", port = port) {
         install(SSE)
         routing {
             sse("/sse") {
@@ -145,7 +145,7 @@ suspend fun runSseMcpServerUsingKtorPlugin(port: Int) {
     println("Starting sse server on port $port")
     println("Use inspector to connect to the http://localhost:$port/sse")
 
-    embeddedServer(CIO, host = "0.0.0.0", port = port) {
+    embeddedServer(CIO, host = "127.0.0.1", port = port) {
         mcp {
             return@mcp configureServer()
         }
