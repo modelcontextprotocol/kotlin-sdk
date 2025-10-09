@@ -52,16 +52,15 @@ class TsEdgeCasesTestSse : TsTestBase() {
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
     fun testInvalidURL() = runTest {
-        val nonExistentToolCommand = "npx tsx myClient.ts $serverUrl non-existent-tool"
-        val nonExistentToolOutput = executeCommandAllowingFailure(nonExistentToolCommand, tsClientDir)
+        val nonExistentToolOutput = runHttpClientAllowingFailure(serverUrl, "non-existent-tool")
 
         assertTrue(
             nonExistentToolOutput.contains("Tool \"non-existent-tool\" not found"),
             "Client should handle non-existent tool gracefully",
         )
 
-        val invalidUrlCommand = "npx tsx myClient.ts http://localhost:${port + 1000}/mcp greet TestUser"
-        val invalidUrlOutput = executeCommandAllowingFailure(invalidUrlCommand, tsClientDir)
+        val invalidUrl = "http://localhost:${port + 1000}/mcp"
+        val invalidUrlOutput = runHttpClientAllowingFailure(invalidUrl, "greet", "TestUser")
 
         assertTrue(
             invalidUrlOutput.contains("Invalid URL") ||
@@ -81,8 +80,7 @@ class TsEdgeCasesTestSse : TsTestBase() {
         tempFile.deleteOnExit()
 
         val specialCharsContent = tempFile.readText()
-        val specialCharsCommand = "npx tsx myClient.ts $serverUrl greet \"$specialCharsContent\""
-        val specialCharsOutput = executeCommand(specialCharsCommand, tsClientDir)
+        val specialCharsOutput = runHttpClient(serverUrl, "greet", specialCharsContent)
 
         assertTrue(
             specialCharsOutput.contains("Hello, $specialChars!"),
@@ -106,8 +104,7 @@ class TsEdgeCasesTestSse : TsTestBase() {
         tempFile.deleteOnExit()
 
         val largeNameContent = tempFile.readText()
-        val largePayloadCommand = "npx tsx myClient.ts $serverUrl greet \"$largeNameContent\""
-        val largePayloadOutput = executeCommand(largePayloadCommand, tsClientDir)
+        val largePayloadOutput = runHttpClient(serverUrl, "greet", largeNameContent)
 
         tempFile.delete()
 
@@ -165,7 +162,21 @@ class TsEdgeCasesTestSse : TsTestBase() {
             val jobs = commands.mapIndexed { index, command ->
                 async(kotlinx.coroutines.Dispatchers.IO) {
                     println("Starting client $index")
-                    val output = executeCommand(command, tsClientDir)
+                    val output = when {
+                        command.contains("greet \"Client1\"") -> runHttpClient(serverUrl, "greet", "Client1")
+
+                        command.contains(
+                            "multi-greet \"Client2\"",
+                        ) -> runHttpClient(serverUrl, "multi-greet", "Client2")
+
+                        command.contains("greet \"Client3\"") -> runHttpClient(serverUrl, "greet", "Client3")
+
+                        command.contains(
+                            "multi-greet \"Client5\"",
+                        ) -> runHttpClient(serverUrl, "multi-greet", "Client5")
+
+                        else -> runHttpClient(serverUrl)
+                    }
                     println("Client $index completed")
 
                     assertContains(
@@ -239,8 +250,7 @@ class TsEdgeCasesTestSse : TsTestBase() {
     @Timeout(120, unit = TimeUnit.SECONDS)
     fun testRapidSequentialRequests() = runTest {
         val outputs = (1..10).map { i ->
-            val command = "npx tsx myClient.ts $serverUrl greet \"RapidClient$i\""
-            val output = executeCommand(command, tsClientDir)
+            val output = runHttpClient(serverUrl, "greet", "RapidClient$i")
 
             assertTrue(
                 output.contains("Connected to server"),

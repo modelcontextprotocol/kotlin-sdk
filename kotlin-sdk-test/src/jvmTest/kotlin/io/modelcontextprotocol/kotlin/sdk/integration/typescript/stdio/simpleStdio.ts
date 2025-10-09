@@ -1,7 +1,7 @@
 // @ts-nocheck
-import { z } from 'zod';
+import {z} from 'zod';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import {pathToFileURL} from 'node:url';
 
 const SDK_DIR = process.env.TYPESCRIPT_SDK_DIR;
 if (!SDK_DIR) {

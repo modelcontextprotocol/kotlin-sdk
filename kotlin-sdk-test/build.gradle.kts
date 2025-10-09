@@ -25,6 +25,7 @@ kotlin {
             dependencies {
                 implementation(kotlin("test-junit5"))
                 implementation(libs.awaitility)
+                implementation(libs.testcontainers)
                 runtimeOnly(libs.slf4j.simple)
             }
         }

@@ -18,6 +18,7 @@ logging = "7.0.13"
 slf4j = "2.0.17"
 kotest = "6.0.3"
 awaitility = "4.3.0"
+testcontainers = "1.21.3"
 
 # Samples
 mcp-kotlin = "0.7.2"
@@ -54,6 +55,7 @@ kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 ktor-client-mock = { group = "io.ktor", name = "ktor-client-mock", version.ref = "ktor" }
 ktor-server-test-host = { group = "io.ktor", name = "ktor-server-test-host", version.ref = "ktor" }
 slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
+testcontainers = { group = "org.testcontainers", name = "testcontainers", version.ref = "testcontainers" }
 
 # Samples
 ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktor" }

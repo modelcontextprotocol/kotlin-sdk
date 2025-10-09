@@ -36,15 +36,5 @@ class TsClientKotlinServerTestSse : AbstractTsClientKotlinServerTest() {
     override fun beforeServer() {}
     override fun afterServer() {}
 
-    override fun runClient(vararg args: String): String {
-        val cmd = buildString {
-            append("npx tsx myClient.ts ")
-            append(serverUrl)
-            if (args.isNotEmpty()) {
-                append(' ')
-                append(args.joinToString(" "))
-            }
-        }
-        return executeCommand(cmd, tsClientDir)
-    }
+    override fun runClient(vararg args: String): String = runHttpClient(serverUrl, *args)
 }

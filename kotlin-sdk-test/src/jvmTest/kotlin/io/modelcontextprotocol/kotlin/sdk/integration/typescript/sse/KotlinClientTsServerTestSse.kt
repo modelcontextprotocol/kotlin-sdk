@@ -15,14 +15,14 @@ class KotlinClientTsServerTestSse : AbstractKotlinClientTsServerTest() {
     private var port: Int = 0
     private val host = "localhost"
     private lateinit var serverUrl: String
-    private lateinit var tsServerProcess: Process
+    private lateinit var tsServerProcess: ContainerProcess
 
     @BeforeEach
     fun setUpSse() {
         port = findFreePort()
-        serverUrl = "http://$host:$port/mcp"
         tsServerProcess = startTypeScriptServer(port)
-        println("TypeScript server started on port $port")
+        serverUrl = "http://$host:${tsServerProcess.mappedPort}/mcp"
+        println("TypeScript server started on port ${tsServerProcess.mappedPort}")
     }
 
     @AfterEach

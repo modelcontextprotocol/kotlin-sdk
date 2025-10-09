@@ -2,453 +2,353 @@ package io.modelcontextprotocol.kotlin.sdk.integration.typescript
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.sse.SSE
+import io.ktor.client.request.get
 import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
 import io.modelcontextprotocol.kotlin.sdk.client.mcpStreamableHttp
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.sse.KotlinServerForTsClient
 import io.modelcontextprotocol.kotlin.sdk.integration.utils.Retry
-import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.StdioServerTransport
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
-import kotlinx.io.Sink
-import kotlinx.io.Source
 import kotlinx.io.asSink
 import kotlinx.io.asSource
 import kotlinx.io.buffered
 import org.awaitility.kotlin.await
-import org.junit.jupiter.api.BeforeAll
-import java.io.BufferedReader
-import java.io.File
-import java.io.InputStreamReader
+import org.testcontainers.containers.BindMode
+import org.testcontainers.containers.GenericContainer
+import org.testcontainers.images.PullPolicy
+import java.io.ByteArrayInputStream
+import java.io.OutputStream
 import java.net.ServerSocket
 import java.net.Socket
 import java.util.concurrent.TimeUnit
-import kotlin.io.path.createTempDirectory
 import kotlin.time.Duration.Companion.seconds
 
 enum class TransportKind { SSE, STDIO, DEFAULT }
 
 @Retry(times = 3)
 abstract class TsTestBase {
-
     protected open val transportKind: TransportKind = TransportKind.DEFAULT
 
-    protected val projectRoot: File get() = File(System.getProperty("user.dir"))
-    protected val tsClientDir: File
-        get() {
-            val base = File(
-                projectRoot,
-                "src/jvmTest/kotlin/io/modelcontextprotocol/kotlin/sdk/integration/typescript",
-            )
-
-            // Allow override via system property for CI: -Dts.transport=stdio|sse
-            val fromProp = System.getProperty("ts.transport")?.lowercase()
-            val overrideSubDir = when (fromProp) {
-                "stdio" -> "stdio"
-                "sse" -> "sse"
-                else -> null
-            }
-
-            val subDirName = overrideSubDir ?: when (transportKind) {
-                TransportKind.STDIO -> "stdio"
-                TransportKind.SSE -> "sse"
-                TransportKind.DEFAULT -> null
-            }
-            if (subDirName != null) {
-                val sub = File(base, subDirName)
-                if (sub.exists()) return sub
-            }
-            return base
-        }
-
     companion object {
-        @JvmStatic
-        private val tempRootDir: File = createTempDirectory("typescript-sdk-").toFile().apply { deleteOnExit() }
+        private val isWindows = System.getProperty("os.name").lowercase().contains("windows")
 
-        @JvmStatic
-        protected val sdkDir: File = File(tempRootDir, "typescript-sdk")
+        private fun tsDockerImage() = System.getenv("TS_SDK_IMAGE")
+            ?: throw IllegalStateException("TS_SDK_IMAGE environment variable is not set")
 
-        @JvmStatic
-        @BeforeAll
-        fun setupTypeScriptSdk() {
-            println("Cloning TypeScript SDK repository")
+        private fun getTsFilesPath(subdir: String): String {
+            val userDir = System.getProperty("user.dir")
+            return "$userDir/src/jvmTest/kotlin/io/modelcontextprotocol/kotlin/sdk/integration/typescript/$subdir"
+        }
 
-            if (!sdkDir.exists()) {
-                val process = ProcessBuilder(
-                    "git",
-                    "clone",
-                    "--depth",
-                    "1",
-                    "https://github.com/modelcontextprotocol/typescript-sdk.git",
-                    sdkDir.absolutePath,
+        fun findFreePort() = ServerSocket(0).use { it.localPort }
+
+        fun killProcessOnPort(port: Int) {
+            val command = if (isWindows) {
+                listOf(
+                    "cmd.exe",
+                    "/c",
+                    "netstat -ano | findstr :$port | for /f \"tokens=5\" %a in ('more') do taskkill /F /PID %a 2>nul || echo No process found",
                 )
-                    .redirectErrorStream(true)
-                    .start()
-                val exitCode = process.waitFor()
-                if (exitCode != 0) {
-                    throw RuntimeException("Failed to clone TypeScript SDK repository: exit code $exitCode")
-                }
-            }
-
-            println("Installing TypeScript SDK dependencies")
-            executeCommand("npm install", sdkDir, allowFailure = false, timeoutSeconds = null)
-        }
-
-        @JvmStatic
-        protected fun killProcessOnPort(port: Int) {
-            val isWindows = System.getProperty("os.name").lowercase().contains("windows")
-            val killCommand = if (isWindows) {
-                "netstat -ano | findstr :$port | for /f \"tokens=5\" %a in ('more')" +
-                    " do taskkill /F /PID %a 2>nul || echo No process found"
             } else {
-                "lsof -ti:$port | xargs kill -9 2>/dev/null || true"
-            }
-            executeCommand(killCommand, File("."), allowFailure = true, timeoutSeconds = null)
-        }
-
-        @JvmStatic
-        protected fun findFreePort(): Int {
-            ServerSocket(0).use { socket ->
-                return socket.localPort
-            }
-        }
-
-        @JvmStatic
-        protected fun executeCommand(
-            command: String,
-            workingDir: File,
-            allowFailure: Boolean = false,
-            timeoutSeconds: Long? = null,
-        ): String {
-            if (!workingDir.exists()) {
-                if (!workingDir.mkdirs()) {
-                    throw RuntimeException("Failed to create working directory: ${workingDir.absolutePath}")
-                }
+                listOf("bash", "-c", "lsof -ti:$port | xargs kill -9 2>/dev/null || true")
             }
 
-            if (!workingDir.isDirectory || !workingDir.canRead()) {
-                throw RuntimeException("Working directory is not accessible: ${workingDir.absolutePath}")
-            }
-
-            val isWindows = System.getProperty("os.name").lowercase().contains("windows")
-            val processBuilder = if (isWindows) {
-                ProcessBuilder()
-                    .command("cmd.exe", "/c", "set TYPESCRIPT_SDK_DIR=${sdkDir.absolutePath} && $command")
-            } else {
-                ProcessBuilder()
-                    .command("bash", "-c", "TYPESCRIPT_SDK_DIR='${sdkDir.absolutePath}' $command")
-            }
-
-            val process = processBuilder
-                .directory(workingDir)
+            val process = ProcessBuilder(command)
                 .redirectErrorStream(true)
                 .start()
 
-            val output = StringBuilder()
-            BufferedReader(InputStreamReader(process.inputStream)).use { reader ->
-                var line: String?
-                while (reader.readLine().also { line = it } != null) {
-                    println(line)
-                    output.append(line).append("\n")
+            process.inputStream.bufferedReader().use { it.readText() }
+            process.waitFor()
+        }
+
+        fun runDockerCommand(
+            image: String = tsDockerImage(),
+            command: List<String>,
+            interactive: Boolean = true,
+            environmentVariables: Map<String, String> = emptyMap(),
+            extraArgs: List<String> = emptyList(),
+            allowFailure: Boolean = false,
+        ): Process {
+            val dockerArgs = buildList {
+                add("docker")
+                add("run")
+                add("--rm")
+                if (interactive) add("-i")
+                add("-v")
+                add("${getTsFilesPath("sse")}:/app/sse")
+                add("-v")
+                add("${getTsFilesPath("stdio")}:/app/stdio")
+                addAll(extraArgs)
+                environmentVariables.forEach { (key, value) ->
+                    add("-e")
+                    add("$key=$value")
                 }
+                add(image)
+                addAll(command)
             }
 
-            if (timeoutSeconds == null) {
-                val exitCode = process.waitFor()
-                if (!allowFailure && exitCode != 0) {
-                    throw RuntimeException(
-                        "Command execution failed with exit code $exitCode: $command\n" +
-                            "Working dir: ${workingDir.absolutePath}\nOutput:\n$output",
-                    )
-                }
-            } else {
-                process.waitFor(timeoutSeconds, TimeUnit.SECONDS)
-            }
+            return ProcessBuilder(dockerArgs)
+                .redirectErrorStream(false)
+                .start()
+                .also { if (!allowFailure) it.startErrorLogger() }
+        }
 
-            return output.toString()
+        private fun Process.startErrorLogger() = Thread {
+            errorStream.bufferedReader().useLines { lines ->
+                lines.forEach { println("[ERR] $it") }
+            }
+        }.apply {
+            isDaemon = true
+            start()
         }
     }
 
-    private fun waitForProcessTermination(process: Process, timeoutSeconds: Long): Boolean {
-        if (process.isAlive && !process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
-            process.destroyForcibly()
-            process.waitFor(2, TimeUnit.SECONDS)
-            return false
-        }
-        return true
-    }
-
-    private fun createProcessOutputReader(process: Process, prefix: String = "TS-SERVER"): Thread {
-        val outputReader = Thread {
-            try {
-                process.inputStream.bufferedReader().useLines { lines ->
-                    for (line in lines) {
-                        println("[$prefix] $line")
-                    }
-                }
-            } catch (e: Exception) {
-                println("Warning: Error reading process output: ${e.message}")
-            }
-        }
-        outputReader.isDaemon = true
-        return outputReader
-    }
-
-    private fun createProcessErrorReader(process: Process, prefix: String = "TS-SERVER"): Thread {
-        val errorReader = Thread {
-            try {
-                process.errorStream.bufferedReader().useLines { lines ->
-                    for (line in lines) {
-                        println("[$prefix][err] $line")
-                    }
-                }
-            } catch (e: Exception) {
-                println("Warning: Error reading process error stream: ${e.message}")
-            }
-        }
-        errorReader.isDaemon = true
-        return errorReader
-    }
-
-    protected fun waitForPort(host: String = "localhost", port: Int, timeoutSeconds: Long = 10): Boolean = try {
+    // ===== Wait utilities =====
+    protected fun waitForPort(host: String = "localhost", port: Int, timeoutSeconds: Long = 10) = runCatching {
         await.atMost(timeoutSeconds, TimeUnit.SECONDS)
             .pollDelay(200, TimeUnit.MILLISECONDS)
             .pollInterval(100, TimeUnit.MILLISECONDS)
             .until {
-                try {
-                    Socket(host, port).use { true }
-                } catch (_: Exception) {
-                    false
-                }
+                runCatching { Socket(host, port).close() }.isSuccess
             }
         true
-    } catch (_: Exception) {
-        false
+    }.getOrDefault(false)
+
+    protected fun waitForHttpReady(url: String, timeoutSeconds: Long = 10) = runCatching {
+        await.atMost(timeoutSeconds, TimeUnit.SECONDS)
+            .pollDelay(200, TimeUnit.MILLISECONDS)
+            .pollInterval(150, TimeUnit.MILLISECONDS)
+            .until {
+                runCatching {
+                    HttpClient(CIO) {
+                        install(HttpTimeout) {
+                            requestTimeoutMillis = 1000
+                            connectTimeoutMillis = 1000
+                            socketTimeoutMillis = 1000
+                        }
+                        followRedirects = false
+                    }.use { client ->
+                        runBlocking { client.get(url).status.value in 200..499 }
+                    }
+                }.getOrDefault(false)
+            }
+        true
+    }.getOrDefault(false)
+
+    // ===== TypeScript Server (SSE/HTTP) =====
+    protected fun startTypeScriptServer(port: Int): ContainerProcess {
+        val container = GenericContainer(tsDockerImage()).apply {
+            withImagePullPolicy(PullPolicy.defaultPolicy())
+            withExposedPorts(port)
+            mapOf(
+                "MCP_HOST" to "0.0.0.0",
+                "MCP_PORT" to port.toString(),
+                "MCP_PATH" to "/mcp",
+            ).forEach { (k, v) -> withEnv(k, v) }
+            withFileSystemBind(getTsFilesPath("sse"), "/app/sse", BindMode.READ_ONLY)
+            withFileSystemBind(getTsFilesPath("stdio"), "/app/stdio", BindMode.READ_ONLY)
+            withCommand("npx", "--prefix", "/opt/typescript-sdk", "tsx", "/app/sse/simpleStreamableHttp.ts")
+            withReuse(false)
+        }
+
+        runCatching { container.start() }.onFailure {
+            runCatching { container.stop() }
+            throw it
+        }
+
+        val host = container.host
+        val mappedPort = container.getMappedPort(port)
+        require(waitForPort(host, mappedPort, 60)) {
+            runCatching { container.stop() }
+            "TypeScript server did not become ready on $host:$mappedPort"
+        }
+        require(waitForHttpReady("http://$host:$mappedPort/mcp")) {
+            runCatching { container.stop() }
+            "TypeScript server HTTP endpoint /mcp not ready on $host:$mappedPort"
+        }
+
+        println("TypeScript server started on $host:$mappedPort (container port: $port)")
+        Thread.sleep(300)
+
+        return ContainerProcess(container, mappedPort)
     }
 
-    protected fun executeCommandAllowingFailure(command: String, workingDir: File, timeoutSeconds: Long = 20): String =
-        executeCommand(command, workingDir, allowFailure = true, timeoutSeconds = timeoutSeconds)
-
-    protected fun startTypeScriptServer(port: Int): Process {
-        killProcessOnPort(port)
-
-        if (!sdkDir.exists() || !sdkDir.isDirectory) {
-            throw IllegalStateException(
-                "TypeScript SDK directory does not exist or is not accessible: ${sdkDir.absolutePath}",
-            )
+    protected class ContainerProcess(private val container: GenericContainer<*>, val mappedPort: Int) : Process() {
+        override fun destroy() = runCatching { container.stop() }.let { }
+        override fun destroyForcibly() = apply { destroy() }
+        override fun exitValue() = if (container.isRunning) throw IllegalThreadStateException() else 0
+        override fun isAlive() = container.isRunning
+        override fun waitFor(): Int {
+            while (container.isRunning) {
+                runCatching { Thread.sleep(50) }
+            }
+            return 0
         }
-
-        val isWindows = System.getProperty("os.name").lowercase().contains("windows")
-        val localServerPath = File(tsClientDir, "simpleStreamableHttp.ts").absolutePath
-        val processBuilder = if (isWindows) {
-            ProcessBuilder()
-                .command(
-                    "cmd.exe",
-                    "/c",
-                    "set MCP_PORT=$port && set NODE_PATH=${sdkDir.absolutePath}\\node_modules && npx --prefix \"${sdkDir.absolutePath}\" tsx \"$localServerPath\"",
-                )
-        } else {
-            ProcessBuilder()
-                .command(
-                    "bash",
-                    "-c",
-                    "MCP_PORT=$port NODE_PATH='${sdkDir.absolutePath}/node_modules' npx --prefix '${sdkDir.absolutePath}' tsx \"$localServerPath\"",
-                )
+        override fun getInputStream() = ByteArrayInputStream(ByteArray(0))
+        override fun getErrorStream() = ByteArrayInputStream(ByteArray(0))
+        override fun getOutputStream() = object : OutputStream() {
+            override fun write(b: Int) {}
         }
-
-        processBuilder.environment()["TYPESCRIPT_SDK_DIR"] = sdkDir.absolutePath
-
-        val process = processBuilder
-            .directory(tsClientDir)
-            .redirectErrorStream(true)
-            .start()
-
-        createProcessOutputReader(process).start()
-
-        if (!waitForPort(port = port, timeoutSeconds = 20)) {
-            throw IllegalStateException("TypeScript server did not become ready on localhost:$port within timeout")
-        }
-        return process
     }
 
-    protected fun stopProcess(process: Process, waitSeconds: Long = 3, name: String = "TypeScript server") {
+    protected fun stopProcess(process: Process, waitSeconds: Long = 3, name: String = "Process") {
         process.destroy()
-        if (waitForProcessTermination(process, waitSeconds)) {
-            println("$name stopped gracefully")
-        } else {
-            println("$name did not stop gracefully, forced termination")
-        }
+        val stopped = process.waitFor(waitSeconds, TimeUnit.SECONDS)
+        if (!stopped) process.destroyForcibly()
+        println("$name stopped ${if (stopped) "gracefully" else "forcibly"}")
     }
 
-    // ===== SSE client helpers =====
-    protected suspend fun newClient(serverUrl: String): Client =
-        HttpClient(CIO) { install(SSE) }.mcpStreamableHttp(serverUrl)
+    // ===== SSE Client =====
+    protected suspend fun newClient(serverUrl: String) = HttpClient(CIO) { install(SSE) }.mcpStreamableHttp(serverUrl)
 
     protected suspend fun <T> withClient(serverUrl: String, block: suspend (Client) -> T): T {
         val client = newClient(serverUrl)
         return try {
             withTimeout(20.seconds) { block(client) }
         } finally {
-            try {
-                withTimeout(3.seconds) { client.close() }
-            } catch (_: Exception) {
-                // ignore errors
-            }
+            runCatching { withTimeout(3.seconds) { client.close() } }
         }
     }
 
-    // ===== STDIO client + server helpers =====
+    // ===== STDIO Client =====
     protected fun startTypeScriptServerStdio(): Process {
-        if (!sdkDir.exists() || !sdkDir.isDirectory) {
-            throw IllegalStateException(
-                "TypeScript SDK directory does not exist or is not accessible: ${sdkDir.absolutePath}",
-            )
-        }
-        val isWindows = System.getProperty("os.name").lowercase().contains("windows")
-        val localServerPath = File(tsClientDir, "simpleStdio.ts").absolutePath
-        val processBuilder = if (isWindows) {
-            ProcessBuilder()
-                .command(
-                    "cmd.exe",
-                    "/c",
-                    "set NODE_PATH=${sdkDir.absolutePath}\\node_modules && npx --prefix \"${sdkDir.absolutePath}\" tsx \"$localServerPath\"",
-                )
-        } else {
-            ProcessBuilder()
-                .command(
-                    "bash",
-                    "-c",
-                    "NODE_PATH='${sdkDir.absolutePath}/node_modules' npx --prefix '${sdkDir.absolutePath}' tsx \"$localServerPath\"",
-                )
-        }
-        processBuilder.environment()["TYPESCRIPT_SDK_DIR"] = sdkDir.absolutePath
-        val process = processBuilder
-            .directory(tsClientDir)
-            .redirectErrorStream(false)
-            .start()
-        // For stdio transports, do NOT read from stdout (it's used for protocol). Read stderr for logs only.
-        createProcessErrorReader(process, prefix = "TS-SERVER-STDIO").start()
-        // Give the process a moment to start
+        val process = runDockerCommand(
+            command = listOf("npx", "--prefix", "/opt/typescript-sdk", "tsx", "/app/stdio/simpleStdio.ts"),
+        )
+
         await.atMost(2, TimeUnit.SECONDS)
             .pollDelay(200, TimeUnit.MILLISECONDS)
             .pollInterval(100, TimeUnit.MILLISECONDS)
             .until { process.isAlive }
+
         return process
     }
 
     protected suspend fun newClientStdio(process: Process): Client {
-        val input: Source = process.inputStream.asSource().buffered()
-        val output: Sink = process.outputStream.asSink().buffered()
-        val transport = StdioClientTransport(input = input, output = output)
-        val client = Client(Implementation("test", "1.0"))
-        client.connect(transport)
-        return client
+        val transport = StdioClientTransport(
+            input = process.inputStream.asSource().buffered(),
+            output = process.outputStream.asSink().buffered(),
+        )
+        return Client(Implementation("test", "1.0")).apply { connect(transport) }
     }
 
     protected suspend fun <T> withClientStdio(block: suspend (Client, Process) -> T): T {
         val proc = startTypeScriptServerStdio()
         val client = newClientStdio(proc)
         return try {
-            withTimeout(20.seconds) { block(client, proc) }
+            withTimeout(5.seconds) { block(client, proc) }
         } finally {
-            try {
-                withTimeout(3.seconds) { client.close() }
-            } catch (_: Exception) {
-            }
-            try {
-                stopProcess(proc, name = "TypeScript stdio server")
-            } catch (_: Exception) {
-            }
+            runCatching { withTimeout(3.seconds) { client.close() } }
+            runCatching { stopProcess(proc, name = "TypeScript stdio server") }
         }
     }
 
-    // ===== Helpers to run TypeScript client over STDIO against Kotlin server over STDIO =====
-    protected fun runStdioClient(vararg args: String): String {
-        // Start Node stdio client (it will speak MCP over its stdout/stdin)
-        val isWindows = System.getProperty("os.name").lowercase().contains("windows")
-        val clientPath = File(tsClientDir, "myClient.ts").absolutePath
+    // ===== HTTP Client (TypeScript → Kotlin Server) =====
+    protected fun runHttpClient(serverUrl: String, vararg args: String) = runTsClient(serverUrl, args.toList())
 
-        val process = if (isWindows) {
-            ProcessBuilder()
-                .command(
-                    "cmd.exe",
-                    "/c",
-                    (
-                        "set TYPESCRIPT_SDK_DIR=${sdkDir.absolutePath} && " +
-                            "set NODE_PATH=${sdkDir.absolutePath}\\node_modules && " +
-                            "npx --prefix \"${sdkDir.absolutePath}\" tsx \"$clientPath\" " +
-                            args.joinToString(" ")
-                        ),
-                )
-                .directory(tsClientDir)
-                .redirectErrorStream(false)
-                .start()
-        } else {
-            ProcessBuilder()
-                .command(
-                    "bash",
-                    "-c",
-                    (
-                        "TYPESCRIPT_SDK_DIR='${sdkDir.absolutePath}' " +
-                            "NODE_PATH='${sdkDir.absolutePath}/node_modules' " +
-                            "npx --prefix '${sdkDir.absolutePath}' tsx \"$clientPath\" " +
-                            args.joinToString(" ")
-                        ),
-                )
-                .directory(tsClientDir)
-                .redirectErrorStream(false)
-                .start()
+    protected fun runHttpClientAllowingFailure(serverUrl: String, vararg args: String) =
+        runTsClient(serverUrl, args.toList(), allowFailure = true)
+
+    private fun runTsClient(serverUrl: String, args: List<String>, allowFailure: Boolean = false): String {
+        val containerUrl = serverUrl.replace("localhost", "host.docker.internal")
+        val command = buildList {
+            add("npx")
+            add("--prefix")
+            add("/opt/typescript-sdk")
+            add("tsx")
+            add("/app/sse/myClient.ts")
+            add(containerUrl)
+            addAll(args)
         }
 
-        // Create Kotlin server and attach stdio transport to the process streams
-        val server: Server = KotlinServerForTsClient().createMcpServer()
+        val process = runDockerCommand(
+            command = command,
+            environmentVariables = mapOf("NODE_PATH" to "/opt/typescript-sdk/node_modules"),
+            extraArgs = listOf("--add-host=host.docker.internal:host-gateway"),
+            allowFailure = allowFailure,
+        )
+
+        // Capture both stdout and stderr from the TS client to ensure error messages are returned to tests
+        val output = StringBuffer()
+
+        fun captureStream(stream: java.io.InputStream, prefix: String = ""): Thread = Thread {
+            stream.bufferedReader().useLines { lines ->
+                lines.forEach { line ->
+                    val msg = if (prefix.isEmpty()) line else "$prefix$line"
+                    println(msg)
+                    output.append(line).append('\n')
+                }
+            }
+        }.apply {
+            isDaemon = true
+            start()
+        }
+
+        val stdoutThread = captureStream(process.inputStream)
+        val stderrThread = captureStream(process.errorStream, "[TS-CLIENT][err] ")
+
+        val finished = if (allowFailure) {
+            process.waitFor(25, TimeUnit.SECONDS)
+        } else {
+            process.waitFor()
+            true
+        }
+
+        if (!finished) {
+            process.destroyForcibly()
+        }
+
+        stdoutThread.join(1000)
+        stderrThread.join(1000)
+
+        return output.toString()
+    }
+
+    // ===== STDIO Client (TypeScript → Kotlin Server) =====
+    protected fun runStdioClient(vararg args: String): String {
+        val process = runDockerCommand(
+            command = listOf("npx", "--prefix", "/opt/typescript-sdk", "tsx", "/app/stdio/myClient.ts") + args,
+            allowFailure = true,
+        )
+
+        val server = KotlinServerForTsClient().createMcpServer()
         val transport = StdioServerTransport(
             inputStream = process.inputStream.asSource().buffered(),
             outputStream = process.outputStream.asSink().buffered(),
         )
 
-        // Connect server in a background thread to avoid blocking
-        val serverThread = Thread {
-            try {
-                kotlinx.coroutines.runBlocking { server.connect(transport) }
-            } catch (e: Exception) {
-                println("[STDIO-SERVER] Error connecting: ${e.message}")
-            }
+        Thread {
+            runCatching { runBlocking { server.connect(transport) } }
+                .onFailure { println("[STDIO-SERVER] Error: ${it.message}") }
+        }.apply {
+            isDaemon = true
+            start()
         }
-        serverThread.isDaemon = true
-        serverThread.start()
 
-        // Read ONLY stderr from client for human-readable output
-        val output = StringBuilder()
-        val errReader = Thread {
-            try {
-                process.errorStream.bufferedReader().useLines { lines ->
-                    lines.forEach { line ->
-                        println("[TS-CLIENT-STDIO][err] $line")
-                        output.append(line).append('\n')
-                    }
+        val output = StringBuffer()
+        Thread {
+            process.errorStream.bufferedReader().useLines { lines ->
+                lines.forEach {
+                    println("[TS-CLIENT-STDIO][err] $it")
+                    output.append(it).append('\n')
                 }
-            } catch (e: Exception) {
-                println("Warning: Error reading stdio client stderr: ${e.message}")
             }
+        }.apply {
+            isDaemon = true
+            start()
         }
-        errReader.isDaemon = true
-        errReader.start()
 
-        // Wait up to 25s for client to exit
-        val finished = process.waitFor(25, TimeUnit.SECONDS)
-        if (!finished) {
-            println("Stdio client did not finish in time; destroying")
+        if (!process.waitFor(25, TimeUnit.SECONDS)) {
+            println("Stdio client timeout; destroying")
             process.destroyForcibly()
         }
 
-        try {
-            kotlinx.coroutines.runBlocking { transport.close() }
-        } catch (_: Exception) {
-        }
-
+        runCatching { runBlocking { transport.close() } }
         return output.toString()
     }
 }
