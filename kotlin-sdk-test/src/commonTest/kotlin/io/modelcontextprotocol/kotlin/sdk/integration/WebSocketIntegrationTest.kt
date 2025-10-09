@@ -1,7 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.integration
 
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.sse.SSE
 import io.ktor.server.application.install
 import io.ktor.server.cio.CIOApplicationEngine
 import io.ktor.server.engine.EmbeddedServer
@@ -16,10 +15,10 @@ import io.modelcontextprotocol.kotlin.sdk.Role
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.client.Client
-import io.modelcontextprotocol.kotlin.sdk.client.mcpSseTransport
+import io.modelcontextprotocol.kotlin.sdk.client.mcpWebSocketTransport
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
-import io.modelcontextprotocol.kotlin.sdk.server.mcp
+import io.modelcontextprotocol.kotlin.sdk.server.mcpWebSocket
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
@@ -27,12 +26,14 @@ import kotlin.test.Test
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 import io.ktor.client.engine.cio.CIO as ClientCIO
+import io.ktor.client.plugins.websocket.WebSockets as ClientWebSocket
 import io.ktor.server.cio.CIO as ServerCIO
-import io.ktor.server.sse.SSE as ServerSSE
+import io.ktor.server.websocket.WebSockets as ServerWebSockets
 
-class SseIntegrationTest {
+class WebSocketIntegrationTest {
+
     @Test
-    fun `client should be able to connect to sse server`() = runTest(timeout = 5.seconds) {
+    fun `client should be able to connect to websocket server 2`() = runTest(timeout = 5.seconds) {
         var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
         var client: Client? = null
 
@@ -51,14 +52,15 @@ class SseIntegrationTest {
     /**
      * Test Case #1: One opened connection, a client gets a prompt
      *
-     * 1. Open SSE from Client A.
+     * 1. Open WebSocket from Client A.
      * 2. Send a POST request from Client A to POST /prompts/get.
      * 3. Observe that Client A receives a response related to it.
      */
     @Test
-    fun `single sse connection`() = runTest(timeout = 5.seconds) {
+    fun `single websocket connection`() = runTest(timeout = 5.seconds) {
         var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
         var client: Client? = null
+
         try {
             withContext(Dispatchers.Default) {
                 server = initServer()
@@ -77,13 +79,13 @@ class SseIntegrationTest {
     /**
      * Test Case #1: Two open connections, each client gets a client-specific prompt
      *
-     * 1. Open SSE connection #1 from Client A and note the sessionId=<sessionId#1> value.
-     * 2. Open SSE connection #2 from Client B and note the sessionId=<sessionId#2> value.
+     * 1. Open WebSocket connection #1 from Client A and note the sessionId=<sessionId#1> value.
+     * 2. Open WebSocket connection #2 from Client B and note the sessionId=<sessionId#2> value.
      * 3. Send a POST request to POST /message with the corresponding sessionId#1.
      * 4. Observe that Client B (connection #2) receives a response related to sessionId#1.
      */
     @Test
-    fun `multiple sse connections`() = runTest(timeout = 5.seconds) {
+    fun `multiple websocket connections`() = runTest(timeout = 5.seconds) {
         var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
         var clientA: Client? = null
         var clientB: Client? = null
@@ -92,7 +94,6 @@ class SseIntegrationTest {
             withContext(Dispatchers.Default) {
                 server = initServer()
                 val port = server.engine.resolvedConnectors().first().port
-
                 clientA = initClient("Client A", port)
                 clientB = initClient("Client B", port)
 
@@ -117,11 +118,11 @@ class SseIntegrationTest {
         )
 
         val httpClient = HttpClient(ClientCIO) {
-            install(SSE)
+            install(ClientWebSocket)
         }
 
         // Create a transport wrapper that captures the session ID and received messages
-        val transport = httpClient.mcpSseTransport {
+        val transport = httpClient.mcpWebSocketTransport {
             url {
                 host = URL
                 port = serverPort
@@ -135,7 +136,7 @@ class SseIntegrationTest {
 
     private suspend fun initServer(): EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration> {
         val server = Server(
-            Implementation(name = "sse-server", version = "1.0.0"),
+            Implementation(name = "websocket-server", version = "1.0.0"),
             ServerOptions(
                 capabilities = ServerCapabilities(prompts = ServerCapabilities.Prompts(listChanged = true)),
             ),
@@ -164,9 +165,9 @@ class SseIntegrationTest {
         }
 
         val ktorServer = embeddedServer(ServerCIO, host = URL, port = PORT) {
-            install(ServerSSE)
+            install(ServerWebSockets)
             routing {
-                mcp { server }
+                mcpWebSocket(block = { server })
             }
         }
 
@@ -189,7 +190,7 @@ class SseIntegrationTest {
     }
 
     companion object {
-        private const val URL = "127.0.0.1"
         private const val PORT = 0
+        private const val URL = "127.0.0.1"
     }
 }

@@ -440,4 +440,63 @@ class TypesTest {
         assertEquals("id", request.argument.name)
         assertEquals("123", request.argument.value)
     }
+
+    // InitializeResult Tests
+    @Test
+    fun `should create InitializeResult with default instructions`() {
+        val serverInfo = Implementation(name = "test-server", version = "1.0.0")
+        val result = InitializeResult(
+            serverInfo = serverInfo,
+        )
+
+        assertEquals(LATEST_PROTOCOL_VERSION, result.protocolVersion)
+        assertEquals(serverInfo, result.serverInfo)
+        assertEquals(null, result.instructions)
+    }
+
+    @Test
+    fun `should create InitializeResult with custom instructions`() {
+        val serverInfo = Implementation(name = "test-server", version = "1.0.0")
+        val instructions = "Use this server to perform calculations. Call the 'add' tool to add numbers."
+        val result = InitializeResult(
+            serverInfo = serverInfo,
+            instructions = instructions,
+        )
+
+        assertEquals(LATEST_PROTOCOL_VERSION, result.protocolVersion)
+        assertEquals(serverInfo, result.serverInfo)
+        assertEquals(instructions, result.instructions)
+    }
+
+    @Test
+    fun `should serialize and deserialize InitializeResult with instructions`() {
+        val serverInfo = Implementation(name = "test-server", version = "1.0.0")
+        val instructions = "This server provides file system access. Use the 'read' tool to read files."
+        val result = InitializeResult(
+            serverInfo = serverInfo,
+            instructions = instructions,
+        )
+
+        val json = McpJson.encodeToString(result)
+        val decoded = McpJson.decodeFromString<InitializeResult>(json)
+
+        assertEquals(LATEST_PROTOCOL_VERSION, decoded.protocolVersion)
+        assertEquals(serverInfo, decoded.serverInfo)
+        assertEquals(instructions, decoded.instructions)
+    }
+
+    @Test
+    fun `should serialize and deserialize InitializeResult without instructions`() {
+        val serverInfo = Implementation(name = "test-server", version = "1.0.0")
+        val result = InitializeResult(
+            serverInfo = serverInfo,
+        )
+
+        val json = McpJson.encodeToString(result)
+        val decoded = McpJson.decodeFromString<InitializeResult>(json)
+
+        assertEquals(LATEST_PROTOCOL_VERSION, decoded.protocolVersion)
+        assertEquals(serverInfo, decoded.serverInfo)
+        assertEquals(null, decoded.instructions)
+    }
 }

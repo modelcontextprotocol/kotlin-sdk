@@ -7,12 +7,71 @@ plugins {
     id("mcp.publishing")
     id("mcp.dokka")
     alias(libs.plugins.kotlinx.binary.compatibility.validator)
+    id("org.openapi.generator") version "7.15.0"
+}
+
+/*
+tasks.withType<KotlinCompilationTask<*>>().configureEach {
+    dependsOn(tasks.openApiGenerate)
+}
+
+tasks.named("runKtlintCheckOverCommonMainSourceSet") {
+    dependsOn(tasks.openApiGenerate)
+}
+
+// Also ensure it runs before other relevant tasks
+tasks.withType<DokkaGenerateTask>().configureEach {
+    dependsOn(tasks.openApiGenerate)
+}
+
+tasks.withType<Task>().configureEach {
+    if (name.lowercase().contains("sourcesjar")) {
+        dependsOn(tasks.openApiGenerate)
+    }
+}
+ */
+
+openApiGenerate {
+    val schemaVersion = "2025-03-26" // or "2025-06-18" or "draft"
+    val schemaUrl =
+//        "https://raw.githubusercontent.com/modelcontextprotocol/modelcontextprotocol/refs/heads/main/schema/$schemaVersion/schema.json"
+        "https://raw.githubusercontent.com/modelcontextprotocol/modelcontextprotocol/refs/tags/$schemaVersion/schema/$schemaVersion/schema.json"
+    generatorName = "kotlin"
+    remoteInputSpec = schemaUrl
+    outputDir = layout.buildDirectory.dir("generated-sources/openapi").get().asFile.absolutePath
+    packageName = "io.modelcontextprotocol.kotlin.sdk.models"
+    modelPackage = "io.modelcontextprotocol.kotlin.sdk.models"
+    apiPackage = "io.modelcontextprotocol.kotlin.sdk.api"
+    generateModelTests = false
+    generateModelDocumentation = false
+    cleanupOutput = false
+    skipValidateSpec = true // do not validate spec
+    library = "multiplatform"
+    ignoreFileOverride = "${layout.projectDirectory}/.openapi-generator-ignore"
+    globalProperties.set(
+        mapOf(
+            "supportingFiles" to "",
+            "models" to "", // or generate all models
+        ),
+    )
+    configOptions.set(
+        mapOf(
+            "omitGradleWrapper" to "true",
+            "enumPropertyNaming" to "UPPERCASE",
+            "dateLibrary" to "kotlinx-datetime",
+            "explicitApi" to "true",
+            "modelMutable" to "false",
+        ),
+    )
 }
 
 // Generation library versions
 val generateLibVersion by tasks.registering {
     val outputDir = layout.buildDirectory.dir("generated-sources/libVersion")
     outputs.dir(outputDir)
+
+    // Capture version at configuration time to avoid configuration cache issues
+    val projectVersion = project.version.toString()
 
     doLast {
         val sourceFile = outputDir.get().file("io/modelcontextprotocol/kotlin/sdk/LibVersion.kt").asFile
@@ -21,7 +80,7 @@ val generateLibVersion by tasks.registering {
             """
             package io.modelcontextprotocol.kotlin.sdk
 
-            public const val LIB_VERSION: String = "${project.version}"
+            public const val LIB_VERSION: String = "$projectVersion"
             
             """.trimIndent(),
         )
@@ -63,6 +122,7 @@ kotlin {
         commonTest {
             dependencies {
                 implementation(kotlin("test"))
+                implementation(libs.kotest.assertions.core)
                 implementation(libs.kotest.assertions.json)
             }
         }

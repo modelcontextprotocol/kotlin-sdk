@@ -30,6 +30,7 @@ import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.Tool
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
+import io.modelcontextprotocol.kotlin.sdk.server.ServerSession
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.InMemoryTransport
 import kotlinx.coroutines.CompletableDeferred
@@ -241,7 +242,28 @@ class ClientTest {
             serverOptions,
         )
 
-        server.setRequestHandler<InitializeRequest>(Method.Defined.Initialize) { _, _ ->
+        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
+
+        val client = Client(
+            clientInfo = Implementation(name = "test client", version = "1.0"),
+            options = ClientOptions(
+                capabilities = ClientCapabilities(sampling = EmptyJsonObject),
+            ),
+        )
+
+        val serverSessionResult = CompletableDeferred<ServerSession>()
+
+        listOf(
+            launch {
+                client.connect(clientTransport)
+            },
+            launch {
+                serverSessionResult.complete(server.connect(serverTransport))
+            },
+        ).joinAll()
+
+        val serverSession = serverSessionResult.await()
+        serverSession.setRequestHandler<InitializeRequest>(Method.Defined.Initialize) { _, _ ->
             InitializeResult(
                 protocolVersion = LATEST_PROTOCOL_VERSION,
                 capabilities = ServerCapabilities(
@@ -252,32 +274,13 @@ class ClientTest {
             )
         }
 
-        server.setRequestHandler<ListResourcesRequest>(Method.Defined.ResourcesList) { _, _ ->
+        serverSession.setRequestHandler<ListResourcesRequest>(Method.Defined.ResourcesList) { _, _ ->
             ListResourcesResult(resources = emptyList(), nextCursor = null)
         }
 
-        server.setRequestHandler<ListToolsRequest>(Method.Defined.ToolsList) { _, _ ->
+        serverSession.setRequestHandler<ListToolsRequest>(Method.Defined.ToolsList) { _, _ ->
             ListToolsResult(tools = emptyList(), nextCursor = null)
         }
-
-        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-
-        val client = Client(
-            clientInfo = Implementation(name = "test client", version = "1.0"),
-            options = ClientOptions(
-                capabilities = ClientCapabilities(sampling = EmptyJsonObject),
-            ),
-        )
-
-        listOf(
-            launch {
-                client.connect(clientTransport)
-            },
-            launch {
-                server.connect(serverTransport)
-            },
-        ).joinAll()
-
         // Server supports resources and tools, but not prompts
         val caps = client.serverCapabilities
         assertEquals(ServerCapabilities.Resources(null, null), caps?.resources)
@@ -368,24 +371,27 @@ class ClientTest {
 
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
 
+        val serverSessionResult = CompletableDeferred<ServerSession>()
+
         listOf(
             launch {
                 client.connect(clientTransport)
                 println("Client connected")
             },
             launch {
-                server.connect(serverTransport)
+                serverSessionResult.complete(server.connect(serverTransport))
                 println("Server connected")
             },
         ).joinAll()
 
+        val serverSession = serverSessionResult.await()
         // These should not throw
         val jsonObject = buildJsonObject {
             put("name", "John")
             put("age", 30)
             put("isStudent", false)
         }
-        server.sendLoggingMessage(
+        serverSession.sendLoggingMessage(
             LoggingMessageNotification(
                 params = LoggingMessageNotification.Params(
                     level = LoggingLevel.info,
@@ -393,11 +399,11 @@ class ClientTest {
                 ),
             ),
         )
-        server.sendResourceListChanged()
+        serverSession.sendResourceListChanged()
 
         // This should fail because the server doesn't have the tools capability
         val ex = assertFailsWith<IllegalStateException> {
-            server.sendToolListChanged()
+            serverSession.sendToolListChanged()
         }
         assertTrue(ex.message?.contains("Server does not support notifying of tool list changes") == true)
     }
@@ -418,7 +424,29 @@ class ClientTest {
 
         val def = CompletableDeferred<Unit>()
         val defTimeOut = CompletableDeferred<Unit>()
-        server.setRequestHandler<ListResourcesRequest>(Method.Defined.ResourcesList) { _, _ ->
+        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
+
+        val client = Client(
+            clientInfo = Implementation(name = "test client", version = "1.0"),
+            options = ClientOptions(capabilities = ClientCapabilities()),
+        )
+
+        val serverSessionResult = CompletableDeferred<ServerSession>()
+
+        listOf(
+            launch {
+                client.connect(clientTransport)
+                println("Client connected")
+            },
+            launch {
+                serverSessionResult.complete(server.connect(serverTransport))
+                println("Server connected")
+            },
+        ).joinAll()
+
+        val serverSession = serverSessionResult.await()
+
+        serverSession.setRequestHandler<ListResourcesRequest>(Method.Defined.ResourcesList) { _, _ ->
             // Simulate delay
             def.complete(Unit)
             try {
@@ -430,24 +458,6 @@ class ClientTest {
             ListResourcesResult(resources = emptyList())
             fail("Shouldn't have been called")
         }
-
-        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-
-        val client = Client(
-            clientInfo = Implementation(name = "test client", version = "1.0"),
-            options = ClientOptions(capabilities = ClientCapabilities()),
-        )
-
-        listOf(
-            launch {
-                client.connect(clientTransport)
-                println("Client connected")
-            },
-            launch {
-                server.connect(serverTransport)
-                println("Server connected")
-            },
-        ).joinAll()
 
         val defCancel = CompletableDeferred<Unit>()
         val job = launch {
@@ -478,7 +488,27 @@ class ClientTest {
             ),
         )
 
-        server.setRequestHandler<ListResourcesRequest>(Method.Defined.ResourcesList) { _, _ ->
+        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
+        val client = Client(
+            clientInfo = Implementation(name = "test client", version = "1.0"),
+            options = ClientOptions(capabilities = ClientCapabilities()),
+        )
+
+        val serverSessionResult = CompletableDeferred<ServerSession>()
+
+        listOf(
+            launch {
+                client.connect(clientTransport)
+                println("Client connected")
+            },
+            launch {
+                serverSessionResult.complete(server.connect(serverTransport))
+                println("Server connected")
+            },
+        ).joinAll()
+
+        val serverSession = serverSessionResult.await()
+        serverSession.setRequestHandler<ListResourcesRequest>(Method.Defined.ResourcesList) { _, _ ->
             // Simulate a delayed response
             // Wait ~100ms unless canceled
             try {
@@ -491,23 +521,6 @@ class ClientTest {
             }
             ListResourcesResult(resources = emptyList())
         }
-
-        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-        val client = Client(
-            clientInfo = Implementation(name = "test client", version = "1.0"),
-            options = ClientOptions(capabilities = ClientCapabilities()),
-        )
-
-        listOf(
-            launch {
-                client.connect(clientTransport)
-                println("Client connected")
-            },
-            launch {
-                server.connect(serverTransport)
-                println("Server connected")
-            },
-        ).joinAll()
 
         // Request with 1 msec timeout should fail immediately
         val ex = assertFailsWith<Exception> {
@@ -559,34 +572,6 @@ class ClientTest {
             serverOptions,
         )
 
-        server.setRequestHandler<InitializeRequest>(Method.Defined.Initialize) { _, _ ->
-            InitializeResult(
-                protocolVersion = LATEST_PROTOCOL_VERSION,
-                capabilities = ServerCapabilities(
-                    resources = ServerCapabilities.Resources(null, null),
-                    tools = ServerCapabilities.Tools(null),
-                ),
-                serverInfo = Implementation(name = "test", version = "1.0"),
-            )
-        }
-        val serverListToolsResult = ListToolsResult(
-            tools = listOf(
-                Tool(
-                    name = "testTool",
-                    title = "testTool title",
-                    description = "testTool description",
-                    annotations = null,
-                    inputSchema = Tool.Input(),
-                    outputSchema = null,
-                ),
-            ),
-            nextCursor = null,
-        )
-
-        server.setRequestHandler<ListToolsRequest>(Method.Defined.ToolsList) { _, _ ->
-            serverListToolsResult
-        }
-
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
 
         val client = Client(
@@ -601,14 +586,49 @@ class ClientTest {
             receivedMessage = msg
         }
 
+        val serverSessionResult = CompletableDeferred<ServerSession>()
+
         listOf(
             launch {
                 client.connect(clientTransport)
+                println("Client connected")
             },
             launch {
-                server.connect(serverTransport)
+                serverSessionResult.complete(server.connect(serverTransport))
+                println("Server connected")
             },
         ).joinAll()
+
+        val serverSession = serverSessionResult.await()
+
+        serverSession.setRequestHandler<InitializeRequest>(Method.Defined.Initialize) { _, _ ->
+            InitializeResult(
+                protocolVersion = LATEST_PROTOCOL_VERSION,
+                capabilities = ServerCapabilities(
+                    resources = ServerCapabilities.Resources(null, null),
+                    tools = ServerCapabilities.Tools(null),
+                ),
+                serverInfo = Implementation(name = "test", version = "1.0"),
+            )
+        }
+
+        val serverListToolsResult = ListToolsResult(
+            tools = listOf(
+                Tool(
+                    name = "testTool",
+                    title = "testTool title",
+                    description = "testTool description",
+                    annotations = null,
+                    inputSchema = Tool.Input(),
+                    outputSchema = null,
+                ),
+            ),
+            nextCursor = null,
+        )
+
+        serverSession.setRequestHandler<ListToolsRequest>(Method.Defined.ToolsList) { _, _ ->
+            serverListToolsResult
+        }
 
         val serverCapabilities = client.serverCapabilities
         assertEquals(ServerCapabilities.Tools(null), serverCapabilities?.tools)
@@ -652,15 +672,25 @@ class ClientTest {
             ),
         )
 
+        val serverSessionResult = CompletableDeferred<ServerSession>()
+
         listOf(
-            launch { client.connect(clientTransport) },
-            launch { server.connect(serverTransport) },
+            launch {
+                client.connect(clientTransport)
+                println("Client connected")
+            },
+            launch {
+                serverSessionResult.complete(server.connect(serverTransport))
+                println("Server connected")
+            },
         ).joinAll()
 
-        val clientCapabilities = server.clientCapabilities
+        val serverSession = serverSessionResult.await()
+
+        val clientCapabilities = serverSession.clientCapabilities
         assertEquals(ClientCapabilities.Roots(null), clientCapabilities?.roots)
 
-        val listRootsResult = server.listRoots()
+        val listRootsResult = serverSession.listRoots()
 
         assertEquals(listRootsResult.roots, clientRoots)
     }
@@ -773,15 +803,27 @@ class ClientTest {
 
         // Track notifications
         var rootListChangedNotificationReceived = false
-        server.setNotificationHandler<RootsListChangedNotification>(Method.Defined.NotificationsRootsListChanged) {
+
+        val serverSessionResult = CompletableDeferred<ServerSession>()
+
+        listOf(
+            launch {
+                client.connect(clientTransport)
+                println("Client connected")
+            },
+            launch {
+                serverSessionResult.complete(server.connect(serverTransport))
+                println("Server connected")
+            },
+        ).joinAll()
+
+        val serverSession = serverSessionResult.await()
+        serverSession.setNotificationHandler<RootsListChangedNotification>(
+            Method.Defined.NotificationsRootsListChanged,
+        ) {
             rootListChangedNotificationReceived = true
             CompletableDeferred(Unit)
         }
-
-        listOf(
-            launch { client.connect(clientTransport) },
-            launch { server.connect(serverTransport) },
-        ).joinAll()
 
         client.sendRootsListChanged()
 
@@ -809,14 +851,24 @@ class ClientTest {
             ),
         )
 
+        val serverSessionResult = CompletableDeferred<ServerSession>()
+
         listOf(
-            launch { client.connect(clientTransport) },
-            launch { server.connect(serverTransport) },
+            launch {
+                client.connect(clientTransport)
+                println("Client connected")
+            },
+            launch {
+                serverSessionResult.complete(server.connect(serverTransport))
+                println("Server connected")
+            },
         ).joinAll()
+
+        val serverSession = serverSessionResult.await()
 
         // Verify that creating an elicitation throws an exception
         val exception = assertFailsWith<IllegalStateException> {
-            server.createElicitation(
+            serverSession.createElicitation(
                 message = "Please provide your GitHub username",
                 requestedSchema = CreateElicitationRequest.RequestedSchema(
                     properties = buildJsonObject {
@@ -879,12 +931,22 @@ class ClientTest {
             ),
         )
 
+        val serverSessionResult = CompletableDeferred<ServerSession>()
+
         listOf(
-            launch { client.connect(clientTransport) },
-            launch { server.connect(serverTransport) },
+            launch {
+                client.connect(clientTransport)
+                println("Client connected")
+            },
+            launch {
+                serverSessionResult.complete(server.connect(serverTransport))
+                println("Server connected")
+            },
         ).joinAll()
 
-        val result = server.createElicitation(
+        val serverSession = serverSessionResult.await()
+
+        val result = serverSession.createElicitation(
             message = elicitationMessage,
             requestedSchema = requestedSchema,
         )
