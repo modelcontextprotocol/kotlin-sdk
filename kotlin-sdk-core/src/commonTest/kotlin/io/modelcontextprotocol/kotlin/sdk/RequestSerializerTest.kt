@@ -281,6 +281,57 @@ class RequestSerializerTest {
         assertEquals(buildJsonObject { put("result", "Legacy tool result") }, decoded.toolResult)
     }
 
+    // Only supported content types
+    @Test
+    fun `should not deserialize ResourceLink in CreateMessageResult`() {
+        val json = """{
+            "model": "test-model",
+            "role": "assistant", 
+            "content": {
+              "type": "resource_link",
+              "uri": "file:///project/src/main.rs",
+              "name": "main.rs",
+              "description": "Primary application entry point",
+              "mimeType": "text/x-rust"
+            },
+            "stopReason": "endTurn"
+        }"""
+
+        val decoded = McpJson.decodeFromString<RequestResult>(json)
+
+        assertIs<CreateMessageResult>(decoded)
+        assertEquals("test-model", decoded.model)
+        assertEquals(Role.assistant, decoded.role)
+        assertEquals(StopReason.EndTurn, decoded.stopReason)
+        assertIs<UnknownContent>(decoded.content)
+    }
+
+    // Only supported content types
+    @Test
+    fun `should not deserialize EmbeddedResource in CreateMessageResult`() {
+        val json = """{
+            "model": "test-model",
+            "role": "assistant", 
+            "content": {
+                "type": "resource", 
+                "resource": {
+                    "uri": "file:///test.txt",
+                    "mimeType": "text/plain",
+                    "text": "content"
+                }
+            },
+            "stopReason": "endTurn"
+        }"""
+
+        val decoded = McpJson.decodeFromString<RequestResult>(json)
+
+        assertIs<CreateMessageResult>(decoded)
+        assertEquals("test-model", decoded.model)
+        assertEquals(Role.assistant, decoded.role)
+        assertEquals(StopReason.EndTurn, decoded.stopReason)
+        assertIs<UnknownContent>(decoded.content)
+    }
+
     // Fallback Test
     @Test
     fun `should deserialize EmptyRequestResult for unknown result type`() {

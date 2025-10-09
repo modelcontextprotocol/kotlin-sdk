@@ -974,11 +974,22 @@ public data class GetPromptRequest(
     override val method: Method = Method.Defined.PromptsGet
 }
 
-@Deprecated("For backwards compatibility; use ContentBlock instead", ReplaceWith("ContentBlock"))
-public sealed interface PromptMessageContent {
+/**
+ * The server's response content indicating the type of content.
+ */
+public sealed interface ContentWithType {
     public val type: String
 }
 
+/**
+ * Represents the content of a prompt message. Deprecated.
+ */
+@Deprecated("For backwards compatibility; use ContentBlock instead", ReplaceWith("ContentBlock"))
+public sealed interface PromptMessageContent : ContentWithType
+
+/**
+ * Represents multimodal content of a prompt message. Deprecated.
+ */
 @Deprecated(
     "For backwards compatibility; use CreateMessageResultContent or SamplingMessageContent instead",
     ReplaceWith("CreateMessageResultContent"),
@@ -995,13 +1006,13 @@ public sealed interface ContentBlock : PromptMessageContent
  * Represents content for the CreateMessageResult
  */
 @Serializable(with = CreateMessageResultContentMultimodalPolymorphicSerializer::class)
-public sealed interface CreateMessageResultContent : ContentBlock
+public sealed interface CreateMessageResultContent : ContentWithType
 
 /**
  * Represents content for the SamplingMessage
  */
 @Serializable(with = SamplingMessageContentMultimodalPolymorphicSerializer::class)
-public sealed interface SamplingMessageContent : ContentBlock
+public sealed interface SamplingMessageContent : ContentWithType
 
 /**
  * Text provided to or from an LLM.

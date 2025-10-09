@@ -458,6 +458,10 @@ public final class io/modelcontextprotocol/kotlin/sdk/ContentBlock$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public abstract interface class io/modelcontextprotocol/kotlin/sdk/ContentWithType {
+	public abstract fun getType ()Ljava/lang/String;
+}
+
 public final class io/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest : io/modelcontextprotocol/kotlin/sdk/ServerRequest, io/modelcontextprotocol/kotlin/sdk/WithMeta {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest$Companion;
 	public fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/CreateElicitationRequest$RequestedSchema;Lkotlinx/serialization/json/JsonObject;)V
@@ -664,7 +668,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/CreateMessageResult$Compan
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
-public abstract interface class io/modelcontextprotocol/kotlin/sdk/CreateMessageResultContent : io/modelcontextprotocol/kotlin/sdk/ContentBlock {
+public abstract interface class io/modelcontextprotocol/kotlin/sdk/CreateMessageResultContent : io/modelcontextprotocol/kotlin/sdk/ContentWithType {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/CreateMessageResultContent$Companion;
 }
 
@@ -2039,8 +2043,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/PromptMessage$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
-public abstract interface class io/modelcontextprotocol/kotlin/sdk/PromptMessageContent {
-	public abstract fun getType ()Ljava/lang/String;
+public abstract interface class io/modelcontextprotocol/kotlin/sdk/PromptMessageContent : io/modelcontextprotocol/kotlin/sdk/ContentWithType {
 }
 
 public abstract interface class io/modelcontextprotocol/kotlin/sdk/PromptMessageContentMultimodal : io/modelcontextprotocol/kotlin/sdk/PromptMessageContent {
@@ -2635,7 +2638,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/SamplingMessage$Companion 
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
-public abstract interface class io/modelcontextprotocol/kotlin/sdk/SamplingMessageContent : io/modelcontextprotocol/kotlin/sdk/ContentBlock {
+public abstract interface class io/modelcontextprotocol/kotlin/sdk/SamplingMessageContent : io/modelcontextprotocol/kotlin/sdk/ContentWithType {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/SamplingMessageContent$Companion;
 }
 
