@@ -21,12 +21,12 @@ jobs:
       matrix:
         include:
           - os: macos-latest-xlarge
-            name: "macOS Build & Tests"
+            name: "macOS"
             java-opts: "-Xmx8g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx6g -DexcludeDockerTests=true"
             gradle-task: "clean ktlintCheck assemble macosArm64Test macosX64Test jvmTest koverLog koverHtmlReport"
             test-type: "macos"
           - os: ubuntu-latest
-            name: "Ubuntu Docker Tests"
+            name: "Ubuntu"
             java-opts: "-Xmx4g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx3g"
             gradle-task: "clean :kotlin-sdk-test:jvmTest"
             test-type: "ubuntu"
