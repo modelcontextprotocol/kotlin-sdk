@@ -32,7 +32,7 @@ jobs:
             test-type: "ubuntu"
     env:
       JAVA_OPTS: "${{ matrix.java-opts }}"
-      TS_SDK_IMAGE: "registry.jetbrains.team/p/grazi/grazie-infra-public/typescript-sdk-mcp@sha256:585bd19d0f2c3e46250da4d128cf3f2e8c155dc387026927e319f556a4fd559f"
+      TS_SDK_IMAGE: "registry.jetbrains.team/p/grazi/grazie-infra-public/typescript-sdk-mcp@sha256:69f7762ec271b768b10e2d383e1dbc135c4df38a314a75c1ef35e9ff42276cb4"
     steps:
       - uses: actions/checkout@v5
 
