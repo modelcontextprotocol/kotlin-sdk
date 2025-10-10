@@ -1,5 +1,10 @@
-package io.modelcontextprotocol.kotlin.sdk.integration.typescript
+package io.modelcontextprotocol.kotlin.sdk.integration.typescript.sse
 
+import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TransportKind
+import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TsTestBase
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -11,19 +16,22 @@ import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.test.fail
 
-class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
+class TsEdgeCasesTestSse : TsTestBase() {
+
+    override val transportKind = TransportKind.SSE
 
     private var port: Int = 0
     private lateinit var serverUrl: String
-    private var httpServer: KotlinServerForTypeScriptClient? = null
+    private var httpServer: KotlinServerForTsClient? = null
 
     @BeforeEach
     fun setUp() {
         port = findFreePort()
         serverUrl = "http://localhost:$port/mcp"
         killProcessOnPort(port)
-        httpServer = KotlinServerForTypeScriptClient()
+        httpServer = KotlinServerForTsClient()
         httpServer?.start(port)
         if (!waitForPort(port = port)) {
             throw IllegalStateException("Kotlin test server did not become ready on localhost:$port within timeout")
@@ -116,6 +124,35 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
     @Test
     @Timeout(60, unit = TimeUnit.SECONDS)
     fun testComplexConcurrentRequests() = runTest {
+        fun prettyFail(
+            index: Int,
+            command: String,
+            expectation: String,
+            output: String,
+        ): Nothing {
+            val msg = buildString {
+                appendLine("Assertion failed for client #$index")
+                appendLine("Expectation: $expectation")
+                appendLine("Command: $command")
+                appendLine("----- OUTPUT BEGIN -----")
+                appendLine(output.trimEnd())
+                appendLine("----- OUTPUT END -----")
+            }
+            fail(msg)
+        }
+
+        fun assertContains(
+            index: Int,
+            command: String,
+            output: String,
+            needle: String,
+            description: String,
+        ) {
+            if (!output.contains(needle)) {
+                prettyFail(index, command, "$description — expected to contain: \"$needle\"", output)
+            }
+        }
+
         val commands = listOf(
             "npx tsx myClient.ts $serverUrl greet \"Client1\"",
             "npx tsx myClient.ts $serverUrl multi-greet \"Client2\"",
@@ -124,41 +161,78 @@ class TypeScriptEdgeCasesTest : TypeScriptTestBase() {
             "npx tsx myClient.ts $serverUrl multi-greet \"Client5\"",
         )
 
-        val threads = commands.mapIndexed { index, command ->
-            Thread {
-                println("Starting client $index")
-                val output = executeCommand(command, tsClientDir)
-                println("Client $index completed")
+        coroutineScope {
+            val jobs = commands.mapIndexed { index, command ->
+                async(kotlinx.coroutines.Dispatchers.IO) {
+                    println("Starting client $index")
+                    val output = executeCommand(command, tsClientDir)
+                    println("Client $index completed")
 
-                assertTrue(
-                    output.contains("Connected to server"),
-                    "Client $index should connect to server",
-                )
-                assertTrue(
-                    output.contains("Disconnected from server"),
-                    "Client $index should disconnect cleanly",
-                )
+                    assertContains(
+                        index,
+                        command,
+                        output,
+                        "Connected to server",
+                        "Client should connect to server",
+                    )
+                    assertContains(
+                        index,
+                        command,
+                        output,
+                        "Disconnected from server",
+                        "Client should disconnect cleanly",
+                    )
 
-                when {
-                    command.contains("greet \"Client1\"") ->
-                        assertTrue(output.contains("Hello, Client1!"), "Client 1 should receive correct greeting")
+                    when {
+                        command.contains("greet \"Client1\"") ->
+                            assertContains(
+                                index,
+                                command,
+                                output,
+                                "Hello, Client1!",
+                                "Client 1 should receive correct greeting",
+                            )
 
-                    command.contains("multi-greet \"Client2\"") ->
-                        assertTrue(output.contains("Multiple greetings"), "Client 2 should receive multiple greetings")
+                        command.contains("multi-greet \"Client2\"") ->
+                            assertContains(
+                                index,
+                                command,
+                                output,
+                                "Multiple greetings",
+                                "Client 2 should receive multiple greetings",
+                            )
 
-                    command.contains("greet \"Client3\"") ->
-                        assertTrue(output.contains("Hello, Client3!"), "Client 3 should receive correct greeting")
+                        command.contains("greet \"Client3\"") ->
+                            assertContains(
+                                index,
+                                command,
+                                output,
+                                "Hello, Client3!",
+                                "Client 3 should receive correct greeting",
+                            )
 
-                    !command.contains("greet") && !command.contains("multi-greet") ->
-                        assertTrue(output.contains("Available utils:"), "Client 4 should list available tools")
+                        !command.contains("greet") && !command.contains("multi-greet") ->
+                            assertContains(
+                                index,
+                                command,
+                                output,
+                                "Available utils:",
+                                "Client 4 should list available tools",
+                            )
 
-                    command.contains("multi-greet \"Client5\"") ->
-                        assertTrue(output.contains("Multiple greetings"), "Client 5 should receive multiple greetings")
+                        command.contains("multi-greet \"Client5\"") ->
+                            assertContains(
+                                index,
+                                command,
+                                output,
+                                "Multiple greetings",
+                                "Client 5 should receive multiple greetings",
+                            )
+                    }
                 }
-            }.apply { start() }
+            }
+            jobs.awaitAll()
         }
-
-        threads.forEach { it.join() }
     }
 
     @Test
