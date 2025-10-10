@@ -5,10 +5,9 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.response.respond
-import io.ktor.server.routing.Routing
+import io.ktor.server.routing.Route
 import io.ktor.server.routing.RoutingContext
 import io.ktor.server.routing.post
-import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.server.sse.SSE
 import io.ktor.server.sse.ServerSSESession
@@ -36,18 +35,11 @@ internal class SseTransportManager(transports: Map<String, SseServerTransport> =
     }
 }
 
-@KtorDsl
-public fun Routing.mcp(path: String, block: ServerSSESession.() -> Server) {
-    route(path) {
-        mcp(block)
-    }
-}
-
 /*
 * Configures the Ktor Application to handle Model Context Protocol (MCP) over Server-Sent Events (SSE).
 */
 @KtorDsl
-public fun Routing.mcp(block: ServerSSESession.() -> Server) {
+public fun Route.mcp(block: suspend ServerSSESession.() -> Server) {
     val sseTransportManager = SseTransportManager()
 
     sse {
@@ -61,12 +53,12 @@ public fun Routing.mcp(block: ServerSSESession.() -> Server) {
 
 @Suppress("FunctionName")
 @Deprecated("Use mcp() instead", ReplaceWith("mcp(block)"), DeprecationLevel.ERROR)
-public fun Application.MCP(block: ServerSSESession.() -> Server) {
+public fun Application.MCP(block: suspend ServerSSESession.() -> Server) {
     mcp(block)
 }
 
 @KtorDsl
-public fun Application.mcp(block: ServerSSESession.() -> Server) {
+public fun Application.mcp(block: suspend ServerSSESession.() -> Server) {
     install(SSE)
 
     routing {
@@ -77,7 +69,7 @@ public fun Application.mcp(block: ServerSSESession.() -> Server) {
 internal suspend fun ServerSSESession.mcpSseEndpoint(
     postEndpoint: String,
     sseTransportManager: SseTransportManager,
-    block: ServerSSESession.() -> Server,
+    block: suspend ServerSSESession.() -> Server,
 ) {
     val transport = mcpSseTransport(postEndpoint, sseTransportManager)
 
