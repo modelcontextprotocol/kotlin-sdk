@@ -13,21 +13,23 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main'  }}
 
 jobs:
-  validate-pr:
+  build:
     runs-on: ${{ matrix.os }}
-    name: Validate PR ${{ matrix.os }}
+    name: ${{ matrix.name }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: macos-latest-xlarge
-            java-opts: "-Xmx8g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx6g"
-            gradle-task: "clean ktlintCheck assemble macosArm64Test macosX64Test koverLog koverHtmlReport"
+            name: "macOS Build & Tests"
+            java-opts: "-Xmx8g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx6g -DexcludeDockerTests=true"
+            gradle-task: "clean ktlintCheck assemble macosArm64Test macosX64Test jvmTest koverLog koverHtmlReport"
             test-type: "macos"
           - os: ubuntu-latest
+            name: "Ubuntu Docker Tests"
             java-opts: "-Xmx4g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx3g"
             gradle-task: "clean :kotlin-sdk-test:jvmTest"
-            test-type: "jvm-docker"
+            test-type: "ubuntu"
     env:
       JAVA_OPTS: "${{ matrix.java-opts }}"
       TS_SDK_IMAGE: "registry.jetbrains.team/p/grazi/grazie-infra-public/typescript-sdk-mcp@sha256:585bd19d0f2c3e46250da4d128cf3f2e8c155dc387026927e319f556a4fd559f"

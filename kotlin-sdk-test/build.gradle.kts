@@ -6,6 +6,11 @@ kotlin {
     jvm {
         testRuns["test"].executionTask.configure {
             useJUnitPlatform()
+            if (System.getProperty("excludeDockerTests") == "true") {
+                filter {
+                    excludeTestsMatching("*.typescript.*")
+                }
+            }
         }
     }
     sourceSets {
