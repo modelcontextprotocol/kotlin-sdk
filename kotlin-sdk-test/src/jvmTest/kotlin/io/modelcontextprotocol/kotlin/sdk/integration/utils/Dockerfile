@@ -1,6 +1,6 @@
 # Docker image for running TypeScript SDK test servers/clients with SSE over HTTP and STDIO
 
-FROM node:20-alpine AS base
+FROM --platform=linux/amd64 node:20-alpine AS base
 
 # 1) System deps
 RUN apk add --no-cache git
