@@ -32,7 +32,7 @@ jobs:
             test-type: "ubuntu"
     env:
       JAVA_OPTS: "${{ matrix.java-opts }}"
-      TS_SDK_IMAGE: "registry.jetbrains.team/p/grazi/grazie-infra-public/typescript-sdk-mcp@sha256:585bd19d0f2c3e46250da4d128cf3f2e8c155dc387026927e319f556a4fd559f"
+      TS_SDK_IMAGE: "registry.jetbrains.team/p/grazi/grazie-infra-public/typescript-sdk-mcp@sha256:97db9969e988c566c87c1c1b64605c6ce333a6db84d702339c8670987e8e8064"
       DOCKER_DEFAULT_PLATFORM: "linux/amd64"
     steps:
       - uses: actions/checkout@v5
