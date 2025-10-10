@@ -143,8 +143,8 @@ abstract class TsTestBase {
     // ===== TypeScript Server (SSE/HTTP) =====
     protected fun startTypeScriptServer(port: Int): ContainerProcess {
         val container = GenericContainer(tsDockerImage()).apply {
-            withImagePullPolicy(PullPolicy.alwaysPull())
             withCreateContainerCmdModifier { cmd -> cmd.withPlatform("linux/amd64") }
+            withImagePullPolicy(PullPolicy.alwaysPull())
             withExposedPorts(port)
             mapOf(
                 "MCP_HOST" to "0.0.0.0",
