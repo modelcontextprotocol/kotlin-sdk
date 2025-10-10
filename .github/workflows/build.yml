@@ -14,10 +14,22 @@ concurrency:
 
 jobs:
   validate-pr:
-    runs-on: macos-latest-xlarge
-    name: Validate PR
+    runs-on: ${{ matrix.os }}
+    name: Validate PR ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest-xlarge
+            java-opts: "-Xmx8g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx6g"
+            gradle-task: "clean ktlintCheck assemble macosArm64Test macosX64Test koverLog koverHtmlReport"
+            test-type: "macos"
+          - os: ubuntu-latest
+            java-opts: "-Xmx4g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx3g"
+            gradle-task: "clean :kotlin-sdk-test:jvmTest"
+            test-type: "jvm-docker"
     env:
-      JAVA_OPTS: "-Xmx8g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx6g"
+      JAVA_OPTS: "${{ matrix.java-opts }}"
       TS_SDK_IMAGE: "registry.jetbrains.team/p/grazi/grazie-infra-public/typescript-sdk-mcp@sha256:585bd19d0f2c3e46250da4d128cf3f2e8c155dc387026927e319f556a4fd559f"
     steps:
       - uses: actions/checkout@v5
@@ -35,19 +47,24 @@ jobs:
           cache-read-only: true
 
       - name: Build with Gradle
-        run: |-
-          ./gradlew clean ktlintCheck build koverLog koverHtmlReport
-          ./gradlew :kotlin-sdk-core:publishToMavenLocal :kotlin-sdk-client:publishToMavenLocal :kotlin-sdk-server:publishToMavenLocal
+        run: ./gradlew ${{ matrix.gradle-task }}
+
+      - name: Publish to Maven Local (macOS only)
+        if: matrix.test-type == 'macos'
+        run: ./gradlew :kotlin-sdk-core:publishToMavenLocal :kotlin-sdk-client:publishToMavenLocal :kotlin-sdk-server:publishToMavenLocal
 
       - name: Build Kotlin-MCP-Client Sample
+        if: matrix.test-type == 'macos'
         working-directory: ./samples/kotlin-mcp-client
         run: ./../../gradlew clean build
 
       - name: Build Kotlin-MCP-Server Sample
+        if: matrix.test-type == 'macos'
         working-directory: ./samples/kotlin-mcp-server
         run: ./../../gradlew clean build
 
       - name: Build Weather-Stdio-Server Sample
+        if: matrix.test-type == 'macos'
         working-directory: ./samples/weather-stdio-server
         run: ./../../gradlew clean build
 
@@ -55,7 +72,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
-          name: reports
+          name: reports-${{ matrix.test-type }}
           path: |
             **/build/reports/
 
@@ -69,6 +86,7 @@ jobs:
           include_empty_in_summary: false
           include_time_in_summary: true
           annotate_only: true
+          check_name: Test Report (${{ matrix.test-type }})
 
       - name: Disable Auto-Merge on Fail
         if: failure() && github.event_name == 'pull_request'
