@@ -274,7 +274,7 @@ abstract class TsTestBase {
         )
 
         // Capture both stdout and stderr from the TS client to ensure error messages are returned to tests
-        val output = StringBuffer()
+        val output = StringBuilder()
 
         fun captureStream(stream: java.io.InputStream, prefix: String = ""): Thread = Thread {
             stream.bufferedReader().useLines { lines ->
@@ -330,7 +330,7 @@ abstract class TsTestBase {
             start()
         }
 
-        val output = StringBuffer()
+        val output = StringBuilder()
         Thread {
             process.errorStream.bufferedReader().useLines { lines ->
                 lines.forEach {
