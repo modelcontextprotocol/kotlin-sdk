@@ -33,6 +33,7 @@ jobs:
     env:
       JAVA_OPTS: "${{ matrix.java-opts }}"
       TS_SDK_IMAGE: "registry.jetbrains.team/p/grazi/grazie-infra-public/typescript-sdk-mcp@sha256:585bd19d0f2c3e46250da4d128cf3f2e8c155dc387026927e319f556a4fd559f"
+      DOCKER_DEFAULT_PLATFORM: "linux/amd64"
     steps:
       - uses: actions/checkout@v5
 
