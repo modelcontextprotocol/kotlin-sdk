@@ -78,6 +78,8 @@ abstract class TsTestBase {
                 add("docker")
                 add("run")
                 add("--rm")
+                add("--platform")
+                add("linux/amd64")
                 if (interactive) add("-i")
                 add("-v")
                 add("${getTsFilesPath("sse")}:/app/sse")

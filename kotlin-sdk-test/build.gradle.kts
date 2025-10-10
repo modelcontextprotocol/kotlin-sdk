@@ -11,6 +11,10 @@ kotlin {
                     excludeTestsMatching("*.typescript.*")
                 }
             }
+            // Pass DOCKER_DEFAULT_PLATFORM to test process for Testcontainers
+            System.getenv("DOCKER_DEFAULT_PLATFORM")?.let { platform ->
+                environment("DOCKER_DEFAULT_PLATFORM", platform)
+            }
         }
     }
     sourceSets {
