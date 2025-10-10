@@ -18,6 +18,7 @@ jobs:
     name: Validate PR
     env:
       JAVA_OPTS: "-Xmx8g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx6g"
+      TS_SDK_IMAGE: "registry.jetbrains.team/p/grazi/grazie-infra-public/typescript-sdk-mcp:585bd19d0f2c"
     steps:
       - uses: actions/checkout@v5
 
