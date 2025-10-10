@@ -66,7 +66,7 @@ abstract class TsTestBase {
             process.waitFor()
         }
 
-        fun runDockerCommand(
+        private fun runDockerCommand(
             image: String = tsDockerImage(),
             command: List<String>,
             interactive: Boolean = true,
