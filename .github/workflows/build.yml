@@ -22,7 +22,7 @@ jobs:
         include:
           - os: macos-latest-xlarge
             name: "macOS"
-            java-opts: "-Xmx8g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx6g"
+            java-opts: "-Xmx8g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx6g -DexcludeDockerTests=true"
             gradle-task: "clean ktlintCheck assemble macosArm64Test macosX64Test jvmTest koverLog koverHtmlReport"
             test-type: "macos"
           - os: ubuntu-latest
