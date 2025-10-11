@@ -46,8 +46,8 @@ openApiGenerate {
     generateModelDocumentation = false
     cleanupOutput = false
     skipValidateSpec = true // do not validate spec
-    library = "multiplatform"
-    ignoreFileOverride = "${layout.projectDirectory}/.openapi-generator-ignore"
+    library.set("multiplatform")
+    ignoreFileOverride.set("${layout.projectDirectory}/.openapi-generator-ignore")
     globalProperties.set(
         mapOf(
             "supportingFiles" to "",
