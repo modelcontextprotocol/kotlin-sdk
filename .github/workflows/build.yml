@@ -22,7 +22,7 @@ jobs:
         include:
           - os: macos-latest-xlarge
             name: "macOS"
-            java-opts: "-Xmx8g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx6g -DexcludeDockerTests=true"
+            java-opts: "-Xmx8g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx6g"
             gradle-task: "clean ktlintCheck assemble macosArm64Test macosX64Test jvmTest koverLog koverHtmlReport"
             test-type: "macos"
           - os: ubuntu-latest
@@ -32,8 +32,7 @@ jobs:
             test-type: "ubuntu"
     env:
       JAVA_OPTS: "${{ matrix.java-opts }}"
-      TS_SDK_IMAGE: "registry.jetbrains.team/p/grazi/grazie-infra-public/typescript-sdk-mcp@sha256:97db9969e988c566c87c1c1b64605c6ce333a6db84d702339c8670987e8e8064"
-      DOCKER_DEFAULT_PLATFORM: "linux/amd64"
+      TS_SDK_IMAGE: "registry.jetbrains.team/p/grazi/grazie-infra-public/typescript-sdk-mcp@sha256:69f7762ec271b768b10e2d383e1dbc135c4df38a314a75c1ef35e9ff42276cb4"
     steps:
       - uses: actions/checkout@v5
 

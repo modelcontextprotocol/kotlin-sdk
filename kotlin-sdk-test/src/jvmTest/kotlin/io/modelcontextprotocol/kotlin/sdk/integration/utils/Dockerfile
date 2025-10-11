@@ -1,6 +1,8 @@
 # Docker image for running TypeScript SDK test servers/clients with SSE over HTTP and STDIO
+# Be sure to build it for amd64 architecture with the following command:
+# `docker buildx build --platform linux/amd64 -t registry.jetbrains.team/p/grazi/grazie-infra-public/typescript-sdk-mcp:latest --push .`
 
-FROM --platform=linux/amd64 node:20-alpine AS base
+FROM node:20-alpine AS base
 
 # 1) System deps
 RUN apk add --no-cache git
