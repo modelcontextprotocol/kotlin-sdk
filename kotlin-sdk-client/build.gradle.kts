@@ -40,8 +40,18 @@ kotlin {
         commonTest {
             dependencies {
                 implementation(kotlin("test"))
+                implementation(dependencies.platform(libs.ktor.bom))
                 implementation(libs.ktor.client.mock)
                 implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.ktor.client.logging)
+            }
+        }
+
+        jvmTest {
+            dependencies {
+                implementation(libs.mokksy)
+                implementation(libs.awaitility)
+                implementation(libs.ktor.client.apache5)
                 runtimeOnly(libs.slf4j.simple)
             }
         }

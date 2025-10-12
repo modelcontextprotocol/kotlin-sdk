@@ -4,7 +4,7 @@ plugins {
 
 kotlin {
     jvm {
-        testRuns["test"].executionTask.configure {
+        tasks.withType<Test> {
             useJUnitPlatform()
         }
     }
