@@ -4,7 +4,7 @@ kotlin = "2.2.10"
 dokka = "2.0.0"
 atomicfu = "0.29.0"
 ktlint = "13.1.0"
-kover = "0.9.1"
+kover = "0.9.2"
 mavenPublish = "0.34.0"
 binaryCompatibilityValidatorPlugin = "0.18.1"
 
@@ -48,6 +48,7 @@ ktor-server-core = { group = "io.ktor", name = "ktor-server-core", version.ref =
 
 # Testing
 awaitility = { group = "org.awaitility", name = "awaitility-kotlin", version.ref = "awaitility" }
+kotest-assertions-core = { group = "io.kotest", name = "kotest-assertions-core", version.ref = "kotest" }
 kotest-assertions-json = { group = "io.kotest", name = "kotest-assertions-json", version.ref = "kotest" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 ktor-client-mock = { group = "io.ktor", name = "ktor-client-mock", version.ref = "ktor" }
