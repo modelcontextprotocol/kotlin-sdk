@@ -18,6 +18,7 @@ logging = "7.0.13"
 slf4j = "2.0.17"
 kotest = "6.0.3"
 awaitility = "4.3.0"
+mokksy = "0.5.1"
 
 # Samples
 mcp-kotlin = "0.7.2"
@@ -41,7 +42,10 @@ kotlinx-collections-immutable = { group = "org.jetbrains.kotlinx", name = "kotli
 kotlin-logging = { group = "io.github.oshai", name = "kotlin-logging", version.ref = "logging" }
 
 # Ktor
+ktor-bom = { group = "io.ktor", name = "ktor-bom", version.ref = "ktor" }
 ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
+ktor-client-logging = { group = "io.ktor", name = "ktor-client-logging"}
+ktor-client-apache5 = { group = "io.ktor", name = "ktor-client-apache5" }
 ktor-server-sse = { group = "io.ktor", name = "ktor-server-sse", version.ref = "ktor" }
 ktor-server-websockets = { group = "io.ktor", name = "ktor-server-websockets", version.ref = "ktor" }
 ktor-server-core = { group = "io.ktor", name = "ktor-server-core", version.ref = "ktor" }
@@ -53,6 +57,7 @@ kotest-assertions-json = { group = "io.kotest", name = "kotest-assertions-json",
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 ktor-client-mock = { group = "io.ktor", name = "ktor-client-mock", version.ref = "ktor" }
 ktor-server-test-host = { group = "io.ktor", name = "ktor-server-test-host", version.ref = "ktor" }
+mokksy = { group = "me.kpavlov.mokksy", name = "mokksy", version.ref = "mokksy" }
 slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
 
 # Samples
