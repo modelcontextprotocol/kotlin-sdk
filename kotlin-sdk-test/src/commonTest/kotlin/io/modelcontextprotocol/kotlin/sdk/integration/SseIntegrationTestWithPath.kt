@@ -2,10 +2,9 @@ package io.modelcontextprotocol.kotlin.sdk.integration
 
 import io.ktor.server.application.install
 import io.ktor.server.engine.embeddedServer
-import io.ktor.server.routing.routing
 import io.ktor.server.routing.route
+import io.ktor.server.routing.routing
 import io.modelcontextprotocol.kotlin.sdk.server.mcp
-import kotlin.collections.emptyList
 import io.ktor.server.cio.CIO as ServerCIO
 import io.ktor.server.sse.SSE as ServerSSE
 
