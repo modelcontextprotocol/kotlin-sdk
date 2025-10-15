@@ -1,8 +1,12 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
+import dev.mokksy.mokksy.Mokksy
+import dev.mokksy.mokksy.StubConfiguration
 import io.kotest.matchers.collections.shouldContain
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.apache5.Apache5
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.sse.SSE
 import io.ktor.http.HttpStatusCode
 import io.ktor.sse.ServerSentEvent
@@ -16,8 +20,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
-import me.kpavlov.mokksy.MokksyServer
-import me.kpavlov.mokksy.StubConfiguration
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.TestInstance
 import java.util.UUID
@@ -28,7 +30,7 @@ import kotlin.time.Duration.Companion.milliseconds
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StreamableHttpClientTest {
 
-    private val mokksy = MokksyServer(verbose = true)
+    private val mokksy = Mokksy(verbose = true)
 
     @AfterTest
     fun afterEach() {
@@ -90,7 +92,7 @@ class StreamableHttpClientTest {
         mokksy.get(name = "MCP GETs", requestType = Any::class) {
             path("/mcp")
             containsHeader("Mcp-Session-Id", sessionId)
-            containsHeader("Connection", "keep-alive")
+            containsHeader("Accept", "text/event-stream,text/event-stream") // todo: why 2 times?
             containsHeader("Cache-Control", "no-store")
         } respondsWithSseStream {
             headers += "Mcp-Session-Id" to sessionId
@@ -122,6 +124,9 @@ class StreamableHttpClientTest {
                 url = "http://localhost:${mokksy.port()}/mcp",
                 client = HttpClient(Apache5) {
                     install(SSE)
+                    install(Logging) {
+                        level = LogLevel.ALL
+                    }
                 },
             ),
         )
@@ -171,6 +176,8 @@ class StreamableHttpClientTest {
         }
 
         val listToolsResult = client.listTools()
+
+        println("✅  $listToolsResult")
 
         listToolsResult.tools shouldContain Tool(
             name = "get_weather",

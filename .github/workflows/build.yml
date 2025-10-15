@@ -16,6 +16,7 @@ jobs:
   validate-pr:
     runs-on: macos-latest-xlarge
     name: Validate PR
+    timeout-minutes: 20
     env:
       JAVA_OPTS: "-Xmx8g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx6g"
     steps:
