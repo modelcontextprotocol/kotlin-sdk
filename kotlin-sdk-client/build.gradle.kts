@@ -7,6 +7,7 @@ plugins {
     id("mcp.publishing")
     id("mcp.dokka")
     alias(libs.plugins.kotlinx.binary.compatibility.validator)
+    `netty-convention`
 }
 
 kotlin {
@@ -52,6 +53,7 @@ kotlin {
                 implementation(libs.mokksy)
                 implementation(libs.awaitility)
                 implementation(libs.ktor.client.apache5)
+                implementation(dependencies.platform(libs.netty.bom))
                 runtimeOnly(libs.slf4j.simple)
             }
         }

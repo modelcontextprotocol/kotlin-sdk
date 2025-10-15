@@ -5,6 +5,7 @@ dokka = "2.0.0"
 atomicfu = "0.29.0"
 ktlint = "13.1.0"
 kover = "0.9.2"
+netty = "4.2.7.Final"
 mavenPublish = "0.34.0"
 binaryCompatibilityValidatorPlugin = "0.18.1"
 
@@ -48,6 +49,7 @@ ktor-client-logging = { group = "io.ktor", name = "ktor-client-logging"}
 ktor-client-apache5 = { group = "io.ktor", name = "ktor-client-apache5" }
 ktor-client-okhttp = { group = "io.ktor", name = "ktor-client-okhttp" }
 ktor-server-sse = { group = "io.ktor", name = "ktor-server-sse", version.ref = "ktor" }
+ktor-server-netty = { group = "io.ktor", name = "ktor-server-netty" }
 ktor-server-websockets = { group = "io.ktor", name = "ktor-server-websockets", version.ref = "ktor" }
 ktor-server-core = { group = "io.ktor", name = "ktor-server-core", version.ref = "ktor" }
 
@@ -60,6 +62,7 @@ ktor-client-mock = { group = "io.ktor", name = "ktor-client-mock", version.ref =
 ktor-server-test-host = { group = "io.ktor", name = "ktor-server-test-host", version.ref = "ktor" }
 mokksy = { group = "dev.mokksy", name = "mokksy", version.ref = "mokksy" }
 slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
+netty-bom = { group = "io.netty", name = "netty-bom", version.ref = "netty" }
 
 # Samples
 ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktor" }
