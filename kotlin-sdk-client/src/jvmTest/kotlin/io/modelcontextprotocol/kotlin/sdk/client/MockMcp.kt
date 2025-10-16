@@ -67,7 +67,7 @@ internal class MockMcp(verbose: Boolean = false) {
         mokksy.get(name = "MCP GETs", requestType = Any::class) {
             path("/mcp")
             containsHeader("Mcp-Session-Id", sessionId)
-            containsHeader("Accept", "text/event-stream,text/event-stream") // todo: why 2 times?
+            containsHeader("Accept", "application/json,text/event-stream")
             containsHeader("Cache-Control", "no-store")
         } respondsWithSseStream {
             headers += "Mcp-Session-Id" to sessionId
