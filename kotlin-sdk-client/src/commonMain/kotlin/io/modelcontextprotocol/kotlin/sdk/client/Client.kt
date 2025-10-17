@@ -50,6 +50,8 @@ import kotlinx.atomicfu.update
 import kotlinx.collections.immutable.minus
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentSet
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -405,10 +407,14 @@ public open class Client(private val clientInfo: Implementation, options: Client
     ): EmptyRequestResult = request(request, options)
 
     /**
-     * Calls a tool on the server by name, passing the specified arguments.
+     * Calls a tool on the server by name, passing the specified arguments and metadata.
      *
      * @param name The name of the tool to call.
      * @param arguments A map of argument names to values for the tool.
+     * @param meta A map of metadata key-value pairs. Keys must follow MCP specification format.
+     *             - Optional prefix: dot-separated labels followed by slash (e.g., "api.example.com/")
+     *             - Name: alphanumeric start/end, may contain hyphens, underscores, dots, alphanumerics
+     *             - Reserved prefixes starting with "mcp" or "modelcontextprotocol" are forbidden
      * @param compatibility Whether to use compatibility mode for older protocol versions.
      * @param options Optional request options.
      * @return The result of the tool call, or `null` if none.
@@ -417,23 +423,19 @@ public open class Client(private val clientInfo: Implementation, options: Client
     public suspend fun callTool(
         name: String,
         arguments: Map<String, Any?>,
+        meta: Map<String, Any?> = emptyMap(),
         compatibility: Boolean = false,
         options: RequestOptions? = null,
     ): CallToolResultBase? {
-        val jsonArguments = arguments.mapValues { (_, value) ->
-            when (value) {
-                is String -> JsonPrimitive(value)
-                is Number -> JsonPrimitive(value)
-                is Boolean -> JsonPrimitive(value)
-                is JsonElement -> value
-                null -> JsonNull
-                else -> JsonPrimitive(value.toString())
-            }
-        }
+        validateMetaKeys(meta.keys)
+
+        val jsonArguments = convertToJsonMap(arguments)
+        val jsonMeta = convertToJsonMap(meta)
 
         val request = CallToolRequest(
             name = name,
             arguments = JsonObject(jsonArguments),
+            _meta = JsonObject(jsonMeta),
         )
         return callTool(request, compatibility, options)
     }
@@ -587,5 +589,138 @@ public open class Client(private val clientInfo: Implementation, options: Client
     private suspend fun handleListRoots(): ListRootsResult {
         val rootList = roots.value.values.toList()
         return ListRootsResult(rootList)
+    }
+
+    /**
+     * Validates meta keys according to MCP specification.
+     *
+     * Key format: [prefix/]name
+     * - Prefix (optional): dot-separated labels + slash
+     * - Reserved prefixes contain "modelcontextprotocol" or "mcp" as complete labels
+     * - Name: alphanumeric start/end, may contain hyphens, underscores, dots (empty allowed)
+     */
+    private fun validateMetaKeys(keys: Set<String>) {
+        for (key in keys) {
+            if (!isValidMetaKey(key)) {
+                throw Error("Invalid _meta key '$key'. Must follow format [prefix/]name with valid labels.")
+            }
+        }
+    }
+
+    private fun isValidMetaKey(key: String): Boolean {
+        if (key.isEmpty()) return false
+        val parts = key.split('/', limit = 2)
+        return when (parts.size) {
+            1 -> {
+                // No prefix, just validate name
+                isValidMetaName(parts[0])
+            }
+
+            2 -> {
+                val (prefix, name) = parts
+                isValidMetaPrefix(prefix) && isValidMetaName(name)
+            }
+
+            else -> false
+        }
+    }
+
+    private fun isValidMetaPrefix(prefix: String): Boolean {
+        if (prefix.isEmpty()) return false
+        val labels = prefix.split('.')
+
+        if (!labels.all { isValidLabel(it) }) {
+            return false
+        }
+
+        return !labels.any { label ->
+            label.equals("modelcontextprotocol", ignoreCase = true) ||
+                label.equals("mcp", ignoreCase = true)
+        }
+    }
+
+    private fun isValidLabel(label: String): Boolean {
+        if (label.isEmpty()) return false
+        if (!label.first().isLetter() || !label.last().let { it.isLetter() || it.isDigit() }) {
+            return false
+        }
+        return label.all { it.isLetter() || it.isDigit() || it == '-' }
+    }
+
+    private fun isValidMetaName(name: String): Boolean {
+        // Empty names are allowed per MCP specification
+        if (name.isEmpty()) return true
+
+        if (!name.first().isLetterOrDigit() || !name.last().isLetterOrDigit()) {
+            return false
+        }
+        return name.all { it.isLetterOrDigit() || it in setOf('-', '_', '.') }
+    }
+
+    private fun convertToJsonMap(map: Map<String, Any?>): Map<String, JsonElement> = map.mapValues { (key, value) ->
+        try {
+            convertToJsonElement(value)
+        } catch (e: Exception) {
+            logger.warn { "Failed to convert value for key '$key': ${e.message}. Using string representation." }
+            JsonPrimitive(value.toString())
+        }
+    }
+
+    @OptIn(ExperimentalUnsignedTypes::class, ExperimentalSerializationApi::class)
+    private fun convertToJsonElement(value: Any?): JsonElement = when (value) {
+        null -> JsonNull
+
+        is Map<*, *> -> {
+            val jsonMap = value.entries.associate { (k, v) ->
+                k.toString() to convertToJsonElement(v)
+            }
+            JsonObject(jsonMap)
+        }
+
+        is JsonElement -> value
+
+        is String -> JsonPrimitive(value)
+
+        is Number -> JsonPrimitive(value)
+
+        is Boolean -> JsonPrimitive(value)
+
+        is Char -> JsonPrimitive(value.toString())
+
+        is Enum<*> -> JsonPrimitive(value.name)
+
+        is Collection<*> -> JsonArray(value.map { convertToJsonElement(it) })
+
+        is Array<*> -> JsonArray(value.map { convertToJsonElement(it) })
+
+        is IntArray -> JsonArray(value.map { JsonPrimitive(it) })
+
+        is LongArray -> JsonArray(value.map { JsonPrimitive(it) })
+
+        is FloatArray -> JsonArray(value.map { JsonPrimitive(it) })
+
+        is DoubleArray -> JsonArray(value.map { JsonPrimitive(it) })
+
+        is BooleanArray -> JsonArray(value.map { JsonPrimitive(it) })
+
+        is ShortArray -> JsonArray(value.map { JsonPrimitive(it) })
+
+        is ByteArray -> JsonArray(value.map { JsonPrimitive(it) })
+
+        is CharArray -> JsonArray(value.map { JsonPrimitive(it.toString()) })
+
+        // ExperimentalUnsignedTypes
+        is UIntArray -> JsonArray(value.map { JsonPrimitive(it) })
+
+        is ULongArray -> JsonArray(value.map { JsonPrimitive(it) })
+
+        is UShortArray -> JsonArray(value.map { JsonPrimitive(it) })
+
+        is UByteArray -> JsonArray(value.map { JsonPrimitive(it) })
+
+        else -> {
+            logger.debug { "Converting unknown type ${value::class.simpleName} to string: $value" }
+            JsonPrimitive(value.toString())
+        }
     }
 }
