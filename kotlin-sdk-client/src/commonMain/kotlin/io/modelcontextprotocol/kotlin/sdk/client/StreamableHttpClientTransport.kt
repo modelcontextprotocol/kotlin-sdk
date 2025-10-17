@@ -228,7 +228,8 @@ public class StreamableHttpClientTransport(
             ) {
                 method = HttpMethod.Get
                 applyCommonHeaders(this)
-                accept(ContentType.Text.EventStream)
+                // sseSession will add ContentType.Text.EventStream automatically
+                accept(ContentType.Application.Json)
                 (resumptionToken ?: lastEventId)?.let { headers.append(MCP_RESUMPTION_TOKEN_HEADER, it) }
                 requestBuilder()
             }
