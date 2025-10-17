@@ -235,10 +235,22 @@ public class StreamableHttpClientTransport(
             }
             logger.debug { "Client SSE session started successfully." }
         } catch (e: SSEClientException) {
-            if (e.response?.status == HttpStatusCode.MethodNotAllowed) {
+            val responseStatus = e.response?.status
+            val responseContentType = e.response?.contentType()
+
+            // 405 means server doesn't support SSE at GET endpoint - this is expected and valid
+            if (responseStatus == HttpStatusCode.MethodNotAllowed) {
                 logger.info { "Server returned 405 for GET/SSE, stream disabled." }
                 return
             }
+
+            // If server returns application/json, it means it doesn't support SSE for this session
+            // This is valid per spec - server can choose to only use JSON responses
+            if (responseContentType?.match(ContentType.Application.Json) == true) {
+                logger.info { "Server returned application/json for GET/SSE, using JSON-only mode." }
+                return
+            }
+
             _onError(e)
             throw e
         }
