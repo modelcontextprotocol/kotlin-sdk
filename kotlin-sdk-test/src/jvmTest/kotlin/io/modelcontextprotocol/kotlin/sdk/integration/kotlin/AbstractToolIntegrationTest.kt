@@ -289,7 +289,7 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
             }
 
             val pattern = if (precision > 0) "0." + "0".repeat(precision) else "0"
-            val symbols = DecimalFormatSymbols(Locale.US).apply { decimalSeparator = ',' }
+            val symbols = DecimalFormatSymbols(Locale.US).apply { decimalSeparator = '.' }
             val df = DecimalFormat(pattern, symbols).apply { isGroupingUsed = false }
             val formattedResult = df.format(result)
 
@@ -482,9 +482,9 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
                   "a" : 5.5,
                   "b" : 2.0,
                   "result" : 11.0,
-                  "formattedResult" : "11,000",
+                  "formattedResult" : "11.000",
                   "precision" : 3,
-                  "tags" : [ ]
+                  "tags" : [ "test", "calculator", "integration" ]
                 }
         """.trimIndent()
 
@@ -633,7 +633,7 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
               "a": 0.0,
               "b": 0.0,
               "result": 0.0,
-              "formattedResult": "0,00",
+              "formattedResult": "0.00",
               "precision": 2,
               "tags": []
             }
