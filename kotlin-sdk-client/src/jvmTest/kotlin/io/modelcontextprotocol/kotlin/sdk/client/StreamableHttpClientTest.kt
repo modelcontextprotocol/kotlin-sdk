@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
 import io.kotest.matchers.collections.shouldContain
+import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.sse.ServerSentEvent
 import io.modelcontextprotocol.kotlin.sdk.ClientCapabilities
@@ -145,6 +146,42 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
         )
 
         mockMcp.mockUnsubscribeRequest(sessionId = sessionId)
+
+        client.close()
+    }
+
+    @Test
+    fun `handle streaming not supported`() = runBlocking {
+        val client = Client(
+            clientInfo = Implementation(name = "client2", version = "1.0.0"),
+            options = ClientOptions(
+                capabilities = ClientCapabilities(),
+            ),
+        )
+
+        val sessionId = UUID.randomUUID().toString()
+
+        mockMcp.onInitialize(clientName = "client2", sessionId = sessionId)
+
+        mockMcp.handleJSONRPCRequest(
+            jsonRpcMethod = "notifications/initialized",
+            expectedSessionId = sessionId,
+            sessionId = sessionId,
+            statusCode = HttpStatusCode.Accepted,
+        )
+
+        mockMcp.onSubscribe(
+            httpMethod = HttpMethod.Get,
+            sessionId = sessionId,
+        ) respondsWith {
+            headers += MCP_SESSION_ID_HEADER to sessionId
+            body = null
+            httpStatus = HttpStatusCode.UnsupportedMediaType
+        }
+
+        mockMcp.mockUnsubscribeRequest(sessionId = sessionId)
+
+        connect(client)
 
         client.close()
     }
