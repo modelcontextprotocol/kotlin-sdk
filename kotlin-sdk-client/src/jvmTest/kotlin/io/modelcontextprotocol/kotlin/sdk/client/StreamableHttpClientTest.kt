@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
 import io.kotest.matchers.collections.shouldContain
+import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.sse.ServerSentEvent
@@ -10,13 +11,16 @@ import io.modelcontextprotocol.kotlin.sdk.Tool
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 import org.junit.jupiter.api.TestInstance
-import java.util.UUID
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 /**
  * Integration tests for the `StreamableHttpClientTransport` implementation
@@ -24,6 +28,7 @@ import kotlin.time.Duration.Companion.milliseconds
  * to simulate Streaming HTTP with server-sent events (SSE).
  * @author Konstantin Pavlov
  */
+@OptIn(ExperimentalUuidApi::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Suppress("LongMethod")
 internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
@@ -40,7 +45,7 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
             ),
         )
 
-        val sessionId = UUID.randomUUID().toString()
+        val sessionId = Uuid.random().toString()
 
         mockMcp.onInitialize(
             clientName = "client1",
@@ -151,17 +156,32 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
     }
 
     @Test
-    fun `handle streaming not supported`() = runBlocking {
+    fun `handle MethodNotAllowed`() = runTest {
+        checkSupportNonStreamingResponse(
+            ContentType.Text.EventStream,
+            HttpStatusCode.MethodNotAllowed,
+        )
+    }
+
+    @Test
+    fun `handle non-streaming response`() = runTest {
+        checkSupportNonStreamingResponse(
+            ContentType.Application.Json,
+            HttpStatusCode.OK,
+        )
+    }
+
+    private suspend fun checkSupportNonStreamingResponse(contentType: ContentType, statusCode: HttpStatusCode) {
+        val sessionId = "SID_${Uuid.random().toHexString()}"
+        val clientName = "client-${Uuid.random().toHexString()}"
         val client = Client(
-            clientInfo = Implementation(name = "client2", version = "1.0.0"),
+            clientInfo = Implementation(name = clientName, version = "1.0.0"),
             options = ClientOptions(
                 capabilities = ClientCapabilities(),
             ),
         )
 
-        val sessionId = UUID.randomUUID().toString()
-
-        mockMcp.onInitialize(clientName = "client2", sessionId = sessionId)
+        mockMcp.onInitialize(clientName = clientName, sessionId = sessionId)
 
         mockMcp.handleJSONRPCRequest(
             jsonRpcMethod = "notifications/initialized",
@@ -176,12 +196,21 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
         ) respondsWith {
             headers += MCP_SESSION_ID_HEADER to sessionId
             body = null
-            httpStatus = HttpStatusCode.UnsupportedMediaType
+            httpStatus = statusCode
+            this.contentType = contentType
+        }
+
+        mockMcp.handleWithResult(jsonRpcMethod = "ping", sessionId = sessionId) {
+            buildJsonObject {}
         }
 
         mockMcp.mockUnsubscribeRequest(sessionId = sessionId)
 
         connect(client)
+
+        delay(1.seconds)
+
+        client.ping() // connection is still alive
 
         client.close()
     }
