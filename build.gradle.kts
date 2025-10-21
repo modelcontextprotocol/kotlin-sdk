@@ -6,7 +6,7 @@ plugins {
 
 allprojects {
     group = "io.modelcontextprotocol"
-    version = "0.7.2"
+    version = "0.7.3"
 }
 
 dependencies {
