@@ -1,8 +1,10 @@
 # MCP Kotlin SDK
 
+[![Maven Central](https://img.shields.io/maven-central/v/io.modelcontextprotocol/kotlin-sdk.svg?label=Maven%20Central)](https://repo1.maven.org/maven2/io/modelcontextprotocol/kotlin-sdk/)
+[![Kotlin](https://img.shields.io/badge/kotlin-2.2+-blueviolet.svg?logo=kotlin)](http://kotlinlang.org)
 [![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-blueviolet?logo=kotlin)](https://kotlinlang.org/docs/multiplatform.html)
+[![JVM](https://img.shields.io/badge/JVM-1.8+-red.svg?logo=jvm)](http://java.com)
 [![Platforms](https://img.shields.io/badge/Platforms-JVM%20%7C%20Wasm%2FJS%20%7C%20Native%20(iOS%2FiOS%20Simulator)-blue)](https://kotlinlang.org/docs/multiplatform.html)
-[![Maven Central](https://img.shields.io/maven-central/v/io.modelcontextprotocol/kotlin-sdk.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:io.modelcontextprotocol%20a:kotlin-sdk)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Kotlin Multiplatform implementation of the [Model Context Protocol](https://modelcontextprotocol.io) (MCP),
