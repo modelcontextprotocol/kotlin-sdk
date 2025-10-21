@@ -11,7 +11,6 @@ import io.modelcontextprotocol.kotlin.sdk.Tool
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
@@ -156,7 +155,7 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
     }
 
     @Test
-    fun `handle MethodNotAllowed`() = runTest {
+    fun `handle MethodNotAllowed`() = runBlocking {
         checkSupportNonStreamingResponse(
             ContentType.Text.EventStream,
             HttpStatusCode.MethodNotAllowed,
@@ -164,7 +163,7 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
     }
 
     @Test
-    fun `handle non-streaming response`() = runTest {
+    fun `handle non-streaming response`() = runBlocking {
         checkSupportNonStreamingResponse(
             ContentType.Application.Json,
             HttpStatusCode.OK,
