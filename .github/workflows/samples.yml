@@ -14,7 +14,7 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   # Cancel only when the run is NOT on `main` branch
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main'  }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   build:
@@ -45,32 +45,14 @@ jobs:
           add-job-summary: 'always'
           cache-read-only: true
 
-      - name: Build with Gradle
-        working-directory: matrix.sample
-        run: |-
-          ./../../gradlew --no-daemon --rerun-tasks \
-            clean \
-            ktlintCheck \
-            build \
-            koverLog koverHtmlReport \
-            publishToMavenLocal
-
       - name: "Build Sample: ${{ matrix.sample }}"
         working-directory: ./samples/${{ matrix.sample }}
-        run: ./../../gradlew --no-daemon --rerun-tasks clean build
+        run: ./../../gradlew --no-daemon clean build
 
       - name: Upload Reports
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
-          name: reports
+          name: reports-${{ matrix.sample }}
           path: |
             **/build/reports/
-
-      - name: Disable Auto-Merge on Fail
-        if: failure() && github.event_name == 'pull_request'
-        run: gh pr merge --disable-auto "$PR_URL"
-        env:
-          PR_URL: ${{github.event.pull_request.html_url}}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
