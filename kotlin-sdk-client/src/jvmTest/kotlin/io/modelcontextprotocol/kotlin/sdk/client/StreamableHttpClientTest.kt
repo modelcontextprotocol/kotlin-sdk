@@ -1,11 +1,8 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
 import io.kotest.matchers.collections.shouldContain
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.apache5.Apache5
-import io.ktor.client.plugins.logging.LogLevel
-import io.ktor.client.plugins.logging.Logging
-import io.ktor.client.plugins.sse.SSE
+import io.ktor.http.ContentType
+import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.sse.ServerSentEvent
 import io.modelcontextprotocol.kotlin.sdk.ClientCapabilities
@@ -18,10 +15,11 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 import org.junit.jupiter.api.TestInstance
-import java.util.UUID
-import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 /**
  * Integration tests for the `StreamableHttpClientTransport` implementation
@@ -29,67 +27,38 @@ import kotlin.time.Duration.Companion.milliseconds
  * to simulate Streaming HTTP with server-sent events (SSE).
  * @author Konstantin Pavlov
  */
+@OptIn(ExperimentalUuidApi::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class StreamableHttpClientTest {
-
-    // start mokksy on random port
-    private val mockMcp: MockMcp = MockMcp(verbose = true)
-
-    @AfterTest
-    fun afterEach() {
-        mockMcp.checkForUnmatchedRequests()
-    }
+@Suppress("LongMethod")
+internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
 
     @Test
-    @Suppress("LongMethod")
-    fun `test streamableHttpClient`(): Unit = runBlocking {
+    fun `test streamableHttpClient`() = runBlocking {
         val client = Client(
-            clientInfo = Implementation(name = "sample-client", version = "1.0.0"),
+            clientInfo = Implementation(
+                name = "client1",
+                version = "1.0.0",
+            ),
             options = ClientOptions(
                 capabilities = ClientCapabilities(),
             ),
         )
 
-        val sessionId = UUID.randomUUID().toString()
+        val sessionId = Uuid.random().toString()
 
-        mockMcp.onJSONRPCRequest(
-            jsonRpcMethod = "initialize",
+        mockMcp.onInitialize(
+            clientName = "client1",
             sessionId = sessionId,
-        ) {
-            // language=json
-            """
-            {
-              "jsonrpc": "2.0",
-              "id": 1,
-              "result": {
-                "capabilities": {
-                  "tools": {
-                     "listChanged": false
-                  }
-                },
-                "protocolVersion": "2025-03-26",
-                "serverInfo": {
-                  "name": "Mock MCP Server",
-                  "version": "1.0.0"
-                },
-                "_meta": {
-                  "foo": "bar"
-                }
-              }
-            }
-            """.trimIndent()
-        }
+        )
 
-        mockMcp.onJSONRPCRequest(
+        mockMcp.handleJSONRPCRequest(
             jsonRpcMethod = "notifications/initialized",
             expectedSessionId = sessionId,
             sessionId = sessionId,
             statusCode = HttpStatusCode.Accepted,
-        ) {
-            ""
-        }
+        )
 
-        mockMcp.onSubscribeWithGet(sessionId) {
+        mockMcp.handleSubscribeWithGet(sessionId) {
             flow {
                 delay(500.milliseconds)
                 emit(
@@ -112,30 +81,14 @@ class StreamableHttpClientTest {
             }
         }
 
-        client.connect(
-            StreamableHttpClientTransport(
-                url = mockMcp.url,
-                client = HttpClient(Apache5) {
-                    install(SSE)
-                    install(Logging) {
-                        level = LogLevel.ALL
-                    }
-                },
-            ),
-        )
-
         // TODO: how to get notifications via Client API?
 
-        mockMcp.onJSONRPCRequest(
+        mockMcp.handleWithResult(
             jsonRpcMethod = "tools/list",
             sessionId = sessionId,
-        ) {
             // language=json
-            """
-             {
-              "jsonrpc": "2.0",
-              "id": 3,
-              "result": {
+            result = """
+              {
                 "tools": [
                   {
                     "name": "get_weather",
@@ -164,9 +117,10 @@ class StreamableHttpClientTest {
                   }
                 ]
               }
-            }
-            """.trimIndent()
-        }
+            """.trimIndent(),
+        )
+
+        connect(client)
 
         val listToolsResult = client.listTools()
 
@@ -196,6 +150,66 @@ class StreamableHttpClientTest {
         )
 
         mockMcp.mockUnsubscribeRequest(sessionId = sessionId)
+
+        client.close()
+    }
+
+    @Test
+    fun `handle MethodNotAllowed`() = runBlocking {
+        checkSupportNonStreamingResponse(
+            ContentType.Text.EventStream,
+            HttpStatusCode.MethodNotAllowed,
+        )
+    }
+
+    @Test
+    fun `handle non-streaming response`() = runBlocking {
+        checkSupportNonStreamingResponse(
+            ContentType.Application.Json,
+            HttpStatusCode.OK,
+        )
+    }
+
+    private suspend fun checkSupportNonStreamingResponse(contentType: ContentType, statusCode: HttpStatusCode) {
+        val sessionId = "SID_${Uuid.random().toHexString()}"
+        val clientName = "client-${Uuid.random().toHexString()}"
+        val client = Client(
+            clientInfo = Implementation(name = clientName, version = "1.0.0"),
+            options = ClientOptions(
+                capabilities = ClientCapabilities(),
+            ),
+        )
+
+        mockMcp.onInitialize(clientName = clientName, sessionId = sessionId)
+
+        mockMcp.handleJSONRPCRequest(
+            jsonRpcMethod = "notifications/initialized",
+            expectedSessionId = sessionId,
+            sessionId = sessionId,
+            statusCode = HttpStatusCode.Accepted,
+        )
+
+        mockMcp.onSubscribe(
+            httpMethod = HttpMethod.Get,
+            sessionId = sessionId,
+        ) respondsWith {
+            headers += MCP_SESSION_ID_HEADER to sessionId
+            body = null
+            httpStatus = statusCode
+            this.contentType = contentType
+        }
+
+        mockMcp.handleWithResult(jsonRpcMethod = "ping", sessionId = sessionId) {
+            buildJsonObject {}
+        }
+
+        mockMcp.mockUnsubscribeRequest(sessionId = sessionId)
+
+        connect(client)
+
+        delay(1.seconds)
+
+        client.ping() // connection is still alive
 
         client.close()
     }

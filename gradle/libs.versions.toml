@@ -22,7 +22,7 @@ awaitility = "4.3.0"
 mokksy = "0.6.1"
 
 # Samples
-mcp-kotlin = "0.7.2"
+mcp-kotlin = "0.7.3"
 anthropic = "2.7.0"
 shadow = "8.1.1"
 
