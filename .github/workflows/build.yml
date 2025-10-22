@@ -16,6 +16,7 @@ jobs:
   validate-pr:
     runs-on: macos-latest-xlarge
     name: Validate PR
+    timeout-minutes: 20
     env:
       JAVA_OPTS: "-Xmx8g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx6g"
     steps:
@@ -35,20 +36,20 @@ jobs:
 
       - name: Build with Gradle
         run: |-
-          ./gradlew clean ktlintCheck build koverLog koverHtmlReport
-          ./gradlew :kotlin-sdk-core:publishToMavenLocal :kotlin-sdk-client:publishToMavenLocal :kotlin-sdk-server:publishToMavenLocal
+          ./gradlew --no-daemon clean ktlintCheck build koverLog koverHtmlReport
+          ./gradlew --no-daemon :kotlin-sdk-core:publishToMavenLocal :kotlin-sdk-client:publishToMavenLocal :kotlin-sdk-server:publishToMavenLocal
 
       - name: Build Kotlin-MCP-Client Sample
         working-directory: ./samples/kotlin-mcp-client
-        run: ./../../gradlew clean build
+        run: ./../../gradlew --no-daemon clean build
 
       - name: Build Kotlin-MCP-Server Sample
         working-directory: ./samples/kotlin-mcp-server
-        run: ./../../gradlew clean build
+        run: ./../../gradlew --no-daemon clean build
 
       - name: Build Weather-Stdio-Server Sample
         working-directory: ./samples/weather-stdio-server
-        run: ./../../gradlew clean build
+        run: ./../../gradlew --no-daemon clean build
 
       - name: Upload Reports
         if: ${{ !cancelled() }}

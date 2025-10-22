@@ -1,7 +1,9 @@
 @file:OptIn(ExperimentalWasmDsl::class)
 
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.ExplicitApiMode
+import org.jetbrains.kotlin.gradle.dsl.JvmDefaultMode
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -11,11 +13,50 @@ plugins {
 }
 
 kotlin {
-    jvm {
-        compilerOptions.jvmTarget = JvmTarget.JVM_1_8
+
+    compilerOptions {
+        freeCompilerArgs =
+            listOf(
+                "-Wextra",
+                "-Xmulti-dollar-interpolation",
+            )
     }
-    macosX64(); macosArm64()
-    linuxX64(); linuxArm64()
+
+    // coreLibrariesVersion = "2.0.10"
+
+    jvm {
+        compilerOptions {
+            jvmTarget = JvmTarget.JVM_1_8
+            javaParameters = true
+            jvmDefault = JvmDefaultMode.ENABLE
+            freeCompilerArgs.addAll(
+                "-Xdebug",
+            )
+        }
+
+        tasks.withType<Test>().configureEach {
+
+            useJUnitPlatform()
+
+            maxParallelForks = Runtime.getRuntime().availableProcessors()
+            forkEvery = 100
+            testLogging {
+                exceptionFormat = TestExceptionFormat.SHORT
+                showStandardStreams = true
+                events("failed")
+            }
+            systemProperty("kotest.output.ansi", "true")
+            reports {
+                junitXml.required.set(true)
+                junitXml.includeSystemOutLog.set(true)
+                junitXml.includeSystemErrLog.set(true)
+            }
+        }
+    }
+    macosX64()
+    macosArm64()
+    linuxX64()
+    linuxArm64()
     mingwX64()
     js { nodejs() }
     wasmJs { nodejs() }
