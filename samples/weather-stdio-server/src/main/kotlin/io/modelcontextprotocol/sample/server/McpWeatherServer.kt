@@ -33,10 +33,12 @@ fun `run mcp server`() {
         }
         // Install content negotiation plugin for JSON serialization/deserialization
         install(ContentNegotiation) {
-            json(Json {
-                ignoreUnknownKeys = true
-                prettyPrint = true
-            })
+            json(
+                Json {
+                    ignoreUnknownKeys = true
+                    prettyPrint = true
+                },
+            )
         }
     }
 
@@ -44,11 +46,11 @@ fun `run mcp server`() {
     val server = Server(
         Implementation(
             name = "weather", // Tool name is "weather"
-            version = "1.0.0" // Version of the implementation
+            version = "1.0.0", // Version of the implementation
         ),
         ServerOptions(
-            capabilities = ServerCapabilities(tools = ServerCapabilities.Tools(listChanged = true))
-        )
+            capabilities = ServerCapabilities(tools = ServerCapabilities.Tools(listChanged = true)),
+        ),
     )
 
     // Register a tool to fetch weather alerts by state
@@ -64,11 +66,11 @@ fun `run mcp server`() {
                     put("description", "Two-letter US state code (e.g. CA, NY)")
                 }
             },
-            required = listOf("state")
-        )
+            required = listOf("state"),
+        ),
     ) { request ->
         val state = request.arguments["state"]?.jsonPrimitive?.content ?: return@addTool CallToolResult(
-            content = listOf(TextContent("The 'state' parameter is required."))
+            content = listOf(TextContent("The 'state' parameter is required.")),
         )
 
         val alerts = httpClient.getAlerts(state)
@@ -91,14 +93,14 @@ fun `run mcp server`() {
                     put("type", "number")
                 }
             },
-            required = listOf("latitude", "longitude")
-        )
+            required = listOf("latitude", "longitude"),
+        ),
     ) { request ->
         val latitude = request.arguments["latitude"]?.jsonPrimitive?.doubleOrNull
         val longitude = request.arguments["longitude"]?.jsonPrimitive?.doubleOrNull
         if (latitude == null || longitude == null) {
             return@addTool CallToolResult(
-                content = listOf(TextContent("The 'latitude' and 'longitude' parameters are required."))
+                content = listOf(TextContent("The 'latitude' and 'longitude' parameters are required.")),
             )
         }
 
@@ -110,7 +112,7 @@ fun `run mcp server`() {
     // Create a transport using standard IO for server communication
     val transport = StdioServerTransport(
         System.`in`.asInput(),
-        System.out.asSink().buffered()
+        System.out.asSink().buffered(),
     )
 
     runBlocking {

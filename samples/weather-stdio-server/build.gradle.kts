@@ -21,6 +21,7 @@ dependencies {
     implementation(libs.slf4j.simple)
 
     testImplementation(kotlin("test"))
+
     testImplementation(libs.mcp.kotlin.client)
     testImplementation(libs.kotlinx.coroutines.test)
 }
