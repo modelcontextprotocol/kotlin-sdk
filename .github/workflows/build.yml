@@ -36,8 +36,12 @@ jobs:
 
       - name: Build with Gradle
         run: |-
-          ./gradlew --no-daemon clean ktlintCheck build koverLog koverHtmlReport
-          ./gradlew --no-daemon :kotlin-sdk-core:publishToMavenLocal :kotlin-sdk-client:publishToMavenLocal :kotlin-sdk-server:publishToMavenLocal
+          ./gradlew --no-daemon --rerun-tasks \
+            clean \
+            ktlintCheck \
+            build \
+            koverLog koverHtmlReport \
+            publishToMavenLocal
 
       - name: Build Kotlin-MCP-Client Sample
         working-directory: ./samples/kotlin-mcp-client
