@@ -36,24 +36,26 @@ jobs:
 
       - name: Build with Gradle
         run: |-
-          ./gradlew --no-daemon --rerun-tasks \
+          ./gradlew --no-daemon \
+            --rerun-tasks \
             clean \
             ktlintCheck \
             build \
             koverLog koverHtmlReport \
-            publishToMavenLocal
+            publishToMavenLocal \
+            -Pversion=0.0.1-SNAPSHOT
 
       - name: Build Kotlin-MCP-Client Sample
         working-directory: ./samples/kotlin-mcp-client
-        run: ./../../gradlew --no-daemon clean build
+        run: ./gradlew --no-daemon clean build -Pmcp.kotlin.overrideVersion=0.0.1-SNAPSHOT
 
       - name: Build Kotlin-MCP-Server Sample
         working-directory: ./samples/kotlin-mcp-server
-        run: ./../../gradlew --no-daemon clean build
+        run: ./gradlew --no-daemon clean build -Pmcp.kotlin.overrideVersion=0.0.1-SNAPSHOT
 
       - name: Build Weather-Stdio-Server Sample
         working-directory: ./samples/weather-stdio-server
-        run: ./../../gradlew --no-daemon clean build
+        run: ./gradlew --no-daemon clean build -Pmcp.kotlin.overrideVersion=0.0.1-SNAPSHOT
 
       - name: Upload Reports
         if: ${{ !cancelled() }}
