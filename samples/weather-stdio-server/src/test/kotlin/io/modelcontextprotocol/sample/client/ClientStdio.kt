@@ -11,15 +11,15 @@ import kotlinx.io.asSource
 import kotlinx.io.buffered
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-
+import kotlinx.serialization.json.buildJsonObject
 
 fun main(): Unit = runBlocking {
-    val process = ProcessBuilder("java", "-jar", "build/libs/weather-stdio-server-0.1.0-all.jar")
+    val process = ProcessBuilder("java", "-jar", "./build/libs/weather-stdio-server-0.1.0-all.jar")
         .start()
 
     val transport = StdioClientTransport(
         input = process.inputStream.asSource().buffered(),
-        output = process.outputStream.asSink().buffered()
+        output = process.outputStream.asSink().buffered(),
     )
 
     // Initialize the MCP client with client information
@@ -29,15 +29,17 @@ fun main(): Unit = runBlocking {
 
     client.connect(transport)
 
-
-    val toolsList = client.listTools()?.tools?.map { it.name }
+    val toolsList = client.listTools().tools.map { it.name }
     println("Available Tools = $toolsList")
 
     val weatherForecastResult = client.callTool(
         CallToolRequest(
             name = "get_forecast",
-            arguments = JsonObject(mapOf("latitude" to JsonPrimitive(38.5816), "longitude" to JsonPrimitive(-121.4944)))
-        )
+            arguments = buildJsonObject {
+                put("latitude", JsonPrimitive(38.5816))
+                put("longitude", JsonPrimitive(-121.4944))
+            },
+        ),
     )?.content?.map { if (it is TextContent) it.text else it.toString() }
 
     println("Weather Forcast: ${weatherForecastResult?.joinToString(separator = "\n", prefix = "\n", postfix = "\n")}")
@@ -46,8 +48,8 @@ fun main(): Unit = runBlocking {
         client.callTool(
             CallToolRequest(
                 name = "get_alerts",
-                arguments = JsonObject(mapOf("state" to JsonPrimitive("TX")))
-            )
+                arguments = JsonObject(mapOf("state" to JsonPrimitive("TX"))),
+            ),
         )?.content?.map { if (it is TextContent) it.text else it.toString() }
 
     println("Alert Response = $alertResult")
