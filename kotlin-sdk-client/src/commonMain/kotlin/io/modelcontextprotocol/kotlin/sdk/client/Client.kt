@@ -50,14 +50,7 @@ import kotlinx.atomicfu.update
 import kotlinx.collections.immutable.minus
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentSet
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.add
-import kotlinx.serialization.json.buildJsonArray
-import kotlinx.serialization.json.buildJsonObject
 import kotlin.coroutines.cancellation.CancellationException
 
 private val logger = KotlinLogging.logger {}
@@ -86,6 +79,11 @@ public class ClientOptions(
  */
 public open class Client(private val clientInfo: Implementation, options: ClientOptions = ClientOptions()) :
     Protocol(options) {
+
+    companion object {
+        private val labelPattern = Regex("[a-zA-Z]([a-zA-Z0-9-]*[a-zA-Z0-9])?")
+        private val namePattern = Regex("[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?")
+    }
 
     /**
      * Retrieves the server's reported capabilities after the initialization process completes.
@@ -427,8 +425,8 @@ public open class Client(private val clientInfo: Implementation, options: Client
     ): CallToolResultBase? {
         validateMetaKeys(meta.keys)
 
-        val jsonArguments = convertToJsonMap(arguments)
-        val jsonMeta = convertToJsonMap(meta)
+        val jsonArguments = JsonConverter.convertToJsonMap(arguments)
+        val jsonMeta = JsonConverter.convertToJsonMap(meta)
 
         val request = CallToolRequest(
             name = name,
@@ -598,9 +596,6 @@ public open class Client(private val clientInfo: Implementation, options: Client
      * - Name: alphanumeric start/end, may contain hyphens, underscores, dots (empty allowed)
      */
     private fun validateMetaKeys(keys: Set<String>) {
-        val labelPattern = Regex("[a-zA-Z]([a-zA-Z0-9-]*[a-zA-Z0-9])?")
-        val namePattern = Regex("[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?")
-
         keys.forEach { key ->
             require(key.isNotEmpty()) { "Meta key cannot be empty" }
 
@@ -635,69 +630,6 @@ public open class Client(private val clientInfo: Implementation, options: Client
             require(name.isEmpty() || name.matches(namePattern)) {
                 "Invalid _meta key '$key': name must start and end with alphanumeric characters, and contain only alphanumerics, hyphens, underscores, or dots"
             }
-        }
-    }
-
-    private fun convertToJsonMap(map: Map<String, Any?>): Map<String, JsonElement> = map.mapValues { (key, value) ->
-        try {
-            convertToJsonElement(value)
-        } catch (e: Exception) {
-            logger.warn { "Failed to convert value for key '$key': ${e.message}. Using string representation." }
-            JsonPrimitive(value.toString())
-        }
-    }
-
-    @OptIn(ExperimentalUnsignedTypes::class, ExperimentalSerializationApi::class)
-    private fun convertToJsonElement(value: Any?): JsonElement = when (value) {
-        null -> JsonNull
-
-        is JsonElement -> value
-
-        is String -> JsonPrimitive(value)
-
-        is Number -> JsonPrimitive(value)
-
-        is Boolean -> JsonPrimitive(value)
-
-        is Char -> JsonPrimitive(value.toString())
-
-        is Enum<*> -> JsonPrimitive(value.name)
-
-        is Map<*, *> -> buildJsonObject { value.forEach { (k, v) -> put(k.toString(), convertToJsonElement(v)) } }
-
-        is Collection<*> -> buildJsonArray { value.forEach { add(convertToJsonElement(it)) } }
-
-        is Array<*> -> buildJsonArray { value.forEach { add(convertToJsonElement(it)) } }
-
-        // Primitive arrays
-        is IntArray -> buildJsonArray { value.forEach { add(it) } }
-
-        is LongArray -> buildJsonArray { value.forEach { add(it) } }
-
-        is FloatArray -> buildJsonArray { value.forEach { add(it) } }
-
-        is DoubleArray -> buildJsonArray { value.forEach { add(it) } }
-
-        is BooleanArray -> buildJsonArray { value.forEach { add(it) } }
-
-        is ShortArray -> buildJsonArray { value.forEach { add(it) } }
-
-        is ByteArray -> buildJsonArray { value.forEach { add(it) } }
-
-        is CharArray -> buildJsonArray { value.forEach { add(it.toString()) } }
-
-        // Unsigned arrays
-        is UIntArray -> buildJsonArray { value.forEach { add(JsonPrimitive(it)) } }
-
-        is ULongArray -> buildJsonArray { value.forEach { add(JsonPrimitive(it)) } }
-
-        is UShortArray -> buildJsonArray { value.forEach { add(JsonPrimitive(it)) } }
-
-        is UByteArray -> buildJsonArray { value.forEach { add(JsonPrimitive(it)) } }
-
-        else -> {
-            logger.debug { "Converting unknown type ${value::class} to string: $value" }
-            JsonPrimitive(value.toString())
         }
     }
 }
