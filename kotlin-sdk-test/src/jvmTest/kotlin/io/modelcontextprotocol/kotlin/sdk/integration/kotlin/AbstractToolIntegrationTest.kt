@@ -484,7 +484,7 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
                   "result" : 11.0,
                   "formattedResult" : "11,000",
                   "precision" : 3,
-                  "tags" : [ ]
+                  "tags" : ["test", "calculator", "integration"]
                 }
         """.trimIndent()
 
