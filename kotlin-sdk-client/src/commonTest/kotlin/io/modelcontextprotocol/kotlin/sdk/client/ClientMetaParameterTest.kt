@@ -1,15 +1,12 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
-import io.modelcontextprotocol.kotlin.sdk.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.Implementation
-import io.modelcontextprotocol.kotlin.sdk.InitializeResult
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCRequest
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCResponse
-import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
-import io.modelcontextprotocol.kotlin.sdk.shared.Transport
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContains
@@ -60,6 +57,26 @@ class ClientMetaParameterTest {
         }
 
         assertTrue(result.isSuccess, "Valid meta keys should not cause exceptions")
+        mockTransport.lastJsonRpcRequest()?.let { request ->
+            val params = request.params as JsonObject
+            assertTrue(params.containsKey("_meta"), "Request should contain _meta field")
+            val metaField = params["_meta"] as JsonObject
+
+            // Verify all meta keys are present
+            assertEquals(validMeta.size, metaField.size, "All meta keys should be included")
+
+            // Verify specific key-value pairs
+            assertEquals("value1", metaField["simple-key"]?.jsonPrimitive?.content)
+            assertEquals("1.0", metaField["api.example.com/version"]?.jsonPrimitive?.content)
+            assertEquals("enabled", metaField["com.company.app/setting"]?.jsonPrimitive?.content)
+            assertEquals(3, metaField["retry_count"]?.jsonPrimitive?.int)
+            assertEquals(true, metaField["user.preference"]?.jsonPrimitive?.boolean)
+            assertEquals("alphanumeric", metaField["valid123"]?.jsonPrimitive?.content)
+            assertEquals("multiple-dots", metaField["multi.dot.name"]?.jsonPrimitive?.content)
+            assertEquals("underscore", metaField["under_score"]?.jsonPrimitive?.content)
+            assertEquals("hyphen", metaField["hyphen-dash"]?.jsonPrimitive?.content)
+            assertEquals("complex-valid-prefix", metaField["org.apache.kafka/consumer-config"]?.jsonPrimitive?.content)
+        }
     }
 
     @Test
@@ -191,7 +208,7 @@ class ClientMetaParameterTest {
 
         assertTrue(result.isSuccess, "Complex data type conversion should not throw exceptions")
 
-        mockTransport.lastJsonRpcRequest?.let { request ->
+        mockTransport.lastJsonRpcRequest()?.let { request ->
             assertEquals("tools/call", request.method)
             val params = request.params as JsonObject
             assertTrue(params.containsKey("_meta"), "Request should contain _meta field")
@@ -208,7 +225,7 @@ class ClientMetaParameterTest {
 
         assertTrue(result.isSuccess)
 
-        mockTransport.lastJsonRpcRequest?.let { request ->
+        mockTransport.lastJsonRpcRequest()?.let { request ->
             val params = request.params as JsonObject
             val metaField = params["_meta"] as JsonObject
             assertTrue(metaField.containsKey("config"))
@@ -219,7 +236,7 @@ class ClientMetaParameterTest {
     fun `should include empty meta object when meta parameter not provided`() = runTest {
         client.callTool("test-tool", mapOf("arg" to "value"))
 
-        mockTransport.lastJsonRpcRequest?.let { request ->
+        mockTransport.lastJsonRpcRequest()?.let { request ->
             val params = request.params as JsonObject
             val metaField = params["_meta"] as JsonObject
             assertTrue(metaField.isEmpty(), "Meta field should be empty when not provided")
@@ -254,76 +271,4 @@ class ClientMetaParameterTest {
     }
 }
 
-class MockTransport : Transport {
-    private val _sentMessages = mutableListOf<JSONRPCMessage>()
-    val sentMessages: List<JSONRPCMessage> = _sentMessages
-
-    private var onMessageBlock: (suspend (JSONRPCMessage) -> Unit)? = null
-    private var onCloseBlock: (() -> Unit)? = null
-    private var onErrorBlock: ((Throwable) -> Unit)? = null
-
-    override suspend fun start() = Unit
-
-    override suspend fun send(message: JSONRPCMessage) {
-        _sentMessages += message
-
-        // Auto-respond to initialization and tool calls
-        when (message) {
-            is JSONRPCRequest -> {
-                when (message.method) {
-                    "initialize" -> {
-                        val initResponse = JSONRPCResponse(
-                            id = message.id,
-                            result = InitializeResult(
-                                protocolVersion = "2024-11-05",
-                                capabilities = ServerCapabilities(
-                                    tools = ServerCapabilities.Tools(listChanged = null),
-                                ),
-                                serverInfo = Implementation("mock-server", "1.0.0"),
-                            ),
-                        )
-                        onMessageBlock?.invoke(initResponse)
-                    }
-
-                    "tools/call" -> {
-                        val toolResponse = JSONRPCResponse(
-                            id = message.id,
-                            result = CallToolResult(
-                                content = listOf(),
-                                isError = false,
-                            ),
-                        )
-                        onMessageBlock?.invoke(toolResponse)
-                    }
-                }
-            }
-
-            else -> {
-                // Handle other message types if needed
-            }
-        }
-    }
-
-    override suspend fun close() {
-        onCloseBlock?.invoke()
-    }
-
-    override fun onMessage(block: suspend (JSONRPCMessage) -> Unit) {
-        onMessageBlock = block
-    }
-
-    override fun onClose(block: () -> Unit) {
-        onCloseBlock = block
-    }
-
-    override fun onError(block: (Throwable) -> Unit) {
-        onErrorBlock = block
-    }
-
-    fun setupInitializationResponse() {
-        // This method helps set up the mock for proper initialization
-    }
-}
-
-val MockTransport.lastJsonRpcRequest: JSONRPCRequest?
-    get() = sentMessages.lastOrNull() as? JSONRPCRequest
+suspend fun MockTransport.lastJsonRpcRequest(): JSONRPCRequest? = getSentMessages().lastOrNull() as? JSONRPCRequest

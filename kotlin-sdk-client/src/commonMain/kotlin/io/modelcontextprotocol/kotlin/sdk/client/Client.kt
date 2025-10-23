@@ -189,14 +189,20 @@ public open class Client(private val clientInfo: Implementation, options: Client
                 }
             }
 
-            Method.Defined.PromptsGet, Method.Defined.PromptsList, Method.Defined.CompletionComplete -> {
+            Method.Defined.PromptsGet,
+            Method.Defined.PromptsList,
+            Method.Defined.CompletionComplete,
+            -> {
                 if (serverCapabilities?.prompts == null) {
                     throw IllegalStateException("Server does not support prompts (required for $method)")
                 }
             }
 
-            Method.Defined.ResourcesList, Method.Defined.ResourcesTemplatesList,
-            Method.Defined.ResourcesRead, Method.Defined.ResourcesSubscribe, Method.Defined.ResourcesUnsubscribe,
+            Method.Defined.ResourcesList,
+            Method.Defined.ResourcesTemplatesList,
+            Method.Defined.ResourcesRead,
+            Method.Defined.ResourcesSubscribe,
+            Method.Defined.ResourcesUnsubscribe,
             -> {
                 val resCaps = serverCapabilities?.resources
                     ?: error("Server does not support resources (required for $method)")
