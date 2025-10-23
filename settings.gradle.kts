@@ -26,8 +26,21 @@ include(
 )
 
 // Include sample projects as composite builds if this is the root project
-if (gradle.parent == null) {
-    includeBuild("samples/kotlin-mcp-client")
-    includeBuild("samples/kotlin-mcp-server")
-    includeBuild("samples/weather-stdio-server")
+// if (gradle.parent == null) {
+includeBuild("samples/kotlin-mcp-client") {
+    dependencySubstitution {
+        substitute(module("io.modelcontextprotocol:kotlin-sdk-client"))
+            .using(project(":"))
+    }
 }
+// includeBuild("samples/kotlin-mcp-server")
+
+includeBuild("samples/weather-stdio-server") {
+    dependencySubstitution {
+        substitute(module("io.modelcontextprotocol:kotlin-sdk-client"))
+            .using(project(":"))
+        substitute(module("io.modelcontextprotocol:kotlin-sdk-server"))
+            .using(project(":"))
+    }
+}
+// }

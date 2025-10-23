@@ -4,11 +4,6 @@ plugins {
     alias(libs.plugins.kover)
 }
 
-allprojects {
-    group = "io.modelcontextprotocol"
-    version = "0.7.4-SNAPSHOT"
-}
-
 dependencies {
     dokka(project(":kotlin-sdk-core"))
     dokka(project(":kotlin-sdk-client"))

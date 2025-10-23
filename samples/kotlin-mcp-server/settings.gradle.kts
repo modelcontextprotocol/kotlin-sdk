@@ -1,10 +1,8 @@
 rootProject.name = "kotlin-mcp-server"
 
-pluginManagement {
-    repositories {
-        mavenCentral()
-        gradlePluginPortal()
-    }
+plugins {
+    // Apply the foojay-resolver plugin to allow automatic download of JDKs
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
 dependencyResolutionManagement {
@@ -12,9 +10,16 @@ dependencyResolutionManagement {
         mavenLocal()
         mavenCentral()
     }
+
     versionCatalogs {
         create("libs") {
-            from(files("../../gradle/libs.versions.toml"))
+            val mcpKotlinVersion = providers.gradleProperty(
+                "mcp.kotlin.overrideVersion",
+            ).orNull
+            if (mcpKotlinVersion != null) {
+                logger.lifecycle("Using the override version $mcpKotlinVersion of MCP Kotlin SDK")
+                version("mcp-kotlin", mcpKotlinVersion)
+            }
         }
     }
 }

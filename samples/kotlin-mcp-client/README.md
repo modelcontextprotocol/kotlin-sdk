@@ -34,7 +34,7 @@ The client application performs the following tasks:
 Use the Gradle wrapper to build the application. In a terminal, run:
 
 ```shell
-./gradlew clean build -x test
+./gradlew clean build
 ```
 
 To run the client, execute the jar file and provide the path to your MCP server script.

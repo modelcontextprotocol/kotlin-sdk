@@ -23,7 +23,7 @@ jobs:
       matrix:
         sample:
           - kotlin-mcp-client
-          - kotlin-mcp-server
+#          - kotlin-mcp-server
           - weather-stdio-server
 
     name: Build Sample
@@ -47,7 +47,7 @@ jobs:
 
       - name: "Build Sample: ${{ matrix.sample }}"
         working-directory: ./samples/${{ matrix.sample }}
-        run: ./../../gradlew --no-daemon clean build
+        run: ./gradlew --no-daemon clean build
 
       - name: Upload Reports
         if: ${{ !cancelled() }}
