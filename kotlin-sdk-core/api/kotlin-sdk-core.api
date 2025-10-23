@@ -1143,8 +1143,12 @@ public final class io/modelcontextprotocol/kotlin/sdk/JSONRPCNotification$Compan
 
 public final class io/modelcontextprotocol/kotlin/sdk/JSONRPCRequest : io/modelcontextprotocol/kotlin/sdk/JSONRPCMessage {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/JSONRPCRequest$Companion;
+	public fun <init> (JLjava/lang/String;Lkotlinx/serialization/json/JsonElement;)V
+	public synthetic fun <init> (JLjava/lang/String;Lkotlinx/serialization/json/JsonElement;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/RequestId;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;)V
 	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/RequestId;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/RequestId;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Lkotlinx/serialization/json/JsonElement;
@@ -3365,5 +3369,26 @@ public abstract class io/modelcontextprotocol/kotlin/sdk/shared/WebSocketMcpTran
 
 public final class io/modelcontextprotocol/kotlin/sdk/shared/WebSocketMcpTransportKt {
 	public static final field MCP_SUBPROTOCOL Ljava/lang/String;
+}
+
+public class io/modelcontextprotocol/kotlin/sdk/testing/MockTransport : io/modelcontextprotocol/kotlin/sdk/shared/Transport {
+	public fun <init> ()V
+	public fun <init> (Lkotlin/jvm/functions/Function1;)V
+	public synthetic fun <init> (Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun awaitMessage-ePrTys8 (JJLjava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun awaitMessage-ePrTys8$default (Lio/modelcontextprotocol/kotlin/sdk/testing/MockTransport;JJLjava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun getReceivedMessages (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun getSentMessages (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun onClose (Lkotlin/jvm/functions/Function0;)V
+	public fun onError (Lkotlin/jvm/functions/Function1;)V
+	public fun onMessage (Lkotlin/jvm/functions/Function2;)V
+	public final fun onMessageReply (Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;)V
+	public final fun onMessageReplyError (Lio/modelcontextprotocol/kotlin/sdk/Method;Lkotlin/jvm/functions/Function1;)V
+	public static synthetic fun onMessageReplyError$default (Lio/modelcontextprotocol/kotlin/sdk/testing/MockTransport;Lio/modelcontextprotocol/kotlin/sdk/Method;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public final fun onMessageReplyResult (Lio/modelcontextprotocol/kotlin/sdk/Method;Lkotlin/jvm/functions/Function1;)V
+	public fun send (Lio/modelcontextprotocol/kotlin/sdk/JSONRPCMessage;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun setupInitializationResponse ()V
+	public fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
