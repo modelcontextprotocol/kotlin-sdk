@@ -230,10 +230,18 @@ public open class Server(
         title: String? = null,
         outputSchema: Tool.Output? = null,
         toolAnnotations: ToolAnnotations? = null,
-        @Suppress("LocalVariableName") _meta: JsonObject = EmptyJsonObject,
+        @Suppress("LocalVariableName") _meta: JsonObject? = null,
         handler: suspend (CallToolRequest) -> CallToolResult,
     ) {
-        val tool = Tool(name, title, description, inputSchema, outputSchema, toolAnnotations, _meta)
+        val tool = Tool.build{
+            this.name = name
+            this.description = description
+            this.inputSchema = inputSchema
+            title?.let { this.title = it }
+            outputSchema?.let { this.outputSchema = it }
+            toolAnnotations?.let { this.annotations = it }
+            _meta?.let { this._meta = it }
+        }
         addTool(tool, handler)
     }
 

@@ -1246,7 +1246,7 @@ public data class Tool(
     /**
      * Optional metadata for the tool.
      */
-    override val _meta: JsonObject = EmptyJsonObject,
+    override val _meta: JsonObject,
 ) : WithMeta {
     @Serializable
     public data class Input(val properties: JsonObject = EmptyJsonObject, val required: List<String>? = null) {
@@ -1260,6 +1260,33 @@ public data class Tool(
         @OptIn(ExperimentalSerializationApi::class)
         @EncodeDefault
         val type: String = "object"
+    }
+
+    public class Builder {
+        public var name: String? = null
+        public var title: String? = null
+        public var description: String? = null
+        public var inputSchema: Input = Input()
+        public var outputSchema: Output? = null
+        public var annotations: ToolAnnotations? = null
+        @Suppress("PropertyName")
+        public var _meta: JsonObject = EmptyJsonObject
+
+        public fun build(): Tool {
+            return Tool(
+                name = requireNotNull(name){ "Tool name is required" },
+                title = title,
+                description = description,
+                inputSchema = inputSchema,
+                outputSchema = outputSchema,
+                annotations = annotations,
+                _meta = _meta,
+            )
+        }
+    }
+
+    public companion object{
+        public fun build(builder: Builder.() -> Unit): Tool = Builder().apply(builder).build()
     }
 }
 
