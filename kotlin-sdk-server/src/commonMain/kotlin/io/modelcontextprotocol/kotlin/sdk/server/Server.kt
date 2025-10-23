@@ -3,6 +3,7 @@ package io.modelcontextprotocol.kotlin.sdk.server
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
 import io.modelcontextprotocol.kotlin.sdk.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.GetPromptRequest
 import io.modelcontextprotocol.kotlin.sdk.GetPromptResult
 import io.modelcontextprotocol.kotlin.sdk.Implementation
@@ -32,6 +33,7 @@ import kotlinx.collections.immutable.minus
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentSet
+import kotlinx.serialization.json.JsonObject
 
 private val logger = KotlinLogging.logger {}
 
@@ -217,6 +219,7 @@ public open class Server(
      * @param inputSchema The expected input schema for the tool.
      * @param outputSchema The optional expected output schema for the tool.
      * @param toolAnnotations Optional additional tool information.
+     * @param _meta Optional metadata as a [JsonObject].
      * @param handler A suspend function that handles executing the tool when called by the client.
      * @throws IllegalStateException If the server does not support tools.
      */
@@ -227,9 +230,10 @@ public open class Server(
         title: String? = null,
         outputSchema: Tool.Output? = null,
         toolAnnotations: ToolAnnotations? = null,
+        @Suppress("LocalVariableName") _meta: JsonObject = EmptyJsonObject,
         handler: suspend (CallToolRequest) -> CallToolResult,
     ) {
-        val tool = Tool(name, title, description, inputSchema, outputSchema, toolAnnotations)
+        val tool = Tool(name, title, description, inputSchema, outputSchema, toolAnnotations, _meta)
         addTool(tool, handler)
     }
 
