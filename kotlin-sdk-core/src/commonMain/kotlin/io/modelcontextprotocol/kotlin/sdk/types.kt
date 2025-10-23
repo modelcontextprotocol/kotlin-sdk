@@ -1269,23 +1269,22 @@ public data class Tool(
         public var inputSchema: Input = Input()
         public var outputSchema: Output? = null
         public var annotations: ToolAnnotations? = null
+
         @Suppress("PropertyName")
         public var _meta: JsonObject = EmptyJsonObject
 
-        public fun build(): Tool {
-            return Tool(
-                name = requireNotNull(name){ "Tool name is required" },
-                title = title,
-                description = description,
-                inputSchema = inputSchema,
-                outputSchema = outputSchema,
-                annotations = annotations,
-                _meta = _meta,
-            )
-        }
+        public fun build(): Tool = Tool(
+            name = requireNotNull(name) { "Tool name is required" },
+            title = title,
+            description = description,
+            inputSchema = inputSchema,
+            outputSchema = outputSchema,
+            annotations = annotations,
+            _meta = _meta,
+        )
     }
 
-    public companion object{
+    public companion object {
         public fun build(builder: Builder.() -> Unit): Tool = Builder().apply(builder).build()
     }
 }
