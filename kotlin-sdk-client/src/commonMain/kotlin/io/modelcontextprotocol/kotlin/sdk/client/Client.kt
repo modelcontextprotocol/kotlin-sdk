@@ -56,6 +56,8 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
 import kotlin.coroutines.cancellation.CancellationException
 
 private val logger = KotlinLogging.logger {}
@@ -600,61 +602,38 @@ public open class Client(private val clientInfo: Implementation, options: Client
      * - Name: alphanumeric start/end, may contain hyphens, underscores, dots (empty allowed)
      */
     private fun validateMetaKeys(keys: Set<String>) {
-        for (key in keys) {
-            if (!isValidMetaKey(key)) {
-                throw Error("Invalid _meta key '$key'. Must follow format [prefix/]name with valid labels.")
+        val labelPattern = Regex("[a-zA-Z]([a-zA-Z0-9-]*[a-zA-Z0-9])?")
+        val namePattern = Regex("[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?")
+        
+        keys.forEach { key ->
+            require(key.isNotEmpty()) { "Meta key cannot be empty" }
+            
+            val (prefix, name) = key.split('/', limit = 2).let { parts ->
+                when (parts.size) {
+                    1 -> null to parts[0]
+                    else -> parts[0] to parts[1]
+                }
+            }
+            
+            // Validate prefix if present
+            prefix?.let {
+                require(it.isNotEmpty()) { "Invalid _meta key '$key': prefix cannot be empty" }
+                
+                val labels = it.split('.')
+                require(labels.all { label -> label.matches(labelPattern) }) {
+                    "Invalid _meta key '$key': prefix labels must start with a letter, end with letter/digit, and contain only letters, digits, or hyphens"
+                }
+                
+                require(labels.none { label -> label.equals("modelcontextprotocol", ignoreCase = true) || label.equals("mcp", ignoreCase = true) }) {
+                    "Invalid _meta key '$key': prefix cannot contain reserved labels 'modelcontextprotocol' or 'mcp'"
+                }
+            }
+            
+            // Validate name (empty allowed)
+            require(name.isEmpty() || name.matches(namePattern)) {
+                "Invalid _meta key '$key': name must start and end with alphanumeric characters, and contain only alphanumerics, hyphens, underscores, or dots"
             }
         }
-    }
-
-    private fun isValidMetaKey(key: String): Boolean {
-        if (key.isEmpty()) return false
-        val parts = key.split('/', limit = 2)
-        return when (parts.size) {
-            1 -> {
-                // No prefix, just validate name
-                isValidMetaName(parts[0])
-            }
-
-            2 -> {
-                val (prefix, name) = parts
-                isValidMetaPrefix(prefix) && isValidMetaName(name)
-            }
-
-            else -> false
-        }
-    }
-
-    private fun isValidMetaPrefix(prefix: String): Boolean {
-        if (prefix.isEmpty()) return false
-        val labels = prefix.split('.')
-
-        if (!labels.all { isValidLabel(it) }) {
-            return false
-        }
-
-        return !labels.any { label ->
-            label.equals("modelcontextprotocol", ignoreCase = true) ||
-                label.equals("mcp", ignoreCase = true)
-        }
-    }
-
-    private fun isValidLabel(label: String): Boolean {
-        if (label.isEmpty()) return false
-        if (!label.first().isLetter() || !label.last().let { it.isLetter() || it.isDigit() }) {
-            return false
-        }
-        return label.all { it.isLetter() || it.isDigit() || it == '-' }
-    }
-
-    private fun isValidMetaName(name: String): Boolean {
-        // Empty names are allowed per MCP specification
-        if (name.isEmpty()) return true
-
-        if (!name.first().isLetterOrDigit() || !name.last().isLetterOrDigit()) {
-            return false
-        }
-        return name.all { it.isLetterOrDigit() || it in setOf('-', '_', '.') }
     }
 
     private fun convertToJsonMap(map: Map<String, Any?>): Map<String, JsonElement> = map.mapValues { (key, value) ->
@@ -669,54 +648,42 @@ public open class Client(private val clientInfo: Implementation, options: Client
     @OptIn(ExperimentalUnsignedTypes::class, ExperimentalSerializationApi::class)
     private fun convertToJsonElement(value: Any?): JsonElement = when (value) {
         null -> JsonNull
-
-        is Map<*, *> -> {
-            val jsonMap = value.entries.associate { (k, v) ->
-                k.toString() to convertToJsonElement(v)
-            }
-            JsonObject(jsonMap)
-        }
-
         is JsonElement -> value
-
         is String -> JsonPrimitive(value)
-
         is Number -> JsonPrimitive(value)
-
         is Boolean -> JsonPrimitive(value)
-
         is Char -> JsonPrimitive(value.toString())
-
         is Enum<*> -> JsonPrimitive(value.name)
 
-        is Collection<*> -> JsonArray(value.map { convertToJsonElement(it) })
+        is Map<*, *> -> buildJsonObject {
+            value.forEach { (k, v) ->
+                put(k.toString(), convertToJsonElement(v))
+            }
+        }
 
-        is Array<*> -> JsonArray(value.map { convertToJsonElement(it) })
+        is Collection<*> -> buildJsonArray {
+            value.forEach { add(convertToJsonElement(it)) }
+        }
 
-        is IntArray -> JsonArray(value.map { JsonPrimitive(it) })
+        is Array<*> -> buildJsonArray {
+            value.forEach { add(convertToJsonElement(it)) }
+        }
 
-        is LongArray -> JsonArray(value.map { JsonPrimitive(it) })
-
-        is FloatArray -> JsonArray(value.map { JsonPrimitive(it) })
-
-        is DoubleArray -> JsonArray(value.map { JsonPrimitive(it) })
-
-        is BooleanArray -> JsonArray(value.map { JsonPrimitive(it) })
-
-        is ShortArray -> JsonArray(value.map { JsonPrimitive(it) })
-
-        is ByteArray -> JsonArray(value.map { JsonPrimitive(it) })
-
-        is CharArray -> JsonArray(value.map { JsonPrimitive(it.toString()) })
+        // Primitive arrays - use iterator for unified handling
+        is IntArray -> buildJsonArray { value.forEach { add(it) } }
+        is LongArray -> buildJsonArray { value.forEach { add(it) } }
+        is FloatArray -> buildJsonArray { value.forEach { add(it) } }
+        is DoubleArray -> buildJsonArray { value.forEach { add(it) } }
+        is BooleanArray -> buildJsonArray { value.forEach { add(it) } }
+        is ShortArray -> buildJsonArray { value.forEach { add(it) } }
+        is ByteArray -> buildJsonArray { value.forEach { add(it) } }
+        is CharArray -> buildJsonArray { value.forEach { add(it.toString()) } }
 
         // ExperimentalUnsignedTypes
-        is UIntArray -> JsonArray(value.map { JsonPrimitive(it) })
-
-        is ULongArray -> JsonArray(value.map { JsonPrimitive(it) })
-
-        is UShortArray -> JsonArray(value.map { JsonPrimitive(it) })
-
-        is UByteArray -> JsonArray(value.map { JsonPrimitive(it) })
+        is UIntArray -> buildJsonArray { value.forEach { add(it) } }
+        is ULongArray -> buildJsonArray { value.forEach { add(it) } }
+        is UShortArray -> buildJsonArray { value.forEach { add(it) } }
+        is UByteArray -> buildJsonArray { value.forEach { add(it) } }
 
         else -> {
             logger.debug { "Converting unknown type ${value::class.simpleName} to string: $value" }
