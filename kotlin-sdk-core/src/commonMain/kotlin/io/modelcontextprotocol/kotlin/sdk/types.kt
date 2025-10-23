@@ -1246,7 +1246,7 @@ public data class Tool(
     /**
      * Optional metadata for the tool.
      */
-    override val _meta: JsonObject,
+    override val _meta: JsonObject = EmptyJsonObject,
 ) : WithMeta {
     @Serializable
     public data class Input(val properties: JsonObject = EmptyJsonObject, val required: List<String>? = null) {
