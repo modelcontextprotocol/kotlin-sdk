@@ -19,8 +19,11 @@ dependencies {
     implementation(libs.ktor.server.cio)
     implementation(libs.ktor.client.cio)
     implementation(libs.slf4j.simple)
+    runtimeOnly(libs.kotlin.logging)
+    runtimeOnly(libs.kotlinx.collections.immutable)
 
     testImplementation(kotlin("test"))
+
     testImplementation(libs.mcp.kotlin.client)
     testImplementation(libs.kotlinx.coroutines.test)
 }

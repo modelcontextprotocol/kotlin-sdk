@@ -1,0 +1,17 @@
+[versions]
+anthropic = "2.9.0"
+kotlin = "2.2.20"
+ktor = "3.3.0"
+mcp-kotlin = "0.7.3"
+shadow = "9.2.2"
+slf4j = "2.0.17"
+
+[libraries]
+anthropic-java = { group = "com.anthropic", name = "anthropic-java", version.ref = "anthropic" }
+ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktor" }
+mcp-kotlin-client = { group = "io.modelcontextprotocol", name = "kotlin-sdk-client", version.ref = "mcp-kotlin" }
+slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }

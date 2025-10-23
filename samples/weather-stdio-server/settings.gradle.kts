@@ -12,9 +12,16 @@ dependencyResolutionManagement {
         mavenLocal()
         mavenCentral()
     }
+
     versionCatalogs {
         create("libs") {
-            from(files("../../gradle/libs.versions.toml"))
+            val mcpKotlinVersion = providers.gradleProperty(
+                "mcp.kotlin.overrideVersion",
+            ).orNull
+            if (mcpKotlinVersion != null) {
+                logger.lifecycle("Using the override version $mcpKotlinVersion of MCP Kotlin SDK")
+                version("mcp-kotlin", mcpKotlinVersion)
+            }
         }
     }
 }

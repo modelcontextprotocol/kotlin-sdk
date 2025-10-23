@@ -30,13 +30,13 @@ The project provides:
 Use the Gradle wrapper to build the application. In a terminal run:
 
 ```shell
-./gradlew clean build -x test
+./gradlew clean build
 ```
 
 To run the server:
 
 ```shell
-java -jar build/libs/<your-jar-name>.jar
+java -jar build/libs/weather-stdio-server-0.1.0-all.jar
 ```
 
 > [!NOTE]
