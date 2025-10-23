@@ -1,0 +1,58 @@
+name: Build Samples
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'samples/**'
+  push:
+    branches: [ main ]
+    paths:
+      - 'samples/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # Cancel only when the run is NOT on `main` branch
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        sample:
+          - kotlin-mcp-client
+          - kotlin-mcp-server
+          - weather-stdio-server
+
+    name: Build Sample
+    timeout-minutes: 10
+    env:
+      JAVA_OPTS: "-Xmx8g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx6g"
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: 21
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          add-job-summary: 'always'
+          cache-read-only: true
+
+      - name: "Build Sample: ${{ matrix.sample }}"
+        working-directory: ./samples/${{ matrix.sample }}
+        run: ./../../gradlew --no-daemon clean build
+
+      - name: Upload Reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports-${{ matrix.sample }}
+          path: |
+            **/build/reports/
