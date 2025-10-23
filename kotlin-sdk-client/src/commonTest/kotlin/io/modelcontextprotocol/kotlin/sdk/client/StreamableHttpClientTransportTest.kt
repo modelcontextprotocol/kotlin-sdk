@@ -19,7 +19,6 @@ import io.modelcontextprotocol.kotlin.sdk.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.RequestId
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
@@ -30,9 +29,9 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import kotlin.test.fail
 import kotlin.time.Duration.Companion.seconds
 
 class StreamableHttpClientTransportTest {
@@ -405,26 +404,18 @@ class StreamableHttpClientTransportTest {
             ),
         )
 
-        runCatching {
+        try {
             // Real time-keeping is needed; otherwise Protocol will always throw TimeoutCancellationException in tests
-            withContext(Dispatchers.Default.limitedParallelism(1)) {
-                withTimeout(5.seconds) {
-                    client.connect(transport)
+            assertFailsWith<IllegalStateException>(
+                message = "Expected client.connect to fail on invalid JSON response",
+            ) {
+                withContext(Dispatchers.Default.limitedParallelism(1)) {
+                    withTimeout(5.seconds) {
+                        client.connect(transport)
+                    }
                 }
             }
-        }.onSuccess {
-            fail("Expected client.connect to fail on invalid JSON response")
-        }.onFailure { e ->
-            when (e) {
-                is TimeoutCancellationException -> fail("Client connect caused a hang", e)
-
-                is IllegalStateException -> {
-                    // Expected behavior: connect finishes and fails with an exception.
-                }
-
-                else -> fail("Unexpected exception during client.connect", e)
-            }
-        }.also {
+        } finally {
             transport.close()
         }
     }
