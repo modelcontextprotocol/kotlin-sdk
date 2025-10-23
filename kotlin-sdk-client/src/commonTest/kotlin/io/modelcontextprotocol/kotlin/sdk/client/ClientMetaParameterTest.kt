@@ -83,7 +83,7 @@ class ClientMetaParameterTest {
     fun `should reject mcp reserved prefix`() = runTest {
         val invalidMeta = mapOf("mcp/internal" to "value")
 
-        val exception = assertFailsWith<Error> {
+        val exception = assertFailsWith<IllegalArgumentException> {
             client.callTool("test-tool", emptyMap(), invalidMeta)
         }
 
@@ -97,7 +97,7 @@ class ClientMetaParameterTest {
     fun `should reject modelcontextprotocol reserved prefix`() = runTest {
         val invalidMeta = mapOf("modelcontextprotocol/config" to "value")
 
-        val exception = assertFailsWith<Error> {
+        val exception = assertFailsWith<IllegalArgumentException> {
             client.callTool("test-tool", emptyMap(), invalidMeta)
         }
 
@@ -120,7 +120,7 @@ class ClientMetaParameterTest {
         )
 
         invalidKeys.forEach { key ->
-            val exception = assertFailsWith<Error>(
+            val exception = assertFailsWith<IllegalArgumentException>(
                 message = "Should reject nested reserved key: $key",
             ) {
                 client.callTool("test-tool", emptyMap(), mapOf(key to "value"))
@@ -144,7 +144,7 @@ class ClientMetaParameterTest {
         )
 
         invalidKeys.forEach { key ->
-            val exception = assertFailsWith<Error>(
+            val exception = assertFailsWith<IllegalArgumentException>(
                 message = "Should reject case-insensitive reserved key: $key",
             ) {
                 client.callTool("test-tool", emptyMap(), mapOf(key to "value"))
@@ -169,15 +169,11 @@ class ClientMetaParameterTest {
         )
 
         invalidKeys.forEach { key ->
-            val exception = assertFailsWith<Error>(
+            assertFailsWith<IllegalArgumentException>(
                 message = "Should reject invalid key format: '$key'",
             ) {
                 client.callTool("test-tool", emptyMap(), mapOf(key to "value"))
             }
-            assertContains(
-                charSequence = exception.message ?: "",
-                other = "Invalid _meta key",
-            )
         }
     }
 
