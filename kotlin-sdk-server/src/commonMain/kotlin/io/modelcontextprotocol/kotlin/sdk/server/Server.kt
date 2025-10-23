@@ -3,7 +3,6 @@ package io.modelcontextprotocol.kotlin.sdk.server
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
 import io.modelcontextprotocol.kotlin.sdk.CallToolResult
-import io.modelcontextprotocol.kotlin.sdk.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.GetPromptRequest
 import io.modelcontextprotocol.kotlin.sdk.GetPromptResult
 import io.modelcontextprotocol.kotlin.sdk.Implementation
@@ -233,7 +232,7 @@ public open class Server(
         @Suppress("LocalVariableName") _meta: JsonObject? = null,
         handler: suspend (CallToolRequest) -> CallToolResult,
     ) {
-        val tool = Tool.build{
+        val tool = Tool.build {
             this.name = name
             this.description = description
             this.inputSchema = inputSchema
