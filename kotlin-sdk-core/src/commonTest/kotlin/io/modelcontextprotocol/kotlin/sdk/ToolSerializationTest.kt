@@ -97,7 +97,7 @@ class ToolSerializationTest {
         ),
         _meta = buildJsonObject {
             put("_for_test_only", JsonPrimitive(true))
-        }
+        },
     )
 
     //region Serialize
@@ -418,7 +418,7 @@ class ToolSerializationTest {
         name: String = "get_weather",
         title: String? = null,
         outputSchema: String? = null,
-        _meta: String? = null
+        @Suppress("LocalVariableName") _meta: String? = null,
     ): String {
         val stringBuilder = StringBuilder()
 
@@ -499,7 +499,7 @@ class ToolSerializationTest {
             required = listOf("location"),
         ),
         outputSchema = outputSchema,
-        _meta = _meta
+        _meta = _meta,
     )
 
     //endregion Private Methods
