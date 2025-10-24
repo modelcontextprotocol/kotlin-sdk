@@ -2,13 +2,13 @@ package io.modelcontextprotocol.kotlin.sdk.integration
 
 import io.ktor.server.application.install
 import io.ktor.server.engine.embeddedServer
+import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.modelcontextprotocol.kotlin.sdk.server.mcp
-import kotlin.collections.emptyList
 import io.ktor.server.cio.CIO as ServerCIO
 import io.ktor.server.sse.SSE as ServerSSE
 
-class SseIntegrationTest : AbstractSseIntegrationTest() {
+class SseIntegrationTestWithPath : AbstractSseIntegrationTest() {
 
     protected override suspend fun initServer(): Pair<CIOEmbeddedServer, List<String>> {
         val server = newMcpServer()
@@ -16,10 +16,12 @@ class SseIntegrationTest : AbstractSseIntegrationTest() {
         val ktorServer = embeddedServer(ServerCIO, host = URL, port = PORT) {
             install(ServerSSE)
             routing {
-                mcp { server }
+                route("/some-path") {
+                    mcp { server }
+                }
             }
         }
 
-        return ktorServer.startSuspend(wait = false) to emptyList()
+        return ktorServer.startSuspend(wait = false) to listOf("some-path")
     }
 }
