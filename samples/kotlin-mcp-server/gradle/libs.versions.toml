@@ -1,7 +1,7 @@
 [versions]
-kotlin = "2.2.20"
-ktor = "3.3.1"
-mcp-kotlin = "0.7.3"
+kotlin = "2.2.21"
+ktor = "3.2.3"
+mcp-kotlin = "0.7.4"
 slf4j = "2.0.17"
 serialization = "1.9.0"
 
@@ -11,5 +11,5 @@ mcp-kotlin-server = { group = "io.modelcontextprotocol", name = "kotlin-sdk-serv
 slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
 
 [plugins]
-kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
