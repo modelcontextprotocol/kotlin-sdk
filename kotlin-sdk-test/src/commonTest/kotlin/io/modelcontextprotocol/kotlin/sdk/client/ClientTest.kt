@@ -614,14 +614,14 @@ class ClientTest {
 
         val serverListToolsResult = ListToolsResult(
             tools = listOf(
-                Tool(
-                    name = "testTool",
-                    title = "testTool title",
-                    description = "testTool description",
-                    annotations = null,
-                    inputSchema = Tool.Input(),
-                    outputSchema = null,
-                ),
+                Tool.build {
+                    name = "testTool"
+                    title = "testTool title"
+                    description = "testTool description"
+                    annotations = null
+                    inputSchema = Tool.Input()
+                    outputSchema = null
+                },
             ),
             nextCursor = null,
         )

@@ -32,6 +32,7 @@ import kotlinx.collections.immutable.minus
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentSet
+import kotlinx.serialization.json.JsonObject
 
 private val logger = KotlinLogging.logger {}
 
@@ -217,6 +218,7 @@ public open class Server(
      * @param inputSchema The expected input schema for the tool.
      * @param outputSchema The optional expected output schema for the tool.
      * @param toolAnnotations Optional additional tool information.
+     * @param _meta Optional metadata as a [JsonObject].
      * @param handler A suspend function that handles executing the tool when called by the client.
      * @throws IllegalStateException If the server does not support tools.
      */
@@ -227,9 +229,18 @@ public open class Server(
         title: String? = null,
         outputSchema: Tool.Output? = null,
         toolAnnotations: ToolAnnotations? = null,
+        @Suppress("LocalVariableName") _meta: JsonObject? = null,
         handler: suspend (CallToolRequest) -> CallToolResult,
     ) {
-        val tool = Tool(name, title, description, inputSchema, outputSchema, toolAnnotations)
+        val tool = Tool.build {
+            this.name = name
+            this.description = description
+            this.inputSchema = inputSchema
+            title?.let { this.title = it }
+            outputSchema?.let { this.outputSchema = it }
+            toolAnnotations?.let { this.annotations = it }
+            _meta?.let { this._meta = it }
+        }
         addTool(tool, handler)
     }
 

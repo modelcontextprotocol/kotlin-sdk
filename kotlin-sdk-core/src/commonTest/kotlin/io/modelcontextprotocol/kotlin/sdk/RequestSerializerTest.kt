@@ -75,7 +75,8 @@ class RequestSerializerTest {
                     "inputSchema": {
                         "type": "object",
                         "properties": {}
-                    }
+                    },
+                    "_meta": {}
                 }
             ]
         }"""
