@@ -1,15 +1,14 @@
 # MCP Kotlin Server Sample
 
-A sample implementation of an MCP (Model Communication Protocol) server in Kotlin that demonstrates different server
-configurations and transport methods for both JVM and WASM targets.
+A sample implementation of an MCP (Model Context Protocol) server in Kotlin that demonstrates different server
+configurations and transport methods.
 
 ## Features
 
 - Multiple server operation modes:
-    - Standard I/O server (JVM only)
-      - SSE (Server-Sent Events) server with plain configuration (JVM, WASM)
-      - SSE server using Ktor plugin (JVM, WASM)
-- Multiplatform support
+    - Standard I/O server
+    - SSE (Server-Sent Events) server with plain configuration
+    - SSE server using Ktor plugin
 - Built-in capabilities for:
     - Prompts management
     - Resources handling
@@ -19,30 +18,40 @@ configurations and transport methods for both JVM and WASM targets.
 
 ### Running the Server
 
-You can run the server on the JVM or using Kotlin/WASM on Node.js.
+The server defaults to SSE mode with Ktor plugin on port 3001. You can customize the behavior using command-line arguments.
 
-
-#### JVM:
-
-To run the server on the JVM (defaults to SSE mode with Ktor plugin on port 3001):
+#### Default (SSE with Ktor plugin):
 
 ```bash
-./gradlew runJvm
+./gradlew run
 ```
 
-#### WASM:
-
-To run the server using Kotlin/WASM on Node.js (defaults to SSE mode with Ktor plugin on port 3001):
+#### Standard I/O mode:
 
 ```bash
-./gradlew wasmJsNodeDevelopmentRun
+./gradlew run --args="--stdio"
+```
+
+#### SSE with plain configuration:
+
+```bash
+./gradlew run --args="--sse-server 3001"
+```
+
+#### SSE with Ktor plugin (custom port):
+
+```bash
+./gradlew run --args="--sse-server-ktor 3002"
 ```
 
 ### Connecting to the Server
 
-For servers on JVM or WASM:
+For SSE servers:
 1. Start the server
 2. Use the [MCP inspector](https://modelcontextprotocol.io/docs/tools/inspector) to connect to `http://localhost:<port>/sse`
+
+For STDIO servers:
+- Connect using an MCP client that supports STDIO transport
 
 ## Server Capabilities
 
@@ -53,8 +62,14 @@ For servers on JVM or WASM:
 ## Implementation Details
 
 The server is implemented using:
-- Ktor for HTTP server functionality
+- Ktor for HTTP server functionality (SSE modes)
 - Kotlin coroutines for asynchronous operations
-- SSE for real-time communication
-- Standard I/O for command-line interface
-- Common Kotlin code shared between JVM and WASM targets
+- SSE for real-time communication in web contexts
+- Standard I/O for command-line interface and process-based communication
+
+## Example Capabilities
+
+The sample server demonstrates:
+- **Prompt**: "Kotlin Developer" - helps develop small Kotlin applications with a configurable project name
+- **Tool**: "kotlin-sdk-tool" - a simple test tool that returns a greeting
+- **Resource**: "Web Search" - a placeholder resource demonstrating resource handling
