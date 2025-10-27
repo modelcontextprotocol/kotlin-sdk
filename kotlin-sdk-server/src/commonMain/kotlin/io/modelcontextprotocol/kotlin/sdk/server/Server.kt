@@ -4,7 +4,6 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
 import io.modelcontextprotocol.kotlin.sdk.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.EmptyRequestResult
-import io.modelcontextprotocol.kotlin.sdk.ErrorCode
 import io.modelcontextprotocol.kotlin.sdk.GetPromptRequest
 import io.modelcontextprotocol.kotlin.sdk.GetPromptResult
 import io.modelcontextprotocol.kotlin.sdk.Implementation
@@ -115,7 +114,7 @@ public open class Server(
     public suspend fun connect(transport: Transport): ServerSession {
         val session = ServerSession(serverInfo, options, instructionsProvider?.invoke())
 
-        // Add internal logging level handler to prevent client errors of copilot logging level requests
+        // Add internal logging level handler to prevent client errors from Copilot logging level requests
         session.setRequestHandler<LoggingMessageNotification.SetLevelRequest>(
             Method.Defined.LoggingSetLevel,
         ) { _, _ ->
