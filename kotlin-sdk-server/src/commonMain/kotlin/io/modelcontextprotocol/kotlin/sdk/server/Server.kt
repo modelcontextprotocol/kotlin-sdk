@@ -3,6 +3,8 @@ package io.modelcontextprotocol.kotlin.sdk.server
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
 import io.modelcontextprotocol.kotlin.sdk.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.EmptyRequestResult
+import io.modelcontextprotocol.kotlin.sdk.ErrorCode
 import io.modelcontextprotocol.kotlin.sdk.GetPromptRequest
 import io.modelcontextprotocol.kotlin.sdk.GetPromptResult
 import io.modelcontextprotocol.kotlin.sdk.Implementation
@@ -14,6 +16,7 @@ import io.modelcontextprotocol.kotlin.sdk.ListResourcesRequest
 import io.modelcontextprotocol.kotlin.sdk.ListResourcesResult
 import io.modelcontextprotocol.kotlin.sdk.ListToolsRequest
 import io.modelcontextprotocol.kotlin.sdk.ListToolsResult
+import io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification
 import io.modelcontextprotocol.kotlin.sdk.Method
 import io.modelcontextprotocol.kotlin.sdk.Prompt
 import io.modelcontextprotocol.kotlin.sdk.PromptArgument
@@ -111,6 +114,13 @@ public open class Server(
      */
     public suspend fun connect(transport: Transport): ServerSession {
         val session = ServerSession(serverInfo, options, instructionsProvider?.invoke())
+
+        // Add internal logging level handler to prevent client errors of copilot logging level requests
+        session.setRequestHandler<LoggingMessageNotification.SetLevelRequest>(
+            Method.Defined.LoggingSetLevel,
+        ) { _, _ ->
+            EmptyRequestResult()
+        }
 
         // Internal handlers for tools
         if (options.capabilities.tools != null) {
