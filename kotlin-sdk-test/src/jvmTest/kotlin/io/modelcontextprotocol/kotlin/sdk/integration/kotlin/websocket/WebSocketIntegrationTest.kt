@@ -1,4 +1,4 @@
-package io.modelcontextprotocol.kotlin.sdk.integration
+package io.modelcontextprotocol.kotlin.sdk.integration.kotlin.websocket
 
 import io.ktor.client.HttpClient
 import io.ktor.server.application.install
@@ -22,7 +22,6 @@ import io.modelcontextprotocol.kotlin.sdk.server.mcpWebSocket
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
@@ -34,7 +33,6 @@ import io.ktor.server.websocket.WebSockets as ServerWebSockets
 class WebSocketIntegrationTest {
 
     @Test
-    @Ignore // Ignored because it doesn’t work with wasm/js in Ktor 3.2.3
     fun `client should be able to connect to websocket server 2`() = runTest(timeout = 5.seconds) {
         var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
         var client: Client? = null
@@ -59,7 +57,6 @@ class WebSocketIntegrationTest {
      * 3. Observe that Client A receives a response related to it.
      */
     @Test
-    @Ignore // Ignored because it doesn’t work with wasm/js in Ktor 3.2.3
     fun `single websocket connection`() = runTest(timeout = 5.seconds) {
         var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
         var client: Client? = null
@@ -88,7 +85,6 @@ class WebSocketIntegrationTest {
      * 4. Observe that Client B (connection #2) receives a response related to sessionId#1.
      */
     @Test
-    @Ignore // Ignored because it doesn’t work with wasm/js in Ktor 3.2.3
     fun `multiple websocket connections`() = runTest(timeout = 5.seconds) {
         var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
         var clientA: Client? = null
