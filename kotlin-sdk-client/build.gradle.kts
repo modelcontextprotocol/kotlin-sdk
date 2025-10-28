@@ -43,6 +43,7 @@ kotlin {
                 implementation(kotlin("test"))
                 implementation(dependencies.platform(libs.ktor.bom))
                 implementation(libs.ktor.client.mock)
+                implementation(libs.ktor.server.websockets)
                 implementation(libs.kotlinx.coroutines.test)
                 implementation(libs.ktor.client.logging)
             }

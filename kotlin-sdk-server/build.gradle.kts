@@ -12,6 +12,7 @@ kotlin {
                 api(project(":kotlin-sdk-core"))
                 api(libs.ktor.server.core)
                 api(libs.ktor.server.sse)
+                implementation(libs.ktor.server.websockets)
                 implementation(libs.kotlin.logging)
             }
         }

@@ -113,8 +113,8 @@ kotlin {
                 api(libs.kotlinx.serialization.json)
                 api(libs.kotlinx.coroutines.core)
                 api(libs.kotlinx.io.core)
-                api(libs.ktor.server.websockets)
                 api(libs.kotlinx.collections.immutable)
+                implementation(libs.ktor.server.websockets)
                 implementation(libs.kotlin.logging)
             }
         }
