@@ -21,6 +21,7 @@ import io.modelcontextprotocol.kotlin.sdk.ReadResourceRequest
 import io.modelcontextprotocol.kotlin.sdk.ReadResourceResult
 import io.modelcontextprotocol.kotlin.sdk.Resource
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.Tool
 import io.modelcontextprotocol.kotlin.sdk.ToolAnnotations
 import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions
@@ -32,6 +33,7 @@ import kotlinx.collections.immutable.minus
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentSet
+import kotlinx.coroutines.CancellationException
 
 private val logger = KotlinLogging.logger {}
 
@@ -515,13 +517,30 @@ public open class Server(
 
     private suspend fun handleCallTool(request: CallToolRequest): CallToolResult {
         logger.debug { "Handling tool call request for tool: ${request.name}" }
+
+        // Check if tool exists
         val tool = _tools.value[request.name]
             ?: run {
                 logger.error { "Tool not found: ${request.name}" }
-                throw IllegalArgumentException("Tool not found: ${request.name}")
+                return CallToolResult(
+                    content = listOf(TextContent(text = "Tool ${request.name} not found")),
+                    isError = true,
+                )
             }
-        logger.trace { "Executing tool ${request.name} with input: ${request.arguments}" }
-        return tool.handler(request)
+
+        // Execute tool handler and catch any errors
+        return try {
+            logger.trace { "Executing tool ${request.name} with input: ${request.arguments}" }
+            tool.handler(request)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            logger.error(e) { "Error executing tool ${request.name}" }
+            CallToolResult(
+                content = listOf(TextContent(text = "Error executing tool ${request.name}: ${e.message}")),
+                isError = true,
+            )
+        }
     }
 
     private suspend fun handleListPrompts(): ListPromptsResult {
