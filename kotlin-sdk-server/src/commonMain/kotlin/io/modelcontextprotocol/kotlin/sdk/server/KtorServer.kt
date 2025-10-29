@@ -14,7 +14,6 @@ import io.ktor.server.routing.routing
 import io.ktor.server.sse.SSE
 import io.ktor.server.sse.ServerSSESession
 import io.ktor.server.sse.sse
-import io.ktor.util.collections.ConcurrentMap
 import io.ktor.utils.io.KtorDsl
 import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
@@ -23,16 +22,19 @@ import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.awaitCancellation
 import io.modelcontextprotocol.kotlin.sdk.ErrorCode
+import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 
 private val logger = KotlinLogging.logger {}
 
-internal class SseTransportManager(transports: Map<String, SseServerTransport> = emptyMap()) {
-    private val transports: AtomicRef<PersistentMap<String, SseServerTransport>> = atomic(transports.toPersistentMap())
+internal class TransportManager(transports: Map<String, AbstractTransport> = emptyMap()) {
+    private val transports: AtomicRef<PersistentMap<String, AbstractTransport>> = atomic(transports.toPersistentMap())
 
-    fun getTransport(sessionId: String): SseServerTransport? = transports.value[sessionId]
+    fun hasTransport(sessionId: String): Boolean = transports.value.containsKey(sessionId)
 
-    fun addTransport(transport: SseServerTransport) {
-        transports.update { it.put(transport.sessionId, transport) }
+    fun getTransport(sessionId: String): AbstractTransport? = transports.value[sessionId]
+
+    fun addTransport(sessionId: String, transport: AbstractTransport) {
+        transports.update { it.put(sessionId, transport) }
     }
 
     fun removeTransport(sessionId: String) {
@@ -52,14 +54,14 @@ public fun Routing.mcp(path: String, block: ServerSSESession.() -> Server) {
 */
 @KtorDsl
 public fun Routing.mcp(block: ServerSSESession.() -> Server) {
-    val sseTransportManager = SseTransportManager()
+    val transportManager = TransportManager()
 
     sse {
-        mcpSseEndpoint("", sseTransportManager, block)
+        mcpSseEndpoint("", transportManager, block)
     }
 
     post {
-        mcpPostEndpoint(sseTransportManager)
+        mcpPostEndpoint(transportManager)
     }
 }
 
@@ -80,12 +82,12 @@ public fun Application.mcpStreamableHttp(
     eventStore: EventStore? = null,
     block: RoutingContext.() -> Server,
 ) {
-    val transports = ConcurrentMap<String, StreamableHttpServerTransport>()
+    val transportManager = TransportManager()
 
     routing {
         post("/mcp") {
             mcpStreamableHttpEndpoint(
-                transports,
+                transportManager,
                 enableDnsRebindingProtection,
                 allowedHosts,
                 allowedOrigins,
@@ -119,16 +121,16 @@ public fun Application.mcpStatelessStreamableHttp(
 
 internal suspend fun ServerSSESession.mcpSseEndpoint(
     postEndpoint: String,
-    sseTransportManager: SseTransportManager,
+    transportManager: TransportManager,
     block: ServerSSESession.() -> Server,
 ) {
-    val transport = mcpSseTransport(postEndpoint, sseTransportManager)
+    val transport = mcpSseTransport(postEndpoint, transportManager)
 
     val server = block()
 
     server.onClose {
         logger.info { "Server connection closed for sessionId: ${transport.sessionId}" }
-        sseTransportManager.removeTransport(transport.sessionId)
+        transportManager.removeTransport(transport.sessionId)
     }
 
     server.createSession(transport)
@@ -140,17 +142,17 @@ internal suspend fun ServerSSESession.mcpSseEndpoint(
 
 internal fun ServerSSESession.mcpSseTransport(
     postEndpoint: String,
-    sseTransportManager: SseTransportManager,
+    transportManager: TransportManager,
 ): SseServerTransport {
     val transport = SseServerTransport(postEndpoint, this)
-    sseTransportManager.addTransport(transport)
+    transportManager.addTransport(transport.sessionId, transport)
     logger.info { "New SSE connection established and stored with sessionId: ${transport.sessionId}" }
 
     return transport
 }
 
 internal suspend fun RoutingContext.mcpStreamableHttpEndpoint(
-    transports: ConcurrentMap<String, StreamableHttpServerTransport>,
+    transportManager: TransportManager,
     enableDnsRebindingProtection: Boolean = false,
     allowedHosts: List<String>? = null,
     allowedOrigins: List<String>? = null,
@@ -158,8 +160,8 @@ internal suspend fun RoutingContext.mcpStreamableHttpEndpoint(
     block: RoutingContext.() -> Server,
 ) {
     val sessionId = this.call.request.header(MCP_SESSION_ID_HEADER)
-    val transport = if (sessionId != null && transports.containsKey(sessionId)) {
-        transports[sessionId]!!
+    val transport = if (sessionId != null && transportManager.hasTransport(sessionId)) {
+        transportManager.getTransport(sessionId)
     } else if (sessionId == null) {
         val transport = StreamableHttpServerTransport(
             enableDnsRebindingProtection = enableDnsRebindingProtection,
@@ -170,7 +172,7 @@ internal suspend fun RoutingContext.mcpStreamableHttpEndpoint(
         )
 
         transport.setOnSessionInitialized { sessionId ->
-            transports[sessionId] = transport
+            transportManager.addTransport(sessionId, transport)
 
             logger.info { "New StreamableHttp connection established and stored with sessionId: $sessionId" }
         }
@@ -196,7 +198,7 @@ internal suspend fun RoutingContext.mcpStreamableHttpEndpoint(
         return
     }
 
-    transport.handleRequest(null, this.call)
+    (transport as StreamableHttpServerTransport).handleRequest(null, this.call)
     logger.debug { "Server connected to transport for sessionId: ${transport.sessionId}" }
 }
 
@@ -231,7 +233,7 @@ internal suspend fun RoutingContext.mcpStatelessStreamableHttpEndpoint(
     logger.debug { "Server connected to transport without sessionId" }
 }
 
-internal suspend fun RoutingContext.mcpPostEndpoint(sseTransportManager: SseTransportManager) {
+internal suspend fun RoutingContext.mcpPostEndpoint(transportManager: TransportManager) {
     val sessionId: String = call.request.queryParameters["sessionId"] ?: run {
         call.respond(HttpStatusCode.BadRequest, "sessionId query parameter is not provided")
         return
@@ -239,7 +241,7 @@ internal suspend fun RoutingContext.mcpPostEndpoint(sseTransportManager: SseTran
 
     logger.debug { "Received message for sessionId: $sessionId" }
 
-    val transport = sseTransportManager.getTransport(sessionId)
+    val transport = transportManager.getTransport(sessionId) as SseServerTransport?
     if (transport == null) {
         logger.warn { "Session not found for sessionId: $sessionId" }
         call.respond(HttpStatusCode.NotFound, "Session not found")

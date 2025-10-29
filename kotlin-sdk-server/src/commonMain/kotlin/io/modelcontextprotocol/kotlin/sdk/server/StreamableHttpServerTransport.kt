@@ -12,6 +12,7 @@ import io.ktor.server.request.httpMethod
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.header
 import io.ktor.server.response.respond
+import io.ktor.server.response.respondBytes
 import io.ktor.server.response.respondNullable
 import io.ktor.server.sse.ServerSSESession
 import io.ktor.util.collections.ConcurrentMap
@@ -332,7 +333,7 @@ public class StreamableHttpServerTransport(
 
             val hasRequest = messages.any { it is JSONRPCRequest }
             if (!hasRequest) {
-                call.respondNullable(status = HttpStatusCode.Accepted, message = null)
+                call.respondBytes(status = HttpStatusCode.Accepted, bytes = ByteArray(0))
                 messages.forEach { message -> _onMessage(message) }
                 return
             }
@@ -568,7 +569,7 @@ internal suspend fun ApplicationCall.reject(status: HttpStatusCode, code: ErrorC
     this.response.status(status)
     this.respond(
         JSONRPCResponse(
-            id = null,
+            id = RequestId.StringId("server-error"),
             error = JSONRPCError(message = message, code = code),
         ),
     )
