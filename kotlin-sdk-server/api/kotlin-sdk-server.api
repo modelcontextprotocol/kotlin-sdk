@@ -1,7 +1,3 @@
-public final class io/modelcontextprotocol/kotlin/sdk/LibVersionKt {
-	public static final field LIB_VERSION Ljava/lang/String;
-}
-
 public abstract interface class io/modelcontextprotocol/kotlin/sdk/server/EventStore {
 	public abstract fun replayEventsAfter (Ljava/lang/String;Lkotlin/jvm/functions/Function3;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun storeEvent (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/JSONRPCMessage;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
