@@ -249,14 +249,14 @@ public data class JSONRPCNotification(
  */
 @Serializable
 public class JSONRPCResponse(
-    public val id: RequestId?,
+    public val id: RequestId,
     public val jsonrpc: String = JSONRPC_VERSION,
     public val result: RequestResult? = null,
     public val error: JSONRPCError? = null,
 ) : JSONRPCMessage {
 
     public fun copy(
-        id: RequestId? = this.id,
+        id: RequestId = this.id,
         jsonrpc: String = this.jsonrpc,
         result: RequestResult? = this.result,
         error: JSONRPCError? = this.error,
