@@ -74,6 +74,10 @@ public fun Application.mcp(block: ServerSSESession.() -> Server) {
     }
 }
 
+/*
+* Configures the Ktor Application to handle Model Context Protocol (MCP) over Streamable Http.
+* It currently only works with JSON response.
+*/
 @KtorDsl
 public fun Application.mcpStreamableHttp(
     enableDnsRebindingProtection: Boolean = false,
@@ -98,6 +102,10 @@ public fun Application.mcpStreamableHttp(
     }
 }
 
+/*
+* Configures the Ktor Application to handle Model Context Protocol (MCP) over stateless Streamable Http.
+* It currently only works with JSON response.
+*/
 @KtorDsl
 public fun Application.mcpStatelessStreamableHttp(
     enableDnsRebindingProtection: Boolean = false,
