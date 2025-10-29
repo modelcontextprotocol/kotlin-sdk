@@ -18,7 +18,7 @@ fun main(args: Array<String>): Unit = runBlocking {
         "--sse-server-ktor" -> runSseMcpServerUsingKtorPlugin(port)
         "--sse-server" -> runSseMcpServerWithPlainConfiguration(port)
         else -> {
-            System.err.println("Unknown command: $command")
+            error("Unknown command: $command")
         }
     }
 }
