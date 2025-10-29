@@ -45,7 +45,7 @@ class WebSocketIntegrationTest {
             }
         } finally {
             client?.close()
-            server?.stopSuspend(1000, 2000)
+            server?.stop(1000, 2000)
         }
     }
 
@@ -72,7 +72,7 @@ class WebSocketIntegrationTest {
             }
         } finally {
             client?.close()
-            server?.stopSuspend(1000, 2000)
+            server?.stop(1000, 2000)
         }
     }
 
@@ -108,7 +108,7 @@ class WebSocketIntegrationTest {
         } finally {
             clientA?.close()
             clientB?.close()
-            server?.stopSuspend(1000, 2000)
+            server?.stop(1000, 2000)
         }
     }
 
@@ -134,7 +134,7 @@ class WebSocketIntegrationTest {
         return client
     }
 
-    private suspend fun initServer(): EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration> {
+    private fun initServer(): EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration> {
         val server = Server(
             Implementation(name = "websocket-server", version = "1.0.0"),
             ServerOptions(
@@ -171,7 +171,7 @@ class WebSocketIntegrationTest {
             }
         }
 
-        return ktorServer.startSuspend(wait = false)
+        return ktorServer.start(wait = false)
     }
 
     /**
