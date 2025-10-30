@@ -21,7 +21,6 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.Locale
@@ -527,16 +526,18 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
             "message" to "My exception message",
         )
 
-        val exception = assertThrows<IllegalStateException> {
-            runBlocking {
-                client.callTool(errorToolName, exceptionArgs)
-            }
-        }
+        val exceptionResult = client.callTool(errorToolName, exceptionArgs) as CallToolResultBase
 
-        val msg = exception.message ?: ""
-        val expectedMessage = "JSONRPCError(code=InternalError, message=My exception message, data={})"
+        assertTrue(exceptionResult.isError ?: false, "isError should be true for exception")
 
-        assertEquals(expectedMessage, msg, "Unexpected error message for exception")
+        val exceptionContent = exceptionResult.content.firstOrNull { it is TextContent } as? TextContent
+        assertNotNull(exceptionContent, "Error content should be present in the result")
+
+        val exceptionText = exceptionContent.text ?: ""
+        assertTrue(
+            exceptionText.contains("Error executing tool") && exceptionText.contains("My exception message"),
+            "Error message should contain the exception details",
+        )
     }
 
     @Test
@@ -770,15 +771,21 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
         val nonExistentToolName = "non-existent-tool"
         val arguments = mapOf("text" to "Test")
 
-        val exception = assertThrows<IllegalStateException> {
-            runBlocking {
-                client.callTool(nonExistentToolName, arguments)
-            }
+        val result = runBlocking {
+            client.callTool(nonExistentToolName, arguments)
         }
 
-        val msg = exception.message ?: ""
-        val expectedMessage = "JSONRPCError(code=InternalError, message=Tool not found: non-existent-tool, data={})"
+        assertNotNull(result, "Tool call result should not be null")
+        val callResult = result as CallToolResult
+        assertTrue(callResult.isError ?: false, "isError should be true for non-existent tool")
 
-        assertEquals(expectedMessage, msg, "Unexpected error message for non-existent tool")
+        val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
+        assertNotNull(textContent, "Error content should be present in the result")
+
+        val errorText = textContent.text ?: ""
+        assertTrue(
+            errorText.contains("non-existent-tool") && errorText.contains("not found"),
+            "Error message should indicate the tool was not found",
+        )
     }
 }

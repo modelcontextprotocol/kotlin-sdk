@@ -17,7 +17,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
-import org.junit.jupiter.api.assertThrows
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -74,16 +73,19 @@ class KotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
             val nonExistentToolName = "non-existent-tool"
             val arguments = mapOf("name" to "TestUser")
 
-            val exception = assertThrows<IllegalStateException> {
-                client.callTool(nonExistentToolName, arguments)
-            }
+            val result = client.callTool(nonExistentToolName, arguments)
+            assertNotNull(result, "Tool call result should not be null")
 
-            val expectedMessage =
-                "JSONRPCError(code=InvalidParams, message=MCP error -32602: Tool non-existent-tool not found, data={})"
-            assertEquals(
-                expectedMessage,
-                exception.message,
-                "Unexpected error message for non-existent tool",
+            val callResult = result as CallToolResult
+            assertTrue(callResult.isError ?: false, "isError should be true for non-existent tool")
+
+            val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
+            assertNotNull(textContent, "Error content should be present in the result")
+
+            val errorText = textContent.text ?: ""
+            assertTrue(
+                errorText.contains("non-existent-tool") && errorText.contains("not found"),
+                "Error message should indicate the tool was not found",
             )
         }
     }
@@ -176,26 +178,20 @@ class KotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
                 "name" to JsonObject(mapOf("nested" to JsonPrimitive("value"))),
             )
 
-            val exception = assertThrows<IllegalStateException> {
-                client.callTool("greet", invalidArguments)
-            }
+            val result = client.callTool("greet", invalidArguments)
+            assertNotNull(result, "Tool call result should not be null")
 
-            val msg = exception.message ?: ""
-            val expectedMessage = """
-                        JSONRPCError(code=InvalidParams, message=MCP error -32602: Invalid arguments for tool greet: [
-                          {
-                            "code": "invalid_type",
-                            "expected": "string",
-                            "received": "object",
-                            "path": [
-                              "name"
-                            ],
-                            "message": "Expected string, received object"
-                          }
-                        ], data={})
-            """.trimIndent()
+            val callResult = result as CallToolResult
+            assertTrue(callResult.isError ?: false, "isError should be true for invalid arguments")
 
-            assertEquals(expectedMessage, msg, "Unexpected error message for invalid arguments")
+            val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
+            assertNotNull(textContent, "Error content should be present in the result")
+
+            val errorText = textContent.text ?: ""
+            assertTrue(
+                errorText.contains("Invalid arguments") && errorText.contains("greet"),
+                "Error message should indicate invalid arguments for tool greet",
+            )
         }
     }
 
