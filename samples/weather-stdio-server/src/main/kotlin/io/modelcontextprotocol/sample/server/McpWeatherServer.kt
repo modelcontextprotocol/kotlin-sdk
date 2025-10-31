@@ -7,7 +7,6 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.headers
 import io.ktor.serialization.kotlinx.json.json
-import io.ktor.utils.io.core.Input
 import io.ktor.utils.io.streams.asInput
 import io.modelcontextprotocol.kotlin.sdk.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.Implementation
@@ -19,7 +18,6 @@ import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.StdioServerTransport
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.runBlocking
-import kotlinx.io.Sink
 import kotlinx.io.asSink
 import kotlinx.io.buffered
 import kotlinx.serialization.json.Json
