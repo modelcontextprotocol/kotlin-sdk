@@ -16,6 +16,7 @@ import io.modelcontextprotocol.kotlin.sdk.InitializedNotification
 import io.modelcontextprotocol.kotlin.sdk.LATEST_PROTOCOL_VERSION
 import io.modelcontextprotocol.kotlin.sdk.ListRootsRequest
 import io.modelcontextprotocol.kotlin.sdk.ListRootsResult
+import io.modelcontextprotocol.kotlin.sdk.LoggingLevel
 import io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification
 import io.modelcontextprotocol.kotlin.sdk.Method
 import io.modelcontextprotocol.kotlin.sdk.Method.Defined
@@ -43,22 +44,6 @@ public open class ServerSession(
     @Suppress("ktlint:standard:backing-property-naming")
     private var _onClose: () -> Unit = {}
 
-    init {
-        // Core protocol handlers
-        setRequestHandler<InitializeRequest>(Method.Defined.Initialize) { request, _ ->
-            handleInitialize(request)
-        }
-        setNotificationHandler<InitializedNotification>(Method.Defined.NotificationsInitialized) {
-            _onInitialized()
-            CompletableDeferred(Unit)
-        }
-    }
-
-    /**
-     * The capabilities supported by the server, related to the session.
-     */
-    private val serverCapabilities = options.capabilities
-
     /**
      * The client's reported capabilities after initialization.
      */
@@ -70,6 +55,44 @@ public open class ServerSession(
      */
     public var clientVersion: Implementation? = null
         private set
+
+    /**
+     * The capabilities supported by the server, related to the session.
+     */
+    private val serverCapabilities = options.capabilities
+
+    /**
+     * The current logging level set by the client.
+     * When null, all messages are sent (no filtering).
+     */
+    private var currentLoggingLevel: LoggingLevel? = null
+
+    /**
+     * Map of LoggingLevel to severity index for comparison.
+     * Higher index means higher severity.
+     */
+    private val loggingLevelSeverity: Map<LoggingLevel, Int> = LoggingLevel.entries.withIndex()
+        .associate { (index, level) -> level to index }
+
+    init {
+        // Core protocol handlers
+        setRequestHandler<InitializeRequest>(Defined.Initialize) { request, _ ->
+            handleInitialize(request)
+        }
+        setNotificationHandler<InitializedNotification>(Defined.NotificationsInitialized) {
+            _onInitialized()
+            CompletableDeferred(Unit)
+        }
+
+        // Logging level handler
+        if (options.capabilities.logging != null) {
+            setRequestHandler<LoggingMessageNotification.SetLevelRequest>(Defined.LoggingSetLevel) { request, _ ->
+                currentLoggingLevel = request.level
+                logger.debug { "Logging level set to: ${request.level}" }
+                EmptyRequestResult()
+            }
+        }
+    }
 
     /**
      * Registers a callback to be invoked when the server has completed initialization.
@@ -160,12 +183,20 @@ public open class ServerSession(
 
     /**
      * Sends a logging message notification to the client.
+     * Messages are filtered based on the current logging level set by the client.
+     * If no logging level is set, all messages are sent.
      *
      * @param notification The logging message notification.
      */
     public suspend fun sendLoggingMessage(notification: LoggingMessageNotification) {
-        logger.trace { "Sending logging message: ${notification.params.data}" }
-        notification(notification)
+        if (serverCapabilities.logging != null) {
+            if (!isMessageIgnored(notification.params.level)) {
+                logger.trace { "Sending logging message: ${notification.params.data}" }
+                notification(notification)
+            } else {
+                logger.trace { "Filtering out logging message with level ${notification.params.level}" }
+            }
+        }
     }
 
     /**
@@ -318,6 +349,7 @@ public open class ServerSession(
 
             Defined.LoggingSetLevel -> {
                 if (serverCapabilities.logging == null) {
+                    logger.error { "Server does not support logging (required for $method)" }
                     throw IllegalStateException("Server does not support logging (required for $method)")
                 }
             }
@@ -380,5 +412,20 @@ public open class ServerSession(
             serverInfo = serverInfo,
             instructions = instructions,
         )
+    }
+
+    /**
+     * Checks if a message with the given level should be ignored based on the current logging level.
+     *
+     * @param level The level of the message to check.
+     * @return true if the message should be ignored (filtered out), false otherwise.
+     */
+    private fun isMessageIgnored(level: LoggingLevel): Boolean {
+        val current = currentLoggingLevel ?: return false // If no level is set, don't filter
+
+        val messageSeverity = loggingLevelSeverity[level] ?: return false
+        val currentSeverity = loggingLevelSeverity[current] ?: return false
+
+        return messageSeverity < currentSeverity
     }
 }

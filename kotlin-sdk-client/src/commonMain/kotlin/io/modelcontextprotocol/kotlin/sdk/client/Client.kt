@@ -315,7 +315,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
      * @throws IllegalStateException If the server does not support logging.
      */
     public suspend fun setLoggingLevel(level: LoggingLevel, options: RequestOptions? = null): EmptyRequestResult =
-        request<EmptyRequestResult>(SetLevelRequest(level), options)
+        request(SetLevelRequest(level), options)
 
     /**
      * Retrieves a prompt by name from the server.
