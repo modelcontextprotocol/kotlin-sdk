@@ -25,14 +25,14 @@ import kotlin.test.assertTrue
  */
 class ClientMetaParameterTest {
 
-    private lateinit var client: Client
+    private lateinit var client: McpClient
     private lateinit var mockTransport: MockTransport
     private val clientInfo = Implementation("test-client", "1.0.0")
 
     @BeforeTest
     fun setup() = runTest {
         mockTransport = MockTransport()
-        client = Client(clientInfo = clientInfo)
+        client = McpClient(clientInfo = clientInfo)
         mockTransport.setupInitializationResponse()
         client.connect(mockTransport)
     }

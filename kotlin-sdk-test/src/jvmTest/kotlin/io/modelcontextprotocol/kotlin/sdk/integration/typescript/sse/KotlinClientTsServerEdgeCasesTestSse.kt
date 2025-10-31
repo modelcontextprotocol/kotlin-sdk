@@ -2,7 +2,7 @@ package io.modelcontextprotocol.kotlin.sdk.integration.typescript.sse
 
 import io.modelcontextprotocol.kotlin.sdk.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.TextContent
-import io.modelcontextprotocol.kotlin.sdk.client.Client
+import io.modelcontextprotocol.kotlin.sdk.client.McpClient
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TransportKind
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TsTestBase
 import kotlinx.coroutines.Dispatchers
@@ -31,7 +31,7 @@ class KotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
     private val host = "localhost"
     private lateinit var serverUrl: String
 
-    private lateinit var client: Client
+    private lateinit var client: McpClient
     private lateinit var tsServerProcess: Process
 
     @BeforeEach

@@ -37,7 +37,7 @@ internal class SseTransportManager(transports: Map<String, SseServerTransport> =
 }
 
 @KtorDsl
-public fun Routing.mcp(path: String, block: ServerSSESession.() -> Server) {
+public fun Routing.mcp(path: String, block: ServerSSESession.() -> McpServer) {
     route(path) {
         mcp(block)
     }
@@ -47,7 +47,7 @@ public fun Routing.mcp(path: String, block: ServerSSESession.() -> Server) {
 * Configures the Ktor Application to handle Model Context Protocol (MCP) over Server-Sent Events (SSE).
 */
 @KtorDsl
-public fun Routing.mcp(block: ServerSSESession.() -> Server) {
+public fun Routing.mcp(block: ServerSSESession.() -> McpServer) {
     val sseTransportManager = SseTransportManager()
 
     sse {
@@ -61,12 +61,12 @@ public fun Routing.mcp(block: ServerSSESession.() -> Server) {
 
 @Suppress("FunctionName")
 @Deprecated("Use mcp() instead", ReplaceWith("mcp(block)"), DeprecationLevel.ERROR)
-public fun Application.MCP(block: ServerSSESession.() -> Server) {
+public fun Application.MCP(block: ServerSSESession.() -> McpServer) {
     mcp(block)
 }
 
 @KtorDsl
-public fun Application.mcp(block: ServerSSESession.() -> Server) {
+public fun Application.mcp(block: ServerSSESession.() -> McpServer) {
     install(SSE)
 
     routing {
@@ -77,7 +77,7 @@ public fun Application.mcp(block: ServerSSESession.() -> Server) {
 internal suspend fun ServerSSESession.mcpSseEndpoint(
     postEndpoint: String,
     sseTransportManager: SseTransportManager,
-    block: ServerSSESession.() -> Server,
+    block: ServerSSESession.() -> McpServer,
 ) {
     val transport = mcpSseTransport(postEndpoint, sseTransportManager)
 

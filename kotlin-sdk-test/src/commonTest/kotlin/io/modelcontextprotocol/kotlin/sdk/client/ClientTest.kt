@@ -28,7 +28,7 @@ import io.modelcontextprotocol.kotlin.sdk.SUPPORTED_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.Tool
-import io.modelcontextprotocol.kotlin.sdk.server.Server
+import io.modelcontextprotocol.kotlin.sdk.server.McpServer
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.ServerSession
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
@@ -83,7 +83,7 @@ class ClientTest {
             }
         }
 
-        val client = Client(
+        val client = McpClient(
             clientInfo = Implementation(
                 name = "test client",
                 version = "1.0",
@@ -129,7 +129,7 @@ class ClientTest {
             }
         }
 
-        val client = Client(
+        val client = McpClient(
             clientInfo = Implementation(
                 name = "test client",
                 version = "1.0",
@@ -180,7 +180,7 @@ class ClientTest {
             }
         }
 
-        val client = Client(
+        val client = McpClient(
             clientInfo = Implementation(
                 name = "test client",
                 version = "1.0",
@@ -212,7 +212,7 @@ class ClientTest {
             }
         }
 
-        val client = Client(
+        val client = McpClient(
             clientInfo = Implementation(
                 name = "test client",
                 version = "1.0",
@@ -237,14 +237,14 @@ class ClientTest {
                 tools = ServerCapabilities.Tools(null),
             ),
         )
-        val server = Server(
+        val server = McpServer(
             Implementation(name = "test server", version = "1.0"),
             serverOptions,
         )
 
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
 
-        val client = Client(
+        val client = McpClient(
             clientInfo = Implementation(name = "test client", version = "1.0"),
             options = ClientOptions(
                 capabilities = ClientCapabilities(sampling = EmptyJsonObject),
@@ -300,12 +300,12 @@ class ClientTest {
 
     @Test
     fun `should respect client notification capabilities`() = runTest {
-        val server = Server(
+        val server = McpServer(
             Implementation(name = "test server", version = "1.0"),
             ServerOptions(capabilities = ServerCapabilities()),
         )
 
-        val client = Client(
+        val client = McpClient(
             clientInfo = Implementation(name = "test client", version = "1.0"),
             options = ClientOptions(
                 capabilities = ClientCapabilities(
@@ -331,7 +331,7 @@ class ClientTest {
         client.sendRootsListChanged()
 
         // Create a new client without the roots.listChanged capability
-        val clientWithoutCapability = Client(
+        val clientWithoutCapability = McpClient(
             clientInfo = Implementation(name = "test client without capability", version = "1.0"),
             options = ClientOptions(
                 capabilities = ClientCapabilities(),
@@ -352,7 +352,7 @@ class ClientTest {
 
     @Test
     fun `should respect server notification capabilities`() = runTest {
-        val server = Server(
+        val server = McpServer(
             Implementation(name = "test server", version = "1.0"),
             ServerOptions(
                 capabilities = ServerCapabilities(
@@ -362,7 +362,7 @@ class ClientTest {
             ),
         )
 
-        val client = Client(
+        val client = McpClient(
             clientInfo = Implementation(name = "test client", version = "1.0"),
             options = ClientOptions(
                 capabilities = ClientCapabilities(),
@@ -410,7 +410,7 @@ class ClientTest {
 
     @Test
     fun `should handle client cancelling a request`() = runTest {
-        val server = Server(
+        val server = McpServer(
             Implementation(name = "test server", version = "1.0"),
             ServerOptions(
                 capabilities = ServerCapabilities(
@@ -426,7 +426,7 @@ class ClientTest {
         val defTimeOut = CompletableDeferred<Unit>()
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
 
-        val client = Client(
+        val client = McpClient(
             clientInfo = Implementation(name = "test client", version = "1.0"),
             options = ClientOptions(capabilities = ClientCapabilities()),
         )
@@ -476,7 +476,7 @@ class ClientTest {
 
     @Test
     fun `should handle request timeout`() = runTest {
-        val server = Server(
+        val server = McpServer(
             Implementation(name = "test server", version = "1.0"),
             ServerOptions(
                 capabilities = ServerCapabilities(
@@ -489,7 +489,7 @@ class ClientTest {
         )
 
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-        val client = Client(
+        val client = McpClient(
             clientInfo = Implementation(name = "test client", version = "1.0"),
             options = ClientOptions(capabilities = ClientCapabilities()),
         )
@@ -533,7 +533,7 @@ class ClientTest {
 
     @Test
     fun `should only allow setRequestHandler for declared capabilities`() = runTest {
-        val client = Client(
+        val client = McpClient(
             clientInfo = Implementation(
                 name = "test client",
                 version = "1.0",
@@ -567,14 +567,14 @@ class ClientTest {
                 tools = ServerCapabilities.Tools(null),
             ),
         )
-        val server = Server(
+        val server = McpServer(
             Implementation(name = "test server", version = "1.0"),
             serverOptions,
         )
 
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
 
-        val client = Client(
+        val client = McpClient(
             clientInfo = Implementation(name = "test client", version = "1.0"),
             options = ClientOptions(
                 capabilities = ClientCapabilities(sampling = EmptyJsonObject),
@@ -648,7 +648,7 @@ class ClientTest {
 
     @Test
     fun `listRoots returns list of roots`() = runTest {
-        val client = Client(
+        val client = McpClient(
             Implementation(name = "test client", version = "1.0"),
             ClientOptions(
                 capabilities = ClientCapabilities(
@@ -665,7 +665,7 @@ class ClientTest {
 
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
 
-        val server = Server(
+        val server = McpServer(
             serverInfo = Implementation(name = "test server", version = "1.0"),
             options = ServerOptions(
                 capabilities = ServerCapabilities(),
@@ -697,7 +697,7 @@ class ClientTest {
 
     @Test
     fun `addRoot should throw when roots capability is not supported`() = runTest {
-        val client = Client(
+        val client = McpClient(
             Implementation(name = "test client", version = "1.0"),
             ClientOptions(
                 capabilities = ClientCapabilities(),
@@ -713,7 +713,7 @@ class ClientTest {
 
     @Test
     fun `removeRoot should throw when roots capability is not supported`() = runTest {
-        val client = Client(
+        val client = McpClient(
             Implementation(name = "test client", version = "1.0"),
             ClientOptions(
                 capabilities = ClientCapabilities(),
@@ -729,7 +729,7 @@ class ClientTest {
 
     @Test
     fun `removeRoot should remove a root`() = runTest {
-        val client = Client(
+        val client = McpClient(
             Implementation(name = "test client", version = "1.0"),
             ClientOptions(
                 capabilities = ClientCapabilities(
@@ -755,7 +755,7 @@ class ClientTest {
 
     @Test
     fun `removeRoots should remove multiple roots`() = runTest {
-        val client = Client(
+        val client = McpClient(
             Implementation(name = "test client", version = "1.0"),
             ClientOptions(
                 capabilities = ClientCapabilities(
@@ -783,7 +783,7 @@ class ClientTest {
 
     @Test
     fun `sendRootsListChanged should notify server`() = runTest {
-        val client = Client(
+        val client = McpClient(
             Implementation(name = "test client", version = "1.0"),
             ClientOptions(
                 capabilities = ClientCapabilities(
@@ -794,7 +794,7 @@ class ClientTest {
 
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
 
-        val server = Server(
+        val server = McpServer(
             serverInfo = Implementation(name = "test server", version = "1.0"),
             options = ServerOptions(
                 capabilities = ServerCapabilities(),
@@ -835,7 +835,7 @@ class ClientTest {
 
     @Test
     fun `should reject server elicitation when elicitation capability is not supported`() = runTest {
-        val client = Client(
+        val client = McpClient(
             Implementation(name = "test client", version = "1.0"),
             ClientOptions(
                 capabilities = ClientCapabilities(),
@@ -844,7 +844,7 @@ class ClientTest {
 
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
 
-        val server = Server(
+        val server = McpServer(
             serverInfo = Implementation(name = "test server", version = "1.0"),
             options = ServerOptions(
                 capabilities = ServerCapabilities(),
@@ -888,7 +888,7 @@ class ClientTest {
 
     @Test
     fun `should handle server elicitation`() = runTest {
-        val client = Client(
+        val client = McpClient(
             Implementation(name = "test client", version = "1.0"),
             ClientOptions(
                 capabilities = ClientCapabilities(
@@ -924,7 +924,7 @@ class ClientTest {
 
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
 
-        val server = Server(
+        val server = McpServer(
             serverInfo = Implementation(name = "test server", version = "1.0"),
             options = ServerOptions(
                 capabilities = ServerCapabilities(),

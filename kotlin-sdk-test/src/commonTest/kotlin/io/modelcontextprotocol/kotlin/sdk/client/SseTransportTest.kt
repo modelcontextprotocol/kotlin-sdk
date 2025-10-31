@@ -8,7 +8,7 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.routing.routing
 import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
-import io.modelcontextprotocol.kotlin.sdk.server.Server
+import io.modelcontextprotocol.kotlin.sdk.server.McpServer
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.mcp
 import io.modelcontextprotocol.kotlin.sdk.shared.BaseTransportTest
@@ -23,11 +23,11 @@ class SseTransportTest : BaseTransportTest() {
 
     private suspend fun EmbeddedServer<*, *>.actualPort() = engine.resolvedConnectors().first().port
 
-    private lateinit var mcpServer: Server
+    private lateinit var mcpServer: McpServer
 
     @BeforeTest
     fun setUp() {
-        mcpServer = Server(
+        mcpServer = McpServer(
             serverInfo = Implementation(
                 name = "test-server",
                 version = "1.0",

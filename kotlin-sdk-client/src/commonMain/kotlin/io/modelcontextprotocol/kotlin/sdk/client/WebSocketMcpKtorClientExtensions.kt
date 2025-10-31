@@ -26,14 +26,14 @@ public fun HttpClient.mcpWebSocketTransport(
  *
  * @param urlString Optional URL of the MCP server.
  * @param requestBuilder Optional lambda to configure the HTTP request.
- * @return A connected [Client] ready for MCP communication.
+ * @return A connected [McpClient] ready for MCP communication.
  */
 public suspend fun HttpClient.mcpWebSocket(
     urlString: String? = null,
     requestBuilder: HttpRequestBuilder.() -> Unit = {},
-): Client {
+): McpClient {
     val transport = mcpWebSocketTransport(urlString, requestBuilder)
-    val client = Client(
+    val client = McpClient(
         Implementation(
             name = IMPLEMENTATION_NAME,
             version = LIB_VERSION,

@@ -27,15 +27,15 @@ public fun HttpClient.mcpSseTransport(
  * @param urlString Optional URL of the MCP server.
  * @param reconnectionTime Optional duration to wait before attempting to reconnect.
  * @param requestBuilder Optional lambda to configure the HTTP request.
- * @return A connected [Client] ready for MCP communication.
+ * @return A connected [McpClient] ready for MCP communication.
  */
 public suspend fun HttpClient.mcpSse(
     urlString: String? = null,
     reconnectionTime: Duration? = null,
     requestBuilder: HttpRequestBuilder.() -> Unit = {},
-): Client {
+): McpClient {
     val transport = mcpSseTransport(urlString, reconnectionTime, requestBuilder)
-    val client = Client(
+    val client = McpClient(
         Implementation(
             name = IMPLEMENTATION_NAME,
             version = LIB_VERSION,

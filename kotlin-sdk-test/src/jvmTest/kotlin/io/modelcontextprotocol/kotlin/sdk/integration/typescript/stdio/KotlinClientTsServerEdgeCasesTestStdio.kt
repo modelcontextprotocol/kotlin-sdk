@@ -2,7 +2,7 @@ package io.modelcontextprotocol.kotlin.sdk.integration.typescript.stdio
 
 import io.modelcontextprotocol.kotlin.sdk.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.TextContent
-import io.modelcontextprotocol.kotlin.sdk.client.Client
+import io.modelcontextprotocol.kotlin.sdk.client.McpClient
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TransportKind
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TsTestBase
 import kotlinx.coroutines.Dispatchers
@@ -26,7 +26,7 @@ class KotlinClientTsServerEdgeCasesTestStdio : TsTestBase() {
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
     fun testNonExistentToolOverStdio(): Unit = runBlocking(Dispatchers.IO) {
-        withClientStdio { client: Client, _ ->
+        withClientStdio { client: McpClient, _ ->
             val nonExistentToolName = "non-existent-tool"
             val arguments = mapOf("name" to "TestUser")
 
@@ -50,7 +50,7 @@ class KotlinClientTsServerEdgeCasesTestStdio : TsTestBase() {
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
     fun testSpecialCharactersInArgumentsOverStdio(): Unit = runBlocking(Dispatchers.IO) {
-        withClientStdio { client: Client, _ ->
+        withClientStdio { client: McpClient, _ ->
             val specialChars = "!@#$%^&*()_+{}[]|\\:;\"'<>.,?/"
             val arguments = mapOf("name" to specialChars)
 
@@ -72,7 +72,7 @@ class KotlinClientTsServerEdgeCasesTestStdio : TsTestBase() {
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
     fun testLargePayloadOverStdio(): Unit = runBlocking(Dispatchers.IO) {
-        withClientStdio { client: Client, _ ->
+        withClientStdio { client: McpClient, _ ->
             val largeName = "A".repeat(10 * 1024)
             val arguments = mapOf("name" to largeName)
 
@@ -94,7 +94,7 @@ class KotlinClientTsServerEdgeCasesTestStdio : TsTestBase() {
     @Test
     @Timeout(60, unit = TimeUnit.SECONDS)
     fun testConcurrentRequestsOverStdio(): Unit = runBlocking(Dispatchers.IO) {
-        withClientStdio { client: Client, _ ->
+        withClientStdio { client: McpClient, _ ->
             val concurrentCount = 5
             val responses = coroutineScope {
                 val results = (1..concurrentCount).map { i ->
@@ -130,7 +130,7 @@ class KotlinClientTsServerEdgeCasesTestStdio : TsTestBase() {
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
     fun testInvalidArgumentsOverStdio(): Unit = runBlocking(Dispatchers.IO) {
-        withClientStdio { client: Client, _ ->
+        withClientStdio { client: McpClient, _ ->
             val invalidArguments = mapOf(
                 "name" to JsonObject(mapOf("nested" to JsonPrimitive("value"))),
             )
@@ -155,7 +155,7 @@ class KotlinClientTsServerEdgeCasesTestStdio : TsTestBase() {
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
     fun testMultipleToolCallsOverStdio(): Unit = runBlocking(Dispatchers.IO) {
-        withClientStdio { client: Client, _ ->
+        withClientStdio { client: McpClient, _ ->
             repeat(10) { i ->
                 val name = "SequentialClient$i"
                 val arguments = mapOf("name" to name)

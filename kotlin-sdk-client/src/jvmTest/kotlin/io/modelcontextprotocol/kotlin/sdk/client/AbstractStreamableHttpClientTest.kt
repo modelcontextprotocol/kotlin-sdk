@@ -19,7 +19,7 @@ internal abstract class AbstractStreamableHttpClientTest {
         mockMcp.checkForUnmatchedRequests()
     }
 
-    protected suspend fun connect(client: Client) {
+    protected suspend fun connect(client: McpClient) {
         client.connect(
             StreamableHttpClientTransport(
                 url = mockMcp.url,

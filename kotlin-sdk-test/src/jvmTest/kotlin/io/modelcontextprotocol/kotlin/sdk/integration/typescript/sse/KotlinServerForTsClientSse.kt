@@ -35,7 +35,7 @@ import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.TextResourceContents
 import io.modelcontextprotocol.kotlin.sdk.Tool
-import io.modelcontextprotocol.kotlin.sdk.server.Server
+import io.modelcontextprotocol.kotlin.sdk.server.McpServer
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
@@ -53,7 +53,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonPrimitive
-import org.awaitility.Awaitility.await
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
@@ -194,8 +193,8 @@ class KotlinServerForTsClient {
         server = null
     }
 
-    fun createMcpServer(): Server {
-        val server = Server(
+    fun createMcpServer(): McpServer {
+        val server = McpServer(
             Implementation(
                 name = "kotlin-http-server",
                 version = "1.0.0",

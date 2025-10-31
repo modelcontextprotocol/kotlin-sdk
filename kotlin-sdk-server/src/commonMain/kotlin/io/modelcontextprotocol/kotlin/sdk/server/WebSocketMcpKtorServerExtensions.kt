@@ -23,7 +23,7 @@ private val logger = KotlinLogging.logger {}
  * Configures the Ktor Application to handle Model Context Protocol (MCP) over WebSocket.
  */
 @KtorDsl
-public fun Routing.mcpWebSocket(block: () -> Server) {
+public fun Routing.mcpWebSocket(block: () -> McpServer) {
     webSocket {
         mcpWebSocketEndpoint(block)
     }
@@ -33,7 +33,7 @@ public fun Routing.mcpWebSocket(block: () -> Server) {
  * Configures the Ktor Application to handle Model Context Protocol (MCP) over WebSocket.
  */
 @KtorDsl
-public fun Routing.mcpWebSocket(path: String, block: () -> Server) {
+public fun Routing.mcpWebSocket(path: String, block: () -> McpServer) {
     webSocket(path) {
         mcpWebSocketEndpoint(block)
     }
@@ -43,7 +43,7 @@ public fun Routing.mcpWebSocket(path: String, block: () -> Server) {
  * Configures the Ktor Application to handle Model Context Protocol (MCP) over WebSocket.
  */
 @KtorDsl
-public fun Application.mcpWebSocket(block: () -> Server) {
+public fun Application.mcpWebSocket(block: () -> McpServer) {
     install(WebSockets)
 
     routing {
@@ -55,7 +55,7 @@ public fun Application.mcpWebSocket(block: () -> Server) {
  * Configures the Ktor Application to handle Model Context Protocol (MCP) over WebSocket at the specified path.
  */
 @KtorDsl
-public fun Application.mcpWebSocket(path: String, block: () -> Server) {
+public fun Application.mcpWebSocket(path: String, block: () -> McpServer) {
     install(WebSockets)
 
     routing {
@@ -63,7 +63,7 @@ public fun Application.mcpWebSocket(path: String, block: () -> Server) {
     }
 }
 
-internal suspend fun WebSocketServerSession.mcpWebSocketEndpoint(block: () -> Server) {
+internal suspend fun WebSocketServerSession.mcpWebSocketEndpoint(block: () -> McpServer) {
     logger.info { "Ktor Server establishing new connection" }
     val transport = createMcpTransport(this)
     val server = block()
@@ -90,7 +90,7 @@ private fun createMcpTransport(webSocketSession: WebSocketServerSession): WebSoc
     ReplaceWith("Routing.mcpWebSocket"),
     DeprecationLevel.WARNING,
 )
-public fun Route.mcpWebSocket(options: ServerOptions? = null, handler: suspend Server.() -> Unit = {}) {
+public fun Route.mcpWebSocket(options: ServerOptions? = null, handler: suspend McpServer.() -> Unit = {}) {
     webSocket {
         createMcpServer(this, options, handler)
     }
@@ -101,7 +101,7 @@ public fun Route.mcpWebSocket(options: ServerOptions? = null, handler: suspend S
     ReplaceWith("Routing.mcpWebSocket"),
     DeprecationLevel.WARNING,
 )
-public fun Route.mcpWebSocket(block: () -> Server) {
+public fun Route.mcpWebSocket(block: () -> McpServer) {
     webSocket {
         block().connect(createMcpTransport(this))
     }
@@ -119,7 +119,11 @@ public fun Route.mcpWebSocket(block: () -> Server) {
     ReplaceWith("Routing.mcpWebSocket"),
     DeprecationLevel.WARNING,
 )
-public fun Route.mcpWebSocket(path: String, options: ServerOptions? = null, handler: suspend Server.() -> Unit = {}) {
+public fun Route.mcpWebSocket(
+    path: String,
+    options: ServerOptions? = null,
+    handler: suspend McpServer.() -> Unit = {},
+) {
     webSocket(path) {
         createMcpServer(this, options, handler)
     }
@@ -172,11 +176,11 @@ public fun Route.mcpWebSocketTransport(path: String, handler: suspend WebSocketM
 private suspend fun Route.createMcpServer(
     session: WebSocketServerSession,
     options: ServerOptions?,
-    handler: suspend Server.() -> Unit,
+    handler: suspend McpServer.() -> Unit,
 ) {
     val transport = createMcpTransport(session)
 
-    val server = Server(
+    val server = McpServer(
         serverInfo = Implementation(
             name = IMPLEMENTATION_NAME,
             version = LIB_VERSION,

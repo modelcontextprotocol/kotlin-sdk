@@ -14,9 +14,9 @@ import io.modelcontextprotocol.kotlin.sdk.PromptMessage
 import io.modelcontextprotocol.kotlin.sdk.Role
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.TextContent
-import io.modelcontextprotocol.kotlin.sdk.client.Client
+import io.modelcontextprotocol.kotlin.sdk.client.McpClient
 import io.modelcontextprotocol.kotlin.sdk.client.mcpWebSocketTransport
-import io.modelcontextprotocol.kotlin.sdk.server.Server
+import io.modelcontextprotocol.kotlin.sdk.server.McpServer
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.mcpWebSocket
 import kotlinx.coroutines.Dispatchers
@@ -35,7 +35,7 @@ class WebSocketIntegrationTest {
     @Test
     fun `client should be able to connect to websocket server 2`() = runTest(timeout = 5.seconds) {
         var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
-        var client: Client? = null
+        var client: McpClient? = null
 
         try {
             withContext(Dispatchers.Default) {
@@ -59,7 +59,7 @@ class WebSocketIntegrationTest {
     @Test
     fun `single websocket connection`() = runTest(timeout = 5.seconds) {
         var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
-        var client: Client? = null
+        var client: McpClient? = null
 
         try {
             withContext(Dispatchers.Default) {
@@ -87,8 +87,8 @@ class WebSocketIntegrationTest {
     @Test
     fun `multiple websocket connections`() = runTest(timeout = 5.seconds) {
         var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
-        var clientA: Client? = null
-        var clientB: Client? = null
+        var clientA: McpClient? = null
+        var clientB: McpClient? = null
 
         try {
             withContext(Dispatchers.Default) {
@@ -112,8 +112,8 @@ class WebSocketIntegrationTest {
         }
     }
 
-    private suspend fun initClient(name: String = "", serverPort: Int): Client {
-        val client = Client(
+    private suspend fun initClient(name: String = "", serverPort: Int): McpClient {
+        val client = McpClient(
             Implementation(name = name, version = "1.0.0"),
         )
 
@@ -135,7 +135,7 @@ class WebSocketIntegrationTest {
     }
 
     private fun initServer(): EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration> {
-        val server = Server(
+        val server = McpServer(
             Implementation(name = "websocket-server", version = "1.0.0"),
             ServerOptions(
                 capabilities = ServerCapabilities(prompts = ServerCapabilities.Prompts(listChanged = true)),
@@ -177,7 +177,7 @@ class WebSocketIntegrationTest {
     /**
      * Retrieves a prompt result using the provided client and client name.
      */
-    private suspend fun getPrompt(client: Client, clientName: String): String {
+    private suspend fun getPrompt(client: McpClient, clientName: String): String {
         val response = client.getPrompt(
             GetPromptRequest(
                 "prompt",

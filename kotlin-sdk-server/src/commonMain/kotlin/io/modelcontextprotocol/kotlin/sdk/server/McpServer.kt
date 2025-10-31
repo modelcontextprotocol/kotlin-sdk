@@ -37,6 +37,9 @@ import kotlinx.coroutines.CancellationException
 
 private val logger = KotlinLogging.logger {}
 
+@Deprecated("Use McpServer", ReplaceWith("McpServer"), DeprecationLevel.WARNING)
+public typealias Server = McpServer
+
 /**
  * Configuration options for the MCP server.
  *
@@ -57,12 +60,14 @@ public class ServerOptions(public val capabilities: ServerCapabilities, enforceS
  * @param options Configuration options for the server.
  * @param instructionsProvider Optional provider for instructions from the server to the client about how to use
  * this server. The provider is called each time a new session is started to support dynamic instructions.
+ * @param configurer Lambda to configure mcp server.
  */
 
-public open class Server(
+public open class McpServer(
     protected val serverInfo: Implementation,
     protected val options: ServerOptions,
     protected val instructionsProvider: (() -> String)? = null,
+    configurer: McpServer.() -> Unit = {},
 ) {
     /**
      * Alternative constructor that provides the instructions directly as a string.
@@ -70,12 +75,19 @@ public open class Server(
      * @param serverInfo Information about this server implementation (name, version).
      * @param options Configuration options for the server.
      * @param instructions Instructions from the server to the client about how to use this server.
+     * @param configurer Lambda to configure mcp server.
      */
     public constructor(
         serverInfo: Implementation,
         options: ServerOptions,
         instructions: String,
-    ) : this(serverInfo, options, { instructions })
+        configurer: McpServer.() -> Unit = {},
+    ) : this(
+        serverInfo = serverInfo,
+        options = options,
+        instructionsProvider = { instructions },
+        configurer = configurer,
+    )
 
     private val sessions = atomic(persistentListOf<ServerSession>())
 
@@ -97,6 +109,10 @@ public open class Server(
         get() = _prompts.value
     public val resources: Map<String, RegisteredResource>
         get() = _resources.value
+
+    init {
+        configurer(this)
+    }
 
     public suspend fun close() {
         logger.debug { "Closing MCP server" }
@@ -148,6 +164,7 @@ public open class Server(
         }
 
         logger.debug { "Server session connecting to transport" }
+
         session.connect(transport)
         logger.debug { "Server session successfully connected to transport" }
         sessions.update { it.add(session) }

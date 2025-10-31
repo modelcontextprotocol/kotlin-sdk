@@ -397,7 +397,7 @@ class StreamableHttpClientTransportTest {
             )
         }
 
-        val client = Client(
+        val client = McpClient(
             clientInfo = Implementation(
                 name = "test-client",
                 version = "1.0",

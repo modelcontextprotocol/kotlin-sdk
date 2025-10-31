@@ -28,15 +28,15 @@ public fun HttpClient.mcpStreamableHttpTransport(
  * @param url URL of the MCP server.
  * @param reconnectionTime Optional duration to wait before attempting to reconnect.
  * @param requestBuilder Optional lambda to configure the HTTP request.
- * @return A connected [Client] ready for MCP communication.
+ * @return A connected [McpClient] ready for MCP communication.
  */
 public suspend fun HttpClient.mcpStreamableHttp(
     url: String,
     reconnectionTime: Duration? = null,
     requestBuilder: HttpRequestBuilder.() -> Unit = {},
-): Client {
+): McpClient {
     val transport = mcpStreamableHttpTransport(url, reconnectionTime, requestBuilder)
-    val client = Client(Implementation(name = IMPLEMENTATION_NAME, version = LIB_VERSION))
+    val client = McpClient(Implementation(name = IMPLEMENTATION_NAME, version = LIB_VERSION))
     client.connect(transport)
     return client
 }

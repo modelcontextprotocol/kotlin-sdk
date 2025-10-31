@@ -1,6 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.typescript.sse
 
-import io.modelcontextprotocol.kotlin.sdk.client.Client
+import io.modelcontextprotocol.kotlin.sdk.client.McpClient
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.AbstractKotlinClientTsServerTest
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TransportKind
 import kotlinx.coroutines.withTimeout
@@ -37,7 +37,7 @@ class KotlinClientTsServerTestSse : AbstractKotlinClientTsServerTest() {
         }
     }
 
-    override suspend fun <T> useClient(block: suspend (Client) -> T): T = withClient(serverUrl) { client ->
+    override suspend fun <T> useClient(block: suspend (McpClient) -> T): T = withClient(serverUrl) { client ->
         try {
             withTimeout(20.seconds) { block(client) }
         } finally {

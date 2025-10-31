@@ -62,6 +62,9 @@ import kotlin.coroutines.cancellation.CancellationException
 
 private val logger = KotlinLogging.logger {}
 
+@Deprecated("Use McpClient", ReplaceWith("McpClient"), DeprecationLevel.WARNING)
+public typealias Client = McpClient
+
 /**
  * Options for configuring the MCP client.
  *
@@ -84,7 +87,7 @@ public class ClientOptions(
  * @param clientInfo Information about the client implementation (name, version).
  * @param options Configuration options for this client.
  */
-public open class Client(private val clientInfo: Implementation, options: ClientOptions = ClientOptions()) :
+public open class McpClient(private val clientInfo: Implementation, options: ClientOptions = ClientOptions()) :
     Protocol(options) {
 
     /**

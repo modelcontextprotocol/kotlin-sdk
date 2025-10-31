@@ -13,7 +13,7 @@ import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.TextResourceContents
 import io.modelcontextprotocol.kotlin.sdk.Tool
 import io.modelcontextprotocol.kotlin.sdk.ToolListChangedNotification
-import io.modelcontextprotocol.kotlin.sdk.client.Client
+import io.modelcontextprotocol.kotlin.sdk.client.McpClient
 import io.modelcontextprotocol.kotlin.sdk.shared.InMemoryTransport
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
@@ -35,7 +35,7 @@ class ServerTest {
                 tools = ServerCapabilities.Tools(null),
             ),
         )
-        val server = Server(
+        val server = McpServer(
             Implementation(name = "test server", version = "1.0"),
             serverOptions,
         )
@@ -47,7 +47,7 @@ class ServerTest {
 
         // Setup client
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-        val client = Client(
+        val client = McpClient(
             clientInfo = Implementation(name = "test client", version = "1.0"),
         )
 
@@ -70,14 +70,14 @@ class ServerTest {
                 tools = ServerCapabilities.Tools(null),
             ),
         )
-        val server = Server(
+        val server = McpServer(
             Implementation(name = "test server", version = "1.0"),
             serverOptions,
         )
 
         // Setup client
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-        val client = Client(
+        val client = McpClient(
             clientInfo = Implementation(name = "test client", version = "1.0"),
         )
 
@@ -106,7 +106,7 @@ class ServerTest {
         val serverOptions = ServerOptions(
             capabilities = ServerCapabilities(),
         )
-        val server = Server(
+        val server = McpServer(
             Implementation(name = "test server", version = "1.0"),
             serverOptions,
         )
@@ -126,7 +126,7 @@ class ServerTest {
                 tools = ServerCapabilities.Tools(null),
             ),
         )
-        val server = Server(
+        val server = McpServer(
             Implementation(name = "test server", version = "1.0"),
             serverOptions,
         )
@@ -141,7 +141,7 @@ class ServerTest {
 
         // Setup client
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-        val client = Client(
+        val client = McpClient(
             clientInfo = Implementation(name = "test client", version = "1.0"),
         )
 
@@ -164,7 +164,7 @@ class ServerTest {
                 prompts = ServerCapabilities.Prompts(listChanged = false),
             ),
         )
-        val server = Server(
+        val server = McpServer(
             Implementation(name = "test server", version = "1.0"),
             serverOptions,
         )
@@ -180,7 +180,7 @@ class ServerTest {
 
         // Setup client
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-        val client = Client(
+        val client = McpClient(
             clientInfo = Implementation(name = "test client", version = "1.0"),
         )
 
@@ -203,7 +203,7 @@ class ServerTest {
                 prompts = ServerCapabilities.Prompts(listChanged = false),
             ),
         )
-        val server = Server(
+        val server = McpServer(
             Implementation(name = "test server", version = "1.0"),
             serverOptions,
         )
@@ -226,7 +226,7 @@ class ServerTest {
 
         // Setup client
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-        val client = Client(
+        val client = McpClient(
             clientInfo = Implementation(name = "test client", version = "1.0"),
         )
 
@@ -249,7 +249,7 @@ class ServerTest {
                 resources = ServerCapabilities.Resources(null, null),
             ),
         )
-        val server = Server(
+        val server = McpServer(
             Implementation(name = "test server", version = "1.0"),
             serverOptions,
         )
@@ -275,7 +275,7 @@ class ServerTest {
 
         // Setup client
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-        val client = Client(
+        val client = McpClient(
             clientInfo = Implementation(name = "test client", version = "1.0"),
         )
 
@@ -298,7 +298,7 @@ class ServerTest {
                 resources = ServerCapabilities.Resources(null, null),
             ),
         )
-        val server = Server(
+        val server = McpServer(
             Implementation(name = "test server", version = "1.0"),
             serverOptions,
         )
@@ -341,7 +341,7 @@ class ServerTest {
 
         // Setup client
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-        val client = Client(
+        val client = McpClient(
             clientInfo = Implementation(name = "test client", version = "1.0"),
         )
 
@@ -364,14 +364,14 @@ class ServerTest {
                 prompts = ServerCapabilities.Prompts(listChanged = false),
             ),
         )
-        val server = Server(
+        val server = McpServer(
             Implementation(name = "test server", version = "1.0"),
             serverOptions,
         )
 
         // Setup client
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-        val client = Client(
+        val client = McpClient(
             clientInfo = Implementation(name = "test client", version = "1.0"),
         )
 
@@ -400,7 +400,7 @@ class ServerTest {
         val serverOptions = ServerOptions(
             capabilities = ServerCapabilities(),
         )
-        val server = Server(
+        val server = McpServer(
             Implementation(name = "test server", version = "1.0"),
             serverOptions,
         )
@@ -420,14 +420,14 @@ class ServerTest {
                 resources = ServerCapabilities.Resources(null, null),
             ),
         )
-        val server = Server(
+        val server = McpServer(
             Implementation(name = "test server", version = "1.0"),
             serverOptions,
         )
 
         // Setup client
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-        val client = Client(
+        val client = McpClient(
             clientInfo = Implementation(name = "test client", version = "1.0"),
         )
 
@@ -461,7 +461,7 @@ class ServerTest {
         val serverOptions = ServerOptions(
             capabilities = ServerCapabilities(),
         )
-        val server = Server(
+        val server = McpServer(
             Implementation(name = "test server", version = "1.0"),
             serverOptions,
         )
@@ -479,12 +479,12 @@ class ServerTest {
         val serverOptions = ServerOptions(capabilities = ServerCapabilities())
         val instructions = "This is a test server. Use it for testing purposes only."
 
-        val server = Server(serverInfo, serverOptions, { instructions })
+        val server = McpServer(serverInfo, serverOptions, { instructions })
 
         // The instructions should be stored internally and used in handleInitialize
         // We can't directly access the private field, but we can test it through initialization
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-        val client = Client(clientInfo = Implementation(name = "test client", version = "1.0"))
+        val client = McpClient(clientInfo = Implementation(name = "test client", version = "1.0"))
 
         server.connect(serverTransport)
         client.connect(clientTransport)
@@ -498,12 +498,12 @@ class ServerTest {
         val serverOptions = ServerOptions(capabilities = ServerCapabilities())
         val instructions = "This is a test server. Use it for testing purposes only."
 
-        val server = Server(serverInfo, serverOptions, instructions)
+        val server = McpServer(serverInfo, serverOptions, instructions)
 
         // The instructions should be stored internally and used in handleInitialize
         // We can't directly access the private field, but we can test it through initialization
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-        val client = Client(clientInfo = Implementation(name = "test client", version = "1.0"))
+        val client = McpClient(clientInfo = Implementation(name = "test client", version = "1.0"))
 
         server.connect(serverTransport)
         client.connect(clientTransport)
@@ -517,10 +517,10 @@ class ServerTest {
         val serverOptions = ServerOptions(capabilities = ServerCapabilities())
 
         // Test that server works when instructions parameter is omitted (defaults to null)
-        val server = Server(serverInfo, serverOptions)
+        val server = McpServer(serverInfo, serverOptions)
 
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-        val client = Client(clientInfo = Implementation(name = "test client", version = "1.0"))
+        val client = McpClient(clientInfo = Implementation(name = "test client", version = "1.0"))
 
         server.connect(serverTransport)
         client.connect(clientTransport)

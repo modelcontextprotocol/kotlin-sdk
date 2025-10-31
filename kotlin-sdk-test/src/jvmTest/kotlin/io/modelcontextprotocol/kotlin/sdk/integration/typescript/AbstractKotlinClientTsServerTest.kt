@@ -2,7 +2,7 @@ package io.modelcontextprotocol.kotlin.sdk.integration.typescript
 
 import io.modelcontextprotocol.kotlin.sdk.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.TextContent
-import io.modelcontextprotocol.kotlin.sdk.client.Client
+import io.modelcontextprotocol.kotlin.sdk.client.McpClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
@@ -13,7 +13,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 abstract class AbstractKotlinClientTsServerTest : TsTestBase() {
-    protected abstract suspend fun <T> useClient(block: suspend (Client) -> T): T
+    protected abstract suspend fun <T> useClient(block: suspend (McpClient) -> T): T
 
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)

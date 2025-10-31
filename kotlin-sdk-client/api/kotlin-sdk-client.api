@@ -57,6 +57,51 @@ public final class io/modelcontextprotocol/kotlin/sdk/client/KtorClientKt {
 	public static synthetic fun mcpSseTransport-5_5nbZA$default (Lio/ktor/client/HttpClient;Ljava/lang/String;Lkotlin/time/Duration;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/client/SseClientTransport;
 }
 
+public class io/modelcontextprotocol/kotlin/sdk/client/McpClient : io/modelcontextprotocol/kotlin/sdk/shared/Protocol {
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/Implementation;Lio/modelcontextprotocol/kotlin/sdk/client/ClientOptions;)V
+	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/Implementation;Lio/modelcontextprotocol/kotlin/sdk/client/ClientOptions;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun addRoot (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun addRoots (Ljava/util/List;)V
+	protected final fun assertCapability (Ljava/lang/String;Ljava/lang/String;)V
+	protected fun assertCapabilityForMethod (Lio/modelcontextprotocol/kotlin/sdk/Method;)V
+	protected fun assertNotificationCapability (Lio/modelcontextprotocol/kotlin/sdk/Method;)V
+	public fun assertRequestHandlerCapability (Lio/modelcontextprotocol/kotlin/sdk/Method;)V
+	public final fun callTool (Lio/modelcontextprotocol/kotlin/sdk/CallToolRequest;ZLio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun callTool (Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;ZLio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun callTool$default (Lio/modelcontextprotocol/kotlin/sdk/client/McpClient;Lio/modelcontextprotocol/kotlin/sdk/CallToolRequest;ZLio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static synthetic fun callTool$default (Lio/modelcontextprotocol/kotlin/sdk/client/McpClient;Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;ZLio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun complete (Lio/modelcontextprotocol/kotlin/sdk/CompleteRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun complete$default (Lio/modelcontextprotocol/kotlin/sdk/client/McpClient;Lio/modelcontextprotocol/kotlin/sdk/CompleteRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public fun connect (Lio/modelcontextprotocol/kotlin/sdk/shared/Transport;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun getPrompt (Lio/modelcontextprotocol/kotlin/sdk/GetPromptRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun getPrompt$default (Lio/modelcontextprotocol/kotlin/sdk/client/McpClient;Lio/modelcontextprotocol/kotlin/sdk/GetPromptRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun getServerCapabilities ()Lio/modelcontextprotocol/kotlin/sdk/ServerCapabilities;
+	public final fun getServerInstructions ()Ljava/lang/String;
+	public final fun getServerVersion ()Lio/modelcontextprotocol/kotlin/sdk/Implementation;
+	public final fun listPrompts (Lio/modelcontextprotocol/kotlin/sdk/ListPromptsRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun listPrompts$default (Lio/modelcontextprotocol/kotlin/sdk/client/McpClient;Lio/modelcontextprotocol/kotlin/sdk/ListPromptsRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun listResourceTemplates (Lio/modelcontextprotocol/kotlin/sdk/ListResourceTemplatesRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun listResourceTemplates$default (Lio/modelcontextprotocol/kotlin/sdk/client/McpClient;Lio/modelcontextprotocol/kotlin/sdk/ListResourceTemplatesRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun listResources (Lio/modelcontextprotocol/kotlin/sdk/ListResourcesRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun listResources$default (Lio/modelcontextprotocol/kotlin/sdk/client/McpClient;Lio/modelcontextprotocol/kotlin/sdk/ListResourcesRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun listTools (Lio/modelcontextprotocol/kotlin/sdk/ListToolsRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun listTools$default (Lio/modelcontextprotocol/kotlin/sdk/client/McpClient;Lio/modelcontextprotocol/kotlin/sdk/ListToolsRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun ping (Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun ping$default (Lio/modelcontextprotocol/kotlin/sdk/client/McpClient;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun readResource (Lio/modelcontextprotocol/kotlin/sdk/ReadResourceRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun readResource$default (Lio/modelcontextprotocol/kotlin/sdk/client/McpClient;Lio/modelcontextprotocol/kotlin/sdk/ReadResourceRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun removeRoot (Ljava/lang/String;)Z
+	public final fun removeRoots (Ljava/util/List;)I
+	public final fun sendRootsListChanged (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun setElicitationHandler (Lkotlin/jvm/functions/Function1;)V
+	public final fun setLoggingLevel (Lio/modelcontextprotocol/kotlin/sdk/LoggingLevel;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun setLoggingLevel$default (Lio/modelcontextprotocol/kotlin/sdk/client/McpClient;Lio/modelcontextprotocol/kotlin/sdk/LoggingLevel;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun subscribeResource (Lio/modelcontextprotocol/kotlin/sdk/SubscribeRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun subscribeResource$default (Lio/modelcontextprotocol/kotlin/sdk/client/McpClient;Lio/modelcontextprotocol/kotlin/sdk/SubscribeRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun unsubscribeResource (Lio/modelcontextprotocol/kotlin/sdk/UnsubscribeRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun unsubscribeResource$default (Lio/modelcontextprotocol/kotlin/sdk/client/McpClient;Lio/modelcontextprotocol/kotlin/sdk/UnsubscribeRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
 public final class io/modelcontextprotocol/kotlin/sdk/client/SseClientTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport {
 	public synthetic fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Lkotlin/time/Duration;Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public synthetic fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Lkotlin/time/Duration;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/internal/DefaultConstructorMarker;)V

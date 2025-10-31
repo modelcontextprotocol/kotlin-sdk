@@ -9,11 +9,11 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.routing.routing
 import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
-import io.modelcontextprotocol.kotlin.sdk.client.Client
+import io.modelcontextprotocol.kotlin.sdk.client.McpClient
 import io.modelcontextprotocol.kotlin.sdk.client.SseClientTransport
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
 import io.modelcontextprotocol.kotlin.sdk.integration.utils.Retry
-import io.modelcontextprotocol.kotlin.sdk.server.Server
+import io.modelcontextprotocol.kotlin.sdk.server.McpServer
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.StdioServerTransport
 import io.modelcontextprotocol.kotlin.sdk.server.mcp
@@ -39,8 +39,8 @@ abstract class KotlinTestBase {
     protected val host = "localhost"
     protected var port: Int = 0
 
-    protected lateinit var server: Server
-    protected lateinit var client: Client
+    protected lateinit var server: McpServer
+    protected lateinit var client: McpClient
     protected lateinit var serverEngine: EmbeddedServer<*, *>
 
     // Transport selection
@@ -80,7 +80,7 @@ abstract class KotlinTestBase {
                     },
                     "http://$host:$port",
                 )
-                client = Client(
+                client = McpClient(
                     Implementation("test", "1.0"),
                 )
                 client.connect(transport)
@@ -93,7 +93,7 @@ abstract class KotlinTestBase {
                     input = input,
                     output = output,
                 )
-                client = Client(
+                client = McpClient(
                     Implementation("test", "1.0"),
                 )
                 client.connect(transport)
@@ -104,7 +104,7 @@ abstract class KotlinTestBase {
     protected fun setupServer() {
         val capabilities = configureServerCapabilities()
 
-        server = Server(
+        server = McpServer(
             Implementation(name = "test-server", version = "1.0"),
             ServerOptions(capabilities = capabilities),
         )

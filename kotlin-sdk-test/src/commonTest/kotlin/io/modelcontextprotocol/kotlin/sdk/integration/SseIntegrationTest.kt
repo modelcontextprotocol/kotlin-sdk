@@ -15,9 +15,9 @@ import io.modelcontextprotocol.kotlin.sdk.PromptMessage
 import io.modelcontextprotocol.kotlin.sdk.Role
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.TextContent
-import io.modelcontextprotocol.kotlin.sdk.client.Client
+import io.modelcontextprotocol.kotlin.sdk.client.McpClient
 import io.modelcontextprotocol.kotlin.sdk.client.mcpSseTransport
-import io.modelcontextprotocol.kotlin.sdk.server.Server
+import io.modelcontextprotocol.kotlin.sdk.server.McpServer
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.mcp
 import kotlinx.coroutines.Dispatchers
@@ -36,12 +36,12 @@ class SseIntegrationTest {
     @Ignore // Ignored because it doesn’t work with wasm/js in Ktor 3.2.3
     fun `client should be able to connect to sse server`() = runTest(timeout = 5.seconds) {
         var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
-        var client: Client? = null
+        var client: McpClient? = null
 
         try {
             withContext(Dispatchers.Default) {
                 server = initServer()
-                val port = server.engine.resolvedConnectors().first().port
+                val port = server.engine.resolvedConnectors().single().port
                 client = initClient(serverPort = port)
             }
         } finally {
@@ -61,7 +61,7 @@ class SseIntegrationTest {
     @Ignore // Ignored because it doesn’t work with wasm/js in Ktor 3.2.3
     fun `single sse connection`() = runTest(timeout = 5.seconds) {
         var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
-        var client: Client? = null
+        var client: McpClient? = null
         try {
             withContext(Dispatchers.Default) {
                 server = initServer()
@@ -89,8 +89,8 @@ class SseIntegrationTest {
     @Ignore // Ignored because it doesn’t work with wasm/js in Ktor 3.2.3
     fun `multiple sse connections`() = runTest(timeout = 5.seconds) {
         var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
-        var clientA: Client? = null
-        var clientB: Client? = null
+        var clientA: McpClient? = null
+        var clientB: McpClient? = null
 
         try {
             withContext(Dispatchers.Default) {
@@ -115,8 +115,8 @@ class SseIntegrationTest {
         }
     }
 
-    private suspend fun initClient(name: String = "", serverPort: Int): Client {
-        val client = Client(
+    private suspend fun initClient(name: String = "", serverPort: Int): McpClient {
+        val client = McpClient(
             Implementation(name = name, version = "1.0.0"),
         )
 
@@ -138,39 +138,39 @@ class SseIntegrationTest {
     }
 
     private suspend fun initServer(): EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration> {
-        val server = Server(
+        val mcpServer = McpServer(
             Implementation(name = "sse-server", version = "1.0.0"),
             ServerOptions(
                 capabilities = ServerCapabilities(prompts = ServerCapabilities.Prompts(listChanged = true)),
             ),
-        )
-
-        server.addPrompt(
-            name = "prompt",
-            description = "Prompt description",
-            arguments = listOf(
-                PromptArgument(
-                    name = "client",
-                    description = "Client name who requested a prompt",
-                    required = true,
-                ),
-            ),
-        ) { request ->
-            GetPromptResult(
-                "Prompt for ${request.name}",
-                messages = listOf(
-                    PromptMessage(
-                        role = Role.user,
-                        content = TextContent("Prompt for client ${request.arguments?.get("client")}"),
+        ) {
+            addPrompt(
+                name = "prompt",
+                description = "Prompt description",
+                arguments = listOf(
+                    PromptArgument(
+                        name = "client",
+                        description = "Client name who requested a prompt",
+                        required = true,
                     ),
                 ),
-            )
+            ) { request ->
+                GetPromptResult(
+                    "Prompt for ${request.name}",
+                    messages = listOf(
+                        PromptMessage(
+                            role = Role.user,
+                            content = TextContent("Prompt for client ${request.arguments?.get("client")}"),
+                        ),
+                    ),
+                )
+            }
         }
 
         val ktorServer = embeddedServer(ServerCIO, host = URL, port = PORT) {
             install(ServerSSE)
             routing {
-                mcp { server }
+                mcp { mcpServer }
             }
         }
 
@@ -180,7 +180,7 @@ class SseIntegrationTest {
     /**
      * Retrieves a prompt result using the provided client and client name.
      */
-    private suspend fun getPrompt(client: Client, clientName: String): String {
+    private suspend fun getPrompt(client: McpClient, clientName: String): String {
         val response = client.getPrompt(
             GetPromptRequest(
                 "prompt",

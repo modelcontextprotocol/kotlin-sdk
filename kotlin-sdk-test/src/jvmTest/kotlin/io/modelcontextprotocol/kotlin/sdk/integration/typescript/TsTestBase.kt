@@ -4,12 +4,12 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.sse.SSE
 import io.modelcontextprotocol.kotlin.sdk.Implementation
-import io.modelcontextprotocol.kotlin.sdk.client.Client
+import io.modelcontextprotocol.kotlin.sdk.client.McpClient
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
 import io.modelcontextprotocol.kotlin.sdk.client.mcpStreamableHttp
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.sse.KotlinServerForTsClient
 import io.modelcontextprotocol.kotlin.sdk.integration.utils.Retry
-import io.modelcontextprotocol.kotlin.sdk.server.Server
+import io.modelcontextprotocol.kotlin.sdk.server.McpServer
 import io.modelcontextprotocol.kotlin.sdk.server.StdioServerTransport
 import kotlinx.coroutines.withTimeout
 import kotlinx.io.Sink
@@ -283,10 +283,10 @@ abstract class TsTestBase {
     }
 
     // ===== SSE client helpers =====
-    protected suspend fun newClient(serverUrl: String): Client =
+    protected suspend fun newClient(serverUrl: String): McpClient =
         HttpClient(CIO) { install(SSE) }.mcpStreamableHttp(serverUrl)
 
-    protected suspend fun <T> withClient(serverUrl: String, block: suspend (Client) -> T): T {
+    protected suspend fun <T> withClient(serverUrl: String, block: suspend (McpClient) -> T): T {
         val client = newClient(serverUrl)
         return try {
             withTimeout(20.seconds) { block(client) }
@@ -338,16 +338,16 @@ abstract class TsTestBase {
         return process
     }
 
-    protected suspend fun newClientStdio(process: Process): Client {
+    protected suspend fun newClientStdio(process: Process): McpClient {
         val input: Source = process.inputStream.asSource().buffered()
         val output: Sink = process.outputStream.asSink().buffered()
         val transport = StdioClientTransport(input = input, output = output)
-        val client = Client(Implementation("test", "1.0"))
+        val client = McpClient(Implementation("test", "1.0"))
         client.connect(transport)
         return client
     }
 
-    protected suspend fun <T> withClientStdio(block: suspend (Client, Process) -> T): T {
+    protected suspend fun <T> withClientStdio(block: suspend (McpClient, Process) -> T): T {
         val proc = startTypeScriptServerStdio()
         val client = newClientStdio(proc)
         return try {
@@ -403,7 +403,7 @@ abstract class TsTestBase {
         }
 
         // Create Kotlin server and attach stdio transport to the process streams
-        val server: Server = KotlinServerForTsClient().createMcpServer()
+        val server: McpServer = KotlinServerForTsClient().createMcpServer()
         val transport = StdioServerTransport(
             inputStream = process.inputStream.asSource().buffered(),
             outputStream = process.outputStream.asSink().buffered(),

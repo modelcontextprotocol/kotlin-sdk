@@ -34,7 +34,7 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
 
     @Test
     fun `test streamableHttpClient`() = runBlocking {
-        val client = Client(
+        val client = McpClient(
             clientInfo = Implementation(
                 name = "client1",
                 version = "1.0.0",
@@ -173,7 +173,7 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
     private suspend fun checkSupportNonStreamingResponse(contentType: ContentType, statusCode: HttpStatusCode) {
         val sessionId = "SID_${Uuid.random().toHexString()}"
         val clientName = "client-${Uuid.random().toHexString()}"
-        val client = Client(
+        val client = McpClient(
             clientInfo = Implementation(name = clientName, version = "1.0.0"),
             options = ClientOptions(
                 capabilities = ClientCapabilities(),
