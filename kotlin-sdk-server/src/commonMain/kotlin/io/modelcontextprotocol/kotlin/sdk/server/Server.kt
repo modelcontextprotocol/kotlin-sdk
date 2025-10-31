@@ -32,6 +32,11 @@ import kotlinx.collections.immutable.minus
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentSet
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 private val logger = KotlinLogging.logger {}
 
@@ -76,6 +81,7 @@ public open class Server(
     ) : this(serverInfo, options, { instructions })
 
     private val sessions = atomic(persistentListOf<ServerSession>())
+    private val notificationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     @Suppress("ktlint:standard:backing-property-naming")
     private var _onInitialized: (() -> Unit) = {}
@@ -99,6 +105,7 @@ public open class Server(
     public suspend fun close() {
         logger.debug { "Closing MCP server" }
         sessions.value.forEach { it.close() }
+        notificationScope.cancel()
         _onClose()
     }
 
@@ -206,6 +213,11 @@ public open class Server(
         }
         logger.info { "Registering tool: ${tool.name}" }
         _tools.update { current -> current.put(tool.name, RegisteredTool(tool, handler)) }
+
+        // Send notification on tool list change to all sessions
+        notificationScope.launch {
+            sessions.value.forEach { it.sendToolListChanged() }
+        }
     }
 
     /**
@@ -246,6 +258,11 @@ public open class Server(
         }
         logger.info { "Registering ${toolsToAdd.size} tools" }
         _tools.update { current -> current.putAll(toolsToAdd.associateBy { it.tool.name }) }
+
+        // Send notification on tool list change to all sessions
+        notificationScope.launch {
+            sessions.value.forEach { it.sendToolListChanged() }
+        }
     }
 
     /**
@@ -272,6 +289,12 @@ public open class Server(
                 "Tool not found: $name"
             }
         }
+
+        // Send notification on tool list change to all sessions
+        notificationScope.launch {
+            sessions.value.forEach { it.sendToolListChanged() }
+        }
+
         return removed
     }
 
@@ -299,6 +322,12 @@ public open class Server(
                 "No tools were removed"
             }
         }
+
+        // Send notification on tool list change to all sessions
+        notificationScope.launch {
+            sessions.value.forEach { it.sendToolListChanged() }
+        }
+
         return removedCount
     }
 
@@ -316,6 +345,11 @@ public open class Server(
         }
         logger.info { "Registering prompt: ${prompt.name}" }
         _prompts.update { current -> current.put(prompt.name, RegisteredPrompt(prompt, promptProvider)) }
+
+        // Send notification on prompt list change to all sessions
+        notificationScope.launch {
+            sessions.value.forEach { it.sendPromptListChanged() }
+        }
     }
 
     /**
@@ -350,6 +384,11 @@ public open class Server(
         }
         logger.info { "Registering ${promptsToAdd.size} prompts" }
         _prompts.update { current -> current.putAll(promptsToAdd.associateBy { it.prompt.name }) }
+
+        // Send notification on prompt list change to all sessions
+        notificationScope.launch {
+            sessions.value.forEach { it.sendPromptListChanged() }
+        }
     }
 
     /**
@@ -376,6 +415,12 @@ public open class Server(
                 "Prompt not found: $name"
             }
         }
+
+        // Send notification on prompt list change to all sessions
+        notificationScope.launch {
+            sessions.value.forEach { it.sendPromptListChanged() }
+        }
+
         return removed
     }
 
@@ -404,6 +449,12 @@ public open class Server(
                 "No prompts were removed"
             }
         }
+
+        // Send notification on prompt list change to all sessions
+        notificationScope.launch {
+            sessions.value.forEach { it.sendPromptListChanged() }
+        }
+
         return removedCount
     }
 
@@ -435,6 +486,11 @@ public open class Server(
                 RegisteredResource(Resource(uri, name, description, mimeType), readHandler),
             )
         }
+
+        // Send notification on resources list change to all sessions
+        notificationScope.launch {
+            sessions.value.forEach { it.sendResourceListChanged() }
+        }
     }
 
     /**
@@ -450,6 +506,11 @@ public open class Server(
         }
         logger.info { "Registering ${resourcesToAdd.size} resources" }
         _resources.update { current -> current.putAll(resourcesToAdd.associateBy { it.resource.uri }) }
+
+        // Send notification on resources list change to all sessions
+        notificationScope.launch {
+            sessions.value.forEach { it.sendResourceListChanged() }
+        }
     }
 
     /**
@@ -476,6 +537,12 @@ public open class Server(
                 "Resource not found: $uri"
             }
         }
+
+        // Send notification on resources list change to all sessions
+        notificationScope.launch {
+            sessions.value.forEach { it.sendResourceListChanged() }
+        }
+
         return removed
     }
 
@@ -504,6 +571,12 @@ public open class Server(
                 "No resources were removed"
             }
         }
+
+        // Send notification on resources list change to all sessions
+        notificationScope.launch {
+            sessions.value.forEach { it.sendResourceListChanged() }
+        }
+
         return removedCount
     }
 

@@ -34,7 +34,7 @@ private val logger = KotlinLogging.logger {}
 
 public open class ServerSession(
     protected val serverInfo: Implementation,
-    options: ServerOptions,
+    protected val options: ServerOptions,
     protected val instructions: String?,
 ) : Protocol(options) {
     @Suppress("ktlint:standard:backing-property-naming")
@@ -45,10 +45,10 @@ public open class ServerSession(
 
     init {
         // Core protocol handlers
-        setRequestHandler<InitializeRequest>(Method.Defined.Initialize) { request, _ ->
+        setRequestHandler<InitializeRequest>(Defined.Initialize) { request, _ ->
             handleInitialize(request)
         }
-        setNotificationHandler<InitializedNotification>(Method.Defined.NotificationsInitialized) {
+        setNotificationHandler<InitializedNotification>(Defined.NotificationsInitialized) {
             _onInitialized()
             CompletableDeferred(Unit)
         }
@@ -107,7 +107,7 @@ public open class ServerSession(
      * @return The result of the ping request.
      * @throws IllegalStateException If for some reason the method is not supported or the connection is closed.
      */
-    public suspend fun ping(): EmptyRequestResult = request<EmptyRequestResult>(PingRequest())
+    public suspend fun ping(): EmptyRequestResult = request(PingRequest())
 
     /**
      * Creates a message using the server's sampling capability.
@@ -122,7 +122,7 @@ public open class ServerSession(
         options: RequestOptions? = null,
     ): CreateMessageResult {
         logger.debug { "Creating message with params: $params" }
-        return request<CreateMessageResult>(params, options)
+        return request(params, options)
     }
 
     /**
@@ -138,7 +138,7 @@ public open class ServerSession(
         options: RequestOptions? = null,
     ): ListRootsResult {
         logger.debug { "Listing roots with params: $params" }
-        return request<ListRootsResult>(ListRootsRequest(params), options)
+        return request(ListRootsRequest(params), options)
     }
 
     public suspend fun createElicitation(
@@ -174,24 +174,45 @@ public open class ServerSession(
      * Sends a notification to the client indicating that the list of resources has changed.
      */
     public suspend fun sendResourceListChanged() {
-        logger.debug { "Sending resource list changed notification" }
-        notification(ResourceListChangedNotification())
+        if (options.capabilities.resources?.listChanged ?: false) {
+            logger.debug { "Sending resource list changed notification" }
+            notification(ResourceListChangedNotification())
+        } else {
+            logger.warn {
+                "Resources list changed notification was not sent because " +
+                    "server does not support resources list changed notification"
+            }
+        }
     }
 
     /**
      * Sends a notification to the client indicating that the list of tools has changed.
      */
     public suspend fun sendToolListChanged() {
-        logger.debug { "Sending tool list changed notification" }
-        notification(ToolListChangedNotification())
+        if (options.capabilities.tools?.listChanged ?: false) {
+            logger.debug { "Sending tool list changed notification" }
+            notification(ToolListChangedNotification())
+        } else {
+            logger.warn {
+                "Tool list changed notification was not sent because " +
+                    "server does not support tool list changed notification"
+            }
+        }
     }
 
     /**
      * Sends a notification to the client indicating that the list of prompts has changed.
      */
     public suspend fun sendPromptListChanged() {
-        logger.debug { "Sending prompt list changed notification" }
-        notification(PromptListChangedNotification())
+        if (options.capabilities.prompts?.listChanged ?: false) {
+            logger.debug { "Sending prompt list changed notification" }
+            notification(PromptListChangedNotification())
+        } else {
+            logger.warn {
+                "Prompt list changed notification was not sent because " +
+                    "server does not support prompt list changed notification"
+            }
+        }
     }
 
     /**

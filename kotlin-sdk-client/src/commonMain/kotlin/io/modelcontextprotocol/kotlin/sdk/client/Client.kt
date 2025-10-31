@@ -168,6 +168,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
             serverVersion = result.serverInfo
             serverInstructions = result.instructions
 
+            logger.info { "Sending initialized notification to server" }
             notification(InitializedNotification())
         } catch (error: Throwable) {
             logger.error(error) { "Failed to initialize client: ${error.message}" }
