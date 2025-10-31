@@ -2925,27 +2925,7 @@ public final synthetic class io/modelcontextprotocol/kotlin/sdk/Tool$$serializer
 	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/Tool$Builder {
-	public fun <init> ()V
-	public final fun build ()Lio/modelcontextprotocol/kotlin/sdk/Tool;
-	public final fun getAnnotations ()Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations;
-	public final fun getDescription ()Ljava/lang/String;
-	public final fun getInputSchema ()Lio/modelcontextprotocol/kotlin/sdk/Tool$Input;
-	public final fun getName ()Ljava/lang/String;
-	public final fun getOutputSchema ()Lio/modelcontextprotocol/kotlin/sdk/Tool$Output;
-	public final fun getTitle ()Ljava/lang/String;
-	public final fun get_meta ()Lkotlinx/serialization/json/JsonObject;
-	public final fun setAnnotations (Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations;)V
-	public final fun setDescription (Ljava/lang/String;)V
-	public final fun setInputSchema (Lio/modelcontextprotocol/kotlin/sdk/Tool$Input;)V
-	public final fun setName (Ljava/lang/String;)V
-	public final fun setOutputSchema (Lio/modelcontextprotocol/kotlin/sdk/Tool$Output;)V
-	public final fun setTitle (Ljava/lang/String;)V
-	public final fun set_meta (Lkotlinx/serialization/json/JsonObject;)V
-}
-
 public final class io/modelcontextprotocol/kotlin/sdk/Tool$Companion {
-	public final fun build (Lkotlin/jvm/functions/Function1;)Lio/modelcontextprotocol/kotlin/sdk/Tool;
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 

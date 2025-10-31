@@ -481,12 +481,12 @@ class ToolSerializationTest {
         title: String? = null,
         outputSchema: Tool.Output? = null,
         @Suppress("LocalVariableName") _meta: JsonObject? = null,
-    ): Tool = Tool.build {
-        this.name = name
-        title?.let { this.title = it }
-        this.description = "Get the current weather in a given location"
-        this.annotations = null
-        this.inputSchema = Tool.Input(
+    ): Tool = Tool(
+        name = name,
+        title = title,
+        description = "Get the current weather in a given location",
+        annotations = null,
+        inputSchema = Tool.Input(
             properties = buildJsonObject {
                 put(
                     "location",
@@ -497,10 +497,10 @@ class ToolSerializationTest {
                 )
             },
             required = listOf("location"),
-        )
-        outputSchema?.let { this.outputSchema = it }
-        _meta?.let { this._meta = it }
-    }
+        ),
+        outputSchema = outputSchema,
+        _meta = _meta ?: EmptyJsonObject,
+    )
 
     //endregion Private Methods
 }

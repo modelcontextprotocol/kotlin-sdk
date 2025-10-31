@@ -1261,32 +1261,6 @@ public data class Tool(
         @EncodeDefault
         val type: String = "object"
     }
-
-    public class Builder {
-        public var name: String? = null
-        public var title: String? = null
-        public var description: String? = null
-        public var inputSchema: Input = Input()
-        public var outputSchema: Output? = null
-        public var annotations: ToolAnnotations? = null
-
-        @Suppress("PropertyName")
-        public var _meta: JsonObject = EmptyJsonObject
-
-        public fun build(): Tool = Tool(
-            name = requireNotNull(name) { "Tool name is required" },
-            title = title,
-            description = description,
-            inputSchema = inputSchema,
-            outputSchema = outputSchema,
-            annotations = annotations,
-            _meta = _meta,
-        )
-    }
-
-    public companion object {
-        public fun build(builder: Builder.() -> Unit): Tool = Builder().apply(builder).build()
-    }
 }
 
 /**

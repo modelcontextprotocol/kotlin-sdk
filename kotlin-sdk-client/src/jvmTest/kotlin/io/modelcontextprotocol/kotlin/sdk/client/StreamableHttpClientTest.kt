@@ -125,10 +125,10 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
 
         val listToolsResult = client.listTools()
 
-        listToolsResult.tools shouldContain Tool.build {
-            name = "get_weather"
-            title = "Weather Information Provider"
-            description = "Get current weather information for a location"
+        listToolsResult.tools shouldContain Tool(
+            name = "get_weather",
+            title = "Weather Information Provider",
+            description = "Get current weather information for a location",
             inputSchema = Tool.Input(
                 properties = buildJsonObject {
                     putJsonObject("location") {
@@ -137,7 +137,7 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
                     }
                 },
                 required = listOf("location"),
-            )
+            ),
             outputSchema = Tool.Output(
                 properties = buildJsonObject {
                     putJsonObject("temperature") {
@@ -146,8 +146,9 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
                     }
                 },
                 required = listOf("temperature"),
-            )
-        }
+            ),
+            annotations = null,
+        )
 
         mockMcp.mockUnsubscribeRequest(sessionId = sessionId)
 
