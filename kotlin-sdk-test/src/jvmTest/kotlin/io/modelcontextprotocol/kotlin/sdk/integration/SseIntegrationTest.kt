@@ -33,7 +33,6 @@ import io.ktor.server.sse.SSE as ServerSSE
 
 class SseIntegrationTest {
     @Test
-    @Ignore // Ignored because it doesn’t work with wasm/js in Ktor 3.2.3
     fun `client should be able to connect to sse server`() = runTest(timeout = 5.seconds) {
         var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
         var client: McpClient? = null
@@ -58,7 +57,6 @@ class SseIntegrationTest {
      * 3. Observe that Client A receives a response related to it.
      */
     @Test
-    @Ignore // Ignored because it doesn’t work with wasm/js in Ktor 3.2.3
     fun `single sse connection`() = runTest(timeout = 5.seconds) {
         var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
         var client: McpClient? = null
@@ -86,7 +84,6 @@ class SseIntegrationTest {
      * 4. Observe that Client B (connection #2) receives a response related to sessionId#1.
      */
     @Test
-    @Ignore // Ignored because it doesn’t work with wasm/js in Ktor 3.2.3
     fun `multiple sse connections`() = runTest(timeout = 5.seconds) {
         var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
         var clientA: McpClient? = null
