@@ -152,6 +152,12 @@ public open class Server(
         logger.debug { "Server session successfully connected to transport" }
         sessions.update { it.add(session) }
 
+        // Register cleanup handler to remove session from list when it closes
+        session.onClose {
+            logger.debug { "Removing closed session from active sessions list" }
+            sessions.update { list -> list - session }
+        }
+
         _onConnect()
         return session
     }
