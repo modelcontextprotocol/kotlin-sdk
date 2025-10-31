@@ -1,4 +1,4 @@
-package shared
+package io.modelcontextprotocol.sample.server
 
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.install
@@ -25,7 +25,13 @@ import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.ServerSession
 import io.modelcontextprotocol.kotlin.sdk.server.SseServerTransport
+import io.modelcontextprotocol.kotlin.sdk.server.StdioServerTransport
 import io.modelcontextprotocol.kotlin.sdk.server.mcp
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.runBlocking
+import kotlinx.io.asSink
+import kotlinx.io.asSource
+import kotlinx.io.buffered
 
 fun configureServer(): Server {
     val server = Server(
@@ -71,7 +77,7 @@ fun configureServer(): Server {
         name = "kotlin-sdk-tool",
         description = "A test tool",
         inputSchema = Tool.Input(),
-    ) { request ->
+    ) { _ ->
         CallToolResult(
             content = listOf(TextContent("Hello, world!")),
         )
@@ -94,10 +100,10 @@ fun configureServer(): Server {
     return server
 }
 
-suspend fun runSseMcpServerWithPlainConfiguration(port: Int) {
+fun runSseMcpServerWithPlainConfiguration(port: Int) {
     val serverSessions = ConcurrentMap<String, ServerSession>()
-    println("Starting sse server on port $port. ")
-    println("Use inspector to connect to the http://localhost:$port/sse")
+    println("Starting SSE server on port $port")
+    println("Use inspector to connect to http://localhost:$port/sse")
 
     val server = configureServer()
 
@@ -106,21 +112,21 @@ suspend fun runSseMcpServerWithPlainConfiguration(port: Int) {
         routing {
             sse("/sse") {
                 val transport = SseServerTransport("/message", this)
-
-                // For SSE, you can also add prompts/tools/resources if needed:
-                // server.addTool(...), server.addPrompt(...), server.addResource(...)
-
                 val serverSession = server.connect(transport)
-                serverSessions[transport.sessionId] = server.connect(transport)
+                serverSessions[transport.sessionId] = serverSession
 
                 serverSession.onClose {
-                    println("Server closed")
+                    println("Server session closed for: ${transport.sessionId}")
                     serverSessions.remove(transport.sessionId)
                 }
             }
             post("/message") {
-                println("Received Message")
-                val sessionId: String = call.request.queryParameters["sessionId"]!!
+                val sessionId: String? = call.request.queryParameters["sessionId"]
+                if (sessionId == null) {
+                    call.respond(HttpStatusCode.BadRequest, "Missing sessionId parameter")
+                    return@post
+                }
+
                 val transport = serverSessions[sessionId]?.transport as? SseServerTransport
                 if (transport == null) {
                     call.respond(HttpStatusCode.NotFound, "Session not found")
@@ -130,24 +136,47 @@ suspend fun runSseMcpServerWithPlainConfiguration(port: Int) {
                 transport.handlePostMessage(call)
             }
         }
-    }.startSuspend(wait = true)
+    }.start(wait = true)
 }
 
 /**
- * Starts an SSE (Server Sent Events) MCP server using the Ktor framework and the specified port.
+ * Starts an SSE (Server-Sent Events) MCP server using the Ktor plugin.
  *
- * The url can be accessed in the MCP inspector at [http://localhost:$port]
+ * This is the recommended approach for SSE servers as it simplifies configuration.
+ * The URL can be accessed in the MCP inspector at http://localhost:[port]/sse
  *
  * @param port The port number on which the SSE MCP server will listen for client connections.
- * @return Unit This method does not return a value.
  */
-suspend fun runSseMcpServerUsingKtorPlugin(port: Int) {
-    println("Starting sse server on port $port")
-    println("Use inspector to connect to the http://localhost:$port/sse")
+fun runSseMcpServerUsingKtorPlugin(port: Int) {
+    println("Starting SSE server on port $port")
+    println("Use inspector to connect to http://localhost:$port/sse")
 
     embeddedServer(CIO, host = "127.0.0.1", port = port) {
         mcp {
             return@mcp configureServer()
         }
-    }.startSuspend(wait = true)
+    }.start(wait = true)
+}
+
+/**
+ * Starts an MCP server using Standard I/O transport.
+ *
+ * This mode is useful for process-based communication where the server
+ * communicates via stdin/stdout with a parent process or client.
+ */
+fun runMcpServerUsingStdio() {
+    val server = configureServer()
+    val transport = StdioServerTransport(
+        inputStream = System.`in`.asSource().buffered(),
+        outputStream = System.out.asSink().buffered()
+    )
+
+    runBlocking {
+        server.connect(transport)
+        val done = Job()
+        server.onClose {
+            done.complete()
+        }
+        done.join()
+    }
 }
