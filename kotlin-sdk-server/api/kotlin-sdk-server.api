@@ -79,40 +79,6 @@ public final class io/modelcontextprotocol/kotlin/sdk/server/RegisteredTool {
 	public fun toString ()Ljava/lang/String;
 }
 
-public class io/modelcontextprotocol/kotlin/sdk/server/Server {
-	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/Implementation;Lio/modelcontextprotocol/kotlin/sdk/server/ServerOptions;Ljava/lang/String;)V
-	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/Implementation;Lio/modelcontextprotocol/kotlin/sdk/server/ServerOptions;Lkotlin/jvm/functions/Function0;)V
-	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/Implementation;Lio/modelcontextprotocol/kotlin/sdk/server/ServerOptions;Lkotlin/jvm/functions/Function0;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun addPrompt (Lio/modelcontextprotocol/kotlin/sdk/Prompt;Lkotlin/jvm/functions/Function2;)V
-	public final fun addPrompt (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Lkotlin/jvm/functions/Function2;)V
-	public static synthetic fun addPrompt$default (Lio/modelcontextprotocol/kotlin/sdk/server/Server;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)V
-	public final fun addPrompts (Ljava/util/List;)V
-	public final fun addResource (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function2;)V
-	public static synthetic fun addResource$default (Lio/modelcontextprotocol/kotlin/sdk/server/Server;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)V
-	public final fun addResources (Ljava/util/List;)V
-	public final fun addTool (Lio/modelcontextprotocol/kotlin/sdk/Tool;Lkotlin/jvm/functions/Function2;)V
-	public final fun addTool (Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Tool$Input;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Tool$Output;Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations;Lkotlin/jvm/functions/Function2;)V
-	public static synthetic fun addTool$default (Lio/modelcontextprotocol/kotlin/sdk/server/Server;Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Tool$Input;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Tool$Output;Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)V
-	public final fun addTools (Ljava/util/List;)V
-	public final fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public final fun connect (Lio/modelcontextprotocol/kotlin/sdk/shared/Transport;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	protected final fun getInstructionsProvider ()Lkotlin/jvm/functions/Function0;
-	protected final fun getOptions ()Lio/modelcontextprotocol/kotlin/sdk/server/ServerOptions;
-	public final fun getPrompts ()Ljava/util/Map;
-	public final fun getResources ()Ljava/util/Map;
-	protected final fun getServerInfo ()Lio/modelcontextprotocol/kotlin/sdk/Implementation;
-	public final fun getTools ()Ljava/util/Map;
-	public final fun onClose (Lkotlin/jvm/functions/Function0;)V
-	public final fun onConnect (Lkotlin/jvm/functions/Function0;)V
-	public final fun onInitialized (Lkotlin/jvm/functions/Function0;)V
-	public final fun removePrompt (Ljava/lang/String;)Z
-	public final fun removePrompts (Ljava/util/List;)I
-	public final fun removeResource (Ljava/lang/String;)Z
-	public final fun removeResources (Ljava/util/List;)I
-	public final fun removeTool (Ljava/lang/String;)Z
-	public final fun removeTools (Ljava/util/List;)I
-}
-
 public final class io/modelcontextprotocol/kotlin/sdk/server/ServerOptions : io/modelcontextprotocol/kotlin/sdk/shared/ProtocolOptions {
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/ServerCapabilities;Z)V
 	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/ServerCapabilities;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
