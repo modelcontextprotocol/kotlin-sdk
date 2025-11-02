@@ -172,6 +172,7 @@ fun Application.module() {
 Inside a custom Ktor's `Route`:
 ```kotlin
 import io.ktor.server.application.*
+import io.ktor.server.routing.*
 import io.ktor.server.sse.SSE
 import io.modelcontextprotocol.kotlin.sdk.server.mcp
 
@@ -179,22 +180,20 @@ fun Application.module() {
     install(SSE)
 
     routing {
-        route("myRoute") {
-            mcp {
-                Server(
-                    serverInfo = Implementation(
-                        name = "example-sse-server",
-                        version = "1.0.0"
-                    ),
-                    options = ServerOptions(
-                        capabilities = ServerCapabilities(
-                            prompts = ServerCapabilities.Prompts(listChanged = null),
-                            resources = ServerCapabilities.Resources(subscribe = null, listChanged = null)
-                        )
-                    ),
-                ) {
-                    "Connect via SSE to interact with this MCP server."
-                }
+        mcp("/myRoute") {
+            Server(
+                serverInfo = Implementation(
+                    name = "example-sse-server",
+                    version = "1.0.0"
+                ),
+                options = ServerOptions(
+                    capabilities = ServerCapabilities(
+                        prompts = ServerCapabilities.Prompts(listChanged = null),
+                        resources = ServerCapabilities.Resources(subscribe = null, listChanged = null)
+                    )
+                ),
+            ) {
+                "Connect via SSE to interact with this MCP server."
             }
         }
     }

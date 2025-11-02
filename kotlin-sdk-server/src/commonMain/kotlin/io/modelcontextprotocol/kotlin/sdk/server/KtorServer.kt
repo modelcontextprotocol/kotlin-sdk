@@ -8,7 +8,6 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.RoutingContext
 import io.ktor.server.routing.post
-import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.server.sse.SSE
 import io.ktor.server.sse.ServerSSESession
@@ -38,8 +37,16 @@ internal class SseTransportManager(transports: Map<String, SseServerTransport> =
 
 @KtorDsl
 public fun Routing.mcp(path: String, block: ServerSSESession.() -> Server) {
-    route(path) {
-        mcp(block)
+    val sseTransportManager = SseTransportManager()
+
+    // SSE endpoint at the specified path
+    sse(path) {
+        mcpSseEndpoint("", sseTransportManager, block)
+    }
+
+    // POST endpoint at the same path
+    post(path) {
+        mcpPostEndpoint(sseTransportManager)
     }
 }
 
