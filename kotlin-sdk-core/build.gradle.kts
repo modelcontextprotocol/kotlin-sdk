@@ -7,7 +7,7 @@ plugins {
     id("mcp.publishing")
     id("mcp.dokka")
     alias(libs.plugins.kotlinx.binary.compatibility.validator)
-    id("org.openapi.generator") version "7.16.0"
+    id("org.openapi.generator") version "7.17.0"
 }
 
 /*
