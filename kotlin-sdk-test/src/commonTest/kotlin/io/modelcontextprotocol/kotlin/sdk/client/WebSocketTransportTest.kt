@@ -22,7 +22,7 @@ class WebSocketTransportTest : BaseTransportTest() {
             install(io.ktor.client.plugins.websocket.WebSockets)
         }.mcpWebSocketTransport()
 
-        testClientOpenClose(client)
+        testTransportOpenClose(client)
     }
 
     @Test
@@ -41,11 +41,11 @@ class WebSocketTransportTest : BaseTransportTest() {
             }
         }
 
-        val client = createClient {
+        val transport = createClient {
             install(io.ktor.client.plugins.websocket.WebSockets)
         }.mcpWebSocketTransport()
 
-        testClientRead(client)
+        testTransportRead(transport)
 
         clientFinished.complete(Unit)
     }

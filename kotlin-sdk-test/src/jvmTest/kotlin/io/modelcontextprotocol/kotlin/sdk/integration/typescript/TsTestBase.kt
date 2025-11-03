@@ -412,7 +412,7 @@ abstract class TsTestBase {
         // Connect server in a background thread to avoid blocking
         val serverThread = Thread {
             try {
-                kotlinx.coroutines.runBlocking { server.connect(transport) }
+                kotlinx.coroutines.runBlocking { server.createSession(transport) }
             } catch (e: Exception) {
                 println("[STDIO-SERVER] Error connecting: ${e.message}")
             }

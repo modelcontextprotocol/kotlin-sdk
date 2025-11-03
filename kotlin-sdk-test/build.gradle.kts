@@ -24,7 +24,6 @@ kotlin {
         }
         jvmTest {
             dependencies {
-                implementation(kotlin("test-junit5"))
                 implementation(libs.awaitility)
                 runtimeOnly(libs.slf4j.simple)
             }

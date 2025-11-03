@@ -88,7 +88,7 @@ internal suspend fun ServerSSESession.mcpSseEndpoint(
         sseTransportManager.removeTransport(transport.sessionId)
     }
 
-    server.connect(transport)
+    server.createSession(transport)
 
     logger.debug { "Server connected to transport for sessionId: ${transport.sessionId}" }
 }
