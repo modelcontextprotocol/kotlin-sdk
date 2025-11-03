@@ -928,52 +928,42 @@ class ClientTest {
         val serverSession = serverSessionResult.await()
 
         // Set logging level to warning
-        val result = client.setLoggingLevel(LoggingLevel.warning)
+        val minLevel = LoggingLevel.warning
+        val result = client.setLoggingLevel(minLevel)
         assertEquals(EmptyJsonObject, result._meta)
 
         // Send messages of different levels
-        serverSession.sendLoggingMessage(
-            LoggingMessageNotification(
-                params = LoggingMessageNotification.Params(
-                    level = LoggingLevel.debug,
-                    data = buildJsonObject { put("message", "Debug - should be filtered") },
-                ),
-            ),
+        val testMessages = listOf(
+            LoggingLevel.debug to "Debug - should be filtered",
+            LoggingLevel.info to "Info - should be filtered",
+            LoggingLevel.warning to "Warning - should pass",
+            LoggingLevel.error to "Error - should pass",
         )
 
-        serverSession.sendLoggingMessage(
-            LoggingMessageNotification(
-                params = LoggingMessageNotification.Params(
-                    level = LoggingLevel.info,
-                    data = buildJsonObject { put("message", "Info - should be filtered") },
+        testMessages.forEach { (level, message) ->
+            serverSession.sendLoggingMessage(
+                LoggingMessageNotification(
+                    params = LoggingMessageNotification.Params(
+                        level = level,
+                        data = buildJsonObject { put("message", message) },
+                    ),
                 ),
-            ),
-        )
+            )
+        }
 
-        serverSession.sendLoggingMessage(
-            LoggingMessageNotification(
-                params = LoggingMessageNotification.Params(
-                    level = LoggingLevel.warning,
-                    data = buildJsonObject { put("message", "Warning - should pass") },
-                ),
-            ),
-        )
-
-        serverSession.sendLoggingMessage(
-            LoggingMessageNotification(
-                params = LoggingMessageNotification.Params(
-                    level = LoggingLevel.error,
-                    data = buildJsonObject { put("message", "Error - should pass") },
-                ),
-            ),
-        )
+        delay(100)
 
         // Only warning and error should be received
         assertEquals(2, receivedMessages.size, "Should receive only 2 messages (warning and error)")
 
-        val levels = receivedMessages.map { it.params.level }
-        assertTrue(levels.contains(LoggingLevel.warning), "Should receive warning message")
-        assertTrue(levels.contains(LoggingLevel.error), "Should receive error message")
+        // Verify all received messages have severity >= minLevel
+        receivedMessages.forEach { message ->
+            val messageSeverity = message.params.level.ordinal
+            assertTrue(
+                messageSeverity >= minLevel.ordinal,
+                "Received message with level ${message.params.level} should have severity >= $minLevel",
+            )
+        }
     }
 
     @Test

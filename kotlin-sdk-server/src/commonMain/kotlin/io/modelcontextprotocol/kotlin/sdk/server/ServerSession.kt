@@ -28,6 +28,8 @@ import io.modelcontextprotocol.kotlin.sdk.SUPPORTED_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.ToolListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.shared.Protocol
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
+import kotlinx.atomicfu.AtomicRef
+import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.serialization.json.JsonObject
 
@@ -65,14 +67,7 @@ public open class ServerSession(
      * The current logging level set by the client.
      * When null, all messages are sent (no filtering).
      */
-    private var currentLoggingLevel: LoggingLevel? = null
-
-    /**
-     * Map of LoggingLevel to severity index for comparison.
-     * Higher index means higher severity.
-     */
-    private val loggingLevelSeverity: Map<LoggingLevel, Int> = LoggingLevel.entries.withIndex()
-        .associate { (index, level) -> level to index }
+    private val currentLoggingLevel: AtomicRef<LoggingLevel?> = atomic(null)
 
     init {
         // Core protocol handlers
@@ -87,7 +82,7 @@ public open class ServerSession(
         // Logging level handler
         if (options.capabilities.logging != null) {
             setRequestHandler<LoggingMessageNotification.SetLevelRequest>(Defined.LoggingSetLevel) { request, _ ->
-                currentLoggingLevel = request.level
+                currentLoggingLevel.value = request.level
                 logger.debug { "Logging level set to: ${request.level}" }
                 EmptyRequestResult()
             }
@@ -190,7 +185,7 @@ public open class ServerSession(
      */
     public suspend fun sendLoggingMessage(notification: LoggingMessageNotification) {
         if (serverCapabilities.logging != null) {
-            if (!isMessageIgnored(notification.params.level)) {
+            if (isMessageAccepted(notification.params.level)) {
                 logger.trace { "Sending logging message: ${notification.params.data}" }
                 notification(notification)
             } else {
@@ -421,11 +416,16 @@ public open class ServerSession(
      * @return true if the message should be ignored (filtered out), false otherwise.
      */
     private fun isMessageIgnored(level: LoggingLevel): Boolean {
-        val current = currentLoggingLevel ?: return false // If no level is set, don't filter
+        val current = currentLoggingLevel.value ?: return false // If no level is set, don't filter
 
-        val messageSeverity = loggingLevelSeverity[level] ?: return false
-        val currentSeverity = loggingLevelSeverity[current] ?: return false
-
-        return messageSeverity < currentSeverity
+        return level.ordinal < current.ordinal
     }
+
+    /**
+     * Checks if a message with the given level should be accepted based on the current logging level.
+     *
+     * @param level The level of the message to check.
+     * @return true if the message should be accepted (not filtered out), false otherwise.
+     */
+    private fun isMessageAccepted(level: LoggingLevel): Boolean = !isMessageIgnored(level)
 }
