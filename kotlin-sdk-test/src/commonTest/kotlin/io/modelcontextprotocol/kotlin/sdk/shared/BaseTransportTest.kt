@@ -11,23 +11,24 @@ import kotlin.test.assertTrue
 import kotlin.test.fail
 
 abstract class BaseTransportTest {
-    protected suspend fun testClientOpenClose(client: Transport) {
-        client.onError { error ->
+
+    protected suspend fun testTransportOpenClose(transport: Transport) {
+        transport.onError { error ->
             fail("Unexpected error: $error")
         }
 
         var didClose = false
-        client.onClose { didClose = true }
+        transport.onClose { didClose = true }
 
-        client.start()
+        transport.start()
         assertFalse(didClose, "Transport should not be closed immediately after start")
 
-        client.close()
+        transport.close()
         assertTrue(didClose, "Transport should be closed after close() call")
     }
 
-    protected suspend fun testClientRead(client: Transport) {
-        client.onError { error ->
+    protected suspend fun testTransportRead(transport: Transport) {
+        transport.onError { error ->
             error.printStackTrace()
             fail("Unexpected error: $error")
         }
@@ -40,23 +41,23 @@ abstract class BaseTransportTest {
         val readMessages = mutableListOf<JSONRPCMessage>()
         val finished = CompletableDeferred<Unit>()
 
-        client.onMessage { message ->
+        transport.onMessage { message ->
             readMessages.add(message)
             if (message == messages.last()) {
                 finished.complete(Unit)
             }
         }
 
-        client.start()
+        transport.start()
 
         for (message in messages) {
-            client.send(message)
+            transport.send(message)
         }
 
         finished.await()
 
         assertEquals(messages, readMessages, "Assert messages received")
 
-        client.close()
+        transport.close()
     }
 }
