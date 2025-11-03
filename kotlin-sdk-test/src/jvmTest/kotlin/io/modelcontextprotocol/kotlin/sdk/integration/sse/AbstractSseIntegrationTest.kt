@@ -23,7 +23,7 @@ import io.ktor.client.engine.cio.CIO as ClientCIO
 import io.ktor.server.cio.CIO as ServerCIO
 import io.ktor.server.sse.SSE as ServerSSE
 
-open class SseIntegrationBaseTest {
+open class AbstractSseIntegrationTest {
 
     suspend fun EmbeddedServer<*, *>.actualPort() = engine.resolvedConnectors().single().port
 
@@ -97,7 +97,7 @@ open class SseIntegrationBaseTest {
 
     companion object {
         private const val DEFAULT_CLIENT_NAME = "sse-test-client"
-        private const val DEFAULT_SERVER_NAME = "sse-test-client"
+        private const val DEFAULT_SERVER_NAME = "sse-test-server"
         private const val VERSION = "1.0.0"
         private const val URL = "127.0.0.1"
         private const val PORT = 0

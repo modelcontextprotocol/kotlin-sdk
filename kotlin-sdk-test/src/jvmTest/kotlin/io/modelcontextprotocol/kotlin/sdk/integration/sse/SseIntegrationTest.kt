@@ -12,7 +12,7 @@ import kotlin.test.Test
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
-class SseIntegrationTest : SseIntegrationBaseTest() {
+class SSeIntegrationTest : AbstractSseIntegrationTest() {
 
     @Test
     fun `client should be able to connect to sse server`() = runTest(timeout = 5.seconds) {
