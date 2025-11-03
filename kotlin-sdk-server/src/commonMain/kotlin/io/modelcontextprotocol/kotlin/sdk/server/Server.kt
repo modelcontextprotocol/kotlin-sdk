@@ -27,12 +27,8 @@ import io.modelcontextprotocol.kotlin.sdk.ToolAnnotations
 import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
 import kotlinx.atomicfu.atomic
-import kotlinx.atomicfu.getAndUpdate
 import kotlinx.atomicfu.update
-import kotlinx.collections.immutable.minus
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.coroutines.CancellationException
 
 private val logger = KotlinLogging.logger {}
@@ -59,7 +55,7 @@ public class ServerOptions(public val capabilities: ServerCapabilities, enforceS
  * this server. The provider is called each time a new session is started to support dynamic instructions.
  * @param block A block to configure the mcp server.
  */
-
+@Suppress("TooManyFunctions")
 public open class Server(
     protected val serverInfo: Implementation,
     protected val options: ServerOptions,
@@ -92,15 +88,16 @@ public open class Server(
     @Suppress("ktlint:standard:backing-property-naming")
     private var _onClose: () -> Unit = {}
 
-    private val _tools = atomic(persistentMapOf<String, RegisteredTool>())
-    private val _prompts = atomic(persistentMapOf<String, RegisteredPrompt>())
-    private val _resources = atomic(persistentMapOf<String, RegisteredResource>())
+    private val toolRegistry = FeatureRegistry<RegisteredTool>("Tool")
+    private val promptRegistry = FeatureRegistry<RegisteredPrompt>("Prompt")
+    private val resourceRegistry = FeatureRegistry<RegisteredResource>("Resource")
+
     public val tools: Map<String, RegisteredTool>
-        get() = _tools.value
+        get() = toolRegistry.values
     public val prompts: Map<String, RegisteredPrompt>
-        get() = _prompts.value
+        get() = promptRegistry.values
     public val resources: Map<String, RegisteredResource>
-        get() = _resources.value
+        get() = resourceRegistry.values
 
     init {
         block(this)
@@ -108,7 +105,7 @@ public open class Server(
 
     public suspend fun close() {
         logger.debug { "Closing MCP server" }
-        sessions.value.forEach { it.close() }
+        sessions.value.forEach { session -> session.close() }
         _onClose()
     }
 
@@ -172,12 +169,12 @@ public open class Server(
         // Register cleanup handler to remove session from list when it closes
         session.onClose {
             logger.debug { "Removing closed session from active sessions list" }
-            sessions.update { list -> list - session }
+            sessions.update { list -> list.remove(session) }
         }
         logger.debug { "Server session connecting to transport" }
         session.connect(transport)
         logger.debug { "Server session successfully connected to transport" }
-        sessions.update { it.add(session) }
+        sessions.update { sessions -> sessions.add(session) }
 
         _onConnect()
         return session
@@ -229,12 +226,12 @@ public open class Server(
      * @throws IllegalStateException If the server does not support tools.
      */
     public fun addTool(tool: Tool, handler: suspend (CallToolRequest) -> CallToolResult) {
-        if (options.capabilities.tools == null) {
+        check(options.capabilities.tools != null) {
             logger.error { "Failed to add tool '${tool.name}': Server does not support tools capability" }
-            throw IllegalStateException("Server does not support tools capability. Enable it in ServerOptions.")
+            "Server does not support tools capability. Enable it in ServerOptions."
         }
-        logger.info { "Registering tool: ${tool.name}" }
-        _tools.update { current -> current.put(tool.name, RegisteredTool(tool, handler)) }
+
+        toolRegistry.add(RegisteredTool(tool, handler))
     }
 
     /**
@@ -249,6 +246,7 @@ public open class Server(
      * @param handler A suspend function that handles executing the tool when called by the client.
      * @throws IllegalStateException If the server does not support tools.
      */
+    @Suppress("LongParameterList")
     public fun addTool(
         name: String,
         description: String,
@@ -269,12 +267,11 @@ public open class Server(
      * @throws IllegalStateException If the server does not support tools.
      */
     public fun addTools(toolsToAdd: List<RegisteredTool>) {
-        if (options.capabilities.tools == null) {
+        check(options.capabilities.tools != null) {
             logger.error { "Failed to add tools: Server does not support tools capability" }
-            throw IllegalStateException("Server does not support tools capability.")
+            "Server does not support tools capability."
         }
-        logger.info { "Registering ${toolsToAdd.size} tools" }
-        _tools.update { current -> current.putAll(toolsToAdd.associateBy { it.tool.name }) }
+        toolRegistry.addAll(toolsToAdd)
     }
 
     /**
@@ -285,23 +282,11 @@ public open class Server(
      * @throws IllegalStateException If the server does not support tools.
      */
     public fun removeTool(name: String): Boolean {
-        if (options.capabilities.tools == null) {
+        check(options.capabilities.tools != null) {
             logger.error { "Failed to remove tool '$name': Server does not support tools capability" }
-            throw IllegalStateException("Server does not support tools capability.")
+            "Server does not support tools capability."
         }
-        logger.info { "Removing tool: $name" }
-
-        val oldMap = _tools.getAndUpdate { current -> current.remove(name) }
-
-        val removed = name in oldMap
-        logger.debug {
-            if (removed) {
-                "Tool removed: $name"
-            } else {
-                "Tool not found: $name"
-            }
-        }
-        return removed
+        return toolRegistry.remove(name)
     }
 
     /**
@@ -312,22 +297,12 @@ public open class Server(
      * @throws IllegalStateException If the server does not support tools.
      */
     public fun removeTools(toolNames: List<String>): Int {
-        if (options.capabilities.tools == null) {
+        check(options.capabilities.tools != null) {
             logger.error { "Failed to remove tools: Server does not support tools capability" }
-            throw IllegalStateException("Server does not support tools capability.")
+            "Server does not support tools capability."
         }
-        logger.info { "Removing ${toolNames.size} tools" }
 
-        val oldMap = _tools.getAndUpdate { current -> current - toolNames.toPersistentSet() }
-
-        val removedCount = toolNames.count { it in oldMap }
-        logger.info {
-            if (removedCount > 0) {
-                "Removed $removedCount tools"
-            } else {
-                "No tools were removed"
-            }
-        }
+        val removedCount = toolRegistry.removeAll(toolNames)
         return removedCount
     }
 
@@ -339,12 +314,11 @@ public open class Server(
      * @throws IllegalStateException If the server does not support prompts.
      */
     public fun addPrompt(prompt: Prompt, promptProvider: suspend (GetPromptRequest) -> GetPromptResult) {
-        if (options.capabilities.prompts == null) {
+        check(options.capabilities.prompts != null) {
             logger.error { "Failed to add prompt '${prompt.name}': Server does not support prompts capability" }
-            throw IllegalStateException("Server does not support prompts capability.")
+            "Server does not support prompts capability."
         }
-        logger.info { "Registering prompt: ${prompt.name}" }
-        _prompts.update { current -> current.put(prompt.name, RegisteredPrompt(prompt, promptProvider)) }
+        promptRegistry.add(RegisteredPrompt(prompt, promptProvider))
     }
 
     /**
@@ -373,12 +347,11 @@ public open class Server(
      * @throws IllegalStateException If the server does not support prompts.
      */
     public fun addPrompts(promptsToAdd: List<RegisteredPrompt>) {
-        if (options.capabilities.prompts == null) {
+        check(options.capabilities.prompts != null) {
             logger.error { "Failed to add prompts: Server does not support prompts capability" }
-            throw IllegalStateException("Server does not support prompts capability.")
+            "Server does not support prompts capability."
         }
-        logger.info { "Registering ${promptsToAdd.size} prompts" }
-        _prompts.update { current -> current.putAll(promptsToAdd.associateBy { it.prompt.name }) }
+        promptRegistry.addAll(promptsToAdd)
     }
 
     /**
@@ -389,23 +362,12 @@ public open class Server(
      * @throws IllegalStateException If the server does not support prompts.
      */
     public fun removePrompt(name: String): Boolean {
-        if (options.capabilities.prompts == null) {
+        check(options.capabilities.prompts != null) {
             logger.error { "Failed to remove prompt '$name': Server does not support prompts capability" }
-            throw IllegalStateException("Server does not support prompts capability.")
+            "Server does not support prompts capability."
         }
-        logger.info { "Removing prompt: $name" }
 
-        val oldMap = _prompts.getAndUpdate { current -> current.remove(name) }
-
-        val removed = name in oldMap
-        logger.debug {
-            if (removed) {
-                "Prompt removed: $name"
-            } else {
-                "Prompt not found: $name"
-            }
-        }
-        return removed
+        return promptRegistry.remove(name)
     }
 
     /**
@@ -416,24 +378,12 @@ public open class Server(
      * @throws IllegalStateException If the server does not support prompts.
      */
     public fun removePrompts(promptNames: List<String>): Int {
-        if (options.capabilities.prompts == null) {
+        check(options.capabilities.prompts != null) {
             logger.error { "Failed to remove prompts: Server does not support prompts capability" }
-            throw IllegalStateException("Server does not support prompts capability.")
+            "Server does not support prompts capability."
         }
-        logger.info { "Removing ${promptNames.size} prompts" }
 
-        val oldMap = _prompts.getAndUpdate { current -> current - promptNames.toPersistentSet() }
-
-        val removedCount = promptNames.count { it in oldMap }
-
-        logger.info {
-            if (removedCount > 0) {
-                "Removed $removedCount prompts"
-            } else {
-                "No prompts were removed"
-            }
-        }
-        return removedCount
+        return promptRegistry.removeAll(promptNames)
     }
 
     /**
@@ -453,17 +403,12 @@ public open class Server(
         mimeType: String = "text/html",
         readHandler: suspend (ReadResourceRequest) -> ReadResourceResult,
     ) {
-        if (options.capabilities.resources == null) {
+        check(options.capabilities.resources != null) {
             logger.error { "Failed to add resource '$name': Server does not support resources capability" }
-            throw IllegalStateException("Server does not support resources capability.")
+            "Server does not support resources capability."
         }
-        logger.info { "Registering resource: $name ($uri)" }
-        _resources.update { current ->
-            current.put(
-                uri,
-                RegisteredResource(Resource(uri, name, description, mimeType), readHandler),
-            )
-        }
+        val resource = Resource(uri, name, description, mimeType)
+        resourceRegistry.add(RegisteredResource(resource, readHandler))
     }
 
     /**
@@ -473,12 +418,11 @@ public open class Server(
      * @throws IllegalStateException If the server does not support resources.
      */
     public fun addResources(resourcesToAdd: List<RegisteredResource>) {
-        if (options.capabilities.resources == null) {
+        check(options.capabilities.resources != null) {
             logger.error { "Failed to add resources: Server does not support resources capability" }
-            throw IllegalStateException("Server does not support resources capability.")
+            "Server does not support resources capability."
         }
-        logger.info { "Registering ${resourcesToAdd.size} resources" }
-        _resources.update { current -> current.putAll(resourcesToAdd.associateBy { it.resource.uri }) }
+        resourceRegistry.addAll(resourcesToAdd)
     }
 
     /**
@@ -489,23 +433,11 @@ public open class Server(
      * @throws IllegalStateException If the server does not support resources.
      */
     public fun removeResource(uri: String): Boolean {
-        if (options.capabilities.resources == null) {
+        check(options.capabilities.resources != null) {
             logger.error { "Failed to remove resource '$uri': Server does not support resources capability" }
-            throw IllegalStateException("Server does not support resources capability.")
+            "Server does not support resources capability."
         }
-        logger.info { "Removing resource: $uri" }
-
-        val oldMap = _resources.getAndUpdate { current -> current.remove(uri) }
-
-        val removed = uri in oldMap
-        logger.debug {
-            if (removed) {
-                "Resource removed: $uri"
-            } else {
-                "Resource not found: $uri"
-            }
-        }
-        return removed
+        return resourceRegistry.remove(uri)
     }
 
     /**
@@ -516,24 +448,11 @@ public open class Server(
      * @throws IllegalStateException If the server does not support resources.
      */
     public fun removeResources(uris: List<String>): Int {
-        if (options.capabilities.resources == null) {
+        check(options.capabilities.resources != null) {
             logger.error { "Failed to remove resources: Server does not support resources capability" }
-            throw IllegalStateException("Server does not support resources capability.")
+            "Server does not support resources capability."
         }
-        logger.info { "Removing ${uris.size} resources" }
-
-        val oldMap = _resources.getAndUpdate { current -> current - uris.toPersistentSet() }
-
-        val removedCount = uris.count { it in oldMap }
-
-        logger.info {
-            if (removedCount > 0) {
-                "Removed $removedCount resources"
-            } else {
-                "No resources were removed"
-            }
-        }
-        return removedCount
+        return resourceRegistry.removeAll(uris)
     }
 
     // --- Internal Handlers ---
@@ -545,17 +464,17 @@ public open class Server(
     private suspend fun handleCallTool(request: CallToolRequest): CallToolResult {
         logger.debug { "Handling tool call request for tool: ${request.name}" }
 
-        // Check if tool exists
-        val tool = _tools.value[request.name]
-            ?: run {
-                logger.error { "Tool not found: ${request.name}" }
-                return CallToolResult(
-                    content = listOf(TextContent(text = "Tool ${request.name} not found")),
-                    isError = true,
-                )
-            }
+        // Check if the tool exists
+        val tool = toolRegistry.get(request.name) ?: run {
+            logger.error { "Tool not found: ${request.name}" }
+            return CallToolResult(
+                content = listOf(TextContent(text = "Tool ${request.name} not found")),
+                isError = true,
+            )
+        }
 
-        // Execute tool handler and catch any errors
+        @Suppress("TooGenericExceptionCaught")
+        // Execute the tool handler and catch any errors
         return try {
             logger.trace { "Executing tool ${request.name} with input: ${request.arguments}" }
             tool.handler(request)
@@ -577,7 +496,7 @@ public open class Server(
 
     private suspend fun handleGetPrompt(request: GetPromptRequest): GetPromptResult {
         logger.debug { "Handling get prompt request for: ${request.name}" }
-        val prompt = prompts[request.name]
+        val prompt = promptRegistry.get(request.name)
             ?: run {
                 logger.error { "Prompt not found: ${request.name}" }
                 throw IllegalArgumentException("Prompt not found: ${request.name}")
@@ -592,7 +511,7 @@ public open class Server(
 
     private suspend fun handleReadResource(request: ReadResourceRequest): ReadResourceResult {
         logger.debug { "Handling read resource request for: ${request.uri}" }
-        val resource = resources[request.uri]
+        val resource = resourceRegistry.get(request.uri)
             ?: run {
                 logger.error { "Resource not found: ${request.uri}" }
                 throw IllegalArgumentException("Resource not found: ${request.uri}")
@@ -605,33 +524,3 @@ public open class Server(
         return ListResourceTemplatesResult(listOf())
     }
 }
-
-/**
- * A wrapper class representing a registered tool on the server.
- *
- * @property tool The tool definition.
- * @property handler A suspend function to handle the tool call requests.
- */
-public data class RegisteredTool(val tool: Tool, val handler: suspend (CallToolRequest) -> CallToolResult)
-
-/**
- * A wrapper class representing a registered prompt on the server.
- *
- * @property prompt The prompt definition.
- * @property messageProvider A suspend function that returns the prompt content when requested by the client.
- */
-public data class RegisteredPrompt(
-    val prompt: Prompt,
-    val messageProvider: suspend (GetPromptRequest) -> GetPromptResult,
-)
-
-/**
- * A wrapper class representing a registered resource on the server.
- *
- * @property resource The resource definition.
- * @property readHandler A suspend function to handle read requests for this resource.
- */
-public data class RegisteredResource(
-    val resource: Resource,
-    val readHandler: suspend (ReadResourceRequest) -> ReadResourceResult,
-)
