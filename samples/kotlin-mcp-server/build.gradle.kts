@@ -12,6 +12,7 @@ application {
 }
 
 dependencies {
+    implementation(dependencies.platform(libs.ktor.bom))
     implementation(libs.mcp.kotlin.server)
     implementation(libs.ktor.server.cio)
     implementation(libs.slf4j.simple)

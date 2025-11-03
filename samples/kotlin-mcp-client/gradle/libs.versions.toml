@@ -8,7 +8,8 @@ slf4j = "2.0.17"
 
 [libraries]
 anthropic-java = { group = "com.anthropic", name = "anthropic-java", version.ref = "anthropic" }
-ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktor" }
+ktor-bom = { group = "io.ktor", name = "ktor-bom", version.ref = "ktor" }
+ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio" }
 mcp-kotlin-client = { group = "io.modelcontextprotocol", name = "kotlin-sdk-client", version.ref = "mcp-kotlin" }
 slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
 

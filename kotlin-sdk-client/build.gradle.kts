@@ -32,6 +32,7 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
+                implementation(dependencies.platform(libs.ktor.bom))
                 api(project(":kotlin-sdk-core"))
                 api(libs.ktor.client.core)
                 implementation(libs.kotlin.logging)
@@ -41,7 +42,6 @@ kotlin {
         commonTest {
             dependencies {
                 implementation(kotlin("test"))
-                implementation(dependencies.platform(libs.ktor.bom))
                 implementation(libs.ktor.client.mock)
                 implementation(libs.ktor.server.websockets)
                 implementation(libs.kotlinx.coroutines.test)
