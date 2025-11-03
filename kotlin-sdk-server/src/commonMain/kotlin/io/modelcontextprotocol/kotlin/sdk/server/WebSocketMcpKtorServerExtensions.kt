@@ -69,7 +69,7 @@ internal suspend fun WebSocketServerSession.mcpWebSocketEndpoint(block: () -> Se
     val server = block()
     var session: ServerSession? = null
     try {
-        session = server.connect(transport)
+        session = server.createSession(transport)
         awaitCancellation()
     } catch (e: CancellationException) {
         session?.close()
@@ -103,7 +103,7 @@ public fun Route.mcpWebSocket(options: ServerOptions? = null, handler: suspend S
 )
 public fun Route.mcpWebSocket(block: () -> Server) {
     webSocket {
-        block().connect(createMcpTransport(this))
+        block().createSession(createMcpTransport(this))
     }
 }
 
@@ -190,7 +190,7 @@ private suspend fun Route.createMcpServer(
         ),
     )
 
-    server.connect(transport)
+    server.createSession(transport)
     handler(server)
     server.close()
 }

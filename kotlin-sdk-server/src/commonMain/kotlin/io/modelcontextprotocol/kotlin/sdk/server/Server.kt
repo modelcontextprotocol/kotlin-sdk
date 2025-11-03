@@ -57,12 +57,14 @@ public class ServerOptions(public val capabilities: ServerCapabilities, enforceS
  * @param options Configuration options for the server.
  * @param instructionsProvider Optional provider for instructions from the server to the client about how to use
  * this server. The provider is called each time a new session is started to support dynamic instructions.
+ * @param block A block to configure the mcp server.
  */
 
 public open class Server(
     protected val serverInfo: Implementation,
     protected val options: ServerOptions,
     protected val instructionsProvider: (() -> String)? = null,
+    block: Server.() -> Unit = {},
 ) {
     /**
      * Alternative constructor that provides the instructions directly as a string.
@@ -70,12 +72,14 @@ public open class Server(
      * @param serverInfo Information about this server implementation (name, version).
      * @param options Configuration options for the server.
      * @param instructions Instructions from the server to the client about how to use this server.
+     * @param block A block to configure the mcp server.
      */
     public constructor(
         serverInfo: Implementation,
         options: ServerOptions,
         instructions: String,
-    ) : this(serverInfo, options, { instructions })
+        block: Server.() -> Unit = {},
+    ) : this(serverInfo, options, { instructions }, block)
 
     private val sessions = atomic(persistentListOf<ServerSession>())
 
@@ -98,6 +102,10 @@ public open class Server(
     public val resources: Map<String, RegisteredResource>
         get() = _resources.value
 
+    init {
+        block(this)
+    }
+
     public suspend fun close() {
         logger.debug { "Closing MCP server" }
         sessions.value.forEach { it.close() }
@@ -111,7 +119,21 @@ public open class Server(
      * @param transport The transport layer to connect the session with.
      * @return The initialized and connected server session.
      */
-    public suspend fun connect(transport: Transport): ServerSession {
+    @Deprecated(
+        "Use createSession(transport) instead.",
+        ReplaceWith("createSession(transport)"),
+        DeprecationLevel.WARNING,
+    )
+    public suspend fun connect(transport: Transport): ServerSession = createSession(transport)
+
+    /**
+     * Starts a new server session with the given transport and initializes
+     * internal request handlers based on the server's capabilities.
+     *
+     * @param transport The transport layer to connect the session with.
+     * @return The initialized and connected server session.
+     */
+    public suspend fun createSession(transport: Transport): ServerSession {
         val session = ServerSession(serverInfo, options, instructionsProvider?.invoke())
 
         // Internal handlers for tools

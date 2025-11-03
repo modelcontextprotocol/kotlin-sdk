@@ -22,7 +22,7 @@ class StdioClientTransportTest : BaseTransportTest() {
             output = output,
         )
 
-        testClientOpenClose(client)
+        testTransportOpenClose(client)
 
         process.destroy()
     }
@@ -40,7 +40,7 @@ class StdioClientTransportTest : BaseTransportTest() {
             output = output,
         )
 
-        testClientRead(client)
+        testTransportRead(client)
 
         process.waitFor()
         process.destroy()
@@ -60,7 +60,7 @@ class StdioClientTransportTest : BaseTransportTest() {
             output = output,
         )
 
-        testClientRead(client)
+        testTransportRead(client)
 
         process.waitFor()
         process.destroy()
