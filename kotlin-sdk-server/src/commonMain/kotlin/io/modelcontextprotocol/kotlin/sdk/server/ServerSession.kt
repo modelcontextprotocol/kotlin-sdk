@@ -107,7 +107,7 @@ public open class ServerSession(
      * @return The result of the ping request.
      * @throws IllegalStateException If for some reason the method is not supported or the connection is closed.
      */
-    public suspend fun ping(): EmptyRequestResult = request<EmptyRequestResult>(PingRequest())
+    public suspend fun ping(): EmptyRequestResult = request(PingRequest())
 
     /**
      * Creates a message using the server's sampling capability.
@@ -121,8 +121,12 @@ public open class ServerSession(
         params: CreateMessageRequest,
         options: RequestOptions? = null,
     ): CreateMessageResult {
-        logger.debug { "Creating message with params: $params" }
-        return request<CreateMessageResult>(params, options)
+        logger.debug {
+            "Creating message with ${params.messages.size} messages, maxTokens=${params.maxTokens}, " +
+                "temperature=${params.temperature}, systemPrompt=${if (params.systemPrompt != null) "present" else "absent"}"
+        }
+        logger.trace { "Full createMessage params: $params" }
+        return request(params, options)
     }
 
     /**
@@ -138,7 +142,7 @@ public open class ServerSession(
         options: RequestOptions? = null,
     ): ListRootsResult {
         logger.debug { "Listing roots with params: $params" }
-        return request<ListRootsResult>(ListRootsRequest(params), options)
+        return request(ListRootsRequest(params), options)
     }
 
     public suspend fun createElicitation(
@@ -146,7 +150,11 @@ public open class ServerSession(
         requestedSchema: RequestedSchema,
         options: RequestOptions? = null,
     ): CreateElicitationResult {
-        logger.debug { "Creating elicitation with message: $message" }
+        logger.debug {
+            "Creating elicitation with message length=${message.length}, " +
+                "schema properties count=${requestedSchema.properties.size}"
+        }
+        logger.trace { "Full elicitation message: $message, requestedSchema: $requestedSchema" }
         return request(CreateElicitationRequest(message, requestedSchema), options)
     }
 
