@@ -23,7 +23,7 @@ jobs:
       matrix:
         sample:
           - kotlin-mcp-client
-#          - kotlin-mcp-server
+          - kotlin-mcp-server
           - weather-stdio-server
 
     name: Build Sample
