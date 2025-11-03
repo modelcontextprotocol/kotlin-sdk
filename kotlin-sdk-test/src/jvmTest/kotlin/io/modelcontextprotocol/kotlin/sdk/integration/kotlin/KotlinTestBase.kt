@@ -139,7 +139,7 @@ abstract class KotlinTestBase {
 
             // Start server transport by connecting the server
             runBlocking {
-                server.connect(serverTransport)
+                server.createSession(serverTransport)
             }
         }
     }

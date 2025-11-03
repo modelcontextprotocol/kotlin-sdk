@@ -48,7 +48,7 @@ class SseTransportTest : BaseTransportTest() {
 
         val actualPort = server.actualPort()
 
-        val client = HttpClient {
+        val transport = HttpClient {
             install(ClientSSE)
         }.mcpSseTransport {
             url {
@@ -58,7 +58,7 @@ class SseTransportTest : BaseTransportTest() {
         }
 
         try {
-            testClientOpenClose(client)
+            testTransportRead(transport)
         } finally {
             server.stopSuspend()
         }
@@ -76,7 +76,7 @@ class SseTransportTest : BaseTransportTest() {
 
         val actualPort = server.actualPort()
 
-        val client = HttpClient {
+        val transport = HttpClient {
             install(ClientSSE)
         }.mcpSseTransport {
             url {
@@ -86,7 +86,7 @@ class SseTransportTest : BaseTransportTest() {
         }
 
         try {
-            testClientRead(client)
+            testTransportRead(transport)
         } finally {
             server.stopSuspend()
         }
@@ -104,7 +104,7 @@ class SseTransportTest : BaseTransportTest() {
 
         val actualPort = server.actualPort()
 
-        val client = HttpClient {
+        val transport = HttpClient {
             install(ClientSSE)
         }.mcpSseTransport {
             url {
@@ -115,7 +115,7 @@ class SseTransportTest : BaseTransportTest() {
         }
 
         try {
-            testClientRead(client)
+            testTransportRead(transport)
         } finally {
             server.stopSuspend()
         }

@@ -53,7 +53,7 @@ class ServerTest {
 
         // Connect client and server
         launch { client.connect(clientTransport) }
-        launch { server.connect(serverTransport) }
+        launch { server.createSession(serverTransport) }
 
         // Remove the tool
         val result = server.removeTool("test-tool")
@@ -90,7 +90,7 @@ class ServerTest {
 
         // Connect client and server
         launch { client.connect(clientTransport) }
-        launch { server.connect(serverTransport) }
+        launch { server.createSession(serverTransport) }
 
         // Try to remove a non-existent tool
         val result = server.removeTool("non-existent-tool")
@@ -147,7 +147,7 @@ class ServerTest {
 
         // Connect client and server
         launch { client.connect(clientTransport) }
-        launch { server.connect(serverTransport) }
+        launch { server.createSession(serverTransport) }
 
         // Remove the tools
         val result = server.removeTools(listOf("test-tool-1", "test-tool-2"))
@@ -186,7 +186,7 @@ class ServerTest {
 
         // Connect client and server
         launch { client.connect(clientTransport) }
-        launch { server.connect(serverTransport) }
+        launch { server.createSession(serverTransport) }
 
         // Remove the prompt
         val result = server.removePrompt(testPrompt.name)
@@ -232,7 +232,7 @@ class ServerTest {
 
         // Connect client and server
         launch { client.connect(clientTransport) }
-        launch { server.connect(serverTransport) }
+        launch { server.createSession(serverTransport) }
 
         // Remove the prompts
         val result = server.removePrompts(listOf(testPrompt1.name, testPrompt2.name))
@@ -281,7 +281,7 @@ class ServerTest {
 
         // Connect client and server
         launch { client.connect(clientTransport) }
-        launch { server.connect(serverTransport) }
+        launch { server.createSession(serverTransport) }
 
         // Remove the resource
         val result = server.removeResource(testResourceUri)
@@ -347,7 +347,7 @@ class ServerTest {
 
         // Connect client and server
         launch { client.connect(clientTransport) }
-        launch { server.connect(serverTransport) }
+        launch { server.createSession(serverTransport) }
 
         // Remove the resources
         val result = server.removeResources(listOf(testResourceUri1, testResourceUri2))
@@ -384,7 +384,7 @@ class ServerTest {
 
         // Connect client and server
         launch { client.connect(clientTransport) }
-        launch { server.connect(serverTransport) }
+        launch { server.createSession(serverTransport) }
 
         // Try to remove a non-existent prompt
         val result = server.removePrompt("non-existent-prompt")
@@ -442,7 +442,7 @@ class ServerTest {
 
         // Connect client and server
         launch { client.connect(clientTransport) }
-        launch { server.connect(serverTransport) }
+        launch { server.createSession(serverTransport) }
 
         // Try to remove a non-existent resource
         val result = server.removeResource("non-existent-resource")
@@ -486,7 +486,7 @@ class ServerTest {
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
         val client = Client(clientInfo = Implementation(name = "test client", version = "1.0"))
 
-        server.connect(serverTransport)
+        server.createSession(serverTransport)
         client.connect(clientTransport)
 
         assertEquals(instructions, client.serverInstructions)
@@ -505,7 +505,7 @@ class ServerTest {
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
         val client = Client(clientInfo = Implementation(name = "test client", version = "1.0"))
 
-        server.connect(serverTransport)
+        server.createSession(serverTransport)
         client.connect(clientTransport)
 
         assertEquals(instructions, client.serverInstructions)
@@ -522,7 +522,7 @@ class ServerTest {
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
         val client = Client(clientInfo = Implementation(name = "test client", version = "1.0"))
 
-        server.connect(serverTransport)
+        server.createSession(serverTransport)
         client.connect(clientTransport)
 
         assertNull(client.serverInstructions)

@@ -258,7 +258,7 @@ class ClientTest {
                 client.connect(clientTransport)
             },
             launch {
-                serverSessionResult.complete(server.connect(serverTransport))
+                serverSessionResult.complete(server.createSession(serverTransport))
             },
         ).joinAll()
 
@@ -322,7 +322,7 @@ class ClientTest {
                 println("Client connected")
             },
             launch {
-                server.connect(serverTransport)
+                server.createSession(serverTransport)
                 println("Server connected")
             },
         ).joinAll()
@@ -379,7 +379,7 @@ class ClientTest {
                 println("Client connected")
             },
             launch {
-                serverSessionResult.complete(server.connect(serverTransport))
+                serverSessionResult.complete(server.createSession(serverTransport))
                 println("Server connected")
             },
         ).joinAll()
@@ -439,7 +439,7 @@ class ClientTest {
                 println("Client connected")
             },
             launch {
-                serverSessionResult.complete(server.connect(serverTransport))
+                serverSessionResult.complete(server.createSession(serverTransport))
                 println("Server connected")
             },
         ).joinAll()
@@ -502,7 +502,7 @@ class ClientTest {
                 println("Client connected")
             },
             launch {
-                serverSessionResult.complete(server.connect(serverTransport))
+                serverSessionResult.complete(server.createSession(serverTransport))
                 println("Server connected")
             },
         ).joinAll()
@@ -594,7 +594,7 @@ class ClientTest {
                 println("Client connected")
             },
             launch {
-                serverSessionResult.complete(server.connect(serverTransport))
+                serverSessionResult.complete(server.createSession(serverTransport))
                 println("Server connected")
             },
         ).joinAll()
@@ -680,7 +680,7 @@ class ClientTest {
                 println("Client connected")
             },
             launch {
-                serverSessionResult.complete(server.connect(serverTransport))
+                serverSessionResult.complete(server.createSession(serverTransport))
                 println("Server connected")
             },
         ).joinAll()
@@ -812,7 +812,7 @@ class ClientTest {
                 println("Client connected")
             },
             launch {
-                serverSessionResult.complete(server.connect(serverTransport))
+                serverSessionResult.complete(server.createSession(serverTransport))
                 println("Server connected")
             },
         ).joinAll()
@@ -859,7 +859,7 @@ class ClientTest {
                 println("Client connected")
             },
             launch {
-                serverSessionResult.complete(server.connect(serverTransport))
+                serverSessionResult.complete(server.createSession(serverTransport))
                 println("Server connected")
             },
         ).joinAll()
@@ -939,7 +939,7 @@ class ClientTest {
                 println("Client connected")
             },
             launch {
-                serverSessionResult.complete(server.connect(serverTransport))
+                serverSessionResult.complete(server.createSession(serverTransport))
                 println("Server connected")
             },
         ).joinAll()
