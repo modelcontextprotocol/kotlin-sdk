@@ -113,7 +113,8 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
                         }
                       },
                       "required": ["temperature"]
-                    }
+                    },
+                    "_meta": {}
                   }
                 ]
               }

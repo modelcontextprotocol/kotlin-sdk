@@ -3,6 +3,7 @@ package io.modelcontextprotocol.kotlin.sdk
 import io.kotest.assertions.json.shouldEqualJson
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlin.test.Test
@@ -44,6 +45,9 @@ class ToolSerializationTest {
               }
             },
             "required": ["temperature", "conditions", "humidity"]
+          },
+          "_meta": {
+            "_for_test_only": true
           }
         }
     """.trimIndent()
@@ -91,6 +95,9 @@ class ToolSerializationTest {
             },
             required = listOf("temperature", "conditions", "humidity"),
         ),
+        _meta = buildJsonObject {
+            put("_for_test_only", JsonPrimitive(true))
+        },
     )
 
     //region Serialize
@@ -411,6 +418,7 @@ class ToolSerializationTest {
         name: String = "get_weather",
         title: String? = null,
         outputSchema: String? = null,
+        @Suppress("LocalVariableName") _meta: String? = null,
     ): String {
         val stringBuilder = StringBuilder()
 
@@ -454,6 +462,14 @@ class ToolSerializationTest {
         }
 
         stringBuilder
+            .appendLine(",")
+            .append(
+                """
+                "_meta": ${_meta ?: "{}"}
+                """.trimIndent(),
+            )
+
+        stringBuilder
             .appendLine()
             .appendLine("}")
 
@@ -464,6 +480,7 @@ class ToolSerializationTest {
         name: String = "get_weather",
         title: String? = null,
         outputSchema: Tool.Output? = null,
+        @Suppress("LocalVariableName") _meta: JsonObject? = null,
     ): Tool = Tool(
         name = name,
         title = title,
@@ -482,6 +499,7 @@ class ToolSerializationTest {
             required = listOf("location"),
         ),
         outputSchema = outputSchema,
+        _meta = _meta ?: EmptyJsonObject,
     )
 
     //endregion Private Methods

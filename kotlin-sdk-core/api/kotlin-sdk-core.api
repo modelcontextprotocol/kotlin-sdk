@@ -2889,17 +2889,19 @@ public final class io/modelcontextprotocol/kotlin/sdk/TextResourceContents$Compa
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/Tool {
+public final class io/modelcontextprotocol/kotlin/sdk/Tool : io/modelcontextprotocol/kotlin/sdk/WithMeta {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/Tool$Companion;
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Tool$Input;Lio/modelcontextprotocol/kotlin/sdk/Tool$Output;Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Tool$Input;Lio/modelcontextprotocol/kotlin/sdk/Tool$Output;Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations;Lkotlinx/serialization/json/JsonObject;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Tool$Input;Lio/modelcontextprotocol/kotlin/sdk/Tool$Output;Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Lio/modelcontextprotocol/kotlin/sdk/Tool$Input;
 	public final fun component5 ()Lio/modelcontextprotocol/kotlin/sdk/Tool$Output;
 	public final fun component6 ()Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Tool$Input;Lio/modelcontextprotocol/kotlin/sdk/Tool$Output;Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations;)Lio/modelcontextprotocol/kotlin/sdk/Tool;
-	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/Tool;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Tool$Input;Lio/modelcontextprotocol/kotlin/sdk/Tool$Output;Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/Tool;
+	public final fun component7 ()Lkotlinx/serialization/json/JsonObject;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Tool$Input;Lio/modelcontextprotocol/kotlin/sdk/Tool$Output;Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/Tool;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/Tool;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/Tool$Input;Lio/modelcontextprotocol/kotlin/sdk/Tool$Output;Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/Tool;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAnnotations ()Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations;
 	public final fun getDescription ()Ljava/lang/String;
@@ -2907,6 +2909,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/Tool {
 	public final fun getName ()Ljava/lang/String;
 	public final fun getOutputSchema ()Lio/modelcontextprotocol/kotlin/sdk/Tool$Output;
 	public final fun getTitle ()Ljava/lang/String;
+	public fun get_meta ()Lkotlinx/serialization/json/JsonObject;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
