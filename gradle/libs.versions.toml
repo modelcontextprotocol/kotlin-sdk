@@ -8,6 +8,7 @@ kover = "0.9.3"
 netty = "4.2.7.Final"
 mavenPublish = "0.34.0"
 binaryCompatibilityValidatorPlugin = "0.18.1"
+openapi-generator = "7.17.0"
 
 # libraries version
 serialization = "1.9.0"
@@ -23,45 +24,46 @@ mokksy = "0.6.1"
 
 [libraries]
 # Plugins
+dokka-gradle = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
 kotlin-gradle = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlin-serialization = { module = "org.jetbrains.kotlin:kotlin-serialization", version.ref = "kotlin" }
 kotlinx-atomicfu-gradle = { module = "org.jetbrains.kotlinx:atomicfu-gradle-plugin", version.ref = "atomicfu" }
-dokka-gradle = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
 maven-publish = { module = "com.vanniktech:gradle-maven-publish-plugin", version.ref = "mavenPublish" }
 
 # Kotlinx libraries
-kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
+kotlin-logging = { group = "io.github.oshai", name = "kotlin-logging", version.ref = "logging" }
+kotlinx-collections-immutable = { group = "org.jetbrains.kotlinx", name = "kotlinx-collections-immutable", version.ref = "collections-immutable" }
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-core-wasm = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core-wasm-js", version.ref = "coroutines" }
 kotlinx-io-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-io-core", version.ref = "kotlinx-io" }
-kotlinx-collections-immutable = { group = "org.jetbrains.kotlinx", name = "kotlinx-collections-immutable", version.ref = "collections-immutable" }
-kotlin-logging = { group = "io.github.oshai", name = "kotlin-logging", version.ref = "logging" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 
 # Ktor
 ktor-bom = { group = "io.ktor", name = "ktor-bom", version.ref = "ktor" }
-ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
-ktor-client-logging = { group = "io.ktor", name = "ktor-client-logging"}
 ktor-client-apache5 = { group = "io.ktor", name = "ktor-client-apache5" }
-ktor-server-sse = { group = "io.ktor", name = "ktor-server-sse", version.ref = "ktor" }
-ktor-server-websockets = { group = "io.ktor", name = "ktor-server-websockets", version.ref = "ktor" }
-ktor-server-core = { group = "io.ktor", name = "ktor-server-core", version.ref = "ktor" }
+ktor-client-core = { group = "io.ktor", name = "ktor-client-core" }
+ktor-client-logging = { group = "io.ktor", name = "ktor-client-logging" }
+ktor-server-core = { group = "io.ktor", name = "ktor-server-core" }
+ktor-server-sse = { group = "io.ktor", name = "ktor-server-sse" }
+ktor-server-websockets = { group = "io.ktor", name = "ktor-server-websockets" }
 
 # Testing
 awaitility = { group = "org.awaitility", name = "awaitility-kotlin", version.ref = "awaitility" }
 kotest-assertions-core = { group = "io.kotest", name = "kotest-assertions-core", version.ref = "kotest" }
 kotest-assertions-json = { group = "io.kotest", name = "kotest-assertions-json", version.ref = "kotest" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
-ktor-client-mock = { group = "io.ktor", name = "ktor-client-mock", version.ref = "ktor" }
-ktor-server-test-host = { group = "io.ktor", name = "ktor-server-test-host", version.ref = "ktor" }
+ktor-client-mock = { group = "io.ktor", name = "ktor-client-mock" }
+ktor-server-test-host = { group = "io.ktor", name = "ktor-server-test-host" }
 mokksy = { group = "dev.mokksy", name = "mokksy", version.ref = "mokksy" }
-slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
 netty-bom = { group = "io.netty", name = "netty-bom", version.ref = "netty" }
+slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
 
 # Samples
-ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktor" }
-ktor-server-cio = { group = "io.ktor", name = "ktor-server-cio", version.ref = "ktor" }
+ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio" }
+ktor-server-cio = { group = "io.ktor", name = "ktor-server-cio" }
 
 [plugins]
 kotlinx-binary-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibilityValidatorPlugin" }
-ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
+openapi-generator = { id = "org.openapi.generator", version.ref = "openapi-generator" }

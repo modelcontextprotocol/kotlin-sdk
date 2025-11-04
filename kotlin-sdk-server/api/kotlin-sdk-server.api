@@ -5,33 +5,35 @@ public final class io/modelcontextprotocol/kotlin/sdk/server/KtorServerKt {
 	public static final fun mcp (Lio/ktor/server/routing/Routing;Lkotlin/jvm/functions/Function1;)V
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/server/RegisteredPrompt {
+public final class io/modelcontextprotocol/kotlin/sdk/server/RegisteredPrompt : io/modelcontextprotocol/kotlin/sdk/server/Feature {
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/Prompt;Lkotlin/jvm/functions/Function2;)V
 	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/Prompt;
 	public final fun component2 ()Lkotlin/jvm/functions/Function2;
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/Prompt;Lkotlin/jvm/functions/Function2;)Lio/modelcontextprotocol/kotlin/sdk/server/RegisteredPrompt;
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/server/RegisteredPrompt;Lio/modelcontextprotocol/kotlin/sdk/Prompt;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/server/RegisteredPrompt;
 	public fun equals (Ljava/lang/Object;)Z
+	public fun getKey ()Ljava/lang/String;
 	public final fun getMessageProvider ()Lkotlin/jvm/functions/Function2;
 	public final fun getPrompt ()Lio/modelcontextprotocol/kotlin/sdk/Prompt;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/server/RegisteredResource {
+public final class io/modelcontextprotocol/kotlin/sdk/server/RegisteredResource : io/modelcontextprotocol/kotlin/sdk/server/Feature {
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/Resource;Lkotlin/jvm/functions/Function2;)V
 	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/Resource;
 	public final fun component2 ()Lkotlin/jvm/functions/Function2;
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/Resource;Lkotlin/jvm/functions/Function2;)Lio/modelcontextprotocol/kotlin/sdk/server/RegisteredResource;
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/server/RegisteredResource;Lio/modelcontextprotocol/kotlin/sdk/Resource;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/server/RegisteredResource;
 	public fun equals (Ljava/lang/Object;)Z
+	public fun getKey ()Ljava/lang/String;
 	public final fun getReadHandler ()Lkotlin/jvm/functions/Function2;
 	public final fun getResource ()Lio/modelcontextprotocol/kotlin/sdk/Resource;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/server/RegisteredTool {
+public final class io/modelcontextprotocol/kotlin/sdk/server/RegisteredTool : io/modelcontextprotocol/kotlin/sdk/server/Feature {
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/Tool;Lkotlin/jvm/functions/Function2;)V
 	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/Tool;
 	public final fun component2 ()Lkotlin/jvm/functions/Function2;
@@ -39,6 +41,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/server/RegisteredTool {
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/server/RegisteredTool;Lio/modelcontextprotocol/kotlin/sdk/Tool;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/server/RegisteredTool;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getHandler ()Lkotlin/jvm/functions/Function2;
+	public fun getKey ()Ljava/lang/String;
 	public final fun getTool ()Lio/modelcontextprotocol/kotlin/sdk/Tool;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;

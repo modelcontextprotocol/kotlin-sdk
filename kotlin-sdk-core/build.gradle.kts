@@ -7,7 +7,7 @@ plugins {
     id("mcp.publishing")
     id("mcp.dokka")
     alias(libs.plugins.kotlinx.binary.compatibility.validator)
-    id("org.openapi.generator") version "7.16.0"
+    alias(libs.plugins.openapi.generator)
 }
 
 /*
@@ -110,6 +110,7 @@ kotlin {
         commonMain {
             kotlin.srcDir(generateLibVersion)
             dependencies {
+                implementation(dependencies.platform(libs.ktor.bom))
                 api(libs.kotlinx.serialization.json)
                 api(libs.kotlinx.coroutines.core)
                 api(libs.kotlinx.io.core)
