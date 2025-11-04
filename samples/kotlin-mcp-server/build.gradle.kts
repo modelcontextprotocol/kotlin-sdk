@@ -16,6 +16,10 @@ dependencies {
     implementation(libs.mcp.kotlin.server)
     implementation(libs.ktor.server.cio)
     implementation(libs.slf4j.simple)
+
+    testImplementation(libs.mcp.kotlin.client)
+    testImplementation(libs.ktor.client.cio)
+    testImplementation(kotlin("test"))
 }
 
 tasks.test {

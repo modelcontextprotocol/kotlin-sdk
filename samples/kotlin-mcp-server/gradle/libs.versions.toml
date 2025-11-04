@@ -3,12 +3,13 @@ kotlin = "2.2.21"
 ktor = "3.2.3"
 mcp-kotlin = "0.7.4"
 slf4j = "2.0.17"
-serialization = "1.9.0"
 
 [libraries]
 ktor-bom = { group = "io.ktor", name = "ktor-bom", version.ref = "ktor" }
 ktor-server-cio = { group = "io.ktor", name = "ktor-server-cio" }
+ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio" }
 mcp-kotlin-server = { group = "io.modelcontextprotocol", name = "kotlin-sdk-server", version.ref = "mcp-kotlin" }
+mcp-kotlin-client = { group = "io.modelcontextprotocol", name = "kotlin-sdk-client", version.ref = "mcp-kotlin" }
 slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
 
 [plugins]
