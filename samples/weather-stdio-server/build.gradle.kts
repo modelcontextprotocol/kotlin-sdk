@@ -13,6 +13,7 @@ group = "org.example"
 version = "0.1.0"
 
 dependencies {
+    implementation(dependencies.platform(libs.ktor.bom))
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.mcp.kotlin.server)

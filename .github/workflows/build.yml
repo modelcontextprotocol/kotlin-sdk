@@ -49,9 +49,9 @@ jobs:
         working-directory: ./samples/kotlin-mcp-client
         run: ./gradlew --no-daemon clean build -Pmcp.kotlin.overrideVersion=0.0.1-SNAPSHOT
 
-#      - name: Build Kotlin-MCP-Server Sample
-#        working-directory: ./samples/kotlin-mcp-server
-#        run: ./gradlew --no-daemon clean build -Pmcp.kotlin.overrideVersion=0.0.1-SNAPSHOT
+      - name: Build Kotlin-MCP-Server Sample
+        working-directory: ./samples/kotlin-mcp-server
+        run: ./gradlew --no-daemon clean build -Pmcp.kotlin.overrideVersion=0.0.1-SNAPSHOT
 
       - name: Build Weather-Stdio-Server Sample
         working-directory: ./samples/weather-stdio-server
