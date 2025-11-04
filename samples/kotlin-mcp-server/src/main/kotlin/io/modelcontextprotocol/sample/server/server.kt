@@ -100,7 +100,7 @@ fun configureServer(): Server {
     return server
 }
 
-fun runSseMcpServerWithPlainConfiguration(port: Int) {
+fun runSseMcpServerWithPlainConfiguration(port: Int, wait: Boolean = true) {
     val serverSessions = ConcurrentMap<String, ServerSession>()
     println("Starting SSE server on port $port")
     println("Use inspector to connect to http://localhost:$port/sse")
@@ -136,7 +136,7 @@ fun runSseMcpServerWithPlainConfiguration(port: Int) {
                 transport.handlePostMessage(call)
             }
         }
-    }.start(wait = true)
+    }.start(wait = wait)
 }
 
 /**
@@ -147,7 +147,7 @@ fun runSseMcpServerWithPlainConfiguration(port: Int) {
  *
  * @param port The port number on which the SSE MCP server will listen for client connections.
  */
-fun runSseMcpServerUsingKtorPlugin(port: Int) {
+fun runSseMcpServerUsingKtorPlugin(port: Int, wait: Boolean = true) {
     println("Starting SSE server on port $port")
     println("Use inspector to connect to http://localhost:$port/sse")
 
@@ -155,7 +155,7 @@ fun runSseMcpServerUsingKtorPlugin(port: Int) {
         mcp {
             return@mcp configureServer()
         }
-    }.start(wait = true)
+    }.start(wait = wait)
 }
 
 /**
