@@ -1,6 +1,8 @@
 public final class io/modelcontextprotocol/kotlin/sdk/Annotations {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/Annotations$Companion;
+	public fun <init> ()V
 	public fun <init> (Ljava/util/List;Lkotlin/time/Instant;Ljava/lang/Double;)V
+	public synthetic fun <init> (Ljava/util/List;Lkotlin/time/Instant;Ljava/lang/Double;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/util/List;
 	public final fun component2 ()Lkotlin/time/Instant;
 	public final fun component3 ()Ljava/lang/Double;
@@ -1589,12 +1591,11 @@ public final class io/modelcontextprotocol/kotlin/sdk/LoggingMessageNotification
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/McpError : java/lang/Exception {
+public final class io/modelcontextprotocol/kotlin/sdk/McpException : java/lang/Exception {
 	public fun <init> (ILjava/lang/String;Lkotlinx/serialization/json/JsonObject;)V
 	public synthetic fun <init> (ILjava/lang/String;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getCode ()I
 	public final fun getData ()Lkotlinx/serialization/json/JsonObject;
-	public fun getMessage ()Ljava/lang/String;
 }
 
 public abstract interface class io/modelcontextprotocol/kotlin/sdk/Method {
@@ -1699,7 +1700,9 @@ public final class io/modelcontextprotocol/kotlin/sdk/ModelHint$Companion {
 
 public final class io/modelcontextprotocol/kotlin/sdk/ModelPreferences {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/ModelPreferences$Companion;
+	public fun <init> ()V
 	public fun <init> (Ljava/util/List;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;)V
+	public synthetic fun <init> (Ljava/util/List;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getCostPriority ()Ljava/lang/Double;
 	public final fun getHints ()Ljava/util/List;
 	public final fun getIntelligencePriority ()Ljava/lang/Double;
@@ -1883,6 +1886,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/ProgressNotification$Param
 public final class io/modelcontextprotocol/kotlin/sdk/Prompt {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/Prompt$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getArguments ()Ljava/util/List;
 	public final fun getDescription ()Ljava/lang/String;
 	public final fun getName ()Ljava/lang/String;
@@ -2472,6 +2476,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/Role$Companion {
 public final class io/modelcontextprotocol/kotlin/sdk/Root {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/Root$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/Root;
@@ -2995,6 +3000,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/Tool$Output$Companion {
 
 public final class io/modelcontextprotocol/kotlin/sdk/ToolAnnotations {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/ToolAnnotations$Companion;
+	public fun <init> ()V
 	public fun <init> (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;

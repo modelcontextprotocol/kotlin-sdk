@@ -8,7 +8,7 @@ import io.modelcontextprotocol.kotlin.sdk.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCResponse
-import io.modelcontextprotocol.kotlin.sdk.McpError
+import io.modelcontextprotocol.kotlin.sdk.McpException
 import io.modelcontextprotocol.kotlin.sdk.Method
 import io.modelcontextprotocol.kotlin.sdk.Notification
 import io.modelcontextprotocol.kotlin.sdk.PingRequest
@@ -19,6 +19,7 @@ import io.modelcontextprotocol.kotlin.sdk.RequestId
 import io.modelcontextprotocol.kotlin.sdk.RequestResult
 import io.modelcontextprotocol.kotlin.sdk.fromJSON
 import io.modelcontextprotocol.kotlin.sdk.toJSON
+import io.modelcontextprotocol.kotlin.sdk.toMcpException
 import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.getAndUpdate
@@ -97,7 +98,7 @@ public data class RequestOptions(
     val onProgress: ProgressCallback? = null,
 
     /**
-     * A timeout for this request. If exceeded, an McpError with code `RequestTimeout`
+     * A timeout for this request. If exceeded, an [McpException] with code `RequestTimeout`
      * will be raised from request().
      *
      * If not specified, `DEFAULT_REQUEST_TIMEOUT` will be used as the timeout.
@@ -116,6 +117,7 @@ internal val COMPLETED = CompletableDeferred(Unit).also { it.complete(Unit) }
  * Implements MCP protocol framing on top of a pluggable transport, including
  * features like request/response linking, notifications, and progress.
  */
+@Suppress("TooManyFunctions")
 public abstract class Protocol(@PublishedApi internal val options: ProtocolOptions?) {
     public var transport: Transport? = null
         private set
@@ -190,7 +192,9 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     /**
      * Attaches to the given transport, starts it, and starts listening for messages.
      *
-     * The Protocol object assumes ownership of the Transport, replacing any callbacks that have already been set, and expects that it is the only user of the Transport instance going forward.
+     * The Protocol object assumes ownership of the Transport,
+     * replacing any callbacks that have already been set,
+     * and expects that it is the only user of the Transport instance going forward.
      */
     public open suspend fun connect(transport: Transport) {
         this.transport = transport
@@ -222,7 +226,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         transport = null
         onClose()
 
-        val error = McpError(ErrorCode.Defined.ConnectionClosed.code, "Connection closed")
+        val error = McpException(ErrorCode.Defined.ConnectionClosed.code, "Connection closed")
         for (handler in handlersToNotify) {
             handler(null, error)
         }
@@ -237,6 +241,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             logger.trace { "No handler found for notification: ${notification.method}" }
             return
         }
+        @Suppress("TooGenericExceptionCaught")
         try {
             handler(notification)
         } catch (cause: Throwable) {
@@ -252,6 +257,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
 
         if (handler === null) {
             logger.trace { "No handler found for request: ${request.method}" }
+            @Suppress("TooGenericExceptionCaught")
             try {
                 transport?.send(
                     JSONRPCResponse(
@@ -268,7 +274,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             }
             return
         }
-
+        @Suppress("TooGenericExceptionCaught")
         try {
             val result = handler(request, RequestHandlerExtra())
             logger.trace { "Request handled successfully: ${request.method} (id: ${request.id})" }
@@ -303,7 +309,8 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
 
     private fun onProgress(notification: ProgressNotification) {
         logger.trace {
-            "Received progress notification: token=${notification.params.progressToken}, progress=${notification.params.progress}/${notification.params.total}"
+            "Received progress notification: token=${notification.params.progressToken}, " +
+                "progress=${notification.params.progress}/${notification.params.total}"
         }
         val progress = notification.params.progress
         val total = notification.params.total
@@ -347,7 +354,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             handler(response, null)
         } else {
             check(error != null)
-            val error = McpError(
+            val error = McpException(
                 error.code.code,
                 error.message,
                 error.data,
@@ -392,7 +399,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     public suspend fun <T : RequestResult> request(request: Request, options: RequestOptions? = null): T {
         logger.trace { "Sending request: ${request.method}" }
         val result = CompletableDeferred<T>()
-        val transport = transport ?: throw Error("Not connected")
+        val transport = transport ?: throw McpException(ErrorCode.Defined.ConnectionClosed.code, "Not connected")
 
         if (this@Protocol.options?.enforceStrictCapabilities == true) {
             assertCapabilityForMethod(request.method)
@@ -415,11 +422,12 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                     return@put
                 }
 
-                if (response?.error != null) {
-                    result.completeExceptionally(IllegalStateException(response.error.toString()))
+                response?.error?.let {
+                    result.completeExceptionally(it.toMcpException())
                     return@put
                 }
 
+                @Suppress("TooGenericExceptionCaught")
                 try {
                     @Suppress("UNCHECKED_CAST")
                     result.complete(response!!.result as T)
@@ -459,7 +467,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         } catch (cause: TimeoutCancellationException) {
             logger.error { "Request timed out after ${timeout.inWholeMilliseconds}ms: ${request.method}" }
             cancel(
-                McpError(
+                McpException(
                     ErrorCode.Defined.RequestTimeout.code,
                     "Request timed out",
                     JsonObject(mutableMapOf("timeout" to JsonPrimitive(timeout.inWholeMilliseconds))),

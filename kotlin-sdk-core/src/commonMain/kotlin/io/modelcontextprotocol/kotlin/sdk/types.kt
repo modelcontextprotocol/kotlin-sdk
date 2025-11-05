@@ -52,7 +52,7 @@ public sealed interface WithMeta {
      * The protocol reserves this result property
      * to allow clients and servers to attach additional metadata to their responses.
      */
-    @Suppress("PropertyName")
+    @Suppress("PropertyName", "VariableNaming")
     public val _meta: JsonObject
 
     public companion object {
@@ -271,6 +271,7 @@ public sealed interface ErrorCode {
     public val code: Int
 
     @Serializable
+    @Suppress("MagicNumber")
     public enum class Defined(override val code: Int) : ErrorCode {
         // SDK error codes
         ConnectionClosed(-1),
@@ -302,10 +303,12 @@ public data class JSONRPCError(val code: ErrorCode, val message: String, val dat
 public sealed interface NotificationParams : WithMeta
 
 /* Cancellation */
+
 /**
  * This notification can be sent by either side to indicate that it is cancelling a previously issued request.
  *
- * The request SHOULD still be in-flight, but due to communication latency, it is always possible that this notification MAY arrive after the request has already finished.
+ * The request SHOULD still be in-flight, but due to communication latency,
+ * it is always possible that this notification MAY arrive after the request has already finished.
  *
  * This notification indicates that the result will be unused, so any associated processing SHOULD cease.
  *
@@ -334,6 +337,7 @@ public data class CancelledNotification(override val params: Params) :
 }
 
 /* Initialization */
+
 /**
  * Describes the name and version of an MCP implementation.
  */
@@ -507,7 +511,10 @@ public data class ServerCapabilities(
 @Serializable
 public data class InitializeResult(
     /**
-     * The version of the Model Context Protocol that the server wants to use. This may not match the version that the client requested. If the client cannot support this version, it MUST disconnect.
+     * The version of the Model Context Protocol that the server wants to use.
+     *
+     * This may not match the version that the client requested.
+     * If the client cannot support this version, it MUST disconnect.
      */
     val protocolVersion: String = LATEST_PROTOCOL_VERSION,
     val capabilities: ServerCapabilities = ServerCapabilities(),
@@ -531,6 +538,7 @@ public data class InitializedNotification(override val params: Params = Params()
 }
 
 /* Ping */
+
 /**
  * A ping, issued by either the server or the client, to check that the other party is still alive.
  * The receiver must promptly respond, or else it may be disconnected.
@@ -564,6 +572,7 @@ public sealed interface ProgressBase {
 }
 
 /* Progress notifications */
+
 /**
  * Represents a progress notification.
  *
@@ -623,6 +632,7 @@ public data class ProgressNotification(override val params: Params) :
 }
 
 /* Pagination */
+
 /**
  * Represents a request supporting pagination.
  */
@@ -650,6 +660,7 @@ public sealed interface PaginatedResult : RequestResult {
 }
 
 /* Resources */
+
 /**
  * The contents of a specific resource or sub-resource.
  */
@@ -669,7 +680,8 @@ public sealed interface ResourceContents {
 /**
  * Represents the text contents of a resource.
  *
- * @property text The text of the item. This must only be set if the item can actually be represented as text (not binary data).
+ * @property text The text of the item. This must only be set if the item can actually be represented as text
+ * (not binary data).
  */
 @Serializable
 public data class TextResourceContents(val text: String, override val uri: String, override val mimeType: String?) :
@@ -753,7 +765,9 @@ public data class ResourceTemplate(
      */
     val description: String?,
     /**
-     * The MIME type for all resources that match this template. This should only be included if all resources matching this template have the same type.
+     * The MIME type for all resources that match this template.
+     *
+     * This should only be included if all resources matching this template have the same type.
      */
     val mimeType: String?,
     /**
@@ -845,12 +859,15 @@ public data class ResourceListChangedNotification(override val params: Params = 
 }
 
 /**
- * Sent from the client to request resources/updated notifications from the server whenever a particular resource changes.
+ * Sent from the client to request resources/updated notifications from the server
+ * whenever a particular resource changes.
  */
 @Serializable
 public data class SubscribeRequest(
     /**
-     * The URI of the resource to subscribe to. The URI can use any protocol; it is up to the server how to interpret it.
+     * The URI of the resource to subscribe to.
+     *
+     * The URI can use any protocol; it is up to the server how to interpret it.
      */
     val uri: String,
     override val _meta: JsonObject = EmptyJsonObject,
@@ -860,7 +877,8 @@ public data class SubscribeRequest(
 }
 
 /**
- * Sent from the client to request cancellation of resources/updated notifications from the server. This should follow a previous resources/subscribe request.
+ * Sent from the client to request cancellation of resources/updated notifications from the server.
+ * This should follow a previous resources/subscribe request.
  */
 @Serializable
 public data class UnsubscribeRequest(
@@ -875,7 +893,8 @@ public data class UnsubscribeRequest(
 }
 
 /**
- * A notification from the server to the client, informing it that a resource has changed and may need to be read again. This should only be sent if the client previously sent a resources/subscribe request.
+ * A notification from the server to the client, informing it that a resource has changed and may need to be read again.
+ * This should only be sent if the client previously sent a resources/subscribe request.
  */
 @Serializable
 public data class ResourceUpdatedNotification(override val params: Params) : ServerNotification {
@@ -884,7 +903,8 @@ public data class ResourceUpdatedNotification(override val params: Params) : Ser
     @Serializable
     public data class Params(
         /**
-         * The URI of the resource that has been updated. This might be a sub-resource of the one that the client actually subscribed to.
+         * The URI of the resource that has been updated.
+         * This might be a sub-resource of the one that the client actually subscribed to.
          */
         val uri: String,
         override val _meta: JsonObject = EmptyJsonObject,
@@ -892,6 +912,7 @@ public data class ResourceUpdatedNotification(override val params: Params) : Ser
 }
 
 /* Prompts */
+
 /**
  * Describes an argument that a prompt can accept.
  */
@@ -923,11 +944,11 @@ public class Prompt(
     /**
      * An optional description of what this prompt provides
      */
-    public val description: String?,
+    public val description: String? = null,
     /**
      * A list of arguments to use for templating the prompt.
      */
-    public val arguments: List<PromptArgument>?,
+    public val arguments: List<PromptArgument>? = null,
 )
 
 /**
@@ -966,7 +987,7 @@ public data class GetPromptRequest(
     /**
      * Arguments to use for templating the prompt.
      */
-    val arguments: Map<String, String>?,
+    val arguments: Map<String, String>? = null,
 
     override val _meta: JsonObject = EmptyJsonObject,
 ) : ClientRequest,
@@ -983,7 +1004,7 @@ public sealed interface PromptMessageContent {
 }
 
 /**
- * Represents prompt message content that is either text, image or audio.
+ * Represents prompt message content that is either text, image, or audio.
  */
 @Serializable(with = PromptMessageContentMultimodalPolymorphicSerializer::class)
 public sealed interface PromptMessageContentMultimodal : PromptMessageContent
@@ -1095,7 +1116,7 @@ public data class EmbeddedResource(
 /**
  * Enum representing the role of a participant.
  */
-@Suppress("EnumEntryName")
+@Suppress("EnumEntryName", "EnumNaming")
 @Serializable
 public enum class Role {
     user,
@@ -1111,19 +1132,19 @@ public data class Annotations(
     /**
      * Describes who the intended customer of this object or data is.
      */
-    val audience: List<Role>?,
+    val audience: List<Role>? = null,
     /**
      * The moment the resource was last modified.
      */
     @OptIn(ExperimentalTime::class)
-    val lastModified: Instant?,
+    val lastModified: Instant? = null,
     /**
      * Describes how important this data is for operating the server.
      *
-     * A value of 1.0 means "most important", and indicates that the data is effectively required,
-     * while 0.0 means "less important", and indicates that the data is entirely optional.
+     * A value of 1.0 means "most important" and indicates that the data is effectively required,
+     * while 0.0 means "less important" and indicates that the data is entirely optional.
      */
-    val priority: Double?,
+    val priority: Double? = null,
 ) {
     init {
         require(priority == null || priority in 0.0..1.0) { "Priority must be between 0.0 and 1.0" }
@@ -1144,7 +1165,7 @@ public class GetPromptResult(
     /**
      * An optional description for the prompt.
      */
-    public val description: String?,
+    public val description: String? = null,
     public val messages: List<PromptMessage>,
     override val _meta: JsonObject = EmptyJsonObject,
 ) : ServerResult
@@ -1162,6 +1183,7 @@ public data class PromptListChangedNotification(override val params: Params = Pa
 }
 
 /* Tools */
+
 /**
  * Additional properties describing a Tool to clients.
  *
@@ -1177,7 +1199,7 @@ public data class ToolAnnotations(
     /**
      * A human-readable title for the tool.
      */
-    val title: String?,
+    val title: String? = null,
     /**
      * If true, the tool does not modify its environment.
      *
@@ -1195,7 +1217,7 @@ public data class ToolAnnotations(
     val destructiveHint: Boolean? = true,
     /**
      * If true, calling the tool repeatedly with the same arguments
-     * will have no additional effect on the its environment.
+     * will have no additional effect on its environment.
      *
      * (This property is meaningful only when `readOnlyHint == false`)
      *
@@ -1225,11 +1247,11 @@ public data class Tool(
     /**
      * The title of the tool.
      */
-    val title: String?,
+    val title: String? = null,
     /**
      * A human-readable description of the tool.
      */
-    val description: String?,
+    val description: String? = null,
     /**
      * A JSON object defining the expected parameters for the tool.
      */
@@ -1237,11 +1259,11 @@ public data class Tool(
     /**
      * An optional JSON object defining the expected output schema for the tool.
      */
-    val outputSchema: Output?,
+    val outputSchema: Output? = null,
     /**
      * Optional additional tool information.
      */
-    val annotations: ToolAnnotations?,
+    val annotations: ToolAnnotations? = null,
 
     /**
      * Optional metadata for the tool.
@@ -1345,10 +1367,11 @@ public data class ToolListChangedNotification(override val params: Params = Para
 }
 
 /* Logging */
+
 /**
  * The severity of a log message.
  */
-@Suppress("EnumEntryName")
+@Suppress("EnumEntryName", "EnumNaming")
 @Serializable
 public enum class LoggingLevel {
     debug,
@@ -1393,7 +1416,9 @@ public data class LoggingMessageNotification(override val params: Params) : Serv
     @Serializable
     public data class SetLevelRequest(
         /**
-         * The level of logging that the client wants to receive from the server. The server should send all logs at this level and higher (i.e., more severe) to the client as notifications/logging/message.
+         * The level of logging that the client wants to receive from the server.
+         * The server should send all logs at this level and higher (i.e., more severe)
+         * to the client as notifications/logging/message.
          */
         val level: LoggingLevel,
         override val _meta: JsonObject = EmptyJsonObject,
@@ -1404,6 +1429,7 @@ public data class LoggingMessageNotification(override val params: Params) : Serv
 }
 
 /* Sampling */
+
 /**
  * Hints to use for model selection.
  */
@@ -1424,19 +1450,19 @@ public class ModelPreferences(
     /**
      * Optional hints to use for model selection.
      */
-    public val hints: List<ModelHint>?,
+    public val hints: List<ModelHint>? = null,
     /**
      * How much to prioritize cost when selecting a model.
      */
-    public val costPriority: Double?,
+    public val costPriority: Double? = null,
     /**
      * How much to prioritize sampling speed (latency) when selecting a model.
      */
-    public val speedPriority: Double?,
+    public val speedPriority: Double? = null,
     /**
      * How much to prioritize intelligence and capabilities when selecting a model.
      */
-    public val intelligencePriority: Double?,
+    public val intelligencePriority: Double? = null,
 ) {
     init {
         require(costPriority == null || costPriority in 0.0..1.0) {
@@ -1471,17 +1497,20 @@ public data class CreateMessageRequest(
     /**
      * An optional system prompt the server wants to use it for sampling. The client MAY modify or omit this prompt.
      */
-    val systemPrompt: String?,
+    val systemPrompt: String? = null,
     /**
-     * A request to include context from one or more MCP servers (including the caller), to be attached to the prompt. The client MAY ignore this request.
+     * A request to include context from one or more MCP servers (including the caller),
+     * to be attached to the prompt. The client MAY ignore this request.
      */
-    val includeContext: IncludeContext?,
-    val temperature: Double?,
+    val includeContext: IncludeContext? = null,
+    val temperature: Double? = null,
     /**
-     * The maximum number of tokens to sample, as requested by the server. The client MAY choose to sample fewer tokens than requested.
+     * The maximum number of tokens to sample, as requested by the server.
+     *
+     * The client MAY choose to sample fewer tokens than requested.
      */
     val maxTokens: Int,
-    val stopSequences: List<String>?,
+    val stopSequences: List<String>? = null,
     /**
      * Optional metadata to pass through to the LLM provider. The format of this metadata is provider-specific.
      */
@@ -1489,13 +1518,14 @@ public data class CreateMessageRequest(
     /**
      * The server's preferences for which model to select.
      */
-    val modelPreferences: ModelPreferences?,
+    val modelPreferences: ModelPreferences? = null,
     override val _meta: JsonObject = EmptyJsonObject,
 ) : ServerRequest,
     WithMeta {
     override val method: Method = Method.Defined.SamplingCreateMessage
 
     @Serializable
+    @Suppress("EnumEntryName", "EnumNaming")
     public enum class IncludeContext { none, thisServer, allServers }
 }
 
@@ -1623,7 +1653,6 @@ public data class CompleteRequest(
 @Serializable
 public data class CompleteResult(val completion: Completion, override val _meta: JsonObject = EmptyJsonObject) :
     ServerResult {
-    @Suppress("CanBeParameter")
     @Serializable
     public class Completion(
         /**
@@ -1631,15 +1660,19 @@ public data class CompleteResult(val completion: Completion, override val _meta:
          */
         public val values: List<String>,
         /**
-         * The total number of completion options available. This can exceed the number of values actually sent in the response.
+         * The total number of completion options available.
+         *
+         * This can exceed the number of values actually sent in the response.
          */
         public val total: Int?,
         /**
-         * Indicates whether there are additional completion options beyond those provided in the current response, even if the exact total is unknown.
+         * Indicates whether there are additional completion options beyond those provided in the current response,
+         * even if the exact total is unknown.
          */
         public val hasMore: Boolean?,
     ) {
         init {
+            @Suppress("MagicNumber")
             require(values.size <= 100) {
                 "'values' field must not exceed 100 items"
             }
@@ -1648,6 +1681,7 @@ public data class CompleteResult(val completion: Completion, override val _meta:
 }
 
 /* Roots */
+
 /**
  * Represents a root directory or file that the server can operate on.
  */
@@ -1661,7 +1695,7 @@ public data class Root(
     /**
      * An optional name for the root.
      */
-    val name: String?,
+    val name: String? = null,
 ) {
     init {
         require(uri.startsWith("file://")) {
@@ -1699,7 +1733,7 @@ public data class RootsListChangedNotification(override val params: Params = Par
 }
 
 /**
- * Sent from the server to create an elicitation from the client.
+ * Sent from the server to create elicitation from the client.
  */
 @Serializable
 public data class CreateElicitationRequest(
@@ -1738,17 +1772,6 @@ public data class CreateElicitationResult(
     }
 
     @Serializable
+    @Suppress("EnumEntryName", "EnumNaming")
     public enum class Action { accept, decline, cancel }
-}
-
-/**
- * Represents an error specific to the MCP protocol.
- *
- * @property code The error code.
- * @property message The error message.
- * @property data Additional error data as a JSON object.
- */
-public class McpError(public val code: Int, message: String, public val data: JsonObject = EmptyJsonObject) :
-    Exception() {
-    override val message: String = "MCP error $code: $message"
 }

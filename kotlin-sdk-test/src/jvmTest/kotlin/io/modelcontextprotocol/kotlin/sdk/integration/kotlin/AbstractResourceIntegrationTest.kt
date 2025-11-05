@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.kotlin
 
 import io.modelcontextprotocol.kotlin.sdk.BlobResourceContents
+import io.modelcontextprotocol.kotlin.sdk.McpException
 import io.modelcontextprotocol.kotlin.sdk.ReadResourceRequest
 import io.modelcontextprotocol.kotlin.sdk.ReadResourceResult
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
@@ -202,7 +203,7 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
     fun testInvalidResourceUri() = runTest {
         val invalidUri = "test://nonexistent.txt"
 
-        val exception = assertThrows<IllegalStateException> {
+        val exception = assertThrows<McpException> {
             runBlocking {
                 client.readResource(ReadResourceRequest(uri = invalidUri))
             }
@@ -210,7 +211,7 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
 
         val msg = exception.message ?: ""
         val expectedMessage =
-            "JSONRPCError(code=InternalError, message=Resource not found: test://nonexistent.txt, data={})"
+            "MCP error -32603: \"Resource not found: test://nonexistent.txt\""
 
         assertEquals(expectedMessage, msg, "Unexpected error message for invalid resource URI")
     }

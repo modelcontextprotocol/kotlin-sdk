@@ -257,7 +257,7 @@ public open class Server(
         title: String? = null,
         outputSchema: Tool.Output? = null,
         toolAnnotations: ToolAnnotations? = null,
-        @Suppress("LocalVariableName") _meta: JsonObject? = null,
+        @Suppress("LocalVariableName", "FunctionParameterNaming") _meta: JsonObject? = null,
         handler: suspend (CallToolRequest) -> CallToolResult,
     ) {
         val tool = Tool(
@@ -468,7 +468,7 @@ public open class Server(
     }
 
     // --- Internal Handlers ---
-    private suspend fun handleListTools(): ListToolsResult {
+    private fun handleListTools(): ListToolsResult {
         val toolList = tools.values.map { it.tool }
         return ListToolsResult(tools = toolList, nextCursor = null)
     }
@@ -501,7 +501,7 @@ public open class Server(
         }
     }
 
-    private suspend fun handleListPrompts(): ListPromptsResult {
+    private fun handleListPrompts(): ListPromptsResult {
         logger.debug { "Handling list prompts request" }
         return ListPromptsResult(prompts = prompts.values.map { it.prompt })
     }
@@ -510,13 +510,13 @@ public open class Server(
         logger.debug { "Handling get prompt request for: ${request.name}" }
         val prompt = promptRegistry.get(request.name)
             ?: run {
-                logger.error { "Prompt not found: ${request.name}" }
-                throw IllegalArgumentException("Prompt not found: ${request.name}")
+                logger.error { "Prompt not found: '${request.name}'" }
+                throw IllegalArgumentException("Prompt not found: '${request.name}'")
             }
         return prompt.messageProvider(request)
     }
 
-    private suspend fun handleListResources(): ListResourcesResult {
+    private fun handleListResources(): ListResourcesResult {
         logger.debug { "Handling list resources request" }
         return ListResourcesResult(resources = resources.values.map { it.resource })
     }
@@ -531,7 +531,7 @@ public open class Server(
         return resource.readHandler(request)
     }
 
-    private suspend fun handleListResourceTemplates(): ListResourceTemplatesResult {
+    private fun handleListResourceTemplates(): ListResourceTemplatesResult {
         // If you have resource templates, return them here. For now, return empty.
         return ListResourceTemplatesResult(listOf())
     }
