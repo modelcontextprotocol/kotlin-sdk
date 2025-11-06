@@ -1,9 +1,13 @@
 package io.modelcontextprotocol.sample.server
 
+import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.cio.CIO
+import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
+import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.response.respond
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
@@ -101,13 +105,13 @@ fun configureServer(): Server {
 }
 
 fun runSseMcpServerWithPlainConfiguration(port: Int, wait: Boolean = true) {
+    printBanner(port = port, path = "/sse")
     val serverSessions = ConcurrentMap<String, ServerSession>()
-    println("Starting SSE server on port $port")
-    println("Use inspector to connect to http://localhost:$port/sse")
 
     val server = configureServer()
 
     embeddedServer(CIO, host = "127.0.0.1", port = port) {
+        installCors()
         install(SSE)
         routing {
             sse("/sse") {
@@ -147,15 +151,36 @@ fun runSseMcpServerWithPlainConfiguration(port: Int, wait: Boolean = true) {
  *
  * @param port The port number on which the SSE MCP server will listen for client connections.
  */
-fun runSseMcpServerUsingKtorPlugin(port: Int, wait: Boolean = true) {
-    println("Starting SSE server on port $port")
-    println("Use inspector to connect to http://localhost:$port/sse")
+fun runSseMcpServerUsingKtorPlugin(port: Int, wait: Boolean = true): EmbeddedServer<*, *> {
+    printBanner(port)
 
-    embeddedServer(CIO, host = "127.0.0.1", port = port) {
+    val server = embeddedServer(CIO, host = "127.0.0.1", port = port) {
+        installCors()
         mcp {
             return@mcp configureServer()
         }
     }.start(wait = wait)
+    return server
+}
+
+private fun printBanner(port: Int, path: String = "") {
+    if (port == 0) {
+        println("🎬 Starting SSE server on random port")
+    } else {
+        println("🎬 Starting SSE server on ${if (port > 0) "port $port" else "random port"}")
+        println("🔍 Use MCP inspector to connect to http://localhost:$port$path")
+    }
+}
+
+private fun Application.installCors() {
+    install(CORS) {
+        allowMethod(HttpMethod.Options)
+        allowMethod(HttpMethod.Get)
+        allowMethod(HttpMethod.Post)
+        allowMethod(HttpMethod.Delete)
+        allowNonSimpleContentTypes = true
+        anyHost() // @TODO: Don't do this in production if possible. Try to limit it.
+    }
 }
 
 /**
@@ -168,7 +193,7 @@ fun runMcpServerUsingStdio() {
     val server = configureServer()
     val transport = StdioServerTransport(
         inputStream = System.`in`.asSource().buffered(),
-        outputStream = System.out.asSink().buffered()
+        outputStream = System.out.asSink().buffered(),
     )
 
     runBlocking {

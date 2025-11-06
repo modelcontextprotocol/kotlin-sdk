@@ -18,40 +18,58 @@ configurations and transport methods.
 
 ### Running the Server
 
-The server defaults to SSE mode with Ktor plugin on port 3001. You can customize the behavior using command-line arguments.
+The server defaults [STDIO transport](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#stdio). 
 
-#### Default (SSE with Ktor plugin):
+You can customize the behavior using command-line arguments.
+Logs are printed to [./build/stdout.log](./build/stdout.log)
+
+#### Standard I/O mode (STDIO):
 
 ```bash
-./gradlew run
+./gradlew clean build
 ```
+Use the [MCP inspector](https://modelcontextprotocol.io/docs/tools/inspector) 
+to connect to MCP via STDIO (Click the "▶️ Connect" button):
 
-#### Standard I/O mode:
-
-```bash
-./gradlew run --args="--stdio"
+```shell
+npx @modelcontextprotocol/inspector --config mcp-inspector-config.json --server stdio-server
 ```
 
 #### SSE with plain configuration:
 
+**NB!: 🐞 This configuration may not work ATM**
+
 ```bash
 ./gradlew run --args="--sse-server 3001"
 ```
+or
+```shell
+./gradlew clean build
+java -jar ./build/libs/kotlin-mcp-server-0.1.0-all.jar --sse-server 3001
+```
 
-#### SSE with Ktor plugin (custom port):
+Use the [MCP inspector](https://modelcontextprotocol.io/docs/tools/inspector) 
+to connect to `http://localhost:3002/` via SSE Transport (Click the "▶️ Connect" button):
+```shell
+npx @modelcontextprotocol/inspector --config mcp-inspector-config.json --server sse-server
+```
+
+#### SSE with Ktor plugin:
 
 ```bash
 ./gradlew run --args="--sse-server-ktor 3002"
 ```
+or
+```shell
+./gradlew clean build
+java -jar ./build/libs/kotlin-mcp-server-0.1.0-all.jar --sse-server-ktor 3002
+```
 
-### Connecting to the Server
-
-For SSE servers:
-1. Start the server
-2. Use the [MCP inspector](https://modelcontextprotocol.io/docs/tools/inspector) to connect to `http://localhost:<port>/sse`
-
-For STDIO servers:
-- Connect using an MCP client that supports STDIO transport
+Use the [MCP inspector](https://modelcontextprotocol.io/docs/tools/inspector) 
+to connect to `http://localhost:3002/` via SSE transport (Click the "▶️ Connect" button):
+```shell
+npx @modelcontextprotocol/inspector --config mcp-inspector-config.json --server sse-ktor-server
+```
 
 ## Server Capabilities
 
