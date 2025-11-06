@@ -1,54 +1,15 @@
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
-import io.ktor.client.plugins.sse.SSE
 import io.modelcontextprotocol.kotlin.sdk.EmptyJsonObject
-import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.client.Client
-import io.modelcontextprotocol.kotlin.sdk.client.mcpSseTransport
-import io.modelcontextprotocol.sample.server.runSseMcpServerUsingKtorPlugin
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.TestInstance
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SseServerIntegrationTest {
 
-    companion object {
-        private const val PORT = 3002
-    }
-
-    private lateinit var client: Client
-
-    private fun initClient(port: Int) {
-        client = Client(
-            Implementation(name = "test-client", version = "0.1.0"),
-        )
-
-        val httpClient = HttpClient(CIO) {
-            install(SSE)
-        }
-
-        // Create a transport wrapper that captures the session ID and received messages
-        val transport = httpClient.mcpSseTransport {
-            url {
-                this.host = "127.0.0.1"
-                this.port = port
-            }
-        }
-        runBlocking {
-            client.connect(transport)
-        }
-    }
-
-    @BeforeAll
-    fun setUp() {
-        runSseMcpServerUsingKtorPlugin(PORT, wait = false)
-        initClient(PORT)
-    }
+    private val client: Client = TestEnvironment.client
 
     @Test
     fun `should get tools`(): Unit = runBlocking {

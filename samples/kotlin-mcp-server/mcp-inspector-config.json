@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "stdio-server": {
+      "command": "java",
+      "args": [
+        "-Dorg.slf4j.simpleLogger.defaultLogLevel=off",
+        "-jar",
+        "./build/libs/kotlin-mcp-server-0.1.0-all.jar"
+      ],
+      "env": {
+      },
+      "note": "For SSE connections, add this URL directly in your MCP Client"
+    },
+    "sse-server": {
+      "type": "sse",
+      "url": "http://127.0.0.1:3001/sse",
+      "note": "SSE with plain configuration"
+    },
+    "sse-ktor-server": {
+      "type": "sse",
+      "url": "http://127.0.0.1:3002/",
+      "note": "SSE with Ktor plugin"
+    }
+  }
+}
