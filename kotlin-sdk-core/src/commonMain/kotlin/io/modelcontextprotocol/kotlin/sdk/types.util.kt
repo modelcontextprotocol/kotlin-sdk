@@ -265,6 +265,11 @@ internal object JSONRPCMessagePolymorphicSerializer :
     }
 }
 
+@Deprecated(
+    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject` instead",
+    replaceWith = ReplaceWith("EmptyJsonObject", "io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject"),
+    level = DeprecationLevel.WARNING,
+)
 public val EmptyJsonObject: JsonObject = JsonObject(emptyMap())
 
 public class RequestIdSerializer : KSerializer<RequestId> {

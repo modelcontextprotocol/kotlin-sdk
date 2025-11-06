@@ -51,6 +51,7 @@ public const val IMPLEMENTATION_NAME: String = "mcp-ktor"
 public typealias ProgressCallback = (Progress) -> Unit
 
 @OptIn(ExperimentalSerializationApi::class)
+@Deprecated("Use McpJson instead", ReplaceWith("McpJson"))
 public val McpJson: Json by lazy {
     Json {
         ignoreUnknownKeys = true
