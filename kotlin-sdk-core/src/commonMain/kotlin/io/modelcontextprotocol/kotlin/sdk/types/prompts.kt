@@ -113,6 +113,22 @@ public data class GetPromptRequest(override val params: GetPromptRequestParams) 
     @EncodeDefault
     override val method: Method = Method.Defined.PromptsGet
 
+    @Deprecated(
+        message = "Use constructor with GetPromptRequestParams instead",
+        replaceWith = ReplaceWith("GetPromptRequest(GetPromptRequestParams(name, arguments, meta))"),
+    )
+    public constructor(
+        name: String,
+        arguments: Map<String, String>? = null,
+        meta: RequestMeta? = null,
+    ) : this(
+        GetPromptRequestParams(
+            name = name,
+            arguments = arguments,
+            meta = meta,
+        ),
+    )
+
     /**
      * The name of the prompt or prompt template to retrieve.
      */
