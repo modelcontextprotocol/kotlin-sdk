@@ -3,7 +3,6 @@ package io.modelcontextprotocol.kotlin.sdk.integration.typescript
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.sse.SSE
-import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
 import io.modelcontextprotocol.kotlin.sdk.client.mcpStreamableHttp
@@ -11,6 +10,7 @@ import io.modelcontextprotocol.kotlin.sdk.integration.typescript.sse.KotlinServe
 import io.modelcontextprotocol.kotlin.sdk.integration.utils.Retry
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.StdioServerTransport
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import kotlinx.coroutines.withTimeout
 import kotlinx.io.Sink
 import kotlinx.io.Source

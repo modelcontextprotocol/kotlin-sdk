@@ -3,7 +3,6 @@ package io.modelcontextprotocol.kotlin.sdk.types
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonClassDiscriminator
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -17,8 +16,8 @@ public value class RequestMeta(public val json: JsonObject) {
     public val progressToken: ProgressToken?
         get() = json["progressToken"]?.let { element ->
             when (element) {
-                is JsonPrimitive if (element.isString) -> ProgressToken.ProgressTokenString(element.content)
-                is JsonPrimitive if (element.longOrNull != null) -> ProgressToken.ProgressTokenInt(element.long)
+                is JsonPrimitive if (element.isString) -> ProgressToken(element.content)
+                is JsonPrimitive if (element.longOrNull != null) -> ProgressToken(element.long)
                 else -> null
             }
         }
@@ -40,8 +39,8 @@ public data class BaseRequestParams(override val meta: RequestMeta? = null) : Re
  */
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
-@JsonClassDiscriminator("method") // TODO: custom serializer
 public sealed interface Request {
+    public val method: Method
     public val params: RequestParams?
 }
 
@@ -49,12 +48,12 @@ public sealed interface Request {
  * A custom request with a specified method.
  */
 @Serializable
-public open class CustomRequest(override val params: RequestParams?) : Request
+public open class CustomRequest(override val method: Method, override val params: RequestParams?) : Request
 
 /**
  * Represents a request sent by the client.
  */
-@Serializable // TODO: custom serializer?
+@Serializable
 public sealed interface ClientRequest : Request
 
 /**

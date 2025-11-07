@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
-import kotlinx.serialization.SerialName
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 
@@ -48,8 +49,11 @@ public data class Root(val uri: String, val name: String? = null, override val m
  * @property params Optional request parameters containing metadata.
  */
 @Serializable
-@SerialName("roots/list")
-public data class ListRootsRequest(override val params: BaseRequestParams? = null) : ServerRequest
+public data class ListRootsRequest(override val params: BaseRequestParams? = null) : ServerRequest {
+    @OptIn(ExperimentalSerializationApi::class)
+    @EncodeDefault
+    override val method: Method = Method.Defined.RootsList
+}
 
 /**
  * The client's response to a [ListRootsRequest] from the server.

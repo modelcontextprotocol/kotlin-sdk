@@ -1,6 +1,9 @@
+@file:OptIn(ExperimentalSerializationApi::class)
+
 package io.modelcontextprotocol.kotlin.sdk.types
 
-import kotlinx.serialization.SerialName
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 
@@ -85,8 +88,10 @@ public data class PromptMessage(val role: Role, val content: ContentBlock)
  * If not provided, [name] should be used for display purposes.
  */
 @Serializable
-@SerialName("ref/prompt")
-public data class PromptReference(val name: String, val title: String? = null) : Reference
+public data class PromptReference(val name: String, val title: String? = null) : Reference {
+    @EncodeDefault
+    public override val type: String = "ref/prompt"
+}
 
 // ============================================================================
 // prompts/get
@@ -102,8 +107,10 @@ public data class PromptReference(val name: String, val title: String? = null) :
  * @property params The parameters specifying which prompt to retrieve and any template arguments.
  */
 @Serializable
-@SerialName("prompts/get")
-public data class GetPromptRequest(override val params: GetPromptRequestParams) : ClientRequest
+public data class GetPromptRequest(override val params: GetPromptRequestParams) : ClientRequest {
+    @EncodeDefault
+    override val method: Method = Method.Defined.PromptsGet
+}
 
 /**
  * Parameters for a prompts/get request.
@@ -152,10 +159,12 @@ public data class GetPromptResult(
  * @property params Optional pagination parameters to control which page of results to return.
  */
 @Serializable
-@SerialName("prompts/list")
 public data class ListPromptsRequest(override val params: PaginatedRequestParams? = null) :
     ClientRequest,
-    PaginatedRequest
+    PaginatedRequest {
+    @EncodeDefault
+    override val method: Method = Method.Defined.PromptsList
+}
 
 /**
  * The server's response to a [ListPromptsRequest] from the client.

@@ -1,10 +1,9 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.typescript.sse
 
-import io.modelcontextprotocol.kotlin.sdk.CallToolResult
-import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TransportKind
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TsTestBase
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -76,13 +75,12 @@ class KotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
             val result = client.callTool(nonExistentToolName, arguments)
             assertNotNull(result, "Tool call result should not be null")
 
-            val callResult = result as CallToolResult
-            assertTrue(callResult.isError ?: false, "isError should be true for non-existent tool")
+            assertTrue(result.isError ?: false, "isError should be true for non-existent tool")
 
-            val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
+            val textContent = result.content.firstOrNull { it is TextContent } as? TextContent
             assertNotNull(textContent, "Error content should be present in the result")
 
-            val errorText = textContent.text ?: ""
+            val errorText = textContent.text
             assertTrue(
                 errorText.contains("non-existent-tool") && errorText.contains("not found"),
                 "Error message should indicate the tool was not found",
@@ -100,11 +98,10 @@ class KotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
             val result = client.callTool("greet", arguments)
             assertNotNull(result, "Tool call result should not be null")
 
-            val callResult = result as CallToolResult
-            val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
+            val textContent = result.content.firstOrNull { it is TextContent } as? TextContent
             assertNotNull(textContent, "Text content should be present in the result")
 
-            val text = textContent.text ?: ""
+            val text = textContent.text
             assertTrue(
                 text.contains(specialChars),
                 "Tool response should contain the special characters",
@@ -122,11 +119,10 @@ class KotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
             val result = client.callTool("greet", arguments)
             assertNotNull(result, "Tool call result should not be null")
 
-            val callResult = result as CallToolResult
-            val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
+            val textContent = result.content.firstOrNull { it is TextContent } as? TextContent
             assertNotNull(textContent, "Text content should be present in the result")
 
-            val text = textContent.text ?: ""
+            val text = textContent.text
             assertTrue(
                 text.contains("Hello,") && text.contains("A"),
                 "Tool response should contain the greeting with the large name",
@@ -148,11 +144,10 @@ class KotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
                         val result = client.callTool("greet", arguments)
                         assertNotNull(result, "Tool call result should not be null for client $i")
 
-                        val callResult = result as CallToolResult
-                        val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
+                        val textContent = result.content.firstOrNull { it is TextContent } as? TextContent
                         assertNotNull(textContent, "Text content should be present for client $i")
 
-                        textContent.text ?: ""
+                        textContent.text
                     }
                 }
                 results.awaitAll()
@@ -181,13 +176,12 @@ class KotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
             val result = client.callTool("greet", invalidArguments)
             assertNotNull(result, "Tool call result should not be null")
 
-            val callResult = result as CallToolResult
-            assertTrue(callResult.isError ?: false, "isError should be true for invalid arguments")
+            assertTrue(result.isError ?: false, "isError should be true for invalid arguments")
 
-            val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
+            val textContent = result.content.firstOrNull { it is TextContent } as? TextContent
             assertNotNull(textContent, "Error content should be present in the result")
 
-            val errorText = textContent.text ?: ""
+            val errorText = textContent.text
             assertTrue(
                 errorText.contains("Invalid arguments") && errorText.contains("greet"),
                 "Error message should indicate invalid arguments for tool greet",
@@ -206,7 +200,7 @@ class KotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
                 val result = client.callTool("greet", arguments)
                 assertNotNull(result, "Tool call result should not be null for call $i")
 
-                val callResult = result as CallToolResult
+                val callResult = result
                 val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
                 assertNotNull(textContent, "Text content should be present for call $i")
 

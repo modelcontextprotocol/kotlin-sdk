@@ -1,9 +1,9 @@
 package io.modelcontextprotocol.kotlin.sdk.integration
 
-import io.modelcontextprotocol.kotlin.sdk.InitializedNotification
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.shared.InMemoryTransport
-import io.modelcontextprotocol.kotlin.sdk.toJSON
+import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test

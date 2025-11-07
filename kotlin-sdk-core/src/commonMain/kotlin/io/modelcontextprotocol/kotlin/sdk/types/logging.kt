@@ -1,5 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -57,8 +59,11 @@ public enum class LoggingLevel {
  * @property params The parameters specifying the desired logging level.
  */
 @Serializable
-@SerialName("logging/setLevel")
-public data class SetLevelRequest(override val params: SetLevelRequestParams) : ClientRequest
+public data class SetLevelRequest(override val params: SetLevelRequestParams) : ClientRequest {
+    @OptIn(ExperimentalSerializationApi::class)
+    @EncodeDefault
+    override val method: Method = Method.Defined.LoggingSetLevel
+}
 
 /**
  * Parameters for a logging/setLevel request.
@@ -66,7 +71,7 @@ public data class SetLevelRequest(override val params: SetLevelRequestParams) : 
  * @property level The minimum severity level of logging that the client wants to receive
  * from the server. The server should send all logs at this level and higher
  * (i.e., more severe) to the client as notifications/message.
- * For example, if [level] is [LoggingLevel.warning], the server should send
+ * For example, if [level] is [LoggingLevel.Warning], the server should send
  * warning, error, critical, alert, and emergency messages, but not info, notice, or debug.
  * @property meta Optional metadata for this request. May include a progressToken for
  * out-of-band progress notifications.

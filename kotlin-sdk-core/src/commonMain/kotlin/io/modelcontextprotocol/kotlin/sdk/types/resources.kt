@@ -1,5 +1,9 @@
+@file:OptIn(ExperimentalSerializationApi::class)
+
 package io.modelcontextprotocol.kotlin.sdk.types
 
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
@@ -102,7 +106,10 @@ public data class ResourceTemplate(
  */
 @Serializable
 @SerialName("ref/resource")
-public data class ResourceTemplateReference(val uri: String) : Reference
+public data class ResourceTemplateReference(val uri: String) : Reference {
+    @EncodeDefault
+    public override val type: String = "ref/resource"
+}
 
 /**
  * The contents of a specific resource or sub-resource.
@@ -174,10 +181,12 @@ public data class UnknownResourceContents(
  * @property params Optional pagination parameters to control which page of results to return.
  */
 @Serializable
-@SerialName("resources/list")
 public data class ListResourcesRequest(override val params: PaginatedRequestParams? = null) :
     ClientRequest,
-    PaginatedRequest
+    PaginatedRequest {
+    @EncodeDefault
+    override val method: Method = Method.Defined.ResourcesList
+}
 
 /**
  * The server's response to a [ListResourcesRequest] from the client.
@@ -223,8 +232,10 @@ public data class ReadResourceRequestParams(val uri: String, override val meta: 
  * @property params The parameters specifying which resource URI to read.
  */
 @Serializable
-@SerialName("resources/read")
-public data class ReadResourceRequest(override val params: ReadResourceRequestParams) : ClientRequest
+public data class ReadResourceRequest(override val params: ReadResourceRequestParams) : ClientRequest {
+    @EncodeDefault
+    override val method: Method = Method.Defined.ResourcesRead
+}
 
 /**
  * The server's response to a [ReadResourceRequest] from the client.
@@ -267,8 +278,10 @@ public data class SubscribeRequestParams(val uri: String, override val meta: Req
  * @property params The parameters specifying which resource URI to subscribe to.
  */
 @Serializable
-@SerialName("resources/subscribe")
-public data class SubscribeRequest(override val params: SubscribeRequestParams) : ClientRequest
+public data class SubscribeRequest(override val params: SubscribeRequestParams) : ClientRequest {
+    @EncodeDefault
+    override val method: Method = Method.Defined.ResourcesSubscribe
+}
 
 // ============================================================================
 // resources/unsubscribe
@@ -294,8 +307,10 @@ public data class UnsubscribeRequestParams(val uri: String, override val meta: R
  * @property params The parameters specifying which resource URI to unsubscribe from.
  */
 @Serializable
-@SerialName("resources/unsubscribe")
-public data class UnsubscribeRequest(override val params: UnsubscribeRequestParams) : ClientRequest
+public data class UnsubscribeRequest(override val params: UnsubscribeRequestParams) : ClientRequest {
+    @EncodeDefault
+    override val method: Method = Method.Defined.ResourcesUnsubscribe
+}
 
 // ============================================================================
 // resources/templates/list
@@ -311,10 +326,12 @@ public data class UnsubscribeRequest(override val params: UnsubscribeRequestPara
  * @property params Optional pagination parameters to control which page of results to return.
  */
 @Serializable
-@SerialName("resources/templates/list")
 public data class ListResourceTemplatesRequest(override val params: PaginatedRequestParams? = null) :
     ClientRequest,
-    PaginatedRequest
+    PaginatedRequest {
+    @EncodeDefault
+    override val method: Method = Method.Defined.ResourcesTemplatesList
+}
 
 /**
  * The server's response to a [ListResourceTemplatesRequest] from the client.

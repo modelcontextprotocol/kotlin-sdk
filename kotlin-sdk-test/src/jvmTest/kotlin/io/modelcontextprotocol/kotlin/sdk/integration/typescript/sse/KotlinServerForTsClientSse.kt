@@ -17,28 +17,28 @@ import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
-import io.modelcontextprotocol.kotlin.sdk.CallToolResult
-import io.modelcontextprotocol.kotlin.sdk.ErrorCode
-import io.modelcontextprotocol.kotlin.sdk.GetPromptResult
-import io.modelcontextprotocol.kotlin.sdk.Implementation
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCError
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCNotification
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCRequest
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCResponse
-import io.modelcontextprotocol.kotlin.sdk.PromptArgument
-import io.modelcontextprotocol.kotlin.sdk.PromptMessage
-import io.modelcontextprotocol.kotlin.sdk.ReadResourceResult
-import io.modelcontextprotocol.kotlin.sdk.RequestId
-import io.modelcontextprotocol.kotlin.sdk.Role
-import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
-import io.modelcontextprotocol.kotlin.sdk.TextContent
-import io.modelcontextprotocol.kotlin.sdk.TextResourceContents
-import io.modelcontextprotocol.kotlin.sdk.Tool
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
-import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
+import io.modelcontextprotocol.kotlin.sdk.types.McpJson
+import io.modelcontextprotocol.kotlin.sdk.types.PromptArgument
+import io.modelcontextprotocol.kotlin.sdk.types.PromptMessage
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError
+import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
+import io.modelcontextprotocol.kotlin.sdk.types.RequestId
+import io.modelcontextprotocol.kotlin.sdk.types.Role
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
+import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
+import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.Channel
@@ -211,7 +211,7 @@ class KotlinServerForTsClient {
         server.addTool(
             name = "greet",
             description = "A simple greeting tool",
-            inputSchema = Tool.Input(
+            inputSchema = ToolSchema(
                 properties = buildJsonObject {
                     put(
                         "name",
@@ -224,7 +224,7 @@ class KotlinServerForTsClient {
                 required = listOf("name"),
             ),
         ) { request ->
-            val name = (request.arguments["name"] as? JsonPrimitive)?.content ?: "World"
+            val name = (request.params.arguments?.get("name") as? JsonPrimitive)?.content ?: "World"
             CallToolResult(
                 content = listOf(TextContent("Hello, $name!")),
                 structuredContent = buildJsonObject {
@@ -236,7 +236,7 @@ class KotlinServerForTsClient {
         server.addTool(
             name = "multi-greet",
             description = "A greeting tool that sends multiple notifications",
-            inputSchema = Tool.Input(
+            inputSchema = ToolSchema(
                 properties = buildJsonObject {
                     put(
                         "name",
@@ -249,7 +249,7 @@ class KotlinServerForTsClient {
                 required = listOf("name"),
             ),
         ) { request ->
-            val name = (request.arguments["name"] as? JsonPrimitive)?.content ?: "World"
+            val name = (request.params.arguments?.get("name") as? JsonPrimitive)?.content ?: "World"
 
             CallToolResult(
                 content = listOf(TextContent("Multiple greetings sent to $name!")),
@@ -272,15 +272,15 @@ class KotlinServerForTsClient {
             ),
         ) { request ->
             GetPromptResult(
-                "Greeting for ${request.name}",
                 messages = listOf(
                     PromptMessage(
-                        role = Role.user,
+                        role = Role.User,
                         content = TextContent(
-                            "Please greet ${request.arguments?.get("name") ?: "someone"} in a friendly manner.",
+                            "Please greet ${request.params.arguments?.get("name") ?: "someone"} in a friendly manner.",
                         ),
                     ),
                 ),
+                description = "Greeting for ${request.params.name}",
             )
         }
 
@@ -292,7 +292,7 @@ class KotlinServerForTsClient {
         ) { request ->
             ReadResourceResult(
                 contents = listOf(
-                    TextResourceContents("Hello, world!", request.uri, "text/plain"),
+                    TextResourceContents("Hello, world!", request.params.uri, "text/plain"),
                 ),
             )
         }
@@ -369,8 +369,11 @@ class HttpServerTransport(private val sessionId: String) : AbstractTransport() {
                                 JSONRPCResponse(
                                     id = message.id,
                                     error = JSONRPCError(
-                                        code = ErrorCode.Defined.RequestTimeout,
-                                        message = "Request timed out",
+                                        id = message.id,
+                                        error = RPCError(
+                                            code = RPCError.ErrorCode.REQUEST_TIMEOUT,
+                                            message = "Request timed out",
+                                        ),
                                     ),
                                 ),
                             ),
@@ -386,8 +389,11 @@ class HttpServerTransport(private val sessionId: String) : AbstractTransport() {
                                 JSONRPCResponse(
                                     id = message.id,
                                     error = JSONRPCError(
-                                        code = ErrorCode.Defined.ConnectionClosed,
-                                        message = "Request cancelled",
+                                        id = message.id,
+                                        error = RPCError(
+                                            code = RPCError.ErrorCode.CONNECTION_CLOSED,
+                                            message = "Request cancelled",
+                                        ),
                                     ),
                                 ),
                             ),
@@ -404,10 +410,13 @@ class HttpServerTransport(private val sessionId: String) : AbstractTransport() {
             if (!call.response.isCommitted) {
                 try {
                     val errorResponse = JSONRPCResponse(
-                        id = RequestId.NumberId(0),
+                        id = RequestId(0),
                         error = JSONRPCError(
-                            code = ErrorCode.Defined.InternalError,
-                            message = "Internal server error: ${e.message}",
+                            id = RequestId(0),
+                            error = RPCError(
+                                code = RPCError.ErrorCode.INTERNAL_ERROR,
+                                message = "Internal server error: ${e.message}",
+                            ),
                         ),
                     )
 

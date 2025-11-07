@@ -5,9 +5,10 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.sse.ServerSentEvent
-import io.modelcontextprotocol.kotlin.sdk.ClientCapabilities
-import io.modelcontextprotocol.kotlin.sdk.Implementation
-import io.modelcontextprotocol.kotlin.sdk.Tool
+import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.Tool
+import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
@@ -129,7 +130,7 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
             name = "get_weather",
             title = "Weather Information Provider",
             description = "Get current weather information for a location",
-            inputSchema = Tool.Input(
+            inputSchema = ToolSchema(
                 properties = buildJsonObject {
                     putJsonObject("location") {
                         put("type", "string")
@@ -138,7 +139,7 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
                 },
                 required = listOf("location"),
             ),
-            outputSchema = Tool.Output(
+            outputSchema = ToolSchema(
                 properties = buildJsonObject {
                     putJsonObject("temperature") {
                         put("type", "number")

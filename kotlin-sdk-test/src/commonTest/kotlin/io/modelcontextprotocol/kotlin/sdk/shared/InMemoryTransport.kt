@@ -1,6 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.shared
 
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 
 /**
  * In-memory transport for creating clients and servers that talk to each other within the same process.

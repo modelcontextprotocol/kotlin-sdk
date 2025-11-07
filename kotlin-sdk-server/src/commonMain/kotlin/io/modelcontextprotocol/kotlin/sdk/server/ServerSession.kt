@@ -1,33 +1,34 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.modelcontextprotocol.kotlin.sdk.ClientCapabilities
-import io.modelcontextprotocol.kotlin.sdk.CreateElicitationRequest
-import io.modelcontextprotocol.kotlin.sdk.CreateElicitationRequest.RequestedSchema
-import io.modelcontextprotocol.kotlin.sdk.CreateElicitationResult
-import io.modelcontextprotocol.kotlin.sdk.CreateMessageRequest
-import io.modelcontextprotocol.kotlin.sdk.CreateMessageResult
-import io.modelcontextprotocol.kotlin.sdk.EmptyJsonObject
-import io.modelcontextprotocol.kotlin.sdk.EmptyRequestResult
-import io.modelcontextprotocol.kotlin.sdk.Implementation
-import io.modelcontextprotocol.kotlin.sdk.InitializeRequest
-import io.modelcontextprotocol.kotlin.sdk.InitializeResult
-import io.modelcontextprotocol.kotlin.sdk.InitializedNotification
-import io.modelcontextprotocol.kotlin.sdk.LATEST_PROTOCOL_VERSION
-import io.modelcontextprotocol.kotlin.sdk.ListRootsRequest
-import io.modelcontextprotocol.kotlin.sdk.ListRootsResult
-import io.modelcontextprotocol.kotlin.sdk.LoggingLevel
-import io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification
-import io.modelcontextprotocol.kotlin.sdk.Method
-import io.modelcontextprotocol.kotlin.sdk.Method.Defined
-import io.modelcontextprotocol.kotlin.sdk.PingRequest
-import io.modelcontextprotocol.kotlin.sdk.PromptListChangedNotification
-import io.modelcontextprotocol.kotlin.sdk.ResourceListChangedNotification
-import io.modelcontextprotocol.kotlin.sdk.ResourceUpdatedNotification
-import io.modelcontextprotocol.kotlin.sdk.SUPPORTED_PROTOCOL_VERSIONS
-import io.modelcontextprotocol.kotlin.sdk.ToolListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.shared.Protocol
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
+import io.modelcontextprotocol.kotlin.sdk.types.BaseRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
+import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageResult
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitResult
+import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
+import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
+import io.modelcontextprotocol.kotlin.sdk.types.InitializeResult
+import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
+import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.ListRootsRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ListRootsResult
+import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification
+import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.Method.Defined
+import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
+import io.modelcontextprotocol.kotlin.sdk.types.PromptListChangedNotification
+import io.modelcontextprotocol.kotlin.sdk.types.RequestMeta
+import io.modelcontextprotocol.kotlin.sdk.types.ResourceListChangedNotification
+import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotification
+import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
+import io.modelcontextprotocol.kotlin.sdk.types.ToolListChangedNotification
 import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CompletableDeferred
@@ -125,7 +126,7 @@ public open class ServerSession(
      * @return The result of the ping request.
      * @throws IllegalStateException If for some reason the method is not supported or the connection is closed.
      */
-    public suspend fun ping(): EmptyRequestResult = request(PingRequest())
+    public suspend fun ping(): EmptyResult = request(PingRequest())
 
     /**
      * Creates a message using the server's sampling capability.
@@ -160,20 +161,20 @@ public open class ServerSession(
         options: RequestOptions? = null,
     ): ListRootsResult {
         logger.debug { "Listing roots with params: $params" }
-        return request(ListRootsRequest(params), options)
+        return request(ListRootsRequest(BaseRequestParams(RequestMeta(params))), options)
     }
 
     public suspend fun createElicitation(
         message: String,
-        requestedSchema: RequestedSchema,
+        requestedSchema: ElicitRequestParams.RequestedSchema,
         options: RequestOptions? = null,
-    ): CreateElicitationResult {
+    ): ElicitResult {
         logger.debug {
             "Creating elicitation with message length=${message.length}, " +
                 "schema properties count=${requestedSchema.properties.size}"
         }
         logger.trace { "Full elicitation message: $message, requestedSchema: $requestedSchema" }
-        return request(CreateElicitationRequest(message, requestedSchema), options)
+        return request(ElicitRequest(ElicitRequestParams(message, requestedSchema)), options)
     }
 
     /**
@@ -336,7 +337,7 @@ public open class ServerSession(
         logger.trace { "Asserting request handler capability for method: ${method.value}" }
         when (method) {
             Defined.SamplingCreateMessage -> {
-                if (serverCapabilities.sampling == null) {
+                if (serverCapabilities.experimental?.get("sampling") == null) {
                     logger.error { "Server capability assertion failed: sampling not supported" }
                     throw IllegalStateException("Server does not support sampling (required for $method)")
                 }
@@ -388,10 +389,10 @@ public open class ServerSession(
 
     private suspend fun handleInitialize(request: InitializeRequest): InitializeResult {
         logger.debug { "Handling initialization request from client" }
-        clientCapabilities = request.capabilities
-        clientVersion = request.clientInfo
+        clientCapabilities = request.params.capabilities
+        clientVersion = request.params.clientInfo
 
-        val requestedVersion = request.protocolVersion
+        val requestedVersion = request.params.protocolVersion
         val protocolVersion = if (SUPPORTED_PROTOCOL_VERSIONS.contains(requestedVersion)) {
             requestedVersion
         } else {
@@ -418,7 +419,7 @@ public open class ServerSession(
     private fun isMessageIgnored(level: LoggingLevel): Boolean {
         val current = currentLoggingLevel.value ?: return false // If no level is set, don't filter
 
-        return level.ordinal < current.ordinal
+        return level < current
     }
 
     /**

@@ -1,5 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
@@ -100,8 +102,11 @@ public data class SamplingMessage(val role: Role, val content: MediaContent)
  * @property params The parameters for the sampling request, including messages and model preferences.
  */
 @Serializable
-@SerialName("sampling/createMessage")
-public data class CreateMessageRequest(override val params: CreateMessageRequestParams) : ServerRequest
+public data class CreateMessageRequest(override val params: CreateMessageRequestParams) : ServerRequest {
+    @OptIn(ExperimentalSerializationApi::class)
+    @EncodeDefault
+    override val method: Method = Method.Defined.SamplingCreateMessage
+}
 
 /**
  * Parameters for a sampling/createMessage request.

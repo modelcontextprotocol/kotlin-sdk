@@ -1,8 +1,9 @@
+@file:OptIn(ExperimentalSerializationApi::class)
+
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 
@@ -116,8 +117,10 @@ public data class ToolAnnotations(
  * @property params The parameters specifying which tool to call and what arguments to pass.
  */
 @Serializable
-@SerialName("tools/call")
-public data class CallToolRequest(override val params: CallToolRequestParams) : ClientRequest
+public data class CallToolRequest(override val params: CallToolRequestParams) : ClientRequest {
+    @EncodeDefault
+    override val method: Method = Method.Defined.ToolsCall
+}
 
 /**
  * Parameters for a tools/call request.
@@ -177,10 +180,12 @@ public data class CallToolResult(
  * @property params Optional pagination parameters to control which page of results to return.
  */
 @Serializable
-@SerialName("tools/list")
 public data class ListToolsRequest(override val params: PaginatedRequestParams? = null) :
     ClientRequest,
-    PaginatedRequest
+    PaginatedRequest {
+    @EncodeDefault
+    override val method: Method = Method.Defined.ToolsList
+}
 
 /**
  * The server's response to a [ListToolsRequest] from the client.

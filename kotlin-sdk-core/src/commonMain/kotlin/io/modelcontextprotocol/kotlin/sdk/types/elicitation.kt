@@ -16,8 +16,11 @@ import kotlinx.serialization.json.JsonObject
  * @property params The elicitation parameters including the message and requested schema.
  */
 @Serializable
-@SerialName("elicitation/create")
-public data class ElicitRequest(override val params: ElicitRequestParams) : ServerRequest
+public data class ElicitRequest(override val params: ElicitRequestParams) : ServerRequest {
+    @OptIn(ExperimentalSerializationApi::class)
+    @EncodeDefault
+    public override val method: Method = Method.Defined.ElicitationCreate
+}
 
 /**
  * Parameters for an elicitation/create request.
@@ -50,10 +53,7 @@ public data class ElicitRequestParams(
      * @property type Always "object" for elicitation schemas.
      */
     @Serializable
-    public data class RequestedSchema(
-        val properties: JsonObject, // TODO: PrimitiveSchema???
-        val required: List<String>? = null,
-    ) {
+    public data class RequestedSchema(val properties: JsonObject, val required: List<String>? = null) {
         @OptIn(ExperimentalSerializationApi::class)
         @EncodeDefault
         val type: String = "object"

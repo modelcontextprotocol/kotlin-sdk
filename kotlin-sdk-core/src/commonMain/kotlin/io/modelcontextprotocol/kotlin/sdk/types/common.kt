@@ -1,11 +1,8 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonClassDiscriminator
 import kotlinx.serialization.json.JsonObject
-import kotlin.jvm.JvmInline
 
 // ============================================================================
 // Protocol Version Constants
@@ -25,19 +22,6 @@ public val SUPPORTED_PROTOCOL_VERSIONS: Array<String> = arrayOf(
 /**
  * Represents an entity that includes additional metadata in its responses.
  */
-// TODO: реализовать meta
-// The _meta property/parameter is reserved by MCP to allow clients and servers to attach additional metadata to their interactions.
-// Certain key names are reserved by MCP for protocol-level metadata, as specified below; implementations MUST NOT make assumptions about values at these keys.
-// Additionally, definitions in the schema may reserve particular names for purpose-specific metadata, as declared in those definitions.
-// Key name format: valid _meta key names have two segments: an optional prefix, and a name.
-// Prefix:
-// If specified, MUST be a series of labels separated by dots (.), followed by a slash (/).
-// Labels MUST start with a letter and end with a letter or digit; interior characters can be letters, digits, or hyphens (-).
-// Any prefix beginning with zero or more valid labels, followed by modelcontextprotocol or mcp, followed by any valid label, is reserved for MCP use.
-// For example: modelcontextprotocol.io/, mcp.dev/, api.modelcontextprotocol.org/, and tools.mcp.com/ are all reserved.
-// Name:
-// Unless empty, MUST begin and end with an alphanumeric character ([a-z0-9A-Z]).
-// MAY contain hyphens (-), underscores (_), dots (.), and alphanumerics in between.
 @Serializable
 public sealed interface WithMeta {
     @SerialName("_meta")
@@ -51,16 +35,11 @@ public sealed interface WithMeta {
 /**
  * A progress token, used to associate progress notifications with the original request.
  */
-@Serializable // TODO custom serializer
-public sealed interface ProgressToken {
-    @JvmInline
-    @Serializable
-    public value class ProgressTokenString(public val value: String) : ProgressToken
+public typealias ProgressToken = RequestId
 
-    @JvmInline
-    @Serializable
-    public value class ProgressTokenInt(public val value: Long) : ProgressToken
-}
+public fun ProgressToken(value: String): ProgressToken = RequestId(value)
+
+public fun ProgressToken(value: Long): ProgressToken = RequestId(value)
 
 // ============================================================================
 // Visual Elements
@@ -139,10 +118,10 @@ public enum class Role {
  * References are used to point to other entities (prompts, resources, etc.)
  * without including their full definitions.
  */
-@OptIn(ExperimentalSerializationApi::class)
 @Serializable
-@JsonClassDiscriminator("type")
-public sealed interface Reference
+public sealed interface Reference {
+    public val type: String
+}
 
 // ============================================================================
 // Annotations and Metadata

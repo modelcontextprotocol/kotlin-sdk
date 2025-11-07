@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
-import kotlinx.serialization.SerialName
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 
@@ -10,8 +11,11 @@ import kotlinx.serialization.json.JsonObject
  * @property params The request parameters containing the argument to complete and its context.
  */
 @Serializable
-@SerialName("completion/complete")
-public data class CompleteRequest(override val params: CompleteRequestParams) : ClientRequest
+public data class CompleteRequest(override val params: CompleteRequestParams) : ClientRequest {
+    @OptIn(ExperimentalSerializationApi::class)
+    @EncodeDefault
+    public override val method: Method = Method.Defined.CompletionComplete
+}
 
 /**
  * Parameters for the completion request.

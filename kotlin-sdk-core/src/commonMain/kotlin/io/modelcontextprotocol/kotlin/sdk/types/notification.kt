@@ -1,6 +1,9 @@
+@file:OptIn(ExperimentalSerializationApi::class)
+
 package io.modelcontextprotocol.kotlin.sdk.types
 
-import kotlinx.serialization.SerialName
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -8,16 +11,16 @@ import kotlinx.serialization.json.JsonObject
 /**
  * Represents a notification in the protocol.
  */
-// TODO: custom serializer
 @Serializable
 public sealed interface Notification {
+    public val method: Method
     public val params: NotificationParams?
 }
 
 /**
  * Represents a notification sent by the client.
  */
-@Serializable // TODO: custom serializer?
+@Serializable
 public sealed interface ClientNotification : Notification
 
 /**
@@ -72,10 +75,12 @@ public class Progress(
  * @property params Details of the cancellation request.
  */
 @Serializable
-@SerialName("notifications/cancelled")
 public data class CancelledNotification(override val params: CancelledNotificationParams) :
     ClientNotification,
-    ServerNotification
+    ServerNotification {
+    @EncodeDefault
+    override val method: Method = Method.Defined.NotificationsCancelled
+}
 
 /**
  * Parameters for a notifications/cancelled notification.
@@ -106,8 +111,10 @@ public data class CancelledNotificationParams(
  * @property params Optional notification parameters containing metadata.
  */
 @Serializable
-@SerialName("notifications/initialized")
-public data class InitializedNotification(override val params: BaseNotificationParams? = null) : ClientNotification
+public data class InitializedNotification(override val params: BaseNotificationParams? = null) : ClientNotification {
+    @EncodeDefault
+    override val method: Method = Method.Defined.NotificationsInitialized
+}
 
 // ============================================================================
 // Logging Message Notification
@@ -122,8 +129,11 @@ public data class InitializedNotification(override val params: BaseNotificationP
  * @property params The log message parameters including level and data.
  */
 @Serializable
-@SerialName("notifications/message")
-public data class LoggingMessageNotification(override val params: LoggingMessageNotificationParams) : ServerNotification
+public data class LoggingMessageNotification(override val params: LoggingMessageNotificationParams) :
+    ServerNotification {
+    @EncodeDefault
+    override val method: Method = Method.Defined.NotificationsMessage
+}
 
 /**
  * Parameters for a notifications/message notification.
@@ -155,10 +165,12 @@ public data class LoggingMessageNotificationParams(
  * @property params The progress update parameters.
  */
 @Serializable
-@SerialName("notifications/progress")
 public data class ProgressNotification(override val params: ProgressNotificationParams) :
     ClientNotification,
-    ServerNotification
+    ServerNotification {
+    @EncodeDefault
+    override val method: Method = Method.Defined.NotificationsProgress
+}
 
 /**
  * Parameters for a notifications/progress notification.
@@ -193,9 +205,11 @@ public data class ProgressNotificationParams(
  * @property params Optional notification parameters containing metadata.
  */
 @Serializable
-@SerialName("notifications/prompts/list_changed")
 public data class PromptListChangedNotification(override val params: BaseNotificationParams? = null) :
-    ServerNotification
+    ServerNotification {
+    @EncodeDefault
+    override val method: Method = Method.Defined.NotificationsPromptsListChanged
+}
 
 // ============================================================================
 // Resources List Changed Notification
@@ -210,9 +224,11 @@ public data class PromptListChangedNotification(override val params: BaseNotific
  * @property params Optional notification parameters containing metadata.
  */
 @Serializable
-@SerialName("notifications/resources/list_changed")
 public data class ResourceListChangedNotification(override val params: BaseNotificationParams? = null) :
-    ServerNotification
+    ServerNotification {
+    @EncodeDefault
+    override val method: Method = Method.Defined.NotificationsResourcesListChanged
+}
 
 // ============================================================================
 // Resource Updated Notification
@@ -227,9 +243,11 @@ public data class ResourceListChangedNotification(override val params: BaseNotif
  * @property params Parameters identifying which resource was updated.
  */
 @Serializable
-@SerialName("notifications/resources/updated")
 public data class ResourceUpdatedNotification(override val params: ResourceUpdatedNotificationParams) :
-    ServerNotification
+    ServerNotification {
+    @EncodeDefault
+    override val method: Method = Method.Defined.NotificationsResourcesUpdated
+}
 
 /**
  * Parameters for a notifications/resources/updated notification.
@@ -256,8 +274,10 @@ public data class ResourceUpdatedNotificationParams(val uri: String, override va
  * @property params Optional notification parameters containing metadata.
  */
 @Serializable
-@SerialName("notifications/roots/list_changed")
-public data class RootsListChangedNotification(override val params: NotificationParams? = null) : ClientNotification
+public data class RootsListChangedNotification(override val params: NotificationParams? = null) : ClientNotification {
+    @EncodeDefault
+    override val method: Method = Method.Defined.NotificationsRootsListChanged
+}
 
 // ============================================================================
 // Tools List Changed Notification
@@ -272,5 +292,7 @@ public data class RootsListChangedNotification(override val params: Notification
  * @property params Optional notification parameters containing metadata.
  */
 @Serializable
-@SerialName("notifications/tools/list_changed")
-public data class ToolListChangedNotification(override val params: NotificationParams? = null) : ServerNotification
+public data class ToolListChangedNotification(override val params: NotificationParams? = null) : ServerNotification {
+    @EncodeDefault
+    override val method: Method = Method.Defined.NotificationsToolsListChanged
+}

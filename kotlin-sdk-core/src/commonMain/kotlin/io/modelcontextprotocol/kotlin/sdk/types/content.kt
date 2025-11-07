@@ -2,18 +2,17 @@
 
 package io.modelcontextprotocol.kotlin.sdk.types
 
+import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonClassDiscriminator
 import kotlinx.serialization.json.JsonObject
 
 @Serializable
-@JsonClassDiscriminator("type")
-public sealed interface ContentBlock : WithMeta
+public sealed interface ContentBlock : WithMeta {
+    public val type: String
+}
 
 @Serializable
-@JsonClassDiscriminator("type")
 public sealed interface MediaContent : ContentBlock
 
 /**
@@ -25,12 +24,14 @@ public sealed interface MediaContent : ContentBlock
  * to attach additional metadata to their interactions.
  */
 @Serializable
-@SerialName("text")
 public data class TextContent(
     val text: String,
     val annotations: Annotations? = null,
     override val meta: JsonObject? = null,
-) : MediaContent
+) : MediaContent {
+    @EncodeDefault
+    public override val type: String = "text"
+}
 
 /**
  * An image provided to or from an LLM.
@@ -42,13 +43,15 @@ public data class TextContent(
  * to attach additional metadata to their interactions.
  */
 @Serializable
-@SerialName("image")
 public data class ImageContent(
     val data: String,
     val mimeType: String,
     val annotations: Annotations? = null,
     override val meta: JsonObject? = null,
-) : MediaContent
+) : MediaContent {
+    @EncodeDefault
+    public override val type: String = "image"
+}
 
 /**
  * Audio provided to or from an LLM.
@@ -60,13 +63,15 @@ public data class ImageContent(
  * to attach additional metadata to their interactions.
  */
 @Serializable
-@SerialName("audio")
 public data class AudioContent(
     val data: String,
     val mimeType: String,
     val annotations: Annotations? = null,
     override val meta: JsonObject? = null,
-) : MediaContent
+) : MediaContent {
+    @EncodeDefault
+    public override val type: String = "audio"
+}
 
 /**
  * A resource that the server is capable of reading, included in a prompt or tool call result.
@@ -95,7 +100,6 @@ public data class AudioContent(
  * to attach additional metadata to their interactions.
  */
 @Serializable
-@SerialName("resource_link")
 public data class ResourceLink(
     val name: String,
     val uri: String,
@@ -106,7 +110,10 @@ public data class ResourceLink(
     val annotations: Annotations? = null,
     override val meta: JsonObject? = null,
 ) : ContentBlock,
-    ResourceLike
+    ResourceLike {
+    @EncodeDefault
+    public override val type: String = "resource_link"
+}
 
 /**
  * The contents of a resource, embedded into a prompt or tool call result.
@@ -119,9 +126,11 @@ public data class ResourceLink(
  * to attach additional metadata to their interactions.
  */
 @Serializable
-@SerialName("resource")
 public data class EmbeddedResource(
     val resource: ResourceContents,
     val annotations: Annotations? = null,
     override val meta: JsonObject? = null,
-) : ContentBlock
+) : ContentBlock {
+    @EncodeDefault
+    public override val type: String = "resource"
+}

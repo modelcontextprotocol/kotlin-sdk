@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
-import kotlinx.serialization.SerialName
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 
@@ -15,8 +16,11 @@ import kotlinx.serialization.json.JsonObject
  * @property params The initialization parameters including protocol version and client capabilities.
  */
 @Serializable
-@SerialName("initialize")
-public data class InitializeRequest(override val params: InitializeRequestParams) : ClientRequest
+public data class InitializeRequest(override val params: InitializeRequestParams) : ClientRequest {
+    @OptIn(ExperimentalSerializationApi::class)
+    @EncodeDefault
+    override val method: Method = Method.Defined.Initialize
+}
 
 /**
  * Parameters for an initialize request.

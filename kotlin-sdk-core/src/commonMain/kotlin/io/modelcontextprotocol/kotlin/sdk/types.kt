@@ -21,7 +21,7 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION` instead",
+    message = "Use `LATEST_PROTOCOL_VERSION` instead",
     replaceWith = ReplaceWith(
         "LATEST_PROTOCOL_VERSION",
         "io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION",
@@ -31,7 +31,7 @@ import kotlin.time.Instant
 public const val LATEST_PROTOCOL_VERSION: String = "2025-03-26"
 
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS` instead",
+    message = "Use `SUPPORTED_PROTOCOL_VERSIONS` instead",
     replaceWith = ReplaceWith(
         "SUPPORTED_PROTOCOL_VERSIONS",
         "io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS",
@@ -44,7 +44,7 @@ public val SUPPORTED_PROTOCOL_VERSIONS: Array<String> = arrayOf(
 )
 
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.JSONRPC_VERSION` instead",
+    message = "Use `JSONRPC_VERSION` instead",
     replaceWith = ReplaceWith("JSONRPC_VERSION", "io.modelcontextprotocol.kotlin.sdk.types.JSONRPC_VERSION"),
     level = DeprecationLevel.WARNING,
 )
@@ -52,7 +52,7 @@ public const val JSONRPC_VERSION: String = "2.0"
 
 @OptIn(ExperimentalAtomicApi::class)
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.REQUEST_MESSAGE_ID` instead",
+    message = "Use `REQUEST_MESSAGE_ID` instead",
     replaceWith = ReplaceWith("REQUEST_MESSAGE_ID", "io.modelcontextprotocol.kotlin.sdk.types.REQUEST_MESSAGE_ID"),
     level = DeprecationLevel.WARNING,
 )
@@ -63,7 +63,7 @@ private val REQUEST_MESSAGE_ID: AtomicLong = AtomicLong(0L)
  * Stores message ID.
  */
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ProgressToken` instead",
+    message = "Use `ProgressToken` instead",
     replaceWith = ReplaceWith("ProgressToken", "io.modelcontextprotocol.kotlin.sdk.types.ProgressToken"),
     level = DeprecationLevel.WARNING,
 )
@@ -84,7 +84,7 @@ public typealias Cursor = String
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.WithMeta` instead",
+    message = "Use `WithMeta` instead",
     replaceWith = ReplaceWith("WithMeta", "io.modelcontextprotocol.kotlin.sdk.types.WithMeta"),
     level = DeprecationLevel.WARNING,
 )
@@ -108,7 +108,7 @@ public sealed interface WithMeta {
  */
 @Serializable
 @Deprecated(
-    message = "This class will be removed. Use `io.modelcontextprotocol.kotlin.sdk.types.WithMeta` instead",
+    message = "This class will be removed. Use `WithMeta` instead",
     replaceWith = ReplaceWith("WithMeta", "io.modelcontextprotocol.kotlin.sdk.types.WithMeta"),
     level = DeprecationLevel.WARNING,
 )
@@ -119,7 +119,7 @@ public class CustomMeta(override val _meta: JsonObject = EmptyJsonObject) : With
  */
 @Serializable(with = RequestMethodSerializer::class)
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.Method` instead",
+    message = "Use `Method` instead",
     replaceWith = ReplaceWith("Method", "io.modelcontextprotocol.kotlin.sdk.types.Method"),
     level = DeprecationLevel.WARNING,
 )
@@ -170,7 +170,7 @@ public sealed interface Method {
  */
 @Serializable(with = RequestPolymorphicSerializer::class)
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.Request` instead",
+    message = "Use `Request` instead",
     replaceWith = ReplaceWith("Request", "io.modelcontextprotocol.kotlin.sdk.types.Request"),
     level = DeprecationLevel.WARNING,
 )
@@ -184,7 +184,7 @@ public sealed interface Request {
  * @return The JSON-RPC request representation.
  */
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.toJSON` instead",
+    message = "Use `toJSON` instead",
     replaceWith = ReplaceWith("toJSON", "io.modelcontextprotocol.kotlin.sdk.types.toJSON"),
     level = DeprecationLevel.WARNING,
 )
@@ -204,7 +204,7 @@ public fun Request.toJSON(): JSONRPCRequest {
  * @return The decoded [Request] or null
  */
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.fromJSON` instead",
+    message = "Use `fromJSON` instead",
     replaceWith = ReplaceWith("fromJSON", "io.modelcontextprotocol.kotlin.sdk.types.fromJSON"),
     level = DeprecationLevel.WARNING,
 )
@@ -221,7 +221,7 @@ internal fun JSONRPCRequest.fromJSON(): Request {
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.CustomRequest` instead",
+    message = "Use `CustomRequest` instead",
     replaceWith = ReplaceWith("CustomRequest", "io.modelcontextprotocol.kotlin.sdk.types.CustomRequest"),
     level = DeprecationLevel.WARNING,
 )
@@ -232,7 +232,7 @@ public open class CustomRequest(override val method: Method) : Request
  */
 @Serializable(with = NotificationPolymorphicSerializer::class)
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.Notification` instead",
+    message = "Use `Notification` instead",
     replaceWith = ReplaceWith("Notification", "io.modelcontextprotocol.kotlin.sdk.types.Notification"),
     level = DeprecationLevel.WARNING,
 )
@@ -247,7 +247,7 @@ public sealed interface Notification {
  * @return The JSON-RPC notification representation.
  */
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.toJSON` instead",
+    message = "Use `toJSON` instead",
     replaceWith = ReplaceWith("toJSON", "io.modelcontextprotocol.kotlin.sdk.types.toJSON"),
     level = DeprecationLevel.WARNING,
 )
@@ -262,7 +262,7 @@ public fun Notification.toJSON(): JSONRPCNotification = JSONRPCNotification(
  * @return The decoded [Notification].
  */
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.fromJSON` instead",
+    message = "Use `fromJSON` instead",
     replaceWith = ReplaceWith("toJSON", "io.modelcontextprotocol.kotlin.sdk.types.fromJSON"),
     level = DeprecationLevel.WARNING,
 )
@@ -279,7 +279,7 @@ internal fun JSONRPCNotification.fromJSON(): Notification {
  */
 @Serializable(with = RequestResultPolymorphicSerializer::class)
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.RequestResult` instead",
+    message = "Use `RequestResult` instead",
     replaceWith = ReplaceWith("RequestResult", "io.modelcontextprotocol.kotlin.sdk.types.RequestResult"),
     level = DeprecationLevel.WARNING,
 )
@@ -305,7 +305,7 @@ public data class EmptyRequestResult(override val _meta: JsonObject = EmptyJsonO
  */
 @Serializable(with = RequestIdSerializer::class)
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.RequestId` instead",
+    message = "Use `RequestId` instead",
     replaceWith = ReplaceWith("RequestId", "io.modelcontextprotocol.kotlin.sdk.types.RequestId"),
     level = DeprecationLevel.WARNING,
 )
@@ -322,7 +322,7 @@ public sealed interface RequestId {
  */
 @Serializable(with = JSONRPCMessagePolymorphicSerializer::class)
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage` instead",
+    message = "Use `JSONRPCMessage` instead",
     replaceWith = ReplaceWith("JSONRPCMessage", "io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage"),
     level = DeprecationLevel.WARNING,
 )
@@ -334,7 +334,7 @@ public sealed interface JSONRPCMessage
 @OptIn(ExperimentalAtomicApi::class)
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest` instead",
+    message = "Use `JSONRPCRequest` instead",
     replaceWith = ReplaceWith("JSONRPCRequest", "io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest"),
     level = DeprecationLevel.WARNING,
 )
@@ -350,7 +350,7 @@ public data class JSONRPCRequest(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification` instead",
+    message = "Use `JSONRPCNotification` instead",
     replaceWith = ReplaceWith("JSONRPCNotification", "io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification"),
     level = DeprecationLevel.WARNING,
 )
@@ -365,7 +365,7 @@ public data class JSONRPCNotification(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse` instead",
+    message = "Use `JSONRPCResponse` instead",
     replaceWith = ReplaceWith("JSONRPCResponse", "io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse"),
     level = DeprecationLevel.WARNING,
 )
@@ -419,7 +419,7 @@ public sealed interface ErrorCode {
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError` instead",
+    message = "Use `JSONRPCError` instead",
     replaceWith = ReplaceWith("JSONRPCError", "io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError"),
     level = DeprecationLevel.WARNING,
 )
@@ -431,7 +431,7 @@ public data class JSONRPCError(val code: ErrorCode, val message: String, val dat
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.NotificationParams` instead",
+    message = "Use `NotificationParams` instead",
     replaceWith = ReplaceWith("NotificationParams", "io.modelcontextprotocol.kotlin.sdk.types.NotificationParams"),
     level = DeprecationLevel.WARNING,
 )
@@ -449,7 +449,7 @@ public sealed interface NotificationParams : WithMeta
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.CancelledNotification` instead",
+    message = "Use `CancelledNotification` instead",
     replaceWith = ReplaceWith(
         "CancelledNotification",
         "io.modelcontextprotocol.kotlin.sdk.types.CancelledNotification",
@@ -483,7 +483,7 @@ public data class CancelledNotification(override val params: Params) :
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.Implementation` instead",
+    message = "Use `Implementation` instead",
     replaceWith = ReplaceWith("Implementation", "io.modelcontextprotocol.kotlin.sdk.types.Implementation"),
     level = DeprecationLevel.WARNING,
 )
@@ -496,7 +496,7 @@ public data class Implementation(val name: String, val version: String)
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities` instead",
+    message = "Use `ClientCapabilities` instead",
     replaceWith = ReplaceWith("ClientCapabilities", "io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities"),
     level = DeprecationLevel.WARNING,
 )
@@ -532,7 +532,7 @@ public data class ClientCapabilities(
  */
 // @Serializable(with = ClientRequestPolymorphicSerializer::class)
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ClientRequest` instead",
+    message = "Use `ClientRequest` instead",
     replaceWith = ReplaceWith("ClientRequest", "io.modelcontextprotocol.kotlin.sdk.types.ClientRequest"),
     level = DeprecationLevel.WARNING,
 )
@@ -543,7 +543,7 @@ public interface ClientRequest : Request
  */
 @Serializable(with = ClientNotificationPolymorphicSerializer::class)
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ClientNotification` instead",
+    message = "Use `ClientNotification` instead",
     replaceWith = ReplaceWith("ClientNotification", "io.modelcontextprotocol.kotlin.sdk.types.ClientNotification"),
     level = DeprecationLevel.WARNING,
 )
@@ -554,7 +554,7 @@ public sealed interface ClientNotification : Notification
  */
 @Serializable(with = ClientResultPolymorphicSerializer::class)
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ClientResult` instead",
+    message = "Use `ClientResult` instead",
     replaceWith = ReplaceWith("ClientResult", "io.modelcontextprotocol.kotlin.sdk.types.ClientResult"),
     level = DeprecationLevel.WARNING,
 )
@@ -565,7 +565,7 @@ public sealed interface ClientResult : RequestResult
  */
 // @Serializable(with = ServerRequestPolymorphicSerializer::class)
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ServerRequest` instead",
+    message = "Use `ServerRequest` instead",
     replaceWith = ReplaceWith("ServerRequest", "io.modelcontextprotocol.kotlin.sdk.types.ServerRequest"),
     level = DeprecationLevel.WARNING,
 )
@@ -576,7 +576,7 @@ public sealed interface ServerRequest : Request
  */
 @Serializable(with = ServerNotificationPolymorphicSerializer::class)
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ServerNotification` instead",
+    message = "Use `ServerNotification` instead",
     replaceWith = ReplaceWith("ServerNotification", "io.modelcontextprotocol.kotlin.sdk.types.ServerNotification"),
     level = DeprecationLevel.WARNING,
 )
@@ -587,7 +587,7 @@ public sealed interface ServerNotification : Notification
  */
 @Serializable(with = ServerResultPolymorphicSerializer::class)
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ServerResult` instead",
+    message = "Use `ServerResult` instead",
     replaceWith = ReplaceWith("ServerResult", "io.modelcontextprotocol.kotlin.sdk.types.ServerResult"),
     level = DeprecationLevel.WARNING,
 )
@@ -616,7 +616,7 @@ public data class UnknownMethodRequestOrNotification(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest` instead",
+    message = "Use `InitializeRequest` instead",
     replaceWith = ReplaceWith("InitializeRequest", "io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest"),
     level = DeprecationLevel.WARNING,
 )
@@ -642,7 +642,7 @@ public data class InitializeRequest(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities` instead",
+    message = "Use `ServerCapabilities` instead",
     replaceWith = ReplaceWith("ServerCapabilities", "io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities"),
     level = DeprecationLevel.WARNING,
 )
@@ -704,7 +704,7 @@ public data class ServerCapabilities(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.InitializeResult` instead",
+    message = "Use `InitializeResult` instead",
     replaceWith = ReplaceWith("InitializeResult", "io.modelcontextprotocol.kotlin.sdk.types.InitializeResult"),
     level = DeprecationLevel.WARNING,
 )
@@ -727,7 +727,7 @@ public data class InitializeResult(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification` instead",
+    message = "Use `InitializedNotification` instead",
     replaceWith = ReplaceWith(
         "InitializedNotification",
         "io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification",
@@ -748,7 +748,7 @@ public data class InitializedNotification(override val params: Params = Params()
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.PingRequest` instead",
+    message = "Use `PingRequest` instead",
     replaceWith = ReplaceWith("PingRequest", "io.modelcontextprotocol.kotlin.sdk.types.PingRequest"),
     level = DeprecationLevel.WARNING,
 )
@@ -792,7 +792,7 @@ public sealed interface ProgressBase {
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.Progress` instead",
+    message = "Use `Progress` instead",
     replaceWith = ReplaceWith("Progress", "io.modelcontextprotocol.kotlin.sdk.types.Progress"),
     level = DeprecationLevel.WARNING,
 )
@@ -818,7 +818,7 @@ public open class Progress(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ProgressNotification` instead",
+    message = "Use `ProgressNotification` instead",
     replaceWith = ReplaceWith("ProgressNotification", "io.modelcontextprotocol.kotlin.sdk.types.ProgressNotification"),
     level = DeprecationLevel.WARNING,
 )
@@ -858,7 +858,7 @@ public data class ProgressNotification(override val params: Params) :
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.PaginatedRequest` instead",
+    message = "Use `PaginatedRequest` instead",
     replaceWith = ReplaceWith("PaginatedRequest", "io.modelcontextprotocol.kotlin.sdk.types.PaginatedRequest"),
     level = DeprecationLevel.WARNING,
 )
@@ -877,7 +877,7 @@ public sealed interface PaginatedRequest :
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.PaginatedResult` instead",
+    message = "Use `PaginatedResult` instead",
     replaceWith = ReplaceWith("PaginatedResult", "io.modelcontextprotocol.kotlin.sdk.types.PaginatedResult"),
     level = DeprecationLevel.WARNING,
 )
@@ -895,7 +895,7 @@ public sealed interface PaginatedResult : RequestResult {
  */
 @Serializable(with = ResourceContentsPolymorphicSerializer::class)
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ResourceContents` instead",
+    message = "Use `ResourceContents` instead",
     replaceWith = ReplaceWith("ResourceContents", "io.modelcontextprotocol.kotlin.sdk.types.ResourceContents"),
     level = DeprecationLevel.WARNING,
 )
@@ -918,7 +918,7 @@ public sealed interface ResourceContents {
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents` instead",
+    message = "Use `TextResourceContents` instead",
     replaceWith = ReplaceWith("TextResourceContents", "io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents"),
     level = DeprecationLevel.WARNING,
 )
@@ -932,7 +932,7 @@ public data class TextResourceContents(val text: String, override val uri: Strin
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.BlobResourceContents` instead",
+    message = "Use `BlobResourceContents` instead",
     replaceWith = ReplaceWith("BlobResourceContents", "io.modelcontextprotocol.kotlin.sdk.types.BlobResourceContents"),
     level = DeprecationLevel.WARNING,
 )
@@ -944,7 +944,7 @@ public data class BlobResourceContents(val blob: String, override val uri: Strin
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.UnknownResourceContents` instead",
+    message = "Use `UnknownResourceContents` instead",
     replaceWith = ReplaceWith(
         "UnknownResourceContents",
         "io.modelcontextprotocol.kotlin.sdk.types.UnknownResourceContents",
@@ -958,7 +958,7 @@ public data class UnknownResourceContents(override val uri: String, override val
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.Resource` instead",
+    message = "Use `Resource` instead",
     replaceWith = ReplaceWith("Resource", "io.modelcontextprotocol.kotlin.sdk.types.Resource"),
     level = DeprecationLevel.WARNING,
 )
@@ -1003,7 +1003,7 @@ public data class Resource(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ResourceTemplate` instead",
+    message = "Use `ResourceTemplate` instead",
     replaceWith = ReplaceWith("ResourceTemplate", "io.modelcontextprotocol.kotlin.sdk.types.ResourceTemplate"),
     level = DeprecationLevel.WARNING,
 )
@@ -1044,7 +1044,7 @@ public data class ResourceTemplate(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ListResourcesRequest` instead",
+    message = "Use `ListResourcesRequest` instead",
     replaceWith = ReplaceWith("ListResourcesRequest", "io.modelcontextprotocol.kotlin.sdk.types.ListResourcesRequest"),
     level = DeprecationLevel.WARNING,
 )
@@ -1061,7 +1061,7 @@ public data class ListResourcesRequest(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ListResourcesResult` instead",
+    message = "Use `ListResourcesResult` instead",
     replaceWith = ReplaceWith("ListResourcesResult", "io.modelcontextprotocol.kotlin.sdk.types.ListResourcesResult"),
     level = DeprecationLevel.WARNING,
 )
@@ -1077,7 +1077,7 @@ public class ListResourcesResult(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ListResourceTemplatesRequest` instead",
+    message = "Use `ListResourceTemplatesRequest` instead",
     replaceWith = ReplaceWith(
         "ListResourceTemplatesRequest",
         "io.modelcontextprotocol.kotlin.sdk.types.ListResourceTemplatesRequest",
@@ -1097,7 +1097,7 @@ public data class ListResourceTemplatesRequest(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ListResourceTemplatesResult` instead",
+    message = "Use `ListResourceTemplatesResult` instead",
     replaceWith = ReplaceWith(
         "ListResourceTemplatesResult",
         "io.modelcontextprotocol.kotlin.sdk.types.ListResourceTemplatesResult",
@@ -1116,7 +1116,7 @@ public class ListResourceTemplatesResult(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest` instead",
+    message = "Use `ReadResourceRequest` instead",
     replaceWith = ReplaceWith("ReadResourceRequest", "io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest"),
     level = DeprecationLevel.WARNING,
 )
@@ -1131,7 +1131,7 @@ public data class ReadResourceRequest(val uri: String, override val _meta: JsonO
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult` instead",
+    message = "Use `ReadResourceResult` instead",
     replaceWith = ReplaceWith("ReadResourceResult", "io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult"),
     level = DeprecationLevel.WARNING,
 )
@@ -1147,7 +1147,7 @@ public class ReadResourceResult(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ResourceListChangedNotification` instead",
+    message = "Use `ResourceListChangedNotification` instead",
     replaceWith = ReplaceWith(
         "ResourceListChangedNotification",
         "io.modelcontextprotocol.kotlin.sdk.types.ResourceListChangedNotification",
@@ -1166,7 +1166,7 @@ public data class ResourceListChangedNotification(override val params: Params = 
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.SubscribeRequest` instead",
+    message = "Use `SubscribeRequest` instead",
     replaceWith = ReplaceWith("SubscribeRequest", "io.modelcontextprotocol.kotlin.sdk.types.SubscribeRequest"),
     level = DeprecationLevel.WARNING,
 )
@@ -1186,7 +1186,7 @@ public data class SubscribeRequest(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.UnsubscribeRequest` instead",
+    message = "Use `UnsubscribeRequest` instead",
     replaceWith = ReplaceWith("UnsubscribeRequest", "io.modelcontextprotocol.kotlin.sdk.types.UnsubscribeRequest"),
     level = DeprecationLevel.WARNING,
 )
@@ -1206,7 +1206,7 @@ public data class UnsubscribeRequest(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotification` instead",
+    message = "Use `ResourceUpdatedNotification` instead",
     replaceWith = ReplaceWith(
         "ResourceUpdatedNotification",
         "io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotification",
@@ -1232,7 +1232,7 @@ public data class ResourceUpdatedNotification(override val params: Params) : Ser
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.PromptArgument` instead",
+    message = "Use `PromptArgument` instead",
     replaceWith = ReplaceWith("PromptArgument", "io.modelcontextprotocol.kotlin.sdk.types.PromptArgument"),
     level = DeprecationLevel.WARNING,
 )
@@ -1256,7 +1256,7 @@ public data class PromptArgument(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.Prompt` instead",
+    message = "Use `Prompt` instead",
     replaceWith = ReplaceWith("Prompt", "io.modelcontextprotocol.kotlin.sdk.types.Prompt"),
     level = DeprecationLevel.WARNING,
 )
@@ -1280,7 +1280,7 @@ public class Prompt(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ListPromptsRequest` instead",
+    message = "Use `ListPromptsRequest` instead",
     replaceWith = ReplaceWith("ListPromptsRequest", "io.modelcontextprotocol.kotlin.sdk.types.ListPromptsRequest"),
     level = DeprecationLevel.WARNING,
 )
@@ -1297,7 +1297,7 @@ public data class ListPromptsRequest(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ListPromptsResult` instead",
+    message = "Use `ListPromptsResult` instead",
     replaceWith = ReplaceWith("ListPromptsResult", "io.modelcontextprotocol.kotlin.sdk.types.ListPromptsResult"),
     level = DeprecationLevel.WARNING,
 )
@@ -1313,7 +1313,7 @@ public class ListPromptsResult(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest` instead",
+    message = "Use `GetPromptRequest` instead",
     replaceWith = ReplaceWith("GetPromptRequest", "io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest"),
     level = DeprecationLevel.WARNING,
 )
@@ -1363,7 +1363,7 @@ public sealed interface PromptMessageContentMultimodal : PromptMessageContent
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.TextContent` instead",
+    message = "Use `TextContent` instead",
     replaceWith = ReplaceWith("TextContent", "io.modelcontextprotocol.kotlin.sdk.types.TextContent"),
     level = DeprecationLevel.WARNING,
 )
@@ -1390,7 +1390,7 @@ public data class TextContent(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ImageContent` instead",
+    message = "Use `ImageContent` instead",
     replaceWith = ReplaceWith("ImageContent", "io.modelcontextprotocol.kotlin.sdk.types.ImageContent"),
     level = DeprecationLevel.WARNING,
 )
@@ -1422,7 +1422,7 @@ public data class ImageContent(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.AudioContent` instead",
+    message = "Use `AudioContent` instead",
     replaceWith = ReplaceWith("AudioContent", "io.modelcontextprotocol.kotlin.sdk.types.AudioContent"),
     level = DeprecationLevel.WARNING,
 )
@@ -1465,7 +1465,7 @@ public data class UnknownContent(override val type: String) : PromptMessageConte
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.EmbeddedResource` instead",
+    message = "Use `EmbeddedResource` instead",
     replaceWith = ReplaceWith("EmbeddedResource", "io.modelcontextprotocol.kotlin.sdk.types.EmbeddedResource"),
     level = DeprecationLevel.WARNING,
 )
@@ -1493,7 +1493,7 @@ public data class EmbeddedResource(
 @Suppress("EnumEntryName")
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.Role` instead",
+    message = "Use `Role` instead",
     replaceWith = ReplaceWith("Role", "io.modelcontextprotocol.kotlin.sdk.types.Role"),
     level = DeprecationLevel.WARNING,
 )
@@ -1508,7 +1508,7 @@ public enum class Role {
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.Annotations` instead",
+    message = "Use `Annotations` instead",
     replaceWith = ReplaceWith("Annotations", "io.modelcontextprotocol.kotlin.sdk.types.Annotations"),
     level = DeprecationLevel.WARNING,
 )
@@ -1540,7 +1540,7 @@ public data class Annotations(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.PromptMessage` instead",
+    message = "Use `PromptMessage` instead",
     replaceWith = ReplaceWith("PromptMessage", "io.modelcontextprotocol.kotlin.sdk.types.PromptMessage"),
     level = DeprecationLevel.WARNING,
 )
@@ -1551,7 +1551,7 @@ public data class PromptMessage(val role: Role, val content: PromptMessageConten
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult` instead",
+    message = "Use `GetPromptResult` instead",
     replaceWith = ReplaceWith("GetPromptResult", "io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult"),
     level = DeprecationLevel.WARNING,
 )
@@ -1570,7 +1570,7 @@ public class GetPromptResult(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.PromptListChangedNotification` instead",
+    message = "Use `PromptListChangedNotification` instead",
     replaceWith = ReplaceWith(
         "PromptListChangedNotification",
         "io.modelcontextprotocol.kotlin.sdk.types.PromptListChangedNotification",
@@ -1597,7 +1597,7 @@ public data class PromptListChangedNotification(override val params: Params = Pa
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ToolAnnotations` instead",
+    message = "Use `ToolAnnotations` instead",
     replaceWith = ReplaceWith("ToolAnnotations", "io.modelcontextprotocol.kotlin.sdk.types.ToolAnnotations"),
     level = DeprecationLevel.WARNING,
 )
@@ -1646,7 +1646,7 @@ public data class ToolAnnotations(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.Tool` instead",
+    message = "Use `Tool` instead",
     replaceWith = ReplaceWith("Tool", "io.modelcontextprotocol.kotlin.sdk.types.Tool"),
     level = DeprecationLevel.WARNING,
 )
@@ -1701,7 +1701,7 @@ public data class Tool(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ListToolsRequest` instead",
+    message = "Use `ListToolsRequest` instead",
     replaceWith = ReplaceWith("ListToolsRequest", "io.modelcontextprotocol.kotlin.sdk.types.ListToolsRequest"),
     level = DeprecationLevel.WARNING,
 )
@@ -1718,7 +1718,7 @@ public data class ListToolsRequest(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult` instead",
+    message = "Use `ListToolsResult` instead",
     replaceWith = ReplaceWith("ListToolsResult", "io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult"),
     level = DeprecationLevel.WARNING,
 )
@@ -1749,7 +1749,7 @@ public sealed interface CallToolResultBase : ServerResult {
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.CallToolResult` instead",
+    message = "Use `CallToolResult` instead",
     replaceWith = ReplaceWith("CallToolResult", "io.modelcontextprotocol.kotlin.sdk.types.CallToolResult"),
     level = DeprecationLevel.WARNING,
 )
@@ -1782,7 +1782,7 @@ public class CompatibilityCallToolResult(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest` instead",
+    message = "Use `CallToolRequest` instead",
     replaceWith = ReplaceWith("CallToolRequest", "io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest"),
     level = DeprecationLevel.WARNING,
 )
@@ -1801,7 +1801,7 @@ public data class CallToolRequest(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ToolListChangedNotification` instead",
+    message = "Use `ToolListChangedNotification` instead",
     replaceWith = ReplaceWith(
         "ToolListChangedNotification",
         "io.modelcontextprotocol.kotlin.sdk.types.ToolListChangedNotification",
@@ -1822,7 +1822,7 @@ public data class ToolListChangedNotification(override val params: Params = Para
 @Suppress("EnumEntryName")
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel` instead",
+    message = "Use `LoggingLevel` instead",
     replaceWith = ReplaceWith("LoggingLevel", "io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel"),
     level = DeprecationLevel.WARNING,
 )
@@ -1844,7 +1844,7 @@ public enum class LoggingLevel {
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification` instead",
+    message = "Use `LoggingMessageNotification` instead",
     replaceWith = ReplaceWith(
         "LoggingMessageNotification",
         "io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification",
@@ -1893,7 +1893,7 @@ public data class LoggingMessageNotification(override val params: Params) : Serv
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ModelHint` instead",
+    message = "Use `ModelHint` instead",
     replaceWith = ReplaceWith("ModelHint", "io.modelcontextprotocol.kotlin.sdk.types.ModelHint"),
     level = DeprecationLevel.WARNING,
 )
@@ -1910,7 +1910,7 @@ public data class ModelHint(
 @Suppress("CanBeParameter")
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ModelPreferences` instead",
+    message = "Use `ModelPreferences` instead",
     replaceWith = ReplaceWith("ModelPreferences", "io.modelcontextprotocol.kotlin.sdk.types.ModelPreferences"),
     level = DeprecationLevel.WARNING,
 )
@@ -1952,7 +1952,7 @@ public class ModelPreferences(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.SamplingMessage` instead",
+    message = "Use `SamplingMessage` instead",
     replaceWith = ReplaceWith("SamplingMessage", "io.modelcontextprotocol.kotlin.sdk.types.SamplingMessage"),
     level = DeprecationLevel.WARNING,
 )
@@ -1966,7 +1966,7 @@ public data class SamplingMessage(val role: Role, val content: PromptMessageCont
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest` instead",
+    message = "Use `CreateMessageRequest` instead",
     replaceWith = ReplaceWith("CreateMessageRequest", "io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest"),
     level = DeprecationLevel.WARNING,
 )
@@ -2005,7 +2005,7 @@ public data class CreateMessageRequest(
 
 @Serializable(with = StopReasonSerializer::class)
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.StopReason` instead",
+    message = "Use `StopReason` instead",
     replaceWith = ReplaceWith("StopReason", "io.modelcontextprotocol.kotlin.sdk.types.StopReason"),
     level = DeprecationLevel.WARNING,
 )
@@ -2039,7 +2039,7 @@ public sealed interface StopReason {
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.CreateMessageResult` instead",
+    message = "Use `CreateMessageResult` instead",
     replaceWith = ReplaceWith("CreateMessageResult", "io.modelcontextprotocol.kotlin.sdk.types.CreateMessageResult"),
     level = DeprecationLevel.WARNING,
 )
@@ -2060,7 +2060,7 @@ public data class CreateMessageResult(
 /* Autocomplete */
 @Serializable(with = ReferencePolymorphicSerializer::class)
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.Reference` instead",
+    message = "Use `Reference` instead",
     replaceWith = ReplaceWith("Reference", "io.modelcontextprotocol.kotlin.sdk.types.Reference"),
     level = DeprecationLevel.WARNING,
 )
@@ -2073,7 +2073,7 @@ public sealed interface Reference {
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ResourceTemplateReference` instead",
+    message = "Use `ResourceTemplateReference` instead",
     replaceWith = ReplaceWith(
         "ResourceTemplateReference",
         "io.modelcontextprotocol.kotlin.sdk.types.ResourceTemplateReference",
@@ -2098,7 +2098,7 @@ public data class ResourceTemplateReference(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.PromptReference` instead",
+    message = "Use `PromptReference` instead",
     replaceWith = ReplaceWith("PromptReference", "io.modelcontextprotocol.kotlin.sdk.types.PromptReference"),
     level = DeprecationLevel.WARNING,
 )
@@ -2130,7 +2130,7 @@ public data class UnknownReference(override val type: String) : Reference
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.CompleteRequest` instead",
+    message = "Use `CompleteRequest` instead",
     replaceWith = ReplaceWith("CompleteRequest", "io.modelcontextprotocol.kotlin.sdk.types.CompleteRequest"),
     level = DeprecationLevel.WARNING,
 )
@@ -2163,7 +2163,7 @@ public data class CompleteRequest(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.CompleteResult` instead",
+    message = "Use `CompleteResult` instead",
     replaceWith = ReplaceWith("CompleteResult", "io.modelcontextprotocol.kotlin.sdk.types.CompleteResult"),
     level = DeprecationLevel.WARNING,
 )
@@ -2199,7 +2199,7 @@ public data class CompleteResult(val completion: Completion, override val _meta:
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.Root` instead",
+    message = "Use `Root` instead",
     replaceWith = ReplaceWith("Root", "io.modelcontextprotocol.kotlin.sdk.types.Root"),
     level = DeprecationLevel.WARNING,
 )
@@ -2226,7 +2226,7 @@ public data class Root(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ListRootsRequest` instead",
+    message = "Use `ListRootsRequest` instead",
     replaceWith = ReplaceWith("ListRootsRequest", "io.modelcontextprotocol.kotlin.sdk.types.ListRootsRequest"),
     level = DeprecationLevel.WARNING,
 )
@@ -2241,7 +2241,7 @@ public class ListRootsRequest(override val _meta: JsonObject = EmptyJsonObject) 
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.ListRootsResult` instead",
+    message = "Use `ListRootsResult` instead",
     replaceWith = ReplaceWith("ListRootsResult", "io.modelcontextprotocol.kotlin.sdk.types.ListRootsResult"),
     level = DeprecationLevel.WARNING,
 )
@@ -2253,7 +2253,7 @@ public class ListRootsResult(public val roots: List<Root>, override val _meta: J
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.RootsListChangedNotification` instead",
+    message = "Use `RootsListChangedNotification` instead",
     replaceWith = ReplaceWith(
         "RootsListChangedNotification",
         "io.modelcontextprotocol.kotlin.sdk.types.RootsListChangedNotification",
@@ -2272,7 +2272,7 @@ public data class RootsListChangedNotification(override val params: Params = Par
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.CreateElicitationRequest` instead",
+    message = "Use `CreateElicitationRequest` instead",
     replaceWith = ReplaceWith(
         "CreateElicitationRequest",
         "io.modelcontextprotocol.kotlin.sdk.types.CreateElicitationRequest",
@@ -2303,7 +2303,7 @@ public data class CreateElicitationRequest(
  */
 @Serializable
 @Deprecated(
-    message = "Use `io.modelcontextprotocol.kotlin.sdk.types.CreateElicitationResult` instead",
+    message = "Use `CreateElicitationResult` instead",
     replaceWith = ReplaceWith(
         "CreateElicitationResult",
         "io.modelcontextprotocol.kotlin.sdk.types.CreateElicitationResult",
