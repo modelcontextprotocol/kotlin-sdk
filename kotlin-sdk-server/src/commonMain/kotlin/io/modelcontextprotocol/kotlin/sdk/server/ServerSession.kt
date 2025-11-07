@@ -19,6 +19,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsResult
+import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.Method.Defined
@@ -28,6 +29,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.RequestMeta
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
+import io.modelcontextprotocol.kotlin.sdk.types.SetLevelRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ToolListChangedNotification
 import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
@@ -82,10 +84,10 @@ public open class ServerSession(
 
         // Logging level handler
         if (options.capabilities.logging != null) {
-            setRequestHandler<LoggingMessageNotification.SetLevelRequest>(Defined.LoggingSetLevel) { request, _ ->
-                currentLoggingLevel.value = request.level
-                logger.debug { "Logging level set to: ${request.level}" }
-                EmptyRequestResult()
+            setRequestHandler<SetLevelRequest>(Defined.LoggingSetLevel) { request, _ ->
+                currentLoggingLevel.value = request.params.level
+                logger.debug { "Logging level set to: ${request.params.level}" }
+                EmptyResult()
             }
         }
     }
@@ -141,8 +143,7 @@ public open class ServerSession(
         options: RequestOptions? = null,
     ): CreateMessageResult {
         logger.debug {
-            "Creating message with ${params.messages.size} messages, maxTokens=${params.maxTokens}, " +
-                "temperature=${params.temperature}, systemPrompt=${if (params.systemPrompt != null) "present" else "absent"}"
+            "Creating message with ${params.params.messages.size} messages, maxTokens=${params.params.maxTokens}, temperature=${params.params.temperature}, systemPrompt=${if (params.params.systemPrompt != null) "present" else "absent"}"
         }
         logger.trace { "Full createMessage params: $params" }
         return request(params, options)

@@ -7,18 +7,18 @@ import io.ktor.server.cio.CIOApplicationEngine
 import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.routing.routing
-import io.modelcontextprotocol.kotlin.sdk.GetPromptResult
-import io.modelcontextprotocol.kotlin.sdk.Implementation
-import io.modelcontextprotocol.kotlin.sdk.PromptArgument
-import io.modelcontextprotocol.kotlin.sdk.PromptMessage
-import io.modelcontextprotocol.kotlin.sdk.Role
-import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
-import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.mcpSseTransport
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.mcp
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.PromptArgument
+import io.modelcontextprotocol.kotlin.sdk.types.PromptMessage
+import io.modelcontextprotocol.kotlin.sdk.types.Role
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.ktor.client.engine.cio.CIO as ClientCIO
 import io.ktor.server.cio.CIO as ServerCIO
 import io.ktor.server.sse.SSE as ServerSSE
@@ -70,13 +70,13 @@ open class AbstractSseIntegrationTest {
                 ),
             ) { request ->
                 GetPromptResult(
-                    "Prompt for ${request.name}",
                     messages = listOf(
                         PromptMessage(
-                            role = Role.user,
-                            content = TextContent("Prompt for client ${request.arguments?.get("client")}"),
+                            role = Role.User,
+                            content = TextContent("Prompt for client ${request.params.arguments?.get("client")}"),
                         ),
                     ),
+                    description = "Prompt for ${request.params.name}",
                 )
             }
         }

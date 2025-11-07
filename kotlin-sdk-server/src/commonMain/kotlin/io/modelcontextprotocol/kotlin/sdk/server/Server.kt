@@ -245,7 +245,7 @@ public open class Server(
      * @param inputSchema The expected input schema for the tool.
      * @param outputSchema The optional expected output schema for the tool.
      * @param toolAnnotations Optional additional tool information.
-     * @param _meta Optional metadata as a [JsonObject].
+     * @param meta Optional metadata as a [JsonObject].
      * @param handler A suspend function that handles executing the tool when called by the client.
      * @throws IllegalStateException If the server does not support tools.
      */
@@ -257,7 +257,7 @@ public open class Server(
         title: String? = null,
         outputSchema: ToolSchema? = null,
         toolAnnotations: ToolAnnotations? = null,
-        @Suppress("LocalVariableName") _meta: JsonObject? = null,
+        meta: JsonObject? = null,
         handler: suspend (CallToolRequest) -> CallToolResult,
     ) {
         val tool = Tool(
@@ -267,7 +267,7 @@ public open class Server(
             description = description,
             title = title,
             annotations = toolAnnotations,
-            _meta = _meta,
+            meta = meta,
         )
         addTool(tool, handler)
     }
