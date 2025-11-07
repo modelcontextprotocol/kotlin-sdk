@@ -38,6 +38,11 @@ internal object ErrorCodeSerializer : KSerializer<ErrorCode> {
     }
 }
 
+@Deprecated(
+    message = "Use `MethodSerializer` instead",
+    replaceWith = ReplaceWith("MethodSerializer"),
+    level = DeprecationLevel.WARNING,
+)
 internal object RequestMethodSerializer : KSerializer<Method> {
     override val descriptor: SerialDescriptor =
         PrimitiveSerialDescriptor("io.modelcontextprotocol.kotlin.sdk.Method", PrimitiveKind.STRING)

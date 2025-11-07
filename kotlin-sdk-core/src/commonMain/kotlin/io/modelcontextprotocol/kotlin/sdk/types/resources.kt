@@ -118,8 +118,8 @@ public data class ResourceTemplateReference(val uri: String) : Reference {
  * @property mimeType The MIME type of this resource, if known.
  * @property meta Optional metadata for this response.
  */
-@Serializable
-public sealed interface ResourceContents : WithMeta { // TODO: need serializer
+@Serializable(with = ResourceContentsPolymorphicSerializer::class)
+public sealed interface ResourceContents : WithMeta {
     public val uri: String
     public val mimeType: String?
 }
@@ -137,6 +137,7 @@ public data class TextResourceContents(
     val text: String,
     override val uri: String,
     override val mimeType: String? = null,
+    @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : ResourceContents
 
@@ -152,6 +153,7 @@ public data class BlobResourceContents(
     val blob: String,
     override val uri: String,
     override val mimeType: String? = null,
+    @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : ResourceContents
 
@@ -165,6 +167,7 @@ public data class BlobResourceContents(
 public data class UnknownResourceContents(
     override val uri: String,
     override val mimeType: String? = null,
+    @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : ResourceContents
 

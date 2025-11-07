@@ -4,15 +4,34 @@ package io.modelcontextprotocol.kotlin.sdk.types
 
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 
 @Serializable
-public sealed interface ContentBlock : WithMeta {
-    public val type: String
+public enum class ContentTypes(public val value: String) {
+    @SerialName("text")
+    TEXT("text"),
+
+    @SerialName("image")
+    IMAGE("image"),
+
+    @SerialName("audio")
+    AUDIO("audio"),
+
+    @SerialName("resource_link")
+    RESOURCE_LINK("resource_link"),
+
+    @SerialName("resource")
+    EMBEDDED_RESOURCE("resource"),
 }
 
-@Serializable
+@Serializable(with = ContentBlockPolymorphicSerializer::class)
+public sealed interface ContentBlock : WithMeta {
+    public val type: ContentTypes
+}
+
+@Serializable(with = MediaContentPolymorphicSerializer::class)
 public sealed interface MediaContent : ContentBlock
 
 /**
@@ -27,10 +46,11 @@ public sealed interface MediaContent : ContentBlock
 public data class TextContent(
     val text: String,
     val annotations: Annotations? = null,
+    @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : MediaContent {
     @EncodeDefault
-    public override val type: String = "text"
+    public override val type: ContentTypes = ContentTypes.TEXT
 }
 
 /**
@@ -47,10 +67,11 @@ public data class ImageContent(
     val data: String,
     val mimeType: String,
     val annotations: Annotations? = null,
+    @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : MediaContent {
     @EncodeDefault
-    public override val type: String = "image"
+    public override val type: ContentTypes = ContentTypes.IMAGE
 }
 
 /**
@@ -67,10 +88,11 @@ public data class AudioContent(
     val data: String,
     val mimeType: String,
     val annotations: Annotations? = null,
+    @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : MediaContent {
     @EncodeDefault
-    public override val type: String = "audio"
+    public override val type: ContentTypes = ContentTypes.AUDIO
 }
 
 /**
@@ -111,11 +133,12 @@ public data class ResourceLink(
     val icons: List<Icon>? = null,
     val description: String? = null,
     val annotations: Annotations? = null,
+    @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : ContentBlock,
     ResourceLike {
     @EncodeDefault
-    public override val type: String = "resource_link"
+    public override val type: ContentTypes = ContentTypes.RESOURCE_LINK
 }
 
 /**
@@ -132,8 +155,9 @@ public data class ResourceLink(
 public data class EmbeddedResource(
     val resource: ResourceContents,
     val annotations: Annotations? = null,
+    @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : ContentBlock {
     @EncodeDefault
-    public override val type: String = "resource"
+    public override val type: ContentTypes = ContentTypes.EMBEDDED_RESOURCE
 }

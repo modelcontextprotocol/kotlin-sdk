@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 /**
  * Represents a method in the protocol, which can be predefined or custom.
  */
-@Serializable // TODO: Custom serializer or use SerialName
+@Serializable(with = MethodSerializer::class)
 public sealed interface Method {
     public val value: String
 

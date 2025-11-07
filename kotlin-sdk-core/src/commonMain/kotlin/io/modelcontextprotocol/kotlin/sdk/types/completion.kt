@@ -2,6 +2,7 @@ package io.modelcontextprotocol.kotlin.sdk.types
 
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 
@@ -29,6 +30,7 @@ public data class CompleteRequestParams(
     val argument: Argument,
     val ref: Reference,
     val context: Context? = null,
+    @SerialName("_meta")
     override val meta: RequestMeta? = null,
 ) : RequestParams {
     /**
@@ -62,8 +64,11 @@ public data class CompleteRequestParams(
  * @property meta Optional metadata for this response. See MCP specification for details on _meta usage.
  */
 @Serializable
-public data class CompleteResult(public val completion: Completion, override val meta: JsonObject? = null) :
-    ServerResult {
+public data class CompleteResult(
+    public val completion: Completion,
+    @SerialName("_meta")
+    override val meta: JsonObject? = null,
+) : ServerResult {
 
     /**
      * Completion options and pagination information.
