@@ -35,14 +35,24 @@ import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.serialization.json.JsonObject
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 private val logger = KotlinLogging.logger {}
 
+/**
+ * Represents a server session.
+ */
+@Suppress("TooManyFunctions")
 public open class ServerSession(
     protected val serverInfo: Implementation,
     options: ServerOptions,
     protected val instructions: String?,
 ) : Protocol(options) {
+
+    @OptIn(ExperimentalUuidApi::class)
+    public val sessionId: String = Uuid.random().toString()
+
     @Suppress("ktlint:standard:backing-property-naming")
     private var _onInitialized: (() -> Unit) = {}
 
@@ -430,4 +440,12 @@ public open class ServerSession(
      * @return true if the message should be accepted (not filtered out), false otherwise.
      */
     private fun isMessageAccepted(level: LoggingLevel): Boolean = !isMessageIgnored(level)
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is ServerSession) return false
+        return sessionId == other.sessionId
+    }
+
+    override fun hashCode(): Int = sessionId.hashCode()
 }

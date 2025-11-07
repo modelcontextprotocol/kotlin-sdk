@@ -1,35 +1,44 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
+import io.modelcontextprotocol.kotlin.sdk.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.CreateElicitationRequest.RequestedSchema
+import io.modelcontextprotocol.kotlin.sdk.CreateElicitationResult
+import io.modelcontextprotocol.kotlin.sdk.CreateMessageRequest
+import io.modelcontextprotocol.kotlin.sdk.CreateMessageResult
+import io.modelcontextprotocol.kotlin.sdk.EmptyJsonObject
+import io.modelcontextprotocol.kotlin.sdk.EmptyRequestResult
+import io.modelcontextprotocol.kotlin.sdk.GetPromptRequest
+import io.modelcontextprotocol.kotlin.sdk.GetPromptResult
+import io.modelcontextprotocol.kotlin.sdk.Implementation
+import io.modelcontextprotocol.kotlin.sdk.ListPromptsRequest
+import io.modelcontextprotocol.kotlin.sdk.ListPromptsResult
+import io.modelcontextprotocol.kotlin.sdk.ListResourceTemplatesRequest
+import io.modelcontextprotocol.kotlin.sdk.ListResourceTemplatesResult
+import io.modelcontextprotocol.kotlin.sdk.ListResourcesRequest
+import io.modelcontextprotocol.kotlin.sdk.ListResourcesResult
+import io.modelcontextprotocol.kotlin.sdk.ListRootsResult
+import io.modelcontextprotocol.kotlin.sdk.ListToolsRequest
+import io.modelcontextprotocol.kotlin.sdk.ListToolsResult
+import io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification
+import io.modelcontextprotocol.kotlin.sdk.Method
+import io.modelcontextprotocol.kotlin.sdk.Prompt
+import io.modelcontextprotocol.kotlin.sdk.PromptArgument
+import io.modelcontextprotocol.kotlin.sdk.ReadResourceRequest
+import io.modelcontextprotocol.kotlin.sdk.ReadResourceResult
+import io.modelcontextprotocol.kotlin.sdk.Resource
+import io.modelcontextprotocol.kotlin.sdk.ResourceUpdatedNotification
+import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.TextContent
+import io.modelcontextprotocol.kotlin.sdk.Tool
+import io.modelcontextprotocol.kotlin.sdk.ToolAnnotations
 import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions
+import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
-import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
-import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
-import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest
-import io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult
-import io.modelcontextprotocol.kotlin.sdk.types.Implementation
-import io.modelcontextprotocol.kotlin.sdk.types.ListPromptsRequest
-import io.modelcontextprotocol.kotlin.sdk.types.ListPromptsResult
-import io.modelcontextprotocol.kotlin.sdk.types.ListResourceTemplatesRequest
-import io.modelcontextprotocol.kotlin.sdk.types.ListResourceTemplatesResult
-import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesRequest
-import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesResult
-import io.modelcontextprotocol.kotlin.sdk.types.ListToolsRequest
-import io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult
-import io.modelcontextprotocol.kotlin.sdk.types.Method
-import io.modelcontextprotocol.kotlin.sdk.types.Prompt
-import io.modelcontextprotocol.kotlin.sdk.types.PromptArgument
-import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
-import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
-import io.modelcontextprotocol.kotlin.sdk.types.Resource
-import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
-import io.modelcontextprotocol.kotlin.sdk.types.TextContent
-import io.modelcontextprotocol.kotlin.sdk.types.Tool
-import io.modelcontextprotocol.kotlin.sdk.types.ToolAnnotations
-import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.update
-import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.JsonObject
 
@@ -45,7 +54,7 @@ public class ServerOptions(public val capabilities: ServerCapabilities, enforceS
     ProtocolOptions(enforceStrictCapabilities = enforceStrictCapabilities)
 
 /**
- * An MCP server on top of a pluggable transport.
+ * An MCP server is responsible for storing features and handling new connections.
  *
  * This server automatically responds to the initialization flow as initiated by the client.
  * You can register tools, prompts, and resources using [addTool], [addPrompt], and [addResource].
@@ -79,7 +88,24 @@ public open class Server(
         block: Server.() -> Unit = {},
     ) : this(serverInfo, options, { instructions }, block)
 
-    private val sessions = atomic(persistentListOf<ServerSession>())
+    private val sessionRegistry = atomic(persistentMapOf<String, ServerSession>())
+
+    /**
+     * Returns a read-only view of the current server sessions.
+     */
+    public val sessions: Map<String, ServerSession>
+        get() = sessionRegistry.value
+
+    /**
+     * Gets a server session by its ID.
+     */
+    public fun getSession(sessionId: String): ServerSession? = sessions[sessionId]
+
+    /**
+     * Gets a server session by its ID or throws an exception if the session doesn't exist.
+     */
+    public fun getSessionOrThrow(sessionId: String): ServerSession =
+        sessions[sessionId] ?: throw IllegalArgumentException("Session not found: $sessionId")
 
     @Suppress("ktlint:standard:backing-property-naming")
     private var _onInitialized: (() -> Unit) = {}
@@ -107,7 +133,10 @@ public open class Server(
 
     public suspend fun close() {
         logger.debug { "Closing MCP server" }
-        sessions.value.forEach { session -> session.close() }
+        sessions.forEach { (sessionId, session) ->
+            logger.info { "Closing session $sessionId" }
+            session.close()
+        }
         _onClose()
     }
 
@@ -171,12 +200,12 @@ public open class Server(
         // Register cleanup handler to remove session from list when it closes
         session.onClose {
             logger.debug { "Removing closed session from active sessions list" }
-            sessions.update { list -> list.remove(session) }
+            sessionRegistry.update { sessions -> sessions.remove(session.sessionId) }
         }
         logger.debug { "Server session connecting to transport" }
         session.connect(transport)
         logger.debug { "Server session successfully connected to transport" }
-        sessions.update { sessions -> sessions.add(session) }
+        sessionRegistry.update { sessions -> sessions.put(session.sessionId, session) }
 
         _onConnect()
         return session
@@ -538,4 +567,124 @@ public open class Server(
         // If you have resource templates, return them here. For now, return empty.
         return ListResourceTemplatesResult(listOf())
     }
+
+    // Start the ServerSession redirection section
+
+    /**
+     * Triggers [ServerSession.ping] request for session by provided [sessionId].
+     * @param sessionId The session ID to ping
+     */
+    public suspend fun ping(sessionId: String): EmptyRequestResult {
+        val session = getSessionOrThrow(sessionId)
+        return session.ping()
+    }
+
+    /**
+     * Triggers [ServerSession.createMessage] request for session by provided [sessionId].
+     *
+     * @param sessionId The session ID to create a message.
+     * @param params The parameters for creating a message.
+     * @param options Optional request options.
+     * @return The created message result.
+     * @throws IllegalStateException If the server does not support sampling or if the request fails.
+     */
+    public suspend fun createMessage(
+        sessionId: String,
+        params: CreateMessageRequest,
+        options: RequestOptions? = null,
+    ): CreateMessageResult {
+        val session = getSessionOrThrow(sessionId)
+        return session.request(params, options)
+    }
+
+    /**
+     * Triggers [ServerSession.listRoots] request for session by provided [sessionId].
+     *
+     * @param sessionId The session ID to list roots for.
+     * @param params JSON parameters for the request, usually empty.
+     * @param options Optional request options.
+     * @return The list of roots.
+     * @throws IllegalStateException If the server or client does not support roots.
+     */
+    public suspend fun listRoots(
+        sessionId: String,
+        params: JsonObject = EmptyJsonObject,
+        options: RequestOptions? = null,
+    ): ListRootsResult {
+        val session = getSessionOrThrow(sessionId)
+        return session.listRoots(params, options)
+    }
+
+    /**
+     * Triggers [ServerSession.createElicitation] request for session by provided [sessionId].
+     *
+     * @param sessionId The session ID to create elicitation for.
+     * @param message The elicitation message.
+     * @param requestedSchema The requested schema for the elicitation.
+     * @param options Optional request options.
+     * @return The created elicitation result.
+     * @throws IllegalStateException If the server does not support elicitation or if the request fails.
+     */
+    public suspend fun createElicitation(
+        sessionId: String,
+        message: String,
+        requestedSchema: RequestedSchema,
+        options: RequestOptions? = null,
+    ): CreateElicitationResult {
+        val session = getSessionOrThrow(sessionId)
+        return session.createElicitation(message, requestedSchema, options)
+    }
+
+    /**
+     * Triggers [ServerSession.sendLoggingMessage] for session by provided [sessionId].
+     *
+     * @param sessionId The session ID to send the logging message to.
+     * @param notification The logging message notification.
+     */
+    public suspend fun sendLoggingMessage(sessionId: String, notification: LoggingMessageNotification) {
+        val session = getSessionOrThrow(sessionId)
+        session.sendLoggingMessage(notification)
+    }
+
+    /**
+     * Triggers [ServerSession.sendResourceUpdated] for session by provided [sessionId].
+     *
+     * @param sessionId The session ID to send the resource updated notification to.
+     * @param notification Details of the updated resource.
+     */
+    public suspend fun sendResourceUpdated(sessionId: String, notification: ResourceUpdatedNotification) {
+        val session = getSessionOrThrow(sessionId)
+        session.sendResourceUpdated(notification)
+    }
+
+    /**
+     * Triggers [ServerSession.sendResourceListChanged] for session by provided [sessionId].
+     *
+     * @param sessionId The session ID to send the resource list changed notification to.
+     */
+    public suspend fun sendResourceListChanged(sessionId: String) {
+        val session = getSessionOrThrow(sessionId)
+        session.sendResourceListChanged()
+    }
+
+    /**
+     * Triggers [ServerSession.sendToolListChanged] for session by provided [sessionId].
+     *
+     * @param sessionId The session ID to send the tool list changed notification to.
+     */
+    public suspend fun sendToolListChanged(sessionId: String) {
+        val session = getSessionOrThrow(sessionId)
+        session.sendToolListChanged()
+    }
+
+    /**
+     * Triggers [ServerSession.sendPromptListChanged] for session by provided [sessionId].
+     *
+     * @param sessionId The session ID to send the prompt list changed notification to.
+     */
+    public suspend fun sendPromptListChanged(sessionId: String) {
+        val session = getSessionOrThrow(sessionId)
+        session.sendPromptListChanged()
+    }
+    // End the ServerSession redirection section
 }
