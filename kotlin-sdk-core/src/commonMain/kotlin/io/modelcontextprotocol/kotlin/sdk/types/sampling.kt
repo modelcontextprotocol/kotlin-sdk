@@ -5,6 +5,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
+import kotlin.jvm.JvmInline
 
 /**
  * Hints to use for model selection.
@@ -186,14 +187,12 @@ public data class CreateMessageResult(
     override val meta: JsonObject? = null,
 ) : ClientResult
 
+@JvmInline
 @Serializable
-public enum class StopReason {
-    @SerialName("endTurn")
-    EndTurn,
-
-    @SerialName("stopSequence")
-    StopSequence,
-
-    @SerialName("maxTokens")
-    MaxTokens,
+public value class StopReason(public val value: String) {
+    public companion object {
+        public val EndTurn: StopReason = StopReason("endTurn")
+        public val StopSequence: StopReason = StopReason("stopSequence")
+        public val MaxTokens: StopReason = StopReason("maxTokens")
+    }
 }

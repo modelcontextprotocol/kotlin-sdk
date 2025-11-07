@@ -91,6 +91,8 @@ public data class AudioContent(
  *
  * Hosts can use this to display file sizes and estimate context window usage.
  * @property mimeType The MIME type of this resource, if known.
+ * @property icons Optional set of sized icons that clients can display in their user interface.
+ * See [Icon] for supported formats and requirements.
  * @property description A description of what this resource represents.
  *
  * Clients can use this to improve the LLM’s understanding of available resources.
@@ -106,6 +108,7 @@ public data class ResourceLink(
     val title: String? = null,
     val size: Long? = null,
     val mimeType: String? = null,
+    val icons: List<Icon>? = null,
     val description: String? = null,
     val annotations: Annotations? = null,
     override val meta: JsonObject? = null,

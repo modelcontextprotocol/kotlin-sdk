@@ -206,10 +206,10 @@ public data class RPCError(val code: Int, val message: String, val data: JsonEle
     public object ErrorCode {
         // SDK-specific error codes
         /** Connection was closed */
-        public const val CONNECTION_CLOSED: Int = -1
+        public const val CONNECTION_CLOSED: Int = -32000
 
         /** Request timed out */
-        public const val REQUEST_TIMEOUT: Int = -2
+        public const val REQUEST_TIMEOUT: Int = -32001
 
         // Standard JSON-RPC 2.0 error codes
         /** Invalid JSON was received */
@@ -226,11 +226,5 @@ public data class RPCError(val code: Int, val message: String, val data: JsonEle
 
         /** Internal JSON-RPC error */
         public const val INTERNAL_ERROR: Int = -32603
-
-        /** Start of range for server-defined errors */
-        public const val SERVER_ERROR_START: Int = -32000
-
-        /** End of range for server-defined errors */
-        public const val SERVER_ERROR_END: Int = -32099
     }
 }

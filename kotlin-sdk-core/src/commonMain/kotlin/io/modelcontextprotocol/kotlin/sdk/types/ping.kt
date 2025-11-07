@@ -5,7 +5,9 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 
 @Serializable
-public data class PingRequest(override val params: BaseRequestParams? = null) : ServerRequest {
+public data class PingRequest(override val params: BaseRequestParams? = null) :
+    ClientRequest,
+    ServerRequest {
     @OptIn(ExperimentalSerializationApi::class)
     @EncodeDefault
     override val method: Method = Method.Defined.Ping
