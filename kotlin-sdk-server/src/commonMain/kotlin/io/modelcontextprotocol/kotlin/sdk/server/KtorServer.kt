@@ -19,6 +19,7 @@ import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.update
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.toPersistentMap
+import kotlinx.coroutines.awaitCancellation
 
 private val logger = KotlinLogging.logger {}
 
@@ -91,6 +92,8 @@ internal suspend fun ServerSSESession.mcpSseEndpoint(
     server.createSession(transport)
 
     logger.debug { "Server connected to transport for sessionId: ${transport.sessionId}" }
+
+    awaitCancellation()
 }
 
 internal fun ServerSSESession.mcpSseTransport(

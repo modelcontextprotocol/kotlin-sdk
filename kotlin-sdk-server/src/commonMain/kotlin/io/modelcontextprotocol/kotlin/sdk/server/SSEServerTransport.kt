@@ -11,9 +11,11 @@ import io.ktor.server.sse.ServerSSESession
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
+import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.job
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -53,10 +55,13 @@ public class SseServerTransport(private val endpoint: String, private val sessio
             data = "${endpoint.encodeURLPath()}?$SESSION_ID_PARAM=$sessionId",
         )
 
-        try {
-            session.coroutineContext.job.join()
-        } finally {
-            _onClose.invoke()
+        @OptIn(InternalCoroutinesApi::class)
+        session.coroutineContext.job.invokeOnCompletion {
+            if (it != null && it !is CancellationException) {
+                _onError.invoke(it)
+            } else {
+                _onClose.invoke()
+            }
         }
     }
 
