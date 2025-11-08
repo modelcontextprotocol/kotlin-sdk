@@ -3,8 +3,10 @@ package io.modelcontextprotocol.kotlin.sdk.integration.kotlin
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult
+import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.PromptArgument
 import io.modelcontextprotocol.kotlin.sdk.types.PromptMessage
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.Role
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
@@ -376,7 +378,7 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
         )
 
         // test missing required arg
-        val exception = assertThrows<IllegalStateException> {
+        val exception = assertThrows<McpException> {
             runBlocking {
                 client.getPrompt(
                     GetPromptRequest(
@@ -389,14 +391,10 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
             }
         }
 
-        assertEquals(
-            true,
-            exception.message?.contains("requiredArg2"),
-            "Exception should mention the missing argument",
-        )
+        assertTrue(exception.message.contains("requiredArg2"), "Exception should mention the missing argument")
 
         // test with no args
-        val exception2 = assertThrows<IllegalStateException> {
+        val exception2 = assertThrows<McpException> {
             runBlocking {
                 client.getPrompt(
                     GetPromptRequest(
@@ -409,11 +407,7 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
             }
         }
 
-        assertEquals(
-            exception2.message?.contains("requiredArg"),
-            true,
-            "Exception should mention a missing required argument",
-        )
+        assertTrue(exception2.message.contains("requiredArg"), "Exception should mention a missing required argument")
 
         // test with all required args
         val result = client.getPrompt(
@@ -675,7 +669,7 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
     fun testNonExistentPrompt() = runTest {
         val nonExistentPromptName = "non-existent-prompt"
 
-        val exception = assertThrows<IllegalStateException> {
+        val exception = assertThrows<McpException> {
             runBlocking {
                 client.getPrompt(
                     GetPromptRequest(
@@ -688,9 +682,13 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
             }
         }
 
-        val msg = exception.message ?: ""
-        val expectedMessage = "JSONRPCError(code=InternalError, message=Prompt not found: non-existent-prompt, data={})"
+        val expectedMessage = "MCP error -32603: Prompt not found: non-existent-prompt"
 
-        assertEquals(expectedMessage, msg, "Unexpected error message for non-existent prompt")
+        assertEquals(
+            RPCError.ErrorCode.INTERNAL_ERROR,
+            exception.code,
+            "Exception code should be INTERNAL_ERROR: ${RPCError.ErrorCode.INTERNAL_ERROR}",
+        )
+        assertEquals(expectedMessage, exception.message, "Unexpected error message for non-existent prompt")
     }
 }

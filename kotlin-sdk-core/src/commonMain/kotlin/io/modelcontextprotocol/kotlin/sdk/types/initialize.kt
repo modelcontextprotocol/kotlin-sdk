@@ -2,6 +2,7 @@ package io.modelcontextprotocol.kotlin.sdk.types
 
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 
@@ -39,6 +40,7 @@ public data class InitializeRequestParams(
     val protocolVersion: String,
     val capabilities: ClientCapabilities,
     val clientInfo: Implementation,
+    @SerialName("_meta")
     override val meta: RequestMeta? = null,
 ) : RequestParams
 
@@ -67,5 +69,6 @@ public data class InitializeResult(
     val capabilities: ServerCapabilities,
     val serverInfo: Implementation,
     val instructions: String? = null,
+    @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : ServerResult

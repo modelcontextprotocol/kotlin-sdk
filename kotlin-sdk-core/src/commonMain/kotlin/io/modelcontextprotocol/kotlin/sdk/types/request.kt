@@ -32,13 +32,13 @@ public sealed interface RequestParams {
 }
 
 @Serializable
-public data class BaseRequestParams(override val meta: RequestMeta? = null) : RequestParams
+public data class BaseRequestParams(@SerialName("_meta") override val meta: RequestMeta? = null) : RequestParams
 
 /**
  * Represents a request in the protocol.
  */
 @OptIn(ExperimentalSerializationApi::class)
-@Serializable
+@Serializable(with = RequestPolymorphicSerializer::class)
 public sealed interface Request {
     public val method: Method
     public val params: RequestParams?
@@ -48,7 +48,7 @@ public sealed interface Request {
  * A custom request with a specified method.
  */
 @Serializable
-public open class CustomRequest(override val method: Method, override val params: RequestParams?) : Request
+public open class CustomRequest(override val method: Method, override val params: BaseRequestParams?) : Request
 
 /**
  * Represents a request sent by the client.
@@ -73,13 +73,13 @@ public sealed interface PaginatedRequest : Request {
 /**
  * Represents the result of a request, including additional metadata.
  */
-@Serializable // TODO: custom serializer
+@Serializable(with = RequestResultPolymorphicSerializer::class)
 public sealed interface RequestResult : WithMeta
 
-@Serializable
+@Serializable(with = ClientResultPolymorphicSerializer::class)
 public sealed interface ClientResult : RequestResult
 
-@Serializable
+@Serializable(with = ServerResultPolymorphicSerializer::class)
 public sealed interface ServerResult : RequestResult
 
 /**
@@ -88,7 +88,7 @@ public sealed interface ServerResult : RequestResult
  * @param meta Additional metadata for the response. Defaults to an empty JSON object.
  */
 @Serializable
-public data class EmptyResult(override val meta: JsonObject? = null) :
+public data class EmptyResult(@SerialName("_meta") override val meta: JsonObject? = null) :
     ClientResult,
     ServerResult
 
@@ -109,5 +109,8 @@ public sealed interface PaginatedResult : RequestResult {
  * out-of-band progress notifications.
  */
 @Serializable
-public data class PaginatedRequestParams(val cursor: String? = null, override val meta: RequestMeta? = null) :
-    RequestParams
+public data class PaginatedRequestParams(
+    val cursor: String? = null,
+    @SerialName("_meta")
+    override val meta: RequestMeta? = null,
+) : RequestParams

@@ -6,6 +6,7 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.sse.ServerSentEvent
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
@@ -22,12 +23,6 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
-/**
- * Integration tests for the `StreamableHttpClientTransport` implementation
- * using the [Mokksy](https://mokksy.dev) library
- * to simulate Streaming HTTP with server-sent events (SSE).
- * @author Konstantin Pavlov
- */
 @OptIn(ExperimentalUuidApi::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Suppress("LongMethod")
@@ -149,6 +144,7 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
                 required = listOf("temperature"),
             ),
             annotations = null,
+            meta = EmptyJsonObject,
         )
 
         mockMcp.mockUnsubscribeRequest(sessionId = sessionId)

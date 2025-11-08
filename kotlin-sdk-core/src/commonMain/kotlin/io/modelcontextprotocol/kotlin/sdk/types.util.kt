@@ -23,6 +23,10 @@ import kotlinx.serialization.json.longOrNull
 
 private val logger = KotlinLogging.logger {}
 
+@Deprecated(
+    message = "This object will be removed in future versions",
+    level = DeprecationLevel.WARNING,
+)
 internal object ErrorCodeSerializer : KSerializer<ErrorCode> {
     override val descriptor: SerialDescriptor =
         PrimitiveSerialDescriptor("io.modelcontextprotocol.kotlin.sdk.ErrorCode", PrimitiveKind.INT)
@@ -58,6 +62,10 @@ internal object RequestMethodSerializer : KSerializer<Method> {
     }
 }
 
+@Deprecated(
+    message = "This object will be removed in future versions",
+    level = DeprecationLevel.WARNING,
+)
 internal object StopReasonSerializer : KSerializer<StopReason> {
     override val descriptor: SerialDescriptor =
         PrimitiveSerialDescriptor("io.modelcontextprotocol.kotlin.sdk.StopReason", PrimitiveKind.STRING)
@@ -77,6 +85,11 @@ internal object StopReasonSerializer : KSerializer<StopReason> {
     }
 }
 
+@Deprecated(
+    message = "Use `ReferencePolymorphicSerializer` instead",
+    replaceWith = ReplaceWith("ReferencePolymorphicSerializer"),
+    level = DeprecationLevel.WARNING,
+)
 internal object ReferencePolymorphicSerializer : JsonContentPolymorphicSerializer<Reference>(Reference::class) {
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<Reference> =
         when (element.jsonObject.getValue("type").jsonPrimitive.content) {
@@ -86,6 +99,11 @@ internal object ReferencePolymorphicSerializer : JsonContentPolymorphicSerialize
         }
 }
 
+@Deprecated(
+    message = "Use `ContentBlockPolymorphicSerializer` instead",
+    replaceWith = ReplaceWith("ContentBlockPolymorphicSerializer"),
+    level = DeprecationLevel.WARNING,
+)
 internal object PromptMessageContentPolymorphicSerializer :
     JsonContentPolymorphicSerializer<PromptMessageContent>(PromptMessageContent::class) {
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<PromptMessageContent> =
@@ -98,6 +116,11 @@ internal object PromptMessageContentPolymorphicSerializer :
         }
 }
 
+@Deprecated(
+    message = "Use `MediaContentPolymorphicSerializer` instead",
+    replaceWith = ReplaceWith("MediaContentPolymorphicSerializer"),
+    level = DeprecationLevel.WARNING,
+)
 internal object PromptMessageContentMultimodalPolymorphicSerializer :
     JsonContentPolymorphicSerializer<PromptMessageContentMultimodal>(PromptMessageContentMultimodal::class) {
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<PromptMessageContentMultimodal> =
@@ -109,6 +132,11 @@ internal object PromptMessageContentMultimodalPolymorphicSerializer :
         }
 }
 
+@Deprecated(
+    message = "Use `ResourceContentsPolymorphicSerializer` instead",
+    replaceWith = ReplaceWith("ResourceContentsPolymorphicSerializer"),
+    level = DeprecationLevel.WARNING,
+)
 internal object ResourceContentsPolymorphicSerializer :
     JsonContentPolymorphicSerializer<ResourceContents>(ResourceContents::class) {
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<ResourceContents> {
@@ -121,12 +149,21 @@ internal object ResourceContentsPolymorphicSerializer :
     }
 }
 
+@Deprecated(
+    message = "This method will be removed in future versions",
+    level = DeprecationLevel.WARNING,
+)
 internal fun selectRequestDeserializer(method: String): DeserializationStrategy<Request> {
     selectClientRequestDeserializer(method)?.let { return it }
     selectServerRequestDeserializer(method)?.let { return it }
     return CustomRequest.serializer()
 }
 
+@Deprecated(
+    message = "Use `selectClientRequestDeserializer` instead",
+    replaceWith = ReplaceWith("selectClientRequestDeserializer"),
+    level = DeprecationLevel.WARNING,
+)
 internal fun selectClientRequestDeserializer(method: String): DeserializationStrategy<ClientRequest>? = when (method) {
     Method.Defined.Ping.value -> PingRequest.serializer()
     Method.Defined.Initialize.value -> InitializeRequest.serializer()
@@ -144,6 +181,11 @@ internal fun selectClientRequestDeserializer(method: String): DeserializationStr
     else -> null
 }
 
+@Deprecated(
+    message = "Use `selectClientNotificationDeserializer` instead",
+    replaceWith = ReplaceWith("selectClientNotificationDeserializer"),
+    level = DeprecationLevel.WARNING,
+)
 private fun selectClientNotificationDeserializer(element: JsonElement): DeserializationStrategy<ClientNotification>? =
     when (element.jsonObject.getValue("method").jsonPrimitive.content) {
         Method.Defined.NotificationsCancelled.value -> CancelledNotification.serializer()
@@ -153,6 +195,11 @@ private fun selectClientNotificationDeserializer(element: JsonElement): Deserial
         else -> null
     }
 
+@Deprecated(
+    message = "Use `ClientNotificationPolymorphicSerializer` instead",
+    replaceWith = ReplaceWith("ClientNotificationPolymorphicSerializer"),
+    level = DeprecationLevel.WARNING,
+)
 internal object ClientNotificationPolymorphicSerializer :
     JsonContentPolymorphicSerializer<ClientNotification>(ClientNotification::class) {
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<ClientNotification> =
@@ -160,6 +207,11 @@ internal object ClientNotificationPolymorphicSerializer :
             ?: UnknownMethodRequestOrNotification.serializer()
 }
 
+@Deprecated(
+    message = "Use `selectServerRequestDeserializer` instead",
+    replaceWith = ReplaceWith("selectServerRequestDeserializer"),
+    level = DeprecationLevel.WARNING,
+)
 internal fun selectServerRequestDeserializer(method: String): DeserializationStrategy<ServerRequest>? = when (method) {
     Method.Defined.Ping.value -> PingRequest.serializer()
     Method.Defined.SamplingCreateMessage.value -> CreateMessageRequest.serializer()
@@ -167,6 +219,11 @@ internal fun selectServerRequestDeserializer(method: String): DeserializationStr
     else -> null
 }
 
+@Deprecated(
+    message = "Use `selectServerNotificationDeserializer` instead",
+    replaceWith = ReplaceWith("selectServerNotificationDeserializer"),
+    level = DeprecationLevel.WARNING,
+)
 internal fun selectServerNotificationDeserializer(element: JsonElement): DeserializationStrategy<ServerNotification>? =
     when (element.jsonObject.getValue("method").jsonPrimitive.content) {
         Method.Defined.NotificationsCancelled.value -> CancelledNotification.serializer()
@@ -179,6 +236,11 @@ internal fun selectServerNotificationDeserializer(element: JsonElement): Deseria
         else -> null
     }
 
+@Deprecated(
+    message = "Use `ServerNotificationPolymorphicSerializer` instead",
+    replaceWith = ReplaceWith("ServerNotificationPolymorphicSerializer"),
+    level = DeprecationLevel.WARNING,
+)
 internal object ServerNotificationPolymorphicSerializer :
     JsonContentPolymorphicSerializer<ServerNotification>(ServerNotification::class) {
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<ServerNotification> =
@@ -186,6 +248,11 @@ internal object ServerNotificationPolymorphicSerializer :
             ?: UnknownMethodRequestOrNotification.serializer()
 }
 
+@Deprecated(
+    message = "Use `NotificationPolymorphicSerializer` instead",
+    replaceWith = ReplaceWith("NotificationPolymorphicSerializer"),
+    level = DeprecationLevel.WARNING,
+)
 internal object NotificationPolymorphicSerializer :
     JsonContentPolymorphicSerializer<Notification>(Notification::class) {
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<Notification> =
@@ -194,6 +261,11 @@ internal object NotificationPolymorphicSerializer :
             ?: UnknownMethodRequestOrNotification.serializer()
 }
 
+@Deprecated(
+    message = "Use `RequestPolymorphicSerializer` instead",
+    replaceWith = ReplaceWith("RequestPolymorphicSerializer"),
+    level = DeprecationLevel.WARNING,
+)
 internal object RequestPolymorphicSerializer :
     JsonContentPolymorphicSerializer<Request>(Request::class) {
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<Request> {
@@ -208,6 +280,11 @@ internal object RequestPolymorphicSerializer :
     }
 }
 
+@Deprecated(
+    message = "Use `selectServerResultDeserializer` instead",
+    replaceWith = ReplaceWith("selectServerResultDeserializer"),
+    level = DeprecationLevel.WARNING,
+)
 private fun selectServerResultDeserializer(element: JsonElement): DeserializationStrategy<ServerResult>? {
     val jsonObject = element.jsonObject
     return when {
@@ -225,6 +302,11 @@ private fun selectServerResultDeserializer(element: JsonElement): Deserializatio
     }
 }
 
+@Deprecated(
+    message = "Use `selectClientResultDeserializer` instead",
+    replaceWith = ReplaceWith("selectClientResultDeserializer"),
+    level = DeprecationLevel.WARNING,
+)
 private fun selectClientResultDeserializer(element: JsonElement): DeserializationStrategy<ClientResult>? {
     val jsonObject = element.jsonObject
     return when {
@@ -235,6 +317,11 @@ private fun selectClientResultDeserializer(element: JsonElement): Deserializatio
     }
 }
 
+@Deprecated(
+    message = "Use `ServerResultPolymorphicSerializer` instead",
+    replaceWith = ReplaceWith("ServerResultPolymorphicSerializer"),
+    level = DeprecationLevel.WARNING,
+)
 internal object ServerResultPolymorphicSerializer :
     JsonContentPolymorphicSerializer<ServerResult>(ServerResult::class) {
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<ServerResult> =
@@ -242,6 +329,11 @@ internal object ServerResultPolymorphicSerializer :
             ?: EmptyRequestResult.serializer()
 }
 
+@Deprecated(
+    message = "Use `ClientResultPolymorphicSerializer` instead",
+    replaceWith = ReplaceWith("ClientResultPolymorphicSerializer"),
+    level = DeprecationLevel.WARNING,
+)
 internal object ClientResultPolymorphicSerializer :
     JsonContentPolymorphicSerializer<ClientResult>(ClientResult::class) {
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<ClientResult> =
@@ -249,6 +341,11 @@ internal object ClientResultPolymorphicSerializer :
             ?: EmptyRequestResult.serializer()
 }
 
+@Deprecated(
+    message = "Use `RequestResultPolymorphicSerializer` instead",
+    replaceWith = ReplaceWith("RequestResultPolymorphicSerializer"),
+    level = DeprecationLevel.WARNING,
+)
 internal object RequestResultPolymorphicSerializer :
     JsonContentPolymorphicSerializer<RequestResult>(RequestResult::class) {
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<RequestResult> =
@@ -257,6 +354,11 @@ internal object RequestResultPolymorphicSerializer :
             ?: EmptyRequestResult.serializer()
 }
 
+@Deprecated(
+    message = "Use `JSONRPCMessagePolymorphicSerializer` instead",
+    replaceWith = ReplaceWith("JSONRPCMessagePolymorphicSerializer"),
+    level = DeprecationLevel.WARNING,
+)
 internal object JSONRPCMessagePolymorphicSerializer :
     JsonContentPolymorphicSerializer<JSONRPCMessage>(JSONRPCMessage::class) {
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<JSONRPCMessage> {
@@ -277,6 +379,11 @@ internal object JSONRPCMessagePolymorphicSerializer :
 )
 public val EmptyJsonObject: JsonObject = JsonObject(emptyMap())
 
+@Deprecated(
+    message = "Use `RequestIdPolymorphicSerializer` instead",
+    replaceWith = ReplaceWith("RequestIdPolymorphicSerializer"),
+    level = DeprecationLevel.WARNING,
+)
 public class RequestIdSerializer : KSerializer<RequestId> {
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("RequestId")
 
@@ -307,6 +414,11 @@ public class RequestIdSerializer : KSerializer<RequestId> {
 /**
  * Creates a [CallToolResult] with single [TextContent] and [meta].
  */
+@Deprecated(
+    message = "Use `CallToolResult.success` instead",
+    replaceWith = ReplaceWith("CallToolResult.Companion.success"),
+    level = DeprecationLevel.WARNING,
+)
 public fun CallToolResult.Companion.ok(content: String, meta: JsonObject = EmptyJsonObject): CallToolResult =
     CallToolResult(
         content = listOf(TextContent(content)),
@@ -317,6 +429,11 @@ public fun CallToolResult.Companion.ok(content: String, meta: JsonObject = Empty
 /**
  * Creates a [CallToolResult] with single [TextContent] and [meta], with `isError` being true.
  */
+@Deprecated(
+    message = "Use `CallToolResult.error` instead",
+    replaceWith = ReplaceWith("CallToolResult.Companion.error"),
+    level = DeprecationLevel.WARNING,
+)
 public fun CallToolResult.Companion.error(content: String, meta: JsonObject = EmptyJsonObject): CallToolResult =
     CallToolResult(
         content = listOf(TextContent(content)),

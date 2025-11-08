@@ -77,5 +77,8 @@ public data class SetLevelRequest(override val params: SetLevelRequestParams) : 
  * out-of-band progress notifications.
  */
 @Serializable
-public data class SetLevelRequestParams(val level: LoggingLevel, override val meta: RequestMeta? = null) :
-    RequestParams
+public data class SetLevelRequestParams(
+    val level: LoggingLevel,
+    @SerialName("_meta")
+    override val meta: RequestMeta? = null,
+) : RequestParams

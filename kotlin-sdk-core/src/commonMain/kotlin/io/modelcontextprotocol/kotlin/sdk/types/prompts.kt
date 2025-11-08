@@ -4,6 +4,7 @@ package io.modelcontextprotocol.kotlin.sdk.types
 
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 
@@ -59,6 +60,7 @@ public data class Prompt(
     val arguments: List<PromptArgument>? = null,
     val title: String? = null,
     val icons: List<Icon>? = null,
+    @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : WithMeta
 
@@ -90,7 +92,7 @@ public data class PromptMessage(val role: Role, val content: ContentBlock)
 @Serializable
 public data class PromptReference(val name: String, val title: String? = null) : Reference {
     @EncodeDefault
-    public override val type: String = "ref/prompt"
+    public override val type: ReferenceType = ReferenceType.Prompt
 }
 
 // ============================================================================
@@ -125,6 +127,7 @@ public data class GetPromptRequest(override val params: GetPromptRequestParams) 
 public data class GetPromptRequestParams(
     val name: String,
     val arguments: Map<String, String>? = null,
+    @SerialName("_meta")
     override val meta: RequestMeta? = null,
 ) : RequestParams
 
@@ -143,6 +146,7 @@ public data class GetPromptRequestParams(
 public data class GetPromptResult(
     val messages: List<PromptMessage>,
     val description: String? = null,
+    @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : ServerResult
 
@@ -183,6 +187,7 @@ public data class ListPromptsRequest(override val params: PaginatedRequestParams
 public data class ListPromptsResult(
     val prompts: List<Prompt>,
     override val nextCursor: String? = null,
+    @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : ServerResult,
     PaginatedResult

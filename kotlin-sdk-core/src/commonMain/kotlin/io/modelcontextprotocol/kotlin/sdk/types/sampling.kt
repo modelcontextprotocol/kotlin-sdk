@@ -143,6 +143,7 @@ public data class CreateMessageRequestParams(
     val temperature: Double? = null,
     val stopSequences: List<String>? = null,
     val metadata: JsonObject? = null,
+    @SerialName("_meta")
     override val meta: RequestMeta? = null,
 ) : RequestParams
 
@@ -184,6 +185,7 @@ public data class CreateMessageResult(
     val content: MediaContent,
     val model: String,
     val stopReason: StopReason? = null,
+    @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : ClientResult
 

@@ -1,15 +1,13 @@
-@file:OptIn(ExperimentalAtomicApi::class)
+@file:OptIn(ExperimentalAtomicApi::class, ExperimentalSerializationApi::class)
 
 package io.modelcontextprotocol.kotlin.sdk.types
 
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
-import kotlinx.serialization.json.jsonObject
 import kotlin.concurrent.atomics.AtomicLong
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.concurrent.atomics.incrementAndFetch
@@ -17,10 +15,16 @@ import kotlin.jvm.JvmInline
 
 public const val JSONRPC_VERSION: String = "2.0"
 
+private val REQUEST_MESSAGE_ID: AtomicLong = AtomicLong(0L)
+
+public fun RequestId(value: String): RequestId = RequestId.StringId(value)
+
+public fun RequestId(value: Long): RequestId = RequestId.NumberId(value)
+
 /**
  * A uniquely identifying ID for a request in JSON-RPC.
  */
-@Serializable // TODO custom serializer
+@Serializable(with = RequestIdPolymorphicSerializer::class)
 public sealed interface RequestId {
 
     @JvmInline
@@ -32,71 +36,54 @@ public sealed interface RequestId {
     public value class NumberId(public val value: Long) : RequestId
 }
 
-public fun RequestId(value: String): RequestId = RequestId.StringId(value)
-public fun RequestId(value: Long): RequestId = RequestId.NumberId(value)
-
-private val REQUEST_MESSAGE_ID: AtomicLong = AtomicLong(0L)
-
 /**
  * Converts the request to a JSON-RPC request.
  *
  * @return The JSON-RPC request representation.
  */
-public fun Request.toJSON(): JSONRPCRequest {
-    val fullJson = McpJson.encodeToJsonElement(this).jsonObject
-    val params = JsonObject(fullJson.filterKeys { it != "method" }) // TODO: check this filter
-    TODO("Not yet implemented")
-//    return JSONRPCRequest(
-//        method = method.value, // TODO: может не нужно использовать в request method? а брать его из params
-//        params = params
-//    )
-}
+public fun Request.toJSON(): JSONRPCRequest = JSONRPCRequest(
+    method = method.value,
+    params = this.params?.let {
+        McpJson.encodeToJsonElement(it)
+    },
+)
 
 /**
  * Decodes a JSON-RPC request into a protocol-specific [Request].
  *
  * @return The decoded [Request]
  */
-public fun JSONRPCRequest.fromJSON(): Request {
-//    val requestData = JsonObject(params?.jsonObject?.plus(("method" to JsonPrimitive(method)))) // TODO: check this transforming
-//    val deserializer = selectRequestDeserializer(method)
-//    return McpJson.decodeFromJsonElement(deserializer, requestData)
-    TODO("Not yet implemented")
-}
+public fun JSONRPCRequest.fromJSON(): Request =
+    McpJson.decodeFromJsonElement<Request>(McpJson.encodeToJsonElement(this))
 
 /**
  * Converts the notification to a JSON-RPC notification.
  *
  * @return The JSON-RPC notification representation.
  */
-public fun Notification.toJSON(): JSONRPCNotification = TODO("Not yet implemented")
-//    JSONRPCNotification(
-//    method = method.value,
-//    params = McpJson.encodeToJsonElement(params),
-// )
+public fun Notification.toJSON(): JSONRPCNotification = JSONRPCNotification(
+    method = method.value,
+    params = this.params?.let {
+        McpJson.encodeToJsonElement(it)
+    },
+)
 
 /**
  * Decodes a JSON-RPC notification into a protocol-specific [Notification].
  *
  * @return The decoded [Notification].
  */
-internal fun JSONRPCNotification.fromJSON(): Notification {
-    val data = buildJsonObject {
-        put("method", JsonPrimitive(method))
-        params?.let { put("params", it) }
-    }
-    return McpJson.decodeFromJsonElement<Notification>(data)
-}
+internal fun JSONRPCNotification.fromJSON(): Notification =
+    McpJson.decodeFromJsonElement<Notification>(McpJson.encodeToJsonElement(this))
 
 /**
  * Base interface for all JSON-RPC 2.0 messages.
  *
  * All messages in the MCP protocol follow the JSON-RPC 2.0 specification.
  */
-@Serializable // TODO: custom serializer
+@Serializable(with = JSONRPCMessagePolymorphicSerializer::class)
 public sealed interface JSONRPCMessage {
     public val jsonrpc: String
-        get() = JSONRPC_VERSION
 }
 
 // ============================================================================
@@ -121,7 +108,10 @@ public data class JSONRPCRequest(
     val id: RequestId = RequestId(REQUEST_MESSAGE_ID.incrementAndFetch()),
     val method: String,
     val params: JsonElement? = null,
-) : JSONRPCMessage
+) : JSONRPCMessage {
+    @EncodeDefault
+    override val jsonrpc: String = JSONRPC_VERSION
+}
 
 // ============================================================================
 // JSONRPCNotification
@@ -141,7 +131,10 @@ public data class JSONRPCRequest(
  * @property params Optional parameters for the notification. Structure depends on the specific method.
  */
 @Serializable
-public data class JSONRPCNotification(val method: String, val params: JsonElement? = null) : JSONRPCMessage
+public data class JSONRPCNotification(val method: String, val params: JsonElement? = null) : JSONRPCMessage {
+    @EncodeDefault
+    override val jsonrpc: String = JSONRPC_VERSION
+}
 
 // ============================================================================
 // JSONRPCResponse
@@ -158,11 +151,10 @@ public data class JSONRPCNotification(val method: String, val params: JsonElemen
  * @property result The result of the method execution. Structure depends on the method that was called.
  */
 @Serializable
-public data class JSONRPCResponse(
-    val id: RequestId,
-    val result: RequestResult? = null,
-    public val error: JSONRPCError? = null,
-) : JSONRPCMessage
+public data class JSONRPCResponse(val id: RequestId, val result: RequestResult = EmptyResult()) : JSONRPCMessage {
+    @EncodeDefault
+    override val jsonrpc: String = JSONRPC_VERSION
+}
 
 // ============================================================================
 // JSONRPCError
@@ -179,7 +171,10 @@ public data class JSONRPCResponse(
  * @property error Details about the error that occurred, including error code and message.
  */
 @Serializable
-public data class JSONRPCError(val id: RequestId, val error: RPCError) : JSONRPCMessage
+public data class JSONRPCError(val id: RequestId, val error: RPCError) : JSONRPCMessage {
+    @EncodeDefault
+    override val jsonrpc: String = JSONRPC_VERSION
+}
 
 /**
  * Error information for a failed JSON-RPC request.

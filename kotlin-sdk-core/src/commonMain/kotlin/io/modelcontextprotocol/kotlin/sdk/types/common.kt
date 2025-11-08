@@ -118,9 +118,18 @@ public enum class Role {
  * References are used to point to other entities (prompts, resources, etc.)
  * without including their full definitions.
  */
-@Serializable
+@Serializable(with = ReferencePolymorphicSerializer::class)
 public sealed interface Reference {
-    public val type: String
+    public val type: ReferenceType
+}
+
+@Serializable
+public enum class ReferenceType(public val value: String) {
+    @SerialName("ref/prompt")
+    Prompt("ref/prompt"),
+
+    @SerialName("ref/resource")
+    ResourceTemplate("ref/resource"),
 }
 
 // ============================================================================

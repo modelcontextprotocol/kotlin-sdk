@@ -38,9 +38,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
-import kotlinx.serialization.serializer
-import kotlin.reflect.KType
-import kotlin.reflect.typeOf
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -262,14 +259,11 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             logger.trace { "No handler found for request: ${request.method}" }
             try {
                 transport?.send(
-                    JSONRPCResponse(
+                    JSONRPCError(
                         id = request.id,
-                        error = JSONRPCError(
-                            id = request.id,
-                            error = RPCError(
-                                code = RPCError.ErrorCode.METHOD_NOT_FOUND,
-                                message = "Server does not support ${request.method}",
-                            ),
+                        error = RPCError(
+                            code = RPCError.ErrorCode.METHOD_NOT_FOUND,
+                            message = "Server does not support ${request.method}",
                         ),
                     ),
                 )
@@ -287,7 +281,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             transport?.send(
                 JSONRPCResponse(
                     id = request.id,
-                    result = result,
+                    result = result ?: EmptyResult(),
                 ),
             )
         } catch (cause: Throwable) {
@@ -295,14 +289,11 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
 
             try {
                 transport?.send(
-                    JSONRPCResponse(
+                    JSONRPCError(
                         id = request.id,
-                        error = JSONRPCError(
-                            id = request.id,
-                            error = RPCError(
-                                code = RPCError.ErrorCode.INTERNAL_ERROR,
-                                message = cause.message ?: "Internal error",
-                            ),
+                        error = RPCError(
+                            code = RPCError.ErrorCode.INTERNAL_ERROR,
+                            message = cause.message ?: "Internal error",
                         ),
                     ),
                 )
@@ -338,7 +329,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     }
 
     private fun onResponse(response: JSONRPCResponse?, error: JSONRPCError?) {
-        val messageId = response?.id
+        val messageId = response?.id ?: error?.id
 
         val oldResponseHandlers = _responseHandlers.getAndUpdate { current ->
             if (messageId != null && messageId in current) {
@@ -429,11 +420,6 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                     return@put
                 }
 
-                if (response?.error != null) {
-                    result.completeExceptionally(IllegalStateException(response.error.toString()))
-                    return@put
-                }
-
                 try {
                     @Suppress("UNCHECKED_CAST")
                     result.complete(response!!.result as T)
@@ -505,30 +491,21 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         method: Method,
         noinline block: suspend (T, RequestHandlerExtra) -> RequestResult?,
     ) {
-        setRequestHandler(typeOf<T>(), method, block)
+        setRequestHandlerInternal(method, block)
     }
 
     @PublishedApi
-    internal fun <T : Request> setRequestHandler(
-        requestType: KType,
+    @Suppress("UNCHECKED_CAST")
+    internal fun <T : Request> setRequestHandlerInternal(
         method: Method,
         block: suspend (T, RequestHandlerExtra) -> RequestResult?,
     ) {
         assertRequestHandlerCapability(method)
 
-        val serializer = McpJson.serializersModule.serializer(requestType)
-
         _requestHandlers.update { current ->
-            current.put(method.value) { request, extraHandler ->
-                val result = request.params?.let { params ->
-                    McpJson.decodeFromJsonElement(serializer, params)
-                }
-                val response = if (result != null) {
-                    @Suppress("UNCHECKED_CAST")
-                    block(result as T, extraHandler)
-                } else {
-                    EmptyResult()
-                }
+            current.put(method.value) { jSONRPCRequest, extraHandler ->
+                val request = jSONRPCRequest.fromJSON()
+                val response = block(request as T, extraHandler)
                 response
             }
         }

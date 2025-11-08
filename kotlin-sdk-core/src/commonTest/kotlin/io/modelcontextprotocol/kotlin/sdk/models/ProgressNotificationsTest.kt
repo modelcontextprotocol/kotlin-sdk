@@ -1,9 +1,10 @@
 package io.modelcontextprotocol.kotlin.sdk.models
 
 import io.kotest.matchers.shouldBe
-import io.modelcontextprotocol.kotlin.sdk.ProgressNotification
-import io.modelcontextprotocol.kotlin.sdk.RequestId
-import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
+import io.modelcontextprotocol.kotlin.sdk.types.McpJson
+import io.modelcontextprotocol.kotlin.sdk.types.ProgressNotification
+import io.modelcontextprotocol.kotlin.sdk.types.ProgressNotificationParams
+import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import kotlin.test.Test
 
 class ProgressNotificationsTest {
@@ -30,7 +31,7 @@ class ProgressNotificationsTest {
         val result = McpJson.decodeFromString<ProgressNotification>(json)
 
         result shouldBe ProgressNotification(
-            params = ProgressNotification.Params(
+            params = ProgressNotificationParams(
                 progressToken = RequestId.StringId("abc123"),
                 progress = 50.0,
                 message = "Reticulating splines...",
@@ -60,7 +61,7 @@ class ProgressNotificationsTest {
 
         val result = McpJson.decodeFromString<ProgressNotification>(json)
         result shouldBe ProgressNotification(
-            params = ProgressNotification.Params(
+            params = ProgressNotificationParams(
                 progressToken = RequestId.NumberId(100500),
                 progress = 50.0,
                 message = "Reticulating splines...",

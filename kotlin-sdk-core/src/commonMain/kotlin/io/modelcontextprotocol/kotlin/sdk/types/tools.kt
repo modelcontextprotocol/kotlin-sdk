@@ -4,8 +4,27 @@ package io.modelcontextprotocol.kotlin.sdk.types
 
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
+
+/**
+ * Creates a [CallToolResult] with single [TextContent] and [meta].
+ */
+public fun CallToolResult.Companion.success(content: String, meta: JsonObject? = null): CallToolResult = CallToolResult(
+    content = listOf(TextContent(content)),
+    isError = false,
+    meta = meta,
+)
+
+/**
+ * Creates a [CallToolResult] with single [TextContent] and [meta], with `isError` being true.
+ */
+public fun CallToolResult.Companion.error(content: String, meta: JsonObject? = null): CallToolResult = CallToolResult(
+    content = listOf(TextContent(content)),
+    isError = true,
+    meta = meta,
+)
 
 /**
  * Definition for a tool the client can call.
@@ -47,6 +66,7 @@ public data class Tool(
     val title: String? = null,
     val annotations: ToolAnnotations? = null,
     val icons: List<Icon>? = null,
+    @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : WithMeta
 
@@ -135,6 +155,7 @@ public data class CallToolRequest(override val params: CallToolRequestParams) : 
 public data class CallToolRequestParams(
     val name: String,
     val arguments: JsonObject? = null,
+    @SerialName("_meta")
     override val meta: RequestMeta? = null,
 ) : RequestParams
 
@@ -164,6 +185,7 @@ public data class CallToolResult(
     val content: List<ContentBlock>,
     val isError: Boolean? = null,
     val structuredContent: JsonObject? = null,
+    @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : ServerResult
 
@@ -203,6 +225,7 @@ public data class ListToolsRequest(override val params: PaginatedRequestParams? 
 public data class ListToolsResult(
     val tools: List<Tool>,
     override val nextCursor: String? = null,
+    @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : ServerResult,
     PaginatedResult

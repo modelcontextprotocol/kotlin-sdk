@@ -37,6 +37,7 @@ public data class ElicitRequest(override val params: ElicitRequestParams) : Serv
 public data class ElicitRequestParams(
     val message: String,
     val requestedSchema: RequestedSchema,
+    @SerialName("_meta")
     override val meta: RequestMeta? = null,
 ) : RequestParams {
 
@@ -76,6 +77,7 @@ public data class ElicitRequestParams(
 public data class ElicitResult(
     val action: Action,
     val content: JsonObject? = null,
+    @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : ClientResult {
 

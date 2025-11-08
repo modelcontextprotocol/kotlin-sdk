@@ -2,6 +2,7 @@ package io.modelcontextprotocol.kotlin.sdk.types
 
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 
@@ -20,7 +21,12 @@ import kotlinx.serialization.json.JsonObject
  * @property meta Optional metadata for this root.
  */
 @Serializable
-public data class Root(val uri: String, val name: String? = null, override val meta: JsonObject? = null) : WithMeta {
+public data class Root(
+    val uri: String,
+    val name: String? = null,
+    @SerialName("_meta")
+    override val meta: JsonObject? = null,
+) : WithMeta {
     init {
         require(uri.startsWith("file://")) {
             "Root URI must start with 'file://', got: $uri"
@@ -68,4 +74,8 @@ public data class ListRootsRequest(override val params: BaseRequestParams? = nul
  * @property meta Optional metadata for this response.
  */
 @Serializable
-public data class ListRootsResult(val roots: List<Root>, override val meta: JsonObject? = null) : ClientResult
+public data class ListRootsResult(
+    val roots: List<Root>,
+    @SerialName("_meta")
+    override val meta: JsonObject? = null,
+) : ClientResult

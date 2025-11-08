@@ -51,6 +51,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.test.fail
 
@@ -645,7 +646,6 @@ class ClientTest {
         assertEquals(request.id, receivedAsResponse.id)
         assertEquals(request.jsonrpc, receivedAsResponse.jsonrpc)
         assertEquals(serverListToolsResult, receivedAsResponse.result)
-        assertEquals(null, receivedAsResponse.error)
     }
 
     @Test
@@ -932,7 +932,7 @@ class ClientTest {
         // Set logging level to warning
         val minLevel = LoggingLevel.Warning
         val result = client.setLoggingLevel(minLevel)
-        assertEquals(EmptyJsonObject, result.meta)
+        assertNull(result.meta)
 
         // Send messages of different levels
         val testMessages = listOf(

@@ -366,14 +366,11 @@ class HttpServerTransport(private val sessionId: String) : AbstractTransport() {
                         logger.warn { "Timeout waiting for response to request ID: $id" }
                         call.respondText(
                             McpJson.encodeToString(
-                                JSONRPCResponse(
+                                JSONRPCError(
                                     id = message.id,
-                                    error = JSONRPCError(
-                                        id = message.id,
-                                        error = RPCError(
-                                            code = RPCError.ErrorCode.REQUEST_TIMEOUT,
-                                            message = "Request timed out",
-                                        ),
+                                    error = RPCError(
+                                        code = RPCError.ErrorCode.REQUEST_TIMEOUT,
+                                        message = "Request timed out",
                                     ),
                                 ),
                             ),
@@ -386,14 +383,11 @@ class HttpServerTransport(private val sessionId: String) : AbstractTransport() {
                     if (!call.response.isCommitted) {
                         call.respondText(
                             McpJson.encodeToString(
-                                JSONRPCResponse(
+                                JSONRPCError(
                                     id = message.id,
-                                    error = JSONRPCError(
-                                        id = message.id,
-                                        error = RPCError(
-                                            code = RPCError.ErrorCode.CONNECTION_CLOSED,
-                                            message = "Request cancelled",
-                                        ),
+                                    error = RPCError(
+                                        code = RPCError.ErrorCode.CONNECTION_CLOSED,
+                                        message = "Request cancelled",
                                     ),
                                 ),
                             ),
@@ -409,14 +403,11 @@ class HttpServerTransport(private val sessionId: String) : AbstractTransport() {
             logger.error(e) { "Error handling request" }
             if (!call.response.isCommitted) {
                 try {
-                    val errorResponse = JSONRPCResponse(
+                    val errorResponse = JSONRPCError(
                         id = RequestId(0),
-                        error = JSONRPCError(
-                            id = RequestId(0),
-                            error = RPCError(
-                                code = RPCError.ErrorCode.INTERNAL_ERROR,
-                                message = "Internal server error: ${e.message}",
-                            ),
+                        error = RPCError(
+                            code = RPCError.ErrorCode.INTERNAL_ERROR,
+                            message = "Internal server error: ${e.message}",
                         ),
                     )
 

@@ -48,6 +48,7 @@ public data class Resource(
     val title: String? = null,
     val annotations: Annotations? = null,
     val icons: List<Icon>? = null,
+    @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : ResourceLike
 
@@ -90,6 +91,7 @@ public data class ResourceTemplate(
     val title: String? = null,
     val annotations: Annotations? = null,
     val icons: List<Icon>? = null,
+    @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : WithMeta
 
@@ -105,10 +107,9 @@ public data class ResourceTemplate(
  * or a URI template with parameters (e.g., `file:///{path}`).
  */
 @Serializable
-@SerialName("ref/resource")
 public data class ResourceTemplateReference(val uri: String) : Reference {
     @EncodeDefault
-    public override val type: String = "ref/resource"
+    public override val type: ReferenceType = ReferenceType.ResourceTemplate
 }
 
 /**
@@ -207,6 +208,7 @@ public data class ListResourcesRequest(override val params: PaginatedRequestPara
 public data class ListResourcesResult(
     val resources: List<Resource>,
     override val nextCursor: String? = null,
+    @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : ServerResult,
     PaginatedResult
@@ -225,7 +227,11 @@ public data class ListResourcesResult(
  *                out-of-band progress notifications.
  */
 @Serializable
-public data class ReadResourceRequestParams(val uri: String, override val meta: RequestMeta? = null) : RequestParams
+public data class ReadResourceRequestParams(
+    val uri: String,
+    @SerialName("_meta")
+    override val meta: RequestMeta? = null,
+) : RequestParams
 
 /**
  * Sent from the client to the server to read a specific resource URI.
@@ -252,8 +258,11 @@ public data class ReadResourceRequest(override val params: ReadResourceRequestPa
  * @property meta Optional metadata for this response.
  */
 @Serializable
-public data class ReadResourceResult(val contents: List<ResourceContents>, override val meta: JsonObject? = null) :
-    ServerResult
+public data class ReadResourceResult(
+    val contents: List<ResourceContents>,
+    @SerialName("_meta")
+    override val meta: JsonObject? = null,
+) : ServerResult
 
 // ============================================================================
 // resources/subscribe
@@ -268,7 +277,11 @@ public data class ReadResourceResult(val contents: List<ResourceContents>, overr
  * out-of-band progress notifications.
  */
 @Serializable
-public data class SubscribeRequestParams(val uri: String, override val meta: RequestMeta? = null) : RequestParams
+public data class SubscribeRequestParams(
+    val uri: String,
+    @SerialName("_meta")
+    override val meta: RequestMeta? = null,
+) : RequestParams
 
 /**
  * Sent from the client to request resources/updated notifications from the server
@@ -299,7 +312,11 @@ public data class SubscribeRequest(override val params: SubscribeRequestParams) 
  * out-of-band progress notifications.
  */
 @Serializable
-public data class UnsubscribeRequestParams(val uri: String, override val meta: RequestMeta? = null) : RequestParams
+public data class UnsubscribeRequestParams(
+    val uri: String,
+    @SerialName("_meta")
+    override val meta: RequestMeta? = null,
+) : RequestParams
 
 /**
  * Sent from the client to request cancellation of resources/updated notifications from the server.
@@ -353,6 +370,7 @@ public data class ListResourceTemplatesRequest(override val params: PaginatedReq
 public data class ListResourceTemplatesResult(
     val resourceTemplates: List<ResourceTemplate>,
     override val nextCursor: String? = null,
+    @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : ServerResult,
     PaginatedResult

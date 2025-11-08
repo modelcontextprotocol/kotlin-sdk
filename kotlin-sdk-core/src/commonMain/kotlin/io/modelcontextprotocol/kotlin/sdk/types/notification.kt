@@ -4,6 +4,7 @@ package io.modelcontextprotocol.kotlin.sdk.types
 
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -11,7 +12,7 @@ import kotlinx.serialization.json.JsonObject
 /**
  * Represents a notification in the protocol.
  */
-@Serializable
+@Serializable(with = NotificationPolymorphicSerializer::class)
 public sealed interface Notification {
     public val method: Method
     public val params: NotificationParams?
@@ -20,13 +21,13 @@ public sealed interface Notification {
 /**
  * Represents a notification sent by the client.
  */
-@Serializable
+@Serializable(with = ClientNotificationPolymorphicSerializer::class)
 public sealed interface ClientNotification : Notification
 
 /**
  * Represents a notification sent by the server.
  */
-@Serializable
+@Serializable(with = ServerNotificationPolymorphicSerializer::class)
 public sealed interface ServerNotification : Notification
 
 /**
@@ -41,7 +42,8 @@ public sealed interface NotificationParams : WithMeta
  * Base parameters for notifications that only contain metadata.
  */
 @Serializable
-public data class BaseNotificationParams(override val meta: JsonObject? = null) : NotificationParams
+public data class BaseNotificationParams(@SerialName("_meta") override val meta: JsonObject? = null) :
+    NotificationParams
 
 /**
  * Represents a progress notification.
@@ -57,6 +59,25 @@ public class Progress(
     public val total: Double? = null,
     public val message: String? = null,
 )
+
+// ============================================================================
+// Custom Notification
+// ============================================================================
+
+/**
+ * Represents a custom notification method that is not part of the core MCP specification.
+ *
+ * The MCP protocol allows implementations to define custom methods for extending functionality.
+ * This class captures such custom notifications while preserving all their data.
+ *
+ * @property method The custom method name. By convention, custom methods often contain
+ * organization-specific prefixes (e.g., "mycompany/custom_event").
+ * @property params Raw JSON parameters for the custom notification, if present.
+ */
+@Serializable
+public data class CustomNotification(override val method: Method, override val params: BaseNotificationParams? = null) :
+    ClientNotification,
+    ServerNotification
 
 // ============================================================================
 // Cancelled Notification
@@ -95,6 +116,7 @@ public data class CancelledNotification(override val params: CancelledNotificati
 public data class CancelledNotificationParams(
     val requestId: RequestId,
     val reason: String? = null,
+    @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : NotificationParams
 
@@ -149,6 +171,7 @@ public data class LoggingMessageNotificationParams(
     val level: LoggingLevel,
     val data: JsonElement,
     val logger: String? = null,
+    @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : NotificationParams
 
@@ -189,6 +212,7 @@ public data class ProgressNotificationParams(
     val progress: Double,
     val total: Double? = null,
     val message: String? = null,
+    @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : NotificationParams
 
@@ -257,8 +281,11 @@ public data class ResourceUpdatedNotification(override val params: ResourceUpdat
  * @property meta Optional metadata for this notification.
  */
 @Serializable
-public data class ResourceUpdatedNotificationParams(val uri: String, override val meta: JsonObject? = null) :
-    NotificationParams
+public data class ResourceUpdatedNotificationParams(
+    val uri: String,
+    @SerialName("_meta")
+    override val meta: JsonObject? = null,
+) : NotificationParams
 
 // ============================================================================
 // Roots List Changed Notification
@@ -274,7 +301,8 @@ public data class ResourceUpdatedNotificationParams(val uri: String, override va
  * @property params Optional notification parameters containing metadata.
  */
 @Serializable
-public data class RootsListChangedNotification(override val params: NotificationParams? = null) : ClientNotification {
+public data class RootsListChangedNotification(override val params: BaseNotificationParams? = null) :
+    ClientNotification {
     @EncodeDefault
     override val method: Method = Method.Defined.NotificationsRootsListChanged
 }
@@ -292,7 +320,8 @@ public data class RootsListChangedNotification(override val params: Notification
  * @property params Optional notification parameters containing metadata.
  */
 @Serializable
-public data class ToolListChangedNotification(override val params: NotificationParams? = null) : ServerNotification {
+public data class ToolListChangedNotification(override val params: BaseNotificationParams? = null) :
+    ServerNotification {
     @EncodeDefault
     override val method: Method = Method.Defined.NotificationsToolsListChanged
 }
