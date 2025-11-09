@@ -1,9 +1,9 @@
 package io.modelcontextprotocol.kotlin.sdk.shared
 
-import io.modelcontextprotocol.kotlin.sdk.InitializedNotification
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
-import io.modelcontextprotocol.kotlin.sdk.PingRequest
-import io.modelcontextprotocol.kotlin.sdk.toJSON
+import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
+import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import kotlinx.coroutines.CompletableDeferred
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

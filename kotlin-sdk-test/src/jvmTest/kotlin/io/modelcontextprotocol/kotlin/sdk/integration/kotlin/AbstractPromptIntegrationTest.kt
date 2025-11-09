@@ -1,12 +1,15 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.kotlin
 
-import io.modelcontextprotocol.kotlin.sdk.GetPromptRequest
-import io.modelcontextprotocol.kotlin.sdk.GetPromptResult
-import io.modelcontextprotocol.kotlin.sdk.PromptArgument
-import io.modelcontextprotocol.kotlin.sdk.PromptMessage
-import io.modelcontextprotocol.kotlin.sdk.Role
-import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
-import io.modelcontextprotocol.kotlin.sdk.TextContent
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult
+import io.modelcontextprotocol.kotlin.sdk.types.McpException
+import io.modelcontextprotocol.kotlin.sdk.types.PromptArgument
+import io.modelcontextprotocol.kotlin.sdk.types.PromptMessage
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError
+import io.modelcontextprotocol.kotlin.sdk.types.Role
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -56,17 +59,17 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
                 ),
             ),
         ) { request ->
-            val name = request.arguments?.get("name") ?: "World"
+            val name = request.params.arguments?.get("name") ?: "World"
 
             GetPromptResult(
                 description = basicPromptDescription,
                 messages = listOf(
                     PromptMessage(
-                        role = Role.user,
+                        role = Role.User,
                         content = TextContent(text = "Hello, $name!"),
                     ),
                     PromptMessage(
-                        role = Role.assistant,
+                        role = Role.Assistant,
                         content = TextContent(text = "Greetings, $name! How can I assist you today?"),
                     ),
                 ),
@@ -85,17 +88,17 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
                 ),
             ),
         ) { request ->
-            val special = request.arguments?.get("special") ?: specialCharsContent
+            val special = request.params.arguments?.get("special") ?: specialCharsContent
 
             GetPromptResult(
                 description = specialCharsPromptDescription,
                 messages = listOf(
                     PromptMessage(
-                        role = Role.user,
+                        role = Role.User,
                         content = TextContent(text = "Special characters: $special"),
                     ),
                     PromptMessage(
-                        role = Role.assistant,
+                        role = Role.Assistant,
                         content = TextContent(text = "Received special characters: $special"),
                     ),
                 ),
@@ -114,18 +117,18 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
                 ),
             ),
         ) { request ->
-            val size = request.arguments?.get("size")?.toIntOrNull() ?: 1
+            val size = request.params.arguments?.get("size")?.toIntOrNull() ?: 1
             val content = largePromptContent.repeat(size)
 
             GetPromptResult(
                 description = largePromptDescription,
                 messages = listOf(
                     PromptMessage(
-                        role = Role.user,
+                        role = Role.User,
                         content = TextContent(text = "Generate a large response"),
                     ),
                     PromptMessage(
-                        role = Role.assistant,
+                        role = Role.Assistant,
                         content = TextContent(text = content),
                     ),
                 ),
@@ -152,7 +155,7 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
             // validate required arguments
             val requiredArgs = listOf("arg1", "arg2", "arg3")
             for (argName in requiredArgs) {
-                if (request.arguments?.get(argName) == null) {
+                if (request.params.arguments?.get(argName) == null) {
                     throw IllegalArgumentException("Missing required argument: $argName")
                 }
             }
@@ -160,7 +163,7 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
             val args = mutableMapOf<String, String>()
             for (i in 1..10) {
                 val argName = "arg$i"
-                val argValue = request.arguments?.get(argName)
+                val argValue = request.params.arguments?.get(argName)
                 if (argValue != null) {
                     args[argName] = argValue
                 }
@@ -170,7 +173,7 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
                 description = complexPromptDescription,
                 messages = listOf(
                     PromptMessage(
-                        role = Role.user,
+                        role = Role.User,
                         content = TextContent(
                             text = "Arguments: ${
                                 args.entries.joinToString {
@@ -180,7 +183,7 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
                         ),
                     ),
                     PromptMessage(
-                        role = Role.assistant,
+                        role = Role.Assistant,
                         content = TextContent(text = "Received ${args.size} arguments"),
                     ),
                 ),
@@ -199,38 +202,38 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
                 ),
             ),
         ) { request ->
-            val topic = request.arguments?.get("topic") ?: "weather"
+            val topic = request.params.arguments?.get("topic") ?: "weather"
 
             GetPromptResult(
                 description = conversationPromptDescription,
                 messages = listOf(
                     PromptMessage(
-                        role = Role.user,
+                        role = Role.User,
                         content = TextContent(text = "Let's talk about the $topic."),
                     ),
                     PromptMessage(
-                        role = Role.assistant,
+                        role = Role.Assistant,
                         content = TextContent(
                             text = "Sure, I'd love to discuss the $topic. What would you like to know?",
                         ),
                     ),
                     PromptMessage(
-                        role = Role.user,
+                        role = Role.User,
                         content = TextContent(text = "What's your opinion on the $topic?"),
                     ),
                     PromptMessage(
-                        role = Role.assistant,
+                        role = Role.Assistant,
                         content = TextContent(
                             text = "As an AI, I don't have personal opinions," +
                                 " but I can provide information about $topic.",
                         ),
                     ),
                     PromptMessage(
-                        role = Role.user,
+                        role = Role.User,
                         content = TextContent(text = "That's helpful, thank you!"),
                     ),
                     PromptMessage(
-                        role = Role.assistant,
+                        role = Role.Assistant,
                         content = TextContent(
                             text = "You're welcome! Let me know if you have more questions about $topic.",
                         ),
@@ -261,7 +264,7 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
                 ),
             ),
         ) { request ->
-            val args = request.arguments ?: emptyMap()
+            val args = request.params.arguments ?: emptyMap()
             val arg1 = args["requiredArg1"] ?: throw IllegalArgumentException(
                 "Missing required argument: requiredArg1",
             )
@@ -274,11 +277,11 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
                 description = strictPromptDescription,
                 messages = listOf(
                     PromptMessage(
-                        role = Role.user,
+                        role = Role.User,
                         content = TextContent(text = "Required arguments: $arg1, $arg2. Optional: $optArg"),
                     ),
                     PromptMessage(
-                        role = Role.assistant,
+                        role = Role.Assistant,
                         content = TextContent(text = "I received your arguments: $arg1, $arg2, and $optArg"),
                     ),
                 ),
@@ -319,8 +322,10 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
         val testName = "Alice"
         val result = client.getPrompt(
             GetPromptRequest(
-                name = basicPromptName,
-                arguments = mapOf("name" to testName),
+                GetPromptRequestParams(
+                    name = basicPromptName,
+                    arguments = mapOf("name" to testName),
+                ),
             ),
         )
 
@@ -334,7 +339,7 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
         assertTrue(result.messages.isNotEmpty(), "Prompt messages should not be empty")
         assertEquals(2, result.messages.size, "Prompt should have 2 messages")
 
-        val userMessage = result.messages.find { it.role == Role.user }
+        val userMessage = result.messages.find { it.role == Role.User }
         assertNotNull(userMessage, "User message should be in the list")
         val userContent = userMessage.content as? TextContent
         assertNotNull(userContent, "User message content should be TextContent")
@@ -345,7 +350,7 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
             "User message content should match",
         )
 
-        val assistantMessage = result.messages.find { it.role == Role.assistant }
+        val assistantMessage = result.messages.find { it.role == Role.Assistant }
         assertNotNull(assistantMessage, "Assistant message should be in the list")
         val assistantContent = assistantMessage.content as? TextContent
         assertNotNull(assistantContent, "Assistant message content should be TextContent")
@@ -373,48 +378,46 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
         )
 
         // test missing required arg
-        val exception = assertThrows<IllegalStateException> {
+        val exception = assertThrows<McpException> {
             runBlocking {
                 client.getPrompt(
                     GetPromptRequest(
-                        name = strictPromptName,
-                        arguments = mapOf("requiredArg1" to "value1"),
+                        GetPromptRequestParams(
+                            name = strictPromptName,
+                            arguments = mapOf("requiredArg1" to "value1"),
+                        ),
                     ),
                 )
             }
         }
 
-        assertEquals(
-            true,
-            exception.message?.contains("requiredArg2"),
-            "Exception should mention the missing argument",
-        )
+        assertTrue(exception.message.contains("requiredArg2"), "Exception should mention the missing argument")
 
         // test with no args
-        val exception2 = assertThrows<IllegalStateException> {
+        val exception2 = assertThrows<McpException> {
             runBlocking {
                 client.getPrompt(
                     GetPromptRequest(
-                        name = strictPromptName,
-                        arguments = emptyMap(),
+                        GetPromptRequestParams(
+                            name = strictPromptName,
+                            arguments = emptyMap(),
+                        ),
                     ),
                 )
             }
         }
 
-        assertEquals(
-            exception2.message?.contains("requiredArg"),
-            true,
-            "Exception should mention a missing required argument",
-        )
+        assertTrue(exception2.message.contains("requiredArg"), "Exception should mention a missing required argument")
 
         // test with all required args
         val result = client.getPrompt(
             GetPromptRequest(
-                name = strictPromptName,
-                arguments = mapOf(
-                    "requiredArg1" to "value1",
-                    "requiredArg2" to "value2",
+                GetPromptRequestParams(
+                    name = strictPromptName,
+                    arguments = mapOf(
+                        "requiredArg1" to "value1",
+                        "requiredArg2" to "value2",
+                    ),
                 ),
             ),
         )
@@ -422,7 +425,7 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
         assertNotNull(result, "Get prompt result should not be null")
         assertEquals(2, result.messages.size, "Prompt should have 2 messages")
 
-        val userMessage = result.messages.find { it.role == Role.user }
+        val userMessage = result.messages.find { it.role == Role.User }
         assertNotNull(userMessage, "User message should be in the list")
         val userContent = userMessage.content as? TextContent
         assertNotNull(userContent, "User message content should be TextContent")
@@ -436,8 +439,10 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
         val topic = "climate change"
         val result = client.getPrompt(
             GetPromptRequest(
-                name = conversationPromptName,
-                arguments = mapOf("topic" to topic),
+                GetPromptRequestParams(
+                    name = conversationPromptName,
+                    arguments = mapOf("topic" to topic),
+                ),
             ),
         )
 
@@ -451,14 +456,14 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
         assertTrue(result.messages.isNotEmpty(), "Prompt messages should not be empty")
         assertEquals(6, result.messages.size, "Prompt should have 6 messages")
 
-        val userMessages = result.messages.filter { it.role == Role.user }
-        val assistantMessages = result.messages.filter { it.role == Role.assistant }
+        val userMessages = result.messages.filter { it.role == Role.User }
+        val assistantMessages = result.messages.filter { it.role == Role.Assistant }
 
         assertEquals(3, userMessages.size, "Should have 3 user messages")
         assertEquals(3, assistantMessages.size, "Should have 3 assistant messages")
 
         for (i in 0 until result.messages.size) {
-            val expectedRole = if (i % 2 == 0) Role.user else Role.assistant
+            val expectedRole = if (i % 2 == 0) Role.User else Role.Assistant
             assertEquals(
                 expectedRole,
                 result.messages[i].role,
@@ -487,8 +492,10 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
         val testName = "Alice"
         val result = client.getPrompt(
             GetPromptRequest(
-                name = basicPromptName,
-                arguments = mapOf("name" to testName),
+                GetPromptRequestParams(
+                    name = basicPromptName,
+                    arguments = mapOf("name" to testName),
+                ),
             ),
         )
 
@@ -497,13 +504,13 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
 
         assertEquals(2, result.messages.size, "Prompt should have 2 messages")
 
-        val userMessage = result.messages.find { it.role == Role.user }
+        val userMessage = result.messages.find { it.role == Role.User }
         assertNotNull(userMessage, "User message should be in the list")
         val userContent = userMessage.content as? TextContent
         assertNotNull(userContent, "User message content should be TextContent")
         assertEquals("Hello, $testName!", userContent.text, "User message content should match")
 
-        val assistantMessage = result.messages.find { it.role == Role.assistant }
+        val assistantMessage = result.messages.find { it.role == Role.Assistant }
         assertNotNull(assistantMessage, "Assistant message should be in the list")
         val assistantContent = assistantMessage.content as? TextContent
         assertNotNull(assistantContent, "Assistant message content should be TextContent")
@@ -520,8 +527,10 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
 
         val result = client.getPrompt(
             GetPromptRequest(
-                name = complexPromptName,
-                arguments = arguments,
+                GetPromptRequestParams(
+                    name = complexPromptName,
+                    arguments = arguments,
+                ),
             ),
         )
 
@@ -530,18 +539,18 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
 
         assertEquals(2, result.messages.size, "Prompt should have 2 messages")
 
-        val userMessage = result.messages.find { it.role == Role.user }
+        val userMessage = result.messages.find { it.role == Role.User }
         assertNotNull(userMessage, "User message should be in the list")
         val userContent = userMessage.content as? TextContent
         assertNotNull(userContent, "User message content should be TextContent")
 
         // verify all arguments
-        val text = userContent.text ?: ""
+        val text = userContent.text
         for (i in 1..10) {
             assertTrue(text.contains("arg$i=value$i"), "Message should contain arg$i=value$i")
         }
 
-        val assistantMessage = result.messages.find { it.role == Role.assistant }
+        val assistantMessage = result.messages.find { it.role == Role.Assistant }
         assertNotNull(assistantMessage, "Assistant message should be in the list")
         val assistantContent = assistantMessage.content as? TextContent
         assertNotNull(assistantContent, "Assistant message content should be TextContent")
@@ -556,8 +565,10 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
     fun testLargePrompt() = runBlocking(Dispatchers.IO) {
         val result = client.getPrompt(
             GetPromptRequest(
-                name = largePromptName,
-                arguments = mapOf("size" to "1"),
+                GetPromptRequestParams(
+                    name = largePromptName,
+                    arguments = mapOf("size" to "1"),
+                ),
             ),
         )
 
@@ -566,11 +577,11 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
 
         assertEquals(2, result.messages.size, "Prompt should have 2 messages")
 
-        val assistantMessage = result.messages.find { it.role == Role.assistant }
+        val assistantMessage = result.messages.find { it.role == Role.Assistant }
         assertNotNull(assistantMessage, "Assistant message should be in the list")
         val assistantContent = assistantMessage.content as? TextContent
         assertNotNull(assistantContent, "Assistant message content should be TextContent")
-        val text = assistantContent.text ?: ""
+        val text = assistantContent.text
         assertEquals(100_000, text.length, "Assistant message should be 100KB in size")
     }
 
@@ -578,8 +589,10 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
     fun testSpecialCharacters() = runBlocking(Dispatchers.IO) {
         val result = client.getPrompt(
             GetPromptRequest(
-                name = specialCharsPromptName,
-                arguments = mapOf("special" to specialCharsContent),
+                GetPromptRequestParams(
+                    name = specialCharsPromptName,
+                    arguments = mapOf("special" to specialCharsContent),
+                ),
             ),
         )
 
@@ -588,18 +601,18 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
 
         assertEquals(2, result.messages.size, "Prompt should have 2 messages")
 
-        val userMessage = result.messages.find { it.role == Role.user }
+        val userMessage = result.messages.find { it.role == Role.User }
         assertNotNull(userMessage, "User message should be in the list")
         val userContent = userMessage.content as? TextContent
         assertNotNull(userContent, "User message content should be TextContent")
-        val userText = userContent.text ?: ""
+        val userText = userContent.text
         assertTrue(userText.contains(specialCharsContent), "User message should contain special characters")
 
-        val assistantMessage = result.messages.find { it.role == Role.assistant }
+        val assistantMessage = result.messages.find { it.role == Role.Assistant }
         assertNotNull(assistantMessage, "Assistant message should be in the list")
         val assistantContent = assistantMessage.content as? TextContent
         assertNotNull(assistantContent, "Assistant message content should be TextContent")
-        val assistantText = assistantContent.text ?: ""
+        val assistantText = assistantContent.text
         assertTrue(
             assistantText.contains(specialCharsContent),
             "Assistant message should contain special characters",
@@ -630,8 +643,10 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
 
                     val result = client.getPrompt(
                         GetPromptRequest(
-                            name = promptName,
-                            arguments = arguments,
+                            GetPromptRequestParams(
+                                name = promptName,
+                                arguments = arguments,
+                            ),
                         ),
                     )
 
@@ -654,20 +669,26 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
     fun testNonExistentPrompt() = runTest {
         val nonExistentPromptName = "non-existent-prompt"
 
-        val exception = assertThrows<IllegalStateException> {
+        val exception = assertThrows<McpException> {
             runBlocking {
                 client.getPrompt(
                     GetPromptRequest(
-                        name = nonExistentPromptName,
-                        arguments = mapOf("name" to "Test"),
+                        GetPromptRequestParams(
+                            name = nonExistentPromptName,
+                            arguments = mapOf("name" to "Test"),
+                        ),
                     ),
                 )
             }
         }
 
-        val msg = exception.message ?: ""
-        val expectedMessage = "JSONRPCError(code=InternalError, message=Prompt not found: non-existent-prompt, data={})"
+        val expectedMessage = "MCP error -32603: Prompt not found: non-existent-prompt"
 
-        assertEquals(expectedMessage, msg, "Unexpected error message for non-existent prompt")
+        assertEquals(
+            RPCError.ErrorCode.INTERNAL_ERROR,
+            exception.code,
+            "Exception code should be INTERNAL_ERROR: ${RPCError.ErrorCode.INTERNAL_ERROR}",
+        )
+        assertEquals(expectedMessage, exception.message, "Unexpected error message for non-existent prompt")
     }
 }

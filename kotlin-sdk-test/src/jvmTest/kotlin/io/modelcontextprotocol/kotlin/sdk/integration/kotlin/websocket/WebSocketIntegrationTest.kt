@@ -6,19 +6,20 @@ import io.ktor.server.cio.CIOApplicationEngine
 import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.routing.routing
-import io.modelcontextprotocol.kotlin.sdk.GetPromptRequest
-import io.modelcontextprotocol.kotlin.sdk.GetPromptResult
-import io.modelcontextprotocol.kotlin.sdk.Implementation
-import io.modelcontextprotocol.kotlin.sdk.PromptArgument
-import io.modelcontextprotocol.kotlin.sdk.PromptMessage
-import io.modelcontextprotocol.kotlin.sdk.Role
-import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
-import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.mcpWebSocketTransport
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.mcpWebSocket
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.PromptArgument
+import io.modelcontextprotocol.kotlin.sdk.types.PromptMessage
+import io.modelcontextprotocol.kotlin.sdk.types.Role
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
@@ -154,13 +155,13 @@ class WebSocketIntegrationTest {
             ),
         ) { request ->
             GetPromptResult(
-                "Prompt for ${request.name}",
                 messages = listOf(
                     PromptMessage(
-                        role = Role.user,
-                        content = TextContent("Prompt for client ${request.arguments?.get("client")}"),
+                        role = Role.User,
+                        content = TextContent("Prompt for client ${request.params.arguments?.get("client")}"),
                     ),
                 ),
+                description = "Prompt for ${request.params.name}",
             )
         }
 
@@ -180,8 +181,10 @@ class WebSocketIntegrationTest {
     private suspend fun getPrompt(client: Client, clientName: String): String {
         val response = client.getPrompt(
             GetPromptRequest(
-                "prompt",
-                arguments = mapOf("client" to clientName),
+                GetPromptRequestParams(
+                    name = "prompt",
+                    arguments = mapOf("client" to clientName),
+                ),
             ),
         )
 

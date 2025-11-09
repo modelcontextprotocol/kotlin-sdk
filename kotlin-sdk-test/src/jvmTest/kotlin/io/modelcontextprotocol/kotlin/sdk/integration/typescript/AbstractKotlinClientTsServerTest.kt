@@ -1,8 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.typescript
 
-import io.modelcontextprotocol.kotlin.sdk.CallToolResult
-import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.client.Client
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
@@ -50,7 +49,7 @@ abstract class AbstractKotlinClientTsServerTest : TsTestBase() {
             val arguments = mapOf("name" to testName)
             val result = client.callTool("greet", arguments)
             assertNotNull(result, "Tool call result should not be null")
-            val callResult = result as CallToolResult
+            val callResult = result
             val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
             assertNotNull(textContent, "Text content should be present in the result")
             assertEquals("Hello, $testName!", textContent.text)

@@ -5,7 +5,8 @@ import io.ktor.websocket.Frame
 import io.ktor.websocket.WebSocketSession
 import io.ktor.websocket.close
 import io.ktor.websocket.readText
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.InternalCoroutinesApi
@@ -58,7 +59,7 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
             while (true) {
                 val message = try {
                     session.incoming.receive()
-                } catch (e: ClosedReceiveChannelException) {
+                } catch (_: ClosedReceiveChannelException) {
                     logger.debug { "Closed receive channel, exiting" }
                     return@launch
                 }
