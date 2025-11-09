@@ -29,11 +29,16 @@ private val logger = KotlinLogging.logger {}
 private fun JsonElement.getMethodOrNull(): String? = jsonObject["method"]?.jsonPrimitive?.content
 
 /**
- * Extracts the method field from a JSON element.
- * Throws [SerializationException] if the method field is not present.
+ * Safely extracts the type field from a JSON element.
+ * Returns null if the type field is not present.
  */
-private fun JsonElement.getMethod(): String =
-    getMethodOrNull() ?: throw SerializationException("Missing required 'method' field in notification")
+private fun JsonElement.getTypeOrNull(): String? = jsonObject["type"]?.jsonPrimitive?.content
+
+/**
+ * Extracts the type field from a JSON element.
+ * Throws [SerializationException] if the type field is not present.
+ */
+private fun JsonElement.getType(): String = requireNotNull(getTypeOrNull()) { "Missing required 'type' field" }
 
 // ============================================================================
 // Method Serializer
@@ -72,10 +77,10 @@ internal object MethodSerializer : KSerializer<Method> {
  */
 internal object ReferencePolymorphicSerializer : JsonContentPolymorphicSerializer<Reference>(Reference::class) {
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<Reference> =
-        when (element.jsonObject.getValue("type").jsonPrimitive.content) {
+        when (element.getType()) {
             ReferenceType.Prompt.value -> PromptReference.serializer()
             ReferenceType.ResourceTemplate.value -> ResourceTemplateReference.serializer()
-            else -> error("Unknown reference type")
+            else -> throw SerializationException("Unknown reference type: ${element.getTypeOrNull()}")
         }
 }
 
@@ -90,13 +95,13 @@ internal object ReferencePolymorphicSerializer : JsonContentPolymorphicSerialize
 internal object ContentBlockPolymorphicSerializer :
     JsonContentPolymorphicSerializer<ContentBlock>(ContentBlock::class) {
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<ContentBlock> =
-        when (element.jsonObject.getValue("type").jsonPrimitive.content) {
+        when (element.getType()) {
             ContentTypes.TEXT.value -> TextContent.serializer()
             ContentTypes.IMAGE.value -> ImageContent.serializer()
             ContentTypes.AUDIO.value -> AudioContent.serializer()
             ContentTypes.RESOURCE_LINK.value -> ResourceLink.serializer()
             ContentTypes.EMBEDDED_RESOURCE.value -> EmbeddedResource.serializer()
-            else -> error("Unknown content block type")
+            else -> throw SerializationException("Unknown content block type: ${element.getTypeOrNull()}")
         }
 }
 
@@ -107,11 +112,11 @@ internal object ContentBlockPolymorphicSerializer :
 internal object MediaContentPolymorphicSerializer :
     JsonContentPolymorphicSerializer<MediaContent>(MediaContent::class) {
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<MediaContent> =
-        when (element.jsonObject.getValue("type").jsonPrimitive.content) {
+        when (element.getType()) {
             ContentTypes.TEXT.value -> TextContent.serializer()
             ContentTypes.IMAGE.value -> ImageContent.serializer()
             ContentTypes.AUDIO.value -> AudioContent.serializer()
-            else -> error("Unknown media content type")
+            else -> throw SerializationException("Unknown media content type: ${element.getTypeOrNull()}")
         }
 }
 
@@ -128,8 +133,8 @@ internal object ResourceContentsPolymorphicSerializer :
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<ResourceContents> {
         val jsonObject = element.jsonObject
         return when {
-            jsonObject.contains("text") -> TextResourceContents.serializer()
-            jsonObject.contains("blob") -> BlobResourceContents.serializer()
+            "text" in jsonObject -> TextResourceContents.serializer()
+            "blob" in jsonObject -> BlobResourceContents.serializer()
             else -> UnknownResourceContents.serializer()
         }
     }
@@ -139,38 +144,46 @@ internal object ResourceContentsPolymorphicSerializer :
 // Request Serializers
 // ============================================================================
 
+private val clientRequestDeserializers: Map<String, DeserializationStrategy<ClientRequest>> by lazy {
+    mapOf(
+        Method.Defined.CompletionComplete.value to CompleteRequest.serializer(),
+        Method.Defined.Initialize.value to InitializeRequest.serializer(),
+        Method.Defined.Ping.value to PingRequest.serializer(),
+        Method.Defined.LoggingSetLevel.value to SetLevelRequest.serializer(),
+        Method.Defined.PromptsGet.value to GetPromptRequest.serializer(),
+        Method.Defined.PromptsList.value to ListPromptsRequest.serializer(),
+        Method.Defined.ResourcesList.value to ListResourcesRequest.serializer(),
+        Method.Defined.ResourcesRead.value to ReadResourceRequest.serializer(),
+        Method.Defined.ResourcesSubscribe.value to SubscribeRequest.serializer(),
+        Method.Defined.ResourcesUnsubscribe.value to UnsubscribeRequest.serializer(),
+        Method.Defined.ResourcesTemplatesList.value to ListResourceTemplatesRequest.serializer(),
+        Method.Defined.ToolsCall.value to CallToolRequest.serializer(),
+        Method.Defined.ToolsList.value to ListToolsRequest.serializer(),
+    )
+}
+
 /**
  * Selects the appropriate deserializer for client requests based on the method name.
  * Returns null if the method is not a known client request method.
  */
-internal fun selectClientRequestDeserializer(method: String): DeserializationStrategy<ClientRequest>? = when (method) {
-    Method.Defined.CompletionComplete.value -> CompleteRequest.serializer()
-    Method.Defined.Initialize.value -> InitializeRequest.serializer()
-    Method.Defined.Ping.value -> PingRequest.serializer()
-    Method.Defined.LoggingSetLevel.value -> SetLevelRequest.serializer()
-    Method.Defined.PromptsGet.value -> GetPromptRequest.serializer()
-    Method.Defined.PromptsList.value -> ListPromptsRequest.serializer()
-    Method.Defined.ResourcesList.value -> ListResourcesRequest.serializer()
-    Method.Defined.ResourcesRead.value -> ReadResourceRequest.serializer()
-    Method.Defined.ResourcesSubscribe.value -> SubscribeRequest.serializer()
-    Method.Defined.ResourcesUnsubscribe.value -> UnsubscribeRequest.serializer()
-    Method.Defined.ResourcesTemplatesList.value -> ListResourceTemplatesRequest.serializer()
-    Method.Defined.ToolsCall.value -> CallToolRequest.serializer()
-    Method.Defined.ToolsList.value -> ListToolsRequest.serializer()
-    else -> null
+internal fun selectClientRequestDeserializer(method: String): DeserializationStrategy<ClientRequest>? =
+    clientRequestDeserializers[method]
+
+private val serverRequestDeserializers: Map<String, DeserializationStrategy<ServerRequest>> by lazy {
+    mapOf(
+        Method.Defined.ElicitationCreate.value to ElicitRequest.serializer(),
+        Method.Defined.Ping.value to PingRequest.serializer(),
+        Method.Defined.RootsList.value to ListRootsRequest.serializer(),
+        Method.Defined.SamplingCreateMessage.value to CreateMessageRequest.serializer(),
+    )
 }
 
 /**
  * Selects the appropriate deserializer for server requests based on the method name.
  * Returns null if the method is not a known server request method.
  */
-internal fun selectServerRequestDeserializer(method: String): DeserializationStrategy<ServerRequest>? = when (method) {
-    Method.Defined.ElicitationCreate.value -> ElicitRequest.serializer()
-    Method.Defined.Ping.value -> PingRequest.serializer()
-    Method.Defined.RootsList.value -> ListRootsRequest.serializer()
-    Method.Defined.SamplingCreateMessage.value -> CreateMessageRequest.serializer()
-    else -> null
-}
+internal fun selectServerRequestDeserializer(method: String): DeserializationStrategy<ServerRequest>? =
+    serverRequestDeserializers[method]
 
 /**
  * Polymorphic serializer for [Request] types.
@@ -179,8 +192,8 @@ internal fun selectServerRequestDeserializer(method: String): DeserializationStr
 internal object RequestPolymorphicSerializer : JsonContentPolymorphicSerializer<Request>(Request::class) {
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<Request> {
         val method = element.getMethodOrNull() ?: run {
-            logger.error { "No method in $element" }
-            error("No method in $element")
+            logger.error { "Missing 'method' for Request: $element" }
+            throw SerializationException("Missing 'method' for Request: $element")
         }
 
         return selectClientRequestDeserializer(method)
@@ -193,40 +206,40 @@ internal object RequestPolymorphicSerializer : JsonContentPolymorphicSerializer<
 // Notification Serializers
 // ============================================================================
 
+private val clientNotificationDeserializers: Map<String, DeserializationStrategy<ClientNotification>> by lazy {
+    mapOf(
+        Method.Defined.NotificationsCancelled.value to CancelledNotification.serializer(),
+        Method.Defined.NotificationsProgress.value to ProgressNotification.serializer(),
+        Method.Defined.NotificationsInitialized.value to InitializedNotification.serializer(),
+        Method.Defined.NotificationsRootsListChanged.value to RootsListChangedNotification.serializer(),
+    )
+}
+
 /**
  * Selects the appropriate deserializer for client notifications based on the method name.
  * Returns null if the method is not a known client notification method.
  */
-private fun selectClientNotificationDeserializer(element: JsonElement): DeserializationStrategy<ClientNotification>? {
-    val method = element.getMethodOrNull() ?: return null
+private fun selectClientNotificationDeserializer(element: JsonElement): DeserializationStrategy<ClientNotification>? =
+    element.getMethodOrNull()?.let(clientNotificationDeserializers::get)
 
-    return when (method) {
-        Method.Defined.NotificationsCancelled.value -> CancelledNotification.serializer()
-        Method.Defined.NotificationsProgress.value -> ProgressNotification.serializer()
-        Method.Defined.NotificationsInitialized.value -> InitializedNotification.serializer()
-        Method.Defined.NotificationsRootsListChanged.value -> RootsListChangedNotification.serializer()
-        else -> null
-    }
+private val serverNotificationDeserializers: Map<String, DeserializationStrategy<ServerNotification>> by lazy {
+    mapOf(
+        Method.Defined.NotificationsCancelled.value to CancelledNotification.serializer(),
+        Method.Defined.NotificationsProgress.value to ProgressNotification.serializer(),
+        Method.Defined.NotificationsMessage.value to LoggingMessageNotification.serializer(),
+        Method.Defined.NotificationsResourcesUpdated.value to ResourceUpdatedNotification.serializer(),
+        Method.Defined.NotificationsResourcesListChanged.value to ResourceListChangedNotification.serializer(),
+        Method.Defined.NotificationsToolsListChanged.value to ToolListChangedNotification.serializer(),
+        Method.Defined.NotificationsPromptsListChanged.value to PromptListChangedNotification.serializer(),
+    )
 }
 
 /**
  * Selects the appropriate deserializer for server notifications based on the method name.
  * Returns null if the method is not a known server notification method.
  */
-internal fun selectServerNotificationDeserializer(element: JsonElement): DeserializationStrategy<ServerNotification>? {
-    val method = element.getMethodOrNull() ?: return null
-
-    return when (method) {
-        Method.Defined.NotificationsCancelled.value -> CancelledNotification.serializer()
-        Method.Defined.NotificationsProgress.value -> ProgressNotification.serializer()
-        Method.Defined.NotificationsMessage.value -> LoggingMessageNotification.serializer()
-        Method.Defined.NotificationsResourcesUpdated.value -> ResourceUpdatedNotification.serializer()
-        Method.Defined.NotificationsResourcesListChanged.value -> ResourceListChangedNotification.serializer()
-        Method.Defined.NotificationsToolsListChanged.value -> ToolListChangedNotification.serializer()
-        Method.Defined.NotificationsPromptsListChanged.value -> PromptListChangedNotification.serializer()
-        else -> null
-    }
-}
+internal fun selectServerNotificationDeserializer(element: JsonElement): DeserializationStrategy<ServerNotification>? =
+    element.getMethodOrNull()?.let(serverNotificationDeserializers::get)
 
 /**
  * Polymorphic serializer for [Notification] types.
@@ -273,7 +286,7 @@ internal object ServerNotificationPolymorphicSerializer :
 private fun selectEmptyResult(element: JsonElement): DeserializationStrategy<EmptyResult>? {
     val jsonObject = element.jsonObject
     return when {
-        jsonObject.isEmpty() || (jsonObject.size == 1 && jsonObject.contains("_meta")) -> EmptyResult.serializer()
+        jsonObject.isEmpty() || (jsonObject.size == 1 && "_meta" in jsonObject) -> EmptyResult.serializer()
         else -> null
     }
 }
@@ -285,9 +298,9 @@ private fun selectEmptyResult(element: JsonElement): DeserializationStrategy<Emp
 private fun selectClientResultDeserializer(element: JsonElement): DeserializationStrategy<ClientResult>? {
     val jsonObject = element.jsonObject
     return when {
-        jsonObject.contains("model") && jsonObject.contains("role") -> CreateMessageResult.serializer()
-        jsonObject.contains("roots") -> ListRootsResult.serializer()
-        jsonObject.contains("action") -> ElicitResult.serializer()
+        "model" in jsonObject && "role" in jsonObject -> CreateMessageResult.serializer()
+        "roots" in jsonObject -> ListRootsResult.serializer()
+        "action" in jsonObject -> ElicitResult.serializer()
         else -> null
     }
 }
@@ -299,15 +312,15 @@ private fun selectClientResultDeserializer(element: JsonElement): Deserializatio
 private fun selectServerResultDeserializer(element: JsonElement): DeserializationStrategy<ServerResult>? {
     val jsonObject = element.jsonObject
     return when {
-        jsonObject.contains("protocolVersion") && jsonObject.contains("capabilities") -> InitializeResult.serializer()
-        jsonObject.contains("completion") -> CompleteResult.serializer()
-        jsonObject.contains("tools") -> ListToolsResult.serializer()
-        jsonObject.contains("resources") -> ListResourcesResult.serializer()
-        jsonObject.contains("resourceTemplates") -> ListResourceTemplatesResult.serializer()
-        jsonObject.contains("prompts") -> ListPromptsResult.serializer()
-        jsonObject.contains("messages") -> GetPromptResult.serializer()
-        jsonObject.contains("contents") -> ReadResourceResult.serializer()
-        jsonObject.contains("content") -> CallToolResult.serializer()
+        "protocolVersion" in jsonObject && "capabilities" in jsonObject -> InitializeResult.serializer()
+        "completion" in jsonObject -> CompleteResult.serializer()
+        "tools" in jsonObject -> ListToolsResult.serializer()
+        "resources" in jsonObject -> ListResourcesResult.serializer()
+        "resourceTemplates" in jsonObject -> ListResourceTemplatesResult.serializer()
+        "prompts" in jsonObject -> ListPromptsResult.serializer()
+        "messages" in jsonObject -> GetPromptResult.serializer()
+        "contents" in jsonObject -> ReadResourceResult.serializer()
+        "content" in jsonObject -> CallToolResult.serializer()
         else -> null
     }
 }
@@ -367,11 +380,11 @@ internal object JSONRPCMessagePolymorphicSerializer :
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<JSONRPCMessage> {
         val jsonObject = element.jsonObject
         return when {
-            jsonObject.contains("error") -> JSONRPCError.serializer()
-            jsonObject.contains("result") -> JSONRPCResponse.serializer()
-            jsonObject.contains("method") && jsonObject.contains("id") -> JSONRPCRequest.serializer()
-            jsonObject.contains("method") -> JSONRPCNotification.serializer()
-            else -> error("Invalid JSONRPCMessage type")
+            "error" in jsonObject -> JSONRPCError.serializer()
+            "result" in jsonObject -> JSONRPCResponse.serializer()
+            "method" in jsonObject && "id" in jsonObject -> JSONRPCRequest.serializer()
+            "method" in jsonObject -> JSONRPCNotification.serializer()
+            else -> throw SerializationException("Invalid JSONRPCMessage type: ${jsonObject.keys}")
         }
     }
 }
@@ -384,6 +397,6 @@ internal object RequestIdPolymorphicSerializer : JsonContentPolymorphicSerialize
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<RequestId> = when (element) {
         is JsonPrimitive if (element.isString) -> RequestId.StringId.serializer()
         is JsonPrimitive if (element.longOrNull != null) -> RequestId.NumberId.serializer()
-        else -> error("Invalid RequestId type")
+        else -> throw SerializationException("Invalid RequestId type: $element")
     }
 }
