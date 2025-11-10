@@ -1,7 +1,12 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
+import io.modelcontextprotocol.kotlin.sdk.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.Implementation
+import io.modelcontextprotocol.kotlin.sdk.InitializeResult
 import io.modelcontextprotocol.kotlin.sdk.JSONRPCRequest
+import io.modelcontextprotocol.kotlin.sdk.Method
+import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.testing.MockTransport
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
@@ -31,7 +36,24 @@ class ClientMetaParameterTest {
 
     @BeforeTest
     fun setup() = runTest {
-        mockTransport = MockTransport()
+        mockTransport = MockTransport {
+            // configure mock transport behavior
+            onMessageReplyResult(Method.Defined.Initialize) {
+                InitializeResult(
+                    protocolVersion = "2024-11-05",
+                    capabilities = ServerCapabilities(
+                        tools = ServerCapabilities.Tools(listChanged = null),
+                    ),
+                    serverInfo = Implementation("mock-server", "1.0.0"),
+                )
+            }
+            onMessageReplyResult(Method.Defined.ToolsCall) {
+                CallToolResult(
+                    content = listOf(),
+                    isError = false,
+                )
+            }
+        }
         client = Client(clientInfo = clientInfo)
         mockTransport.setupInitializationResponse()
         client.connect(mockTransport)
