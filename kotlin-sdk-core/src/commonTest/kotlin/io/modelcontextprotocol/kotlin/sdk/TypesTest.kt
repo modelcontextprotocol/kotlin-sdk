@@ -7,7 +7,6 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 import kotlin.time.ExperimentalTime
-import kotlin.time.Instant
 
 class TypesTest {
 
@@ -243,7 +242,7 @@ class TypesTest {
     fun `should serialize and deserialize annotations correctly`() {
         val annotations = Annotations(
             audience = listOf(Role.assistant),
-            lastModified = Instant.parse("2025-06-18T00:00:00Z"),
+            lastModified = "2025-06-18T00:00:00Z",
             priority = 0.5,
         )
 
@@ -251,7 +250,7 @@ class TypesTest {
         val decoded = McpJson.decodeFromString<Annotations>(json)
 
         assertEquals(listOf(Role.assistant), decoded.audience)
-        assertEquals(Instant.parse("2025-06-18T00:00:00Z"), decoded.lastModified)
+        assertEquals("2025-06-18T00:00:00Z", decoded.lastModified)
         assertEquals(0.5, decoded.priority)
     }
 

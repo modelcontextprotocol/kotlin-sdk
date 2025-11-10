@@ -71,7 +71,7 @@ internal suspend fun WebSocketServerSession.mcpWebSocketEndpoint(block: () -> Se
     try {
         session = server.createSession(transport)
         awaitCancellation()
-    } catch (e: CancellationException) {
+    } catch (_: CancellationException) {
         session?.close()
     }
 }
