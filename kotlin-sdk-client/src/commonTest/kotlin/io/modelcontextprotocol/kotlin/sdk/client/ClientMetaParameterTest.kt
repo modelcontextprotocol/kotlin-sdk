@@ -94,6 +94,19 @@ class ClientMetaParameterTest {
         }
 
         assertTrue(result.isSuccess, "Edge case valid meta keys should be accepted")
+        
+        mockTransport.lastJsonRpcRequest()?.let { request ->
+            val params = request.params as JsonObject
+            val metaField = params["_meta"] as JsonObject
+            
+            // Verify all edge case meta keys are present with correct values
+            assertEquals(edgeCaseValidMeta.size, metaField.size, "All edge case meta keys should be included")
+            assertEquals("single-char-prefix-empty-name", metaField["a/"]?.jsonPrimitive?.content)
+            assertEquals("alphanumeric-hyphen-prefix", metaField["a1-b2/test"]?.jsonPrimitive?.content)
+            assertEquals("long-prefix", metaField["long.domain.name.here/config"]?.jsonPrimitive?.content)
+            assertEquals("minimal-valid-key", metaField["x/a"]?.jsonPrimitive?.content)
+            assertEquals("alphanumeric-name-only", metaField["test123"]?.jsonPrimitive?.content)
+        }
     }
 
     @Test
@@ -212,6 +225,34 @@ class ClientMetaParameterTest {
             assertEquals("tools/call", request.method)
             val params = request.params as JsonObject
             assertTrue(params.containsKey("_meta"), "Request should contain _meta field")
+            
+            val metaField = params["_meta"] as JsonObject
+            
+            // Verify string conversion
+            assertEquals("text", metaField["string"]?.jsonPrimitive?.content)
+            
+            // Verify number conversion
+            assertEquals(42, metaField["number"]?.jsonPrimitive?.int)
+            
+            // Verify boolean conversion
+            assertEquals(true, metaField["boolean"]?.jsonPrimitive?.boolean)
+            
+            // Verify null conversion
+            assertTrue(metaField.containsKey("null_value"), "Should contain null_value key")
+            
+            // Verify list conversion
+            assertTrue(metaField.containsKey("list"), "Should contain list")
+            
+            // Verify map conversion
+            assertTrue(metaField.containsKey("map"), "Should contain nested map")
+            val nestedMap = metaField["map"] as JsonObject
+            assertEquals("value", nestedMap["nested"]?.jsonPrimitive?.content)
+            
+            // Verify enum/string conversion
+            assertEquals("STRING", metaField["enum"]?.jsonPrimitive?.content)
+            
+            // Verify array conversion
+            assertTrue(metaField.containsKey("int_array"), "Should contain int_array")
         }
     }
 
@@ -228,7 +269,20 @@ class ClientMetaParameterTest {
         mockTransport.lastJsonRpcRequest()?.let { request ->
             val params = request.params as JsonObject
             val metaField = params["_meta"] as JsonObject
-            assertTrue(metaField.containsKey("config"))
+            assertTrue(metaField.containsKey("config"), "Should contain config key")
+            
+            // Verify nested structure
+            val config = metaField["config"] as JsonObject
+            assertTrue(config.containsKey("database"), "Config should contain database")
+            assertTrue(config.containsKey("features"), "Config should contain features")
+            
+            // Verify database nested structure
+            val database = config["database"] as JsonObject
+            assertEquals("localhost", database["host"]?.jsonPrimitive?.content)
+            assertEquals(5432, database["port"]?.jsonPrimitive?.int)
+            
+            // Verify features list
+            assertTrue(config.containsKey("features"), "Config should contain features list")
         }
     }
 
