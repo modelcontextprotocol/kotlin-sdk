@@ -36,9 +36,6 @@ import io.modelcontextprotocol.kotlin.sdk.ToolAnnotations
 import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
-import kotlinx.atomicfu.atomic
-import kotlinx.atomicfu.update
-import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.JsonObject
 
@@ -88,24 +85,13 @@ public open class Server(
         block: Server.() -> Unit = {},
     ) : this(serverInfo, options, { instructions }, block)
 
-    private val sessionRegistry = atomic(persistentMapOf<String, ServerSession>())
+    private val sessionRegistry = ServerSessionRegistry()
 
     /**
-     * Returns a read-only view of the current server sessions.
+     * Provides a snapshot of all sessions currently registered in the server
      */
-    public val sessions: Map<String, ServerSession>
-        get() = sessionRegistry.value
-
-    /**
-     * Gets a server session by its ID.
-     */
-    public fun getSession(sessionId: String): ServerSession? = sessions[sessionId]
-
-    /**
-     * Gets a server session by its ID or throws an exception if the session doesn't exist.
-     */
-    public fun getSessionOrThrow(sessionId: String): ServerSession =
-        sessions[sessionId] ?: throw IllegalArgumentException("Session not found: $sessionId")
+    public val sessions: Map<ServerSessionKey, ServerSession>
+        get() = sessionRegistry.sessions
 
     @Suppress("ktlint:standard:backing-property-naming")
     private var _onInitialized: (() -> Unit) = {}
@@ -200,12 +186,12 @@ public open class Server(
         // Register cleanup handler to remove session from list when it closes
         session.onClose {
             logger.debug { "Removing closed session from active sessions list" }
-            sessionRegistry.update { sessions -> sessions.remove(session.sessionId) }
+            sessionRegistry.removeSession(session.sessionId)
         }
         logger.debug { "Server session connecting to transport" }
         session.connect(transport)
         logger.debug { "Server session successfully connected to transport" }
-        sessionRegistry.update { sessions -> sessions.put(session.sessionId, session) }
+        sessionRegistry.addSession(session)
 
         _onConnect()
         return session
@@ -574,9 +560,8 @@ public open class Server(
      * Triggers [ServerSession.ping] request for session by provided [sessionId].
      * @param sessionId The session ID to ping
      */
-    public suspend fun ping(sessionId: String): EmptyRequestResult {
-        val session = getSessionOrThrow(sessionId)
-        return session.ping()
+    public suspend fun ping(sessionId: String): EmptyRequestResult = with(sessionRegistry.getSession(sessionId)) {
+        ping()
     }
 
     /**
@@ -592,9 +577,8 @@ public open class Server(
         sessionId: String,
         params: CreateMessageRequest,
         options: RequestOptions? = null,
-    ): CreateMessageResult {
-        val session = getSessionOrThrow(sessionId)
-        return session.request(params, options)
+    ): CreateMessageResult = with(sessionRegistry.getSession(sessionId)) {
+        request(params, options)
     }
 
     /**
@@ -610,9 +594,8 @@ public open class Server(
         sessionId: String,
         params: JsonObject = EmptyJsonObject,
         options: RequestOptions? = null,
-    ): ListRootsResult {
-        val session = getSessionOrThrow(sessionId)
-        return session.listRoots(params, options)
+    ): ListRootsResult = with(sessionRegistry.getSession(sessionId)) {
+        listRoots(params, options)
     }
 
     /**
@@ -630,9 +613,8 @@ public open class Server(
         message: String,
         requestedSchema: RequestedSchema,
         options: RequestOptions? = null,
-    ): CreateElicitationResult {
-        val session = getSessionOrThrow(sessionId)
-        return session.createElicitation(message, requestedSchema, options)
+    ): CreateElicitationResult = with(sessionRegistry.getSession(sessionId)) {
+        createElicitation(message, requestedSchema, options)
     }
 
     /**
@@ -642,8 +624,9 @@ public open class Server(
      * @param notification The logging message notification.
      */
     public suspend fun sendLoggingMessage(sessionId: String, notification: LoggingMessageNotification) {
-        val session = getSessionOrThrow(sessionId)
-        session.sendLoggingMessage(notification)
+        with(sessionRegistry.getSession(sessionId)) {
+            sendLoggingMessage(notification)
+        }
     }
 
     /**
@@ -653,8 +636,9 @@ public open class Server(
      * @param notification Details of the updated resource.
      */
     public suspend fun sendResourceUpdated(sessionId: String, notification: ResourceUpdatedNotification) {
-        val session = getSessionOrThrow(sessionId)
-        session.sendResourceUpdated(notification)
+        with(sessionRegistry.getSession(sessionId)) {
+            sendResourceUpdated(notification)
+        }
     }
 
     /**
@@ -663,8 +647,9 @@ public open class Server(
      * @param sessionId The session ID to send the resource list changed notification to.
      */
     public suspend fun sendResourceListChanged(sessionId: String) {
-        val session = getSessionOrThrow(sessionId)
-        session.sendResourceListChanged()
+        with(sessionRegistry.getSession(sessionId)) {
+            sendResourceListChanged()
+        }
     }
 
     /**
@@ -673,8 +658,9 @@ public open class Server(
      * @param sessionId The session ID to send the tool list changed notification to.
      */
     public suspend fun sendToolListChanged(sessionId: String) {
-        val session = getSessionOrThrow(sessionId)
-        session.sendToolListChanged()
+        with(sessionRegistry.getSession(sessionId)) {
+            sendToolListChanged()
+        }
     }
 
     /**
@@ -683,8 +669,9 @@ public open class Server(
      * @param sessionId The session ID to send the prompt list changed notification to.
      */
     public suspend fun sendPromptListChanged(sessionId: String) {
-        val session = getSessionOrThrow(sessionId)
-        session.sendPromptListChanged()
+        with(sessionRegistry.getSession(sessionId)) {
+            sendPromptListChanged()
+        }
     }
     // End the ServerSession redirection section
 }
