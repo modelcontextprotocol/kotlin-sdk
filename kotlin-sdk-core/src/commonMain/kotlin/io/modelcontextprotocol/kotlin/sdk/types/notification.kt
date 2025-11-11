@@ -77,7 +77,11 @@ public class Progress(
 @Serializable
 public data class CustomNotification(override val method: Method, override val params: BaseNotificationParams? = null) :
     ClientNotification,
-    ServerNotification
+    ServerNotification {
+
+    public val meta: JsonObject?
+        get() = params?.meta
+}
 
 // ============================================================================
 // Cancelled Notification
@@ -101,6 +105,24 @@ public data class CancelledNotification(override val params: CancelledNotificati
     ServerNotification {
     @EncodeDefault
     override val method: Method = Method.Defined.NotificationsCancelled
+
+    /**
+     * The ID of the request to cancel.
+     */
+    public val requestId: RequestId
+        get() = params.requestId
+
+    /**
+     * A string describing the reason for the cancellation.
+     */
+    public val reason: String?
+        get() = params.reason
+
+    /**
+     * Metadata for this notification.
+     */
+    public val meta: JsonObject?
+        get() = params.meta
 }
 
 /**

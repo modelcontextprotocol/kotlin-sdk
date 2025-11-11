@@ -59,6 +59,9 @@ public data class ListRootsRequest(override val params: BaseRequestParams? = nul
     @OptIn(ExperimentalSerializationApi::class)
     @EncodeDefault
     override val method: Method = Method.Defined.RootsList
+
+    public val meta: RequestMeta?
+        get() = params?.meta
 }
 
 /**

@@ -20,6 +20,24 @@ public data class ElicitRequest(override val params: ElicitRequestParams) : Serv
     @OptIn(ExperimentalSerializationApi::class)
     @EncodeDefault
     public override val method: Method = Method.Defined.ElicitationCreate
+
+    /**
+     * The message to present to the user. This should clearly explain what information is being requested and why.
+     */
+    public val message: String
+        get() = params.message
+
+    /**
+     * A restricted subset of JSON Schema defining the structure of the requested data.
+     */
+    public val requestedSchema: ElicitRequestParams.RequestedSchema
+        get() = params.requestedSchema
+
+    /**
+     * Metadata for this request. May include a progressToken for out-of-band progress notifications.
+     */
+    public val meta: RequestMeta?
+        get() = params.meta
 }
 
 /**

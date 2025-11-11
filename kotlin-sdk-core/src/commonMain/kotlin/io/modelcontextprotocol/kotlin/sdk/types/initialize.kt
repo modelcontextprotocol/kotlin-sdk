@@ -21,6 +21,30 @@ public data class InitializeRequest(override val params: InitializeRequestParams
     @OptIn(ExperimentalSerializationApi::class)
     @EncodeDefault
     override val method: Method = Method.Defined.Initialize
+
+    /**
+     * The latest version of the Model Context Protocol that the client supports.
+     */
+    public val protocolVersion: String
+        get() = params.protocolVersion
+
+    /**
+     * The capabilities that this client supports. Describes which optional features the client has implemented.
+     */
+    public val capabilities: ClientCapabilities
+        get() = params.capabilities
+
+    /**
+     * Information about the client implementation, including name, version, and branding.
+     */
+    public val clientInfo: Implementation
+        get() = params.clientInfo
+
+    /**
+     * Metadata for this request. May include a progressToken for out-of-band progress notifications.
+     */
+    public val meta: RequestMeta?
+        get() = params.meta
 }
 
 /**
