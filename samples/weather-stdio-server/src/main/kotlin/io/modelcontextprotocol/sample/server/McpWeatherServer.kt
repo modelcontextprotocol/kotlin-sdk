@@ -129,7 +129,7 @@ fun runMcpServer() {
     )
 
     runBlocking {
-        val session = server.connect(transport)
+        val session = server.createSession(transport)
         val done = Job()
         session.onClose {
             done.complete()
