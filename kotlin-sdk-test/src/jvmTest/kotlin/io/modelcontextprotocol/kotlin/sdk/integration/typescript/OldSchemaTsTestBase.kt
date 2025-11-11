@@ -3,6 +3,7 @@ package io.modelcontextprotocol.kotlin.sdk.integration.typescript
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.sse.SSE
+import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
 import io.modelcontextprotocol.kotlin.sdk.client.mcpStreamableHttp
@@ -10,7 +11,7 @@ import io.modelcontextprotocol.kotlin.sdk.integration.typescript.sse.KotlinServe
 import io.modelcontextprotocol.kotlin.sdk.integration.utils.Retry
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.StdioServerTransport
-import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.io.Sink
 import kotlinx.io.Source
@@ -28,12 +29,12 @@ import java.util.concurrent.TimeUnit
 import kotlin.io.path.createTempDirectory
 import kotlin.time.Duration.Companion.seconds
 
-enum class TransportKind { SSE, STDIO, DEFAULT }
+enum class OldSchemaTransportKind { SSE, STDIO, DEFAULT }
 
 @Retry(times = 3)
-abstract class TsTestBase {
+abstract class OldSchemaTsTestBase {
 
-    protected open val transportKind: TransportKind = TransportKind.DEFAULT
+    protected open val transportKind: OldSchemaTransportKind = OldSchemaTransportKind.DEFAULT
 
     protected val projectRoot: File get() = File(System.getProperty("user.dir"))
     protected val tsClientDir: File
@@ -52,9 +53,9 @@ abstract class TsTestBase {
             }
 
             val subDirName = overrideSubDir ?: when (transportKind) {
-                TransportKind.STDIO -> "stdio"
-                TransportKind.SSE -> "sse"
-                TransportKind.DEFAULT -> null
+                OldSchemaTransportKind.STDIO -> "stdio"
+                OldSchemaTransportKind.SSE -> "sse"
+                OldSchemaTransportKind.DEFAULT -> null
             }
             if (subDirName != null) {
                 val sub = File(base, subDirName)
@@ -412,7 +413,7 @@ abstract class TsTestBase {
         // Connect server in a background thread to avoid blocking
         val serverThread = Thread {
             try {
-                kotlinx.coroutines.runBlocking { server.createSession(transport) }
+                runBlocking { server.createSession(transport) }
             } catch (e: Exception) {
                 println("[STDIO-SERVER] Error connecting: ${e.message}")
             }
@@ -445,7 +446,7 @@ abstract class TsTestBase {
         }
 
         try {
-            kotlinx.coroutines.runBlocking { transport.close() }
+            runBlocking { transport.close() }
         } catch (_: Exception) {
         }
 

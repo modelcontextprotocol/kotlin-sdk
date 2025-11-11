@@ -1,7 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
-import io.modelcontextprotocol.kotlin.sdk.types.Implementation
-import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
+import io.modelcontextprotocol.kotlin.sdk.Implementation
+import io.modelcontextprotocol.kotlin.sdk.JSONRPCRequest
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
@@ -23,15 +23,15 @@ import kotlin.test.assertTrue
  * - Error handling for invalid meta keys
  * - Integration with callTool method
  */
-class ClientMetaParameterTest {
+class OldSchemaClientMetaParameterTest {
 
     private lateinit var client: Client
-    private lateinit var mockTransport: MockTransport
+    private lateinit var mockTransport: OldSchemaMockTransport
     private val clientInfo = Implementation("test-client", "1.0.0")
 
     @BeforeTest
     fun setup() = runTest {
-        mockTransport = MockTransport()
+        mockTransport = OldSchemaMockTransport()
         client = Client(clientInfo = clientInfo)
         mockTransport.setupInitializationResponse()
         client.connect(mockTransport)
@@ -271,4 +271,5 @@ class ClientMetaParameterTest {
     }
 }
 
-suspend fun MockTransport.lastJsonRpcRequest(): JSONRPCRequest? = getSentMessages().lastOrNull() as? JSONRPCRequest
+suspend fun OldSchemaMockTransport.lastJsonRpcRequest(): JSONRPCRequest? =
+    getSentMessages().lastOrNull() as? JSONRPCRequest

@@ -1,12 +1,12 @@
 package io.modelcontextprotocol.kotlin.sdk.shared
 
-import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 
 /**
  * In-memory transport for creating clients and servers that talk to each other within the same process.
  */
-class InMemoryTransport : AbstractTransport() {
-    private var otherTransport: InMemoryTransport? = null
+class OldSchemaInMemoryTransport : AbstractTransport() {
+    private var otherTransport: OldSchemaInMemoryTransport? = null
     private val messageQueue: MutableList<JSONRPCMessage> = mutableListOf()
 
     /**
@@ -14,9 +14,9 @@ class InMemoryTransport : AbstractTransport() {
      * One should be passed to a Client and one to a Server.
      */
     companion object {
-        fun createLinkedPair(): Pair<InMemoryTransport, InMemoryTransport> {
-            val clientTransport = InMemoryTransport()
-            val serverTransport = InMemoryTransport()
+        fun createLinkedPair(): Pair<OldSchemaInMemoryTransport, OldSchemaInMemoryTransport> {
+            val clientTransport = OldSchemaInMemoryTransport()
+            val serverTransport = OldSchemaInMemoryTransport()
             clientTransport.otherTransport = serverTransport
             serverTransport.otherTransport = clientTransport
             return Pair(clientTransport, serverTransport)

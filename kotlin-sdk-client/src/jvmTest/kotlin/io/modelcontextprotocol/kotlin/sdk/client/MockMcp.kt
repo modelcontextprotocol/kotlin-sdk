@@ -19,16 +19,9 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.putJsonObject
 
-/**
- * High-level helper for simulating an MCP server over Streaming HTTP transport with Server-Sent Events (SSE),
- * built on top of an HTTP server using the [Mokksy](https://mokksy.dev) library.
- *
- * Provides test utilities to mock server behavior based on specific request conditions.
- *
- * @param verbose Whether to print detailed logs. Defaults to `false`.
- * @author Konstantin Pavlov
- */
-internal class OldSchemaMockMcp(verbose: Boolean = false) {
+const val MCP_SESSION_ID_HEADER = "Mcp-Session-Id"
+
+internal class MockMcp(verbose: Boolean = false) {
 
     private val mokksy: Mokksy = Mokksy(verbose = verbose)
 
@@ -137,7 +130,7 @@ internal class OldSchemaMockMcp(verbose: Boolean = false) {
                 is RequestId.NumberId -> (request.body.id as RequestId.NumberId).value.toString()
                 is RequestId.StringId -> "\"${(request.body.id as RequestId.StringId).value}\""
             }
-            val resultObject = result!!.invoke()
+            val resultObject = result.invoke()
             // language=json
             body = """
              {

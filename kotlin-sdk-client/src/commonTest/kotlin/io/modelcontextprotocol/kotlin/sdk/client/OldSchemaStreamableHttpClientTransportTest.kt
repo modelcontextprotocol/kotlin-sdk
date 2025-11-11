@@ -12,12 +12,12 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteReadChannel
-import io.modelcontextprotocol.kotlin.sdk.types.Implementation
-import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
-import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
-import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
-import io.modelcontextprotocol.kotlin.sdk.types.McpJson
-import io.modelcontextprotocol.kotlin.sdk.types.RequestId
+import io.modelcontextprotocol.kotlin.sdk.Implementation
+import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.JSONRPCNotification
+import io.modelcontextprotocol.kotlin.sdk.JSONRPCRequest
+import io.modelcontextprotocol.kotlin.sdk.RequestId
+import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
@@ -34,7 +34,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
-class StreamableHttpClientTransportTest {
+class OldSchemaStreamableHttpClientTransportTest {
 
     private fun createTransport(handler: MockRequestHandler): StreamableHttpClientTransport {
         val mockEngine = MockEngine(handler)

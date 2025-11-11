@@ -1,9 +1,9 @@
 package io.modelcontextprotocol.kotlin.sdk.integration
 
+import io.modelcontextprotocol.kotlin.sdk.InitializedNotification
+import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.shared.InMemoryTransport
-import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
-import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
-import io.modelcontextprotocol.kotlin.sdk.types.toJSON
+import io.modelcontextprotocol.kotlin.sdk.toJSON
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -12,7 +12,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-class InMemoryTransportTest {
+class OldSchemaInMemoryTransportTest {
     private lateinit var clientTransport: InMemoryTransport
     private lateinit var serverTransport: InMemoryTransport
 

@@ -1,11 +1,11 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
+import io.modelcontextprotocol.kotlin.sdk.InitializedNotification
+import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.shared.ReadBuffer
 import io.modelcontextprotocol.kotlin.sdk.shared.serializeMessage
-import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
-import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
-import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
-import io.modelcontextprotocol.kotlin.sdk.types.toJSON
+import io.modelcontextprotocol.kotlin.sdk.toJSON
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -23,7 +23,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class StdioServerTransportTest {
+class OldSchemaStdioServerTransportTest {
     private lateinit var input: PipedInputStream
     private lateinit var inputWriter: PipedOutputStream
     private lateinit var outputBuffer: ReadBuffer
@@ -137,8 +137,4 @@ class StdioServerTransportTest {
 
         assertEquals(messages, readMessages)
     }
-}
-
-fun PipedOutputStream.write(s: String) {
-    write(s.toByteArray())
 }
