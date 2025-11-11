@@ -140,6 +140,10 @@ public data class ToolAnnotations(
 public data class CallToolRequest(override val params: CallToolRequestParams) : ClientRequest {
     @EncodeDefault
     override val method: Method = Method.Defined.ToolsCall
+
+    @Deprecated("Use `params.arguments` instead", replaceWith = ReplaceWith("params.arguments"))
+    public val arguments: JsonObject
+        get() = params.arguments ?: EmptyJsonObject
 }
 
 /**

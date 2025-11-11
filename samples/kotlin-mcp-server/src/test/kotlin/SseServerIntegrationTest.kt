@@ -1,7 +1,6 @@
 import io.modelcontextprotocol.kotlin.sdk.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.client.Client
-import io.modelcontextprotocol.kotlin.sdk.types.ContentTypes
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -39,6 +38,6 @@ class SseServerIntegrationTest {
         assertIs<TextContent>(content, "Tool result should be a text content")
 
         assertEquals(expected = "Hello, world!", actual = content.text)
-        assertEquals(expected = ContentTypes.TEXT, actual = content.type)
+        assertEquals(expected = "text", actual = "${content.type}".lowercase())
     }
 }

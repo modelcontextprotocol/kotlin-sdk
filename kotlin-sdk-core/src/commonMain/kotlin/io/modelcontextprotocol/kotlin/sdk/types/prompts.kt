@@ -112,6 +112,14 @@ public data class PromptReference(val name: String, val title: String? = null) :
 public data class GetPromptRequest(override val params: GetPromptRequestParams) : ClientRequest {
     @EncodeDefault
     override val method: Method = Method.Defined.PromptsGet
+
+    @Deprecated("Use `params.name` instead", replaceWith = ReplaceWith("params.name"))
+    public val name: String
+        get() = params.name
+
+    @Deprecated("Use `params.arguments` instead", replaceWith = ReplaceWith("params.arguments"))
+    public val arguments: Map<String, String>?
+        get() = params.arguments
 }
 
 /**

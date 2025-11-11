@@ -244,6 +244,12 @@ public data class ReadResourceRequestParams(
 public data class ReadResourceRequest(override val params: ReadResourceRequestParams) : ClientRequest {
     @EncodeDefault
     override val method: Method = Method.Defined.ResourcesRead
+
+    @Deprecated("Use `params.uri` instead", replaceWith = ReplaceWith("params.uri"))
+    public val uri: String get() = params.uri
+
+    @Deprecated("Use `params.meta` instead", replaceWith = ReplaceWith("params.meta"))
+    public val meta: RequestMeta? get() = params.meta
 }
 
 /**
