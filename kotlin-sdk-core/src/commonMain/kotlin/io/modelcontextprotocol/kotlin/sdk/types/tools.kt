@@ -140,6 +140,25 @@ public data class ToolAnnotations(
 public data class CallToolRequest(override val params: CallToolRequestParams) : ClientRequest {
     @EncodeDefault
     override val method: Method = Method.Defined.ToolsCall
+
+    /**
+     * The name of the tool to invoke.
+     */
+    public val name: String
+        get() = params.name
+
+    /**
+     * Arguments to pass to the tool. Keys are argument names, values are the argument values.
+     * The structure must match the tool's input schema.
+     */
+    public val arguments: JsonObject?
+        get() = params.arguments
+
+    /**
+     * Metadata for this request. May include a progressToken for out-of-band progress notifications.
+     */
+    public val meta: RequestMeta?
+        get() = params.meta
 }
 
 /**

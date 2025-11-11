@@ -112,6 +112,25 @@ public data class PromptReference(val name: String, val title: String? = null) :
 public data class GetPromptRequest(override val params: GetPromptRequestParams) : ClientRequest {
     @EncodeDefault
     override val method: Method = Method.Defined.PromptsGet
+
+    /**
+     * The name of the prompt or prompt template to retrieve.
+     */
+    public val name: String
+        get() = params.name
+
+    /**
+     * Arguments to use for templating the prompt.
+     * Keys are argument names, values are the argument values to substitute.
+     */
+    public val arguments: Map<String, String>?
+        get() = params.arguments
+
+    /**
+     * Metadata for this request. May include a progressToken for out-of-band progress notifications.
+     */
+    public val meta: RequestMeta?
+        get() = params.meta
 }
 
 /**

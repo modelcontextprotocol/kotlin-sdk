@@ -1,6 +1,5 @@
 package io.modelcontextprotocol.sample.client
 
-import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
 import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.client.Client
@@ -9,9 +8,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.io.asSink
 import kotlinx.io.asSource
 import kotlinx.io.buffered
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
 
 fun main(): Unit = runBlocking {
     val process = ProcessBuilder("java", "-jar", "./build/libs/weather-stdio-server-0.1.0-all.jar")
@@ -33,12 +29,10 @@ fun main(): Unit = runBlocking {
     println("Available Tools = $toolsList")
 
     val weatherForecastResult = client.callTool(
-        CallToolRequest(
-            name = "get_forecast",
-            arguments = buildJsonObject {
-                put("latitude", JsonPrimitive(38.5816))
-                put("longitude", JsonPrimitive(-121.4944))
-            },
+        name = "get_forecast",
+        arguments = mapOf(
+            "latitude" to 38.5816,
+            "longitude" to -121.4944,
         ),
     )?.content?.map { if (it is TextContent) it.text else it.toString() }
 
@@ -46,10 +40,8 @@ fun main(): Unit = runBlocking {
 
     val alertResult =
         client.callTool(
-            CallToolRequest(
-                name = "get_alerts",
-                arguments = JsonObject(mapOf("state" to JsonPrimitive("TX"))),
-            ),
+            name = "get_alert",
+            arguments = mapOf("state" to "TX"),
         )?.content?.map { if (it is TextContent) it.text else it.toString() }
 
     println("Alert Response = $alertResult")

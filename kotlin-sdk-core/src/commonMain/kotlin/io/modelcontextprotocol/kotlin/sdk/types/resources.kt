@@ -244,6 +244,18 @@ public data class ReadResourceRequestParams(
 public data class ReadResourceRequest(override val params: ReadResourceRequestParams) : ClientRequest {
     @EncodeDefault
     override val method: Method = Method.Defined.ResourcesRead
+
+    /**
+     * The URI of the resource to read
+     */
+    public val uri: String
+        get() = params.uri
+
+    /**
+     * Metadata for this request. May include a progressToken for out-of-band progress notifications.
+     */
+    public val meta: RequestMeta?
+        get() = params.meta
 }
 
 /**
