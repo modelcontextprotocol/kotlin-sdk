@@ -8,9 +8,9 @@ import io.ktor.server.request.contentType
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.respondText
 import io.ktor.server.sse.ServerSSESession
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
-import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.job
 import kotlin.concurrent.atomics.AtomicBoolean

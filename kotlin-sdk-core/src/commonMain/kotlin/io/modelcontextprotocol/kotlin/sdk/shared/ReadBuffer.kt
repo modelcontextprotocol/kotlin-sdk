@@ -1,7 +1,8 @@
 package io.modelcontextprotocol.kotlin.sdk.shared
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import kotlinx.io.Buffer
 import kotlinx.io.indexOf
 import kotlinx.io.readString

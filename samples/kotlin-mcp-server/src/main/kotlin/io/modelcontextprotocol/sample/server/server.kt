@@ -64,7 +64,6 @@ fun configureServer(): Server {
         ),
     ) { request ->
         GetPromptResult(
-            "Description for ${request.name}",
             messages = listOf(
                 PromptMessage(
                     role = Role.user,
@@ -73,6 +72,7 @@ fun configureServer(): Server {
                     ),
                 ),
             ),
+            description = "Description for ${request.name}",
         )
     }
 
