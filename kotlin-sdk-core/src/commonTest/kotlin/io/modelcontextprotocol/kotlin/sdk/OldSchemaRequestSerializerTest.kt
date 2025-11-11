@@ -1,13 +1,18 @@
 package io.modelcontextprotocol.kotlin.sdk
 
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.types.CompleteResult
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitResult
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 
-class RequestSerializerTest {
+class OldSchemaRequestSerializerTest {
 
     // Client Result Tests
     @Test
@@ -60,7 +65,7 @@ class RequestSerializerTest {
 
         val decoded = McpJson.decodeFromString<RequestResult>(json)
 
-        assertIs<CreateElicitationResult>(decoded)
+        assertIs<ElicitResult>(decoded)
         assertEquals(CreateElicitationResult.Action.accept, decoded.action)
     }
 
@@ -276,7 +281,7 @@ class RequestSerializerTest {
             "isError": false
         }"""
 
-        val decoded = McpJson.decodeFromString<RequestResult>(json)
+        val decoded = McpJson.decodeFromString<CompatibilityCallToolResult>(json)
 
         assertIs<CompatibilityCallToolResult>(decoded)
         assertEquals(buildJsonObject { put("result", "Legacy tool result") }, decoded.toolResult)
@@ -287,10 +292,9 @@ class RequestSerializerTest {
     fun `should deserialize EmptyRequestResult for unknown result type`() {
         val json = """{"unknownField": "value"}"""
 
-        val decoded = McpJson.decodeFromString<RequestResult>(json)
-
-        assertIs<EmptyRequestResult>(decoded)
-        assertEquals(EmptyJsonObject, decoded._meta)
+        assertFailsWith<SerializationException> {
+            McpJson.decodeFromString<RequestResult>(json)
+        }
     }
 
     @Test

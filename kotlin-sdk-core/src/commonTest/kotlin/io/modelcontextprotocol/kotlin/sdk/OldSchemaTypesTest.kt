@@ -1,6 +1,9 @@
 package io.modelcontextprotocol.kotlin.sdk
 
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
+import io.modelcontextprotocol.kotlin.sdk.types.CompleteRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.ContentTypes
+import io.modelcontextprotocol.kotlin.sdk.types.ReferenceType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -8,7 +11,7 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 import kotlin.time.ExperimentalTime
 
-class TypesTest {
+class OldSchemaTypesTest {
 
     @Test
     fun `should have correct latest protocol version`() {
@@ -18,7 +21,7 @@ class TypesTest {
 
     @Test
     fun `should have correct supported protocol versions`() {
-        assertIs<Array<String>>(SUPPORTED_PROTOCOL_VERSIONS)
+        assertIs<List<String>>(SUPPORTED_PROTOCOL_VERSIONS)
         assertTrue(SUPPORTED_PROTOCOL_VERSIONS.contains(LATEST_PROTOCOL_VERSION))
         assertTrue(SUPPORTED_PROTOCOL_VERSIONS.contains("2024-11-05"))
         assertEquals(2, SUPPORTED_PROTOCOL_VERSIONS.size)
@@ -34,7 +37,7 @@ class TypesTest {
     fun `should validate ResourceTemplateReference`() {
         val resourceRef = ResourceTemplateReference(uri = "file:///path/to/file.txt")
 
-        assertEquals("ref/resource", resourceRef.type)
+        assertEquals(ReferenceType.ResourceTemplate, resourceRef.type)
         assertEquals("file:///path/to/file.txt", resourceRef.uri)
     }
 
@@ -46,7 +49,7 @@ class TypesTest {
         val decoded = McpJson.decodeFromString<Reference>(json)
 
         assertIs<ResourceTemplateReference>(decoded)
-        assertEquals("ref/resource", decoded.type)
+        assertEquals(ReferenceType.ResourceTemplate, decoded.type)
         assertEquals("https://example.com/resource", decoded.uri)
     }
 
@@ -54,7 +57,7 @@ class TypesTest {
     fun `should validate PromptReference`() {
         val promptRef = PromptReference(name = "greeting")
 
-        assertEquals("ref/prompt", promptRef.type)
+        assertEquals(ReferenceType.Prompt, promptRef.type)
         assertEquals("greeting", promptRef.name)
     }
 
@@ -66,18 +69,8 @@ class TypesTest {
         val decoded = McpJson.decodeFromString<Reference>(json)
 
         assertIs<PromptReference>(decoded)
-        assertEquals("ref/prompt", decoded.type)
+        assertEquals(ReferenceType.Prompt, decoded.type)
         assertEquals("test-prompt", decoded.name)
-    }
-
-    @Test
-    fun `should handle UnknownReference for invalid type`() {
-        val invalidJson = """{"type": "invalid_type"}"""
-
-        val decoded = McpJson.decodeFromString<Reference>(invalidJson)
-
-        assertIs<UnknownReference>(decoded)
-        assertEquals("invalid_type", decoded.type)
     }
 
     // PromptMessageContent Tests
@@ -85,7 +78,7 @@ class TypesTest {
     fun `should validate text content`() {
         val textContent = TextContent(text = "Hello, world!")
 
-        assertEquals("text", textContent.type)
+        assertEquals(ContentTypes.TEXT, textContent.type)
         assertEquals("Hello, world!", textContent.text)
     }
 
@@ -97,7 +90,7 @@ class TypesTest {
         val decoded = McpJson.decodeFromString<PromptMessageContent>(json)
 
         assertIs<TextContent>(decoded)
-        assertEquals("text", decoded.type)
+        assertEquals(ContentTypes.TEXT, decoded.type)
         assertEquals("Test message", decoded.text)
     }
 
@@ -108,7 +101,7 @@ class TypesTest {
             mimeType = "image/png",
         )
 
-        assertEquals("image", imageContent.type)
+        assertEquals(ContentTypes.IMAGE, imageContent.type)
         assertEquals("aGVsbG8=", imageContent.data)
         assertEquals("image/png", imageContent.mimeType)
     }
@@ -124,7 +117,7 @@ class TypesTest {
         val decoded = McpJson.decodeFromString<PromptMessageContent>(json)
 
         assertIs<ImageContent>(decoded)
-        assertEquals("image", decoded.type)
+        assertEquals(ContentTypes.IMAGE, decoded.type)
         assertEquals("dGVzdA==", decoded.data)
         assertEquals("image/jpeg", decoded.mimeType)
     }
@@ -136,7 +129,7 @@ class TypesTest {
             mimeType = "audio/mp3",
         )
 
-        assertEquals("audio", audioContent.type)
+        assertEquals(ContentTypes.AUDIO, audioContent.type)
         assertEquals("aGVsbG8=", audioContent.data)
         assertEquals("audio/mp3", audioContent.mimeType)
     }
@@ -152,7 +145,7 @@ class TypesTest {
         val decoded = McpJson.decodeFromString<PromptMessageContent>(json)
 
         assertIs<AudioContent>(decoded)
-        assertEquals("audio", decoded.type)
+        assertEquals(ContentTypes.AUDIO, decoded.type)
         assertEquals("YXVkaW8=", decoded.data)
         assertEquals("audio/wav", decoded.mimeType)
     }
@@ -166,7 +159,7 @@ class TypesTest {
         )
         val embeddedResource = EmbeddedResource(resource = resource)
 
-        assertEquals("resource", embeddedResource.type)
+        assertEquals(ContentTypes.EMBEDDED_RESOURCE, embeddedResource.type)
         assertEquals(resource, embeddedResource.resource)
     }
 
@@ -183,22 +176,12 @@ class TypesTest {
         val decoded = McpJson.decodeFromString<PromptMessageContent>(json)
 
         assertIs<EmbeddedResource>(decoded)
-        assertEquals("resource", decoded.type)
+        assertEquals(ContentTypes.EMBEDDED_RESOURCE, decoded.type)
         assertIs<BlobResourceContents>(decoded.resource)
         val decodedBlob = decoded.resource
         assertEquals("YmluYXJ5ZGF0YQ==", decodedBlob.blob)
         assertEquals("file:///path/to/binary.dat", decodedBlob.uri)
         assertEquals("application/octet-stream", decodedBlob.mimeType)
-    }
-
-    @Test
-    fun `should handle unknown content type`() {
-        val unknownJson = """{"type": "unknown_type"}"""
-
-        val decoded = McpJson.decodeFromString<PromptMessageContent>(unknownJson)
-
-        assertIs<UnknownContent>(decoded)
-        assertEquals("unknown_type", decoded.type)
     }
 
     // PromptMessage Tests
@@ -212,7 +195,7 @@ class TypesTest {
 
         assertEquals(Role.user, promptMessage.role)
         assertEquals(textContent, promptMessage.content)
-        assertEquals("text", promptMessage.content.type)
+        assertEquals(ContentTypes.TEXT, promptMessage.content.type)
     }
 
     @Test
@@ -229,7 +212,7 @@ class TypesTest {
         )
 
         assertEquals(Role.assistant, promptMessage.role)
-        assertEquals("resource", promptMessage.content.type)
+        assertEquals(ContentTypes.EMBEDDED_RESOURCE, promptMessage.content.type)
         val content = promptMessage.content as EmbeddedResource
         val textResource = content.resource as TextResourceContents
         assertEquals("Primary application entry point", textResource.text)
@@ -299,10 +282,10 @@ class TypesTest {
         )
 
         assertEquals(3, toolResult.content.size)
-        assertEquals("text", toolResult.content[0].type)
-        assertEquals("resource", toolResult.content[1].type)
-        assertEquals("resource", toolResult.content[2].type)
-        assertEquals(false, toolResult.isError)
+        assertEquals(ContentTypes.TEXT, toolResult.content[0].type)
+        assertEquals(ContentTypes.EMBEDDED_RESOURCE, toolResult.content[1].type)
+        assertEquals(ContentTypes.EMBEDDED_RESOURCE, toolResult.content[2].type)
+        assertEquals(null, toolResult.isError)
     }
 
     @Test
@@ -310,7 +293,7 @@ class TypesTest {
         val toolResult = CallToolResult(content = emptyList())
 
         assertEquals(0, toolResult.content.size)
-        assertEquals(false, toolResult.isError)
+        assertEquals(null, toolResult.isError)
     }
 
     @Test
@@ -324,7 +307,7 @@ class TypesTest {
         )
 
         val json = McpJson.encodeToString(toolResult)
-        val decoded = McpJson.decodeFromString<CallToolResult>(json)
+        val decoded = McpJson.decodeFromString<io.modelcontextprotocol.kotlin.sdk.types.CallToolResult>(json)
 
         assertEquals(2, decoded.content.size)
         assertIs<TextContent>(decoded.content[0])
@@ -336,62 +319,70 @@ class TypesTest {
     @Test
     fun `should validate CompleteRequest with prompt reference`() {
         val request = CompleteRequest(
-            ref = PromptReference(name = "greeting"),
-            argument = CompleteRequest.Argument(name = "name", value = "A"),
+            CompleteRequestParams(
+                ref = PromptReference(name = "greeting"),
+                argument = CompleteRequest.Argument(name = "name", value = "A"),
+            ),
         )
 
         assertEquals("completion/complete", request.method.value)
-        assertIs<PromptReference>(request.ref)
-        val promptRef = request.ref
+        assertIs<PromptReference>(request.params.ref)
+        val promptRef = request.params.ref
         assertEquals("greeting", promptRef.name)
-        assertEquals("name", request.argument.name)
-        assertEquals("A", request.argument.value)
+        assertEquals("name", request.params.argument.name)
+        assertEquals("A", request.params.argument.value)
     }
 
     @Test
     fun `should validate CompleteRequest with resource reference`() {
         val request = CompleteRequest(
-            ref = ResourceTemplateReference(uri = "github://repos/{owner}/{repo}"),
-            argument = CompleteRequest.Argument(name = "repo", value = "t"),
+            CompleteRequestParams(
+                ref = ResourceTemplateReference(uri = "github://repos/{owner}/{repo}"),
+                argument = CompleteRequest.Argument(name = "repo", value = "t"),
+            ),
         )
 
         assertEquals("completion/complete", request.method.value)
-        assertIs<ResourceTemplateReference>(request.ref)
-        val resourceRef = request.ref
+        assertIs<ResourceTemplateReference>(request.params.ref)
+        val resourceRef = request.params.ref
         assertEquals("github://repos/{owner}/{repo}", resourceRef.uri)
-        assertEquals("repo", request.argument.name)
-        assertEquals("t", request.argument.value)
+        assertEquals("repo", request.params.argument.name)
+        assertEquals("t", request.params.argument.value)
     }
 
     @Test
     fun `should serialize and deserialize CompleteRequest correctly`() {
         val request = CompleteRequest(
-            ref = PromptReference(name = "test"),
-            argument = CompleteRequest.Argument(name = "arg", value = ""),
+            CompleteRequestParams(
+                ref = PromptReference(name = "test"),
+                argument = CompleteRequest.Argument(name = "arg", value = ""),
+            ),
         )
 
         val json = McpJson.encodeToString(request)
-        val decoded = McpJson.decodeFromString<CompleteRequest>(json)
+        val decoded = McpJson.decodeFromString<io.modelcontextprotocol.kotlin.sdk.types.CompleteRequest>(json)
 
         assertEquals("completion/complete", decoded.method.value)
-        assertIs<PromptReference>(decoded.ref)
-        val promptRef = decoded.ref
+        assertIs<PromptReference>(decoded.params.ref)
+        val promptRef = decoded.params.ref
         assertEquals("test", promptRef.name)
-        assertEquals("arg", decoded.argument.name)
-        assertEquals("", decoded.argument.value)
+        assertEquals("arg", decoded.params.argument.name)
+        assertEquals("", decoded.params.argument.value)
     }
 
     @Test
     fun `should validate CompleteRequest with complex URIs`() {
         val request = CompleteRequest(
-            ref = ResourceTemplateReference(uri = "api://v1/{tenant}/{resource}/{id}"),
-            argument = CompleteRequest.Argument(name = "id", value = "123"),
+            CompleteRequestParams(
+                ref = ResourceTemplateReference(uri = "api://v1/{tenant}/{resource}/{id}"),
+                argument = CompleteRequest.Argument(name = "id", value = "123"),
+            ),
         )
 
-        val resourceRef = request.ref as ResourceTemplateReference
+        val resourceRef = request.params.ref as ResourceTemplateReference
         assertEquals("api://v1/{tenant}/{resource}/{id}", resourceRef.uri)
-        assertEquals("id", request.argument.name)
-        assertEquals("123", request.argument.value)
+        assertEquals("id", request.params.argument.name)
+        assertEquals("123", request.params.argument.value)
     }
 
     // InitializeResult Tests
@@ -399,6 +390,7 @@ class TypesTest {
     fun `should create InitializeResult with default instructions`() {
         val serverInfo = Implementation(name = "test-server", version = "1.0.0")
         val result = InitializeResult(
+            capabilities = ServerCapabilities(),
             serverInfo = serverInfo,
         )
 
@@ -412,6 +404,7 @@ class TypesTest {
         val serverInfo = Implementation(name = "test-server", version = "1.0.0")
         val instructions = "Use this server to perform calculations. Call the 'add' tool to add numbers."
         val result = InitializeResult(
+            capabilities = ServerCapabilities(),
             serverInfo = serverInfo,
             instructions = instructions,
         )
@@ -426,6 +419,7 @@ class TypesTest {
         val serverInfo = Implementation(name = "test-server", version = "1.0.0")
         val instructions = "This server provides file system access. Use the 'read' tool to read files."
         val result = InitializeResult(
+            capabilities = ServerCapabilities(),
             serverInfo = serverInfo,
             instructions = instructions,
         )
@@ -442,6 +436,7 @@ class TypesTest {
     fun `should serialize and deserialize InitializeResult without instructions`() {
         val serverInfo = Implementation(name = "test-server", version = "1.0.0")
         val result = InitializeResult(
+            capabilities = ServerCapabilities(),
             serverInfo = serverInfo,
         )
 

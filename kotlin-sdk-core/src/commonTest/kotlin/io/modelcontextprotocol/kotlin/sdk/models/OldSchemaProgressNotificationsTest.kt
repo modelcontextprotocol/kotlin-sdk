@@ -6,7 +6,7 @@ import io.modelcontextprotocol.kotlin.sdk.RequestId
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
 import kotlin.test.Test
 
-class ProgressNotificationsTest {
+class OldSchemaProgressNotificationsTest {
 
     /**
      * https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress#progress-flow
@@ -27,7 +27,7 @@ class ProgressNotificationsTest {
             }
         """.trimIndent()
 
-        val result = McpJson.decodeFromString<ProgressNotification>(json)
+        val result = McpJson.decodeFromString<io.modelcontextprotocol.kotlin.sdk.types.ProgressNotification>(json)
 
         result shouldBe ProgressNotification(
             params = ProgressNotification.Params(
@@ -58,7 +58,7 @@ class ProgressNotificationsTest {
             }
         """.trimIndent()
 
-        val result = McpJson.decodeFromString<ProgressNotification>(json)
+        val result = McpJson.decodeFromString<io.modelcontextprotocol.kotlin.sdk.types.ProgressNotification>(json)
         result shouldBe ProgressNotification(
             params = ProgressNotification.Params(
                 progressToken = RequestId.NumberId(100500),

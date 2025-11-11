@@ -5,6 +5,7 @@ import io.ktor.server.engine.EmbeddedServer
 import io.modelcontextprotocol.kotlin.sdk.GetPromptRequest
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.client.Client
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequestParams
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
@@ -12,7 +13,7 @@ import kotlin.test.Test
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
-class SseIntegrationTest : AbstractSseIntegrationTest() {
+class OldSchemaSseIntegrationTest : OldSchemaAbstractSseIntegrationTest() {
 
     @Test
     fun `client should be able to connect to sse server`() = runTest(timeout = 5.seconds) {
@@ -100,8 +101,10 @@ class SseIntegrationTest : AbstractSseIntegrationTest() {
     private suspend fun getPrompt(client: Client, clientName: String): String {
         val response = client.getPrompt(
             GetPromptRequest(
-                "prompt",
-                arguments = mapOf("client" to clientName),
+                GetPromptRequestParams(
+                    "prompt",
+                    arguments = mapOf("client" to clientName),
+                ),
             ),
         )
 

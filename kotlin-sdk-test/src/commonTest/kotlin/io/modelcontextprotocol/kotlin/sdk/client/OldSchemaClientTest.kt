@@ -3,7 +3,6 @@ package io.modelcontextprotocol.kotlin.sdk.client
 import io.modelcontextprotocol.kotlin.sdk.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.CreateElicitationRequest
 import io.modelcontextprotocol.kotlin.sdk.CreateElicitationResult
-import io.modelcontextprotocol.kotlin.sdk.CreateMessageRequest
 import io.modelcontextprotocol.kotlin.sdk.CreateMessageResult
 import io.modelcontextprotocol.kotlin.sdk.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.Implementation
@@ -23,7 +22,6 @@ import io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification
 import io.modelcontextprotocol.kotlin.sdk.Method
 import io.modelcontextprotocol.kotlin.sdk.Role
 import io.modelcontextprotocol.kotlin.sdk.Root
-import io.modelcontextprotocol.kotlin.sdk.RootsListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.SUPPORTED_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.TextContent
@@ -52,7 +50,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.test.fail
 
-class ClientTest {
+class OldSchemaClientTest {
     @Test
     fun `should initialize with matching protocol version`() = runTest {
         var initialised = false
@@ -545,7 +543,12 @@ class ClientTest {
             ),
         )
 
-        client.setRequestHandler<CreateMessageRequest>(Method.Defined.SamplingCreateMessage) { _, _ ->
+        client.setRequestHandler<io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest>(
+            Method.Defined.SamplingCreateMessage,
+        ) {
+                _,
+                _,
+            ->
             CreateMessageResult(
                 model = "test-model",
                 role = Role.assistant,
@@ -643,7 +646,6 @@ class ClientTest {
         assertEquals(request.id, receivedAsResponse.id)
         assertEquals(request.jsonrpc, receivedAsResponse.jsonrpc)
         assertEquals(serverListToolsResult, receivedAsResponse.result)
-        assertEquals(null, receivedAsResponse.error)
     }
 
     @Test
@@ -818,7 +820,7 @@ class ClientTest {
         ).joinAll()
 
         val serverSession = serverSessionResult.await()
-        serverSession.setNotificationHandler<RootsListChangedNotification>(
+        serverSession.setNotificationHandler<io.modelcontextprotocol.kotlin.sdk.types.RootsListChangedNotification>(
             Method.Defined.NotificationsRootsListChanged,
         ) {
             rootListChangedNotificationReceived = true
@@ -906,8 +908,10 @@ class ClientTest {
 
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
 
-        val receivedMessages = mutableListOf<LoggingMessageNotification>()
-        client.setNotificationHandler<LoggingMessageNotification>(Method.Defined.NotificationsMessage) { notification ->
+        val receivedMessages = mutableListOf<io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification>()
+        client.setNotificationHandler<io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification>(
+            Method.Defined.NotificationsMessage,
+        ) { notification ->
             receivedMessages.add(notification)
             CompletableDeferred(Unit)
         }
@@ -930,7 +934,7 @@ class ClientTest {
         // Set logging level to warning
         val minLevel = LoggingLevel.warning
         val result = client.setLoggingLevel(minLevel)
-        assertEquals(EmptyJsonObject, result._meta)
+        assertEquals(null, result.meta)
 
         // Send messages of different levels
         val testMessages = listOf(
@@ -993,8 +997,8 @@ class ClientTest {
         }
 
         client.setElicitationHandler { request ->
-            assertEquals(elicitationMessage, request.message)
-            assertEquals(requestedSchema, request.requestedSchema)
+            assertEquals(elicitationMessage, request.params.message)
+            assertEquals(requestedSchema, request.params.requestedSchema)
 
             CreateElicitationResult(
                 action = elicitationResultAction,

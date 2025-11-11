@@ -6,7 +6,6 @@ import io.modelcontextprotocol.kotlin.sdk.Method
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.Tool
-import io.modelcontextprotocol.kotlin.sdk.ToolListChangedNotification
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
@@ -15,11 +14,12 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class ServerToolsTest : AbstractServerFeaturesTest() {
+class OldSchemaServerToolsTest : OldSchemaAbstractServerFeaturesTest() {
 
-    override fun getServerCapabilities(): ServerCapabilities = ServerCapabilities(
-        tools = ServerCapabilities.Tools(null),
-    )
+    override fun getServerCapabilities(): io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities =
+        ServerCapabilities(
+            tools = ServerCapabilities.Tools(null),
+        )
 
     @Test
     fun `removeTool should remove a tool`() = runTest {
@@ -39,7 +39,9 @@ class ServerToolsTest : AbstractServerFeaturesTest() {
     fun `removeTool should return false when tool does not exist`() = runTest {
         // Track notifications
         var toolListChangedNotificationReceived = false
-        client.setNotificationHandler<ToolListChangedNotification>(Method.Defined.NotificationsToolsListChanged) {
+        client.setNotificationHandler<io.modelcontextprotocol.kotlin.sdk.types.ToolListChangedNotification>(
+            Method.Defined.NotificationsToolsListChanged,
+        ) {
             toolListChangedNotificationReceived = true
             CompletableDeferred(Unit)
         }

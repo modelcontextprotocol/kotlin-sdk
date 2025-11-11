@@ -1,10 +1,10 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.typescript.stdio
 
 import io.modelcontextprotocol.kotlin.sdk.client.Client
-import io.modelcontextprotocol.kotlin.sdk.integration.typescript.AbstractKotlinClientTsServerTest
+import io.modelcontextprotocol.kotlin.sdk.integration.typescript.OldSchemaAbstractKotlinClientTsServerTest
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TransportKind
 
-class KotlinClientTsServerTestStdio : AbstractKotlinClientTsServerTest() {
+class OldSchemaKotlinClientTsServerTestStdio : OldSchemaAbstractKotlinClientTsServerTest() {
 
     override val transportKind = TransportKind.STDIO
 

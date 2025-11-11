@@ -19,6 +19,7 @@ import io.modelcontextprotocol.kotlin.sdk.client.mcpWebSocketTransport
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.mcpWebSocket
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequestParams
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
@@ -30,7 +31,7 @@ import io.ktor.client.plugins.websocket.WebSockets as ClientWebSocket
 import io.ktor.server.cio.CIO as ServerCIO
 import io.ktor.server.websocket.WebSockets as ServerWebSockets
 
-class WebSocketIntegrationTest {
+class OldSchemaWebSocketIntegrationTest {
 
     @Test
     fun `client should be able to connect to websocket server 2`() = runTest(timeout = 5.seconds) {
@@ -154,11 +155,11 @@ class WebSocketIntegrationTest {
             ),
         ) { request ->
             GetPromptResult(
-                "Prompt for ${request.name}",
+                description = "Prompt for ${request.params.name}",
                 messages = listOf(
                     PromptMessage(
                         role = Role.user,
-                        content = TextContent("Prompt for client ${request.arguments?.get("client")}"),
+                        content = TextContent("Prompt for client ${request.params.arguments?.get("client")}"),
                     ),
                 ),
             )
@@ -180,8 +181,10 @@ class WebSocketIntegrationTest {
     private suspend fun getPrompt(client: Client, clientName: String): String {
         val response = client.getPrompt(
             GetPromptRequest(
-                "prompt",
-                arguments = mapOf("client" to clientName),
+                GetPromptRequestParams(
+                    "prompt",
+                    arguments = mapOf("client" to clientName),
+                ),
             ),
         )
 

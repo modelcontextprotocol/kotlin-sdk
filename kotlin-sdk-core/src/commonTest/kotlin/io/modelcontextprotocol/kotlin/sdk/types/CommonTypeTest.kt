@@ -18,7 +18,7 @@ class CommonTypeTest {
 
     @Test
     fun `should have correct supported protocol versions`() {
-        assertIs<Array<String>>(SUPPORTED_PROTOCOL_VERSIONS)
+        assertIs<List<String>>(SUPPORTED_PROTOCOL_VERSIONS)
         assertTrue(SUPPORTED_PROTOCOL_VERSIONS.contains(LATEST_PROTOCOL_VERSION))
         assertTrue(SUPPORTED_PROTOCOL_VERSIONS.contains("2024-11-05"))
         assertEquals(2, SUPPORTED_PROTOCOL_VERSIONS.size)

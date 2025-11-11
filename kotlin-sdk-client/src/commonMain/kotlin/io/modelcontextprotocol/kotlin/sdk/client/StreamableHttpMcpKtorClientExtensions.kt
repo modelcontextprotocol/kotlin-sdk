@@ -2,9 +2,9 @@ package io.modelcontextprotocol.kotlin.sdk.client
 
 import io.ktor.client.HttpClient
 import io.ktor.client.request.HttpRequestBuilder
-import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.LIB_VERSION
 import io.modelcontextprotocol.kotlin.sdk.shared.IMPLEMENTATION_NAME
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import kotlin.time.Duration
 
 /**

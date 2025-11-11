@@ -6,6 +6,7 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.sse.ServerSentEvent
 import io.modelcontextprotocol.kotlin.sdk.ClientCapabilities
+import io.modelcontextprotocol.kotlin.sdk.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.Tool
 import kotlinx.coroutines.delay
@@ -30,7 +31,7 @@ import kotlin.uuid.Uuid
 @OptIn(ExperimentalUuidApi::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Suppress("LongMethod")
-internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
+internal class OldStreamableHttpClientTest : AbstractStreamableHttpClientTest() {
 
     @Test
     fun `test streamableHttpClient`() = runBlocking {
@@ -148,6 +149,7 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
                 required = listOf("temperature"),
             ),
             annotations = null,
+            _meta = EmptyJsonObject,
         )
 
         mockMcp.mockUnsubscribeRequest(sessionId = sessionId)

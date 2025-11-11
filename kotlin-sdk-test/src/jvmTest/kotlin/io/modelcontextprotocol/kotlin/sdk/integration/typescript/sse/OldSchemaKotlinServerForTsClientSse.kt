@@ -39,6 +39,7 @@ import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.Channel
@@ -224,7 +225,7 @@ class KotlinServerForTsClient {
                 required = listOf("name"),
             ),
         ) { request ->
-            val name = (request.arguments["name"] as? JsonPrimitive)?.content ?: "World"
+            val name = (request.params.arguments?.get("name") as? JsonPrimitive)?.content ?: "World"
             CallToolResult(
                 content = listOf(TextContent("Hello, $name!")),
                 structuredContent = buildJsonObject {
@@ -249,7 +250,7 @@ class KotlinServerForTsClient {
                 required = listOf("name"),
             ),
         ) { request ->
-            val name = (request.arguments["name"] as? JsonPrimitive)?.content ?: "World"
+            val name = (request.params.arguments?.get("name") as? JsonPrimitive)?.content ?: "World"
 
             CallToolResult(
                 content = listOf(TextContent("Multiple greetings sent to $name!")),
@@ -272,12 +273,12 @@ class KotlinServerForTsClient {
             ),
         ) { request ->
             GetPromptResult(
-                "Greeting for ${request.name}",
+                description = "Greeting for ${request.params.name}",
                 messages = listOf(
                     PromptMessage(
                         role = Role.user,
                         content = TextContent(
-                            "Please greet ${request.arguments?.get("name") ?: "someone"} in a friendly manner.",
+                            "Please greet ${request.params.arguments?.get("name") ?: "someone"} in a friendly manner.",
                         ),
                     ),
                 ),
@@ -292,7 +293,7 @@ class KotlinServerForTsClient {
         ) { request ->
             ReadResourceResult(
                 contents = listOf(
-                    TextResourceContents("Hello, world!", request.uri, "text/plain"),
+                    TextResourceContents("Hello, world!", request.params.uri, "text/plain"),
                 ),
             )
         }
@@ -366,9 +367,9 @@ class HttpServerTransport(private val sessionId: String) : AbstractTransport() {
                         logger.warn { "Timeout waiting for response to request ID: $id" }
                         call.respondText(
                             McpJson.encodeToString(
-                                JSONRPCResponse(
+                                JSONRPCError(
                                     id = message.id,
-                                    error = JSONRPCError(
+                                    error = RPCError(
                                         code = ErrorCode.Defined.RequestTimeout,
                                         message = "Request timed out",
                                     ),
@@ -383,9 +384,9 @@ class HttpServerTransport(private val sessionId: String) : AbstractTransport() {
                     if (!call.response.isCommitted) {
                         call.respondText(
                             McpJson.encodeToString(
-                                JSONRPCResponse(
+                                JSONRPCError(
                                     id = message.id,
-                                    error = JSONRPCError(
+                                    error = RPCError(
                                         code = ErrorCode.Defined.ConnectionClosed,
                                         message = "Request cancelled",
                                     ),
@@ -403,9 +404,9 @@ class HttpServerTransport(private val sessionId: String) : AbstractTransport() {
             logger.error(e) { "Error handling request" }
             if (!call.response.isCommitted) {
                 try {
-                    val errorResponse = JSONRPCResponse(
+                    val errorResponse = JSONRPCError(
                         id = RequestId.NumberId(0),
-                        error = JSONRPCError(
+                        error = RPCError(
                             code = ErrorCode.Defined.InternalError,
                             message = "Internal server error: ${e.message}",
                         ),

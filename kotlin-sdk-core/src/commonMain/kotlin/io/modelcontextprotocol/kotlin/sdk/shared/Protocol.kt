@@ -1,24 +1,27 @@
 package io.modelcontextprotocol.kotlin.sdk.shared
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.modelcontextprotocol.kotlin.sdk.CancelledNotification
-import io.modelcontextprotocol.kotlin.sdk.EmptyRequestResult
-import io.modelcontextprotocol.kotlin.sdk.ErrorCode
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCError
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCNotification
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCRequest
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCResponse
-import io.modelcontextprotocol.kotlin.sdk.McpError
-import io.modelcontextprotocol.kotlin.sdk.Method
-import io.modelcontextprotocol.kotlin.sdk.Notification
-import io.modelcontextprotocol.kotlin.sdk.PingRequest
-import io.modelcontextprotocol.kotlin.sdk.Progress
-import io.modelcontextprotocol.kotlin.sdk.ProgressNotification
-import io.modelcontextprotocol.kotlin.sdk.Request
-import io.modelcontextprotocol.kotlin.sdk.RequestId
-import io.modelcontextprotocol.kotlin.sdk.RequestResult
-import io.modelcontextprotocol.kotlin.sdk.fromJSON
-import io.modelcontextprotocol.kotlin.sdk.toJSON
+import io.modelcontextprotocol.kotlin.sdk.types.CancelledNotification
+import io.modelcontextprotocol.kotlin.sdk.types.CancelledNotificationParams
+import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
+import io.modelcontextprotocol.kotlin.sdk.types.McpException
+import io.modelcontextprotocol.kotlin.sdk.types.McpJson
+import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.Notification
+import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
+import io.modelcontextprotocol.kotlin.sdk.types.Progress
+import io.modelcontextprotocol.kotlin.sdk.types.ProgressNotification
+import io.modelcontextprotocol.kotlin.sdk.types.ProgressToken
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError
+import io.modelcontextprotocol.kotlin.sdk.types.Request
+import io.modelcontextprotocol.kotlin.sdk.types.RequestId
+import io.modelcontextprotocol.kotlin.sdk.types.RequestResult
+import io.modelcontextprotocol.kotlin.sdk.types.fromJSON
+import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.getAndUpdate
@@ -35,9 +38,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
-import kotlinx.serialization.serializer
-import kotlin.reflect.KType
-import kotlin.reflect.typeOf
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -51,6 +51,11 @@ public const val IMPLEMENTATION_NAME: String = "mcp-ktor"
 public typealias ProgressCallback = (Progress) -> Unit
 
 @OptIn(ExperimentalSerializationApi::class)
+@Deprecated(
+    message = "Use McpJson instead",
+    replaceWith = ReplaceWith("McpJson", "io.modelcontextprotocol.kotlin.sdk.types.McpJson"),
+    level = DeprecationLevel.WARNING,
+)
 public val McpJson: Json by lazy {
     Json {
         ignoreUnknownKeys = true
@@ -143,9 +148,9 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     public val responseHandlers: Map<RequestId, (response: JSONRPCResponse?, error: Exception?) -> Unit>
         get() = _responseHandlers.value
 
-    private val _progressHandlers: AtomicRef<PersistentMap<RequestId, ProgressCallback>> =
+    private val _progressHandlers: AtomicRef<PersistentMap<ProgressToken, ProgressCallback>> =
         atomic(persistentMapOf())
-    public val progressHandlers: Map<RequestId, ProgressCallback>
+    public val progressHandlers: Map<ProgressToken, ProgressCallback>
         get() = _progressHandlers.value
 
     /**
@@ -183,7 +188,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         }
 
         setRequestHandler<PingRequest>(Method.Defined.Ping) { _, _ ->
-            EmptyRequestResult()
+            EmptyResult()
         }
     }
 
@@ -222,7 +227,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         transport = null
         onClose()
 
-        val error = McpError(ErrorCode.Defined.ConnectionClosed.code, "Connection closed")
+        val error = McpException(RPCError.ErrorCode.CONNECTION_CLOSED, "Connection closed")
         for (handler in handlersToNotify) {
             handler(null, error)
         }
@@ -254,10 +259,10 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             logger.trace { "No handler found for request: ${request.method}" }
             try {
                 transport?.send(
-                    JSONRPCResponse(
+                    JSONRPCError(
                         id = request.id,
-                        error = JSONRPCError(
-                            ErrorCode.Defined.MethodNotFound,
+                        error = RPCError(
+                            code = RPCError.ErrorCode.METHOD_NOT_FOUND,
                             message = "Server does not support ${request.method}",
                         ),
                     ),
@@ -276,7 +281,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             transport?.send(
                 JSONRPCResponse(
                     id = request.id,
-                    result = result,
+                    result = result ?: EmptyResult(),
                 ),
             )
         } catch (cause: Throwable) {
@@ -284,10 +289,10 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
 
             try {
                 transport?.send(
-                    JSONRPCResponse(
+                    JSONRPCError(
                         id = request.id,
-                        error = JSONRPCError(
-                            code = ErrorCode.Defined.InternalError,
+                        error = RPCError(
+                            code = RPCError.ErrorCode.INTERNAL_ERROR,
                             message = cause.message ?: "Internal error",
                         ),
                     ),
@@ -324,7 +329,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     }
 
     private fun onResponse(response: JSONRPCResponse?, error: JSONRPCError?) {
-        val messageId = response?.id
+        val messageId = response?.id ?: error?.id
 
         val oldResponseHandlers = _responseHandlers.getAndUpdate { current ->
             if (messageId != null && messageId in current) {
@@ -347,10 +352,10 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             handler(response, null)
         } else {
             check(error != null)
-            val error = McpError(
-                error.code.code,
-                error.message,
-                error.data,
+            val error = McpException(
+                code = error.error.code,
+                message = error.error.message,
+                data = error.error.data,
             )
             handler(null, error)
         }
@@ -415,11 +420,6 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                     return@put
                 }
 
-                if (response?.error != null) {
-                    result.completeExceptionally(IllegalStateException(response.error.toString()))
-                    return@put
-                }
-
                 try {
                     @Suppress("UNCHECKED_CAST")
                     result.complete(response!!.result as T)
@@ -434,7 +434,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             _progressHandlers.update { current -> current.remove(messageId) }
 
             val notification = CancelledNotification(
-                params = CancelledNotification.Params(
+                params = CancelledNotificationParams(
                     requestId = messageId,
                     reason = reason.message ?: "Unknown",
                 ),
@@ -459,10 +459,10 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         } catch (cause: TimeoutCancellationException) {
             logger.error { "Request timed out after ${timeout.inWholeMilliseconds}ms: ${request.method}" }
             cancel(
-                McpError(
-                    ErrorCode.Defined.RequestTimeout.code,
-                    "Request timed out",
-                    JsonObject(mutableMapOf("timeout" to JsonPrimitive(timeout.inWholeMilliseconds))),
+                McpException(
+                    code = RPCError.ErrorCode.REQUEST_TIMEOUT,
+                    message = "Request timed out",
+                    data = JsonObject(mutableMapOf("timeout" to JsonPrimitive(timeout.inWholeMilliseconds))),
                 ),
             )
             result.cancel(cause)
@@ -491,28 +491,21 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         method: Method,
         noinline block: suspend (T, RequestHandlerExtra) -> RequestResult?,
     ) {
-        setRequestHandler(typeOf<T>(), method, block)
+        setRequestHandlerInternal(method, block)
     }
 
     @PublishedApi
-    internal fun <T : Request> setRequestHandler(
-        requestType: KType,
+    @Suppress("UNCHECKED_CAST")
+    internal fun <T : Request> setRequestHandlerInternal(
         method: Method,
         block: suspend (T, RequestHandlerExtra) -> RequestResult?,
     ) {
         assertRequestHandlerCapability(method)
 
-        val serializer = McpJson.serializersModule.serializer(requestType)
-
         _requestHandlers.update { current ->
-            current.put(method.value) { request, extraHandler ->
-                val result = McpJson.decodeFromJsonElement(serializer, request.params)
-                val response = if (result != null) {
-                    @Suppress("UNCHECKED_CAST")
-                    block(result as T, extraHandler)
-                } else {
-                    EmptyRequestResult()
-                }
+            current.put(method.value) { jSONRPCRequest, extraHandler ->
+                val request = jSONRPCRequest.fromJSON()
+                val response = block(request as T, extraHandler)
                 response
             }
         }
