@@ -65,22 +65,35 @@ public class io/modelcontextprotocol/kotlin/sdk/server/Server {
 	public final fun addTools (Ljava/util/List;)V
 	public final fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun connect (Lio/modelcontextprotocol/kotlin/sdk/shared/Transport;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun createElicitation (Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun createElicitation$default (Lio/modelcontextprotocol/kotlin/sdk/server/Server;Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun createMessage (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/CreateMessageRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun createMessage$default (Lio/modelcontextprotocol/kotlin/sdk/server/Server;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/CreateMessageRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public final fun createSession (Lio/modelcontextprotocol/kotlin/sdk/shared/Transport;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	protected final fun getInstructionsProvider ()Lkotlin/jvm/functions/Function0;
 	protected final fun getOptions ()Lio/modelcontextprotocol/kotlin/sdk/server/ServerOptions;
 	public final fun getPrompts ()Ljava/util/Map;
 	public final fun getResources ()Ljava/util/Map;
 	protected final fun getServerInfo ()Lio/modelcontextprotocol/kotlin/sdk/types/Implementation;
+	public final fun getSessions ()Ljava/util/Map;
 	public final fun getTools ()Ljava/util/Map;
+	public final fun listRoots (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun listRoots$default (Lio/modelcontextprotocol/kotlin/sdk/server/Server;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public final fun onClose (Lkotlin/jvm/functions/Function0;)V
 	public final fun onConnect (Lkotlin/jvm/functions/Function0;)V
 	public final fun onInitialized (Lkotlin/jvm/functions/Function0;)V
+	public final fun ping (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun removePrompt (Ljava/lang/String;)Z
 	public final fun removePrompts (Ljava/util/List;)I
 	public final fun removeResource (Ljava/lang/String;)Z
 	public final fun removeResources (Ljava/util/List;)I
 	public final fun removeTool (Ljava/lang/String;)Z
 	public final fun removeTools (Ljava/util/List;)I
+	public final fun sendLoggingMessage (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/LoggingMessageNotification;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun sendPromptListChanged (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun sendResourceListChanged (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun sendResourceUpdated (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/ResourceUpdatedNotification;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun sendToolListChanged (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/server/ServerOptions : io/modelcontextprotocol/kotlin/sdk/shared/ProtocolOptions {
@@ -98,10 +111,13 @@ public class io/modelcontextprotocol/kotlin/sdk/server/ServerSession : io/modelc
 	public static synthetic fun createElicitation$default (Lio/modelcontextprotocol/kotlin/sdk/server/ServerSession;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public final fun createMessage (Lio/modelcontextprotocol/kotlin/sdk/types/CreateMessageRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun createMessage$default (Lio/modelcontextprotocol/kotlin/sdk/server/ServerSession;Lio/modelcontextprotocol/kotlin/sdk/types/CreateMessageRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public fun equals (Ljava/lang/Object;)Z
 	public final fun getClientCapabilities ()Lio/modelcontextprotocol/kotlin/sdk/types/ClientCapabilities;
 	public final fun getClientVersion ()Lio/modelcontextprotocol/kotlin/sdk/types/Implementation;
 	protected final fun getInstructions ()Ljava/lang/String;
 	protected final fun getServerInfo ()Lio/modelcontextprotocol/kotlin/sdk/types/Implementation;
+	public final fun getSessionId ()Ljava/lang/String;
+	public fun hashCode ()I
 	public final fun listRoots (Lkotlinx/serialization/json/JsonObject;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun listRoots$default (Lio/modelcontextprotocol/kotlin/sdk/server/ServerSession;Lkotlinx/serialization/json/JsonObject;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public fun onClose ()V
