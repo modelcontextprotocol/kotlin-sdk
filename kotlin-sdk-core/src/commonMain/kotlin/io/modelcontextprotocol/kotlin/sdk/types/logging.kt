@@ -63,6 +63,18 @@ public data class SetLevelRequest(override val params: SetLevelRequestParams) : 
     @OptIn(ExperimentalSerializationApi::class)
     @EncodeDefault
     override val method: Method = Method.Defined.LoggingSetLevel
+
+    /**
+     * The minimum severity level of logging that the client wants to receive from the server.
+     */
+    public val level: LoggingLevel
+        get() = params.level
+
+    /**
+     * Metadata for this request. May include a progressToken for out-of-band progress notifications.
+     */
+    public val meta: RequestMeta?
+        get() = params.meta
 }
 
 /**

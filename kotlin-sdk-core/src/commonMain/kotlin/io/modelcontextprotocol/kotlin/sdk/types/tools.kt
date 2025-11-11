@@ -226,6 +226,18 @@ public data class ListToolsRequest(override val params: PaginatedRequestParams? 
     PaginatedRequest {
     @EncodeDefault
     override val method: Method = Method.Defined.ToolsList
+
+    /**
+     * An opaque token representing the current pagination position.
+     */
+    public val cursor: String?
+        get() = params?.cursor
+
+    /**
+     * Metadata for this request. May include a progressToken for out-of-band progress notifications.
+     */
+    public val meta: RequestMeta?
+        get() = params?.meta
 }
 
 /**

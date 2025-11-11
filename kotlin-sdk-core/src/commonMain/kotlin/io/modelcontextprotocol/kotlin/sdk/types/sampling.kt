@@ -107,31 +107,85 @@ public data class CreateMessageRequest(override val params: CreateMessageRequest
     @OptIn(ExperimentalSerializationApi::class)
     @EncodeDefault
     override val method: Method = Method.Defined.SamplingCreateMessage
+
+    /**
+     * The requested maximum number of tokens to sample (to prevent runaway completions).
+     */
+    public val maxTokens: Int
+        get() = params.maxTokens
+
+    /**
+     * The messages to use as context for sampling.
+     */
+    public val messages: List<SamplingMessage>
+        get() = params.messages
+
+    /**
+     * The server's preferences for which model to select.
+     */
+    public val modelPreferences: ModelPreferences?
+        get() = params.modelPreferences
+
+    /**
+     * An optional system prompt the server wants to use for sampling.
+     */
+    public val systemPrompt: String?
+        get() = params.systemPrompt
+
+    /**
+     * A request to include context from one or more MCP servers (including the caller), to be attached to the prompt.
+     */
+    public val includeContext: IncludeContext?
+        get() = params.includeContext
+
+    /**
+     * Temperature parameter for sampling (typically 0.0-2.0).
+     */
+    public val temperature: Double?
+        get() = params.temperature
+
+    /**
+     * List of sequences that will stop generation if encountered.
+     */
+    public val stopSequences: List<String>?
+        get() = params.stopSequences
+
+    /**
+     * Metadata to pass through to the LLM provider. The format of this metadata is provider-specific.
+     */
+    public val metadata: JsonObject?
+        get() = params.metadata
+
+    /**
+     * Metadata for this request. May include a progressToken for out-of-band progress notifications.
+     */
+    public val meta: RequestMeta?
+        get() = params.meta
 }
 
 /**
  * Parameters for a sampling/createMessage request.
  *
  * @property maxTokens The requested maximum number of tokens to sample (to prevent runaway completions).
- *                    The client MAY choose to sample fewer tokens than the requested maximum.
+ * The client MAY choose to sample fewer tokens than the requested maximum.
  * @property messages The messages to use as context for sampling. Typically includes conversation history
- *                   and the current user message.
+ * and the current user message.
  * @property modelPreferences The server's preferences for which model to select.
- *                           The client MAY ignore these preferences and choose any model.
+ * The client MAY ignore these preferences and choose any model.
  * @property systemPrompt An optional system prompt the server wants to use for sampling.
- *                       The client MAY modify or omit this prompt.
+ * The client MAY modify or omit this prompt.
  * @property includeContext A request to include context from one or more MCP servers (including the caller),
- *                         to be attached to the prompt. The client MAY ignore this request.
- *                         - "none": Don't include any server context
- *                         - "thisServer": Include context only from the requesting server
- *                         - "allServers": Include context from all connected MCP servers
+ * to be attached to the prompt. The client MAY ignore this request.
+ * - `none`: Don't include any server context
+ * - `thisServer`: Include context only from the requesting server
+ * - `allServers`: Include context from all connected MCP servers
  * @property temperature Optional temperature parameter for sampling (typically 0.0-2.0).
- *                      Higher values make output more random, lower values make it more deterministic.
+ * Higher values make output more random, lower values make it more deterministic.
  * @property stopSequences Optional list of sequences that will stop generation if encountered.
  * @property metadata Optional metadata to pass through to the LLM provider.
- *                   The format of this metadata is provider-specific.
+ * The format of this metadata is provider-specific.
  * @property meta Optional metadata for this request. May include a progressToken for
- *                out-of-band progress notifications.
+ * out-of-band progress notifications.
  */
 @Serializable
 public data class CreateMessageRequestParams(

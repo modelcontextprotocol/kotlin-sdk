@@ -190,6 +190,18 @@ public data class ListResourcesRequest(override val params: PaginatedRequestPara
     PaginatedRequest {
     @EncodeDefault
     override val method: Method = Method.Defined.ResourcesList
+
+    /**
+     * An opaque token representing the current pagination position.
+     */
+    public val cursor: String?
+        get() = params?.cursor
+
+    /**
+     * Metadata for this request. May include a progressToken for out-of-band progress notifications.
+     */
+    public val meta: RequestMeta?
+        get() = params?.meta
 }
 
 /**
@@ -218,22 +230,6 @@ public data class ListResourcesResult(
 // ============================================================================
 
 /**
- * Parameters for a resources/read request.
- *
- * @property uri The URI of the resource to read. The URI can use any protocol;
- *              it is up to the server how to interpret it. Common schemes include
- *              file://, http://, https://, or custom application-specific schemes.
- * @property meta Optional metadata for this request. May include a progressToken for
- *                out-of-band progress notifications.
- */
-@Serializable
-public data class ReadResourceRequestParams(
-    val uri: String,
-    @SerialName("_meta")
-    override val meta: RequestMeta? = null,
-) : RequestParams
-
-/**
  * Sent from the client to the server to read a specific resource URI.
  *
  * The server will return the resource's contents, which can be either text or binary data.
@@ -259,6 +255,22 @@ public data class ReadResourceRequest(override val params: ReadResourceRequestPa
 }
 
 /**
+ * Parameters for a resources/read request.
+ *
+ * @property uri The URI of the resource to read. The URI can use any protocol;
+ *              it is up to the server how to interpret it. Common schemes include
+ *              file://, http://, https://, or custom application-specific schemes.
+ * @property meta Optional metadata for this request. May include a progressToken for
+ *                out-of-band progress notifications.
+ */
+@Serializable
+public data class ReadResourceRequestParams(
+    val uri: String,
+    @SerialName("_meta")
+    override val meta: RequestMeta? = null,
+) : RequestParams
+
+/**
  * The server's response to a [ReadResourceRequest] from the client.
  *
  * Contains the resource contents, which can be a mix of text and binary data.
@@ -281,6 +293,34 @@ public data class ReadResourceResult(
 // ============================================================================
 
 /**
+ * Sent from the client to request resources/updated notifications from the server
+ * whenever a particular resource changes.
+ *
+ * After subscribing, the server will send [ResourceUpdatedNotification] messages
+ * whenever the subscribed resource is modified. This requires the server to support
+ * the `subscribe` capability in [ServerCapabilities.resources].
+ *
+ * @property params The parameters specifying which resource URI to subscribe to.
+ */
+@Serializable
+public data class SubscribeRequest(override val params: SubscribeRequestParams) : ClientRequest {
+    @EncodeDefault
+    override val method: Method = Method.Defined.ResourcesSubscribe
+
+    /**
+     * The URI of the resource to subscribe to.
+     */
+    public val uri: String
+        get() = params.uri
+
+    /**
+     * Metadata for this request. May include a progressToken for out-of-band progress notifications.
+     */
+    public val meta: RequestMeta?
+        get() = params.meta
+}
+
+/**
  * Parameters for a resources/subscribe request.
  *
  * @property uri The URI of the resource to subscribe to. The URI can use any protocol;
@@ -295,25 +335,35 @@ public data class SubscribeRequestParams(
     override val meta: RequestMeta? = null,
 ) : RequestParams
 
-/**
- * Sent from the client to request resources/updated notifications from the server
- * whenever a particular resource changes.
- *
- * After subscribing, the server will send [ResourceUpdatedNotification] messages
- * whenever the subscribed resource is modified. This requires the server to support
- * the `subscribe` capability in [ServerCapabilities.resources].
- *
- * @property params The parameters specifying which resource URI to subscribe to.
- */
-@Serializable
-public data class SubscribeRequest(override val params: SubscribeRequestParams) : ClientRequest {
-    @EncodeDefault
-    override val method: Method = Method.Defined.ResourcesSubscribe
-}
-
 // ============================================================================
 // resources/unsubscribe
 // ============================================================================
+
+/**
+ * Sent from the client to request cancellation of resources/updated notifications from the server.
+ *
+ * This should follow a previous [SubscribeRequest]. After unsubscribing, the server will
+ * stop sending [ResourceUpdatedNotification] messages for this resource.
+ *
+ * @property params The parameters specifying which resource URI to unsubscribe from.
+ */
+@Serializable
+public data class UnsubscribeRequest(override val params: UnsubscribeRequestParams) : ClientRequest {
+    @EncodeDefault
+    override val method: Method = Method.Defined.ResourcesUnsubscribe
+
+    /**
+     * The URI of the resource to unsubscribe from.
+     */
+    public val uri: String
+        get() = params.uri
+
+    /**
+     * Metadata for this request. May include a progressToken for out-of-band progress notifications.
+     */
+    public val meta: RequestMeta?
+        get() = params.meta
+}
 
 /**
  * Parameters for a resources/unsubscribe request.
@@ -329,20 +379,6 @@ public data class UnsubscribeRequestParams(
     @SerialName("_meta")
     override val meta: RequestMeta? = null,
 ) : RequestParams
-
-/**
- * Sent from the client to request cancellation of resources/updated notifications from the server.
- *
- * This should follow a previous [SubscribeRequest]. After unsubscribing, the server will
- * stop sending [ResourceUpdatedNotification] messages for this resource.
- *
- * @property params The parameters specifying which resource URI to unsubscribe from.
- */
-@Serializable
-public data class UnsubscribeRequest(override val params: UnsubscribeRequestParams) : ClientRequest {
-    @EncodeDefault
-    override val method: Method = Method.Defined.ResourcesUnsubscribe
-}
 
 // ============================================================================
 // resources/templates/list
@@ -363,6 +399,18 @@ public data class ListResourceTemplatesRequest(override val params: PaginatedReq
     PaginatedRequest {
     @EncodeDefault
     override val method: Method = Method.Defined.ResourcesTemplatesList
+
+    /**
+     * An opaque token representing the current pagination position.
+     */
+    public val cursor: String?
+        get() = params?.cursor
+
+    /**
+     * Metadata for this request. May include a progressToken for out-of-band progress notifications.
+     */
+    public val meta: RequestMeta?
+        get() = params?.meta
 }
 
 /**

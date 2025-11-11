@@ -11,4 +11,7 @@ public data class PingRequest(override val params: BaseRequestParams? = null) :
     @OptIn(ExperimentalSerializationApi::class)
     @EncodeDefault
     override val method: Method = Method.Defined.Ping
+
+    public val meta: RequestMeta?
+        get() = params?.meta
 }

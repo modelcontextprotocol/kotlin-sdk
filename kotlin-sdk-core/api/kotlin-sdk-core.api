@@ -773,9 +773,12 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/CancelledNotificatio
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/CancelledNotificationParams;)Lio/modelcontextprotocol/kotlin/sdk/types/CancelledNotification;
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/CancelledNotification;Lio/modelcontextprotocol/kotlin/sdk/types/CancelledNotificationParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/CancelledNotification;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMeta ()Lkotlinx/serialization/json/JsonObject;
 	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
 	public fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/CancelledNotificationParams;
 	public synthetic fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/NotificationParams;
+	public final fun getReason ()Ljava/lang/String;
+	public final fun getRequestId ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -931,9 +934,13 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/CompleteRequest : io
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/CompleteRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/CompleteRequest;
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/CompleteRequest;Lio/modelcontextprotocol/kotlin/sdk/types/CompleteRequestParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/CompleteRequest;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getArgument ()Lio/modelcontextprotocol/kotlin/sdk/types/CompleteRequestParams$Argument;
+	public final fun getContext ()Lio/modelcontextprotocol/kotlin/sdk/types/CompleteRequestParams$Context;
+	public final fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
 	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
 	public fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/CompleteRequestParams;
 	public synthetic fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestParams;
+	public final fun getRef ()Lio/modelcontextprotocol/kotlin/sdk/types/Reference;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -1140,9 +1147,18 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/CreateMessageRequest
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/CreateMessageRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/CreateMessageRequest;
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/CreateMessageRequest;Lio/modelcontextprotocol/kotlin/sdk/types/CreateMessageRequestParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/CreateMessageRequest;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getIncludeContext ()Lio/modelcontextprotocol/kotlin/sdk/types/IncludeContext;
+	public final fun getMaxTokens ()I
+	public final fun getMessages ()Ljava/util/List;
+	public final fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
+	public final fun getMetadata ()Lkotlinx/serialization/json/JsonObject;
 	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
+	public final fun getModelPreferences ()Lio/modelcontextprotocol/kotlin/sdk/types/ModelPreferences;
 	public fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/CreateMessageRequestParams;
 	public synthetic fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestParams;
+	public final fun getStopSequences ()Ljava/util/List;
+	public final fun getSystemPrompt ()Ljava/lang/String;
+	public final fun getTemperature ()Ljava/lang/Double;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -1251,6 +1267,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/CustomNotification :
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/Method;Lio/modelcontextprotocol/kotlin/sdk/types/BaseNotificationParams;)Lio/modelcontextprotocol/kotlin/sdk/types/CustomNotification;
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/CustomNotification;Lio/modelcontextprotocol/kotlin/sdk/types/Method;Lio/modelcontextprotocol/kotlin/sdk/types/BaseNotificationParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/CustomNotification;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMeta ()Lkotlinx/serialization/json/JsonObject;
 	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
 	public fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/BaseNotificationParams;
 	public synthetic fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/NotificationParams;
@@ -1305,9 +1322,12 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ElicitRequest : io/m
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequest;
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequest;Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequest;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMessage ()Ljava/lang/String;
+	public final fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
 	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
 	public fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams;
 	public synthetic fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestParams;
+	public final fun getRequestedSchema ()Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -1733,9 +1753,13 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/InitializeRequest : 
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/InitializeRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/InitializeRequest;
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/InitializeRequest;Lio/modelcontextprotocol/kotlin/sdk/types/InitializeRequestParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/InitializeRequest;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCapabilities ()Lio/modelcontextprotocol/kotlin/sdk/types/ClientCapabilities;
+	public final fun getClientInfo ()Lio/modelcontextprotocol/kotlin/sdk/types/Implementation;
+	public final fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
 	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
 	public fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/InitializeRequestParams;
 	public synthetic fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestParams;
+	public final fun getProtocolVersion ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -2014,6 +2038,8 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ListPromptsRequest :
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/ListPromptsRequest;
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ListPromptsRequest;Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ListPromptsRequest;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCursor ()Ljava/lang/String;
+	public final fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
 	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
 	public fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;
 	public synthetic fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestParams;
@@ -2077,6 +2103,8 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ListResourceTemplate
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/ListResourceTemplatesRequest;
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ListResourceTemplatesRequest;Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ListResourceTemplatesRequest;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCursor ()Ljava/lang/String;
+	public final fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
 	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
 	public fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;
 	public synthetic fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestParams;
@@ -2140,6 +2168,8 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ListResourcesRequest
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/ListResourcesRequest;
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ListResourcesRequest;Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ListResourcesRequest;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCursor ()Ljava/lang/String;
+	public final fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
 	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
 	public fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;
 	public synthetic fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestParams;
@@ -2203,6 +2233,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ListRootsRequest : i
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/BaseRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/ListRootsRequest;
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ListRootsRequest;Lio/modelcontextprotocol/kotlin/sdk/types/BaseRequestParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ListRootsRequest;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
 	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
 	public fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/BaseRequestParams;
 	public synthetic fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestParams;
@@ -2264,6 +2295,8 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ListToolsRequest : i
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/ListToolsRequest;
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ListToolsRequest;Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ListToolsRequest;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCursor ()Ljava/lang/String;
+	public final fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
 	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
 	public fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;
 	public synthetic fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestParams;
@@ -2626,6 +2659,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/PingRequest : io/mod
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/BaseRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/PingRequest;
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/PingRequest;Lio/modelcontextprotocol/kotlin/sdk/types/BaseRequestParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/PingRequest;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
 	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
 	public fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/BaseRequestParams;
 	public synthetic fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestParams;
@@ -3717,6 +3751,8 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/SetLevelRequest : io
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/SetLevelRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/SetLevelRequest;
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/SetLevelRequest;Lio/modelcontextprotocol/kotlin/sdk/types/SetLevelRequestParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/SetLevelRequest;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getLevel ()Lio/modelcontextprotocol/kotlin/sdk/types/LoggingLevel;
+	public final fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
 	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
 	public synthetic fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestParams;
 	public fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/SetLevelRequestParams;
@@ -3809,9 +3845,11 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/SubscribeRequest : i
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/SubscribeRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/SubscribeRequest;
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/SubscribeRequest;Lio/modelcontextprotocol/kotlin/sdk/types/SubscribeRequestParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/SubscribeRequest;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
 	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
 	public synthetic fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestParams;
 	public fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/SubscribeRequestParams;
+	public final fun getUri ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -4116,9 +4154,11 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/UnsubscribeRequest :
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/UnsubscribeRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/UnsubscribeRequest;
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/UnsubscribeRequest;Lio/modelcontextprotocol/kotlin/sdk/types/UnsubscribeRequestParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/UnsubscribeRequest;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
 	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
 	public synthetic fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestParams;
 	public fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/UnsubscribeRequestParams;
+	public final fun getUri ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }

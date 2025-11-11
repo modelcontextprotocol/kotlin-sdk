@@ -16,6 +16,27 @@ public data class CompleteRequest(override val params: CompleteRequestParams) : 
     @OptIn(ExperimentalSerializationApi::class)
     @EncodeDefault
     public override val method: Method = Method.Defined.CompletionComplete
+
+    /**
+     * The argument's information for which completion options are requested.
+     */
+    public val argument: CompleteRequestParams.Argument
+        get() = params.argument
+
+    /**
+     * A reference to either a prompt or resource template to complete within.
+     */
+    public val ref: Reference
+        get() = params.ref
+
+    /**
+     * Additional, context for generating completions.
+     */
+    public val context: CompleteRequestParams.Context?
+        get() = params.context
+
+    public val meta: RequestMeta?
+        get() = params.meta
 }
 
 /**
