@@ -3,7 +3,6 @@ package io.modelcontextprotocol.kotlin.sdk.server
 import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.Method
 import io.modelcontextprotocol.kotlin.sdk.ReadResourceResult
-import io.modelcontextprotocol.kotlin.sdk.ResourceListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.TextResourceContents
 import kotlinx.coroutines.CompletableDeferred
@@ -14,11 +13,12 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class ServerResourcesTest : AbstractServerFeaturesTest() {
+class OldSchemaServerResourcesTest : OldSchemaAbstractServerFeaturesTest() {
 
-    override fun getServerCapabilities(): ServerCapabilities = ServerCapabilities(
-        resources = ServerCapabilities.Resources(null, null),
-    )
+    override fun getServerCapabilities(): io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities =
+        ServerCapabilities(
+            resources = ServerCapabilities.Resources(null, null),
+        )
 
     @Test
     fun `removeResource should remove a resource and send notification`() = runTest {
@@ -97,7 +97,7 @@ class ServerResourcesTest : AbstractServerFeaturesTest() {
     fun `removeResource should return false when resource does not exist`() = runTest {
         // Track notifications
         var resourceListChangedNotificationReceived = false
-        client.setNotificationHandler<ResourceListChangedNotification>(
+        client.setNotificationHandler<io.modelcontextprotocol.kotlin.sdk.types.ResourceListChangedNotification>(
             Method.Defined.NotificationsResourcesListChanged,
         ) {
             resourceListChangedNotificationReceived = true

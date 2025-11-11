@@ -7,6 +7,10 @@ import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.SubscribeRequest
 import io.modelcontextprotocol.kotlin.sdk.TextResourceContents
 import io.modelcontextprotocol.kotlin.sdk.UnsubscribeRequest
+import io.modelcontextprotocol.kotlin.sdk.types.McpException
+import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.SubscribeRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.UnsubscribeRequestParams
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -19,7 +23,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
+abstract class OldSchemaAbstractResourceIntegrationTest : OldSchemaKotlinTestBase() {
 
     private val testResourceUri = "test://example.txt"
     private val testResourceName = "Test Resource"
@@ -41,12 +45,13 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
     private val dynamicResourceName = "Dynamic Resource"
     private val dynamicResourceContent = AtomicBoolean(false)
 
-    override fun configureServerCapabilities(): ServerCapabilities = ServerCapabilities(
-        resources = ServerCapabilities.Resources(
-            subscribe = true,
-            listChanged = true,
-        ),
-    )
+    override fun configureServerCapabilities(): io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities =
+        ServerCapabilities(
+            resources = ServerCapabilities.Resources(
+                subscribe = true,
+                listChanged = true,
+            ),
+        )
 
     override fun configureServer() {
         server.addResource(
@@ -59,7 +64,7 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
                 contents = listOf(
                     TextResourceContents(
                         text = testResourceContent,
-                        uri = request.uri,
+                        uri = request.params.uri,
                         mimeType = "text/plain",
                     ),
                 ),
@@ -76,7 +81,7 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
                 contents = listOf(
                     TextResourceContents(
                         text = testResourceContent,
-                        uri = request.uri,
+                        uri = request.params.uri,
                         mimeType = "text/plain",
                     ),
                 ),
@@ -93,7 +98,7 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
                 contents = listOf(
                     BlobResourceContents(
                         blob = binaryResourceContent,
-                        uri = request.uri,
+                        uri = request.params.uri,
                         mimeType = "image/png",
                     ),
                 ),
@@ -110,7 +115,7 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
                 contents = listOf(
                     TextResourceContents(
                         text = largeResourceContent,
-                        uri = request.uri,
+                        uri = request.params.uri,
                         mimeType = "text/plain",
                     ),
                 ),
@@ -127,7 +132,7 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
                 contents = listOf(
                     TextResourceContents(
                         text = if (dynamicResourceContent.get()) "Updated content" else "Original content",
-                        uri = request.uri,
+                        uri = request.params.uri,
                         mimeType = "text/plain",
                     ),
                 ),
@@ -150,7 +155,7 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
 
     @Test
     fun testReadResource() = runBlocking(Dispatchers.IO) {
-        val result = client.readResource(ReadResourceRequest(uri = testResourceUri))
+        val result = client.readResource(ReadResourceRequest(ReadResourceRequestParams(uri = testResourceUri)))
 
         assertNotNull(result, "Read resource result should not be null")
         assertTrue(result.contents.isNotEmpty(), "Resource contents should not be empty")
@@ -164,17 +169,19 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
     @Test
     fun testSubscribeAndUnsubscribe() {
         runBlocking(Dispatchers.IO) {
-            val subscribeResult = client.subscribeResource(SubscribeRequest(uri = testResourceUri))
+            val subscribeResult =
+                client.subscribeResource(SubscribeRequest(SubscribeRequestParams(uri = testResourceUri)))
             assertNotNull(subscribeResult, "Subscribe result should not be null")
 
-            val unsubscribeResult = client.unsubscribeResource(UnsubscribeRequest(uri = testResourceUri))
+            val unsubscribeResult =
+                client.unsubscribeResource(UnsubscribeRequest(UnsubscribeRequestParams(uri = testResourceUri)))
             assertNotNull(unsubscribeResult, "Unsubscribe result should not be null")
         }
     }
 
     @Test
     fun testBinaryResource() = runBlocking(Dispatchers.IO) {
-        val result = client.readResource(ReadResourceRequest(uri = binaryResourceUri))
+        val result = client.readResource(ReadResourceRequest(ReadResourceRequestParams(uri = binaryResourceUri)))
 
         assertNotNull(result, "Read resource result should not be null")
         assertTrue(result.contents.isNotEmpty(), "Resource contents should not be empty")
@@ -187,7 +194,7 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
 
     @Test
     fun testLargeResource() = runBlocking(Dispatchers.IO) {
-        val result = client.readResource(ReadResourceRequest(uri = largeResourceUri))
+        val result = client.readResource(ReadResourceRequest(ReadResourceRequestParams(uri = largeResourceUri)))
 
         assertNotNull(result, "Read resource result should not be null")
         assertTrue(result.contents.isNotEmpty(), "Resource contents should not be empty")
@@ -202,22 +209,24 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
     fun testInvalidResourceUri() = runTest {
         val invalidUri = "test://nonexistent.txt"
 
-        val exception = assertThrows<IllegalStateException> {
+        val exception = assertThrows<McpException> {
             runBlocking {
-                client.readResource(ReadResourceRequest(uri = invalidUri))
+                client.readResource(ReadResourceRequest(ReadResourceRequestParams(uri = invalidUri)))
             }
         }
 
         val msg = exception.message ?: ""
         val expectedMessage =
-            "JSONRPCError(code=InternalError, message=Resource not found: test://nonexistent.txt, data={})"
+            "MCP error -32603: Resource not found: test://nonexistent.txt"
 
         assertEquals(expectedMessage, msg, "Unexpected error message for invalid resource URI")
     }
 
     @Test
     fun testDynamicResource() = runBlocking(Dispatchers.IO) {
-        val initialResult = client.readResource(ReadResourceRequest(uri = dynamicResourceUri))
+        val initialResult = client.readResource(
+            ReadResourceRequest(ReadResourceRequestParams(uri = dynamicResourceUri)),
+        )
         assertNotNull(initialResult, "Initial read result should not be null")
         val initialContent = (initialResult.contents.firstOrNull() as? TextResourceContents)?.text
         assertEquals("Original content", initialContent, "Initial content should match")
@@ -225,7 +234,9 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
         // update resource
         dynamicResourceContent.set(true)
 
-        val updatedResult = client.readResource(ReadResourceRequest(uri = dynamicResourceUri))
+        val updatedResult = client.readResource(
+            ReadResourceRequest(ReadResourceRequestParams(uri = dynamicResourceUri)),
+        )
         assertNotNull(updatedResult, "Updated read result should not be null")
         val updatedContent = (updatedResult.contents.firstOrNull() as? TextResourceContents)?.text
         assertEquals("Updated content", updatedContent, "Updated content should match")
@@ -248,7 +259,7 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
                 contents = listOf(
                     TextResourceContents(
                         text = "New resource content",
-                        uri = request.uri,
+                        uri = request.params.uri,
                         mimeType = "text/plain",
                     ),
                 ),
@@ -288,7 +299,7 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
                         else -> largeResourceUri
                     }
 
-                    val result = client.readResource(ReadResourceRequest(uri = uri))
+                    val result = client.readResource(ReadResourceRequest(ReadResourceRequestParams(uri = uri)))
                     synchronized(results) {
                         results.add(result)
                     }

@@ -2,6 +2,7 @@ package io.modelcontextprotocol.kotlin.sdk
 
 import io.kotest.assertions.json.shouldEqualJson
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
+import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -9,7 +10,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class ToolSerializationTest {
+class OldSchemaToolSerializationTest {
 
     // see https://docs.anthropic.com/en/docs/build-with-claude/tool-use
     /* language=json */
@@ -262,7 +263,7 @@ class ToolSerializationTest {
 
     @Test
     fun `should deserialize get_weather tool`() {
-        val actualTool = McpJson.decodeFromString<Tool>(getWeatherToolJson)
+        val actualTool = McpJson.decodeFromString<io.modelcontextprotocol.kotlin.sdk.types.Tool>(getWeatherToolJson)
         assertEquals(expected = getWeatherTool, actual = actualTool)
     }
 
@@ -270,7 +271,7 @@ class ToolSerializationTest {
     fun `should deserialize get_weather tool without optional properties`() {
         val toolJson = createWeatherToolJson(name = "get_weather")
         val expectedTool = createWeatherTool(name = "get_weather")
-        val actualTool = McpJson.decodeFromString<Tool>(toolJson)
+        val actualTool = McpJson.decodeFromString<io.modelcontextprotocol.kotlin.sdk.types.Tool>(toolJson)
 
         assertEquals(expected = expectedTool, actual = actualTool)
     }
@@ -280,7 +281,7 @@ class ToolSerializationTest {
         val toolJson = createWeatherToolJson(name = "get_weather", title = "Get weather")
         val expectedTool = createWeatherTool(name = "get_weather", title = "Get weather")
 
-        val actualTool = McpJson.decodeFromString<Tool>(toolJson)
+        val actualTool = McpJson.decodeFromString<io.modelcontextprotocol.kotlin.sdk.types.Tool>(toolJson)
 
         assertEquals(expected = expectedTool, actual = actualTool)
     }
@@ -342,7 +343,7 @@ class ToolSerializationTest {
             ),
         )
 
-        val actualTool = McpJson.decodeFromString<Tool>(toolJson)
+        val actualTool = McpJson.decodeFromString<io.modelcontextprotocol.kotlin.sdk.types.Tool>(toolJson)
 
         assertEquals(expected = expectedTool, actual = actualTool)
     }
@@ -405,7 +406,7 @@ class ToolSerializationTest {
             ),
         )
 
-        val actualTool = McpJson.decodeFromString<Tool>(toolJson)
+        val actualTool = McpJson.decodeFromString<io.modelcontextprotocol.kotlin.sdk.types.Tool>(toolJson)
 
         assertEquals(expected = expectedTool, actual = actualTool)
     }
@@ -479,9 +480,9 @@ class ToolSerializationTest {
     private fun createWeatherTool(
         name: String = "get_weather",
         title: String? = null,
-        outputSchema: Tool.Output? = null,
+        outputSchema: ToolSchema? = null,
         @Suppress("LocalVariableName") _meta: JsonObject? = null,
-    ): Tool = Tool(
+    ): io.modelcontextprotocol.kotlin.sdk.types.Tool = Tool(
         name = name,
         title = title,
         description = "Get the current weather in a given location",

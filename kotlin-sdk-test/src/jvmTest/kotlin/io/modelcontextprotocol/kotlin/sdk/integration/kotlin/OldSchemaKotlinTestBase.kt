@@ -8,7 +8,6 @@ import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.routing.routing
 import io.modelcontextprotocol.kotlin.sdk.Implementation
-import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.SseClientTransport
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
@@ -34,7 +33,7 @@ import io.ktor.server.cio.CIO as ServerCIO
 import io.ktor.server.sse.SSE as ServerSSE
 
 @Retry(times = 3)
-abstract class KotlinTestBase {
+abstract class OldSchemaKotlinTestBase {
 
     protected val host = "localhost"
     protected var port: Int = 0
@@ -52,7 +51,7 @@ abstract class KotlinTestBase {
     private var stdioClientInput: Source? = null
     private var stdioClientOutput: Sink? = null
 
-    protected abstract fun configureServerCapabilities(): ServerCapabilities
+    protected abstract fun configureServerCapabilities(): io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
     protected abstract fun configureServer()
 
     @BeforeEach

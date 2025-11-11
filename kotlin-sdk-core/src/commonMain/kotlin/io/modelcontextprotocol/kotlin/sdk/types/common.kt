@@ -10,7 +10,7 @@ import kotlinx.serialization.json.JsonObject
 
 public const val LATEST_PROTOCOL_VERSION: String = "2025-03-26"
 
-public val SUPPORTED_PROTOCOL_VERSIONS: Array<String> = arrayOf(
+public val SUPPORTED_PROTOCOL_VERSIONS: List<String> = listOf(
     LATEST_PROTOCOL_VERSION,
     "2024-11-05",
 )

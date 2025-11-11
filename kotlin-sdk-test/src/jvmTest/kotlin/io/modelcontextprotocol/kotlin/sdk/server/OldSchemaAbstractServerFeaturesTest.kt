@@ -1,19 +1,18 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.modelcontextprotocol.kotlin.sdk.Implementation
-import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.shared.InMemoryTransport
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
 
-abstract class AbstractServerFeaturesTest {
+abstract class OldSchemaAbstractServerFeaturesTest {
 
     protected lateinit var server: Server
     protected lateinit var client: Client
 
-    abstract fun getServerCapabilities(): ServerCapabilities
+    abstract fun getServerCapabilities(): io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 
     protected open fun getServerInstructionsProvider(): (() -> String)? = null
 

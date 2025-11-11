@@ -4,7 +4,6 @@ import io.modelcontextprotocol.kotlin.sdk.GetPromptResult
 import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.Method
 import io.modelcontextprotocol.kotlin.sdk.Prompt
-import io.modelcontextprotocol.kotlin.sdk.PromptListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
@@ -14,11 +13,12 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class ServerPromptsTest : AbstractServerFeaturesTest() {
+class OldSchemaServerPromptsTest : OldSchemaAbstractServerFeaturesTest() {
 
-    override fun getServerCapabilities(): ServerCapabilities = ServerCapabilities(
-        prompts = ServerCapabilities.Prompts(false),
-    )
+    override fun getServerCapabilities(): io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities =
+        ServerCapabilities(
+            prompts = ServerCapabilities.Prompts(false),
+        )
 
     @Test
     fun `removePrompt should remove a prompt`() = runTest {
@@ -67,7 +67,9 @@ class ServerPromptsTest : AbstractServerFeaturesTest() {
     fun `removePrompt should return false when prompt does not exist`() = runTest {
         // Track notifications
         var promptListChangedNotificationReceived = false
-        client.setNotificationHandler<PromptListChangedNotification>(Method.Defined.NotificationsPromptsListChanged) {
+        client.setNotificationHandler<io.modelcontextprotocol.kotlin.sdk.types.PromptListChangedNotification>(
+            Method.Defined.NotificationsPromptsListChanged,
+        ) {
             promptListChangedNotificationReceived = true
             CompletableDeferred(Unit)
         }

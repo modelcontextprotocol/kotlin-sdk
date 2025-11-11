@@ -7,6 +7,8 @@ import io.modelcontextprotocol.kotlin.sdk.PromptMessage
 import io.modelcontextprotocol.kotlin.sdk.Role
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.TextContent
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -17,7 +19,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
+abstract class OldSchemaAbstractPromptIntegrationTest : OldSchemaKotlinTestBase() {
 
     private val basicPromptName = "basic-prompt"
     private val basicPromptDescription = "A basic prompt for testing"
@@ -37,11 +39,12 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
     private val specialCharsPromptDescription = "A prompt with special characters"
     private val specialCharsContent = "!@#$%^&*()_+{}|:\"<>?~`-=[]\\;',./\n\t"
 
-    override fun configureServerCapabilities(): ServerCapabilities = ServerCapabilities(
-        prompts = ServerCapabilities.Prompts(
-            listChanged = true,
-        ),
-    )
+    override fun configureServerCapabilities(): io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities =
+        ServerCapabilities(
+            prompts = ServerCapabilities.Prompts(
+                listChanged = true,
+            ),
+        )
 
     override fun configureServer() {
         // basic prompt with a name parameter
@@ -56,7 +59,7 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
                 ),
             ),
         ) { request ->
-            val name = request.arguments?.get("name") ?: "World"
+            val name = request.params.arguments?.get("name") ?: "World"
 
             GetPromptResult(
                 description = basicPromptDescription,
@@ -85,7 +88,7 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
                 ),
             ),
         ) { request ->
-            val special = request.arguments?.get("special") ?: specialCharsContent
+            val special = request.params.arguments?.get("special") ?: specialCharsContent
 
             GetPromptResult(
                 description = specialCharsPromptDescription,
@@ -114,7 +117,7 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
                 ),
             ),
         ) { request ->
-            val size = request.arguments?.get("size")?.toIntOrNull() ?: 1
+            val size = request.params.arguments?.get("size")?.toIntOrNull() ?: 1
             val content = largePromptContent.repeat(size)
 
             GetPromptResult(
@@ -152,7 +155,7 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
             // validate required arguments
             val requiredArgs = listOf("arg1", "arg2", "arg3")
             for (argName in requiredArgs) {
-                if (request.arguments?.get(argName) == null) {
+                if (request.params.arguments?.get(argName) == null) {
                     throw IllegalArgumentException("Missing required argument: $argName")
                 }
             }
@@ -160,7 +163,7 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
             val args = mutableMapOf<String, String>()
             for (i in 1..10) {
                 val argName = "arg$i"
-                val argValue = request.arguments?.get(argName)
+                val argValue = request.params.arguments?.get(argName)
                 if (argValue != null) {
                     args[argName] = argValue
                 }
@@ -199,7 +202,7 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
                 ),
             ),
         ) { request ->
-            val topic = request.arguments?.get("topic") ?: "weather"
+            val topic = request.params.arguments?.get("topic") ?: "weather"
 
             GetPromptResult(
                 description = conversationPromptDescription,
@@ -261,7 +264,7 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
                 ),
             ),
         ) { request ->
-            val args = request.arguments ?: emptyMap()
+            val args = request.params.arguments ?: emptyMap()
             val arg1 = args["requiredArg1"] ?: throw IllegalArgumentException(
                 "Missing required argument: requiredArg1",
             )
@@ -319,8 +322,10 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
         val testName = "Alice"
         val result = client.getPrompt(
             GetPromptRequest(
-                name = basicPromptName,
-                arguments = mapOf("name" to testName),
+                GetPromptRequestParams(
+                    name = basicPromptName,
+                    arguments = mapOf("name" to testName),
+                ),
             ),
         )
 
@@ -373,12 +378,14 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
         )
 
         // test missing required arg
-        val exception = assertThrows<IllegalStateException> {
+        val exception = assertThrows<McpException> {
             runBlocking {
                 client.getPrompt(
                     GetPromptRequest(
-                        name = strictPromptName,
-                        arguments = mapOf("requiredArg1" to "value1"),
+                        GetPromptRequestParams(
+                            name = strictPromptName,
+                            arguments = mapOf("requiredArg1" to "value1"),
+                        ),
                     ),
                 )
             }
@@ -391,12 +398,14 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
         )
 
         // test with no args
-        val exception2 = assertThrows<IllegalStateException> {
+        val exception2 = assertThrows<McpException> {
             runBlocking {
                 client.getPrompt(
                     GetPromptRequest(
-                        name = strictPromptName,
-                        arguments = emptyMap(),
+                        GetPromptRequestParams(
+                            name = strictPromptName,
+                            arguments = emptyMap(),
+                        ),
                     ),
                 )
             }
@@ -411,10 +420,12 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
         // test with all required args
         val result = client.getPrompt(
             GetPromptRequest(
-                name = strictPromptName,
-                arguments = mapOf(
-                    "requiredArg1" to "value1",
-                    "requiredArg2" to "value2",
+                GetPromptRequestParams(
+                    name = strictPromptName,
+                    arguments = mapOf(
+                        "requiredArg1" to "value1",
+                        "requiredArg2" to "value2",
+                    ),
                 ),
             ),
         )
@@ -436,8 +447,10 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
         val topic = "climate change"
         val result = client.getPrompt(
             GetPromptRequest(
-                name = conversationPromptName,
-                arguments = mapOf("topic" to topic),
+                GetPromptRequestParams(
+                    name = conversationPromptName,
+                    arguments = mapOf("topic" to topic),
+                ),
             ),
         )
 
@@ -487,8 +500,10 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
         val testName = "Alice"
         val result = client.getPrompt(
             GetPromptRequest(
-                name = basicPromptName,
-                arguments = mapOf("name" to testName),
+                GetPromptRequestParams(
+                    name = basicPromptName,
+                    arguments = mapOf("name" to testName),
+                ),
             ),
         )
 
@@ -520,8 +535,10 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
 
         val result = client.getPrompt(
             GetPromptRequest(
-                name = complexPromptName,
-                arguments = arguments,
+                GetPromptRequestParams(
+                    name = complexPromptName,
+                    arguments = arguments,
+                ),
             ),
         )
 
@@ -556,8 +573,10 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
     fun testLargePrompt() = runBlocking(Dispatchers.IO) {
         val result = client.getPrompt(
             GetPromptRequest(
-                name = largePromptName,
-                arguments = mapOf("size" to "1"),
+                GetPromptRequestParams(
+                    name = largePromptName,
+                    arguments = mapOf("size" to "1"),
+                ),
             ),
         )
 
@@ -578,8 +597,10 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
     fun testSpecialCharacters() = runBlocking(Dispatchers.IO) {
         val result = client.getPrompt(
             GetPromptRequest(
-                name = specialCharsPromptName,
-                arguments = mapOf("special" to specialCharsContent),
+                GetPromptRequestParams(
+                    name = specialCharsPromptName,
+                    arguments = mapOf("special" to specialCharsContent),
+                ),
             ),
         )
 
@@ -630,8 +651,10 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
 
                     val result = client.getPrompt(
                         GetPromptRequest(
-                            name = promptName,
-                            arguments = arguments,
+                            GetPromptRequestParams(
+                                name = promptName,
+                                arguments = arguments,
+                            ),
                         ),
                     )
 
@@ -654,19 +677,21 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
     fun testNonExistentPrompt() = runTest {
         val nonExistentPromptName = "non-existent-prompt"
 
-        val exception = assertThrows<IllegalStateException> {
+        val exception = assertThrows<McpException> {
             runBlocking {
                 client.getPrompt(
                     GetPromptRequest(
-                        name = nonExistentPromptName,
-                        arguments = mapOf("name" to "Test"),
+                        GetPromptRequestParams(
+                            name = nonExistentPromptName,
+                            arguments = mapOf("name" to "Test"),
+                        ),
                     ),
                 )
             }
         }
 
         val msg = exception.message ?: ""
-        val expectedMessage = "JSONRPCError(code=InternalError, message=Prompt not found: non-existent-prompt, data={})"
+        val expectedMessage = "MCP error -32603: Prompt not found: non-existent-prompt"
 
         assertEquals(expectedMessage, msg, "Unexpected error message for non-existent prompt")
     }

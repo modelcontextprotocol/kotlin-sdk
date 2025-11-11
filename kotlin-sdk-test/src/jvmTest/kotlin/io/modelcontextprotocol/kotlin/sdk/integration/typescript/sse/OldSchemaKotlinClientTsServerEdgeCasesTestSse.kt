@@ -1,6 +1,5 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.typescript.sse
 
-import io.modelcontextprotocol.kotlin.sdk.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TransportKind
@@ -23,7 +22,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
-class KotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
+class OldSchemaKotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
 
     override val transportKind = TransportKind.SSE
 
@@ -76,7 +75,7 @@ class KotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
             val result = client.callTool(nonExistentToolName, arguments)
             assertNotNull(result, "Tool call result should not be null")
 
-            val callResult = result as CallToolResult
+            val callResult = result as io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
             assertTrue(callResult.isError ?: false, "isError should be true for non-existent tool")
 
             val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
@@ -100,7 +99,7 @@ class KotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
             val result = client.callTool("greet", arguments)
             assertNotNull(result, "Tool call result should not be null")
 
-            val callResult = result as CallToolResult
+            val callResult = result as io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
             val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
             assertNotNull(textContent, "Text content should be present in the result")
 
@@ -122,7 +121,7 @@ class KotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
             val result = client.callTool("greet", arguments)
             assertNotNull(result, "Tool call result should not be null")
 
-            val callResult = result as CallToolResult
+            val callResult = result as io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
             val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
             assertNotNull(textContent, "Text content should be present in the result")
 
@@ -148,7 +147,7 @@ class KotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
                         val result = client.callTool("greet", arguments)
                         assertNotNull(result, "Tool call result should not be null for client $i")
 
-                        val callResult = result as CallToolResult
+                        val callResult = result as io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
                         val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
                         assertNotNull(textContent, "Text content should be present for client $i")
 
@@ -181,7 +180,7 @@ class KotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
             val result = client.callTool("greet", invalidArguments)
             assertNotNull(result, "Tool call result should not be null")
 
-            val callResult = result as CallToolResult
+            val callResult = result as io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
             assertTrue(callResult.isError ?: false, "isError should be true for invalid arguments")
 
             val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
@@ -206,7 +205,7 @@ class KotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
                 val result = client.callTool("greet", arguments)
                 assertNotNull(result, "Tool call result should not be null for call $i")
 
-                val callResult = result as CallToolResult
+                val callResult = result as io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
                 val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
                 assertNotNull(textContent, "Text content should be present for call $i")
 
