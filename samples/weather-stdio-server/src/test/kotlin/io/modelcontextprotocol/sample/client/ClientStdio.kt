@@ -5,6 +5,7 @@ import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequestParams
 import kotlinx.coroutines.runBlocking
 import kotlinx.io.asSink
 import kotlinx.io.asSource
@@ -34,11 +35,13 @@ fun main(): Unit = runBlocking {
 
     val weatherForecastResult = client.callTool(
         CallToolRequest(
-            name = "get_forecast",
-            arguments = buildJsonObject {
-                put("latitude", JsonPrimitive(38.5816))
-                put("longitude", JsonPrimitive(-121.4944))
-            },
+            CallToolRequestParams(
+                name = "get_forecast",
+                arguments = buildJsonObject {
+                    put("latitude", JsonPrimitive(38.5816))
+                    put("longitude", JsonPrimitive(-121.4944))
+                },
+            )
         ),
     )?.content?.map { if (it is TextContent) it.text else it.toString() }
 
@@ -47,8 +50,10 @@ fun main(): Unit = runBlocking {
     val alertResult =
         client.callTool(
             CallToolRequest(
-                name = "get_alerts",
-                arguments = JsonObject(mapOf("state" to JsonPrimitive("TX"))),
+                CallToolRequestParams(
+                    name = "get_alerts",
+                    arguments = JsonObject(mapOf("state" to JsonPrimitive("TX"))),
+                )
             ),
         )?.content?.map { if (it is TextContent) it.text else it.toString() }
 
