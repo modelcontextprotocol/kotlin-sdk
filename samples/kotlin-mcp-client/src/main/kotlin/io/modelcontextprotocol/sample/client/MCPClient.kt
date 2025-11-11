@@ -9,6 +9,7 @@ import com.anthropic.models.messages.Tool
 import com.anthropic.models.messages.ToolUnion
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
+import io.modelcontextprotocol.kotlin.sdk.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.client.Client
@@ -76,7 +77,7 @@ class MCPClient : AutoCloseable {
                         .inputSchema(
                             Tool.InputSchema.builder()
                                 .type(JsonValue.from(tool.inputSchema.type))
-                                .properties(tool.inputSchema.properties.toJsonValue())
+                                .properties(tool.inputSchema.properties?.toJsonValue() ?: EmptyJsonObject.toJsonValue())
                                 .putAdditionalProperty("required", JsonValue.from(tool.inputSchema.required))
                                 .build(),
                         )
@@ -135,9 +136,11 @@ class MCPClient : AutoCloseable {
                                 """
                                         "type": "tool_result",
                                         "tool_name": $toolName,
-                                        "result": ${result?.content?.joinToString("\n") {
-                                    (it as TextContent).text ?: ""
-                                }}
+                                        "result": ${
+                                    result?.content?.joinToString("\n") {
+                                        (it as TextContent).text ?: ""
+                                    }
+                                }
                                 """.trimIndent(),
                             )
                             .build(),
