@@ -675,6 +675,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/CallToolRequest : io
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/CallToolRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/CallToolRequest;
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/CallToolRequest;Lio/modelcontextprotocol/kotlin/sdk/types/CallToolRequestParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/CallToolRequest;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getArguments ()Lkotlinx/serialization/json/JsonObject;
 	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
 	public fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/CallToolRequestParams;
 	public synthetic fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestParams;
@@ -1502,7 +1503,9 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/GetPromptRequest : i
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/GetPromptRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/GetPromptRequest;
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/GetPromptRequest;Lio/modelcontextprotocol/kotlin/sdk/types/GetPromptRequestParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/GetPromptRequest;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getArguments ()Ljava/util/Map;
 	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
+	public final fun getName ()Ljava/lang/String;
 	public fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/GetPromptRequestParams;
 	public synthetic fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestParams;
 	public fun hashCode ()I
@@ -2944,9 +2947,11 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ReadResourceRequest 
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/ReadResourceRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/ReadResourceRequest;
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ReadResourceRequest;Lio/modelcontextprotocol/kotlin/sdk/types/ReadResourceRequestParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ReadResourceRequest;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
 	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
 	public fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/ReadResourceRequestParams;
 	public synthetic fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestParams;
+	public final fun getUri ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
