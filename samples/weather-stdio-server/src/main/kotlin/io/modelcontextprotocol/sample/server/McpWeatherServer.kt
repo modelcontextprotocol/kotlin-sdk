@@ -82,7 +82,7 @@ fun runMcpServer() {
             required = listOf("state"),
         ),
     ) { request ->
-        val state = request.arguments["state"]?.jsonPrimitive?.content ?: return@addTool CallToolResult(
+        val state = request.params.arguments?.get("state")?.jsonPrimitive?.content ?: return@addTool CallToolResult(
             content = listOf(TextContent("The 'state' parameter is required.")),
         )
 
@@ -109,8 +109,8 @@ fun runMcpServer() {
             required = listOf("latitude", "longitude"),
         ),
     ) { request ->
-        val latitude = request.arguments["latitude"]?.jsonPrimitive?.doubleOrNull
-        val longitude = request.arguments["longitude"]?.jsonPrimitive?.doubleOrNull
+        val latitude = request.params.arguments?.get("latitude")?.jsonPrimitive?.doubleOrNull
+        val longitude = request.params.arguments?.get("longitude")?.jsonPrimitive?.doubleOrNull
         if (latitude == null || longitude == null) {
             return@addTool CallToolResult(
                 content = listOf(TextContent("The 'latitude' and 'longitude' parameters are required.")),
