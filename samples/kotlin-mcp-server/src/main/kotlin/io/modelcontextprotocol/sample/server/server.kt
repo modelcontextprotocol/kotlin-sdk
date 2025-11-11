@@ -64,15 +64,15 @@ fun configureServer(): Server {
         ),
     ) { request ->
         GetPromptResult(
-            "Description for ${request.name}",
             messages = listOf(
                 PromptMessage(
                     role = Role.user,
                     content = TextContent(
-                        "Develop a kotlin project named <name>${request.arguments?.get("Project Name")}</name>",
+                        "Develop a kotlin project named <name>${request.params.arguments?.get("Project Name")}</name>",
                     ),
                 ),
             ),
+            description = "Description for ${request.params.name}",
         )
     }
 
@@ -96,7 +96,7 @@ fun configureServer(): Server {
     ) { request ->
         ReadResourceResult(
             contents = listOf(
-                TextResourceContents("Placeholder content for ${request.uri}", request.uri, "text/html"),
+                TextResourceContents("Placeholder content for ${request.params.uri}", request.params.uri, "text/html"),
             ),
         )
     }
