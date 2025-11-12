@@ -110,7 +110,6 @@ kotlin {
         commonMain {
             kotlin.srcDir(generateLibVersion)
             dependencies {
-                implementation(dependencies.platform(libs.ktor.bom))
                 api(libs.kotlinx.serialization.json)
                 api(libs.kotlinx.coroutines.core)
                 api(libs.kotlinx.io.core)
