@@ -81,6 +81,6 @@ class SseServerIntegrationTest {
         assertIs<TextContent>(content, "Tool result should be a text content")
 
         assertEquals(expected = "Hello, world!", actual = content.text)
-        assertEquals(expected = "text", actual = content.type.lowercase())
+        assertEquals(expected = "text", actual = "${content.type}".lowercase())
     }
 }
