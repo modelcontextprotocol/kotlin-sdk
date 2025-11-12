@@ -9,7 +9,6 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation(dependencies.platform(libs.ktor.bom))
                 api(project(":kotlin-sdk-core"))
                 api(libs.ktor.server.core)
                 api(libs.ktor.server.sse)
