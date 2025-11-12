@@ -16,7 +16,7 @@ class OldSchemaTypesTest {
     @Test
     fun `should have correct latest protocol version`() {
         assertNotEquals("", LATEST_PROTOCOL_VERSION)
-        assertEquals("2025-03-26", LATEST_PROTOCOL_VERSION)
+        assertEquals("2025-06-18", LATEST_PROTOCOL_VERSION)
     }
 
     @Test
@@ -24,7 +24,7 @@ class OldSchemaTypesTest {
         assertIs<List<String>>(SUPPORTED_PROTOCOL_VERSIONS)
         assertTrue(SUPPORTED_PROTOCOL_VERSIONS.contains(LATEST_PROTOCOL_VERSION))
         assertTrue(SUPPORTED_PROTOCOL_VERSIONS.contains("2024-11-05"))
-        assertEquals(2, SUPPORTED_PROTOCOL_VERSIONS.size)
+        assertEquals(3, SUPPORTED_PROTOCOL_VERSIONS.size)
     }
 
     @Test
