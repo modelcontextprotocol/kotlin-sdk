@@ -17,12 +17,12 @@ class StdioClientTransportTest : BaseTransportTest() {
         val input = process.inputStream.asSource().buffered()
         val output = process.outputStream.asSink().buffered()
 
-        val client = StdioClientTransport(
+        val transport = StdioClientTransport(
             input = input,
             output = output,
         )
 
-        testTransportOpenClose(client)
+        testTransportOpenClose(transport)
 
         process.destroy()
     }
@@ -35,12 +35,12 @@ class StdioClientTransportTest : BaseTransportTest() {
         val input = process.inputStream.asSource().buffered()
         val output = process.outputStream.asSink().buffered()
 
-        val client = StdioClientTransport(
+        val transport = StdioClientTransport(
             input = input,
             output = output,
         )
 
-        testTransportRead(client)
+        testTransportRead(transport)
 
         process.waitFor()
         process.destroy()
@@ -55,12 +55,12 @@ class StdioClientTransportTest : BaseTransportTest() {
         val input = process.inputStream.asSource().buffered()
         val output = process.outputStream.asSink().buffered()
 
-        val client = StdioClientTransport(
+        val transport = StdioClientTransport(
             input = input,
             output = output,
         )
 
-        testTransportRead(client)
+        testTransportRead(transport)
 
         process.waitFor()
         process.destroy()

@@ -130,6 +130,9 @@ public final class io/modelcontextprotocol/kotlin/sdk/ErrorCode$Unknown$Companio
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public abstract interface annotation class io/modelcontextprotocol/kotlin/sdk/ExperimentalMcpApi : java/lang/annotation/Annotation {
+}
+
 public final class io/modelcontextprotocol/kotlin/sdk/InitializedNotification {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/InitializedNotification;
 	public final fun Params (Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/BaseNotificationParams;
