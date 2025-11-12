@@ -21,6 +21,7 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNull
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.Locale
@@ -431,7 +432,8 @@ abstract class OldSchemaAbstractToolIntegrationTest : OldSchemaKotlinTestBase() 
     fun testListTools(): Unit = runBlocking(Dispatchers.IO) {
         val result = client.listTools()
 
-        assertNotNull(result, "List utils result should not be null")
+        assertNotNull(result, "List tools result should not be null")
+        assertNull(actual = result.meta, "List tools result meta should be null")
         assertTrue(result.tools.isNotEmpty(), "Tools list should not be empty")
 
         val testTool = result.tools.find { it.name == testToolName }
@@ -449,7 +451,8 @@ abstract class OldSchemaAbstractToolIntegrationTest : OldSchemaKotlinTestBase() 
         val testText = "Hello, world!"
         val arguments = mapOf("text" to testText)
 
-        val result = client.callTool(testToolName, arguments) as io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+        val result = client.callTool(testToolName, arguments)
+        assertNull(actual = result.meta, "CallTool result meta should be null")
 
         val actualContent = result.structuredContent.toString()
         val expectedContent = """
