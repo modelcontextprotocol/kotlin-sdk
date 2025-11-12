@@ -397,7 +397,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     public suspend fun <T : RequestResult> request(request: Request, options: RequestOptions? = null): T {
         logger.trace { "Sending request: ${request.method}" }
         val result = CompletableDeferred<T>()
-        val transport = transport ?: throw Error("Not connected")
+        val transport = transport ?: error("Not connected")
 
         if (this@Protocol.options?.enforceStrictCapabilities == true) {
             assertCapabilityForMethod(request.method)

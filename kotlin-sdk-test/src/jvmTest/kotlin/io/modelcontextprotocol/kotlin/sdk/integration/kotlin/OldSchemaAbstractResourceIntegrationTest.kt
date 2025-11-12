@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNull
 import org.junit.jupiter.api.assertThrows
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.test.Ignore
@@ -145,6 +146,7 @@ abstract class OldSchemaAbstractResourceIntegrationTest : OldSchemaKotlinTestBas
         val result = client.listResources()
 
         assertNotNull(result, "List resources result should not be null")
+        assertNull(actual = result.meta, "List resources meta should be null")
         assertTrue(result.resources.isNotEmpty(), "Resources list should not be empty")
 
         val testResource = result.resources.find { it.uri == testResourceUri }
@@ -158,6 +160,7 @@ abstract class OldSchemaAbstractResourceIntegrationTest : OldSchemaKotlinTestBas
         val result = client.readResource(ReadResourceRequest(ReadResourceRequestParams(uri = testResourceUri)))
 
         assertNotNull(result, "Read resource result should not be null")
+        assertNull(actual = result.meta, "Read resource result meta should be null")
         assertTrue(result.contents.isNotEmpty(), "Resource contents should not be empty")
 
         val content = result.contents.firstOrNull() as? TextResourceContents

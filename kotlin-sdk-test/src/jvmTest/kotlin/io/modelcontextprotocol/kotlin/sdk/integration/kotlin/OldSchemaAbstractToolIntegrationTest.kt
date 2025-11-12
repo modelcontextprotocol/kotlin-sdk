@@ -21,6 +21,7 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNull
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.Locale
@@ -431,7 +432,8 @@ abstract class OldSchemaAbstractToolIntegrationTest : OldSchemaKotlinTestBase() 
     fun testListTools(): Unit = runBlocking(Dispatchers.IO) {
         val result = client.listTools()
 
-        assertNotNull(result, "List utils result should not be null")
+        assertNotNull(result, "List tools result should not be null")
+        assertNull(actual = result.meta, "List tools result meta should be null")
         assertTrue(result.tools.isNotEmpty(), "Tools list should not be empty")
 
         val testTool = result.tools.find { it.name == testToolName }
@@ -449,7 +451,8 @@ abstract class OldSchemaAbstractToolIntegrationTest : OldSchemaKotlinTestBase() 
         val testText = "Hello, world!"
         val arguments = mapOf("text" to testText)
 
-        val result = client.callTool(testToolName, arguments) as io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+        val result = client.callTool(testToolName, arguments)
+        assertNull(actual = result.meta, "CallTool result meta should be null")
 
         val actualContent = result.structuredContent.toString()
         val expectedContent = """
@@ -478,7 +481,7 @@ abstract class OldSchemaAbstractToolIntegrationTest : OldSchemaKotlinTestBase() 
         val result = client.callTool(
             complexToolName,
             arguments,
-        ) as io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+        )
 
         val actualContent = result.structuredContent.toString()
         val expectedContent = """
@@ -518,7 +521,7 @@ abstract class OldSchemaAbstractToolIntegrationTest : OldSchemaKotlinTestBase() 
         val errorResult = client.callTool(
             errorToolName,
             errorArgs,
-        ) as io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+        )
 
         val actualError = errorResult.structuredContent.toString()
         val expectedError = """
@@ -538,7 +541,7 @@ abstract class OldSchemaAbstractToolIntegrationTest : OldSchemaKotlinTestBase() 
         val exceptionResult = client.callTool(
             errorToolName,
             exceptionArgs,
-        ) as io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+        )
 
         assertTrue(exceptionResult.isError ?: false, "isError should be true for exception")
 
@@ -563,7 +566,7 @@ abstract class OldSchemaAbstractToolIntegrationTest : OldSchemaKotlinTestBase() 
         val result = client.callTool(
             multiContentToolName,
             arguments,
-        ) as io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+        )
 
         assertEquals(
             2,
@@ -603,7 +606,7 @@ abstract class OldSchemaAbstractToolIntegrationTest : OldSchemaKotlinTestBase() 
         val textOnlyResult = client.callTool(
             multiContentToolName,
             textOnlyArgs,
-        ) as io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+        )
 
         assertEquals(
             1,
@@ -645,7 +648,7 @@ abstract class OldSchemaAbstractToolIntegrationTest : OldSchemaKotlinTestBase() 
                     arguments = arguments,
                 ),
             ),
-        ) as io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+        )
 
         val actualContent = result.structuredContent.toString()
         val expectedContent = """
@@ -671,7 +674,7 @@ abstract class OldSchemaAbstractToolIntegrationTest : OldSchemaKotlinTestBase() 
         val result = client.callTool(
             largeToolName,
             arguments,
-        ) as io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+        )
 
         val content = result.content.firstOrNull() as TextContent
         assertNotNull(content, "Tool result content should be TextContent")
@@ -692,7 +695,7 @@ abstract class OldSchemaAbstractToolIntegrationTest : OldSchemaKotlinTestBase() 
         val arguments = mapOf("delay" to delay)
 
         val startTime = System.currentTimeMillis()
-        val result = client.callTool(slowToolName, arguments) as io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+        val result = client.callTool(slowToolName, arguments)
         val endTime = System.currentTimeMillis()
 
         val content = result.content.firstOrNull() as? TextContent
@@ -718,7 +721,7 @@ abstract class OldSchemaAbstractToolIntegrationTest : OldSchemaKotlinTestBase() 
             val result = client.callTool(
                 specialCharsToolName,
                 arguments,
-            ) as io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+            )
 
             val content = result.content.firstOrNull() as? TextContent
             assertNotNull(content, "Tool result content should be TextContent")
@@ -802,7 +805,7 @@ abstract class OldSchemaAbstractToolIntegrationTest : OldSchemaKotlinTestBase() 
         }
 
         assertNotNull(result, "Tool call result should not be null")
-        val callResult = result as io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+        val callResult = result
         assertTrue(callResult.isError ?: false, "isError should be true for non-existent tool")
 
         val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent

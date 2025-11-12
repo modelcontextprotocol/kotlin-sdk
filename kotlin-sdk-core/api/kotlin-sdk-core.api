@@ -938,6 +938,8 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/CommonKt {
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/CompleteRequest : io/modelcontextprotocol/kotlin/sdk/types/ClientRequest {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/CompleteRequest$Companion;
+	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/CompleteRequestParams$Argument;Lio/modelcontextprotocol/kotlin/sdk/types/Reference;Lio/modelcontextprotocol/kotlin/sdk/types/CompleteRequestParams$Context;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/CompleteRequestParams$Argument;Lio/modelcontextprotocol/kotlin/sdk/types/Reference;Lio/modelcontextprotocol/kotlin/sdk/types/CompleteRequestParams$Context;Lkotlinx/serialization/json/JsonObject;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/CompleteRequestParams;)V
 	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/types/CompleteRequestParams;
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/CompleteRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/CompleteRequest;
@@ -2057,12 +2059,14 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ListPromptsRequest :
 	public fun <init> ()V
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;)V
 	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/ListPromptsRequest;
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ListPromptsRequest;Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ListPromptsRequest;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getCursor ()Ljava/lang/String;
-	public final fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
+	public fun getCursor ()Ljava/lang/String;
+	public fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
 	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
 	public fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;
 	public synthetic fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestParams;
@@ -2123,12 +2127,14 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ListResourceTemplate
 	public fun <init> ()V
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;)V
 	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/ListResourceTemplatesRequest;
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ListResourceTemplatesRequest;Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ListResourceTemplatesRequest;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getCursor ()Ljava/lang/String;
-	public final fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
+	public fun getCursor ()Ljava/lang/String;
+	public fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
 	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
 	public fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;
 	public synthetic fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestParams;
@@ -2189,12 +2195,14 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ListResourcesRequest
 	public fun <init> ()V
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;)V
 	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/ListResourcesRequest;
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ListResourcesRequest;Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ListResourcesRequest;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getCursor ()Ljava/lang/String;
-	public final fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
+	public fun getCursor ()Ljava/lang/String;
+	public fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
 	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
 	public fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;
 	public synthetic fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestParams;
@@ -2255,6 +2263,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ListRootsRequest : i
 	public fun <init> ()V
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/BaseRequestParams;)V
 	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/BaseRequestParams;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Lkotlinx/serialization/json/JsonObject;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/types/BaseRequestParams;
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/BaseRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/ListRootsRequest;
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ListRootsRequest;Lio/modelcontextprotocol/kotlin/sdk/types/BaseRequestParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ListRootsRequest;
@@ -2318,12 +2327,14 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ListToolsRequest : i
 	public fun <init> ()V
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;)V
 	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/ListToolsRequest;
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ListToolsRequest;Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ListToolsRequest;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getCursor ()Ljava/lang/String;
-	public final fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
+	public fun getCursor ()Ljava/lang/String;
+	public fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
 	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
 	public fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;
 	public synthetic fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestParams;
@@ -2641,11 +2652,18 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/NotificationParams$D
 
 public abstract interface class io/modelcontextprotocol/kotlin/sdk/types/PaginatedRequest : io/modelcontextprotocol/kotlin/sdk/types/Request {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequest$Companion;
+	public fun getCursor ()Ljava/lang/String;
+	public fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
 	public abstract fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/PaginatedRequest$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/PaginatedRequest$DefaultImpls {
+	public static fun getCursor (Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequest;)Ljava/lang/String;
+	public static fun getMeta-VI-3G7E (Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequest;)Lkotlinx/serialization/json/JsonObject;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams : io/modelcontextprotocol/kotlin/sdk/types/RequestParams {
@@ -3023,6 +3041,8 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/RPCError$ErrorCode {
 public final class io/modelcontextprotocol/kotlin/sdk/types/ReadResourceRequest : io/modelcontextprotocol/kotlin/sdk/types/ClientRequest {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/ReadResourceRequest$Companion;
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/ReadResourceRequestParams;)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/types/ReadResourceRequestParams;
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/ReadResourceRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/ReadResourceRequest;
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ReadResourceRequest;Lio/modelcontextprotocol/kotlin/sdk/types/ReadResourceRequestParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ReadResourceRequest;
@@ -3906,6 +3926,8 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/StopReason$Companion
 public final class io/modelcontextprotocol/kotlin/sdk/types/SubscribeRequest : io/modelcontextprotocol/kotlin/sdk/types/ClientRequest {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/SubscribeRequest$Companion;
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/SubscribeRequestParams;)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/types/SubscribeRequestParams;
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/SubscribeRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/SubscribeRequest;
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/SubscribeRequest;Lio/modelcontextprotocol/kotlin/sdk/types/SubscribeRequestParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/SubscribeRequest;
@@ -4219,6 +4241,8 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/UnknownResourceConte
 public final class io/modelcontextprotocol/kotlin/sdk/types/UnsubscribeRequest : io/modelcontextprotocol/kotlin/sdk/types/ClientRequest {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/UnsubscribeRequest$Companion;
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/UnsubscribeRequestParams;)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/types/UnsubscribeRequestParams;
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/UnsubscribeRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/UnsubscribeRequest;
 	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/UnsubscribeRequest;Lio/modelcontextprotocol/kotlin/sdk/types/UnsubscribeRequestParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/UnsubscribeRequest;

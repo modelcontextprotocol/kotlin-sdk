@@ -1,5 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
+import io.modelcontextprotocol.kotlin.sdk.types.CompleteRequestParams.Argument
+import io.modelcontextprotocol.kotlin.sdk.types.CompleteRequestParams.Context
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
@@ -20,7 +22,7 @@ public data class CompleteRequest(override val params: CompleteRequestParams) : 
     /**
      * The argument's information for which completion options are requested.
      */
-    public val argument: CompleteRequestParams.Argument
+    public val argument: Argument
         get() = params.argument
 
     /**
@@ -32,11 +34,23 @@ public data class CompleteRequest(override val params: CompleteRequestParams) : 
     /**
      * Additional, context for generating completions.
      */
-    public val context: CompleteRequestParams.Context?
+    public val context: Context?
         get() = params.context
 
     public val meta: RequestMeta?
         get() = params.meta
+
+    @Deprecated(
+        message = "Will be removed in a future release.",
+        replaceWith = ReplaceWith(expression = "CompleteRequest(CompleteRequestParams(argument, ref, context, meta))"),
+        level = DeprecationLevel.WARNING,
+    )
+    public constructor(
+        argument: Argument,
+        ref: Reference,
+        context: Context? = null,
+        meta: RequestMeta? = null,
+    ) : this(CompleteRequestParams(argument, ref, context, meta))
 }
 
 /**
@@ -67,7 +81,7 @@ public data class CompleteRequestParams(
     /**
      * Additional context to help generate more relevant completions.
      *
-     * @property arguments Previously-resolved variables in a URI template or prompt.
+     * @property arguments Previously resolved variables in a URI template or prompt.
      * These can be used to provide context-aware completions.
      * For example, if completing a file path, this might contain the repository or directory context.
      */
@@ -100,8 +114,8 @@ public data class CompleteResult(
      * This can exceed the number of values actually sent in the response,
      * indicating that pagination or filtering may be needed.
      * @property hasMore Indicates whether there are additional completion options beyond
-     * those provided in the current response, even if the exact total is unknown.
-     * Use this when the complete set of completions is too large to calculate upfront.
+     *      those provided in the current response, even if the exact total is unknown.
+     *      Use this when the complete set of completions is too large to calculate upfront.
      */
     @Serializable
     public data class Completion(val values: List<String>, val total: Int? = null, val hasMore: Boolean? = null) {
