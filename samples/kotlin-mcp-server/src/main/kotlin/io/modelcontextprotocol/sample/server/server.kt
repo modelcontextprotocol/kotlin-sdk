@@ -116,7 +116,7 @@ fun runSseMcpServerWithPlainConfiguration(port: Int, wait: Boolean = true) {
         routing {
             sse("/sse") {
                 val transport = SseServerTransport("/message", this)
-                val serverSession = server.connect(transport)
+                val serverSession = server.createSession(transport)
                 serverSessions[transport.sessionId] = serverSession
 
                 serverSession.onClose {
@@ -197,7 +197,7 @@ fun runMcpServerUsingStdio() {
     )
 
     runBlocking {
-        server.connect(transport)
+        server.createSession(transport)
         val done = Job()
         server.onClose {
             done.complete()

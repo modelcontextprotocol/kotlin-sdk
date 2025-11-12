@@ -60,12 +60,6 @@ public fun Routing.mcp(block: ServerSSESession.() -> Server) {
     }
 }
 
-@Suppress("FunctionName")
-@Deprecated("Use mcp() instead", ReplaceWith("mcp(block)"), DeprecationLevel.ERROR)
-public fun Application.MCP(block: ServerSSESession.() -> Server) {
-    mcp(block)
-}
-
 @KtorDsl
 public fun Application.mcp(block: ServerSSESession.() -> Server) {
     install(SSE)
