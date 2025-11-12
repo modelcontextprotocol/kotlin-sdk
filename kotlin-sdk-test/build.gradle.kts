@@ -14,6 +14,7 @@ kotlin {
                 implementation(dependencies.platform(libs.ktor.bom))
                 implementation(project(":kotlin-sdk"))
                 implementation(kotlin("test"))
+                implementation(libs.kotest.assertions.core)
                 implementation(libs.kotest.assertions.json)
                 implementation(libs.kotlin.logging)
                 implementation(libs.kotlinx.coroutines.test)
