@@ -32,7 +32,6 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation(dependencies.platform(libs.ktor.bom))
                 api(project(":kotlin-sdk-core"))
                 api(libs.ktor.client.core)
                 implementation(libs.kotlin.logging)
