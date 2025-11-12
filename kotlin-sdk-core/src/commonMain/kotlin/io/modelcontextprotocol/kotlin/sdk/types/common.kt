@@ -1,5 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
+import io.modelcontextprotocol.kotlin.sdk.types.Icon.Theme.Dark
+import io.modelcontextprotocol.kotlin.sdk.types.Icon.Theme.Light
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
@@ -27,6 +29,14 @@ public val SUPPORTED_PROTOCOL_VERSIONS: List<String> = listOf(
 public sealed interface WithMeta {
     @SerialName("_meta")
     public val meta: JsonObject?
+
+    @Deprecated(
+        message = "Use 'meta' instead.",
+        replaceWith = ReplaceWith("meta"),
+    )
+    @Suppress("PropertyName", "VariableNaming")
+    public val _meta: JsonObject
+        get() = meta ?: EmptyJsonObject
 }
 
 // ============================================================================
