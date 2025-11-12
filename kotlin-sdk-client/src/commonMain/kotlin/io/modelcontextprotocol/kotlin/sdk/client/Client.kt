@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.shared.Protocol
 import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
@@ -68,6 +69,30 @@ public class ClientOptions(
     public val capabilities: ClientCapabilities = ClientCapabilities(),
     enforceStrictCapabilities: Boolean = true,
 ) : ProtocolOptions(enforceStrictCapabilities = enforceStrictCapabilities)
+
+/**
+ * Initializes and connects an MCP client using the provided clientInfo [Implementation], client options,
+ * and transport mechanism.
+ *
+ * @param clientInfo The implementation details of the MCP client, including its name, version, and other metadata.
+ * @param clientOptions Optional client configuration settings, such as supported capabilities
+ *      and strict enforcement options. Defaults to a new instance of [ClientOptions].
+ * @param transport The transport mechanism used for communication.
+ * @return An instance of [Client] that is connected and ready for use with the specified transport.
+ */
+@ExperimentalMcpApi
+public suspend fun mcpClient(
+    clientInfo: Implementation,
+    clientOptions: ClientOptions = ClientOptions(),
+    transport: Transport,
+): Client {
+    val client = Client(
+        clientInfo = clientInfo,
+        options = clientOptions,
+    )
+    client.connect(transport)
+    return client
+}
 
 /**
  * An MCP client on top of a pluggable transport.

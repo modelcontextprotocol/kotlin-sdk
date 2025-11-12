@@ -43,6 +43,11 @@ public class io/modelcontextprotocol/kotlin/sdk/client/Client : io/modelcontextp
 	public static synthetic fun unsubscribeResource$default (Lio/modelcontextprotocol/kotlin/sdk/client/Client;Lio/modelcontextprotocol/kotlin/sdk/types/UnsubscribeRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
+public final class io/modelcontextprotocol/kotlin/sdk/client/ClientKt {
+	public static final fun mcpClient (Lio/modelcontextprotocol/kotlin/sdk/types/Implementation;Lio/modelcontextprotocol/kotlin/sdk/client/ClientOptions;Lio/modelcontextprotocol/kotlin/sdk/shared/Transport;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun mcpClient$default (Lio/modelcontextprotocol/kotlin/sdk/types/Implementation;Lio/modelcontextprotocol/kotlin/sdk/client/ClientOptions;Lio/modelcontextprotocol/kotlin/sdk/shared/Transport;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
 public final class io/modelcontextprotocol/kotlin/sdk/client/ClientOptions : io/modelcontextprotocol/kotlin/sdk/shared/ProtocolOptions {
 	public fun <init> ()V
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/ClientCapabilities;Z)V
