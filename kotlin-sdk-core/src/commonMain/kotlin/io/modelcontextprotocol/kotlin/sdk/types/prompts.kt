@@ -205,16 +205,24 @@ public data class ListPromptsRequest(override val params: PaginatedRequestParams
     override val method: Method = Method.Defined.PromptsList
 
     /**
-     * An opaque token representing the current pagination position.
+     * Secondary constructor for creating a [ListPromptsRequest] instance
+     * using optional cursor and metadata parameters.
+     *
+     * This constructor simplifies the creation of the [ListPromptsRequest] by allowing a cursor
+     * and metadata to be provided.
+     *
+     * @param cursor Optional cursor string to specify the starting point of the paginated request.
+     * @param meta Optional metadata associated with the request.
      */
-    public val cursor: String?
-        get() = params?.cursor
-
-    /**
-     * Metadata for this request. May include a progressToken for out-of-band progress notifications.
-     */
-    public val meta: RequestMeta?
-        get() = params?.meta
+    @Deprecated(
+        message = "Use constructor with ListPromptsParams instead",
+        replaceWith = ReplaceWith("ListPromptsRequest(ListPromptsParams(name, arguments, meta))"),
+        level = DeprecationLevel.WARNING,
+    )
+    public constructor(
+        cursor: String?,
+        meta: RequestMeta? = null,
+    ) : this(paginatedRequestParams(cursor, meta))
 }
 
 /**

@@ -17,7 +17,7 @@ public sealed interface ResourceLike : WithMeta
  * Resources represent data sources such as files, database entries, API responses,
  * or other structured data that can be read by clients.
  *
- * @property uri The URI of this resource. Can use any protocol scheme (file://, http://, etc.).
+ * @property uri The URI of this resource. Can use any protocol scheme (`file://`, `http://`, etc.).
  * @property name The programmatic identifier for this resource.
  * Intended for logical use and API identification. If [title] is not provided,
  * this should be used as a fallback display name.
@@ -25,7 +25,8 @@ public sealed interface ResourceLike : WithMeta
  * Clients can use this to improve the LLM's understanding of available resources.
  * It can be thought of like a "hint" to the model.
  * @property mimeType The MIME type of this resource, if known (e.g., "text/plain", "application/json", "image/png").
- * @property size The size of the raw resource content in bytes (i.e., before base64 encoding or any tokenization), if known.
+ * @property size The size of the raw resource content in bytes
+ * (i.e., before base64 encoding or any tokenization), if known.
  * Hosts can use this to display file sizes and estimate context window usage.
  * @property title Optional human-readable display name for this resource.
  * Intended for UI and end-user contexts, optimized to be easily understood
@@ -192,16 +193,24 @@ public data class ListResourcesRequest(override val params: PaginatedRequestPara
     override val method: Method = Method.Defined.ResourcesList
 
     /**
-     * An opaque token representing the current pagination position.
+     * Secondary constructor for creating a [ListResourcesRequest] instance
+     * using optional cursor and metadata parameters.
+     *
+     * This constructor simplifies the creation of the [ListResourcesRequest] by allowing a cursor
+     * and metadata to be provided.
+     *
+     * @param cursor Optional cursor string to specify the starting point of the paginated request.
+     * @param meta Optional metadata associated with the request.
      */
-    public val cursor: String?
-        get() = params?.cursor
-
-    /**
-     * Metadata for this request. May include a progressToken for out-of-band progress notifications.
-     */
-    public val meta: RequestMeta?
-        get() = params?.meta
+    @Deprecated(
+        message = "Use the constructor with PaginatedRequestParams property instead",
+        replaceWith = ReplaceWith("ReadResourceRequest(PaginatedRequestParams(cursor, meta))"),
+        level = DeprecationLevel.WARNING,
+    )
+    public constructor(
+        cursor: String?,
+        meta: RequestMeta? = null,
+    ) : this(paginatedRequestParams(cursor, meta))
 }
 
 /**
@@ -252,6 +261,16 @@ public data class ReadResourceRequest(override val params: ReadResourceRequestPa
      */
     public val meta: RequestMeta?
         get() = params.meta
+
+    @Deprecated(
+        message = "Use the constructor with ReadResourceRequestParams property instead",
+        replaceWith = ReplaceWith("ReadResourceRequest(ReadResourceRequestParams(uri, meta))"),
+        level = DeprecationLevel.WARNING,
+    )
+    public constructor(
+        uri: String,
+        meta: RequestMeta? = null,
+    ) : this(ReadResourceRequestParams(uri, meta))
 }
 
 /**
@@ -318,6 +337,16 @@ public data class SubscribeRequest(override val params: SubscribeRequestParams) 
      */
     public val meta: RequestMeta?
         get() = params.meta
+
+    @Deprecated(
+        message = "Use the constructor with SubscribeRequestParams property instead",
+        replaceWith = ReplaceWith("ReadResourceRequest(SubscribeRequestParams(uri, meta))"),
+        level = DeprecationLevel.WARNING,
+    )
+    public constructor(
+        uri: String,
+        meta: RequestMeta? = null,
+    ) : this(SubscribeRequestParams(uri, meta))
 }
 
 /**
@@ -363,6 +392,11 @@ public data class UnsubscribeRequest(override val params: UnsubscribeRequestPara
      */
     public val meta: RequestMeta?
         get() = params.meta
+
+    public constructor(
+        uri: String,
+        meta: RequestMeta? = null,
+    ) : this(UnsubscribeRequestParams(uri, meta))
 }
 
 /**
@@ -401,16 +435,24 @@ public data class ListResourceTemplatesRequest(override val params: PaginatedReq
     override val method: Method = Method.Defined.ResourcesTemplatesList
 
     /**
-     * An opaque token representing the current pagination position.
+     * Secondary constructor for creating a [ListResourceTemplatesRequest] instance
+     * using optional cursor and metadata parameters.
+     *
+     * This constructor simplifies the creation of the [ListResourceTemplatesRequest] by allowing a cursor
+     * and metadata to be provided.
+     *
+     * @param cursor Optional cursor string to specify the starting point of the paginated request.
+     * @param meta Optional metadata associated with the request.
      */
-    public val cursor: String?
-        get() = params?.cursor
-
-    /**
-     * Metadata for this request. May include a progressToken for out-of-band progress notifications.
-     */
-    public val meta: RequestMeta?
-        get() = params?.meta
+    @Deprecated(
+        message = "Use the constructor with PaginatedRequestParams property instead",
+        replaceWith = ReplaceWith("ListResourceTemplatesRequest(PaginatedRequestParams(cursor, meta))"),
+        level = DeprecationLevel.WARNING,
+    )
+    public constructor(
+        cursor: String?,
+        meta: RequestMeta? = null,
+    ) : this(paginatedRequestParams(cursor, meta))
 }
 
 /**

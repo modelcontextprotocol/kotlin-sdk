@@ -54,13 +54,13 @@ class SseServerIntegrationTest {
     @Test
     fun `should get resource`(): Unit = runBlocking {
         val testResourceUri = "https://search.com/"
-        val listResourcesResult = client.readResource(
+        val getResourcesResult = client.readResource(
             ReadResourceRequest(uri = testResourceUri),
         )
 
         // then
-        assertEquals(expected = EmptyJsonObject, actual = listResourcesResult._meta)
-        val contents = listResourcesResult.contents
+        assertEquals(expected = EmptyJsonObject, actual = getResourcesResult._meta)
+        val contents = getResourcesResult.contents
         assertEquals(expected = 1, actual = contents.size)
         assertTrue {
             contents.contains(

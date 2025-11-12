@@ -27,6 +27,12 @@ public value class RequestMeta(public val json: JsonObject) {
 
 @Serializable
 public sealed interface RequestParams {
+    /**
+     * The `_meta` property/parameter is reserved by MCP
+     * to allow clients and servers to attach additional metadata to their interactions.
+     *
+     * @see <a href="https://modelcontextprotocol.io/specification/2025-06-18/basic/index#meta">MCP specification</a>
+     */
     @SerialName("_meta")
     public val meta: RequestMeta?
 }
@@ -68,6 +74,18 @@ public sealed interface ServerRequest : Request
 @Serializable
 public sealed interface PaginatedRequest : Request {
     public override val params: PaginatedRequestParams?
+
+    /**
+     * An opaque token representing the current pagination position.
+     */
+    public val cursor: String?
+        get() = params?.cursor
+
+    /**
+     * Metadata for this request. May include a progressToken for out-of-band progress notifications.
+     */
+    public val meta: RequestMeta?
+        get() = params?.meta
 }
 
 /**
@@ -114,3 +132,10 @@ public data class PaginatedRequestParams(
     @SerialName("_meta")
     override val meta: RequestMeta? = null,
 ) : RequestParams
+
+internal fun paginatedRequestParams(cursor: String?, meta: RequestMeta?): PaginatedRequestParams? =
+    if (cursor == null && meta == null) {
+        null
+    } else {
+        PaginatedRequestParams(cursor = cursor, meta = meta)
+    }
