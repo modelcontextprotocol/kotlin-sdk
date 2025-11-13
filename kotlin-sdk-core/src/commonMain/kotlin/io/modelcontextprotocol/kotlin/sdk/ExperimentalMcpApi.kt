@@ -35,7 +35,10 @@ import kotlin.annotation.AnnotationTarget.VALUE_PARAMETER
  * - Property setters
  * - Type aliases
  */
-@RequiresOptIn
+@RequiresOptIn(
+    message = "This API is experimental. It may be changed in the future without notice.",
+    level = RequiresOptIn.Level.WARNING,
+)
 @MustBeDocumented
 @Target(
     CLASS,
