@@ -344,7 +344,11 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         if (handler != null) {
             messageId?.let { msg -> _progressHandlers.update { it.remove(msg) } }
         } else {
-            onError(Error("Received a response for an unknown message ID: ${McpJson.encodeToString(response)}"))
+            onError(
+                IllegalStateException(
+                    "Received a response for an unknown message ID: ${McpJson.encodeToString(error ?: response)}",
+                ),
+            )
             return
         }
 
@@ -352,12 +356,12 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             handler(response, null)
         } else {
             check(error != null)
-            val error = McpException(
+            val mcpException = McpException(
                 code = error.error.code,
                 message = error.error.message,
                 data = error.error.data,
             )
-            handler(null, error)
+            handler(null, mcpException)
         }
     }
 
