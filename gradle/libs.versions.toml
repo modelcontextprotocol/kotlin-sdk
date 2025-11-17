@@ -3,7 +3,7 @@
 kotlin = "2.2.21"
 dokka = "2.1.0"
 atomicfu = "0.29.0"
-ktlint = "13.1.0"
+ktlint = "14.0.1"
 kover = "0.9.3"
 netty = "4.2.7.Final"
 mavenPublish = "0.34.0"
