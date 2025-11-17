@@ -407,18 +407,30 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             assertCapabilityForMethod(request.method)
         }
 
-        val message = request.toJSON()
-        val messageId = message.id
+        val jsonRpcRequest = request.toJSON().run {
+            options?.onProgress?.let { progressHandler ->
+                logger.trace { "Registering progress handler for request id: $id" }
+                _progressHandlers.update { current ->
+                    current.put(id, progressHandler)
+                }
 
-        if (options?.onProgress != null) {
-            logger.trace { "Registering progress handler for request id: $messageId" }
-            _progressHandlers.update { current ->
-                current.put(messageId, options.onProgress)
-            }
+                val paramsObject = (this.params as? JsonObject) ?: JsonObject(emptyMap())
+                val metaObject = request.params?.meta?.json ?: JsonObject(emptyMap())
+
+                val updatedMeta = JsonObject(
+                    metaObject + ("progressToken" to McpJson.encodeToJsonElement(id)),
+                )
+                val updatedParams = JsonObject(
+                    paramsObject + ("_meta" to updatedMeta),
+                )
+
+                this.copy(params = updatedParams)
+            } ?: this
         }
+        val jsonRpcRequestId = jsonRpcRequest.id
 
         _responseHandlers.update { current ->
-            current.put(messageId) { response, error ->
+            current.put(jsonRpcRequestId) { response, error ->
                 if (error != null) {
                     result.completeExceptionally(error)
                     return@put
@@ -434,12 +446,12 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         }
 
         val cancel: suspend (Throwable) -> Unit = { reason: Throwable ->
-            _responseHandlers.update { current -> current.remove(messageId) }
-            _progressHandlers.update { current -> current.remove(messageId) }
+            _responseHandlers.update { current -> current.remove(jsonRpcRequestId) }
+            _progressHandlers.update { current -> current.remove(jsonRpcRequestId) }
 
             val notification = CancelledNotification(
                 params = CancelledNotificationParams(
-                    requestId = messageId,
+                    requestId = jsonRpcRequestId,
                     reason = reason.message ?: "Unknown",
                 ),
             )
@@ -456,8 +468,8 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         val timeout = options?.timeout ?: DEFAULT_REQUEST_TIMEOUT
         try {
             withTimeout(timeout) {
-                logger.trace { "Sending request message with id: $messageId" }
-                this@Protocol.transport?.send(message)
+                logger.trace { "Sending request message with id: $jsonRpcRequestId" }
+                this@Protocol.transport?.send(jsonRpcRequest)
             }
             return result.await()
         } catch (cause: TimeoutCancellationException) {
