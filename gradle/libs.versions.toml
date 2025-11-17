@@ -6,7 +6,7 @@ atomicfu = "0.29.0"
 ktlint = "14.0.1"
 kover = "0.9.3"
 netty = "4.2.7.Final"
-mavenPublish = "0.34.0"
+mavenPublish = "0.35.0"
 binaryCompatibilityValidatorPlugin = "0.18.1"
 openapi-generator = "7.17.0"
 
