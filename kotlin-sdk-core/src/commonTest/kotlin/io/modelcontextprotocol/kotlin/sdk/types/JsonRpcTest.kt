@@ -1,6 +1,8 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.kotest.assertions.json.shouldEqualJson
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeSameInstanceAs
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.int
@@ -397,5 +399,35 @@ class JsonRpcTest {
               "jsonrpc": "2.0"
             }
         """.trimIndent()
+    }
+
+    @Test
+    fun `should create JSONRPCRequest with string ID`() {
+        val params = buildJsonObject {
+            put("foo", "bar")
+        }
+        val request = JSONRPCRequest(
+            id = "req-42",
+            method = "notifications/log",
+            params = params,
+        )
+        request.id shouldBe RequestId("req-42")
+        request.method shouldBe "notifications/log"
+        request.params shouldBeSameInstanceAs params
+    }
+
+    @Test
+    fun `should create JSONRPCRequest with numeric ID`() {
+        val params = buildJsonObject {
+            put("foo", "bar")
+        }
+        val request = JSONRPCRequest(
+            id = 42,
+            method = "notifications/log",
+            params = params,
+        )
+        request.id shouldBe RequestId(42)
+        request.method shouldBe "notifications/log"
+        request.params shouldBeSameInstanceAs params
     }
 }
