@@ -16,17 +16,17 @@ import io.ktor.server.response.respondBytes
 import io.ktor.server.response.respondNullable
 import io.ktor.server.sse.ServerSSESession
 import io.ktor.util.collections.ConcurrentMap
-import io.modelcontextprotocol.kotlin.sdk.ErrorCode
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCError
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCRequest
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCResponse
-import io.modelcontextprotocol.kotlin.sdk.LATEST_PROTOCOL_VERSION
-import io.modelcontextprotocol.kotlin.sdk.Method
-import io.modelcontextprotocol.kotlin.sdk.RequestId
-import io.modelcontextprotocol.kotlin.sdk.SUPPORTED_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
-import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
+import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.McpJson
+import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError
+import io.modelcontextprotocol.kotlin.sdk.types.RequestId
+import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
 import kotlinx.coroutines.job
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -237,7 +237,8 @@ public class StreamableHttpServerTransport(
             streamsMapping.values.forEach {
                 try {
                     it.session?.close()
-                } catch (_: Exception) {}
+                } catch (_: Exception) {
+                }
             }
             streamsMapping.clear()
             requestToResponseMapping.clear()
@@ -250,7 +251,7 @@ public class StreamableHttpServerTransport(
      */
     public suspend fun handleRequest(session: ServerSSESession?, call: ApplicationCall) {
         validateHeaders(call)?.let { reason ->
-            call.reject(HttpStatusCode.Forbidden, ErrorCode.Unknown(-32000), reason)
+            call.reject(HttpStatusCode.Forbidden, RPCError.ErrorCode.CONNECTION_CLOSED, reason)
             _onError(Error(reason))
             return
         }
@@ -264,7 +265,7 @@ public class StreamableHttpServerTransport(
 
             else -> call.run {
                 response.header(HttpHeaders.Allow, "GET, POST, DELETE")
-                reject(HttpStatusCode.MethodNotAllowed, ErrorCode.Unknown(-32000), "Method not allowed.")
+                reject(HttpStatusCode.MethodNotAllowed, RPCError.ErrorCode.CONNECTION_CLOSED, "Method not allowed.")
             }
         }
     }
@@ -283,7 +284,7 @@ public class StreamableHttpServerTransport(
             if (!isAcceptEventStream || !isAcceptJson) {
                 call.reject(
                     HttpStatusCode.NotAcceptable,
-                    ErrorCode.Unknown(-32000),
+                    RPCError.ErrorCode.CONNECTION_CLOSED,
                     "Not Acceptable: Client must accept both application/json and text/event-stream",
                 )
                 return
@@ -292,7 +293,7 @@ public class StreamableHttpServerTransport(
             if (!call.request.contentType().match(ContentType.Application.Json)) {
                 call.reject(
                     HttpStatusCode.UnsupportedMediaType,
-                    ErrorCode.Unknown(-32000),
+                    RPCError.ErrorCode.CONNECTION_CLOSED,
                     "Unsupported Media Type: Content-Type must be application/json",
                 )
                 return
@@ -307,7 +308,7 @@ public class StreamableHttpServerTransport(
                 if (initialized.load() && sessionId != null) {
                     call.reject(
                         HttpStatusCode.BadRequest,
-                        ErrorCode.Defined.InvalidRequest,
+                        RPCError.ErrorCode.INVALID_REQUEST,
                         "Invalid Request: Server already initialized",
                     )
                     return
@@ -315,7 +316,7 @@ public class StreamableHttpServerTransport(
                 if (messages.size > 1) {
                     call.reject(
                         HttpStatusCode.BadRequest,
-                        ErrorCode.Defined.InvalidRequest,
+                        RPCError.ErrorCode.INVALID_REQUEST,
                         "Invalid Request: Only one initialization request is allowed",
                     )
                     return
@@ -354,7 +355,7 @@ public class StreamableHttpServerTransport(
         } catch (e: Exception) {
             call.reject(
                 HttpStatusCode.BadRequest,
-                ErrorCode.Defined.ParseError,
+                RPCError.ErrorCode.PARSE_ERROR,
                 "Parse error: ${e.message}",
             )
             _onError(e)
@@ -365,7 +366,7 @@ public class StreamableHttpServerTransport(
         if (enableJsonResponse) {
             call.reject(
                 HttpStatusCode.MethodNotAllowed,
-                ErrorCode.Unknown(-32000),
+                RPCError.ErrorCode.CONNECTION_CLOSED,
                 "Method not allowed.",
             )
             return
@@ -376,7 +377,7 @@ public class StreamableHttpServerTransport(
         if (!acceptHeader.accepts(ContentType.Text.EventStream)) {
             call.reject(
                 HttpStatusCode.NotAcceptable,
-                ErrorCode.Unknown(-32000),
+                RPCError.ErrorCode.CONNECTION_CLOSED,
                 "Not Acceptable: Client must accept text/event-stream",
             )
             return
@@ -394,7 +395,7 @@ public class StreamableHttpServerTransport(
         if (STANDALONE_SSE_STREAM_ID in streamsMapping) {
             call.reject(
                 HttpStatusCode.Conflict,
-                ErrorCode.Unknown(-32000),
+                RPCError.ErrorCode.CONNECTION_CLOSED,
                 "Conflict: Only one SSE stream is allowed per session",
             )
             return
@@ -410,7 +411,7 @@ public class StreamableHttpServerTransport(
         if (enableJsonResponse) {
             call.reject(
                 HttpStatusCode.MethodNotAllowed,
-                ErrorCode.Unknown(-32000),
+                RPCError.ErrorCode.CONNECTION_CLOSED,
                 "Method not allowed.",
             )
         }
@@ -449,7 +450,7 @@ public class StreamableHttpServerTransport(
         if (!initialized.load()) {
             call.reject(
                 HttpStatusCode.BadRequest,
-                ErrorCode.Unknown(-32000),
+                RPCError.ErrorCode.CONNECTION_CLOSED,
                 "Bad Request: Server not initialized",
             )
             return false
@@ -461,7 +462,7 @@ public class StreamableHttpServerTransport(
             headerId == null -> {
                 call.reject(
                     HttpStatusCode.BadRequest,
-                    ErrorCode.Unknown(-32000),
+                    RPCError.ErrorCode.CONNECTION_CLOSED,
                     "Bad Request: Mcp-Session-Id header is required",
                 )
                 false
@@ -470,7 +471,7 @@ public class StreamableHttpServerTransport(
             headerId != sessionId -> {
                 call.reject(
                     HttpStatusCode.NotFound,
-                    ErrorCode.Unknown(-32001),
+                    -32001,
                     "Session not found",
                 )
                 false
@@ -487,7 +488,7 @@ public class StreamableHttpServerTransport(
             !in SUPPORTED_PROTOCOL_VERSIONS -> {
                 call.reject(
                     HttpStatusCode.BadRequest,
-                    ErrorCode.Unknown(-32000),
+                    RPCError.ErrorCode.CONNECTION_CLOSED,
                     "Bad Request: Unsupported protocol version (supported versions: ${
                         SUPPORTED_PROTOCOL_VERSIONS.joinToString(
                             ", ",
@@ -531,10 +532,10 @@ public class StreamableHttpServerTransport(
             else -> {
                 call.reject(
                     HttpStatusCode.BadRequest,
-                    ErrorCode.Defined.InvalidRequest,
+                    RPCError.ErrorCode.INVALID_REQUEST,
                     "Invalid Request: unable to parse JSON body",
                 )
-                return null
+                null
             }
         }
     }
@@ -565,12 +566,12 @@ public class StreamableHttpServerTransport(
     }
 }
 
-internal suspend fun ApplicationCall.reject(status: HttpStatusCode, code: ErrorCode, message: String) {
+internal suspend fun ApplicationCall.reject(status: HttpStatusCode, code: Int, message: String) {
     this.response.status(status)
     this.respond(
-        JSONRPCResponse(
-            id = RequestId.StringId("server-error"),
-            error = JSONRPCError(message = message, code = code),
+        JSONRPCError(
+            id = null,
+            error = RPCError(code = code, message = message),
         ),
     )
 }
