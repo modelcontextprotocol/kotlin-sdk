@@ -15,14 +15,14 @@ import io.ktor.server.sse.SSE
 import io.ktor.server.sse.ServerSSESession
 import io.ktor.server.sse.sse
 import io.ktor.utils.io.KtorDsl
+import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.update
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.awaitCancellation
-import io.modelcontextprotocol.kotlin.sdk.ErrorCode
-import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 
 private val logger = KotlinLogging.logger {}
 
@@ -190,7 +190,7 @@ internal suspend fun RoutingContext.mcpStreamableHttpEndpoint(
             logger.info { "Server connection closed for sessionId: ${transport.sessionId}" }
         }
 
-        server.connect(transport)
+        server.createSession(transport)
 
         transport
     } else {
@@ -200,7 +200,7 @@ internal suspend fun RoutingContext.mcpStreamableHttpEndpoint(
     if (transport == null) {
         this.call.reject(
             HttpStatusCode.BadRequest,
-            ErrorCode.Unknown(-32000),
+            RPCError.ErrorCode.CONNECTION_CLOSED,
             "Bad Request: No valid session ID provided",
         )
         return
@@ -234,7 +234,7 @@ internal suspend fun RoutingContext.mcpStatelessStreamableHttpEndpoint(
         logger.info { "Server connection closed without sessionId" }
     }
 
-    server.connect(transport)
+    server.createSession(transport)
 
     transport.handleRequest(null, this.call)
 
