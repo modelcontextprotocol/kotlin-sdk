@@ -1,63 +1,60 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
-import io.modelcontextprotocol.kotlin.sdk.CallToolResult
-import io.modelcontextprotocol.kotlin.sdk.CallToolResultBase
-import io.modelcontextprotocol.kotlin.sdk.ClientCapabilities
-import io.modelcontextprotocol.kotlin.sdk.CompatibilityCallToolResult
-import io.modelcontextprotocol.kotlin.sdk.CompleteRequest
-import io.modelcontextprotocol.kotlin.sdk.CompleteResult
-import io.modelcontextprotocol.kotlin.sdk.CreateElicitationRequest
-import io.modelcontextprotocol.kotlin.sdk.CreateElicitationResult
-import io.modelcontextprotocol.kotlin.sdk.EmptyRequestResult
-import io.modelcontextprotocol.kotlin.sdk.GetPromptRequest
-import io.modelcontextprotocol.kotlin.sdk.GetPromptResult
-import io.modelcontextprotocol.kotlin.sdk.Implementation
-import io.modelcontextprotocol.kotlin.sdk.InitializeRequest
-import io.modelcontextprotocol.kotlin.sdk.InitializeResult
-import io.modelcontextprotocol.kotlin.sdk.InitializedNotification
-import io.modelcontextprotocol.kotlin.sdk.LATEST_PROTOCOL_VERSION
-import io.modelcontextprotocol.kotlin.sdk.ListPromptsRequest
-import io.modelcontextprotocol.kotlin.sdk.ListPromptsResult
-import io.modelcontextprotocol.kotlin.sdk.ListResourceTemplatesRequest
-import io.modelcontextprotocol.kotlin.sdk.ListResourceTemplatesResult
-import io.modelcontextprotocol.kotlin.sdk.ListResourcesRequest
-import io.modelcontextprotocol.kotlin.sdk.ListResourcesResult
-import io.modelcontextprotocol.kotlin.sdk.ListRootsRequest
-import io.modelcontextprotocol.kotlin.sdk.ListRootsResult
-import io.modelcontextprotocol.kotlin.sdk.ListToolsRequest
-import io.modelcontextprotocol.kotlin.sdk.ListToolsResult
-import io.modelcontextprotocol.kotlin.sdk.LoggingLevel
-import io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification.SetLevelRequest
-import io.modelcontextprotocol.kotlin.sdk.Method
-import io.modelcontextprotocol.kotlin.sdk.PingRequest
-import io.modelcontextprotocol.kotlin.sdk.ReadResourceRequest
-import io.modelcontextprotocol.kotlin.sdk.ReadResourceResult
-import io.modelcontextprotocol.kotlin.sdk.Root
-import io.modelcontextprotocol.kotlin.sdk.RootsListChangedNotification
-import io.modelcontextprotocol.kotlin.sdk.SUPPORTED_PROTOCOL_VERSIONS
-import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
-import io.modelcontextprotocol.kotlin.sdk.SubscribeRequest
-import io.modelcontextprotocol.kotlin.sdk.UnsubscribeRequest
+import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.shared.Protocol
 import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.CompleteRequest
+import io.modelcontextprotocol.kotlin.sdk.types.CompleteResult
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitResult
+import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
+import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.InitializeResult
+import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
+import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.ListPromptsRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ListPromptsResult
+import io.modelcontextprotocol.kotlin.sdk.types.ListResourceTemplatesRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ListResourceTemplatesResult
+import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesResult
+import io.modelcontextprotocol.kotlin.sdk.types.ListRootsRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ListRootsResult
+import io.modelcontextprotocol.kotlin.sdk.types.ListToolsRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult
+import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
+import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
+import io.modelcontextprotocol.kotlin.sdk.types.RequestMeta
+import io.modelcontextprotocol.kotlin.sdk.types.Root
+import io.modelcontextprotocol.kotlin.sdk.types.RootsListChangedNotification
+import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.SetLevelRequest
+import io.modelcontextprotocol.kotlin.sdk.types.SetLevelRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.SubscribeRequest
+import io.modelcontextprotocol.kotlin.sdk.types.UnsubscribeRequest
+import io.modelcontextprotocol.kotlin.sdk.types.toJson
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.getAndUpdate
 import kotlinx.atomicfu.update
 import kotlinx.collections.immutable.minus
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentSet
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.add
-import kotlinx.serialization.json.buildJsonArray
-import kotlinx.serialization.json.buildJsonObject
 import kotlin.coroutines.cancellation.CancellationException
 
 private val logger = KotlinLogging.logger {}
@@ -72,6 +69,30 @@ public class ClientOptions(
     public val capabilities: ClientCapabilities = ClientCapabilities(),
     enforceStrictCapabilities: Boolean = true,
 ) : ProtocolOptions(enforceStrictCapabilities = enforceStrictCapabilities)
+
+/**
+ * Initializes and connects an MCP client using the provided clientInfo [Implementation], client options,
+ * and transport mechanism.
+ *
+ * @param clientInfo The implementation details of the MCP client, including its name, version, and other metadata.
+ * @param clientOptions Optional client configuration settings, such as supported capabilities
+ *      and strict enforcement options. Defaults to a new instance of [ClientOptions].
+ * @param transport The transport mechanism used for communication.
+ * @return An instance of [Client] that is connected and ready for use with the specified transport.
+ */
+@ExperimentalMcpApi
+public suspend fun mcpClient(
+    clientInfo: Implementation,
+    clientOptions: ClientOptions = ClientOptions(),
+    transport: Transport,
+): Client {
+    val client = Client(
+        clientInfo = clientInfo,
+        options = clientOptions,
+    )
+    client.connect(transport)
+    return client
+}
 
 /**
  * An MCP client on top of a pluggable transport.
@@ -152,9 +173,11 @@ public open class Client(private val clientInfo: Implementation, options: Client
 
         try {
             val message = InitializeRequest(
-                protocolVersion = LATEST_PROTOCOL_VERSION,
-                capabilities = capabilities,
-                clientInfo = clientInfo,
+                InitializeRequestParams(
+                    protocolVersion = LATEST_PROTOCOL_VERSION,
+                    capabilities = capabilities,
+                    clientInfo = clientInfo,
+                ),
             )
             val result = request<InitializeResult>(message)
 
@@ -293,8 +316,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
      * @param options Optional request options.
      * @throws IllegalStateException If the server does not support the ping method (unlikely).
      */
-    public suspend fun ping(options: RequestOptions? = null): EmptyRequestResult =
-        request<EmptyRequestResult>(PingRequest(), options)
+    public suspend fun ping(options: RequestOptions? = null): EmptyResult = request(PingRequest(), options)
 
     /**
      * Sends a completion request to the server, typically to generate or complete some content.
@@ -314,8 +336,8 @@ public open class Client(private val clientInfo: Implementation, options: Client
      * @param options Optional request options.
      * @throws IllegalStateException If the server does not support logging.
      */
-    public suspend fun setLoggingLevel(level: LoggingLevel, options: RequestOptions? = null): EmptyRequestResult =
-        request(SetLevelRequest(level), options)
+    public suspend fun setLoggingLevel(level: LoggingLevel, options: RequestOptions? = null): EmptyResult =
+        request(SetLevelRequest(SetLevelRequestParams(level)), options)
 
     /**
      * Retrieves a prompt by name from the server.
@@ -387,10 +409,8 @@ public open class Client(private val clientInfo: Implementation, options: Client
      * @param options Optional request options.
      * @throws IllegalStateException If the server does not support resource subscriptions.
      */
-    public suspend fun subscribeResource(
-        request: SubscribeRequest,
-        options: RequestOptions? = null,
-    ): EmptyRequestResult = request(request, options)
+    public suspend fun subscribeResource(request: SubscribeRequest, options: RequestOptions? = null): EmptyResult =
+        request(request, options)
 
     /**
      * Unsubscribes from resource changes on the server.
@@ -399,10 +419,8 @@ public open class Client(private val clientInfo: Implementation, options: Client
      * @param options Optional request options.
      * @throws IllegalStateException If the server does not support resource subscriptions.
      */
-    public suspend fun unsubscribeResource(
-        request: UnsubscribeRequest,
-        options: RequestOptions? = null,
-    ): EmptyRequestResult = request(request, options)
+    public suspend fun unsubscribeResource(request: UnsubscribeRequest, options: RequestOptions? = null): EmptyResult =
+        request(request, options)
 
     /**
      * Calls a tool on the server by name, passing the specified arguments and metadata.
@@ -413,7 +431,6 @@ public open class Client(private val clientInfo: Implementation, options: Client
      *             - Optional prefix: dot-separated labels followed by slash (e.g., "api.example.com/")
      *             - Name: alphanumeric start/end, may contain hyphens, underscores, dots, alphanumerics
      *             - Reserved prefixes starting with "mcp" or "modelcontextprotocol" are forbidden
-     * @param compatibility Whether to use compatibility mode for older protocol versions.
      * @param options Optional request options.
      * @return The result of the tool call, or `null` if none.
      * @throws IllegalStateException If the server does not support tools.
@@ -422,40 +439,33 @@ public open class Client(private val clientInfo: Implementation, options: Client
         name: String,
         arguments: Map<String, Any?>,
         meta: Map<String, Any?> = emptyMap(),
-        compatibility: Boolean = false,
         options: RequestOptions? = null,
-    ): CallToolResultBase? {
+    ): CallToolResult {
         validateMetaKeys(meta.keys)
 
-        val jsonArguments = convertToJsonMap(arguments)
-        val jsonMeta = convertToJsonMap(meta)
+        val jsonArguments = arguments.toJson()
+        val jsonMeta = meta.toJson()
 
         val request = CallToolRequest(
-            name = name,
-            arguments = JsonObject(jsonArguments),
-            _meta = JsonObject(jsonMeta),
+            CallToolRequestParams(
+                name = name,
+                arguments = JsonObject(jsonArguments),
+                meta = RequestMeta(JsonObject(jsonMeta)),
+            ),
         )
-        return callTool(request, compatibility, options)
+        return callTool(request, options)
     }
 
     /**
      * Calls a tool on the server using a [CallToolRequest] object.
      *
      * @param request The request object containing the tool name and arguments.
-     * @param compatibility Whether to use compatibility mode for older protocol versions.
      * @param options Optional request options.
      * @return The result of the tool call, or `null` if none.
      * @throws IllegalStateException If the server does not support tools.
      */
-    public suspend fun callTool(
-        request: CallToolRequest,
-        compatibility: Boolean = false,
-        options: RequestOptions? = null,
-    ): CallToolResultBase? = if (compatibility) {
-        request<CompatibilityCallToolResult>(request, options)
-    } else {
-        request<CallToolResult>(request, options)
-    }
+    public suspend fun callTool(request: CallToolRequest, options: RequestOptions? = null): CallToolResult =
+        request(request, options)
 
     /**
      * Lists all available tools on the server.
@@ -570,14 +580,14 @@ public open class Client(private val clientInfo: Implementation, options: Client
      * @param handler The elicitation handler.
      * @throws IllegalStateException if the client does not support elicitation.
      */
-    public fun setElicitationHandler(handler: (CreateElicitationRequest) -> CreateElicitationResult) {
+    public fun setElicitationHandler(handler: (ElicitRequest) -> ElicitResult) {
         if (capabilities.elicitation == null) {
             logger.error { "Failed to set elicitation handler: Client does not support elicitation" }
             throw IllegalStateException("Client does not support elicitation.")
         }
         logger.info { "Setting the elicitation handler" }
 
-        setRequestHandler<CreateElicitationRequest>(Method.Defined.ElicitationCreate) { request, _ ->
+        setRequestHandler<ElicitRequest>(Method.Defined.ElicitationCreate) { request, _ ->
             handler(request)
         }
     }
@@ -635,69 +645,6 @@ public open class Client(private val clientInfo: Implementation, options: Client
             require(name.isEmpty() || name.matches(namePattern)) {
                 "Invalid _meta key '$key': name must start and end with alphanumeric characters, and contain only alphanumerics, hyphens, underscores, or dots"
             }
-        }
-    }
-
-    private fun convertToJsonMap(map: Map<String, Any?>): Map<String, JsonElement> = map.mapValues { (key, value) ->
-        try {
-            convertToJsonElement(value)
-        } catch (e: Exception) {
-            logger.warn { "Failed to convert value for key '$key': ${e.message}. Using string representation." }
-            JsonPrimitive(value.toString())
-        }
-    }
-
-    @OptIn(ExperimentalUnsignedTypes::class, ExperimentalSerializationApi::class)
-    private fun convertToJsonElement(value: Any?): JsonElement = when (value) {
-        null -> JsonNull
-
-        is JsonElement -> value
-
-        is String -> JsonPrimitive(value)
-
-        is Number -> JsonPrimitive(value)
-
-        is Boolean -> JsonPrimitive(value)
-
-        is Char -> JsonPrimitive(value.toString())
-
-        is Enum<*> -> JsonPrimitive(value.name)
-
-        is Map<*, *> -> buildJsonObject { value.forEach { (k, v) -> put(k.toString(), convertToJsonElement(v)) } }
-
-        is Collection<*> -> buildJsonArray { value.forEach { add(convertToJsonElement(it)) } }
-
-        is Array<*> -> buildJsonArray { value.forEach { add(convertToJsonElement(it)) } }
-
-        // Primitive arrays
-        is IntArray -> buildJsonArray { value.forEach { add(it) } }
-
-        is LongArray -> buildJsonArray { value.forEach { add(it) } }
-
-        is FloatArray -> buildJsonArray { value.forEach { add(it) } }
-
-        is DoubleArray -> buildJsonArray { value.forEach { add(it) } }
-
-        is BooleanArray -> buildJsonArray { value.forEach { add(it) } }
-
-        is ShortArray -> buildJsonArray { value.forEach { add(it) } }
-
-        is ByteArray -> buildJsonArray { value.forEach { add(it) } }
-
-        is CharArray -> buildJsonArray { value.forEach { add(it.toString()) } }
-
-        // Unsigned arrays
-        is UIntArray -> buildJsonArray { value.forEach { add(JsonPrimitive(it)) } }
-
-        is ULongArray -> buildJsonArray { value.forEach { add(JsonPrimitive(it)) } }
-
-        is UShortArray -> buildJsonArray { value.forEach { add(JsonPrimitive(it)) } }
-
-        is UByteArray -> buildJsonArray { value.forEach { add(JsonPrimitive(it)) } }
-
-        else -> {
-            logger.debug { "Converting unknown type ${value::class} to string: $value" }
-            JsonPrimitive(value.toString())
         }
     }
 }

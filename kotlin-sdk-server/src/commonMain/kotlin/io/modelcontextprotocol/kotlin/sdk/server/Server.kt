@@ -1,35 +1,42 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
-import io.modelcontextprotocol.kotlin.sdk.CallToolResult
-import io.modelcontextprotocol.kotlin.sdk.EmptyJsonObject
-import io.modelcontextprotocol.kotlin.sdk.GetPromptRequest
-import io.modelcontextprotocol.kotlin.sdk.GetPromptResult
-import io.modelcontextprotocol.kotlin.sdk.Implementation
-import io.modelcontextprotocol.kotlin.sdk.ListPromptsRequest
-import io.modelcontextprotocol.kotlin.sdk.ListPromptsResult
-import io.modelcontextprotocol.kotlin.sdk.ListResourceTemplatesRequest
-import io.modelcontextprotocol.kotlin.sdk.ListResourceTemplatesResult
-import io.modelcontextprotocol.kotlin.sdk.ListResourcesRequest
-import io.modelcontextprotocol.kotlin.sdk.ListResourcesResult
-import io.modelcontextprotocol.kotlin.sdk.ListToolsRequest
-import io.modelcontextprotocol.kotlin.sdk.ListToolsResult
-import io.modelcontextprotocol.kotlin.sdk.Method
-import io.modelcontextprotocol.kotlin.sdk.Prompt
-import io.modelcontextprotocol.kotlin.sdk.PromptArgument
-import io.modelcontextprotocol.kotlin.sdk.ReadResourceRequest
-import io.modelcontextprotocol.kotlin.sdk.ReadResourceResult
-import io.modelcontextprotocol.kotlin.sdk.Resource
-import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
-import io.modelcontextprotocol.kotlin.sdk.TextContent
-import io.modelcontextprotocol.kotlin.sdk.Tool
-import io.modelcontextprotocol.kotlin.sdk.ToolAnnotations
 import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions
+import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
-import kotlinx.atomicfu.atomic
-import kotlinx.atomicfu.update
-import kotlinx.collections.immutable.persistentListOf
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
+import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageResult
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitResult
+import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
+import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.ListPromptsRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ListPromptsResult
+import io.modelcontextprotocol.kotlin.sdk.types.ListResourceTemplatesRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ListResourceTemplatesResult
+import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesResult
+import io.modelcontextprotocol.kotlin.sdk.types.ListRootsResult
+import io.modelcontextprotocol.kotlin.sdk.types.ListToolsRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult
+import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification
+import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.Prompt
+import io.modelcontextprotocol.kotlin.sdk.types.PromptArgument
+import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
+import io.modelcontextprotocol.kotlin.sdk.types.Resource
+import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotification
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
+import io.modelcontextprotocol.kotlin.sdk.types.Tool
+import io.modelcontextprotocol.kotlin.sdk.types.ToolAnnotations
+import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.JsonObject
 
@@ -45,7 +52,7 @@ public class ServerOptions(public val capabilities: ServerCapabilities, enforceS
     ProtocolOptions(enforceStrictCapabilities = enforceStrictCapabilities)
 
 /**
- * An MCP server on top of a pluggable transport.
+ * An MCP server is responsible for storing features and handling new connections.
  *
  * This server automatically responds to the initialization flow as initiated by the client.
  * You can register tools, prompts, and resources using [addTool], [addPrompt], and [addResource].
@@ -79,7 +86,13 @@ public open class Server(
         block: Server.() -> Unit = {},
     ) : this(serverInfo, options, { instructions }, block)
 
-    private val sessions = atomic(persistentListOf<ServerSession>())
+    private val sessionRegistry = ServerSessionRegistry()
+
+    /**
+     * Provides a snapshot of all sessions currently registered in the server
+     */
+    public val sessions: Map<ServerSessionKey, ServerSession>
+        get() = sessionRegistry.sessions
 
     @Suppress("ktlint:standard:backing-property-naming")
     private var _onInitialized: (() -> Unit) = {}
@@ -107,7 +120,10 @@ public open class Server(
 
     public suspend fun close() {
         logger.debug { "Closing MCP server" }
-        sessions.value.forEach { session -> session.close() }
+        sessions.forEach { (sessionId, session) ->
+            logger.info { "Closing session $sessionId" }
+            session.close()
+        }
         _onClose()
     }
 
@@ -171,12 +187,12 @@ public open class Server(
         // Register cleanup handler to remove session from list when it closes
         session.onClose {
             logger.debug { "Removing closed session from active sessions list" }
-            sessions.update { list -> list.remove(session) }
+            sessionRegistry.removeSession(session.sessionId)
         }
         logger.debug { "Server session connecting to transport" }
         session.connect(transport)
         logger.debug { "Server session successfully connected to transport" }
-        sessions.update { sessions -> sessions.add(session) }
+        sessionRegistry.addSession(session)
 
         _onConnect()
         return session
@@ -245,7 +261,7 @@ public open class Server(
      * @param inputSchema The expected input schema for the tool.
      * @param outputSchema The optional expected output schema for the tool.
      * @param toolAnnotations Optional additional tool information.
-     * @param _meta Optional metadata as a [JsonObject].
+     * @param meta Optional metadata as a [JsonObject].
      * @param handler A suspend function that handles executing the tool when called by the client.
      * @throws IllegalStateException If the server does not support tools.
      */
@@ -253,21 +269,21 @@ public open class Server(
     public fun addTool(
         name: String,
         description: String,
-        inputSchema: Tool.Input = Tool.Input(),
+        inputSchema: ToolSchema = ToolSchema(),
         title: String? = null,
-        outputSchema: Tool.Output? = null,
+        outputSchema: ToolSchema? = null,
         toolAnnotations: ToolAnnotations? = null,
-        @Suppress("LocalVariableName") _meta: JsonObject? = null,
+        meta: JsonObject? = null,
         handler: suspend (CallToolRequest) -> CallToolResult,
     ) {
         val tool = Tool(
             name = name,
-            title = title,
-            description = description,
             inputSchema = inputSchema,
             outputSchema = outputSchema,
+            description = description,
+            title = title,
             annotations = toolAnnotations,
-            _meta = _meta ?: EmptyJsonObject,
+            meta = meta,
         )
         addTool(tool, handler)
     }
@@ -474,13 +490,14 @@ public open class Server(
     }
 
     private suspend fun handleCallTool(request: CallToolRequest): CallToolResult {
-        logger.debug { "Handling tool call request for tool: ${request.name}" }
+        val requestParams = request.params
+        logger.debug { "Handling tool call request for tool: ${requestParams.name}" }
 
         // Check if the tool exists
-        val tool = toolRegistry.get(request.name) ?: run {
-            logger.error { "Tool not found: ${request.name}" }
+        val tool = toolRegistry.get(requestParams.name) ?: run {
+            logger.error { "Tool not found: ${requestParams.name}" }
             return CallToolResult(
-                content = listOf(TextContent(text = "Tool ${request.name} not found")),
+                content = listOf(TextContent(text = "Tool ${requestParams.name} not found")),
                 isError = true,
             )
         }
@@ -488,14 +505,14 @@ public open class Server(
         @Suppress("TooGenericExceptionCaught")
         // Execute the tool handler and catch any errors
         return try {
-            logger.trace { "Executing tool ${request.name} with input: ${request.arguments}" }
+            logger.trace { "Executing tool ${requestParams.name} with input: ${requestParams.arguments}" }
             tool.handler(request)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            logger.error(e) { "Error executing tool ${request.name}" }
+            logger.error(e) { "Error executing tool ${requestParams.name}" }
             CallToolResult(
-                content = listOf(TextContent(text = "Error executing tool ${request.name}: ${e.message}")),
+                content = listOf(TextContent(text = "Error executing tool ${requestParams.name}: ${e.message}")),
                 isError = true,
             )
         }
@@ -507,11 +524,12 @@ public open class Server(
     }
 
     private suspend fun handleGetPrompt(request: GetPromptRequest): GetPromptResult {
-        logger.debug { "Handling get prompt request for: ${request.name}" }
-        val prompt = promptRegistry.get(request.name)
+        val requestParams = request.params
+        logger.debug { "Handling get prompt request for: ${requestParams.name}" }
+        val prompt = promptRegistry.get(requestParams.name)
             ?: run {
-                logger.error { "Prompt not found: ${request.name}" }
-                throw IllegalArgumentException("Prompt not found: ${request.name}")
+                logger.error { "Prompt not found: ${requestParams.name}" }
+                throw IllegalArgumentException("Prompt not found: ${requestParams.name}")
             }
         return prompt.messageProvider(request)
     }
@@ -522,11 +540,12 @@ public open class Server(
     }
 
     private suspend fun handleReadResource(request: ReadResourceRequest): ReadResourceResult {
-        logger.debug { "Handling read resource request for: ${request.uri}" }
-        val resource = resourceRegistry.get(request.uri)
+        val requestParams = request.params
+        logger.debug { "Handling read resource request for: ${requestParams.uri}" }
+        val resource = resourceRegistry.get(requestParams.uri)
             ?: run {
-                logger.error { "Resource not found: ${request.uri}" }
-                throw IllegalArgumentException("Resource not found: ${request.uri}")
+                logger.error { "Resource not found: ${requestParams.uri}" }
+                throw IllegalArgumentException("Resource not found: ${requestParams.uri}")
             }
         return resource.readHandler(request)
     }
@@ -535,4 +554,125 @@ public open class Server(
         // If you have resource templates, return them here. For now, return empty.
         return ListResourceTemplatesResult(listOf())
     }
+
+    // Start the ServerSession redirection section
+
+    /**
+     * Triggers [ServerSession.ping] request for session by provided [sessionId].
+     * @param sessionId The session ID to ping
+     */
+    public suspend fun ping(sessionId: String): EmptyResult = with(sessionRegistry.getSession(sessionId)) {
+        ping()
+    }
+
+    /**
+     * Triggers [ServerSession.createMessage] request for session by provided [sessionId].
+     *
+     * @param sessionId The session ID to create a message.
+     * @param params The parameters for creating a message.
+     * @param options Optional request options.
+     * @return The created message result.
+     * @throws IllegalStateException If the server does not support sampling or if the request fails.
+     */
+    public suspend fun createMessage(
+        sessionId: String,
+        params: CreateMessageRequest,
+        options: RequestOptions? = null,
+    ): CreateMessageResult = with(sessionRegistry.getSession(sessionId)) {
+        request(params, options)
+    }
+
+    /**
+     * Triggers [ServerSession.listRoots] request for session by provided [sessionId].
+     *
+     * @param sessionId The session ID to list roots for.
+     * @param params JSON parameters for the request, usually empty.
+     * @param options Optional request options.
+     * @return The list of roots.
+     * @throws IllegalStateException If the server or client does not support roots.
+     */
+    public suspend fun listRoots(
+        sessionId: String,
+        params: JsonObject = EmptyJsonObject,
+        options: RequestOptions? = null,
+    ): ListRootsResult = with(sessionRegistry.getSession(sessionId)) {
+        listRoots(params, options)
+    }
+
+    /**
+     * Triggers [ServerSession.createElicitation] request for session by provided [sessionId].
+     *
+     * @param sessionId The session ID to create elicitation for.
+     * @param message The elicitation message.
+     * @param requestedSchema The requested schema for the elicitation.
+     * @param options Optional request options.
+     * @return The created elicitation result.
+     * @throws IllegalStateException If the server does not support elicitation or if the request fails.
+     */
+    public suspend fun createElicitation(
+        sessionId: String,
+        message: String,
+        requestedSchema: ElicitRequestParams.RequestedSchema,
+        options: RequestOptions? = null,
+    ): ElicitResult = with(sessionRegistry.getSession(sessionId)) {
+        createElicitation(message, requestedSchema, options)
+    }
+
+    /**
+     * Triggers [ServerSession.sendLoggingMessage] for session by provided [sessionId].
+     *
+     * @param sessionId The session ID to send the logging message to.
+     * @param notification The logging message notification.
+     */
+    public suspend fun sendLoggingMessage(sessionId: String, notification: LoggingMessageNotification) {
+        with(sessionRegistry.getSession(sessionId)) {
+            sendLoggingMessage(notification)
+        }
+    }
+
+    /**
+     * Triggers [ServerSession.sendResourceUpdated] for session by provided [sessionId].
+     *
+     * @param sessionId The session ID to send the resource updated notification to.
+     * @param notification Details of the updated resource.
+     */
+    public suspend fun sendResourceUpdated(sessionId: String, notification: ResourceUpdatedNotification) {
+        with(sessionRegistry.getSession(sessionId)) {
+            sendResourceUpdated(notification)
+        }
+    }
+
+    /**
+     * Triggers [ServerSession.sendResourceListChanged] for session by provided [sessionId].
+     *
+     * @param sessionId The session ID to send the resource list changed notification to.
+     */
+    public suspend fun sendResourceListChanged(sessionId: String) {
+        with(sessionRegistry.getSession(sessionId)) {
+            sendResourceListChanged()
+        }
+    }
+
+    /**
+     * Triggers [ServerSession.sendToolListChanged] for session by provided [sessionId].
+     *
+     * @param sessionId The session ID to send the tool list changed notification to.
+     */
+    public suspend fun sendToolListChanged(sessionId: String) {
+        with(sessionRegistry.getSession(sessionId)) {
+            sendToolListChanged()
+        }
+    }
+
+    /**
+     * Triggers [ServerSession.sendPromptListChanged] for session by provided [sessionId].
+     *
+     * @param sessionId The session ID to send the prompt list changed notification to.
+     */
+    public suspend fun sendPromptListChanged(sessionId: String) {
+        with(sessionRegistry.getSession(sessionId)) {
+            sendPromptListChanged()
+        }
+    }
+    // End the ServerSession redirection section
 }

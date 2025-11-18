@@ -4,7 +4,7 @@ coroutines = "1.10.2"
 kotlin = "2.2.21"
 ktor = "3.2.3"
 logging = "7.0.13"
-mcp-kotlin = "0.7.4"
+mcp-kotlin = "0.7.7"
 shadow = "9.2.2"
 slf4j = "2.0.17"
 

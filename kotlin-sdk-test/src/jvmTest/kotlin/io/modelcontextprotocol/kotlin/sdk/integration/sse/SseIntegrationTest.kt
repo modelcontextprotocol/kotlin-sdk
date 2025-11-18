@@ -2,9 +2,10 @@ package io.modelcontextprotocol.kotlin.sdk.integration.sse
 
 import io.ktor.server.cio.CIOApplicationEngine
 import io.ktor.server.engine.EmbeddedServer
-import io.modelcontextprotocol.kotlin.sdk.GetPromptRequest
-import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.client.Client
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
@@ -100,8 +101,10 @@ class SseIntegrationTest : AbstractSseIntegrationTest() {
     private suspend fun getPrompt(client: Client, clientName: String): String {
         val response = client.getPrompt(
             GetPromptRequest(
-                "prompt",
-                arguments = mapOf("client" to clientName),
+                GetPromptRequestParams(
+                    name = "prompt",
+                    arguments = mapOf("client" to clientName),
+                ),
             ),
         )
 

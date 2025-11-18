@@ -21,12 +21,9 @@ kotlin {
                 "-Xmulti-dollar-interpolation",
             )
     }
-
-    // coreLibrariesVersion = "2.0.10"
-
     jvm {
         compilerOptions {
-            jvmTarget = JvmTarget.JVM_1_8
+            jvmTarget = JvmTarget.JVM_11
             javaParameters = true
             jvmDefault = JvmDefaultMode.ENABLE
             freeCompilerArgs.addAll(

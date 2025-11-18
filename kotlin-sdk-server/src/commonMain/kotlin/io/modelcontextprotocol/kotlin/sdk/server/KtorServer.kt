@@ -19,6 +19,7 @@ import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.update
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.toPersistentMap
+import kotlinx.coroutines.awaitCancellation
 
 private val logger = KotlinLogging.logger {}
 
@@ -59,12 +60,6 @@ public fun Routing.mcp(block: ServerSSESession.() -> Server) {
     }
 }
 
-@Suppress("FunctionName")
-@Deprecated("Use mcp() instead", ReplaceWith("mcp(block)"), DeprecationLevel.ERROR)
-public fun Application.MCP(block: ServerSSESession.() -> Server) {
-    mcp(block)
-}
-
 @KtorDsl
 public fun Application.mcp(block: ServerSSESession.() -> Server) {
     install(SSE)
@@ -91,6 +86,8 @@ internal suspend fun ServerSSESession.mcpSseEndpoint(
     server.createSession(transport)
 
     logger.debug { "Server connected to transport for sessionId: ${transport.sessionId}" }
+
+    awaitCancellation()
 }
 
 internal fun ServerSSESession.mcpSseTransport(

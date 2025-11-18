@@ -8,18 +8,20 @@ import io.ktor.server.request.contentType
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.respondText
 import io.ktor.server.sse.ServerSSESession
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
-import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.types.McpJson
+import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.job
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 internal const val SESSION_ID_PARAM = "sessionId"
 
-@Deprecated("Use SseServerTransport instead", ReplaceWith("SseServerTransport"), DeprecationLevel.WARNING)
+@Deprecated("Use SseServerTransport instead", ReplaceWith("SseServerTransport"), DeprecationLevel.ERROR)
 public typealias SSEServerTransport = SseServerTransport
 
 /**
@@ -53,10 +55,13 @@ public class SseServerTransport(private val endpoint: String, private val sessio
             data = "${endpoint.encodeURLPath()}?$SESSION_ID_PARAM=$sessionId",
         )
 
-        try {
-            session.coroutineContext.job.join()
-        } finally {
-            _onClose.invoke()
+        @OptIn(InternalCoroutinesApi::class)
+        session.coroutineContext.job.invokeOnCompletion {
+            if (it != null && it !is CancellationException) {
+                _onError.invoke(it)
+            } else {
+                _onClose.invoke()
+            }
         }
     }
 

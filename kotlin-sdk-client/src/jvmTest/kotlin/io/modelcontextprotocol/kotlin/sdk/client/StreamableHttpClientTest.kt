@@ -5,9 +5,11 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.sse.ServerSentEvent
-import io.modelcontextprotocol.kotlin.sdk.ClientCapabilities
-import io.modelcontextprotocol.kotlin.sdk.Implementation
-import io.modelcontextprotocol.kotlin.sdk.Tool
+import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.Tool
+import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
@@ -21,12 +23,6 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
-/**
- * Integration tests for the `StreamableHttpClientTransport` implementation
- * using the [Mokksy](https://mokksy.dev) library
- * to simulate Streaming HTTP with server-sent events (SSE).
- * @author Konstantin Pavlov
- */
 @OptIn(ExperimentalUuidApi::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Suppress("LongMethod")
@@ -129,7 +125,7 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
             name = "get_weather",
             title = "Weather Information Provider",
             description = "Get current weather information for a location",
-            inputSchema = Tool.Input(
+            inputSchema = ToolSchema(
                 properties = buildJsonObject {
                     putJsonObject("location") {
                         put("type", "string")
@@ -138,7 +134,7 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
                 },
                 required = listOf("location"),
             ),
-            outputSchema = Tool.Output(
+            outputSchema = ToolSchema(
                 properties = buildJsonObject {
                     putJsonObject("temperature") {
                         put("type", "number")
@@ -148,6 +144,7 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
                 required = listOf("temperature"),
             ),
             annotations = null,
+            meta = EmptyJsonObject,
         )
 
         mockMcp.mockUnsubscribeRequest(sessionId = sessionId)

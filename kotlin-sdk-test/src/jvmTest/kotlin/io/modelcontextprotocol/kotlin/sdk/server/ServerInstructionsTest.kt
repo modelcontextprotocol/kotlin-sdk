@@ -1,14 +1,18 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
+import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
-import io.modelcontextprotocol.kotlin.sdk.client.Client
+import io.modelcontextprotocol.kotlin.sdk.client.ClientOptions
+import io.modelcontextprotocol.kotlin.sdk.client.mcpClient
 import io.modelcontextprotocol.kotlin.sdk.shared.InMemoryTransport
+import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNull
 import kotlin.test.assertEquals
 
+@OptIn(ExperimentalMcpApi::class)
 class ServerInstructionsTest {
 
     @Test
@@ -22,10 +26,17 @@ class ServerInstructionsTest {
         // The instructions should be stored internally and used in handleInitialize
         // We can't directly access the private field, but we can test it through initialization
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-        val client = Client(clientInfo = Implementation(name = "test client", version = "1.0"))
-
         server.createSession(serverTransport)
-        client.connect(clientTransport)
+
+        val client = mcpClient(
+            clientInfo = Implementation(name = "test client", version = "1.0"),
+            clientOptions = ClientOptions(
+                capabilities = ClientCapabilities(
+                    roots = ClientCapabilities.Roots(listChanged = false),
+                ),
+            ),
+            transport = clientTransport,
+        )
 
         assertEquals(instructions, client.serverInstructions)
     }
@@ -41,10 +52,12 @@ class ServerInstructionsTest {
         // The instructions should be stored internally and used in handleInitialize
         // We can't directly access the private field, but we can test it through initialization
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-        val client = Client(clientInfo = Implementation(name = "test client", version = "1.0"))
-
         server.createSession(serverTransport)
-        client.connect(clientTransport)
+
+        val client = mcpClient(
+            clientInfo = Implementation(name = "test client", version = "1.0"),
+            transport = clientTransport,
+        )
 
         assertEquals(instructions, client.serverInstructions)
     }
@@ -58,10 +71,13 @@ class ServerInstructionsTest {
         val server = Server(serverInfo, serverOptions)
 
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-        val client = Client(clientInfo = Implementation(name = "test client", version = "1.0"))
 
         server.createSession(serverTransport)
-        client.connect(clientTransport)
+
+        val client = mcpClient(
+            clientInfo = Implementation(name = "test client", version = "1.0"),
+            transport = clientTransport,
+        )
 
         assertNull(client.serverInstructions)
     }

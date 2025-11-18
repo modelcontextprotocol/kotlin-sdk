@@ -1,45 +1,58 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.modelcontextprotocol.kotlin.sdk.ClientCapabilities
-import io.modelcontextprotocol.kotlin.sdk.CreateElicitationRequest
-import io.modelcontextprotocol.kotlin.sdk.CreateElicitationRequest.RequestedSchema
-import io.modelcontextprotocol.kotlin.sdk.CreateElicitationResult
-import io.modelcontextprotocol.kotlin.sdk.CreateMessageRequest
-import io.modelcontextprotocol.kotlin.sdk.CreateMessageResult
-import io.modelcontextprotocol.kotlin.sdk.EmptyJsonObject
-import io.modelcontextprotocol.kotlin.sdk.EmptyRequestResult
-import io.modelcontextprotocol.kotlin.sdk.Implementation
-import io.modelcontextprotocol.kotlin.sdk.InitializeRequest
-import io.modelcontextprotocol.kotlin.sdk.InitializeResult
-import io.modelcontextprotocol.kotlin.sdk.InitializedNotification
-import io.modelcontextprotocol.kotlin.sdk.LATEST_PROTOCOL_VERSION
-import io.modelcontextprotocol.kotlin.sdk.ListRootsRequest
-import io.modelcontextprotocol.kotlin.sdk.ListRootsResult
-import io.modelcontextprotocol.kotlin.sdk.LoggingLevel
-import io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification
-import io.modelcontextprotocol.kotlin.sdk.Method
-import io.modelcontextprotocol.kotlin.sdk.Method.Defined
-import io.modelcontextprotocol.kotlin.sdk.PingRequest
-import io.modelcontextprotocol.kotlin.sdk.PromptListChangedNotification
-import io.modelcontextprotocol.kotlin.sdk.ResourceListChangedNotification
-import io.modelcontextprotocol.kotlin.sdk.ResourceUpdatedNotification
-import io.modelcontextprotocol.kotlin.sdk.SUPPORTED_PROTOCOL_VERSIONS
-import io.modelcontextprotocol.kotlin.sdk.ToolListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.shared.Protocol
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
+import io.modelcontextprotocol.kotlin.sdk.types.BaseRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
+import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageResult
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitResult
+import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
+import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
+import io.modelcontextprotocol.kotlin.sdk.types.InitializeResult
+import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
+import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.ListRootsRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ListRootsResult
+import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
+import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification
+import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.Method.Defined
+import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
+import io.modelcontextprotocol.kotlin.sdk.types.PromptListChangedNotification
+import io.modelcontextprotocol.kotlin.sdk.types.RequestMeta
+import io.modelcontextprotocol.kotlin.sdk.types.ResourceListChangedNotification
+import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotification
+import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
+import io.modelcontextprotocol.kotlin.sdk.types.SetLevelRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ToolListChangedNotification
 import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.serialization.json.JsonObject
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 private val logger = KotlinLogging.logger {}
 
+/**
+ * Represents a server session.
+ */
+@Suppress("TooManyFunctions")
 public open class ServerSession(
     protected val serverInfo: Implementation,
     options: ServerOptions,
     protected val instructions: String?,
 ) : Protocol(options) {
+
+    @OptIn(ExperimentalUuidApi::class)
+    public val sessionId: String = Uuid.random().toString()
+
     @Suppress("ktlint:standard:backing-property-naming")
     private var _onInitialized: (() -> Unit) = {}
 
@@ -81,10 +94,10 @@ public open class ServerSession(
 
         // Logging level handler
         if (options.capabilities.logging != null) {
-            setRequestHandler<LoggingMessageNotification.SetLevelRequest>(Defined.LoggingSetLevel) { request, _ ->
-                currentLoggingLevel.value = request.level
-                logger.debug { "Logging level set to: ${request.level}" }
-                EmptyRequestResult()
+            setRequestHandler<SetLevelRequest>(Defined.LoggingSetLevel) { request, _ ->
+                currentLoggingLevel.value = request.params.level
+                logger.debug { "Logging level set to: ${request.params.level}" }
+                EmptyResult()
             }
         }
     }
@@ -125,7 +138,7 @@ public open class ServerSession(
      * @return The result of the ping request.
      * @throws IllegalStateException If for some reason the method is not supported or the connection is closed.
      */
-    public suspend fun ping(): EmptyRequestResult = request(PingRequest())
+    public suspend fun ping(): EmptyResult = request(PingRequest())
 
     /**
      * Creates a message using the server's sampling capability.
@@ -140,8 +153,7 @@ public open class ServerSession(
         options: RequestOptions? = null,
     ): CreateMessageResult {
         logger.debug {
-            "Creating message with ${params.messages.size} messages, maxTokens=${params.maxTokens}, " +
-                "temperature=${params.temperature}, systemPrompt=${if (params.systemPrompt != null) "present" else "absent"}"
+            "Creating message with ${params.params.messages.size} messages, maxTokens=${params.params.maxTokens}, temperature=${params.params.temperature}, systemPrompt=${if (params.params.systemPrompt != null) "present" else "absent"}"
         }
         logger.trace { "Full createMessage params: $params" }
         return request(params, options)
@@ -160,20 +172,20 @@ public open class ServerSession(
         options: RequestOptions? = null,
     ): ListRootsResult {
         logger.debug { "Listing roots with params: $params" }
-        return request(ListRootsRequest(params), options)
+        return request(ListRootsRequest(BaseRequestParams(RequestMeta(params))), options)
     }
 
     public suspend fun createElicitation(
         message: String,
-        requestedSchema: RequestedSchema,
+        requestedSchema: ElicitRequestParams.RequestedSchema,
         options: RequestOptions? = null,
-    ): CreateElicitationResult {
+    ): ElicitResult {
         logger.debug {
             "Creating elicitation with message length=${message.length}, " +
                 "schema properties count=${requestedSchema.properties.size}"
         }
         logger.trace { "Full elicitation message: $message, requestedSchema: $requestedSchema" }
-        return request(CreateElicitationRequest(message, requestedSchema), options)
+        return request(ElicitRequest(ElicitRequestParams(message, requestedSchema)), options)
     }
 
     /**
@@ -336,7 +348,7 @@ public open class ServerSession(
         logger.trace { "Asserting request handler capability for method: ${method.value}" }
         when (method) {
             Defined.SamplingCreateMessage -> {
-                if (serverCapabilities.sampling == null) {
+                if (serverCapabilities.experimental?.get("sampling") == null) {
                     logger.error { "Server capability assertion failed: sampling not supported" }
                     throw IllegalStateException("Server does not support sampling (required for $method)")
                 }
@@ -388,10 +400,10 @@ public open class ServerSession(
 
     private suspend fun handleInitialize(request: InitializeRequest): InitializeResult {
         logger.debug { "Handling initialization request from client" }
-        clientCapabilities = request.capabilities
-        clientVersion = request.clientInfo
+        clientCapabilities = request.params.capabilities
+        clientVersion = request.params.clientInfo
 
-        val requestedVersion = request.protocolVersion
+        val requestedVersion = request.params.protocolVersion
         val protocolVersion = if (SUPPORTED_PROTOCOL_VERSIONS.contains(requestedVersion)) {
             requestedVersion
         } else {
@@ -418,7 +430,7 @@ public open class ServerSession(
     private fun isMessageIgnored(level: LoggingLevel): Boolean {
         val current = currentLoggingLevel.value ?: return false // If no level is set, don't filter
 
-        return level.ordinal < current.ordinal
+        return level < current
     }
 
     /**
@@ -428,4 +440,12 @@ public open class ServerSession(
      * @return true if the message should be accepted (not filtered out), false otherwise.
      */
     private fun isMessageAccepted(level: LoggingLevel): Boolean = !isMessageIgnored(level)
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is ServerSession) return false
+        return sessionId == other.sessionId
+    }
+
+    override fun hashCode(): Int = sessionId.hashCode()
 }

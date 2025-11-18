@@ -5,7 +5,7 @@ import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class AudioContentSerializationTest {
+class OldSchemaAudioContentSerializationTest {
 
     private val audioContentJson = """
         {

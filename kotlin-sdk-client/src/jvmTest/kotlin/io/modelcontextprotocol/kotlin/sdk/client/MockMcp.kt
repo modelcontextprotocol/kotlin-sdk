@@ -7,8 +7,8 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.sse.ServerSentEvent
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCRequest
-import io.modelcontextprotocol.kotlin.sdk.RequestId
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
+import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -21,15 +21,6 @@ import kotlinx.serialization.json.putJsonObject
 
 const val MCP_SESSION_ID_HEADER = "Mcp-Session-Id"
 
-/**
- * High-level helper for simulating an MCP server over Streaming HTTP transport with Server-Sent Events (SSE),
- * built on top of an HTTP server using the [Mokksy](https://mokksy.dev) library.
- *
- * Provides test utilities to mock server behavior based on specific request conditions.
- *
- * @param verbose Whether to print detailed logs. Defaults to `false`.
- * @author Konstantin Pavlov
- */
 internal class MockMcp(verbose: Boolean = false) {
 
     private val mokksy: Mokksy = Mokksy(verbose = verbose)
@@ -139,7 +130,7 @@ internal class MockMcp(verbose: Boolean = false) {
                 is RequestId.NumberId -> (request.body.id as RequestId.NumberId).value.toString()
                 is RequestId.StringId -> "\"${(request.body.id as RequestId.StringId).value}\""
             }
-            val resultObject = result!!.invoke()
+            val resultObject = result.invoke()
             // language=json
             body = """
              {

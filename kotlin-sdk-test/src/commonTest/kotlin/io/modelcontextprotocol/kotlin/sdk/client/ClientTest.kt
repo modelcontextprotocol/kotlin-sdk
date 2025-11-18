@@ -1,38 +1,40 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
-import io.modelcontextprotocol.kotlin.sdk.ClientCapabilities
-import io.modelcontextprotocol.kotlin.sdk.CreateElicitationRequest
-import io.modelcontextprotocol.kotlin.sdk.CreateElicitationResult
-import io.modelcontextprotocol.kotlin.sdk.CreateMessageRequest
-import io.modelcontextprotocol.kotlin.sdk.CreateMessageResult
-import io.modelcontextprotocol.kotlin.sdk.EmptyJsonObject
-import io.modelcontextprotocol.kotlin.sdk.Implementation
-import io.modelcontextprotocol.kotlin.sdk.InitializeRequest
-import io.modelcontextprotocol.kotlin.sdk.InitializeResult
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCRequest
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCResponse
-import io.modelcontextprotocol.kotlin.sdk.LATEST_PROTOCOL_VERSION
-import io.modelcontextprotocol.kotlin.sdk.ListResourcesRequest
-import io.modelcontextprotocol.kotlin.sdk.ListResourcesResult
-import io.modelcontextprotocol.kotlin.sdk.ListRootsRequest
-import io.modelcontextprotocol.kotlin.sdk.ListToolsRequest
-import io.modelcontextprotocol.kotlin.sdk.ListToolsResult
-import io.modelcontextprotocol.kotlin.sdk.LoggingLevel
-import io.modelcontextprotocol.kotlin.sdk.LoggingMessageNotification
-import io.modelcontextprotocol.kotlin.sdk.Method
-import io.modelcontextprotocol.kotlin.sdk.Role
-import io.modelcontextprotocol.kotlin.sdk.Root
-import io.modelcontextprotocol.kotlin.sdk.RootsListChangedNotification
-import io.modelcontextprotocol.kotlin.sdk.SUPPORTED_PROTOCOL_VERSIONS
-import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
-import io.modelcontextprotocol.kotlin.sdk.TextContent
-import io.modelcontextprotocol.kotlin.sdk.Tool
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.ServerSession
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.InMemoryTransport
+import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
+import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageResult
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitResult
+import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
+import io.modelcontextprotocol.kotlin.sdk.types.InitializeResult
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
+import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesResult
+import io.modelcontextprotocol.kotlin.sdk.types.ListRootsRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ListToolsRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult
+import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
+import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification
+import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotificationParams
+import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.Role
+import io.modelcontextprotocol.kotlin.sdk.types.Root
+import io.modelcontextprotocol.kotlin.sdk.types.RootsListChangedNotification
+import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
+import io.modelcontextprotocol.kotlin.sdk.types.Tool
+import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
@@ -49,6 +51,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.test.fail
 
@@ -393,8 +396,8 @@ class ClientTest {
         }
         serverSession.sendLoggingMessage(
             LoggingMessageNotification(
-                params = LoggingMessageNotification.Params(
-                    level = LoggingLevel.info,
+                params = LoggingMessageNotificationParams(
+                    level = LoggingLevel.Info,
                     data = jsonObject,
                 ),
             ),
@@ -548,7 +551,7 @@ class ClientTest {
         client.setRequestHandler<CreateMessageRequest>(Method.Defined.SamplingCreateMessage) { _, _ ->
             CreateMessageResult(
                 model = "test-model",
-                role = Role.assistant,
+                role = Role.Assistant,
                 content = TextContent(
                     text = "Test response",
                 ),
@@ -619,7 +622,7 @@ class ClientTest {
                     title = "testTool title",
                     description = "testTool description",
                     annotations = null,
-                    inputSchema = Tool.Input(),
+                    inputSchema = ToolSchema(),
                     outputSchema = null,
                 ),
             ),
@@ -643,7 +646,6 @@ class ClientTest {
         assertEquals(request.id, receivedAsResponse.id)
         assertEquals(request.jsonrpc, receivedAsResponse.jsonrpc)
         assertEquals(serverListToolsResult, receivedAsResponse.result)
-        assertEquals(null, receivedAsResponse.error)
     }
 
     @Test
@@ -870,7 +872,7 @@ class ClientTest {
         val exception = assertFailsWith<IllegalStateException> {
             serverSession.createElicitation(
                 message = "Please provide your GitHub username",
-                requestedSchema = CreateElicitationRequest.RequestedSchema(
+                requestedSchema = ElicitRequestParams.RequestedSchema(
                     properties = buildJsonObject {
                         putJsonObject("name") {
                             put("type", "string")
@@ -928,22 +930,22 @@ class ClientTest {
         val serverSession = serverSessionResult.await()
 
         // Set logging level to warning
-        val minLevel = LoggingLevel.warning
+        val minLevel = LoggingLevel.Warning
         val result = client.setLoggingLevel(minLevel)
-        assertEquals(EmptyJsonObject, result._meta)
+        assertNull(result.meta)
 
         // Send messages of different levels
         val testMessages = listOf(
-            LoggingLevel.debug to "Debug - should be filtered",
-            LoggingLevel.info to "Info - should be filtered",
-            LoggingLevel.warning to "Warning - should pass",
-            LoggingLevel.error to "Error - should pass",
+            LoggingLevel.Debug to "Debug - should be filtered",
+            LoggingLevel.Info to "Info - should be filtered",
+            LoggingLevel.Warning to "Warning - should pass",
+            LoggingLevel.Error to "Error - should pass",
         )
 
         testMessages.forEach { (level, message) ->
             serverSession.sendLoggingMessage(
                 LoggingMessageNotification(
-                    params = LoggingMessageNotification.Params(
+                    params = LoggingMessageNotificationParams(
                         level = level,
                         data = buildJsonObject { put("message", message) },
                     ),
@@ -978,7 +980,7 @@ class ClientTest {
         )
 
         val elicitationMessage = "Please provide your GitHub username"
-        val requestedSchema = CreateElicitationRequest.RequestedSchema(
+        val requestedSchema = ElicitRequestParams.RequestedSchema(
             properties = buildJsonObject {
                 putJsonObject("name") {
                     put("type", "string")
@@ -987,16 +989,16 @@ class ClientTest {
             required = listOf("name"),
         )
 
-        val elicitationResultAction = CreateElicitationResult.Action.accept
+        val elicitationResultAction = ElicitResult.Action.Accept
         val elicitationResultContent = buildJsonObject {
             put("name", "octocat")
         }
 
         client.setElicitationHandler { request ->
-            assertEquals(elicitationMessage, request.message)
-            assertEquals(requestedSchema, request.requestedSchema)
+            assertEquals(elicitationMessage, request.params.message)
+            assertEquals(requestedSchema, request.params.requestedSchema)
 
-            CreateElicitationResult(
+            ElicitResult(
                 action = elicitationResultAction,
                 content = elicitationResultContent,
             )

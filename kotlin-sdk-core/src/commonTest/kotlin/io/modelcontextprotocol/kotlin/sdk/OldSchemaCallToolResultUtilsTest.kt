@@ -7,17 +7,17 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class CallToolResultUtilsTest {
+class OldSchemaCallToolResultUtilsTest {
 
     @Test
     fun testOkWithOnlyText() {
         val content = "TextMessage"
-        val result = CallToolResult.Companion.ok(content)
+        val result = CallToolResult.ok(content)
 
         assertEquals(1, result.content.size)
         assertEquals(content, (result.content[0] as TextContent).text)
         assertFalse(result.isError == true)
-        assertEquals(EmptyJsonObject, result._meta)
+        assertEquals(EmptyJsonObject, result.meta)
     }
 
     @Test
@@ -27,23 +27,23 @@ class CallToolResultUtilsTest {
             put("key1", JsonPrimitive("value1"))
             put("key2", JsonPrimitive(42))
         }
-        val result = CallToolResult.Companion.ok(content, meta)
+        val result = CallToolResult.ok(content, meta)
 
         assertEquals(1, result.content.size)
         assertEquals(content, (result.content[0] as TextContent).text)
         assertFalse(result.isError == true)
-        assertEquals(meta, result._meta)
+        assertEquals(meta, result.meta)
     }
 
     @Test
     fun testErrorWithOnlyText() {
         val content = "ErrorMessage"
-        val result = CallToolResult.Companion.error(content)
+        val result = CallToolResult.error(content)
 
         assertEquals(1, result.content.size)
         assertEquals(content, (result.content[0] as TextContent).text)
         assertTrue(result.isError == true)
-        assertEquals(EmptyJsonObject, result._meta)
+        assertEquals(EmptyJsonObject, result.meta)
     }
 
     @Test
@@ -53,11 +53,11 @@ class CallToolResultUtilsTest {
             put("errorCode", JsonPrimitive(404))
             put("errorDetail", JsonPrimitive("资源未找到"))
         }
-        val result = CallToolResult.Companion.error(content, meta)
+        val result = CallToolResult.error(content, meta)
 
         assertEquals(1, result.content.size)
         assertEquals(content, (result.content[0] as TextContent).text)
         assertTrue(result.isError == true)
-        assertEquals(meta, result._meta)
+        assertEquals(meta, result.meta)
     }
 }

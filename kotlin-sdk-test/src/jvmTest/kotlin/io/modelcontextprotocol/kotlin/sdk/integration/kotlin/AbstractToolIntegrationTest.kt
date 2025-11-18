@@ -1,14 +1,14 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.kotlin
 
 import io.kotest.assertions.json.shouldEqualJson
-import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
-import io.modelcontextprotocol.kotlin.sdk.CallToolResult
-import io.modelcontextprotocol.kotlin.sdk.CallToolResultBase
-import io.modelcontextprotocol.kotlin.sdk.ImageContent
-import io.modelcontextprotocol.kotlin.sdk.PromptMessageContent
-import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
-import io.modelcontextprotocol.kotlin.sdk.TextContent
-import io.modelcontextprotocol.kotlin.sdk.Tool
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.types.ContentBlock
+import io.modelcontextprotocol.kotlin.sdk.types.ImageContent
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
+import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -69,7 +69,7 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
         server.addTool(
             name = testToolName,
             description = testToolDescription,
-            inputSchema = Tool.Input(
+            inputSchema = ToolSchema(
                 properties = buildJsonObject {
                     put(
                         "text",
@@ -82,7 +82,7 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
                 required = listOf("text"),
             ),
         ) { request ->
-            val text = (request.arguments["text"] as? JsonPrimitive)?.content ?: "No text provided"
+            val text = (request.params.arguments?.get("text") as? JsonPrimitive)?.content ?: "No text provided"
 
             CallToolResult(
                 content = listOf(TextContent(text = "Echo: $text")),
@@ -97,7 +97,7 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
         server.addTool(
             name = basicToolName,
             description = basicToolDescription,
-            inputSchema = Tool.Input(
+            inputSchema = ToolSchema(
                 properties = buildJsonObject {
                     put(
                         "text",
@@ -110,7 +110,7 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
                 required = listOf("text"),
             ),
         ) { request ->
-            val text = (request.arguments["text"] as? JsonPrimitive)?.content ?: "No text provided"
+            val text = (request.params.arguments?.get("text") as? JsonPrimitive)?.content ?: "No text provided"
 
             CallToolResult(
                 content = listOf(TextContent(text = "Echo: $text")),
@@ -123,7 +123,7 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
         server.addTool(
             name = specialCharsToolName,
             description = specialCharsToolDescription,
-            inputSchema = Tool.Input(
+            inputSchema = ToolSchema(
                 properties = buildJsonObject {
                     put(
                         "special",
@@ -135,7 +135,7 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
                 },
             ),
         ) { request ->
-            val special = (request.arguments["special"] as? JsonPrimitive)?.content ?: specialCharsContent
+            val special = (request.params.arguments?.get("special") as? JsonPrimitive)?.content ?: specialCharsContent
 
             CallToolResult(
                 content = listOf(TextContent(text = "Received special characters: $special")),
@@ -149,7 +149,7 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
         server.addTool(
             name = slowToolName,
             description = slowToolDescription,
-            inputSchema = Tool.Input(
+            inputSchema = ToolSchema(
                 properties = buildJsonObject {
                     put(
                         "delay",
@@ -161,7 +161,7 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
                 },
             ),
         ) { request ->
-            val delay = (request.arguments["delay"] as? JsonPrimitive)?.content?.toIntOrNull() ?: 1000
+            val delay = (request.params.arguments?.get("delay") as? JsonPrimitive)?.content?.toIntOrNull() ?: 1000
 
             // simulate slow operation
             runBlocking {
@@ -179,7 +179,7 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
         server.addTool(
             name = largeToolName,
             description = largeToolDescription,
-            inputSchema = Tool.Input(
+            inputSchema = ToolSchema(
                 properties = buildJsonObject {
                     put(
                         "size",
@@ -191,7 +191,7 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
                 },
             ),
         ) { request ->
-            val size = (request.arguments["size"] as? JsonPrimitive)?.content?.toIntOrNull() ?: 1
+            val size = (request.params.arguments?.get("size") as? JsonPrimitive)?.content?.toIntOrNull() ?: 1
             val content = largeToolContent.take(largeToolContent.length.coerceAtMost(size * 1000))
 
             CallToolResult(
@@ -205,7 +205,7 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
         server.addTool(
             name = complexToolName,
             description = complexToolDescription,
-            inputSchema = Tool.Input(
+            inputSchema = ToolSchema(
                 properties = buildJsonObject {
                     put(
                         "operation",
@@ -270,12 +270,13 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
                 required = listOf("operation", "a", "b"),
             ),
         ) { request ->
-            val operation = (request.arguments["operation"] as? JsonPrimitive)?.content ?: "add"
-            val a = (request.arguments["a"] as? JsonPrimitive)?.content?.toDoubleOrNull() ?: 0.0
-            val b = (request.arguments["b"] as? JsonPrimitive)?.content?.toDoubleOrNull() ?: 0.0
-            val precision = (request.arguments["precision"] as? JsonPrimitive)?.content?.toIntOrNull() ?: 2
-            val showSteps = (request.arguments["showSteps"] as? JsonPrimitive)?.content?.toBoolean() ?: false
-            val tags = (request.arguments["tags"] as? JsonArray)?.mapNotNull {
+            val operation = (request.params.arguments?.get("operation") as? JsonPrimitive)?.content ?: "add"
+            val a = (request.params.arguments?.get("a") as? JsonPrimitive)?.content?.toDoubleOrNull() ?: 0.0
+            val b = (request.params.arguments?.get("b") as? JsonPrimitive)?.content?.toDoubleOrNull() ?: 0.0
+            val precision = (request.params.arguments?.get("precision") as? JsonPrimitive)?.content?.toIntOrNull() ?: 2
+            val showSteps =
+                (request.params.arguments?.get("showSteps") as? JsonPrimitive)?.content?.toBoolean() ?: false
+            val tags = (request.params.arguments?.get("tags") as? JsonArray)?.mapNotNull {
                 (it as? JsonPrimitive)?.content
             } ?: emptyList()
 
@@ -319,7 +320,7 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
         server.addTool(
             name = errorToolName,
             description = errorToolDescription,
-            inputSchema = Tool.Input(
+            inputSchema = ToolSchema(
                 properties = buildJsonObject {
                     put(
                         "errorType",
@@ -348,8 +349,8 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
                 required = listOf("errorType"),
             ),
         ) { request ->
-            val errorType = (request.arguments["errorType"] as? JsonPrimitive)?.content ?: "none"
-            val message = (request.arguments["message"] as? JsonPrimitive)?.content ?: "An error occurred"
+            val errorType = (request.params.arguments?.get("errorType") as? JsonPrimitive)?.content ?: "none"
+            val message = (request.params.arguments?.get("message") as? JsonPrimitive)?.content ?: "An error occurred"
 
             when (errorType) {
                 "exception" -> throw IllegalArgumentException(message)
@@ -377,7 +378,7 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
         server.addTool(
             name = multiContentToolName,
             description = multiContentToolDescription,
-            inputSchema = Tool.Input(
+            inputSchema = ToolSchema(
                 properties = buildJsonObject {
                     put(
                         "text",
@@ -398,10 +399,11 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
                 required = listOf("text"),
             ),
         ) { request ->
-            val text = (request.arguments["text"] as? JsonPrimitive)?.content ?: "Default text"
-            val includeImage = (request.arguments["includeImage"] as? JsonPrimitive)?.content?.toBoolean() ?: true
+            val text = (request.params.arguments?.get("text") as? JsonPrimitive)?.content ?: "Default text"
+            val includeImage =
+                (request.params.arguments?.get("includeImage") as? JsonPrimitive)?.content?.toBoolean() ?: true
 
-            val content = mutableListOf<PromptMessageContent>(
+            val content = mutableListOf<ContentBlock>(
                 TextContent(text = "Text content: $text"),
             )
 
@@ -446,7 +448,7 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
         val testText = "Hello, world!"
         val arguments = mapOf("text" to testText)
 
-        val result = client.callTool(testToolName, arguments) as CallToolResultBase
+        val result = client.callTool(testToolName, arguments)
 
         val actualContent = result.structuredContent.toString()
         val expectedContent = """
@@ -472,7 +474,7 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
             "tags" to listOf("test", "calculator", "integration"),
         )
 
-        val result = client.callTool(complexToolName, arguments) as CallToolResultBase
+        val result = client.callTool(complexToolName, arguments)
 
         val actualContent = result.structuredContent.toString()
         val expectedContent = """
@@ -495,7 +497,7 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
         val successArgs = mapOf("errorType" to "none")
         val successResult = client.callTool(errorToolName, successArgs)
 
-        val actualContent = successResult?.structuredContent.toString()
+        val actualContent = successResult.structuredContent.toString()
         val expectedContent = """
             {
               "error" : false,
@@ -509,7 +511,7 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
             "errorType" to "error",
             "message" to "Custom error message",
         )
-        val errorResult = client.callTool(errorToolName, errorArgs) as CallToolResultBase
+        val errorResult = client.callTool(errorToolName, errorArgs)
 
         val actualError = errorResult.structuredContent.toString()
         val expectedError = """
@@ -526,14 +528,14 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
             "message" to "My exception message",
         )
 
-        val exceptionResult = client.callTool(errorToolName, exceptionArgs) as CallToolResultBase
+        val exceptionResult = client.callTool(errorToolName, exceptionArgs)
 
         assertTrue(exceptionResult.isError ?: false, "isError should be true for exception")
 
         val exceptionContent = exceptionResult.content.firstOrNull { it is TextContent } as? TextContent
         assertNotNull(exceptionContent, "Error content should be present in the result")
 
-        val exceptionText = exceptionContent.text ?: ""
+        val exceptionText = exceptionContent.text
         assertTrue(
             exceptionText.contains("Error executing tool") && exceptionText.contains("My exception message"),
             "Error message should contain the exception details",
@@ -548,7 +550,7 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
             "includeImage" to true,
         )
 
-        val result = client.callTool(multiContentToolName, arguments) as CallToolResultBase
+        val result = client.callTool(multiContentToolName, arguments)
 
         assertEquals(
             2,
@@ -585,7 +587,7 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
             "includeImage" to false,
         )
 
-        val textOnlyResult = client.callTool(multiContentToolName, textOnlyArgs) as CallToolResultBase
+        val textOnlyResult = client.callTool(multiContentToolName, textOnlyArgs)
 
         assertEquals(
             1,
@@ -622,10 +624,12 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
 
         val result = client.callTool(
             CallToolRequest(
-                name = complexToolName,
-                arguments = arguments,
+                CallToolRequestParams(
+                    name = complexToolName,
+                    arguments = arguments,
+                ),
             ),
-        ) as CallToolResultBase
+        )
 
         val actualContent = result.structuredContent.toString()
         val expectedContent = """
@@ -648,7 +652,7 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
         val size = 10
         val arguments = mapOf("size" to size)
 
-        val result = client.callTool(largeToolName, arguments) as CallToolResultBase
+        val result = client.callTool(largeToolName, arguments)
 
         val content = result.content.firstOrNull() as TextContent
         assertNotNull(content, "Tool result content should be TextContent")
@@ -669,7 +673,7 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
         val arguments = mapOf("delay" to delay)
 
         val startTime = System.currentTimeMillis()
-        val result = client.callTool(slowToolName, arguments) as CallToolResultBase
+        val result = client.callTool(slowToolName, arguments)
         val endTime = System.currentTimeMillis()
 
         val content = result.content.firstOrNull() as? TextContent
@@ -692,11 +696,11 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
         runBlocking(Dispatchers.IO) {
             val arguments = mapOf("special" to specialCharsContent)
 
-            val result = client.callTool(specialCharsToolName, arguments) as CallToolResultBase
+            val result = client.callTool(specialCharsToolName, arguments)
 
             val content = result.content.firstOrNull() as? TextContent
             assertNotNull(content, "Tool result content should be TextContent")
-            val text = content.text ?: ""
+            val text = content.text
 
             assertTrue(text.contains(specialCharsContent), "Result should contain the special characters")
 
@@ -715,7 +719,7 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
     @Test
     fun testConcurrentToolCalls() = runTest {
         val concurrentCount = 10
-        val results = mutableListOf<CallToolResultBase?>()
+        val results = mutableListOf<CallToolResult?>()
 
         runBlocking {
             repeat(concurrentCount) { index ->
@@ -776,13 +780,12 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
         }
 
         assertNotNull(result, "Tool call result should not be null")
-        val callResult = result as CallToolResult
-        assertTrue(callResult.isError ?: false, "isError should be true for non-existent tool")
+        assertTrue(result.isError ?: false, "isError should be true for non-existent tool")
 
-        val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
+        val textContent = result.content.firstOrNull { it is TextContent } as? TextContent
         assertNotNull(textContent, "Error content should be present in the result")
 
-        val errorText = textContent.text ?: ""
+        val errorText = textContent.text
         assertTrue(
             errorText.contains("non-existent-tool") && errorText.contains("not found"),
             "Error message should indicate the tool was not found",
