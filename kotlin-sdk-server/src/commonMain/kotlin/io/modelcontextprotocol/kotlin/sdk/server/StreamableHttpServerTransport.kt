@@ -7,7 +7,6 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.contentType
 import io.ktor.server.request.header
-import io.ktor.server.request.host
 import io.ktor.server.request.httpMethod
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.header
@@ -41,6 +40,7 @@ import kotlin.uuid.Uuid
 internal const val MCP_SESSION_ID_HEADER = "mcp-session-id"
 private const val MCP_PROTOCOL_VERSION_HEADER = "mcp-protocol-version"
 private const val MCP_RESUMPTION_TOKEN_HEADER = "Last-Event-ID"
+private const val MAXIMUM_MESSAGE_SIZE = 4 * 1024 * 1024 // 4 MB
 
 /**
  * Interface for resumability support via event storage
@@ -415,6 +415,8 @@ public class StreamableHttpServerTransport(
 
         try {
             call.appendSseHeaders()
+            session.send(data = "") // flush headers immediately
+
             val streamId = store.replayEventsAfter(lastEventId) { eventId, message ->
                 try {
                     session.send(
@@ -423,10 +425,16 @@ public class StreamableHttpServerTransport(
                         data = McpJson.encodeToString(message),
                     )
                 } catch (e: Exception) {
-                    _onError(e)
+                    _onError(IllegalStateException("Failed to replay event: ${e.message}", e))
                 }
             }
+
             streamsMapping[streamId] = SessionContext(session, call)
+
+            session.coroutineContext.job.invokeOnCompletion { throwable ->
+                streamsMapping.remove(streamId)
+                throwable?.let { _onError(it) }
+            }
         } catch (e: Exception) {
             _onError(e)
         }
@@ -494,15 +502,19 @@ public class StreamableHttpServerTransport(
         if (!enableDnsRebindingProtection) return null
 
         allowedHosts?.let { hosts ->
-            val hostHeader = call.request.host().substringBefore(':').lowercase()
-            if (hostHeader !in hosts.map { it.substringBefore(':').lowercase() }) {
+            val hostHeader = call.request.headers[HttpHeaders.Host]?.lowercase()
+            val allowedHostsLowercase = hosts.map { it.lowercase() }
+
+            if (hostHeader == null || hostHeader !in allowedHostsLowercase) {
                 return "Invalid Host header: $hostHeader"
             }
         }
 
         allowedOrigins?.let { origins ->
-            val originHeader = call.request.headers[HttpHeaders.Origin]?.removeSuffix("/")?.lowercase()
-            if (originHeader !in origins.map { it.removeSuffix("/").lowercase() }) {
+            val originHeader = call.request.headers[HttpHeaders.Origin]?.lowercase()
+            val allowedOriginsLowercase = origins.map { it.lowercase() }
+
+            if (originHeader == null || originHeader !in allowedOriginsLowercase) {
                 return "Invalid Origin header: $originHeader"
             }
         }
@@ -511,7 +523,26 @@ public class StreamableHttpServerTransport(
     }
 
     private suspend fun parseBody(call: ApplicationCall): List<JSONRPCMessage>? {
+        val contentLength = call.request.header(HttpHeaders.ContentLength)?.toIntOrNull() ?: 0
+        if (contentLength > MAXIMUM_MESSAGE_SIZE) {
+            call.reject(
+                HttpStatusCode.PayloadTooLarge,
+                RPCError.ErrorCode.INVALID_REQUEST,
+                "Invalid Request: message size exceeds maximum of ${MAXIMUM_MESSAGE_SIZE / (1024 * 1024)} MB",
+            )
+            return null
+        }
+
         val body = call.receiveText()
+        if (body.length > MAXIMUM_MESSAGE_SIZE) {
+            call.reject(
+                HttpStatusCode.PayloadTooLarge,
+                RPCError.ErrorCode.INVALID_REQUEST,
+                "Invalid Request: message size exceeds maximum of ${MAXIMUM_MESSAGE_SIZE / (1024 * 1024)} MB",
+            )
+            return null
+        }
+
         return when (val element = McpJson.parseToJsonElement(body)) {
             is JsonObject -> listOf(McpJson.decodeFromJsonElement(element))
 
@@ -556,10 +587,5 @@ public class StreamableHttpServerTransport(
 
 internal suspend fun ApplicationCall.reject(status: HttpStatusCode, code: Int, message: String) {
     this.response.status(status)
-    this.respond(
-        JSONRPCError(
-            id = null,
-            error = RPCError(code = code, message = message),
-        ),
-    )
+    this.respond(JSONRPCError(id = null, error = RPCError(code = code, message = message)))
 }
