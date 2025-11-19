@@ -27,17 +27,24 @@ import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.getAndUpdate
 import kotlinx.atomicfu.update
 import kotlinx.collections.immutable.PersistentMap
+import kotlinx.collections.immutable.PersistentSet
 import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.yield
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.ClassDiscriminatorMode
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.encodeToJsonElement
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -68,23 +75,55 @@ public val McpJson: Json by lazy {
 
 /**
  * Additional initialization options.
+ *
+ * @property enforceStrictCapabilities whether to restrict emitted requests to only those that the remote side has indicated
+ * that they can handle, through their advertised capabilities.
+ *
+ *  Note that this DOES NOT affect checking of _local_ side capabilities, as it is
+ *  considered a logic error to mis-specify those.
+ *
+ *  Currently, this defaults to false, for backwards compatibility with SDK versions
+ *  that did not advertise capabilities correctly.
+ *  In the future, this will default to true.
+ *
+ *  @property debouncedNotificationMethods an array of notification method names that should be automatically debounced.
+ *  Any notifications with a method in this list will be coalesced if they occur in the same tick of the event loop.
+ *  e.g., ['notifications/tools/list_changed']
  */
 public open class ProtocolOptions(
-    /**
-     * Whether to restrict emitted requests to only those that the remote side has indicated
-     * that they can handle, through their advertised capabilities.
-     *
-     * Note that this DOES NOT affect checking of _local_ side capabilities, as it is
-     * considered a logic error to mis-specify those.
-     *
-     * Currently, this defaults to false, for backwards compatibility with SDK versions
-     * that did not advertise capabilities correctly.
-     * In the future, this will default to true.
-     */
     public var enforceStrictCapabilities: Boolean = false,
+    public val debouncedNotificationMethods: List<Method> = emptyList(),
+) {
+    public operator fun component1(): Boolean = enforceStrictCapabilities
+    public operator fun component2(): List<Method> = debouncedNotificationMethods
 
-    public var timeout: Duration = DEFAULT_REQUEST_TIMEOUT,
-)
+    public open fun copy(
+        enforceStrictCapabilities: Boolean = this.enforceStrictCapabilities,
+        debouncedNotificationMethods: List<Method> = this.debouncedNotificationMethods,
+    ): ProtocolOptions = ProtocolOptions(enforceStrictCapabilities, debouncedNotificationMethods)
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as ProtocolOptions
+
+        return when {
+            enforceStrictCapabilities != other.enforceStrictCapabilities -> false
+            debouncedNotificationMethods != other.debouncedNotificationMethods -> false
+            else -> true
+        }
+    }
+
+    override fun hashCode(): Int {
+        var result = enforceStrictCapabilities.hashCode()
+        result = 31 * result + debouncedNotificationMethods.hashCode()
+        return result
+    }
+
+    override fun toString(): String =
+        "ProtocolOptions(enforceStrictCapabilities=$enforceStrictCapabilities, debouncedNotificationMethods=$debouncedNotificationMethods)"
+}
 
 /**
  * The default request timeout.
@@ -93,22 +132,62 @@ public val DEFAULT_REQUEST_TIMEOUT: Duration = 60.seconds
 
 /**
  * Options that can be given per request.
+ *
+ * @property relatedRequestId if present,
+ * `relatedRequestId` is used to indicate to the transport which incoming request to associate this outgoing message with.
+ * @property resumptionToken the resumption token used to continue long-running requests that were interrupted.
+ * This allows clients to reconnect and continue from where they left off, if supported by the transport.
+ * @property onResumptionToken a callback that is invoked when the resumption token changes, if supported by the transport.
+ * This allows clients to persist the latest token for potential reconnection.
+ * @property onProgress callback for progress notifications.
+ * If set, requests progress notifications from the remote end (if supported).
+ * When progress notifications are received, this callback will be invoked.
+ * @property timeout a timeout for this request.
+ * If exceeded, a McpException with code `RequestTimeout` will be raised from request().
+ * If not specified, `DEFAULT_REQUEST_TIMEOUT` will be used as the timeout.
  */
-public data class RequestOptions(
-    /**
-     * If set, requests progress notifications from the remote end (if supported).
-     * When progress notifications are received, this callback will be invoked.
-     */
-    val onProgress: ProgressCallback? = null,
+public class RequestOptions(
+    relatedRequestId: RequestId? = null,
+    resumptionToken: String? = null,
+    onResumptionToken: ((String) -> Unit)? = null,
+    public val onProgress: ProgressCallback? = null,
+    public val timeout: Duration = DEFAULT_REQUEST_TIMEOUT,
+) : TransportSendOptions(relatedRequestId, resumptionToken, onResumptionToken) {
+    public operator fun component4(): ProgressCallback? = onProgress
+    public operator fun component5(): Duration = timeout
 
-    /**
-     * A timeout for this request. If exceeded, an McpError with code `RequestTimeout`
-     * will be raised from request().
-     *
-     * If not specified, `DEFAULT_REQUEST_TIMEOUT` will be used as the timeout.
-     */
-    val timeout: Duration = DEFAULT_REQUEST_TIMEOUT,
-)
+    public fun copy(
+        relatedRequestId: RequestId? = this.relatedRequestId,
+        resumptionToken: String? = this.resumptionToken,
+        onResumptionToken: ((String) -> Unit)? = this.onResumptionToken,
+        onProgress: ProgressCallback? = this.onProgress,
+        timeout: Duration = this.timeout,
+    ): RequestOptions = RequestOptions(relatedRequestId, resumptionToken, onResumptionToken, onProgress, timeout)
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+        if (!super.equals(other)) return false
+
+        other as RequestOptions
+
+        return when {
+            onProgress != other.onProgress -> false
+            timeout != other.timeout -> false
+            else -> true
+        }
+    }
+
+    override fun hashCode(): Int {
+        var result = super.hashCode()
+        result = 31 * result + (onProgress?.hashCode() ?: 0)
+        result = 31 * result + timeout.hashCode()
+        return result
+    }
+
+    override fun toString(): String =
+        "RequestOptions(relatedRequestId=$relatedRequestId, resumptionToken=$resumptionToken, onResumptionToken=$onResumptionToken, onProgress=$onProgress, timeout=$timeout)"
+}
 
 /**
  * Extra data given to request handlers.
@@ -152,6 +231,11 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         atomic(persistentMapOf())
     public val progressHandlers: Map<ProgressToken, ProgressCallback>
         get() = _progressHandlers.value
+
+    @Suppress("ktlint:standard:backing-property-naming")
+    private val _pendingDebouncedNotifications: AtomicRef<PersistentSet<Method>> = atomic(persistentSetOf())
+    private val notificationScopeJob = SupervisorJob()
+    private val notificationScope = CoroutineScope(notificationScopeJob + Dispatchers.Default)
 
     /**
      * Callback for when the connection is closed for any reason.
@@ -224,6 +308,8 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         val handlersToNotify = _responseHandlers.value.values.toList()
         _responseHandlers.getAndSet(persistentMapOf())
         _progressHandlers.getAndSet(persistentMapOf())
+        _pendingDebouncedNotifications.update { it.clear() }
+        notificationScopeJob.cancelChildren()
         transport = null
         onClose()
 
@@ -403,8 +489,8 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             assertCapabilityForMethod(request.method)
         }
 
-        val message = request.toJSON()
-        val messageId = message.id
+        val jSONRPCRequest = request.toJSON()
+        val messageId = jSONRPCRequest.id
 
         if (options?.onProgress != null) {
             logger.trace { "Registering progress handler for request id: $messageId" }
@@ -440,11 +526,9 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                 ),
             )
 
-            val serialized = JSONRPCNotification(
-                notification.method.value,
-                params = McpJson.encodeToJsonElement(notification),
-            )
-            transport.send(serialized)
+            val jsonRpcNotification = notification.toJSON()
+
+            transport.send(jsonRpcNotification, options)
 
             result.completeExceptionally(reason)
         }
@@ -453,7 +537,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         try {
             withTimeout(timeout) {
                 logger.trace { "Sending request message with id: $messageId" }
-                this@Protocol.transport?.send(message)
+                this@Protocol.transport?.send(jSONRPCRequest, options)
             }
             return result.await()
         } catch (cause: TimeoutCancellationException) {
@@ -473,13 +557,46 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     /**
      * Emits a notification, which is a one-way message that does not expect a response.
      */
-    public suspend fun notification(notification: Notification) {
+    public suspend fun notification(notification: Notification, relatedRequestId: RequestId? = null) {
         logger.trace { "Sending notification: ${notification.method}" }
         val transport = this.transport ?: error("Not connected")
         assertNotificationCapability(notification.method)
+        val sendOptions = relatedRequestId?.let { TransportSendOptions(relatedRequestId = it) }
+        val jsonRpcNotification = notification.toJSON()
 
-        val message = notification.toJSON()
-        transport.send(message)
+        val isDebounced =
+            options?.debouncedNotificationMethods?.contains(notification.method) == true &&
+                notification.params == null &&
+                relatedRequestId == null
+
+        if (isDebounced) {
+            if (notification.method in _pendingDebouncedNotifications.value) {
+                logger.trace { "Skipping debounced notification: ${notification.method}" }
+                return
+            }
+
+            _pendingDebouncedNotifications.update { it.add(notification.method) }
+
+            notificationScope.launch {
+                try {
+                    yield()
+                } finally {
+                    _pendingDebouncedNotifications.update { it.remove(notification.method) }
+                }
+
+                val activeTransport = this@Protocol.transport ?: return@launch
+
+                try {
+                    activeTransport.send(jsonRpcNotification, sendOptions)
+                } catch (cause: Throwable) {
+                    logger.error(cause) { "Error sending debounced notification: ${notification.method}" }
+                    onError(cause)
+                }
+            }
+            return
+        }
+
+        transport.send(jsonRpcNotification, sendOptions)
     }
 
     /**

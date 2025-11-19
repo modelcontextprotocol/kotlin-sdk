@@ -39,6 +39,7 @@ import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.McpJson
+import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -428,7 +429,7 @@ class OldSchemaHttpServerTransport(private val sessionId: String) : AbstractTran
         logger.debug { "Starting HTTP server transport for session: $sessionId" }
     }
 
-    override suspend fun send(message: JSONRPCMessage) {
+    override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
         logger.info { "Sending message: $message" }
 
         if (message is JSONRPCResponse) {
