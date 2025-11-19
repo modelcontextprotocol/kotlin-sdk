@@ -12,16 +12,16 @@ import io.ktor.server.request.httpMethod
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.header
 import io.ktor.server.response.respond
-import io.ktor.server.response.respondBytes
 import io.ktor.server.response.respondNullable
 import io.ktor.server.sse.ServerSSESession
 import io.ktor.util.collections.ConcurrentMap
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
+import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
+import io.modelcontextprotocol.kotlin.sdk.types.DEFAULT_NEGOTIATED_PROTOCOL_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
-import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
@@ -169,7 +169,7 @@ public class StreamableHttpServerTransport(
         }
     }
 
-    override suspend fun send(message: JSONRPCMessage) {
+    override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
         val requestId: RequestId? = when (message) {
             is JSONRPCResponse -> message.id
             is JSONRPCError -> message.id
@@ -182,17 +182,16 @@ public class StreamableHttpServerTransport(
                 "Cannot send a response on a standalone SSE stream unless resuming a previous client request"
             }
             val standaloneStream = streamsMapping[STANDALONE_SSE_STREAM_ID] ?: return
-            emitOnStream(STANDALONE_SSE_STREAM_ID, standaloneStream.session!!, message)
+            emitOnStream(STANDALONE_SSE_STREAM_ID, standaloneStream.session, message)
             return
         }
 
-        val streamId = requestToStreamMapping[requestId]
-            ?: error("No connection established for request ID: $requestId")
+        val streamId = requestToStreamMapping[requestId] ?: error("No connection established for request id $requestId")
         val activeStream = streamsMapping[streamId]
 
         if (!enableJsonResponse) {
             activeStream?.let { stream ->
-                emitOnStream(streamId, stream.session!!, message)
+                emitOnStream(streamId, stream.session, message)
             }
         }
 
@@ -202,8 +201,7 @@ public class StreamableHttpServerTransport(
         requestToResponseMapping[requestId] = message
         val relatedIds = requestToStreamMapping.filterValues { it == streamId }.keys
 
-        val allResponseReady = relatedIds.all { it in requestToResponseMapping }
-        if (!allResponseReady) return
+        if (relatedIds.any { it !in requestToResponseMapping }) return
 
         streamMutex.withLock {
             if (activeStream == null) error("No connection established for request ID: $requestId")
@@ -211,9 +209,7 @@ public class StreamableHttpServerTransport(
             if (enableJsonResponse) {
                 activeStream.call.response.header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                 sessionId?.let { activeStream.call.response.header(MCP_SESSION_ID_HEADER, it) }
-                val responses = relatedIds
-                    .mapNotNull { requestToResponseMapping[it] }
-                    .map { McpJson.encodeToString(it) }
+                val responses = relatedIds.mapNotNull { requestToResponseMapping[it] }
                 val payload = if (responses.size == 1) {
                     responses.first()
                 } else {
@@ -221,7 +217,7 @@ public class StreamableHttpServerTransport(
                 }
                 activeStream.call.respond(payload)
             } else {
-                activeStream.session!!.close()
+                activeStream.session?.close()
             }
 
             // Clean up
@@ -261,7 +257,7 @@ public class StreamableHttpServerTransport(
 
             HttpMethod.Get -> handleGetRequest(session, call)
 
-            HttpMethod.Delete -> handleDeleteRequest(session, call)
+            HttpMethod.Delete -> handleDeleteRequest(call)
 
             else -> call.run {
                 response.header(HttpHeaders.Allow, "GET, POST, DELETE")
@@ -334,7 +330,7 @@ public class StreamableHttpServerTransport(
 
             val hasRequest = messages.any { it is JSONRPCRequest }
             if (!hasRequest) {
-                call.respondBytes(status = HttpStatusCode.Accepted, bytes = ByteArray(0))
+                call.respondNullable(status = HttpStatusCode.Accepted, message = null)
                 messages.forEach { message -> _onMessage(message) }
                 return
             }
@@ -342,7 +338,7 @@ public class StreamableHttpServerTransport(
             val streamId = Uuid.random().toString()
             if (!enableJsonResponse) {
                 call.appendSseHeaders()
-                session!!.send(data = "") // flush headers immediately
+                session?.send(data = "") // flush headers immediately
             }
 
             streamMutex.withLock {
@@ -407,15 +403,7 @@ public class StreamableHttpServerTransport(
         session.coroutineContext.job.invokeOnCompletion { streamsMapping.remove(STANDALONE_SSE_STREAM_ID) }
     }
 
-    public suspend fun handleDeleteRequest(session: ServerSSESession?, call: ApplicationCall) {
-        if (enableJsonResponse) {
-            call.reject(
-                HttpStatusCode.MethodNotAllowed,
-                RPCError.ErrorCode.CONNECTION_CLOSED,
-                "Method not allowed.",
-            )
-        }
-
+    public suspend fun handleDeleteRequest(call: ApplicationCall) {
         if (!validateSession(call) || !validateProtocolVersion(call)) return
         sessionId?.let { onSessionClosed?.invoke(it) }
         close()
@@ -482,7 +470,7 @@ public class StreamableHttpServerTransport(
     }
 
     private suspend fun validateProtocolVersion(call: ApplicationCall): Boolean {
-        val version = call.request.header(MCP_PROTOCOL_VERSION_HEADER) ?: LATEST_PROTOCOL_VERSION
+        val version = call.request.header(MCP_PROTOCOL_VERSION_HEADER) ?: DEFAULT_NEGOTIATED_PROTOCOL_VERSION
 
         return when (version) {
             !in SUPPORTED_PROTOCOL_VERSIONS -> {
@@ -548,10 +536,10 @@ public class StreamableHttpServerTransport(
         return pattern.containsMatchIn(this)
     }
 
-    private suspend fun emitOnStream(streamId: String, session: ServerSSESession, message: JSONRPCMessage) {
+    private suspend fun emitOnStream(streamId: String, session: ServerSSESession?, message: JSONRPCMessage) {
         val eventId = eventStore?.storeEvent(streamId, message)
         try {
-            session.send(event = "message", id = eventId, data = McpJson.encodeToString(message))
+            session?.send(event = "message", id = eventId, data = McpJson.encodeToString(message))
         } catch (_: Exception) {
             streamsMapping.remove(streamId)
         }
