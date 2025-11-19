@@ -995,6 +995,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ClientResult$Default
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/CommonKt {
+	public static final field DEFAULT_NEGOTIATED_PROTOCOL_VERSION Ljava/lang/String;
 	public static final field LATEST_PROTOCOL_VERSION Ljava/lang/String;
 	public static final fun ProgressToken (J)Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;
 	public static final fun ProgressToken (Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;
