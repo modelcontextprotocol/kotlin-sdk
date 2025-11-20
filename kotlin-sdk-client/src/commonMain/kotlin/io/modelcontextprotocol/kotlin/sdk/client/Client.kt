@@ -34,6 +34,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ListRootsResult
 import io.modelcontextprotocol.kotlin.sdk.types.ListToolsRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
+import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
@@ -54,6 +55,7 @@ import kotlinx.atomicfu.update
 import kotlinx.collections.immutable.minus
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentSet
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonObject
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -196,11 +198,15 @@ public open class Client(private val clientInfo: Implementation, options: Client
             logger.error(error) { "Failed to initialize client: ${error.message}" }
             close()
 
-            if (error !is CancellationException) {
-                throw IllegalStateException("Error connecting to transport: ${error.message}", error)
-            }
+            when (error) {
+                is CancellationException,
+                is McpException,
+                is StreamableHttpError,
+                is SerializationException,
+                -> throw error
 
-            throw error
+                else -> throw IllegalStateException("Error connecting to transport: ${error.message}", error)
+            }
         }
     }
 
