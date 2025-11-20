@@ -90,7 +90,7 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
         }
     }
 
-    override suspend fun send(message: JSONRPCMessage) {
+    override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
         logger.debug { "Sending message" }
         if (!initialized.load()) {
             error("Not connected")

@@ -166,7 +166,7 @@ private class RecordingTransport : Transport {
 
     override suspend fun start() {}
 
-    override suspend fun send(message: JSONRPCMessage) {
+    override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
         sentMessages.send(message)
     }
 

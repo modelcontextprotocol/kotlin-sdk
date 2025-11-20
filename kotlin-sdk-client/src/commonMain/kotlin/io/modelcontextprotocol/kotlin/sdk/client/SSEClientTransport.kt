@@ -15,6 +15,7 @@ import io.ktor.http.append
 import io.ktor.http.isSuccess
 import io.ktor.http.protocolWithAuthority
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
+import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import kotlinx.coroutines.CancellationException
@@ -98,7 +99,7 @@ public class SseClientTransport(
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override suspend fun send(message: JSONRPCMessage) {
+    override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
         check(initialized.load()) { "SseClientTransport is not initialized!" }
         check(job?.isActive == true) { "SseClientTransport is closed!" }
         check(endpoint.isCompleted) { "Not connected!" }

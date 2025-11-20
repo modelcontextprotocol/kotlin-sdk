@@ -93,22 +93,58 @@ public val DEFAULT_REQUEST_TIMEOUT: Duration = 60.seconds
 
 /**
  * Options that can be given per request.
+ *
+ * @property relatedRequestId if present,
+ * `relatedRequestId` is used to indicate to the transport which incoming request to associate this outgoing message with.
+ * @property resumptionToken the resumption token used to continue long-running requests that were interrupted.
+ * This allows clients to reconnect and continue from where they left off, if supported by the transport.
+ * @property onResumptionToken a callback that is invoked when the resumption token changes, if supported by the transport.
+ * This allows clients to persist the latest token for potential reconnection.
+ * @property onProgress callback for progress notifications.
+ * If set, requests progress notifications from the remote end (if supported).
+ * When progress notifications are received, this callback will be invoked.
+ * @property timeout a timeout for this request.
+ * If exceeded, a McpException with code `RequestTimeout` will be raised from request().
+ * If not specified, `DEFAULT_REQUEST_TIMEOUT` will be used as the timeout.
  */
-public data class RequestOptions(
-    /**
-     * If set, requests progress notifications from the remote end (if supported).
-     * When progress notifications are received, this callback will be invoked.
-     */
-    val onProgress: ProgressCallback? = null,
+public class RequestOptions(
+    relatedRequestId: RequestId? = null,
+    resumptionToken: String? = null,
+    onResumptionToken: ((String) -> Unit)? = null,
+    public val onProgress: ProgressCallback? = null,
+    public val timeout: Duration = DEFAULT_REQUEST_TIMEOUT,
+) : TransportSendOptions(relatedRequestId, resumptionToken, onResumptionToken) {
+    public operator fun component4(): ProgressCallback? = onProgress
+    public operator fun component5(): Duration = timeout
 
-    /**
-     * A timeout for this request. If exceeded, an McpError with code `RequestTimeout`
-     * will be raised from request().
-     *
-     * If not specified, `DEFAULT_REQUEST_TIMEOUT` will be used as the timeout.
-     */
-    val timeout: Duration = DEFAULT_REQUEST_TIMEOUT,
-)
+    public fun copy(
+        relatedRequestId: RequestId? = this.relatedRequestId,
+        resumptionToken: String? = this.resumptionToken,
+        onResumptionToken: ((String) -> Unit)? = this.onResumptionToken,
+        onProgress: ProgressCallback? = this.onProgress,
+        timeout: Duration = this.timeout,
+    ): RequestOptions = RequestOptions(relatedRequestId, resumptionToken, onResumptionToken, onProgress, timeout)
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+        if (!super.equals(other)) return false
+
+        other as RequestOptions
+
+        return onProgress == other.onProgress && timeout == other.timeout
+    }
+
+    override fun hashCode(): Int {
+        var result = super.hashCode()
+        result = 31 * result + (onProgress?.hashCode() ?: 0)
+        result = 31 * result + timeout.hashCode()
+        return result
+    }
+
+    override fun toString(): String =
+        "RequestOptions(relatedRequestId=$relatedRequestId, resumptionToken=$resumptionToken, onResumptionToken=$onResumptionToken, onProgress=$onProgress, timeout=$timeout)"
+}
 
 /**
  * Extra data given to request handlers.
@@ -456,11 +492,9 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                 ),
             )
 
-            val serialized = JSONRPCNotification(
-                notification.method.value,
-                params = McpJson.encodeToJsonElement(notification),
-            )
-            transport.send(serialized)
+            val jsonRpcNotification = notification.toJSON()
+
+            transport.send(jsonRpcNotification, options)
 
             result.completeExceptionally(reason)
         }
@@ -469,7 +503,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         try {
             withTimeout(timeout) {
                 logger.trace { "Sending request message with id: $jsonRpcRequestId" }
-                this@Protocol.transport?.send(jsonRpcRequest)
+                this@Protocol.transport?.send(jsonRpcRequest, options)
             }
             return result.await()
         } catch (cause: TimeoutCancellationException) {
@@ -489,13 +523,14 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     /**
      * Emits a notification, which is a one-way message that does not expect a response.
      */
-    public suspend fun notification(notification: Notification) {
+    public suspend fun notification(notification: Notification, relatedRequestId: RequestId? = null) {
         logger.trace { "Sending notification: ${notification.method}" }
         val transport = this.transport ?: error("Not connected")
         assertNotificationCapability(notification.method)
+        val sendOptions = relatedRequestId?.let { TransportSendOptions(relatedRequestId = it) }
+        val jsonRpcNotification = notification.toJSON()
 
-        val message = notification.toJSON()
-        transport.send(message)
+        transport.send(jsonRpcNotification, sendOptions)
     }
 
     /**

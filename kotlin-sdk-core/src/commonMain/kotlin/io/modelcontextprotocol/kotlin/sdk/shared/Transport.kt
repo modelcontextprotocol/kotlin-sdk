@@ -18,8 +18,12 @@ public interface Transport {
 
     /**
      * Sends a JSON-RPC message (request or response).
+     *
+     * @property message The JSON-RPC message to send, either a request or a response.
+     * @property options Optional transport-specific options that control sending behavior.
+     * Different transport implementations may support different options.
      */
-    public suspend fun send(message: JSONRPCMessage)
+    public suspend fun send(message: JSONRPCMessage, options: TransportSendOptions? = null)
 
     /**
      * Closes the connection.

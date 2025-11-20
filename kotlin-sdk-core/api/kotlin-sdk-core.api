@@ -433,7 +433,8 @@ public abstract class io/modelcontextprotocol/kotlin/sdk/shared/Protocol {
 	public final fun getRequestHandlers ()Ljava/util/Map;
 	public final fun getResponseHandlers ()Ljava/util/Map;
 	public final fun getTransport ()Lio/modelcontextprotocol/kotlin/sdk/shared/Transport;
-	public final fun notification (Lio/modelcontextprotocol/kotlin/sdk/types/Notification;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun notification (Lio/modelcontextprotocol/kotlin/sdk/types/Notification;Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun notification$default (Lio/modelcontextprotocol/kotlin/sdk/shared/Protocol;Lio/modelcontextprotocol/kotlin/sdk/types/Notification;Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public fun onClose ()V
 	public fun onError (Ljava/lang/Throwable;)V
 	public final fun removeNotificationHandler (Lio/modelcontextprotocol/kotlin/sdk/types/Method;)V
@@ -476,13 +477,13 @@ public final class io/modelcontextprotocol/kotlin/sdk/shared/RequestHandlerExtra
 	public fun <init> ()V
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/shared/RequestOptions {
-	public synthetic fun <init> (Lkotlin/jvm/functions/Function1;JILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public synthetic fun <init> (Lkotlin/jvm/functions/Function1;JLkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lkotlin/jvm/functions/Function1;
-	public final fun component2-UwyO8pc ()J
-	public final fun copy-HG0u8IE (Lkotlin/jvm/functions/Function1;J)Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;
-	public static synthetic fun copy-HG0u8IE$default (Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/jvm/functions/Function1;JILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;
+public final class io/modelcontextprotocol/kotlin/sdk/shared/RequestOptions : io/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions {
+	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;JILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;JLkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component4 ()Lkotlin/jvm/functions/Function1;
+	public final fun component5-UwyO8pc ()J
+	public final fun copy-9VgGkz4 (Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;J)Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;
+	public static synthetic fun copy-9VgGkz4$default (Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;JILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getOnProgress ()Lkotlin/jvm/functions/Function1;
 	public final fun getTimeout-UwyO8pc ()J
@@ -495,8 +496,30 @@ public abstract interface class io/modelcontextprotocol/kotlin/sdk/shared/Transp
 	public abstract fun onClose (Lkotlin/jvm/functions/Function0;)V
 	public abstract fun onError (Lkotlin/jvm/functions/Function1;)V
 	public abstract fun onMessage (Lkotlin/jvm/functions/Function2;)V
-	public abstract fun send (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun send (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun send$default (Lio/modelcontextprotocol/kotlin/sdk/shared/Transport;Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public abstract fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/shared/Transport$DefaultImpls {
+	public static synthetic fun send$default (Lio/modelcontextprotocol/kotlin/sdk/shared/Transport;Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public class io/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions {
+	public fun <init> ()V
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
+	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Lkotlin/jvm/functions/Function1;
+	public fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getOnResumptionToken ()Lkotlin/jvm/functions/Function1;
+	public final fun getRelatedRequestId ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;
+	public final fun getResumptionToken ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public abstract class io/modelcontextprotocol/kotlin/sdk/shared/WebSocketMcpTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport {
@@ -504,7 +527,7 @@ public abstract class io/modelcontextprotocol/kotlin/sdk/shared/WebSocketMcpTran
 	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	protected abstract fun getSession ()Lio/ktor/websocket/WebSocketSession;
 	protected abstract fun initializeSession (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun send (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun send (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 

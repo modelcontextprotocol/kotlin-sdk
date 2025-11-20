@@ -136,14 +136,14 @@ public final class io/modelcontextprotocol/kotlin/sdk/server/SseServerTransport 
 	public final fun getSessionId ()Ljava/lang/String;
 	public final fun handleMessage (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun handlePostMessage (Lio/ktor/server/application/ApplicationCall;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun send (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun send (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/server/StdioServerTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport {
 	public fun <init> (Lkotlinx/io/Source;Lkotlinx/io/Sink;)V
 	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun send (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun send (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 

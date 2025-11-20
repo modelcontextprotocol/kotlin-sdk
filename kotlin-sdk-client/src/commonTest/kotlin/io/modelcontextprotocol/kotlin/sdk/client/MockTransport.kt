@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
+import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeResult
@@ -25,7 +26,7 @@ class MockTransport : Transport {
 
     override suspend fun start() = Unit
 
-    override suspend fun send(message: JSONRPCMessage) {
+    override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
         mutex.withLock {
             _sentMessages += message
         }
