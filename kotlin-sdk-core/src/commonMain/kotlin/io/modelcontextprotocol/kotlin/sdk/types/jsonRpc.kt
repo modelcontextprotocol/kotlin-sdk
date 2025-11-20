@@ -8,14 +8,13 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
-import kotlin.concurrent.atomics.AtomicLong
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
-import kotlin.concurrent.atomics.incrementAndFetch
 import kotlin.jvm.JvmInline
+import kotlin.jvm.JvmOverloads
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 public const val JSONRPC_VERSION: String = "2.0"
-
-private val REQUEST_MESSAGE_ID: AtomicLong = AtomicLong(0L)
 
 public fun RequestId(value: String): RequestId = RequestId.StringId(value)
 
@@ -94,23 +93,50 @@ public sealed interface JSONRPCMessage {
  * A request that expects a response.
  *
  * Requests are identified by a unique [id] and specify a [method] to invoke.
- * The server or client (depending on direction) must respond with either a
+ * The server or client (depending on a direction) must respond with either a
  * [JSONRPCResponse] or [JSONRPCError] that has the same [id].
  *
  * @property jsonrpc Always "2.0" to indicate JSON-RPC 2.0 protocol.
  * @property id A unique identifier for this request. The response will include the same ID.
- * Can be a string or number.
+ * Can be a string or number. UUID string is used by default.
  * @property method The name of the method to invoke (e.g., "tools/list", "resources/read").
  * @property params Optional parameters for the method. Structure depends on the specific method.
  */
 @Serializable
-public data class JSONRPCRequest(
-    val id: RequestId = RequestId(REQUEST_MESSAGE_ID.incrementAndFetch()),
+@OptIn(ExperimentalUuidApi::class)
+public data class JSONRPCRequest @JvmOverloads public constructor(
+    val id: RequestId = RequestId(Uuid.random().toHexString()),
     val method: String,
     val params: JsonElement? = null,
 ) : JSONRPCMessage {
     @EncodeDefault
     override val jsonrpc: String = JSONRPC_VERSION
+
+    /**
+     * Secondary constructor for creating a `JSONRPCRequest` using a string-based ID.
+     *
+     * @param id The string ID for the request.
+     * @param method The method name for the request.
+     * @param params The parameters for the request as a JSON element. Defaults to `null`.
+     */
+    public constructor(
+        id: String,
+        method: String,
+        params: JsonElement? = null,
+    ) : this(id = RequestId.StringId(id), method = method, params = params)
+
+    /**
+     * Constructs a JSON-RPC request using a numerical ID, method name, and optional parameters.
+     *
+     * @param id The numerical ID for the request.
+     * @param method The method name for the request.
+     * @param params The parameters for the request as a JSON element. Defaults to `null`.
+     */
+    public constructor(
+        id: Long,
+        method: String,
+        params: JsonElement? = null,
+    ) : this(id = RequestId.NumberId(id), method = method, params = params)
 }
 
 // ============================================================================
@@ -207,6 +233,7 @@ public data class RPCError(val code: Int, val message: String, val data: JsonEle
         public const val REQUEST_TIMEOUT: Int = -32001
 
         // Standard JSON-RPC 2.0 error codes
+
         /** Invalid JSON was received */
         public const val PARSE_ERROR: Int = -32700
 

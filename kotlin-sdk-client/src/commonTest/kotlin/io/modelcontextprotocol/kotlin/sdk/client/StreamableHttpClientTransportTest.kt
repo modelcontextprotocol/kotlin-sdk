@@ -17,7 +17,6 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
-import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
@@ -50,7 +49,7 @@ class StreamableHttpClientTransportTest {
     @Test
     fun testSendJsonRpcMessage() = runTest {
         val message = JSONRPCRequest(
-            id = RequestId.StringId("test-id"),
+            id = "test-id",
             method = "test",
             params = buildJsonObject { },
         )
@@ -78,7 +77,7 @@ class StreamableHttpClientTransportTest {
     @Test
     fun testStoreSessionId() = runTest {
         val initMessage = JSONRPCRequest(
-            id = RequestId.StringId("test-id"),
+            id = "test-id",
             method = "initialize",
             params = buildJsonObject {
                 put(
