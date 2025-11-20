@@ -19,7 +19,7 @@ public interface Transport {
     /**
      * Sends a JSON-RPC message (request or response).
      */
-    public suspend fun send(message: JSONRPCMessage)
+    public suspend fun send(message: JSONRPCMessage, options: TransportSendOptions? = null)
 
     /**
      * Closes the connection.
