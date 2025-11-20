@@ -1,5 +1,8 @@
 package io.modelcontextprotocol.kotlin.sdk.shared
 
+import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.types.CustomRequest
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
@@ -23,7 +26,6 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.BeforeTest
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
 class ProtocolTest {
     private lateinit var protocol: TestProtocol
@@ -56,13 +58,13 @@ class ProtocolTest {
         }
 
         val sent = transport.awaitRequest()
-        val params = requireNotNull(sent.params).jsonObject
-        val meta = params["_meta"]!!.jsonObject
+        val params = sent.params?.jsonObject.shouldNotBeNull()
+        val meta = params["_meta"]?.jsonObject.shouldNotBeNull()
 
-        assertEquals("test://resource", params["uri"]!!.jsonPrimitive.content)
-        assertEquals("customValue", meta["customField"]!!.jsonPrimitive.content)
-        assertEquals(123, meta["anotherField"]!!.jsonPrimitive.int)
-        assertEquals(McpJson.encodeToJsonElement(sent.id), meta["progressToken"])
+        params["uri"]?.jsonPrimitive?.content shouldBe "test://resource"
+        meta["customField"]?.jsonPrimitive?.content shouldBe "customValue"
+        meta["anotherField"]?.jsonPrimitive?.int shouldBe 123
+        meta["progressToken"] shouldBe McpJson.encodeToJsonElement(sent.id)
 
         transport.deliver(JSONRPCResponse(sent.id, EmptyResult()))
         inFlight.await()
@@ -86,11 +88,11 @@ class ProtocolTest {
         }
 
         val sent = transport.awaitRequest()
-        val params = requireNotNull(sent.params).jsonObject
-        val meta = params["_meta"]!!.jsonObject
+        val params = sent.params?.jsonObject.shouldNotBeNull()
+        val meta = params["_meta"]?.jsonObject.shouldNotBeNull()
 
-        assertEquals("test://resource", params["uri"]!!.jsonPrimitive.content)
-        assertEquals(McpJson.encodeToJsonElement(sent.id), meta["progressToken"])
+        params["uri"]?.jsonPrimitive?.content shouldBe "test://resource"
+        meta["progressToken"] shouldBe McpJson.encodeToJsonElement(sent.id)
 
         transport.deliver(JSONRPCResponse(sent.id, EmptyResult()))
         inFlight.await()
@@ -114,11 +116,11 @@ class ProtocolTest {
         }
 
         val sent = transport.awaitRequest()
-        val params = requireNotNull(sent.params).jsonObject
-        val meta = params["_meta"]!!.jsonObject
+        val params = sent.params?.jsonObject.shouldNotBeNull()
+        val meta = params["_meta"]?.jsonObject.shouldNotBeNull()
 
-        assertEquals(originalMeta, meta)
-        assertEquals("test://resource", params["uri"]!!.jsonPrimitive.content)
+        meta shouldBe originalMeta
+        params["uri"]?.jsonPrimitive?.content shouldBe "test://resource"
 
         transport.deliver(JSONRPCResponse(sent.id, EmptyResult()))
         inFlight.await()
@@ -140,11 +142,11 @@ class ProtocolTest {
         }
 
         val sent = transport.awaitRequest()
-        val params = requireNotNull(sent.params).jsonObject
-        val meta = params["_meta"]!!.jsonObject
+        val params = sent.params?.jsonObject.shouldNotBeNull()
+        val meta = params["_meta"]?.jsonObject.shouldNotBeNull()
 
-        assertEquals(setOf("_meta"), params.keys)
-        assertEquals(McpJson.encodeToJsonElement(sent.id), meta["progressToken"])
+        params.keys shouldContainExactly setOf("_meta")
+        meta["progressToken"] shouldBe McpJson.encodeToJsonElement(sent.id)
 
         transport.deliver(JSONRPCResponse(sent.id, EmptyResult()))
         inFlight.await()
