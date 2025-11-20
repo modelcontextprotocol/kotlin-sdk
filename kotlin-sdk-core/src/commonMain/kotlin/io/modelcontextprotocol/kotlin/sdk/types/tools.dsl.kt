@@ -20,14 +20,14 @@ import kotlin.contracts.contract
  *
  * Example without arguments:
  * ```kotlin
- * val request = callToolRequest {
+ * val request = buildCallToolRequest {
  *     name = "getCurrentTime"
  * }
  * ```
  *
  * Example with arguments:
  * ```kotlin
- * val request = callToolRequest {
+ * val request = buildCallToolRequest {
  *     name = "searchDatabase"
  *     arguments {
  *         put("query", "users")
@@ -43,7 +43,7 @@ import kotlin.contracts.contract
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun callToolRequest(block: CallToolRequestBuilder.() -> Unit): CallToolRequest {
+internal inline fun buildCallToolRequest(block: CallToolRequestBuilder.() -> Unit): CallToolRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return CallToolRequestBuilder().apply(block).build()
 }
@@ -60,7 +60,7 @@ public inline fun callToolRequest(block: CallToolRequestBuilder.() -> Unit): Cal
  * - [arguments] - Arguments to pass to the tool
  * - [meta] - Metadata for the request
  *
- * @see callToolRequest
+ * @see buildCallToolRequest
  * @see CallToolRequest
  */
 @McpDsl
@@ -126,12 +126,12 @@ public class CallToolRequestBuilder @PublishedApi internal constructor() : Reque
  *
  * Example without pagination:
  * ```kotlin
- * val request = listToolsRequest { }
+ * val request = buildListToolsRequest { }
  * ```
  *
  * Example with pagination:
  * ```kotlin
- * val request = listToolsRequest {
+ * val request = buildListToolsRequest {
  *     cursor = "eyJwYWdlIjogMn0="
  * }
  * ```
@@ -143,7 +143,7 @@ public class CallToolRequestBuilder @PublishedApi internal constructor() : Reque
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun listToolsRequest(block: ListToolsRequestBuilder.() -> Unit): ListToolsRequest {
+internal inline fun buildListToolsRequest(block: ListToolsRequestBuilder.() -> Unit): ListToolsRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return ListToolsRequestBuilder().apply(block).build()
 }
@@ -158,7 +158,7 @@ public inline fun listToolsRequest(block: ListToolsRequestBuilder.() -> Unit): L
  * - [cursor] - Pagination cursor (inherited from [PaginatedRequestBuilder])
  * - [meta] - Metadata for the request (inherited from [RequestBuilder])
  *
- * @see listToolsRequest
+ * @see buildListToolsRequest
  * @see ListToolsRequest
  * @see PaginatedRequestBuilder
  */

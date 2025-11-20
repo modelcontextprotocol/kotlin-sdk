@@ -18,7 +18,7 @@ import kotlin.contracts.contract
  *
  * Example:
  * ```kotlin
- * val request = initializeRequest {
+ * val request = buildInitializeRequest {
  *     protocolVersion = "2024-11-05"
  *     capabilities {
  *         sampling(ClientCapabilities.sampling)
@@ -30,7 +30,7 @@ import kotlin.contracts.contract
  *
  * Example with full client info:
  * ```kotlin
- * val request = initializeRequest {
+ * val request = buildInitializeRequest {
  *     protocolVersion = "2024-11-05"
  *     capabilities {
  *         sampling(ClientCapabilities.sampling)
@@ -54,7 +54,7 @@ import kotlin.contracts.contract
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun initializeRequest(block: InitializeRequestBuilder.() -> Unit): InitializeRequest {
+internal inline fun buildInitializeRequest(block: InitializeRequestBuilder.() -> Unit): InitializeRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return InitializeRequestBuilder().apply(block).build()
 }
@@ -73,7 +73,7 @@ public inline fun initializeRequest(block: InitializeRequestBuilder.() -> Unit):
  * ## Optional
  * - [meta] - Metadata for the request
  *
- * @see initializeRequest
+ * @see buildInitializeRequest
  * @see InitializeRequest
  */
 @McpDsl

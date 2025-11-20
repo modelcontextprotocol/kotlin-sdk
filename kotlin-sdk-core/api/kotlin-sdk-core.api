@@ -1171,10 +1171,6 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/CompleteResult$Compl
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/types/Completion_dslKt {
-	public static final fun completeRequest (Lkotlin/jvm/functions/Function1;)Lio/modelcontextprotocol/kotlin/sdk/types/CompleteRequest;
-}
-
 public abstract interface class io/modelcontextprotocol/kotlin/sdk/types/ContentBlock : io/modelcontextprotocol/kotlin/sdk/types/WithMeta {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/ContentBlock$Companion;
 	public abstract fun getType ()Lio/modelcontextprotocol/kotlin/sdk/types/ContentTypes;
@@ -1562,10 +1558,6 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ElicitResult$Action$
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/ElicitResult$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
-}
-
-public final class io/modelcontextprotocol/kotlin/sdk/types/Elicitation_dslKt {
-	public static final fun elicitationRequest (Lkotlin/jvm/functions/Function1;)Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequest;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/EmbeddedResource : io/modelcontextprotocol/kotlin/sdk/types/ContentBlock {
@@ -1998,10 +1990,6 @@ public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/Initialize
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/InitializeResult$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
-}
-
-public final class io/modelcontextprotocol/kotlin/sdk/types/Initialize_dslKt {
-	public static final fun initializeRequest (Lkotlin/jvm/functions/Function1;)Lio/modelcontextprotocol/kotlin/sdk/types/InitializeRequest;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/InitializedNotification : io/modelcontextprotocol/kotlin/sdk/types/ClientNotification {
@@ -2633,10 +2621,6 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/LoggingMessageNotifi
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/types/Logging_dslKt {
-	public static final fun setLevelRequest (Lkotlin/jvm/functions/Function1;)Lio/modelcontextprotocol/kotlin/sdk/types/SetLevelRequest;
-}
-
 public abstract interface annotation class io/modelcontextprotocol/kotlin/sdk/types/McpDsl : java/lang/annotation/Annotation {
 }
 
@@ -2933,10 +2917,6 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/PingRequestBuilder :
 	public synthetic fun build$kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/types/PingRequest_dslKt {
-	public static final fun pingRequest (Lkotlin/jvm/functions/Function1;)Lio/modelcontextprotocol/kotlin/sdk/types/PingRequest;
-}
-
 public final class io/modelcontextprotocol/kotlin/sdk/types/Progress {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/Progress$Companion;
 	public fun <init> (DLjava/lang/Double;Ljava/lang/String;)V
@@ -3189,11 +3169,6 @@ public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/PromptRefe
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/PromptReference$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
-}
-
-public final class io/modelcontextprotocol/kotlin/sdk/types/Prompts_dslKt {
-	public static final fun getPromptRequest (Lkotlin/jvm/functions/Function1;)Lio/modelcontextprotocol/kotlin/sdk/types/GetPromptRequest;
-	public static final fun listPromptsRequest (Lkotlin/jvm/functions/Function1;)Lio/modelcontextprotocol/kotlin/sdk/types/ListPromptsRequest;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/RPCError {
@@ -3794,14 +3769,6 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ResourceUpdatedNotif
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/types/Resources_dslKt {
-	public static final fun listResourceTemplatesRequest (Lkotlin/jvm/functions/Function1;)Lio/modelcontextprotocol/kotlin/sdk/types/ListResourceTemplatesRequest;
-	public static final fun listResourcesRequest (Lkotlin/jvm/functions/Function1;)Lio/modelcontextprotocol/kotlin/sdk/types/ListResourcesRequest;
-	public static final fun readResourceRequest (Lkotlin/jvm/functions/Function1;)Lio/modelcontextprotocol/kotlin/sdk/types/ReadResourceRequest;
-	public static final fun subscribeRequest (Lkotlin/jvm/functions/Function1;)Lio/modelcontextprotocol/kotlin/sdk/types/SubscribeRequest;
-	public static final fun unsubscribeRequest (Lkotlin/jvm/functions/Function1;)Lio/modelcontextprotocol/kotlin/sdk/types/UnsubscribeRequest;
-}
-
 public final class io/modelcontextprotocol/kotlin/sdk/types/Role : java/lang/Enum {
 	public static final field Assistant Lio/modelcontextprotocol/kotlin/sdk/types/Role;
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/Role$Companion;
@@ -3879,10 +3846,6 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/RootsListChangedNoti
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/types/Roots_dslKt {
-	public static final fun listRootsRequest (Lkotlin/jvm/functions/Function1;)Lio/modelcontextprotocol/kotlin/sdk/types/ListRootsRequest;
-}
-
 public final class io/modelcontextprotocol/kotlin/sdk/types/SamplingMessage {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/SamplingMessage$Companion;
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/Role;Lio/modelcontextprotocol/kotlin/sdk/types/MediaContent;)V
@@ -3924,7 +3887,6 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/Sampling_dslKt {
 	public static final fun assistantAudio (Lio/modelcontextprotocol/kotlin/sdk/types/SamplingMessageBuilder;Lkotlin/jvm/functions/Function1;)V
 	public static final fun assistantImage (Lio/modelcontextprotocol/kotlin/sdk/types/SamplingMessageBuilder;Lkotlin/jvm/functions/Function1;)V
 	public static final fun assistantText (Lio/modelcontextprotocol/kotlin/sdk/types/SamplingMessageBuilder;Lkotlin/jvm/functions/Function1;)V
-	public static final fun createMessageRequest (Lkotlin/jvm/functions/Function1;)Lio/modelcontextprotocol/kotlin/sdk/types/CreateMessageRequest;
 	public static final fun user (Lio/modelcontextprotocol/kotlin/sdk/types/SamplingMessageBuilder;Lkotlin/jvm/functions/Function0;)V
 	public static final fun userAudio (Lio/modelcontextprotocol/kotlin/sdk/types/SamplingMessageBuilder;Lkotlin/jvm/functions/Function1;)V
 	public static final fun userImage (Lio/modelcontextprotocol/kotlin/sdk/types/SamplingMessageBuilder;Lkotlin/jvm/functions/Function1;)V
@@ -4486,11 +4448,6 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ToolsKt {
 	public static synthetic fun error$default (Lio/modelcontextprotocol/kotlin/sdk/types/CallToolResult$Companion;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/CallToolResult;
 	public static final fun success (Lio/modelcontextprotocol/kotlin/sdk/types/CallToolResult$Companion;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/CallToolResult;
 	public static synthetic fun success$default (Lio/modelcontextprotocol/kotlin/sdk/types/CallToolResult$Companion;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/CallToolResult;
-}
-
-public final class io/modelcontextprotocol/kotlin/sdk/types/Tools_dslKt {
-	public static final fun callToolRequest (Lkotlin/jvm/functions/Function1;)Lio/modelcontextprotocol/kotlin/sdk/types/CallToolRequest;
-	public static final fun listToolsRequest (Lkotlin/jvm/functions/Function1;)Lio/modelcontextprotocol/kotlin/sdk/types/ListToolsRequest;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/UnknownResourceContents : io/modelcontextprotocol/kotlin/sdk/types/ResourceContents {

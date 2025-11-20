@@ -17,14 +17,14 @@ import kotlin.contracts.contract
  *
  * Example without arguments:
  * ```kotlin
- * val request = getPromptRequest {
+ * val request = buildGetPromptRequest {
  *     name = "greeting"
  * }
  * ```
  *
  * Example with arguments:
  * ```kotlin
- * val request = getPromptRequest {
+ * val request = buildGetPromptRequest {
  *     name = "userProfile"
  *     arguments = mapOf(
  *         "userId" to "123",
@@ -40,7 +40,7 @@ import kotlin.contracts.contract
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun getPromptRequest(block: GetPromptRequestBuilder.() -> Unit): GetPromptRequest {
+internal inline fun buildGetPromptRequest(block: GetPromptRequestBuilder.() -> Unit): GetPromptRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return GetPromptRequestBuilder().apply(block).build()
 }
@@ -57,7 +57,7 @@ public inline fun getPromptRequest(block: GetPromptRequestBuilder.() -> Unit): G
  * - [arguments] - Arguments to pass to the prompt
  * - [meta] - Metadata for the request
  *
- * @see getPromptRequest
+ * @see buildGetPromptRequest
  * @see GetPromptRequest
  */
 @McpDsl
@@ -99,12 +99,12 @@ public class GetPromptRequestBuilder @PublishedApi internal constructor() : Requ
  *
  * Example without pagination:
  * ```kotlin
- * val request = listPromptsRequest { }
+ * val request = buildListPromptsRequest { }
  * ```
  *
  * Example with pagination:
  * ```kotlin
- * val request = listPromptsRequest {
+ * val request = buildListPromptsRequest {
  *     cursor = "eyJwYWdlIjogMn0="
  * }
  * ```
@@ -116,7 +116,7 @@ public class GetPromptRequestBuilder @PublishedApi internal constructor() : Requ
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun listPromptsRequest(block: ListPromptsRequestBuilder.() -> Unit): ListPromptsRequest {
+internal inline fun buildListPromptsRequest(block: ListPromptsRequestBuilder.() -> Unit): ListPromptsRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return ListPromptsRequestBuilder().apply(block).build()
 }
@@ -131,7 +131,7 @@ public inline fun listPromptsRequest(block: ListPromptsRequestBuilder.() -> Unit
  * - [cursor] - Pagination cursor (inherited from [PaginatedRequestBuilder])
  * - [meta] - Metadata for the request (inherited from [RequestBuilder])
  *
- * @see listPromptsRequest
+ * @see buildListPromptsRequest
  * @see ListPromptsRequest
  * @see PaginatedRequestBuilder
  */

@@ -13,12 +13,12 @@ import kotlin.contracts.contract
  *
  * Example with no parameters:
  * ```kotlin
- * val request = listRootsRequest { }
+ * val request = buildListRootsRequest { }
  * ```
  *
  * Example with metadata:
  * ```kotlin
- * val request = listRootsRequest {
+ * val request = buildListRootsRequest {
  *     meta {
  *         put("context", "initialization")
  *     }
@@ -32,7 +32,7 @@ import kotlin.contracts.contract
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun listRootsRequest(block: ListRootsRequestBuilder.() -> Unit): ListRootsRequest {
+internal inline fun buildListRootsRequest(block: ListRootsRequestBuilder.() -> Unit): ListRootsRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return ListRootsRequestBuilder().apply(block).build()
 }
@@ -46,7 +46,7 @@ public inline fun listRootsRequest(block: ListRootsRequestBuilder.() -> Unit): L
  * ## Optional
  * - [meta] - Metadata for the request
  *
- * @see listRootsRequest
+ * @see buildListRootsRequest
  * @see ListRootsRequest
  */
 @McpDsl

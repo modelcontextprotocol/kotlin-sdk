@@ -16,14 +16,14 @@ import kotlin.contracts.contract
  *
  * Example setting info level:
  * ```kotlin
- * val request = setLevelRequest {
+ * val request = buildSetLevelRequest {
  *     loggingLevel = LoggingLevel.Info
  * }
  * ```
  *
  * Example setting debug level:
  * ```kotlin
- * val request = setLevelRequest {
+ * val request = buildSetLevelRequest {
  *     loggingLevel = LoggingLevel.Debug
  * }
  * ```
@@ -36,7 +36,7 @@ import kotlin.contracts.contract
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun setLevelRequest(block: SetLevelRequestBuilder.() -> Unit): SetLevelRequest {
+internal inline fun buildSetLevelRequest(block: SetLevelRequestBuilder.() -> Unit): SetLevelRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return SetLevelRequestBuilder().apply(block).build()
 }
@@ -52,7 +52,7 @@ public inline fun setLevelRequest(block: SetLevelRequestBuilder.() -> Unit): Set
  * ## Optional
  * - [meta] - Metadata for the request
  *
- * @see setLevelRequest
+ * @see buildSetLevelRequest
  * @see SetLevelRequest
  * @see LoggingLevel
  */

@@ -16,9 +16,9 @@ import kotlinx.serialization.json.buildJsonObject
  * - [elicitation] - Indicates support for elicitation from the server
  * - [experimental] - Defines experimental, non-standard capabilities
  *
- * Example usage within [initializeRequest][io.modelcontextprotocol.kotlin.sdk.types.initializeRequest]:
+ * Example usage within [buildInitializeRequest][buildInitializeRequest]:
  * ```kotlin
- * val request = initializeRequest {
+ * val request = buildInitializeRequest {
  *     protocolVersion = "1.0"
  *     capabilities {
  *         sampling(ClientCapabilities.sampling)

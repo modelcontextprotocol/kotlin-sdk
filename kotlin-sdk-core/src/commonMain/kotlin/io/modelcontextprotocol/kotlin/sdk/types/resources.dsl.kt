@@ -14,12 +14,12 @@ import kotlin.contracts.contract
  *
  * Example without pagination:
  * ```kotlin
- * val request = listResourcesRequest { }
+ * val request = buildListResourcesRequest { }
  * ```
  *
  * Example with pagination:
  * ```kotlin
- * val request = listResourcesRequest {
+ * val request = buildListResourcesRequest {
  *     cursor = "eyJwYWdlIjogMn0="
  * }
  * ```
@@ -31,7 +31,7 @@ import kotlin.contracts.contract
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun listResourcesRequest(block: ListResourcesRequestBuilder.() -> Unit): ListResourcesRequest {
+internal inline fun buildListResourcesRequest(block: ListResourcesRequestBuilder.() -> Unit): ListResourcesRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return ListResourcesRequestBuilder().apply(block).build()
 }
@@ -46,7 +46,7 @@ public inline fun listResourcesRequest(block: ListResourcesRequestBuilder.() -> 
  * - [cursor] - Pagination cursor (inherited from [PaginatedRequestBuilder])
  * - [meta] - Metadata for the request (inherited from [RequestBuilder])
  *
- * @see listResourcesRequest
+ * @see buildListResourcesRequest
  * @see ListResourcesRequest
  * @see PaginatedRequestBuilder
  */
@@ -70,7 +70,7 @@ public class ListResourcesRequestBuilder @PublishedApi internal constructor() : 
  *
  * Example:
  * ```kotlin
- * val request = readResourceRequest {
+ * val request = buildReadResourceRequest {
  *     uri = "file:///path/to/resource.txt"
  * }
  * ```
@@ -82,7 +82,7 @@ public class ListResourcesRequestBuilder @PublishedApi internal constructor() : 
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun readResourceRequest(block: ReadResourceRequestBuilder.() -> Unit): ReadResourceRequest {
+internal inline fun buildReadResourceRequest(block: ReadResourceRequestBuilder.() -> Unit): ReadResourceRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return ReadResourceRequestBuilder().apply(block).build()
 }
@@ -98,7 +98,7 @@ public inline fun readResourceRequest(block: ReadResourceRequestBuilder.() -> Un
  * ## Optional
  * - [meta] - Metadata for the request
  *
- * @see readResourceRequest
+ * @see buildReadResourceRequest
  * @see ReadResourceRequest
  */
 @McpDsl
@@ -132,7 +132,7 @@ public class ReadResourceRequestBuilder @PublishedApi internal constructor() : R
  *
  * Example:
  * ```kotlin
- * val request = subscribeRequest {
+ * val request = buildSubscribeRequest {
  *     uri = "file:///path/to/resource.txt"
  * }
  * ```
@@ -144,7 +144,7 @@ public class ReadResourceRequestBuilder @PublishedApi internal constructor() : R
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun subscribeRequest(block: SubscribeRequestBuilder.() -> Unit): SubscribeRequest {
+internal inline fun buildSubscribeRequest(block: SubscribeRequestBuilder.() -> Unit): SubscribeRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return SubscribeRequestBuilder().apply(block).build()
 }
@@ -160,7 +160,7 @@ public inline fun subscribeRequest(block: SubscribeRequestBuilder.() -> Unit): S
  * ## Optional
  * - [meta] - Metadata for the request
  *
- * @see subscribeRequest
+ * @see buildSubscribeRequest
  * @see SubscribeRequest
  */
 @McpDsl
@@ -194,7 +194,7 @@ public class SubscribeRequestBuilder @PublishedApi internal constructor() : Requ
  *
  * Example:
  * ```kotlin
- * val request = unsubscribeRequest {
+ * val request = buildUnsubscribeRequest {
  *     uri = "file:///path/to/resource.txt"
  * }
  * ```
@@ -206,7 +206,7 @@ public class SubscribeRequestBuilder @PublishedApi internal constructor() : Requ
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun unsubscribeRequest(block: UnsubscribeRequestBuilder.() -> Unit): UnsubscribeRequest {
+internal inline fun buildUnsubscribeRequest(block: UnsubscribeRequestBuilder.() -> Unit): UnsubscribeRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return UnsubscribeRequestBuilder().apply(block).build()
 }
@@ -222,7 +222,7 @@ public inline fun unsubscribeRequest(block: UnsubscribeRequestBuilder.() -> Unit
  * ## Optional
  * - [meta] - Metadata for the request
  *
- * @see unsubscribeRequest
+ * @see buildUnsubscribeRequest
  * @see UnsubscribeRequest
  */
 @McpDsl
@@ -254,12 +254,12 @@ public class UnsubscribeRequestBuilder @PublishedApi internal constructor() : Re
  *
  * Example without pagination:
  * ```kotlin
- * val request = listResourceTemplatesRequest { }
+ * val request = buildListResourceTemplatesRequest { }
  * ```
  *
  * Example with pagination:
  * ```kotlin
- * val request = listResourceTemplatesRequest {
+ * val request = buildListResourceTemplatesRequest {
  *     cursor = "eyJwYWdlIjogMn0="
  * }
  * ```
@@ -271,7 +271,7 @@ public class UnsubscribeRequestBuilder @PublishedApi internal constructor() : Re
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun listResourceTemplatesRequest(
+internal inline fun buildListResourceTemplatesRequest(
     block: ListResourceTemplatesRequestBuilder.() -> Unit,
 ): ListResourceTemplatesRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
@@ -288,7 +288,7 @@ public inline fun listResourceTemplatesRequest(
  * - [cursor] - Pagination cursor (inherited from [PaginatedRequestBuilder])
  * - [meta] - Metadata for the request (inherited from [RequestBuilder])
  *
- * @see listResourceTemplatesRequest
+ * @see buildListResourceTemplatesRequest
  * @see ListResourceTemplatesRequest
  * @see PaginatedRequestBuilder
  */

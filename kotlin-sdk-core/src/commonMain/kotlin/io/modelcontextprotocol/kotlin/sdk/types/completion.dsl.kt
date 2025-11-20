@@ -18,7 +18,7 @@ import kotlin.contracts.contract
  *
  * Example with [PromptReference]:
  * ```kotlin
- * val request = completeRequest {
+ * val request = buildCompleteRequest {
  *     argument("query", "user input")
  *     ref(PromptReference("searchPrompt"))
  * }
@@ -26,7 +26,7 @@ import kotlin.contracts.contract
  *
  * Example with [ResourceTemplateReference]:
  * ```kotlin
- * val request = completeRequest {
+ * val request = buildCompleteRequest {
  *     argument("path", "/users/123")
  *     ref(ResourceTemplateReference("file:///{path}"))
  *     context {
@@ -42,7 +42,7 @@ import kotlin.contracts.contract
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun completeRequest(block: CompleteRequestBuilder.() -> Unit): CompleteRequest {
+internal inline fun buildCompleteRequest(block: CompleteRequestBuilder.() -> Unit): CompleteRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return CompleteRequestBuilder().apply(block).build()
 }
@@ -53,7 +53,7 @@ public inline fun completeRequest(block: CompleteRequestBuilder.() -> Unit): Com
  * This builder provides methods to configure completion requests for prompts or resource templates.
  * Both [argument] and [ref] are required; [context] is optional.
  *
- * @see completeRequest
+ * @see buildCompleteRequest
  */
 @McpDsl
 public class CompleteRequestBuilder @PublishedApi internal constructor() : RequestBuilder() {

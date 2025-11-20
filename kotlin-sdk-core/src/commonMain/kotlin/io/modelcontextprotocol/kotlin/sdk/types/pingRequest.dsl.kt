@@ -13,12 +13,12 @@ import kotlin.contracts.contract
  *
  * Example with no parameters:
  * ```kotlin
- * val request = pingRequest { }
+ * val request = buildPingRequest { }
  * ```
  *
  * Example with metadata:
  * ```kotlin
- * val request = pingRequest {
+ * val request = buildPingRequest {
  *     meta {
  *         put("timestamp", JsonPrimitive(System.currentTimeMillis()))
  *     }
@@ -32,7 +32,7 @@ import kotlin.contracts.contract
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun pingRequest(block: PingRequestBuilder.() -> Unit): PingRequest {
+internal inline fun buildPingRequest(block: PingRequestBuilder.() -> Unit): PingRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return PingRequestBuilder().apply(block).build()
 }
@@ -46,7 +46,7 @@ public inline fun pingRequest(block: PingRequestBuilder.() -> Unit): PingRequest
  * ## Optional
  * - [meta] - Metadata for the request
  *
- * @see pingRequest
+ * @see buildPingRequest
  * @see PingRequest
  */
 @McpDsl

@@ -20,7 +20,7 @@ import kotlin.contracts.contract
  *
  * Example requesting user information:
  * ```kotlin
- * val request = elicitationRequest {
+ * val request = buildElicitRequest {
  *     message = "Please provide your contact information"
  *     requestedSchema {
  *         properties {
@@ -39,7 +39,7 @@ import kotlin.contracts.contract
  *
  * Example with simple text input:
  * ```kotlin
- * val request = elicitationRequest {
+ * val request = buildElicitRequest {
  *     message = "Enter a project name"
  *     requestedSchema {
  *         properties {
@@ -59,7 +59,7 @@ import kotlin.contracts.contract
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun elicitationRequest(block: ElicitRequestBuilder.() -> Unit): ElicitRequest {
+internal inline fun buildElicitRequest(block: ElicitRequestBuilder.() -> Unit): ElicitRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return ElicitRequestBuilder().apply(block).build()
 }
@@ -77,7 +77,7 @@ public inline fun elicitationRequest(block: ElicitRequestBuilder.() -> Unit): El
  * ## Optional
  * - [meta] - Metadata for the request
  *
- * @see elicitationRequest
+ * @see buildElicitRequest
  * @see ElicitRequest
  */
 @McpDsl
@@ -95,7 +95,7 @@ public class ElicitRequestBuilder @PublishedApi internal constructor() : Request
      *
      * Example:
      * ```kotlin
-     * elicitationRequest {
+     * buildElicitRequest {
      *     message = "Enter details"
      *     requestedSchema(ElicitRequestParams.RequestedSchema(
      *         properties = buildJsonObject {
@@ -119,7 +119,7 @@ public class ElicitRequestBuilder @PublishedApi internal constructor() : Request
      *
      * Example:
      * ```kotlin
-     * elicitationRequest {
+     * buildElicitRequest {
      *     message = "Configure settings"
      *     requestedSchema {
      *         properties {

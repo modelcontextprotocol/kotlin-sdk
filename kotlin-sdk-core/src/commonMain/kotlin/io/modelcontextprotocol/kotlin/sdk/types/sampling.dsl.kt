@@ -26,7 +26,7 @@ import kotlin.contracts.contract
  *
  * Example:
  * ```kotlin
- * val request = createMessageRequest {
+ * val request = buildCreateMessageRequest {
  *     maxTokens = 1000
  *     systemPrompt = "You are a helpful assistant"
  *     messages {
@@ -39,7 +39,7 @@ import kotlin.contracts.contract
  *
  * Example with preferences:
  * ```kotlin
- * val request = createMessageRequest {
+ * val request = buildCreateMessageRequest {
  *     maxTokens = 500
  *     temperature = 0.7
  *     preferences(
@@ -59,7 +59,7 @@ import kotlin.contracts.contract
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun createMessageRequest(block: CreateMessageRequestBuilder.() -> Unit): CreateMessageRequest {
+internal inline fun buildCreateMessageRequest(block: CreateMessageRequestBuilder.() -> Unit): CreateMessageRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return CreateMessageRequestBuilder().apply(block).build()
 }
@@ -82,7 +82,7 @@ public inline fun createMessageRequest(block: CreateMessageRequestBuilder.() -> 
  * - [metadata] - Additional metadata
  * - [meta] - Request metadata
  *
- * @see createMessageRequest
+ * @see buildCreateMessageRequest
  * @see CreateMessageRequest
  */
 @McpDsl
