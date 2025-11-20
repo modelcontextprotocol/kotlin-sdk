@@ -9,6 +9,7 @@ import io.ktor.server.request.receiveText
 import io.ktor.server.response.respondText
 import io.ktor.server.sse.ServerSSESession
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
+import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import kotlinx.coroutines.InternalCoroutinesApi
@@ -119,7 +120,7 @@ public class SseServerTransport(private val endpoint: String, private val sessio
         _onClose.invoke()
     }
 
-    override suspend fun send(message: JSONRPCMessage) {
+    override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
         if (!initialized.load()) {
             error("Not connected")
         }

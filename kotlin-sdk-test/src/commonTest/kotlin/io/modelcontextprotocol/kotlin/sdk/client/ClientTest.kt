@@ -5,6 +5,7 @@ import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.ServerSession
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.InMemoryTransport
+import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageResult
@@ -63,7 +64,7 @@ class ClientTest {
         val clientTransport = object : AbstractTransport() {
             override suspend fun start() {}
 
-            override suspend fun send(message: JSONRPCMessage) {
+            override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
                 if (message !is JSONRPCRequest) return
                 initialised = true
                 val result = InitializeResult(
@@ -109,7 +110,7 @@ class ClientTest {
         val clientTransport = object : AbstractTransport() {
             override suspend fun start() {}
 
-            override suspend fun send(message: JSONRPCMessage) {
+            override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
                 if (message !is JSONRPCRequest) return
                 check(message.method == Method.Defined.Initialize.value)
 
@@ -158,7 +159,7 @@ class ClientTest {
         val clientTransport = object : AbstractTransport() {
             override suspend fun start() {}
 
-            override suspend fun send(message: JSONRPCMessage) {
+            override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
                 if (message !is JSONRPCRequest) return
                 check(message.method == Method.Defined.Initialize.value)
 
@@ -205,7 +206,7 @@ class ClientTest {
         val failingTransport = object : AbstractTransport() {
             override suspend fun start() {}
 
-            override suspend fun send(message: JSONRPCMessage) {
+            override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
                 if (message !is JSONRPCRequest) return
                 check(message.method == Method.Defined.Initialize.value)
                 throw IllegalStateException("Test error")
@@ -239,7 +240,7 @@ class ClientTest {
         val failingTransport = object : AbstractTransport() {
             override suspend fun start() {}
 
-            override suspend fun send(message: JSONRPCMessage) {
+            override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
                 if (message !is JSONRPCRequest) return
                 check(message.method == Method.Defined.Initialize.value)
                 throw McpException(
@@ -277,7 +278,7 @@ class ClientTest {
         val failingTransport = object : AbstractTransport() {
             override suspend fun start() {}
 
-            override suspend fun send(message: JSONRPCMessage) {
+            override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
                 if (message !is JSONRPCRequest) return
                 check(message.method == Method.Defined.Initialize.value)
                 throw StreamableHttpError(
