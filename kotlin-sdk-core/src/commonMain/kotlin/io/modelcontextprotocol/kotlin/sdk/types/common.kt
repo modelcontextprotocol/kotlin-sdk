@@ -1,7 +1,5 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
-import io.modelcontextprotocol.kotlin.sdk.types.Icon.Theme.Dark
-import io.modelcontextprotocol.kotlin.sdk.types.Icon.Theme.Light
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
@@ -11,6 +9,8 @@ import kotlinx.serialization.json.JsonObject
 // ============================================================================
 
 public const val LATEST_PROTOCOL_VERSION: String = "2025-06-18"
+
+public const val DEFAULT_NEGOTIATED_PROTOCOL_VERSION: String = "2025-03-26"
 
 public val SUPPORTED_PROTOCOL_VERSIONS: List<String> = listOf(
     LATEST_PROTOCOL_VERSION,

@@ -22,6 +22,7 @@ import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.utils.io.readUTF8Line
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
+import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
@@ -89,8 +90,8 @@ public class StreamableHttpClientTransport(
     /**
      * Sends a single message with optional resumption support
      */
-    override suspend fun send(message: JSONRPCMessage) {
-        send(message, null)
+    override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
+        send(message, options?.resumptionToken, options?.onResumptionToken)
     }
 
     /**
