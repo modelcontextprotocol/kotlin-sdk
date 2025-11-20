@@ -132,11 +132,7 @@ public class RequestOptions(
 
         other as RequestOptions
 
-        return when {
-            onProgress != other.onProgress -> false
-            timeout != other.timeout -> false
-            else -> true
-        }
+        return onProgress == other.onProgress && timeout == other.timeout
     }
 
     override fun hashCode(): Int {

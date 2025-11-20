@@ -33,12 +33,9 @@ public open class TransportSendOptions(
 
         other as TransportSendOptions
 
-        return when {
-            relatedRequestId != other.relatedRequestId -> false
-            resumptionToken != other.resumptionToken -> false
-            onResumptionToken != other.onResumptionToken -> false
-            else -> true
-        }
+        return relatedRequestId == other.relatedRequestId &&
+            resumptionToken == other.resumptionToken &&
+            onResumptionToken == other.onResumptionToken
     }
 
     override fun hashCode(): Int {
