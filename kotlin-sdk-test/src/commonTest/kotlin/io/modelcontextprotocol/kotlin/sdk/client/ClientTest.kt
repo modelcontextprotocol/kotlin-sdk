@@ -26,6 +26,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotificationParams
+import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.Role
 import io.modelcontextprotocol.kotlin.sdk.types.Root
@@ -228,6 +229,82 @@ class ClientTest {
         }
 
         assertEquals("Error connecting to transport: Test error", exception.message)
+
+        assertTrue(closed)
+    }
+
+    @Test
+    fun `should rethrow McpException as is`() = runTest {
+        var closed = false
+        val failingTransport = object : AbstractTransport() {
+            override suspend fun start() {}
+
+            override suspend fun send(message: JSONRPCMessage) {
+                if (message !is JSONRPCRequest) return
+                check(message.method == Method.Defined.Initialize.value)
+                throw McpException(
+                    code = -32600,
+                    message = "Invalid Request",
+                )
+            }
+
+            override suspend fun close() {
+                closed = true
+            }
+        }
+
+        val client = Client(
+            clientInfo = Implementation(
+                name = "test client",
+                version = "1.0",
+            ),
+            options = ClientOptions(),
+        )
+
+        val exception = assertFailsWith<McpException> {
+            client.connect(failingTransport)
+        }
+
+        assertEquals(-32600, exception.code)
+        assertEquals("MCP error -32600: Invalid Request", exception.message)
+
+        assertTrue(closed)
+    }
+
+    @Test
+    fun `should rethrow StreamableHttpError as is`() = runTest {
+        var closed = false
+        val failingTransport = object : AbstractTransport() {
+            override suspend fun start() {}
+
+            override suspend fun send(message: JSONRPCMessage) {
+                if (message !is JSONRPCRequest) return
+                check(message.method == Method.Defined.Initialize.value)
+                throw StreamableHttpError(
+                    code = 500,
+                    message = "Internal Server Error",
+                )
+            }
+
+            override suspend fun close() {
+                closed = true
+            }
+        }
+
+        val client = Client(
+            clientInfo = Implementation(
+                name = "test client",
+                version = "1.0",
+            ),
+            options = ClientOptions(),
+        )
+
+        val exception = assertFailsWith<StreamableHttpError> {
+            client.connect(failingTransport)
+        }
+
+        assertEquals(500, exception.code)
+        assertEquals("Streamable HTTP error: Internal Server Error", exception.message)
 
         assertTrue(closed)
     }
@@ -922,7 +999,7 @@ class ClientTest {
                 println("Client connected")
             },
             launch {
-                serverSessionResult.complete(server.connect(serverTransport))
+                serverSessionResult.complete(server.createSession(serverTransport))
                 println("Server connected")
             },
         ).joinAll()
