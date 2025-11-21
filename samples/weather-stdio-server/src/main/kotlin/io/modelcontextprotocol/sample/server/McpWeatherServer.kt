@@ -8,14 +8,14 @@ import io.ktor.http.contentType
 import io.ktor.http.headers
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.utils.io.streams.asInput
-import io.modelcontextprotocol.kotlin.sdk.CallToolResult
-import io.modelcontextprotocol.kotlin.sdk.Implementation
-import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
-import io.modelcontextprotocol.kotlin.sdk.TextContent
-import io.modelcontextprotocol.kotlin.sdk.Tool
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.StdioServerTransport
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
+import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.runBlocking
 import kotlinx.io.asSink
@@ -28,7 +28,8 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 
 /**
- * Starts an MCP server that provides weather-related tools for fetching active weather alerts by state and weather forecasts by latitude/longitude.
+ * Starts an MCP server that provides weather-related tools for fetching active
+ * weather alerts by state and weather forecasts by latitude/longitude.
  */
 fun runMcpServer() {
     // Base URL for the Weather API
@@ -72,7 +73,7 @@ fun runMcpServer() {
         description = """
             Get weather alerts for a US state. Input is Two-letter US state code (e.g. CA, NY)
         """.trimIndent(),
-        inputSchema = Tool.Input(
+        inputSchema = ToolSchema(
             properties = buildJsonObject {
                 putJsonObject("state") {
                     put("type", "string")
@@ -97,7 +98,7 @@ fun runMcpServer() {
         description = """
             Get weather forecast for a specific latitude/longitude
         """.trimIndent(),
-        inputSchema = Tool.Input(
+        inputSchema = ToolSchema(
             properties = buildJsonObject {
                 putJsonObject("latitude") {
                     put("type", "number")
