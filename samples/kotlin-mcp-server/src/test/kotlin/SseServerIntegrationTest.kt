@@ -1,8 +1,8 @@
-import io.modelcontextprotocol.kotlin.sdk.EmptyJsonObject
-import io.modelcontextprotocol.kotlin.sdk.ReadResourceRequest
-import io.modelcontextprotocol.kotlin.sdk.TextContent
-import io.modelcontextprotocol.kotlin.sdk.TextResourceContents
 import io.modelcontextprotocol.kotlin.sdk.client.Client
+import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
+import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
+import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals

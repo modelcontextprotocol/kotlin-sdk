@@ -14,23 +14,23 @@ import io.ktor.server.routing.routing
 import io.ktor.server.sse.SSE
 import io.ktor.server.sse.sse
 import io.ktor.util.collections.ConcurrentMap
-import io.modelcontextprotocol.kotlin.sdk.CallToolResult
-import io.modelcontextprotocol.kotlin.sdk.GetPromptResult
-import io.modelcontextprotocol.kotlin.sdk.Implementation
-import io.modelcontextprotocol.kotlin.sdk.PromptArgument
-import io.modelcontextprotocol.kotlin.sdk.PromptMessage
-import io.modelcontextprotocol.kotlin.sdk.ReadResourceResult
-import io.modelcontextprotocol.kotlin.sdk.Role
-import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
-import io.modelcontextprotocol.kotlin.sdk.TextContent
-import io.modelcontextprotocol.kotlin.sdk.TextResourceContents
-import io.modelcontextprotocol.kotlin.sdk.Tool
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.ServerSession
 import io.modelcontextprotocol.kotlin.sdk.server.SseServerTransport
 import io.modelcontextprotocol.kotlin.sdk.server.StdioServerTransport
 import io.modelcontextprotocol.kotlin.sdk.server.mcp
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.PromptArgument
+import io.modelcontextprotocol.kotlin.sdk.types.PromptMessage
+import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
+import io.modelcontextprotocol.kotlin.sdk.types.Role
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
+import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
+import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.runBlocking
 import kotlinx.io.asSink
@@ -66,7 +66,7 @@ fun configureServer(): Server {
         GetPromptResult(
             messages = listOf(
                 PromptMessage(
-                    role = Role.user,
+                    role = Role.User,
                     content = TextContent(
                         "Develop a kotlin project named <name>${request.arguments?.get("Project Name")}</name>",
                     ),
@@ -80,7 +80,7 @@ fun configureServer(): Server {
     server.addTool(
         name = "kotlin-sdk-tool",
         description = "A test tool",
-        inputSchema = Tool.Input(),
+        inputSchema = ToolSchema(),
     ) { _ ->
         CallToolResult(
             content = listOf(TextContent("Hello, world!")),
