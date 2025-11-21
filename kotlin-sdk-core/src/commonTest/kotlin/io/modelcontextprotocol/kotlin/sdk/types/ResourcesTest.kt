@@ -259,7 +259,7 @@ class ResourcesTest {
             McpJson.decodeFromString<ResourceContents>("\"just a string\"")
         }
 
-        exception.message shouldBe "Invalid response. JsonObject expected, got: \"just a string\""
+        exception.message shouldBe "Invalid response. JsonObject expected, got: JsonLiteral"
     }
 
     @Test

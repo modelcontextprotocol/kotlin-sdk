@@ -417,7 +417,7 @@ class JsonRpcTest {
             McpJson.decodeFromString<JSONRPCMessage>("[\"just a string\"]")
         }
 
-        exception.message shouldBe "Invalid response. JsonObject expected, got: [\"just a string\"]"
+        exception.message shouldBe "Invalid response. JsonObject expected, got: JsonArray"
     }
 
     @Test

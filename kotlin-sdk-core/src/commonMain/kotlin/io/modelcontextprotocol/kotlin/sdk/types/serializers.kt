@@ -44,7 +44,7 @@ private fun JsonElement.getType(): String = requireNotNull(getTypeOrNull()) { "M
 @Throws(SerializationException::class)
 private fun JsonElement.asJsonObject(): JsonObject {
     if (this !is JsonObject) {
-        throw SerializationException("Invalid response. JsonObject expected, got: $this")
+        throw SerializationException("Invalid response. JsonObject expected, got: ${this::class.simpleName}")
     }
     val jsonObject = this.jsonObject
     return jsonObject
