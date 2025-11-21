@@ -1,8 +1,10 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.kotest.assertions.json.shouldEqualJson
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.int
@@ -43,6 +45,7 @@ class JsonRpcTest {
 
     @Test
     fun `should convert JSONRPCRequest to Request`() {
+        // language=json
         val jsonRpc = McpJson.decodeFromString<JSONRPCRequest>(
             """
             {
@@ -101,6 +104,7 @@ class JsonRpcTest {
 
     @Test
     fun `should convert JSONRPCNotification to Notification`() {
+        // language=json
         val jsonRpc = McpJson.decodeFromString<JSONRPCNotification>(
             """
             {
@@ -164,6 +168,7 @@ class JsonRpcTest {
 
     @Test
     fun `should deserialize JSONRPCRequest with numeric id`() {
+        // language=json
         val json = """
             {
               "id": 42,
@@ -212,6 +217,7 @@ class JsonRpcTest {
 
     @Test
     fun `should deserialize JSONRPCNotification`() {
+        // language=json
         val json = """
             {
               "method": "notifications/progress",
@@ -257,6 +263,7 @@ class JsonRpcTest {
 
     @Test
     fun `should deserialize JSONRPCResponse with EmptyResult`() {
+        // language=json
         val json = """
             {
               "id": 7,
@@ -308,6 +315,7 @@ class JsonRpcTest {
 
     @Test
     fun `should deserialize JSONRPCError`() {
+        // language=json
         val json = """
             {
               "id": "req-404",
@@ -336,6 +344,7 @@ class JsonRpcTest {
 
     @Test
     fun `should decode JSONRPCMessage as request`() {
+        // language=json
         val json = """
             {
               "id": "msg-1",
@@ -359,6 +368,7 @@ class JsonRpcTest {
 
     @Test
     fun `should decode JSONRPCMessage as error response`() {
+        // language=json
         val json = """
             {
               "id": 123,
@@ -399,6 +409,15 @@ class JsonRpcTest {
               "jsonrpc": "2.0"
             }
         """.trimIndent()
+    }
+
+    @Test
+    fun `JSONRPCMessage should throw on non-object JSON`() {
+        val exception = shouldThrow<SerializationException> {
+            McpJson.decodeFromString<JSONRPCMessage>("[\"just a string\"]")
+        }
+
+        exception.message shouldBe "Invalid response. JsonObject expected, got: [\"just a string\"]"
     }
 
     @Test
