@@ -207,7 +207,7 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
 
         delay(1.seconds)
 
-        client.ping() // connection is still alive
+        client.ping() // the connection is still alive
 
         client.close()
     }

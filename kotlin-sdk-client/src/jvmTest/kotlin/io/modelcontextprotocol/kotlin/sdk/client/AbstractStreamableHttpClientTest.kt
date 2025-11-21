@@ -12,7 +12,7 @@ import org.junit.jupiter.api.TestInstance
 internal abstract class AbstractStreamableHttpClientTest {
 
     // start mokksy on random port
-    protected val mockMcp: OldSchemaMockMcp = OldSchemaMockMcp(verbose = true)
+    protected val mockMcp: MockMcp = MockMcp(verbose = true)
 
     @AfterEach
     fun afterEach() {
