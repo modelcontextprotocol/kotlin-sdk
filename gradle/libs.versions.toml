@@ -18,7 +18,7 @@ kotlinx-io = "0.8.1"
 ktor = "3.2.3"
 logging = "7.0.13"
 slf4j = "2.0.17"
-kotest = "6.0.4"
+kotest = "6.0.5"
 awaitility = "4.3.0"
 mokksy = "0.6.2"
 
