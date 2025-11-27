@@ -42,8 +42,6 @@ import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.time.Duration
 
-private val logger = KotlinLogging.logger {}
-
 private const val MCP_SESSION_ID_HEADER = "mcp-session-id"
 private const val MCP_PROTOCOL_VERSION_HEADER = "mcp-protocol-version"
 private const val MCP_RESUMPTION_TOKEN_HEADER = "Last-Event-ID"
@@ -66,6 +64,10 @@ public class StreamableHttpClientTransport(
     private val reconnectionTime: Duration? = null,
     private val requestBuilder: HttpRequestBuilder.() -> Unit = {},
 ) : AbstractTransport() {
+
+    private companion object {
+        private val logger = KotlinLogging.logger {}
+    }
 
     public var sessionId: String? = null
         private set
@@ -316,7 +318,10 @@ public class StreamableHttpClientTransport(
         var id: String? = null
         var eventName: String? = null
 
-        suspend fun dispatch(data: String) {
+        suspend fun dispatch(id: String?, eventName: String?, data: String) {
+            if (data.isBlank()) {
+                return
+            }
             id?.let {
                 lastEventId = it
                 onResumptionToken?.invoke(it)
@@ -335,16 +340,16 @@ public class StreamableHttpClientTransport(
                         throw it
                     }
             }
-            // reset
-            id = null
-            eventName = null
-            sb.clear()
         }
 
         while (!channel.isClosedForRead) {
             val line = channel.readUTF8Line() ?: break
             if (line.isEmpty()) {
-                dispatch(sb.toString())
+                dispatch(id = id, eventName = eventName, data = sb.toString())
+                // reset
+                id = null
+                eventName = null
+                sb.clear()
                 continue
             }
             when {
