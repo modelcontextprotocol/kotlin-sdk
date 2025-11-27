@@ -319,12 +319,12 @@ public class StreamableHttpClientTransport(
         var eventName: String? = null
 
         suspend fun dispatch(id: String?, eventName: String?, data: String) {
-            if (data.isBlank()) {
-                return
-            }
             id?.let {
                 lastEventId = it
                 onResumptionToken?.invoke(it)
+            }
+            if (data.isBlank()) {
+                return
             }
             if (eventName == null || eventName == "message") {
                 runCatching { McpJson.decodeFromString<JSONRPCMessage>(data) }
