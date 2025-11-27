@@ -11,7 +11,9 @@ import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -27,6 +29,50 @@ import kotlin.uuid.Uuid
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Suppress("LongMethod")
 internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
+
+    @Test
+    fun `Should skip empty SSE`(): Unit = runBlocking {
+        val client = Client(
+            clientInfo = Implementation(
+                name = "client1",
+                version = "1.0.0",
+            ),
+            options = ClientOptions(
+                capabilities = ClientCapabilities(),
+            ),
+        )
+        val sessionId = Uuid.random().toString()
+
+        mockMcp.onJSONRPCRequest(
+            httpMethod = HttpMethod.Post,
+            jsonRpcMethod = "initialize",
+        ).respondsWithStream {
+            headers += MCP_SESSION_ID_HEADER to sessionId
+            flow = flowOf(
+                "id: ${Uuid.random()}\n",
+                "data: \n",
+                "\n",
+                "id: ${Uuid.random()}\n",
+                "event: message\n",
+                @Suppress("MaxLineLength")
+                "data: {\"result\":{\"protocolVersion\":\"2025-06-18\",\"capabilities\":{},\"serverInfo\":{\"name\":\"simple-streamable-http-server\",\"version\":\"1.0.0\"}},\"jsonrpc\":\"2.0\",\"id\":\"7ce065b0678f49e5b04ce5a0fcc7d518\"}\n",
+                "\n",
+            )
+        }
+
+        mockMcp.handleJSONRPCRequest(
+            jsonRpcMethod = "notifications/initialized",
+            expectedSessionId = sessionId,
+            sessionId = sessionId,
+            statusCode = HttpStatusCode.Accepted,
+        )
+
+        mockMcp.handleSubscribeWithGet(sessionId) {
+            emptyFlow()
+        }
+
+        connect(client)
+    }
 
     @Test
     fun `test streamableHttpClient`() = runBlocking {
