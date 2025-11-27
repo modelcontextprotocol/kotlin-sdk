@@ -50,12 +50,23 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
             headers += MCP_SESSION_ID_HEADER to sessionId
             flow = flowOf(
                 "id: ${Uuid.random()}\n",
-                "data: \n",
+                "data:\n", // empty data
+                "\n",
+                "id: ${Uuid.random()}\n",
+                "data:  \t \n", // tabs and spaces
                 "\n",
                 "id: ${Uuid.random()}\n",
                 "event: message\n",
-                @Suppress("MaxLineLength")
-                "data: {\"result\":{\"protocolVersion\":\"2025-06-18\",\"capabilities\":{},\"serverInfo\":{\"name\":\"simple-streamable-http-server\",\"version\":\"1.0.0\"}},\"jsonrpc\":\"2.0\",\"id\":\"7ce065b0678f49e5b04ce5a0fcc7d518\"}\n",
+                // multiline data
+                "data: {\n",
+                "data: \"result\":{\n" +
+                    "data:    \"protocolVersion\":\"2025-06-18\",\n" +
+                    "data:    \"capabilities\":{},\n" +
+                    "data:    \"serverInfo\":{\"name\":\"simple-streamable-http-server\",\"version\":\"1.0.0\"}\n" +
+                    "data: },\n" +
+                    "data: \"jsonrpc\":\"2.0\",\n" +
+                    "data: \"id\":\"7ce065b0678f49e5b04ce5a0fcc7d518\"\n" +
+                    "data: }\n",
                 "\n",
             )
         }
