@@ -1,6 +1,9 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.kotest.assertions.json.shouldEqualJson
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.matchers.shouldBe
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonPrimitive
@@ -251,6 +254,15 @@ class ResourcesTest {
     }
 
     @Test
+    fun `ResourceContents should throw on non-object JSON`() {
+        val exception = shouldThrow<SerializationException> {
+            McpJson.decodeFromString<ResourceContents>("\"just a string\"")
+        }
+
+        exception.message shouldBe "Invalid response. JsonObject expected, got: JsonLiteral"
+    }
+
+    @Test
     fun `should serialize ListResourcesRequest with cursor`() {
         val request = ListResourcesRequest(
             PaginatedRequestParams(
@@ -316,6 +328,7 @@ class ResourcesTest {
 
     @Test
     fun `should deserialize ListResourcesResult`() {
+        // language=json
         val json = """
             {
               "resources": [
@@ -370,6 +383,7 @@ class ResourcesTest {
 
     @Test
     fun `should deserialize ReadResourceResult with mixed contents`() {
+        // language=json
         val json = """
             {
               "contents": [

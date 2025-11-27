@@ -11,6 +11,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonContentPolymorphicSerializer
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -39,6 +40,15 @@ private fun JsonElement.getTypeOrNull(): String? = jsonObject["type"]?.jsonPrimi
  * Throws [SerializationException] if the type field is not present.
  */
 private fun JsonElement.getType(): String = requireNotNull(getTypeOrNull()) { "Missing required 'type' field" }
+
+@Throws(SerializationException::class)
+private fun JsonElement.asJsonObject(): JsonObject {
+    if (this !is JsonObject) {
+        throw SerializationException("Invalid response. JsonObject expected, got: ${this::class.simpleName}")
+    }
+    val jsonObject = this.jsonObject
+    return jsonObject
+}
 
 // ============================================================================
 // Method Serializer
@@ -131,7 +141,7 @@ internal object MediaContentPolymorphicSerializer :
 internal object ResourceContentsPolymorphicSerializer :
     JsonContentPolymorphicSerializer<ResourceContents>(ResourceContents::class) {
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<ResourceContents> {
-        val jsonObject = element.jsonObject
+        val jsonObject = element.asJsonObject()
         return when {
             "text" in jsonObject -> TextResourceContents.serializer()
             "blob" in jsonObject -> BlobResourceContents.serializer()
@@ -284,7 +294,7 @@ internal object ServerNotificationPolymorphicSerializer :
  * Returns EmptyResult serializer if the JSON object is empty or contains only metadata.
  */
 private fun selectEmptyResult(element: JsonElement): DeserializationStrategy<EmptyResult>? {
-    val jsonObject = element.jsonObject
+    val jsonObject = element.asJsonObject()
     return when {
         jsonObject.isEmpty() || (jsonObject.size == 1 && "_meta" in jsonObject) -> EmptyResult.serializer()
         else -> null
@@ -296,7 +306,7 @@ private fun selectEmptyResult(element: JsonElement): DeserializationStrategy<Emp
  * Returns null if the structure doesn't match any known client result type.
  */
 private fun selectClientResultDeserializer(element: JsonElement): DeserializationStrategy<ClientResult>? {
-    val jsonObject = element.jsonObject
+    val jsonObject = element.asJsonObject()
     return when {
         "model" in jsonObject && "role" in jsonObject -> CreateMessageResult.serializer()
         "roots" in jsonObject -> ListRootsResult.serializer()
@@ -310,7 +320,7 @@ private fun selectClientResultDeserializer(element: JsonElement): Deserializatio
  * Returns null if the structure doesn't match any known server result type.
  */
 private fun selectServerResultDeserializer(element: JsonElement): DeserializationStrategy<ServerResult>? {
-    val jsonObject = element.jsonObject
+    val jsonObject = element.asJsonObject()
     return when {
         "protocolVersion" in jsonObject && "capabilities" in jsonObject -> InitializeResult.serializer()
         "completion" in jsonObject -> CompleteResult.serializer()
@@ -378,7 +388,7 @@ internal object ServerResultPolymorphicSerializer :
 internal object JSONRPCMessagePolymorphicSerializer :
     JsonContentPolymorphicSerializer<JSONRPCMessage>(JSONRPCMessage::class) {
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<JSONRPCMessage> {
-        val jsonObject = element.jsonObject
+        val jsonObject = element.asJsonObject()
         return when {
             "error" in jsonObject -> JSONRPCError.serializer()
             "result" in jsonObject -> JSONRPCResponse.serializer()
