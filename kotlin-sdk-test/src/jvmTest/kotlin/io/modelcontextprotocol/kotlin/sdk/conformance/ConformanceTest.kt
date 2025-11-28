@@ -31,7 +31,6 @@ class ConformanceTest {
             "resources-list",
             "prompts-list",
             // TODO: Fix
-            // The following scenarios are failing (likely due to us not meeting the latest specification):
             // - resources-read-text
             // - prompts-get-simple
         )
@@ -39,7 +38,6 @@ class ConformanceTest {
         private val CLIENT_SCENARIOS = listOf(
             "initialize",
             // TODO: Fix
-            // The following scenarios are failing (likely due to us not meeting the latest specification):
             // "tools-call",
         )
 
