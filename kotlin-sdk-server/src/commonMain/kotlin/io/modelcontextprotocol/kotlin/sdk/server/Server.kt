@@ -26,6 +26,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ListToolsRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification
 import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.Notification
 import io.modelcontextprotocol.kotlin.sdk.types.Prompt
 import io.modelcontextprotocol.kotlin.sdk.types.PromptArgument
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
@@ -33,11 +34,14 @@ import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
 import io.modelcontextprotocol.kotlin.sdk.types.Resource
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.SubscribeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
 import io.modelcontextprotocol.kotlin.sdk.types.ToolAnnotations
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
+import io.modelcontextprotocol.kotlin.sdk.types.UnsubscribeRequest
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Deferred
 import kotlinx.serialization.json.JsonObject
 
 private val logger = KotlinLogging.logger {}
@@ -88,6 +92,8 @@ public open class Server(
 
     private val sessionRegistry = ServerSessionRegistry()
 
+    private val notificationService = FeatureNotificationService()
+
     /**
      * Provides a snapshot of all sessions currently registered in the server
      */
@@ -103,9 +109,21 @@ public open class Server(
     @Suppress("ktlint:standard:backing-property-naming")
     private var _onClose: () -> Unit = {}
 
-    private val toolRegistry = FeatureRegistry<RegisteredTool>("Tool")
-    private val promptRegistry = FeatureRegistry<RegisteredPrompt>("Prompt")
-    private val resourceRegistry = FeatureRegistry<RegisteredResource>("Resource")
+    private val toolRegistry = FeatureRegistry<RegisteredTool>("Tool").apply {
+        if (options.capabilities.tools?.listChanged ?: false) {
+            addListener(notificationService.getToolFeatureListener())
+        }
+    }
+    private val promptRegistry = FeatureRegistry<RegisteredPrompt>("Prompt").apply {
+        if (options.capabilities.prompts?.listChanged ?: false) {
+            addListener(notificationService.getPromptFeatureListener())
+        }
+    }
+    private val resourceRegistry = FeatureRegistry<RegisteredResource>("Resource").apply {
+        if (options.capabilities.resources?.listChanged ?: false) {
+            addListener(notificationService.geResourceFeatureListener())
+        }
+    }
 
     public val tools: Map<String, RegisteredTool>
         get() = toolRegistry.values
@@ -182,17 +200,29 @@ public open class Server(
             session.setRequestHandler<ListResourceTemplatesRequest>(Method.Defined.ResourcesTemplatesList) { _, _ ->
                 handleListResourceTemplates()
             }
+            if (options.capabilities.resources?.subscribe ?: false) {
+                session.setRequestHandler<SubscribeRequest>(Method.Defined.ResourcesSubscribe) { request, _ ->
+                    handleSubscribeResources(session, request)
+                    null
+                }
+                session.setRequestHandler<UnsubscribeRequest>(Method.Defined.ResourcesUnsubscribe) { request, _ ->
+                    handleUnsubscribeResources(session, request)
+                    null
+                }
+            }
         }
 
         // Register cleanup handler to remove session from list when it closes
         session.onClose {
             logger.debug { "Removing closed session from active sessions list" }
+            notificationService.unsubscribeFromListChangedNotification(session)
             sessionRegistry.removeSession(session.sessionId)
         }
         logger.debug { "Server session connecting to transport" }
         session.connect(transport)
         logger.debug { "Server session successfully connected to transport" }
         sessionRegistry.addSession(session)
+        notificationService.subscribeToListChangedNotification(session)
 
         _onConnect()
         return session
@@ -484,6 +514,24 @@ public open class Server(
     }
 
     // --- Internal Handlers ---
+    private suspend fun handleSubscribeResources(session: ServerSession, request: SubscribeRequest) {
+        if (options.capabilities.resources?.subscribe ?: false) {
+            logger.debug { "Subscribing to resources" }
+            notificationService.subscribeToResourceUpdateNotifications(session, request.params.uri)
+        } else {
+            logger.debug { "Failed to subscribe to resources: Server does not support resources capability" }
+        }
+    }
+
+    private suspend fun handleUnsubscribeResources(session: ServerSession, request: UnsubscribeRequest) {
+        if (options.capabilities.resources?.subscribe ?: false) {
+            logger.debug { "Unsubscribing from resources" }
+            notificationService.unsubscribeFromResourceUpdateNotifications(session, request.params.uri)
+        } else {
+            logger.debug { "Failed to unsubscribe from resources: Server does not support resources capability" }
+        }
+    }
+
     private suspend fun handleListTools(): ListToolsResult {
         val toolList = tools.values.map { it.tool }
         return ListToolsResult(tools = toolList, nextCursor = null)
@@ -675,4 +723,30 @@ public open class Server(
         }
     }
     // End the ServerSession redirection section
+
+    // Start the notification handling section
+    public fun <T : Notification> setNotificationHandler(method: Method, handler: (notification: T) -> Deferred<Unit>) {
+        sessions.forEach { (_, session) ->
+            session.setNotificationHandler(method, handler)
+        }
+    }
+
+    public fun removeNotificationHandler(method: Method) {
+        sessions.forEach { (_, session) ->
+            session.removeNotificationHandler(method)
+        }
+    }
+
+    public fun <T : Notification> setNotificationHandler(
+        sessionId: String,
+        method: Method,
+        handler: (notification: T) -> Deferred<Unit>
+    ) {
+        sessionRegistry.getSessionOrNull(sessionId)?.setNotificationHandler(method, handler)
+    }
+
+    public fun removeNotificationHandler(sessionId: String, method: Method) {
+        sessionRegistry.getSessionOrNull(sessionId)?.removeNotificationHandler(method)
+    }
+    // End the notification handling section
 }
