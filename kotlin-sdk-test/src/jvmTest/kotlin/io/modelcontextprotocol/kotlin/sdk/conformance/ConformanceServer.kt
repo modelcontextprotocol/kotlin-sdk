@@ -149,9 +149,32 @@ fun main(args: Array<String>) {
                             }
                         }
 
-                        withTimeoutOrNull(SESSION_CREATION_TIMEOUT_MS) {
+                        val sessionCreated = withTimeoutOrNull(SESSION_CREATION_TIMEOUT_MS) {
                             sessionReady.await()
-                        } ?: logger.warn { "Session creation timed out, proceeding anyway" }
+                        }
+
+                        if (sessionCreated == null) {
+                            logger.error { "Session creation timed out" }
+                            serverTransports.remove(newSessionId)
+                            call.respond(
+                                HttpStatusCode.InternalServerError,
+                                jsonFormat.encodeToString(
+                                    JsonObject.serializer(),
+                                    buildJsonObject {
+                                        put("jsonrpc", "2.0")
+                                        put(
+                                            "error",
+                                            buildJsonObject {
+                                                put("code", -32000)
+                                                put("message", "Session creation timed out")
+                                            },
+                                        )
+                                        put("id", JsonNull)
+                                    },
+                                ),
+                            )
+                            return@post
+                        }
 
                         newTransport.handleRequest(call, jsonElement)
                     } else {
