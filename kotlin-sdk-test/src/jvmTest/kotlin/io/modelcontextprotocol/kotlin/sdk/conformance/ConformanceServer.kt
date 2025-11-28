@@ -44,7 +44,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -108,13 +107,16 @@ fun main(args: Array<String>) {
                             JsonObject.serializer(),
                             buildJsonObject {
                                 put("jsonrpc", "2.0")
-                                put("error", buildJsonObject {
-                                    put("code", -32700)
-                                    put("message", "Parse error: ${e.message}")
-                                })
+                                put(
+                                    "error",
+                                    buildJsonObject {
+                                        put("code", -32700)
+                                        put("message", "Parse error: ${e.message}")
+                                    },
+                                )
                                 put("id", JsonNull)
-                            }
-                        )
+                            },
+                        ),
                     )
                     return@post
                 }
@@ -158,13 +160,16 @@ fun main(args: Array<String>) {
                                 JsonObject.serializer(),
                                 buildJsonObject {
                                     put("jsonrpc", "2.0")
-                                    put("error", buildJsonObject {
-                                        put("code", -32000)
-                                        put("message", "Bad Request: No valid session ID provided")
-                                    })
+                                    put(
+                                        "error",
+                                        buildJsonObject {
+                                            put("code", -32000)
+                                            put("message", "Bad Request: No valid session ID provided")
+                                        },
+                                    )
                                     put("id", JsonNull)
-                                }
-                            )
+                                },
+                            ),
                         )
                     }
                 }
@@ -191,15 +196,15 @@ private fun createConformanceServer(): Server {
     val server = Server(
         Implementation(
             name = "kotlin-conformance-server",
-            version = "1.0.0"
+            version = "1.0.0",
         ),
         ServerOptions(
             capabilities = ServerCapabilities(
                 tools = ServerCapabilities.Tools(listChanged = true),
                 resources = ServerCapabilities.Resources(subscribe = true, listChanged = true),
-                prompts = ServerCapabilities.Prompts(listChanged = true)
-            )
-        )
+                prompts = ServerCapabilities.Prompts(listChanged = true),
+            ),
+        ),
     )
 
     server.addTool(
@@ -207,17 +212,20 @@ private fun createConformanceServer(): Server {
         description = "A test tool for conformance testing",
         inputSchema = ToolSchema(
             properties = buildJsonObject {
-                put("input", buildJsonObject {
-                    put("type", "string")
-                    put("description", "Test input parameter")
-                })
+                put(
+                    "input",
+                    buildJsonObject {
+                        put("type", "string")
+                        put("description", "Test input parameter")
+                    },
+                )
             },
-            required = listOf("input")
-        )
+            required = listOf("input"),
+        ),
     ) { request ->
         val input = (request.params.arguments?.get("input") as? JsonPrimitive)?.content ?: "no input"
         CallToolResult(
-            content = listOf(TextContent("Tool executed with input: $input"))
+            content = listOf(TextContent("Tool executed with input: $input")),
         )
     }
 
@@ -225,12 +233,12 @@ private fun createConformanceServer(): Server {
         uri = "test://resource",
         name = "Test Resource",
         description = "A test resource for conformance testing",
-        mimeType = "text/plain"
+        mimeType = "text/plain",
     ) { request ->
         ReadResourceResult(
             contents = listOf(
-                TextResourceContents("Test resource content", request.params.uri, "text/plain")
-            )
+                TextResourceContents("Test resource content", request.params.uri, "text/plain"),
+            ),
         )
     }
 
@@ -241,18 +249,18 @@ private fun createConformanceServer(): Server {
             PromptArgument(
                 name = "arg",
                 description = "Test argument",
-                required = false
-            )
-        )
+                required = false,
+            ),
+        ),
     ) {
         GetPromptResult(
             messages = listOf(
                 PromptMessage(
                     role = Role.User,
-                    content = TextContent("Test prompt content")
-                )
+                    content = TextContent("Test prompt content"),
+                ),
             ),
-            description = "Test prompt description"
+            description = "Test prompt description",
         )
     }
 
@@ -310,10 +318,10 @@ private class HttpServerTransport(private val sessionId: String) : AbstractTrans
                             McpJson.encodeToString(
                                 JSONRPCError(
                                     message.id,
-                                    RPCError(RPCError.ErrorCode.REQUEST_TIMEOUT, "Request timed out")
-                                )
+                                    RPCError(RPCError.ErrorCode.REQUEST_TIMEOUT, "Request timed out"),
+                                ),
                             ),
-                            ContentType.Application.Json
+                            ContentType.Application.Json,
                         )
                     }
                 }
@@ -329,11 +337,11 @@ private class HttpServerTransport(private val sessionId: String) : AbstractTrans
                     McpJson.encodeToString(
                         JSONRPCError(
                             RequestId(0),
-                            RPCError(RPCError.ErrorCode.INTERNAL_ERROR, "Internal error: ${e.message}")
-                        )
+                            RPCError(RPCError.ErrorCode.INTERNAL_ERROR, "Internal error: ${e.message}"),
+                        ),
                     ),
                     ContentType.Application.Json,
-                    HttpStatusCode.InternalServerError
+                    HttpStatusCode.InternalServerError,
                 )
             }
         }

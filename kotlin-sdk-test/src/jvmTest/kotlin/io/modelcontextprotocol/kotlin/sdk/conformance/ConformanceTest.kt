@@ -51,17 +51,11 @@ class ConformanceTest {
         private const val GRACEFUL_SHUTDOWN_SECONDS = 5L
         private const val FORCE_SHUTDOWN_SECONDS = 2L
 
-        private fun findFreePort(): Int {
-            return ServerSocket(0).use { it.localPort }
-        }
+        private fun findFreePort(): Int = ServerSocket(0).use { it.localPort }
 
-        private fun getRuntimeClasspath(): String {
-            return ManagementFactory.getRuntimeMXBean().classPath
-        }
+        private fun getRuntimeClasspath(): String = ManagementFactory.getRuntimeMXBean().classPath
 
-        private fun getTestClasspath(): String {
-            return System.getProperty("test.classpath") ?: getRuntimeClasspath()
-        }
+        private fun getTestClasspath(): String = System.getProperty("test.classpath") ?: getRuntimeClasspath()
 
         private fun waitForServerReady(
             url: String,
@@ -104,9 +98,10 @@ class ConformanceTest {
 
         val processBuilder = ProcessBuilder(
             "java",
-            "-cp", getRuntimeClasspath(),
+            "-cp",
+            getRuntimeClasspath(),
             "io.modelcontextprotocol.kotlin.sdk.conformance.ConformanceServerKt",
-            serverPort.toString()
+            serverPort.toString(),
         )
 
         val process = processBuilder.start()
@@ -134,14 +129,14 @@ class ConformanceTest {
 
         if (!serverReady) {
             val errorInfo = if (serverErrorOutput.isNotEmpty()) {
-                "\n\nServer error output:\n${serverErrorOutput}"
+                "\n\nServer error output:\n$serverErrorOutput"
             } else {
                 ""
             }
             serverProcess?.destroyForcibly()
             throw IllegalStateException(
                 "Server failed to start within $DEFAULT_SERVER_STARTUP_TIMEOUT_SECONDS seconds. " +
-                    "Check if port $serverPort is available.$errorInfo"
+                    "Check if port $serverPort is available.$errorInfo",
             )
         }
 
@@ -184,11 +179,9 @@ class ConformanceTest {
     }
 
     @TestFactory
-    fun `MCP Client Conformance Tests`(): List<DynamicTest> {
-        return CLIENT_SCENARIOS.map { scenario ->
-            DynamicTest.dynamicTest("Client: $scenario") {
-                runClientConformanceTest(scenario)
-            }
+    fun `MCP Client Conformance Tests`(): List<DynamicTest> = CLIENT_SCENARIOS.map { scenario ->
+        DynamicTest.dynamicTest("Client: $scenario") {
+            runClientConformanceTest(scenario)
         }
     }
 
@@ -197,8 +190,10 @@ class ConformanceTest {
             "npx",
             "@modelcontextprotocol/conformance",
             "server",
-            "--url", serverUrl,
-            "--scenario", scenario
+            "--url",
+            serverUrl,
+            "--scenario",
+            scenario,
         ).apply {
             inheritIO()
         }
@@ -211,16 +206,19 @@ class ConformanceTest {
 
         val clientCommand = listOf(
             "java",
-            "-cp", testClasspath,
-            "io.modelcontextprotocol.kotlin.sdk.conformance.ConformanceClientKt"
+            "-cp",
+            testClasspath,
+            "io.modelcontextprotocol.kotlin.sdk.conformance.ConformanceClientKt",
         )
 
         val processBuilder = ProcessBuilder(
             "npx",
             "@modelcontextprotocol/conformance",
             "client",
-            "--command", clientCommand.joinToString(" "),
-            "--scenario", scenario
+            "--command",
+            clientCommand.joinToString(" "),
+            "--scenario",
+            scenario,
         ).apply {
             inheritIO()
         }
@@ -228,11 +226,7 @@ class ConformanceTest {
         runConformanceTest("client", scenario, processBuilder)
     }
 
-    private fun runConformanceTest(
-        type: String,
-        scenario: String,
-        processBuilder: ProcessBuilder
-    ) {
+    private fun runConformanceTest(type: String, scenario: String, processBuilder: ProcessBuilder) {
         logger.info { "Running $type conformance test: $scenario" }
 
         val timeoutSeconds = System.getenv("CONFORMANCE_TEST_TIMEOUT_SECONDS")?.toLongOrNull()
@@ -242,16 +236,33 @@ class ConformanceTest {
         val completed = process.waitFor(timeoutSeconds, TimeUnit.SECONDS)
 
         if (!completed) {
-            logger.error { "${type.replaceFirstChar { it.uppercase() }} conformance test '$scenario' timed out after $timeoutSeconds seconds" }
+            logger.error {
+                "${type.replaceFirstChar {
+                    it.uppercase()
+                }} conformance test '$scenario' timed out after $timeoutSeconds seconds"
+            }
             process.destroyForcibly()
-            throw AssertionError("❌ ${type.replaceFirstChar { it.uppercase() }} conformance test '$scenario' timed out after $timeoutSeconds seconds")
+            throw AssertionError(
+                "❌ ${type.replaceFirstChar {
+                    it.uppercase()
+                }} conformance test '$scenario' timed out after $timeoutSeconds seconds",
+            )
         }
 
         when (val exitCode = process.exitValue()) {
             0 -> logger.info { "✅ ${type.replaceFirstChar { it.uppercase() }} conformance test '$scenario' passed!" }
+
             else -> {
-                logger.error { "${type.replaceFirstChar { it.uppercase() }} conformance test '$scenario' failed with exit code: $exitCode" }
-                throw AssertionError("❌ ${type.replaceFirstChar { it.uppercase() }} conformance test '$scenario' failed (exit code: $exitCode). Check test output above for details.")
+                logger.error {
+                    "${type.replaceFirstChar {
+                        it.uppercase()
+                    }} conformance test '$scenario' failed with exit code: $exitCode"
+                }
+                throw AssertionError(
+                    "❌ ${type.replaceFirstChar {
+                        it.uppercase()
+                    }} conformance test '$scenario' failed (exit code: $exitCode). Check test output above for details.",
+                )
             }
         }
     }

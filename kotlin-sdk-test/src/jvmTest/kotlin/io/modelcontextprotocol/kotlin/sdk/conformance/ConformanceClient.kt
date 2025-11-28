@@ -32,8 +32,8 @@ fun main(args: Array<String>) {
     val client = Client(
         clientInfo = Implementation(
             name = "kotlin-conformance-client",
-            version = "1.0.0"
-        )
+            version = "1.0.0",
+        ),
     )
 
     var exitCode = 0
@@ -57,9 +57,9 @@ fun main(args: Array<String>) {
                                 arguments = buildJsonObject {
                                     put("a", JsonPrimitive(5))
                                     put("b", JsonPrimitive(3))
-                                }
-                            )
-                        )
+                                },
+                            ),
+                        ),
                     )
                     logger.info { "Tool result: ${result.content}" }
                 } else if (tools.tools.isNotEmpty()) {
@@ -72,9 +72,9 @@ fun main(args: Array<String>) {
                                 name = toolName,
                                 arguments = buildJsonObject {
                                     put("input", JsonPrimitive("test"))
-                                }
-                            )
-                        )
+                                },
+                            ),
+                        ),
                     )
                     logger.info { "Tool result: ${result.content}" }
                 }
