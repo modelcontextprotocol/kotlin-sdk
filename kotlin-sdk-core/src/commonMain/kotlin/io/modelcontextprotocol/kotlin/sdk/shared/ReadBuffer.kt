@@ -9,6 +9,13 @@ import kotlinx.io.readString
 
 /**
  * Buffers a continuous stdio stream into discrete JSON-RPC messages.
+ *
+ * This class accumulates bytes from a stream and extracts complete lines,
+ * parsing them as JSON-RPC messages. Handles line-buffering with proper
+ * CR/LF handling for cross-platform compatibility.
+ *
+ * Thread-safety: This class is NOT thread-safe. It should be used from
+ * a single coroutine or protected by external synchronization.
  */
 public class ReadBuffer {
 
@@ -16,14 +23,29 @@ public class ReadBuffer {
 
     private val buffer: Buffer = Buffer()
 
+    /**
+     * Returns true if there's no pending data in the buffer.
+     */
+    public fun isEmpty(): Boolean = buffer.exhausted()
+
+    /**
+     * Appends a chunk of bytes to the buffer.
+     * Call this when new data arrives from the stream.
+     */
     public fun append(chunk: ByteArray) {
         buffer.write(chunk)
     }
 
-    public fun readMessage(): JSONRPCMessage? {
+    /**
+     * Reads a complete line from the buffer if available.
+     * Returns null if no complete line is present.
+     *
+     * Handles both CRLF and LF line endings.
+     */
+    public fun readLine(): String? {
         if (buffer.exhausted()) return null
         var lfIndex = buffer.indexOf('\n'.code.toByte())
-        val line = when (lfIndex) {
+        return when (lfIndex) {
             -1L -> return null
 
             0L -> {
@@ -42,6 +64,17 @@ public class ReadBuffer {
                 string
             }
         }
+    }
+
+    /**
+     * Reads and parses the next JSON-RPC message from the buffer.
+     * Returns null if no complete message is available.
+     *
+     * Attempts recovery if the line has a non-JSON prefix by looking for the first '{'.
+     * If deserialization fails completely, logs the error and returns null.
+     */
+    public fun readMessage(): JSONRPCMessage? {
+        val line = readLine() ?: return null
         try {
             return deserializeMessage(line)
         } catch (e: Exception) {
@@ -61,6 +94,10 @@ public class ReadBuffer {
         return null
     }
 
+    /**
+     * Clears all pending data from the buffer.
+     * Useful for discarding incomplete messages after errors.
+     */
     public fun clear() {
         buffer.clear()
     }

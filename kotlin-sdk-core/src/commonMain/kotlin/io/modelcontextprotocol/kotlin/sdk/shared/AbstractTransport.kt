@@ -1,6 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.shared
 
-import io.modelcontextprotocol.kotlin.sdk.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import kotlinx.coroutines.CompletableDeferred
 
 /**

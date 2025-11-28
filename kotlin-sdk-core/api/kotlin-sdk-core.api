@@ -466,6 +466,8 @@ public final class io/modelcontextprotocol/kotlin/sdk/shared/ReadBuffer {
 	public fun <init> ()V
 	public final fun append ([B)V
 	public final fun clear ()V
+	public final fun isEmpty ()Z
+	public final fun readLine ()Ljava/lang/String;
 	public final fun readMessage ()Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;
 }
 
