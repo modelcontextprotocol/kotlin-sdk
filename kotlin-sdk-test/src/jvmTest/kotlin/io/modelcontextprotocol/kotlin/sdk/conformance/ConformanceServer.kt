@@ -40,7 +40,10 @@ import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
@@ -60,6 +63,10 @@ private val logger = KotlinLogging.logger {}
 private val serverTransports = ConcurrentHashMap<String, HttpServerTransport>()
 private val jsonFormat = Json { ignoreUnknownKeys = true }
 
+private const val SESSION_CREATION_TIMEOUT_MS = 2000L
+private const val REQUEST_TIMEOUT_MS = 10_000L
+private const val MESSAGE_QUEUE_CAPACITY = 256
+
 private fun isInitializeRequest(json: JsonElement): Boolean =
     json is JsonObject && json["method"]?.jsonPrimitive?.contentOrNull == "initialize"
 
@@ -72,15 +79,15 @@ fun main(args: Array<String>) {
         routing {
             get("/mcp") {
                 val sessionId = call.request.header("mcp-session-id")
-                if (sessionId == null) {
-                    call.respond(HttpStatusCode.BadRequest, "Missing mcp-session-id header")
-                    return@get
-                }
+                    ?: run {
+                        call.respond(HttpStatusCode.BadRequest, "Missing mcp-session-id header")
+                        return@get
+                    }
                 val transport = serverTransports[sessionId]
-                if (transport == null) {
-                    call.respond(HttpStatusCode.BadRequest, "Invalid mcp-session-id")
-                    return@get
-                }
+                    ?: run {
+                        call.respond(HttpStatusCode.BadRequest, "Invalid mcp-session-id")
+                        return@get
+                    }
                 transport.stream(call)
             }
 
@@ -99,78 +106,65 @@ fun main(args: Array<String>) {
                         HttpStatusCode.BadRequest,
                         jsonFormat.encodeToString(
                             JsonObject.serializer(),
-                            JsonObject(
-                                mapOf(
-                                    "jsonrpc" to JsonPrimitive("2.0"),
-                                    "error" to JsonObject(
-                                        mapOf(
-                                            "code" to JsonPrimitive(-32700),
-                                            "message" to JsonPrimitive("Parse error: ${e.message}"),
-                                        ),
-                                    ),
-                                    "id" to JsonNull,
-                                ),
-                            ),
-                        ),
+                            buildJsonObject {
+                                put("jsonrpc", "2.0")
+                                put("error", buildJsonObject {
+                                    put("code", -32700)
+                                    put("message", "Parse error: ${e.message}")
+                                })
+                                put("id", JsonNull)
+                            }
+                        )
                     )
                     return@post
                 }
 
-                if (sessionId != null && serverTransports.containsKey(sessionId)) {
+                val transport = sessionId?.let { serverTransports[it] }
+                if (transport != null) {
                     logger.debug { "Using existing transport for session: $sessionId" }
-                    val transport = serverTransports[sessionId]!!
                     transport.handleRequest(call, jsonElement)
                 } else {
                     if (isInitializeRequest(jsonElement)) {
                         val newSessionId = UUID.randomUUID().toString()
                         logger.info { "Creating new session with ID: $newSessionId" }
 
-                        val transport = HttpServerTransport(newSessionId)
-                        serverTransports[newSessionId] = transport
+                        val newTransport = HttpServerTransport(newSessionId)
+                        serverTransports[newSessionId] = newTransport
 
                         val mcpServer = createConformanceServer()
                         call.response.header("mcp-session-id", newSessionId)
 
                         val sessionReady = CompletableDeferred<Unit>()
-                        Thread {
-                            runBlocking {
-                                try {
-                                    mcpServer.createSession(transport)
-                                    sessionReady.complete(Unit)
-                                } catch (e: Exception) {
-                                    logger.error(e) { "Failed to create session" }
-                                    sessionReady.completeExceptionally(e)
-                                }
+                        CoroutineScope(Dispatchers.IO).launch {
+                            try {
+                                mcpServer.createSession(newTransport)
+                                sessionReady.complete(Unit)
+                            } catch (e: Exception) {
+                                logger.error(e) { "Failed to create session" }
+                                sessionReady.completeExceptionally(e)
                             }
-                        }.start()
-
-                        runBlocking {
-                            withTimeoutOrNull(2000) {
-                                sessionReady.await()
-                            } ?: logger.warn { "Session creation timed out, proceeding anyway" }
                         }
 
-                        transport.handleRequest(call, jsonElement)
+                        withTimeoutOrNull(SESSION_CREATION_TIMEOUT_MS) {
+                            sessionReady.await()
+                        } ?: logger.warn { "Session creation timed out, proceeding anyway" }
+
+                        newTransport.handleRequest(call, jsonElement)
                     } else {
                         logger.warn { "Invalid request: no session ID or not an initialization request" }
                         call.respond(
                             HttpStatusCode.BadRequest,
                             jsonFormat.encodeToString(
                                 JsonObject.serializer(),
-                                JsonObject(
-                                    mapOf(
-                                        "jsonrpc" to JsonPrimitive("2.0"),
-                                        "error" to JsonObject(
-                                            mapOf(
-                                                "code" to JsonPrimitive(-32000),
-                                                "message" to
-                                                    JsonPrimitive("Bad Request: No valid session ID provided"),
-                                            ),
-                                        ),
-                                        "id" to JsonNull,
-                                    ),
-                                ),
-                            ),
+                                buildJsonObject {
+                                    put("jsonrpc", "2.0")
+                                    put("error", buildJsonObject {
+                                        put("code", -32000)
+                                        put("message", "Bad Request: No valid session ID provided")
+                                    })
+                                    put("id", JsonNull)
+                                }
+                            )
                         )
                     }
                 }
@@ -178,13 +172,11 @@ fun main(args: Array<String>) {
 
             delete("/mcp") {
                 val sessionId = call.request.header("mcp-session-id")
-                if (sessionId != null && serverTransports.containsKey(sessionId)) {
+                val transport = sessionId?.let { serverTransports[it] }
+                if (transport != null) {
                     logger.info { "Terminating session: $sessionId" }
-                    val transport = serverTransports[sessionId]!!
                     serverTransports.remove(sessionId)
-                    runBlocking {
-                        transport.close()
-                    }
+                    transport.close()
                     call.respond(HttpStatusCode.OK)
                 } else {
                     logger.warn { "Invalid session termination request: $sessionId" }
@@ -270,7 +262,7 @@ private fun createConformanceServer(): Server {
 private class HttpServerTransport(private val sessionId: String) : AbstractTransport() {
     private val logger = KotlinLogging.logger {}
     private val pendingResponses = ConcurrentHashMap<String, CompletableDeferred<JSONRPCMessage>>()
-    private val messageQueue = Channel<JSONRPCMessage>(Channel.UNLIMITED)
+    private val messageQueue = Channel<JSONRPCMessage>(MESSAGE_QUEUE_CAPACITY)
 
     suspend fun stream(call: ApplicationCall) {
         logger.debug { "Starting SSE stream for session $sessionId" }
@@ -300,17 +292,20 @@ private class HttpServerTransport(private val sessionId: String) : AbstractTrans
 
             when (message) {
                 is JSONRPCRequest -> {
-                    val id = message.id.toString()
+                    val idKey = when (val id = message.id) {
+                        is RequestId.NumberId -> id.value.toString()
+                        is RequestId.StringId -> id.value
+                    }
                     val responseDeferred = CompletableDeferred<JSONRPCMessage>()
-                    pendingResponses[id] = responseDeferred
+                    pendingResponses[idKey] = responseDeferred
 
                     _onMessage.invoke(message)
 
-                    val response = withTimeoutOrNull(10_000) { responseDeferred.await() }
+                    val response = withTimeoutOrNull(REQUEST_TIMEOUT_MS) { responseDeferred.await() }
                     if (response != null) {
                         call.respondText(McpJson.encodeToString(response), ContentType.Application.Json)
                     } else {
-                        logger.warn { "Timeout for request $id" }
+                        logger.warn { "Timeout for request $idKey" }
                         call.respondText(
                             McpJson.encodeToString(
                                 JSONRPCError(
@@ -351,9 +346,12 @@ private class HttpServerTransport(private val sessionId: String) : AbstractTrans
     override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
         when (message) {
             is JSONRPCResponse -> {
-                val id = message.id.toString()
-                pendingResponses.remove(id)?.complete(message) ?: run {
-                    logger.warn { "No pending response for ID $id, queueing" }
+                val idKey = when (val id = message.id) {
+                    is RequestId.NumberId -> id.value.toString()
+                    is RequestId.StringId -> id.value
+                }
+                pendingResponses.remove(idKey)?.complete(message) ?: run {
+                    logger.warn { "No pending response for ID $idKey, queueing" }
                     messageQueue.send(message)
                 }
             }
