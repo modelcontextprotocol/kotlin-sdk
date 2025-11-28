@@ -315,6 +315,7 @@ private class HttpServerTransport(private val sessionId: String) : AbstractTrans
                     if (response != null) {
                         call.respondText(McpJson.encodeToString(response), ContentType.Application.Json)
                     } else {
+                        pendingResponses.remove(idKey)
                         logger.warn { "Timeout for request $idKey" }
                         call.respondText(
                             McpJson.encodeToString(
