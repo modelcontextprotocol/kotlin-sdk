@@ -55,6 +55,7 @@ MCP Kotlin SDK — Kotlin Multiplatform implementation of the Model Context Prot
 ### Multiplatform Patterns
 - Use `expect`/`actual` pattern for platform-specific implementations in `utils.*` files.
 - Test changes on JVM first, then verify platform-specific behavior if needed.
+- Use Kotlin 2.2 api and language level 
 - Supported targets: JVM (1.8+), JS/Wasm, iOS, watchOS, tvOS.
 
 ### Serialization

@@ -123,8 +123,6 @@ class StreamableHttpClientTransportTest {
 
     @Test
     fun testTerminateSession() = runTest {
-//        transport.sessionId = "test-session-id"
-
         val transport = createTransport { request ->
             assertEquals(HttpMethod.Delete, request.method)
             assertEquals("test-session-id", request.headers["mcp-session-id"])
@@ -143,8 +141,6 @@ class StreamableHttpClientTransportTest {
 
     @Test
     fun testTerminateSessionHandle405() = runTest {
-//        transport.sessionId = "test-session-id"
-
         val transport = createTransport { request ->
             assertEquals(HttpMethod.Delete, request.method)
             respond(

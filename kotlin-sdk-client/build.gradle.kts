@@ -45,6 +45,7 @@ kotlin {
                 implementation(libs.ktor.server.websockets)
                 implementation(libs.kotlinx.coroutines.test)
                 implementation(libs.ktor.client.logging)
+                implementation(libs.kotest.assertions.core)
             }
         }
 
@@ -53,6 +54,7 @@ kotlin {
                 implementation(libs.mokksy)
                 implementation(libs.awaitility)
                 implementation(libs.ktor.client.apache5)
+                implementation(libs.mockk)
                 implementation(dependencies.platform(libs.netty.bom))
                 runtimeOnly(libs.slf4j.simple)
             }
