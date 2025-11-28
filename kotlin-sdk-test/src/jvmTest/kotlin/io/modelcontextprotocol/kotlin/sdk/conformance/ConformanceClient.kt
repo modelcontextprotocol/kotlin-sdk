@@ -18,7 +18,7 @@ private val logger = KotlinLogging.logger {}
 
 fun main(args: Array<String>) {
     require(args.isNotEmpty()) {
-        "Usage: ConformanceClient <server-url>"
+        "Server URL must be provided as an argument"
     }
 
     val serverUrl = args.last()
@@ -47,22 +47,7 @@ fun main(args: Array<String>) {
                 val tools = client.listTools()
                 logger.info { "Available tools: ${tools.tools.map { it.name }}" }
 
-                val addNumbersTool = tools.tools.find { it.name == "add_numbers" }
-                if (addNumbersTool != null) {
-                    logger.info { "Calling tool: add_numbers" }
-                    val result = client.callTool(
-                        CallToolRequest(
-                            params = CallToolRequestParams(
-                                name = "add_numbers",
-                                arguments = buildJsonObject {
-                                    put("a", JsonPrimitive(5))
-                                    put("b", JsonPrimitive(3))
-                                },
-                            ),
-                        ),
-                    )
-                    logger.info { "Tool result: ${result.content}" }
-                } else if (tools.tools.isNotEmpty()) {
+                if (tools.tools.isNotEmpty()) {
                     val toolName = tools.tools.first().name
                     logger.info { "Calling tool: $toolName" }
 

@@ -63,7 +63,7 @@ jobs:
         run: ./gradlew --no-daemon clean build -Pmcp.kotlin.overrideVersion=0.0.1-SNAPSHOT
 
       - name: Run Conformance Tests
-        run: ./gradlew conformance
+        run: ./gradlew --no-daemon conformance
 
       - name: Upload Conformance Results
         if: always()
