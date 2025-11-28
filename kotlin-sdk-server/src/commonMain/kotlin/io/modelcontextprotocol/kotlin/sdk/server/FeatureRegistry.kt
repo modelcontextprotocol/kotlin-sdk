@@ -5,8 +5,18 @@ import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.getAndUpdate
 import kotlinx.atomicfu.update
 import kotlinx.collections.immutable.minus
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentSet
+
+
+/**
+ * A listener interface for receiving notifications about feature changes in registry.
+ */
+internal interface FeatureListener {
+    fun onListChanged()
+    fun onFeatureUpdated(featureKey: String)
+}
 
 /**
  * A generic registry for managing features of a specified type. This class provides thread-safe
@@ -33,6 +43,16 @@ internal class FeatureRegistry<T : Feature>(private val featureType: String) {
     internal val values: Map<FeatureKey, T>
         get() = registry.value
 
+    private val listeners = atomic(persistentListOf<FeatureListener>())
+
+    internal fun addListener(listener: FeatureListener) {
+        listeners.update { it.add(listener) }
+    }
+
+    internal fun removeListener(listener: FeatureListener) {
+        listeners.update { it.remove(listener) }
+    }
+
     /**
      * Adds the specified feature to the registry.
      *
@@ -40,8 +60,12 @@ internal class FeatureRegistry<T : Feature>(private val featureType: String) {
      */
     internal fun add(feature: T) {
         logger.info { "Adding $featureType: \"${feature.key}\"" }
-        registry.update { current -> current.put(feature.key, feature) }
+        val oldMap = registry.getAndUpdate { current -> current.put(feature.key, feature) }
+        val oldFeature = oldMap[feature.key]
         logger.info { "Added $featureType: \"${feature.key}\"" }
+
+        notifyFeatureUpdated(oldFeature, feature)
+        notifyListChanged()
     }
 
     /**
@@ -52,8 +76,14 @@ internal class FeatureRegistry<T : Feature>(private val featureType: String) {
      */
     internal fun addAll(features: List<T>) {
         logger.info { "Adding ${featureType}s: ${features.size}" }
-        registry.update { current -> current.putAll(features.associateBy { it.key }) }
+        val oldMap = registry.getAndUpdate { current -> current.putAll(features.associateBy { it.key }) }
+        for (feature in features) {
+            val oldFeature = oldMap[feature.key]
+            notifyFeatureUpdated(oldFeature, feature)
+        }
         logger.info { "Added ${featureType}s: ${features.size}" }
+
+        notifyListChanged()
     }
 
     /**
@@ -66,7 +96,8 @@ internal class FeatureRegistry<T : Feature>(private val featureType: String) {
         logger.info { "Removing $featureType: \"$key\"" }
         val oldMap = registry.getAndUpdate { current -> current.remove(key) }
 
-        val removed = key in oldMap
+        val removedFeature = oldMap[key]
+        val removed = removedFeature != null
         logger.info {
             if (removed) {
                 "Removed $featureType: \"$key\""
@@ -74,7 +105,11 @@ internal class FeatureRegistry<T : Feature>(private val featureType: String) {
                 "$featureType not found: \"$key\""
             }
         }
-        return key in oldMap
+
+        notifyFeatureUpdated(removedFeature, null)
+        notifyListChanged()
+
+        return removed
     }
 
     /**
@@ -87,7 +122,12 @@ internal class FeatureRegistry<T : Feature>(private val featureType: String) {
         logger.info { "Removing ${featureType}s: ${keys.size}" }
         val oldMap = registry.getAndUpdate { current -> current - keys.toPersistentSet() }
 
-        val removedCount = keys.count { it in oldMap }
+        val removedFeatures = keys.mapNotNull { oldMap[it] }
+        val removedCount = removedFeatures.size
+        removedFeatures.forEach {
+            notifyFeatureUpdated(it, null)
+        }
+
         logger.info {
             if (removedCount > 0) {
                 "Removed ${featureType}s: $removedCount"
@@ -108,13 +148,24 @@ internal class FeatureRegistry<T : Feature>(private val featureType: String) {
     internal fun get(key: FeatureKey): T? {
         logger.info { "Getting $featureType: \"$key\"" }
         val feature = registry.value[key]
-        logger.info {
-            if (feature != null) {
-                "Got $featureType: \"$key\""
-            } else {
-                "$featureType not found: \"$key\""
-            }
+        if (feature != null) {
+            logger.info { "Got $featureType: \"$key\"" }
+        } else {
+            logger.info { "$featureType not found: \"$key\"" }
         }
+
         return feature
+    }
+
+    private fun notifyListChanged() {
+        logger.info { "Notifying listeners of list change" }
+        listeners.value.forEach { it.onListChanged() }
+    }
+
+    private fun notifyFeatureUpdated(oldFeature: T?, newFeature: T?) {
+        logger.info { "Notifying listeners of feature update" }
+        val featureKey = (oldFeature?.key ?: newFeature?.key) ?: return
+
+        listeners.value.forEach { it.onFeatureUpdated(featureKey) }
     }
 }

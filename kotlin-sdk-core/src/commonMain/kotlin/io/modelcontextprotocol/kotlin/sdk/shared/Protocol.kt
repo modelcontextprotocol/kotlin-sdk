@@ -208,7 +208,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
      * A handler to invoke for any request types that do not have their own handler installed.
      */
     public var fallbackRequestHandler: (
-        suspend (request: JSONRPCRequest, extra: RequestHandlerExtra) -> RequestResult?
+    suspend (request: JSONRPCRequest, extra: RequestHandlerExtra) -> RequestResult?
     )? =
         null
 
