@@ -227,6 +227,7 @@ class ConformanceTest {
     }
 
     private fun runConformanceTest(type: String, scenario: String, processBuilder: ProcessBuilder) {
+        val capitalizedType = type.replaceFirstChar { it.uppercase() }
         logger.info { "Running $type conformance test: $scenario" }
 
         val timeoutSeconds = System.getenv("CONFORMANCE_TEST_TIMEOUT_SECONDS")?.toLongOrNull()
@@ -237,31 +238,23 @@ class ConformanceTest {
 
         if (!completed) {
             logger.error {
-                "${type.replaceFirstChar {
-                    it.uppercase()
-                }} conformance test '$scenario' timed out after $timeoutSeconds seconds"
+                "$capitalizedType conformance test '$scenario' timed out after $timeoutSeconds seconds"
             }
             process.destroyForcibly()
             throw AssertionError(
-                "❌ ${type.replaceFirstChar {
-                    it.uppercase()
-                }} conformance test '$scenario' timed out after $timeoutSeconds seconds",
+                "❌ $capitalizedType conformance test '$scenario' timed out after $timeoutSeconds seconds",
             )
         }
 
         when (val exitCode = process.exitValue()) {
-            0 -> logger.info { "✅ ${type.replaceFirstChar { it.uppercase() }} conformance test '$scenario' passed!" }
+            0 -> logger.info { "✅ $capitalizedType conformance test '$scenario' passed!" }
 
             else -> {
                 logger.error {
-                    "${type.replaceFirstChar {
-                        it.uppercase()
-                    }} conformance test '$scenario' failed with exit code: $exitCode"
+                    "$capitalizedType conformance test '$scenario' failed with exit code: $exitCode"
                 }
                 throw AssertionError(
-                    "❌ ${type.replaceFirstChar {
-                        it.uppercase()
-                    }} conformance test '$scenario' failed (exit code: $exitCode). Check test output above for details.",
+                    "❌ $capitalizedType conformance test '$scenario' failed (exit code: $exitCode). Check test output above for details.",
                 )
             }
         }

@@ -143,6 +143,8 @@ fun main(args: Array<String>) {
                                 sessionReady.complete(Unit)
                             } catch (e: Exception) {
                                 logger.error(e) { "Failed to create session" }
+                                serverTransports.remove(newSessionId)
+                                newTransport.close()
                                 sessionReady.completeExceptionally(e)
                             }
                         }
@@ -208,7 +210,7 @@ private fun createConformanceServer(): Server {
     )
 
     server.addTool(
-        name = "test_tool",
+        name = "test-tool",
         description = "A test tool for conformance testing",
         inputSchema = ToolSchema(
             properties = buildJsonObject {
@@ -230,7 +232,7 @@ private fun createConformanceServer(): Server {
     }
 
     server.addResource(
-        uri = "test://resource",
+        uri = "test://test-resource",
         name = "Test Resource",
         description = "A test resource for conformance testing",
         mimeType = "text/plain",
@@ -243,7 +245,7 @@ private fun createConformanceServer(): Server {
     }
 
     server.addPrompt(
-        name = "test_prompt",
+        name = "test-prompt",
         description = "A test prompt for conformance testing",
         arguments = listOf(
             PromptArgument(
