@@ -22,7 +22,8 @@ class ConformanceTest {
 
     private var serverProcess: Process? = null
     private var serverPort: Int by Delegates.notNull()
-    private val serverErrorOutput = StringBuffer()
+    private val serverErrorOutput = mutableListOf<String>()
+    private val maxErrorLines = 500
 
     companion object {
         private val SERVER_SCENARIOS = listOf(
@@ -112,7 +113,12 @@ class ConformanceTest {
             try {
                 BufferedReader(InputStreamReader(process.errorStream)).use { reader ->
                     reader.lineSequence().forEach { line ->
-                        serverErrorOutput.appendLine(line)
+                        synchronized(serverErrorOutput) {
+                            if (serverErrorOutput.size >= maxErrorLines) {
+                                serverErrorOutput.removeAt(0)
+                            }
+                            serverErrorOutput.add(line)
+                        }
                         logger.debug { "Server stderr: $line" }
                     }
                 }
@@ -128,10 +134,12 @@ class ConformanceTest {
         val serverReady = waitForServerReady(serverUrl)
 
         if (!serverReady) {
-            val errorInfo = if (serverErrorOutput.isNotEmpty()) {
-                "\n\nServer error output:\n$serverErrorOutput"
-            } else {
-                ""
+            val errorInfo = synchronized(serverErrorOutput) {
+                if (serverErrorOutput.isNotEmpty()) {
+                    "\n\nServer error output:\n${serverErrorOutput.joinToString("\n")}"
+                } else {
+                    ""
+                }
             }
             serverProcess?.destroyForcibly()
             throw IllegalStateException(
