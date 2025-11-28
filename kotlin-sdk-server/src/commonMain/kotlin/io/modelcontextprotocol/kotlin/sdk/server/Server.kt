@@ -215,14 +215,14 @@ public open class Server(
         // Register cleanup handler to remove session from list when it closes
         session.onClose {
             logger.debug { "Removing closed session from active sessions list" }
-            notificationService.unsubscribeFromListChangedNotification(session)
+//            notificationService.unsubscribeFromListChangedNotification(session)
             sessionRegistry.removeSession(session.sessionId)
         }
         logger.debug { "Server session connecting to transport" }
         session.connect(transport)
         logger.debug { "Server session successfully connected to transport" }
         sessionRegistry.addSession(session)
-        notificationService.subscribeToListChangedNotification(session)
+//        notificationService.subscribeToListChangedNotification(session)
 
         _onConnect()
         return session
@@ -740,7 +740,7 @@ public open class Server(
     public fun <T : Notification> setNotificationHandler(
         sessionId: String,
         method: Method,
-        handler: (notification: T) -> Deferred<Unit>
+        handler: (notification: T) -> Deferred<Unit>,
     ) {
         sessionRegistry.getSessionOrNull(sessionId)?.setNotificationHandler(method, handler)
     }

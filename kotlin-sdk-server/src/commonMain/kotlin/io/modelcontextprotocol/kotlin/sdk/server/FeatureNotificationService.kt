@@ -73,8 +73,11 @@ internal class FeatureNotificationService {
             notifications.collect { notification ->
                 when (notification) {
                     is PromptListChangedNotification -> session.notification(notification)
+
                     is ResourceListChangedNotification -> session.notification(notification)
+
                     is ToolListChangedNotification -> session.notification(notification)
+
                     else -> logger.debug {
                         "Notification not handled for sessionId ${session.sessionId}: $notification"
                     }
@@ -117,7 +120,6 @@ internal class FeatureNotificationService {
         notificationSessionResourceJobs.remove(session.sessionId to resourceKey)
         logger.debug { "Unsubscribed from resourcec update notifications for sessionId: ${session.sessionId}" }
     }
-
 
     private fun emit(notification: Notification) {
         notificationScope.launch {
