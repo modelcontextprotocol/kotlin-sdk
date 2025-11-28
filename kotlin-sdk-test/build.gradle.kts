@@ -1,3 +1,6 @@
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmCompilation
+
 plugins {
     id("mcp.multiplatform")
 }
@@ -29,5 +32,39 @@ kotlin {
                 runtimeOnly(libs.slf4j.simple)
             }
         }
+    }
+}
+
+tasks.register<Test>("conformance") {
+    group = "conformance"
+    description = "Run MCP conformance tests with detailed output"
+
+    val jvmCompilation = kotlin.targets["jvm"].compilations["test"] as KotlinJvmCompilation
+    testClassesDirs = jvmCompilation.output.classesDirs
+    classpath = jvmCompilation.runtimeDependencyFiles
+
+    useJUnitPlatform()
+
+    filter {
+        includeTestsMatching("*ConformanceTest*")
+    }
+
+    testLogging {
+        events("passed", "skipped", "failed")
+        showStandardStreams = true
+        showExceptions = true
+        showCauses = true
+        showStackTraces = true
+        exceptionFormat = TestExceptionFormat.FULL
+    }
+
+    doFirst {
+        systemProperty("test.classpath", classpath.asPath)
+
+        println("\n" + "=".repeat(60))
+        println("MCP CONFORMANCE TESTS")
+        println("=".repeat(60))
+        println("These tests validate compliance with the MCP specification.")
+        println("=".repeat(60) + "\n")
     }
 }
