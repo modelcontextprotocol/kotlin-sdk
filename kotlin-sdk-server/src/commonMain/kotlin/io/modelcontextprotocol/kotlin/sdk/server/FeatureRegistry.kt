@@ -9,7 +9,6 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentSet
 
-
 /**
  * A listener interface for receiving notifications about feature changes in registry.
  */
