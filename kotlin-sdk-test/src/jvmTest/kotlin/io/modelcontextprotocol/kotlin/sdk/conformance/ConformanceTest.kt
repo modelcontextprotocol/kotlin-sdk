@@ -13,6 +13,7 @@ import java.net.HttpURLConnection
 import java.net.ServerSocket
 import java.net.URI
 import java.util.concurrent.TimeUnit
+import kotlin.properties.Delegates
 
 private val logger = KotlinLogging.logger {}
 
@@ -20,8 +21,8 @@ private val logger = KotlinLogging.logger {}
 class ConformanceTest {
 
     private var serverProcess: Process? = null
-    private var serverPort: Int = 0
-    private val serverErrorOutput = StringBuilder()
+    private var serverPort: Int by Delegates.notNull()
+    private val serverErrorOutput = StringBuffer()
 
     companion object {
         private val SERVER_SCENARIOS = listOf(
@@ -43,6 +44,12 @@ class ConformanceTest {
 
         private const val DEFAULT_TEST_TIMEOUT_SECONDS = 30L
         private const val DEFAULT_SERVER_STARTUP_TIMEOUT_SECONDS = 10
+        private const val INITIAL_BACKOFF_MS = 50L
+        private const val MAX_BACKOFF_MS = 500L
+        private const val BACKOFF_MULTIPLIER = 1.5
+        private const val CONNECTION_TIMEOUT_MS = 500
+        private const val GRACEFUL_SHUTDOWN_SECONDS = 5L
+        private const val FORCE_SHUTDOWN_SECONDS = 2L
 
         private fun findFreePort(): Int {
             return ServerSocket(0).use { it.localPort }
@@ -62,14 +69,14 @@ class ConformanceTest {
         ): Boolean {
             val deadline = System.currentTimeMillis() + (timeoutSeconds * 1000)
             var lastError: Exception? = null
-            var backoffMs = 50L
+            var backoffMs = INITIAL_BACKOFF_MS
 
             while (System.currentTimeMillis() < deadline) {
                 try {
                     val connection = URI(url).toURL().openConnection() as HttpURLConnection
                     connection.requestMethod = "GET"
-                    connection.connectTimeout = 500
-                    connection.readTimeout = 500
+                    connection.connectTimeout = CONNECTION_TIMEOUT_MS
+                    connection.readTimeout = CONNECTION_TIMEOUT_MS
                     connection.connect()
 
                     val responseCode = connection.responseCode
@@ -79,7 +86,7 @@ class ConformanceTest {
                 } catch (e: Exception) {
                     lastError = e
                     Thread.sleep(backoffMs)
-                    backoffMs = (backoffMs * 1.5).toLong().coerceAtMost(500)
+                    backoffMs = (backoffMs * BACKOFF_MULTIPLIER).toLong().coerceAtMost(MAX_BACKOFF_MS)
                 }
             }
 
@@ -102,12 +109,13 @@ class ConformanceTest {
             serverPort.toString()
         )
 
-        serverProcess = processBuilder.start()
+        val process = processBuilder.start()
+        serverProcess = process
 
         // capture stderr in the background
         Thread {
             try {
-                BufferedReader(InputStreamReader(serverProcess!!.errorStream)).use { reader ->
+                BufferedReader(InputStreamReader(process.errorStream)).use { reader ->
                     reader.lineSequence().forEach { line ->
                         serverErrorOutput.appendLine(line)
                         logger.debug { "Server stderr: $line" }
@@ -116,6 +124,9 @@ class ConformanceTest {
             } catch (e: Exception) {
                 logger.trace(e) { "Error reading server stderr" }
             }
+        }.apply {
+            name = "server-stderr-reader"
+            isDaemon = true
         }.start()
 
         logger.info { "Waiting for server to start..." }
@@ -139,29 +150,26 @@ class ConformanceTest {
 
     @AfterAll
     fun stopServer() {
-        if (serverProcess == null) {
-            logger.debug { "No server process to stop" }
-            return
-        }
+        serverProcess?.also { process ->
+            logger.info { "Stopping conformance test server (PID: ${process.pid()})" }
 
-        logger.info { "Stopping conformance test server (PID: ${serverProcess?.pid()})" }
+            try {
+                process.destroy()
+                val terminated = process.waitFor(GRACEFUL_SHUTDOWN_SECONDS, TimeUnit.SECONDS)
 
-        try {
-            serverProcess?.destroy()
-            val terminated = serverProcess?.waitFor(5, TimeUnit.SECONDS) ?: false
-
-            if (!terminated) {
-                logger.warn { "Server did not terminate gracefully, forcing shutdown..." }
-                serverProcess?.destroyForcibly()
-                serverProcess?.waitFor(2, TimeUnit.SECONDS) ?: false
-            } else {
-                logger.info { "Server stopped gracefully" }
+                if (!terminated) {
+                    logger.warn { "Server did not terminate gracefully, forcing shutdown..." }
+                    process.destroyForcibly()
+                    process.waitFor(FORCE_SHUTDOWN_SECONDS, TimeUnit.SECONDS)
+                } else {
+                    logger.info { "Server stopped gracefully" }
+                }
+            } catch (e: Exception) {
+                logger.error(e) { "Error stopping server process" }
+            } finally {
+                serverProcess = null
             }
-        } catch (e: Exception) {
-            logger.error(e) { "Error stopping server process" }
-        } finally {
-            serverProcess = null
-        }
+        } ?: logger.debug { "No server process to stop" }
     }
 
     @TestFactory
@@ -185,12 +193,7 @@ class ConformanceTest {
     }
 
     private fun runServerConformanceTest(scenario: String, serverUrl: String) {
-        logger.info { "Running server conformance test: $scenario" }
-
-        val timeoutSeconds = System.getenv("CONFORMANCE_TEST_TIMEOUT_SECONDS")?.toLongOrNull()
-            ?: DEFAULT_TEST_TIMEOUT_SECONDS
-
-        val process = ProcessBuilder(
+        val processBuilder = ProcessBuilder(
             "npx",
             "@modelcontextprotocol/conformance",
             "server",
@@ -198,32 +201,12 @@ class ConformanceTest {
             "--scenario", scenario
         ).apply {
             inheritIO()
-        }.start()
-
-        val completed = process.waitFor(timeoutSeconds, TimeUnit.SECONDS)
-
-        if (!completed) {
-            logger.error { "Server conformance test '$scenario' timed out after $timeoutSeconds seconds" }
-            process.destroyForcibly()
-            throw AssertionError("❌ Server conformance test '$scenario' timed out after $timeoutSeconds seconds")
         }
 
-        val exitCode = process.exitValue()
-
-        if (exitCode != 0) {
-            logger.error { "Server conformance test '$scenario' failed with exit code: $exitCode" }
-            throw AssertionError("❌ Server conformance test '$scenario' failed (exit code: $exitCode). Check test output above for details.")
-        }
-
-        logger.info { "✅ Server conformance test '$scenario' passed!" }
+        runConformanceTest("server", scenario, processBuilder)
     }
 
     private fun runClientConformanceTest(scenario: String) {
-        logger.info { "Running client conformance test: $scenario" }
-
-        val timeoutSeconds = System.getenv("CONFORMANCE_TEST_TIMEOUT_SECONDS")?.toLongOrNull()
-            ?: DEFAULT_TEST_TIMEOUT_SECONDS
-
         val testClasspath = getTestClasspath()
 
         val clientCommand = listOf(
@@ -232,7 +215,7 @@ class ConformanceTest {
             "io.modelcontextprotocol.kotlin.sdk.conformance.ConformanceClientKt"
         )
 
-        val process = ProcessBuilder(
+        val processBuilder = ProcessBuilder(
             "npx",
             "@modelcontextprotocol/conformance",
             "client",
@@ -240,23 +223,36 @@ class ConformanceTest {
             "--scenario", scenario
         ).apply {
             inheritIO()
-        }.start()
+        }
 
+        runConformanceTest("client", scenario, processBuilder)
+    }
+
+    private fun runConformanceTest(
+        type: String,
+        scenario: String,
+        processBuilder: ProcessBuilder
+    ) {
+        logger.info { "Running $type conformance test: $scenario" }
+
+        val timeoutSeconds = System.getenv("CONFORMANCE_TEST_TIMEOUT_SECONDS")?.toLongOrNull()
+            ?: DEFAULT_TEST_TIMEOUT_SECONDS
+
+        val process = processBuilder.start()
         val completed = process.waitFor(timeoutSeconds, TimeUnit.SECONDS)
 
         if (!completed) {
-            logger.error { "Client conformance test '$scenario' timed out after $timeoutSeconds seconds" }
+            logger.error { "${type.replaceFirstChar { it.uppercase() }} conformance test '$scenario' timed out after $timeoutSeconds seconds" }
             process.destroyForcibly()
-            throw AssertionError("❌ Client conformance test '$scenario' timed out after $timeoutSeconds seconds")
+            throw AssertionError("❌ ${type.replaceFirstChar { it.uppercase() }} conformance test '$scenario' timed out after $timeoutSeconds seconds")
         }
 
-        val exitCode = process.exitValue()
-
-        if (exitCode != 0) {
-            logger.error { "Client conformance test '$scenario' failed with exit code: $exitCode" }
-            throw AssertionError("❌ Client conformance test '$scenario' failed (exit code: $exitCode). Check test output above for details.")
+        when (val exitCode = process.exitValue()) {
+            0 -> logger.info { "✅ ${type.replaceFirstChar { it.uppercase() }} conformance test '$scenario' passed!" }
+            else -> {
+                logger.error { "${type.replaceFirstChar { it.uppercase() }} conformance test '$scenario' failed with exit code: $exitCode" }
+                throw AssertionError("❌ ${type.replaceFirstChar { it.uppercase() }} conformance test '$scenario' failed (exit code: $exitCode). Check test output above for details.")
+            }
         }
-
-        logger.info { "✅ Client conformance test '$scenario' passed!" }
     }
 }
