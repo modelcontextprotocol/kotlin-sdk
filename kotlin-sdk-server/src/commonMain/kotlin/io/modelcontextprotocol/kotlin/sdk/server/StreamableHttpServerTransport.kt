@@ -105,6 +105,8 @@ private data class SessionContext(val session: ServerSSESession?, val call: Appl
  * If not specified, origin validation is disabled.
  * @param eventStore Event store for resumability support
  * If provided, resumability will be enabled, allowing clients to reconnect and resume messages
+ * @param retryIntervalMillis Retry interval (in milliseconds) advertised via SSE priming events to hint the client when to reconnect.
+ * Applies only when an [eventStore] is configured. Defaults to `null` (no retry hint).
  */
 @OptIn(ExperimentalUuidApi::class, ExperimentalAtomicApi::class)
 public class StreamableHttpServerTransport(
@@ -113,6 +115,7 @@ public class StreamableHttpServerTransport(
     private val allowedHosts: List<String>? = null,
     private val allowedOrigins: List<String>? = null,
     private val eventStore: EventStore? = null,
+    private val retryIntervalMillis: Long? = null,
 ) : AbstractTransport() {
     public var sessionId: String? = null
         private set
@@ -346,7 +349,7 @@ public class StreamableHttpServerTransport(
             val streamId = Uuid.random().toString()
             if (!enableJsonResponse) {
                 call.appendSseHeaders()
-                session?.send(data = "") // flush headers immediately
+                flushSse(session) // flush headers immediately
             }
 
             streamMutex.withLock {
@@ -406,7 +409,7 @@ public class StreamableHttpServerTransport(
         }
 
         call.appendSseHeaders()
-        session.send(data = "") // flush headers immediately
+        flushSse(session) // flush headers immediately
         streamsMapping[STANDALONE_SSE_STREAM_ID] = SessionContext(session, call)
         session.coroutineContext.job.invokeOnCompletion { streamsMapping.remove(STANDALONE_SSE_STREAM_ID) }
     }
@@ -455,7 +458,7 @@ public class StreamableHttpServerTransport(
             }
 
             call.appendSseHeaders()
-            session.send(data = "") // flush headers immediately
+            flushSse(session) // flush headers immediately
 
             val streamId = store.replayEventsAfter(lastEventId) { eventId, message ->
                 try {
@@ -560,6 +563,14 @@ public class StreamableHttpServerTransport(
         }
 
         return null
+    }
+
+    private suspend fun flushSse(session: ServerSSESession?) {
+        try {
+            session?.send(data = "")
+        } catch (e: Exception) {
+            _onError(e)
+        }
     }
 
     private suspend fun parseBody(call: ApplicationCall): List<JSONRPCMessage>? {
