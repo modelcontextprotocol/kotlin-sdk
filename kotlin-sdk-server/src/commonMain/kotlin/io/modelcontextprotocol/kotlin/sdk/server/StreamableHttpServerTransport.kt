@@ -170,14 +170,15 @@ public class StreamableHttpServerTransport(
     }
 
     override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
-        val requestId: RequestId? = when (message) {
+        val responseRequestId: RequestId? = when (message) {
             is JSONRPCResponse -> message.id
             is JSONRPCError -> message.id
             else -> null
         }
+        val routingRequestId = responseRequestId ?: options?.relatedRequestId
 
         // Standalone SSE stream
-        if (requestId == null) {
+        if (routingRequestId == null) {
             require(message !is JSONRPCResponse && message !is JSONRPCError) {
                 "Cannot send a response on a standalone SSE stream unless resuming a previous client request"
             }
@@ -186,7 +187,8 @@ public class StreamableHttpServerTransport(
             return
         }
 
-        val streamId = requestToStreamMapping[requestId] ?: error("No connection established for request id $requestId")
+        val streamId = requestToStreamMapping[routingRequestId]
+            ?: error("No connection established for request id $routingRequestId")
         val activeStream = streamsMapping[streamId]
 
         if (!enableJsonResponse) {
@@ -198,13 +200,13 @@ public class StreamableHttpServerTransport(
         val isTerminated = message is JSONRPCResponse || message is JSONRPCError
         if (!isTerminated) return
 
-        requestToResponseMapping[requestId] = message
+        requestToResponseMapping[responseRequestId!!] = message
         val relatedIds = requestToStreamMapping.filterValues { it == streamId }.keys
 
         if (relatedIds.any { it !in requestToResponseMapping }) return
 
         streamMutex.withLock {
-            if (activeStream == null) error("No connection established for request ID: $requestId")
+            if (activeStream == null) error("No connection established for request ID: $routingRequestId")
 
             if (enableJsonResponse) {
                 activeStream.call.response.header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
