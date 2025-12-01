@@ -7,8 +7,6 @@ import io.modelcontextprotocol.kotlin.sdk.types.ResourceListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotificationParams
 import io.modelcontextprotocol.kotlin.sdk.types.ToolListChangedNotification
-import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.getAndUpdate
 import kotlinx.collections.immutable.persistentMapOf
@@ -25,6 +23,8 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 /** Represents an event for notification service. */
 private sealed class Event
@@ -386,7 +386,6 @@ internal class FeatureNotificationService(
 
         // Making sure all session notification jobs are completed (after receiving end event)
         sessionNotificationJobs.value.values.forEach { it.join() }
-
         // Cancelling notification scope to stop processing further events
         notificationScope.cancel()
     }
