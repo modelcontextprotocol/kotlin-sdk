@@ -43,6 +43,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.UnsubscribeRequest
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Deferred
 import kotlinx.serialization.json.JsonObject
+import kotlin.time.ExperimentalTime
 
 private val logger = KotlinLogging.logger {}
 
@@ -92,6 +93,7 @@ public open class Server(
 
     private val sessionRegistry = ServerSessionRegistry()
 
+    @OptIn(ExperimentalTime::class)
     private val notificationService = FeatureNotificationService()
 
     /**
@@ -111,17 +113,20 @@ public open class Server(
 
     private val toolRegistry = FeatureRegistry<RegisteredTool>("Tool").apply {
         if (options.capabilities.tools?.listChanged ?: false) {
-            addListener(notificationService.getToolFeatureListener())
+            addListener(notificationService.getToolListChangedListener())
         }
     }
     private val promptRegistry = FeatureRegistry<RegisteredPrompt>("Prompt").apply {
         if (options.capabilities.prompts?.listChanged ?: false) {
-            addListener(notificationService.getPromptFeatureListener())
+            addListener(notificationService.getPromptListChangedListener())
         }
     }
     private val resourceRegistry = FeatureRegistry<RegisteredResource>("Resource").apply {
         if (options.capabilities.resources?.listChanged ?: false) {
-            addListener(notificationService.geResourceFeatureListener())
+            addListener(notificationService.getResourceListChangedListener())
+        }
+        if (options.capabilities.resources?.subscribe ?: false) {
+            addListener(notificationService.getResourceUpdateListener())
         }
     }
 
@@ -138,6 +143,7 @@ public open class Server(
 
     public suspend fun close() {
         logger.debug { "Closing MCP server" }
+        notificationService.close()
         sessions.forEach { (sessionId, session) ->
             logger.info { "Closing session $sessionId" }
             session.close()
@@ -215,14 +221,15 @@ public open class Server(
         // Register cleanup handler to remove session from list when it closes
         session.onClose {
             logger.debug { "Removing closed session from active sessions list" }
-//            notificationService.unsubscribeFromListChangedNotification(session)
+            notificationService.unsubscribeSession(session)
             sessionRegistry.removeSession(session.sessionId)
         }
+
         logger.debug { "Server session connecting to transport" }
         session.connect(transport)
         logger.debug { "Server session successfully connected to transport" }
         sessionRegistry.addSession(session)
-//        notificationService.subscribeToListChangedNotification(session)
+        notificationService.subscribeSession(session)
 
         _onConnect()
         return session
@@ -517,7 +524,7 @@ public open class Server(
     private suspend fun handleSubscribeResources(session: ServerSession, request: SubscribeRequest) {
         if (options.capabilities.resources?.subscribe ?: false) {
             logger.debug { "Subscribing to resources" }
-            notificationService.subscribeToResourceUpdateNotifications(session, request.params.uri)
+            notificationService.subscribeToResourceUpdate(session, request.params.uri)
         } else {
             logger.debug { "Failed to subscribe to resources: Server does not support resources capability" }
         }
@@ -526,7 +533,7 @@ public open class Server(
     private suspend fun handleUnsubscribeResources(session: ServerSession, request: UnsubscribeRequest) {
         if (options.capabilities.resources?.subscribe ?: false) {
             logger.debug { "Unsubscribing from resources" }
-            notificationService.unsubscribeFromResourceUpdateNotifications(session, request.params.uri)
+            notificationService.unsubscribeFromResourceUpdate(session, request.params.uri)
         } else {
             logger.debug { "Failed to unsubscribe from resources: Server does not support resources capability" }
         }

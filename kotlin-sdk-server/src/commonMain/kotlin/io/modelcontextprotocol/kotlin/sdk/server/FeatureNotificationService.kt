@@ -7,123 +7,385 @@ import io.modelcontextprotocol.kotlin.sdk.types.ResourceListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotificationParams
 import io.modelcontextprotocol.kotlin.sdk.types.ToolListChangedNotification
+import kotlinx.atomicfu.atomic
+import kotlinx.atomicfu.getAndUpdate
+import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.takeWhile
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
-internal class FeatureNotificationService {
-    private val notifications = MutableSharedFlow<Notification>()
+/** Represents an event for notification service. */
+private sealed class Event
+
+/**
+ * Represents an event for a notification.
+ *
+ * @property timestamp A timestamp for the event.
+ * @property notification The notification associated with the event.
+ */
+private class NotificationEvent(val timestamp: Long, val notification: Notification) : Event()
+
+/** Represents an event marking the end of notification processing. */
+private class EndEvent : Event()
+
+/**
+ * Represents a job that handles session-specific notifications, processing events
+ * and delivering relevant notifications to the associated session.
+ *
+ * This class listens to a stream of notification events and processes them
+ * based on the event type and the resource subscriptions associated with the session.
+ * It allows subscribing to or unsubscribing from specific resource keys for granular
+ * notification handling. The job can also be canceled to stop processing further events.
+ * IDs less than or equal to this value will be skipped.
+ */
+private class SessionNotificationJob {
+    private val job: Job
+    private val resourceSubscriptions = atomic(persistentMapOf<FeatureKey, Long>())
+    private val logger = KotlinLogging.logger {}
+
+    constructor(
+        session: ServerSession,
+        scope: CoroutineScope,
+        events: SharedFlow<Event>,
+        fromTimestamp: Long,
+    ) {
+        logger.info { "Starting notification job from timestamp $fromTimestamp for sessionId: ${session.sessionId} " }
+        job = scope.launch {
+            events.takeWhile { it !is EndEvent }.collect { event ->
+                when (event) {
+                    is NotificationEvent -> {
+                        if (event.timestamp > fromTimestamp) {
+                            when (val notification = event.notification) {
+                                is PromptListChangedNotification -> {
+                                    logger.info {
+                                        "Sending prompt list changed notification for sessionId: ${session.sessionId}"
+                                    }
+                                    session.notification(notification)
+                                }
+
+                                is ResourceListChangedNotification -> {
+                                    logger.info {
+                                        "Sending resourse list changed notification for sessionId: ${session.sessionId}"
+                                    }
+                                    session.notification(notification)
+                                }
+
+                                is ToolListChangedNotification -> {
+                                    logger.info {
+                                        "Sending tool list changed notification for sessionId: ${session.sessionId}"
+                                    }
+                                    session.notification(notification)
+                                }
+
+                                is ResourceUpdatedNotification -> {
+                                    resourceSubscriptions.value[notification.params.uri]?.let { resourceFromTimestamp ->
+                                        if (event.timestamp > resourceFromTimestamp) {
+                                            logger.info {
+                                                "Sending notification for resource ${notification.params.uri} " +
+                                                    "to sessionId: ${session.sessionId}"
+                                            }
+                                            session.notification(notification)
+                                        } else {
+                                            logger.info {
+                                                "Skipping notification for resource ${notification.params.uri} " +
+                                                    "as it is older than subscription timestamp $resourceFromTimestamp"
+                                            }
+                                        }
+                                    } ?: run {
+                                        logger.info {
+                                            "No subscription for resource ${notification.params.uri}. " +
+                                                "Skipping notification."
+                                        }
+                                    }
+                                }
+
+                                else -> {
+                                    logger.warn { "Skipping notification: $notification" }
+                                }
+                            }
+                        } else {
+                            logger.info {
+                                "Skipping event with id: ${event.timestamp} " +
+                                    "as it is older than startingEventId $fromTimestamp"
+                            }
+                        }
+                    }
+
+                    else -> {
+                        logger.warn { "Skipping event: $event" }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Subscribes to a resource identified by the given feature key.
+     *
+     * @param resourceKey The key representing the resource to subscribe to.
+     * @param timestamp The timestamp of the subscription.
+     */
+    fun subscribe(resourceKey: FeatureKey, timestamp: Long) {
+        resourceSubscriptions.getAndUpdate { it.put(resourceKey, timestamp) }
+    }
+
+    /**
+     * Unsubscribes from a resource identified by the given feature key.
+     *
+     * @param resourceKey The key representing the resource to unsubscribe from.
+     */
+    fun unsubscribe(resourceKey: FeatureKey) {
+        resourceSubscriptions.getAndUpdate { it.remove(resourceKey) }
+    }
+
+    suspend fun join() {
+        job.join()
+    }
+
+    fun cancel() {
+        job.cancel()
+    }
+}
+
+/**
+ * Service responsible for managing and emitting notifications related to feature changes.
+ *
+ * This service facilitates notification subscriptions for different sessions and supports managing
+ * listeners for feature-related events. Notifications include changes in tool lists, prompt lists,
+ * resource lists, and updates to specific resources.
+ *
+ * This class operates on a background coroutine scope to handle notifications asynchronously.
+ * It maintains jobs associated with sessions and features for controlling active subscriptions.
+ *
+ * Key Responsibilities:
+ * - Emit notifications for various feature-related events.
+ * - Provide listeners for handling feature change events.
+ * - Allow clients to subscribe or unsubscribe from specific notifications.
+ *
+ * Notifications managed:
+ * - Tool list change notifications.
+ * - Prompt list change notifications.
+ * - Resource list change notifications.
+ * - Resource updates pertaining to specific resources.
+ */
+internal class FeatureNotificationService(
+    @OptIn(ExperimentalTime::class)
+    private val clock: Clock = Clock.System,
+) {
+    private val closingService = atomic(false)
+
+    /** Shared flow used to emit events within the feature notification service. */
+    private val notificationEvents = MutableSharedFlow<Event>(
+        extraBufferCapacity = 100,
+        replay = 0,
+        onBufferOverflow = BufferOverflow.SUSPEND,
+    )
+
+    /** Coroutine scope used to handle asynchronous notifications. */
     private val notificationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    private val notificationSessionFeatureJobs: MutableMap<ServerSessionKey, Job> = mutableMapOf()
-    private val notificationSessionResourceJobs: MutableMap<Pair<ServerSessionKey, FeatureKey>, Job> = mutableMapOf()
+    /** Active emit jobs. */
+    private val activeEmitJobs = atomic(persistentSetOf<Job>())
+
+    /** Notification jobs associated with sessions. */
+    private val sessionNotificationJobs = atomic(persistentMapOf<ServerSessionKey, SessionNotificationJob>())
 
     private val logger = KotlinLogging.logger {}
 
-    private val toolFeatureListener: FeatureListener by lazy {
+    /** Listener for tool feature events. */
+    private val toolListChangedListener: FeatureListener by lazy {
         object : FeatureListener {
-            override fun onListChanged() {
-                logger.debug { "Emitting tool list changed notification" }
+            override fun onFeatureUpdated(featureKey: FeatureKey) {
+                logger.info { "Emitting tool list changed notification" }
                 emit(ToolListChangedNotification())
             }
-
-            override fun onFeatureUpdated(featureKey: FeatureKey) {
-                logger.debug { "Skipping update for tool feature key: $featureKey" }
-            }
         }
     }
 
-    private val promptFeatureListener: FeatureListener by lazy {
+    /** Listener for prompt feature events. */
+    private val promptListChangeListener: FeatureListener by lazy {
         object : FeatureListener {
-            override fun onListChanged() {
-                logger.debug { "Emitting prompt list changed notification" }
+            override fun onFeatureUpdated(featureKey: FeatureKey) {
+                logger.info { "Emitting prompt list changed notification" }
                 emit(PromptListChangedNotification())
             }
+        }
+    }
 
+    /** Listener for resource feature events. */
+    private val resourceListChangedListener: FeatureListener by lazy {
+        object : FeatureListener {
             override fun onFeatureUpdated(featureKey: FeatureKey) {
-                logger.debug { "Skipping update for prompt feature key: $featureKey" }
+                logger.info { "Emitting resource list changed notification" }
+                emit(ResourceListChangedNotification())
             }
         }
     }
 
-    private val resourceFeatureListener: FeatureListener by lazy {
+    /** Listener for resource update events. */
+    private val resourceUpdatedListener: FeatureListener by lazy {
         object : FeatureListener {
-            override fun onListChanged() {
-                logger.debug { "Emitting resource list changed notification" }
-                emit(ResourceListChangedNotification())
-            }
-
             override fun onFeatureUpdated(featureKey: FeatureKey) {
-                logger.debug { "Emitting resource updated notification for feature key: $featureKey" }
+                logger.info { "Emitting resource updated notification for feature key: $featureKey" }
                 emit(ResourceUpdatedNotification(ResourceUpdatedNotificationParams(uri = featureKey)))
             }
         }
     }
 
-    internal fun getToolFeatureListener(): FeatureListener = toolFeatureListener
-    internal fun getPromptFeatureListener(): FeatureListener = promptFeatureListener
-    internal fun geResourceFeatureListener(): FeatureListener = resourceFeatureListener
+    /** Listener for the tool list changed events. */
+    internal fun getToolListChangedListener(): FeatureListener = toolListChangedListener
 
-    internal fun subscribeToListChangedNotification(session: ServerSession) {
-        logger.debug { "Subscribing to list changed notifications for sessionId: ${session.sessionId}" }
-        notificationSessionFeatureJobs[session.sessionId] = notificationScope.launch {
-            notifications.collect { notification ->
-                when (notification) {
-                    is PromptListChangedNotification -> session.notification(notification)
+    /** Listener for the prompt list changed events. */
+    internal fun getPromptListChangedListener(): FeatureListener = promptListChangeListener
 
-                    is ResourceListChangedNotification -> session.notification(notification)
+    /** Listener for the resource list changed events. */
+    internal fun getResourceListChangedListener(): FeatureListener = resourceListChangedListener
 
-                    is ToolListChangedNotification -> session.notification(notification)
+    /** Listener for resource update events. */
+    internal fun getResourceUpdateListener(): FeatureListener = resourceUpdatedListener
 
-                    else -> logger.debug {
-                        "Notification not handled for sessionId ${session.sessionId}: $notification"
-                    }
-                }
+    /**
+     * Subscribes session to list changed notifications for all features and resource update notifications.
+     * For each session the job is created and stored until the [unsubscribeSession] method is called.
+     * In case of session already subscribed to list changed notifications, the method will skip the subscription and
+     * continue to send notification using the existing job.
+     *
+     * @param session The session to subscribe.
+     */
+    internal fun subscribeSession(session: ServerSession) {
+        logger.info { "Subscribing session for notifications sessionId: ${session.sessionId}" }
+
+        val timestamp = getCurrentTimestamp()
+
+        sessionNotificationJobs.getAndUpdate {
+            if (it.containsKey(session.sessionId)) {
+                logger.info { "Session already subscribed: ${session.sessionId}" }
+                return@getAndUpdate it
+            } else {
+                it.put(
+                    session.sessionId,
+                    SessionNotificationJob(
+                        session = session,
+                        scope = notificationScope,
+                        events = notificationEvents,
+                        // Save the first event id to process, as notification can be emitted after the subscription
+                        fromTimestamp = timestamp,
+                    ),
+                )
             }
         }
-        logger.debug { "Subscribed to list changed notifications for sessionId: ${session.sessionId}" }
+
+        logger.info { "Subscribed session for notifications sessionId: ${session.sessionId}" }
     }
 
-    internal fun unsubscribeFromListChangedNotification(session: ServerSession) {
-        logger.debug { "Unsubscribing from list changed notifications for sessionId: ${session.sessionId}" }
-        notificationSessionFeatureJobs[session.sessionId]?.cancel()
-        notificationSessionFeatureJobs.remove(session.sessionId)
-        logger.debug { "Unsubscribed from list changed notifications for sessionId: ${session.sessionId}" }
-    }
-
-    internal fun subscribeToResourceUpdateNotifications(session: ServerSession, resourceKey: FeatureKey) {
-        logger.debug { "Subscribing to resource update notifications for sessionId: ${session.sessionId}" }
-        notificationSessionResourceJobs[session.sessionId to resourceKey] = notificationScope.launch {
-            notifications.collect { notification ->
-                when (notification) {
-                    is ResourceUpdatedNotification -> {
-                        if (notification.params.uri == resourceKey) {
-                            session.notification(notification)
-                        }
-                    }
-
-                    else -> logger.debug {
-                        "Notification not handled for session for sessionId ${session.sessionId}: $notification"
-                    }
-                }
-            }
+    /**
+     * Unsubscribes a session from list changed notifications for all features.
+     * Cancels and removes the job associated with the given session's notifications.
+     *
+     * @param session The session to unsubscribe from list changed notifications.
+     */
+    internal fun unsubscribeSession(session: ServerSession) {
+        logger.info { "Unsubscribing from list changed notifications for sessionId: ${session.sessionId}" }
+        sessionNotificationJobs.getAndUpdate {
+            it[session.sessionId]?.cancel()
+            it.remove(session.sessionId)
         }
-        logger.debug { "Subscribed to resource update notifications for sessionId: ${session.sessionId}" }
+        logger.info { "Unsubscribed from list changed notifications for sessionId: ${session.sessionId}" }
     }
 
-    internal fun unsubscribeFromResourceUpdateNotifications(session: ServerSession, resourceKey: FeatureKey) {
-        logger.debug { "Unsubscribing from resourcec update notifications for sessionId: ${session.sessionId}" }
-        notificationSessionResourceJobs[session.sessionId to resourceKey]?.cancel()
-        notificationSessionResourceJobs.remove(session.sessionId to resourceKey)
-        logger.debug { "Unsubscribed from resourcec update notifications for sessionId: ${session.sessionId}" }
+    /**
+     * Subscribes a session to notifications for resource updates pertaining to the given resource key.
+     *
+     * @param session The session to subscribe.
+     * @param resourceKey The resource key to subscribe to.
+     */
+    internal fun subscribeToResourceUpdate(session: ServerSession, resourceKey: FeatureKey) {
+        logger.info { "Subscribing to resource $resourceKey update notifications for sessionId: ${session.sessionId}" }
+        // Set starting event id for resources notifications to skip events emitted before the subscription
+        sessionNotificationJobs.value[session.sessionId]?.subscribe(resourceKey, getCurrentTimestamp())
+        logger.info { "Subscribed to resource $resourceKey update notifications for sessionId: ${session.sessionId}" }
     }
 
+    /**
+     * Unsubscribes a session from notifications for resource updates pertaining to the given resource key.
+     *
+     * @param session The session to unsubscribe from.
+     * @param resourceKey The resource key to unsubscribe from.
+     */
+    internal fun unsubscribeFromResourceUpdate(session: ServerSession, resourceKey: FeatureKey) {
+        logger.info {
+            "Unsubscribing from resource $resourceKey update notifications for sessionId: ${session.sessionId}"
+        }
+        sessionNotificationJobs.value[session.sessionId]?.unsubscribe(resourceKey)
+        logger.info {
+            "Unsubscribed from resource $resourceKey update notifications for sessionId: ${session.sessionId}"
+        }
+    }
+
+    /** Emits a notification to all active sessions. */
     private fun emit(notification: Notification) {
-        notificationScope.launch {
-            notifications.emit(notification)
+        // Create a timestamp before emit to ensure notifications are processed in order
+        val timestamp = getCurrentTimestamp()
+        if (closingService.value) {
+            logger.warn { "Skipping emitting notification as service is closing: $notification" }
+            return
         }
+
+        logger.info { "Emitting notification $timestamp: $notification" }
+
+        // Launching emit lazily to put it to the jobs queue before the completion
+        val job = notificationScope.launch(start = CoroutineStart.LAZY) {
+            logger.info { "Actually emitting notification $timestamp: $notification" }
+            notificationEvents.emit(NotificationEvent(timestamp, notification))
+            logger.info { "Notification emitted $timestamp: $notification" }
+        }
+
+        // Add job to set before starting
+        activeEmitJobs.getAndUpdate { it.add(job) }
+
+        // Register completion
+        job.invokeOnCompletion {
+            activeEmitJobs.getAndUpdate { it.remove(job) }
+        }
+
+        // Start the job after it's safely added
+        job.start()
+    }
+
+    /** Returns the current timestamp in milliseconds. */
+    @OptIn(ExperimentalTime::class)
+    private fun getCurrentTimestamp(): Long = clock.now().toEpochMilliseconds()
+
+    suspend fun close() {
+        logger.info { "Closing feature notification service" }
+        closingService.compareAndSet(false, update = true)
+
+        // Making sure all emit jobs are completed
+        activeEmitJobs.value.joinAll()
+
+        // Emitting end event to complete all session notification jobs
+        notificationScope.launch {
+            logger.info { "Emitting end event" }
+            notificationEvents.emit(EndEvent())
+            logger.info { "End event emitted" }
+        }.join()
+
+        // Making sure all session notification jobs are completed (after receiving end event)
+        sessionNotificationJobs.value.values.forEach { it.join() }
+
+        // Cancelling notification scope to stop processing further events
+        notificationScope.cancel()
     }
 }
