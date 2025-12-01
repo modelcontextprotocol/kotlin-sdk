@@ -26,19 +26,22 @@ import kotlinx.coroutines.launch
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
-/** Represents an event for notification service. */
-private sealed class Event
+/**
+ * Represents an event for the notification service.
+ *
+ * @property timestamp A timestamp for the event.
+ */
+private sealed class NotificationEvent(open val timestamp: Long)
 
 /**
  * Represents an event for a notification.
  *
- * @property timestamp A timestamp for the event.
  * @property notification The notification associated with the event.
  */
-private class NotificationEvent(val timestamp: Long, val notification: Notification) : Event()
+private class SendEvent(override val timestamp: Long, val notification: Notification) : NotificationEvent(timestamp)
 
 /** Represents an event marking the end of notification processing. */
-private class EndEvent : Event()
+private class EndEvent(override val timestamp: Long) : NotificationEvent(timestamp)
 
 /**
  * Represents a job that handles session-specific notifications, processing events
@@ -48,7 +51,7 @@ private class EndEvent : Event()
  * based on the event type and the resource subscriptions associated with the session.
  * It allows subscribing to or unsubscribing from specific resource keys for granular
  * notification handling. The job can also be canceled to stop processing further events.
- * IDs less than or equal to this value will be skipped.
+ * Notification with timestamps older than the starting timestamp are skipped.
  */
 private class SessionNotificationJob {
     private val job: Job
@@ -58,14 +61,14 @@ private class SessionNotificationJob {
     constructor(
         session: ServerSession,
         scope: CoroutineScope,
-        events: SharedFlow<Event>,
+        events: SharedFlow<NotificationEvent>,
         fromTimestamp: Long,
     ) {
         logger.info { "Starting notification job from timestamp $fromTimestamp for sessionId: ${session.sessionId} " }
         job = scope.launch {
             events.takeWhile { it !is EndEvent }.collect { event ->
                 when (event) {
-                    is NotificationEvent -> {
+                    is SendEvent -> {
                         if (event.timestamp >= fromTimestamp) {
                             when (val notification = event.notification) {
                                 is PromptListChangedNotification -> {
@@ -186,17 +189,18 @@ internal class FeatureNotificationService(
     @OptIn(ExperimentalTime::class)
     private val clock: Clock = Clock.System,
 ) {
+    /** Coroutine scope used to handle asynchronous notifications. */
+    private val notificationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    /** Flag indicating whether the service is closing. */
     private val closingService = atomic(false)
 
     /** Shared flow used to emit events within the feature notification service. */
-    private val notificationEvents = MutableSharedFlow<Event>(
+    private val notificationEvents = MutableSharedFlow<NotificationEvent>(
         extraBufferCapacity = 100,
         replay = 0,
         onBufferOverflow = BufferOverflow.SUSPEND,
     )
-
-    /** Coroutine scope used to handle asynchronous notifications. */
-    private val notificationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     /** Active emit jobs. */
     private val activeEmitJobs = atomic(persistentSetOf<Job>())
@@ -270,6 +274,10 @@ internal class FeatureNotificationService(
         logger.info { "Subscribing session for notifications sessionId: ${session.sessionId}" }
 
         val timestamp = getCurrentTimestamp()
+        if (closingService.value) {
+            logger.warn { "Skipping subscription notification as service is closing: ${session.sessionId}" }
+            return
+        }
 
         sessionNotificationJobs.getAndUpdate {
             if (it.containsKey(session.sessionId)) {
@@ -350,7 +358,7 @@ internal class FeatureNotificationService(
         // Launching emit lazily to put it to the jobs queue before the completion
         val job = notificationScope.launch(start = CoroutineStart.LAZY) {
             logger.info { "Actually emitting notification $timestamp: $notification" }
-            notificationEvents.emit(NotificationEvent(timestamp, notification))
+            notificationEvents.emit(SendEvent(timestamp, notification))
             logger.info { "Notification emitted $timestamp: $notification" }
         }
 
@@ -380,7 +388,7 @@ internal class FeatureNotificationService(
         // Emitting end event to complete all session notification jobs
         notificationScope.launch {
             logger.info { "Emitting end event" }
-            notificationEvents.emit(EndEvent())
+            notificationEvents.emit(EndEvent(getCurrentTimestamp()))
             logger.info { "End event emitted" }
         }.join()
 
