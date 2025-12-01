@@ -7,6 +7,8 @@ import io.modelcontextprotocol.kotlin.sdk.types.ResourceListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotificationParams
 import io.modelcontextprotocol.kotlin.sdk.types.ToolListChangedNotification
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.getAndUpdate
 import kotlinx.collections.immutable.persistentMapOf
@@ -23,8 +25,6 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
-import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
 
 /** Represents an event for notification service. */
 private sealed class Event
@@ -66,7 +66,7 @@ private class SessionNotificationJob {
             events.takeWhile { it !is EndEvent }.collect { event ->
                 when (event) {
                     is NotificationEvent -> {
-                        if (event.timestamp > fromTimestamp) {
+                        if (event.timestamp >= fromTimestamp) {
                             when (val notification = event.notification) {
                                 is PromptListChangedNotification -> {
                                     logger.info {
@@ -91,22 +91,24 @@ private class SessionNotificationJob {
 
                                 is ResourceUpdatedNotification -> {
                                     resourceSubscriptions.value[notification.params.uri]?.let { resourceFromTimestamp ->
-                                        if (event.timestamp > resourceFromTimestamp) {
+                                        if (event.timestamp >= resourceFromTimestamp) {
                                             logger.info {
-                                                "Sending notification for resource ${notification.params.uri} " +
+                                                "Sending resource updated notification for resource " +
+                                                    "${notification.params.uri} " +
                                                     "to sessionId: ${session.sessionId}"
                                             }
                                             session.notification(notification)
                                         } else {
                                             logger.info {
-                                                "Skipping notification for resource ${notification.params.uri} " +
+                                                "Skipping resource updated notification for resource " +
+                                                    "${notification.params.uri} " +
                                                     "as it is older than subscription timestamp $resourceFromTimestamp"
                                             }
                                         }
                                     } ?: run {
                                         logger.info {
                                             "No subscription for resource ${notification.params.uri}. " +
-                                                "Skipping notification."
+                                                "Skipping notification: $notification"
                                         }
                                     }
                                 }
@@ -118,7 +120,7 @@ private class SessionNotificationJob {
                         } else {
                             logger.info {
                                 "Skipping event with id: ${event.timestamp} " +
-                                    "as it is older than startingEventId $fromTimestamp"
+                                    "as it is older than startingEventId $fromTimestamp: $event"
                             }
                         }
                     }
