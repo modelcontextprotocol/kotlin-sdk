@@ -85,6 +85,12 @@ public sealed interface JSONRPCMessage {
     public val jsonrpc: String
 }
 
+@Serializable
+public data object PrimingEventMessage : JSONRPCMessage {
+    @EncodeDefault
+    override val jsonrpc: String = JSONRPC_VERSION
+}
+
 // ============================================================================
 // JSONRPCRequest
 // ============================================================================

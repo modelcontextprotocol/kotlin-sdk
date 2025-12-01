@@ -23,6 +23,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.PrimingEventMessage
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
@@ -239,24 +240,6 @@ public class StreamableHttpServerTransport(
         }
     }
 
-    /**
-     * Closes the SSE stream associated with the given [requestId], prompting the client to reconnect.
-     * Useful for implementing polling behavior for long-running operations.
-     */
-    public suspend fun closeSseStream(requestId: RequestId) {
-        if (enableJsonResponse) return
-        val streamId = requestToStreamMapping[requestId] ?: return
-        val sessionContext = streamsMapping[streamId] ?: return
-
-        try {
-            sessionContext.session?.close()
-        } catch (e: Exception) {
-            _onError(e)
-        } finally {
-            streamsMapping.remove(streamId)
-        }
-    }
-
     override suspend fun close() {
         streamMutex.withLock {
             streamsMapping.values.forEach {
@@ -368,6 +351,7 @@ public class StreamableHttpServerTransport(
             if (!enableJsonResponse) {
                 call.appendSseHeaders()
                 flushSse(session) // flush headers immediately
+                maybeSendPrimingEvent(streamId, session)
             }
 
             streamMutex.withLock {
@@ -429,6 +413,7 @@ public class StreamableHttpServerTransport(
         call.appendSseHeaders()
         flushSse(session) // flush headers immediately
         streamsMapping[STANDALONE_SSE_STREAM_ID] = SessionContext(session, call)
+        maybeSendPrimingEvent(STANDALONE_SSE_STREAM_ID, session)
         session.coroutineContext.job.invokeOnCompletion { streamsMapping.remove(STANDALONE_SSE_STREAM_ID) }
     }
 
@@ -437,6 +422,24 @@ public class StreamableHttpServerTransport(
         sessionId?.let { onSessionClosed?.invoke(it) }
         close()
         call.respondNullable(status = HttpStatusCode.OK, message = null)
+    }
+
+    /**
+     * Closes the SSE stream associated with the given [requestId], prompting the client to reconnect.
+     * Useful for implementing polling behavior for long-running operations.
+     */
+    public suspend fun closeSseStream(requestId: RequestId) {
+        if (enableJsonResponse) return
+        val streamId = requestToStreamMapping[requestId] ?: return
+        val sessionContext = streamsMapping[streamId] ?: return
+
+        try {
+            sessionContext.session?.close()
+        } catch (e: Exception) {
+            _onError(e)
+        } finally {
+            streamsMapping.remove(streamId)
+        }
     }
 
     private suspend fun replayEvents(store: EventStore, lastEventId: String, session: ServerSSESession) {
@@ -642,6 +645,17 @@ public class StreamableHttpServerTransport(
             session?.send(event = "message", id = eventId, data = McpJson.encodeToString(message))
         } catch (_: Exception) {
             streamsMapping.remove(streamId)
+        }
+    }
+
+    private suspend fun maybeSendPrimingEvent(streamId: String, session: ServerSSESession?) {
+        val store = eventStore ?: return
+        val sseSession = session ?: return
+        try {
+            val primingEventId = store.storeEvent(streamId, PrimingEventMessage)
+            sseSession.send(id = primingEventId, retry = retryIntervalMillis, data = "")
+        } catch (e: Exception) {
+            _onError(e)
         }
     }
 
