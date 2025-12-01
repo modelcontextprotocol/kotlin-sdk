@@ -58,4 +58,4 @@ dist
 .junie/
 
 ### Conformance test results ###
-kotlin-sdk-test/results/
+conformance-test/results/

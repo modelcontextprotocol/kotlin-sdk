@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
+import io.ktor.server.application.install
 import io.ktor.server.cio.CIO
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.request.header
@@ -16,8 +17,11 @@ import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
+import io.ktor.server.websocket.WebSockets
+import io.ktor.server.websocket.webSocket
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
+import io.modelcontextprotocol.kotlin.sdk.server.WebSocketMcpServerTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
@@ -75,7 +79,22 @@ fun main(args: Array<String>) {
     logger.info { "Starting MCP Conformance Server on port $port" }
 
     embeddedServer(CIO, port = port, host = "127.0.0.1") {
+        install(WebSockets)
+
         routing {
+            webSocket("/ws") {
+                logger.info { "WebSocket connection established" }
+                val transport = WebSocketMcpServerTransport(this)
+                val server = createConformanceServer()
+
+                try {
+                    server.createSession(transport)
+                } catch (e: Exception) {
+                    logger.error(e) { "Error in WebSocket session" }
+                    throw e
+                }
+            }
+
             get("/mcp") {
                 val sessionId = call.request.header("mcp-session-id")
                     ?: run {

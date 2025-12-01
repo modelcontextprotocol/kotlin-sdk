@@ -17,6 +17,11 @@ import kotlin.properties.Delegates
 
 private val logger = KotlinLogging.logger {}
 
+enum class TransportType {
+    SSE,
+    WEBSOCKET,
+}
+
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ConformanceTest {
 
@@ -41,6 +46,17 @@ class ConformanceTest {
             "initialize",
             // TODO: Fix
             // "tools-call",
+        )
+
+        private val SERVER_TRANSPORT_TYPES = listOf(
+            TransportType.SSE,
+            // TODO: Fix
+//            TransportType.WEBSOCKET,
+        )
+
+        private val CLIENT_TRANSPORT_TYPES = listOf(
+            TransportType.SSE,
+            TransportType.WEBSOCKET,
         )
 
         private const val DEFAULT_TEST_TIMEOUT_SECONDS = 30L
@@ -176,48 +192,85 @@ class ConformanceTest {
     }
 
     @TestFactory
-    fun `MCP Server Conformance Tests`(): List<DynamicTest> {
-        val serverUrl = "http://127.0.0.1:$serverPort/mcp"
-
-        return SERVER_SCENARIOS.map { scenario ->
-            DynamicTest.dynamicTest("Server: $scenario") {
-                runServerConformanceTest(scenario, serverUrl)
+    fun `MCP Server Conformance Tests`(): List<DynamicTest> = SERVER_TRANSPORT_TYPES.flatMap { transportType ->
+        SERVER_SCENARIOS.map { scenario ->
+            DynamicTest.dynamicTest("Server [$transportType]: $scenario") {
+                runServerConformanceTest(scenario, transportType)
             }
         }
     }
 
     @TestFactory
-    fun `MCP Client Conformance Tests`(): List<DynamicTest> = CLIENT_SCENARIOS.map { scenario ->
-        DynamicTest.dynamicTest("Client: $scenario") {
-            runClientConformanceTest(scenario)
+    fun `MCP Client Conformance Tests`(): List<DynamicTest> = CLIENT_TRANSPORT_TYPES.flatMap { transportType ->
+        CLIENT_SCENARIOS.map { scenario ->
+            DynamicTest.dynamicTest("Client [$transportType]: $scenario") {
+                runClientConformanceTest(scenario, transportType)
+            }
         }
     }
 
-    private fun runServerConformanceTest(scenario: String, serverUrl: String) {
-        val processBuilder = ProcessBuilder(
-            "npx",
-            "@modelcontextprotocol/conformance",
-            "server",
-            "--url",
-            serverUrl,
-            "--scenario",
-            scenario,
-        ).apply {
-            inheritIO()
+    private fun runServerConformanceTest(scenario: String, transportType: TransportType) {
+        val processBuilder = when (transportType) {
+            TransportType.SSE -> {
+                val serverUrl = "http://127.0.0.1:$serverPort/mcp"
+                ProcessBuilder(
+                    "npx",
+                    "@modelcontextprotocol/conformance",
+                    "server",
+                    "--url",
+                    serverUrl,
+                    "--scenario",
+                    scenario,
+                ).apply {
+                    inheritIO()
+                }
+            }
+
+            TransportType.WEBSOCKET -> {
+                val serverUrl = "ws://127.0.0.1:$serverPort/ws"
+                ProcessBuilder(
+                    "npx",
+                    "@modelcontextprotocol/conformance",
+                    "server",
+                    "--url",
+                    serverUrl,
+                    "--scenario",
+                    scenario,
+                ).apply {
+                    inheritIO()
+                }
+            }
         }
 
-        runConformanceTest("server", scenario, processBuilder)
+        runConformanceTest("server", scenario, processBuilder, transportType)
     }
 
-    private fun runClientConformanceTest(scenario: String) {
+    private fun runClientConformanceTest(scenario: String, transportType: TransportType) {
         val testClasspath = getTestClasspath()
 
-        val clientCommand = listOf(
-            "java",
-            "-cp",
-            testClasspath,
-            "io.modelcontextprotocol.kotlin.sdk.conformance.ConformanceClientKt",
-        )
+        val clientCommand = when (transportType) {
+            TransportType.SSE -> {
+                val serverUrl = "http://127.0.0.1:$serverPort/mcp"
+                listOf(
+                    "java",
+                    "-cp",
+                    testClasspath,
+                    "io.modelcontextprotocol.kotlin.sdk.conformance.ConformanceClientKt",
+                    serverUrl,
+                )
+            }
+
+            TransportType.WEBSOCKET -> {
+                val serverUrl = "ws://127.0.0.1:$serverPort/ws"
+                listOf(
+                    "java",
+                    "-cp",
+                    testClasspath,
+                    "io.modelcontextprotocol.kotlin.sdk.conformance.WebSocketConformanceClientKt",
+                    serverUrl,
+                )
+            }
+        }
 
         val processBuilder = ProcessBuilder(
             "npx",
@@ -231,12 +284,17 @@ class ConformanceTest {
             inheritIO()
         }
 
-        runConformanceTest("client", scenario, processBuilder)
+        runConformanceTest("client", scenario, processBuilder, transportType)
     }
 
-    private fun runConformanceTest(type: String, scenario: String, processBuilder: ProcessBuilder) {
+    private fun runConformanceTest(
+        type: String,
+        scenario: String,
+        processBuilder: ProcessBuilder,
+        transportType: TransportType,
+    ) {
         val capitalizedType = type.replaceFirstChar { it.uppercase() }
-        logger.info { "Running $type conformance test: $scenario" }
+        logger.info { "Running $type conformance test [$transportType]: $scenario" }
 
         val timeoutSeconds = System.getenv("CONFORMANCE_TEST_TIMEOUT_SECONDS")?.toLongOrNull()
             ?: DEFAULT_TEST_TIMEOUT_SECONDS
@@ -246,23 +304,23 @@ class ConformanceTest {
 
         if (!completed) {
             logger.error {
-                "$capitalizedType conformance test '$scenario' timed out after $timeoutSeconds seconds"
+                "$capitalizedType conformance test [$transportType] '$scenario' timed out after $timeoutSeconds seconds"
             }
             process.destroyForcibly()
             throw AssertionError(
-                "❌ $capitalizedType conformance test '$scenario' timed out after $timeoutSeconds seconds",
+                "❌ $capitalizedType conformance test [$transportType] '$scenario' timed out after $timeoutSeconds seconds",
             )
         }
 
         when (val exitCode = process.exitValue()) {
-            0 -> logger.info { "✅ $capitalizedType conformance test '$scenario' passed!" }
+            0 -> logger.info { "✅ $capitalizedType conformance test [$transportType] '$scenario' passed!" }
 
             else -> {
                 logger.error {
-                    "$capitalizedType conformance test '$scenario' failed with exit code: $exitCode"
+                    "$capitalizedType conformance test [$transportType] '$scenario' failed with exit code: $exitCode"
                 }
                 throw AssertionError(
-                    "❌ $capitalizedType conformance test '$scenario' failed (exit code: $exitCode). Check test output above for details.",
+                    "❌ $capitalizedType conformance test [$transportType] '$scenario' failed (exit code: $exitCode). Check test output above for details.",
                 )
             }
         }
