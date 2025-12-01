@@ -56,3 +56,6 @@ dist
 ### SWE agents ###
 .claude/
 .junie/
+
+### Conformance test results ###
+conformance-test/results/

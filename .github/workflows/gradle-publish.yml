@@ -34,7 +34,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v5
 
       - name: Clean Build with Gradle
-        run: ./gradlew clean build
+        run: ./gradlew clean build -x :conformance-test:test
 
       - name: Publish to Maven Central Portal
         id: publish
