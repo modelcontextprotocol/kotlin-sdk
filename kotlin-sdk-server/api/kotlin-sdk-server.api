@@ -160,8 +160,9 @@ public final class io/modelcontextprotocol/kotlin/sdk/server/StdioServerTranspor
 public final class io/modelcontextprotocol/kotlin/sdk/server/StreamableHttpServerTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport {
 	public static final field STANDALONE_SSE_STREAM_ID Ljava/lang/String;
 	public fun <init> ()V
-	public fun <init> (ZZLjava/util/List;Ljava/util/List;Lio/modelcontextprotocol/kotlin/sdk/server/EventStore;)V
-	public synthetic fun <init> (ZZLjava/util/List;Ljava/util/List;Lio/modelcontextprotocol/kotlin/sdk/server/EventStore;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (ZZLjava/util/List;Ljava/util/List;Lio/modelcontextprotocol/kotlin/sdk/server/EventStore;Ljava/lang/Long;)V
+	public synthetic fun <init> (ZZLjava/util/List;Ljava/util/List;Lio/modelcontextprotocol/kotlin/sdk/server/EventStore;Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun closeSseStream (Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun getSessionId ()Ljava/lang/String;
 	public final fun handleDeleteRequest (Lio/ktor/server/application/ApplicationCall;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -195,4 +196,3 @@ public final class io/modelcontextprotocol/kotlin/sdk/server/WebSocketMcpServerT
 	public fun <init> (Lio/ktor/server/websocket/WebSocketServerSession;)V
 	public synthetic fun getSession ()Lio/ktor/websocket/WebSocketSession;
 }
-

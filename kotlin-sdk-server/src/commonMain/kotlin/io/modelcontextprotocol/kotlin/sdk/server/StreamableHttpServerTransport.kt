@@ -239,6 +239,24 @@ public class StreamableHttpServerTransport(
         }
     }
 
+    /**
+     * Closes the SSE stream associated with the given [requestId], prompting the client to reconnect.
+     * Useful for implementing polling behavior for long-running operations.
+     */
+    public suspend fun closeSseStream(requestId: RequestId) {
+        if (enableJsonResponse) return
+        val streamId = requestToStreamMapping[requestId] ?: return
+        val sessionContext = streamsMapping[streamId] ?: return
+
+        try {
+            sessionContext.session?.close()
+        } catch (e: Exception) {
+            _onError(e)
+        } finally {
+            streamsMapping.remove(streamId)
+        }
+    }
+
     override suspend fun close() {
         streamMutex.withLock {
             streamsMapping.values.forEach {
