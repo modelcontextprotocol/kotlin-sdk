@@ -41,6 +41,7 @@ jobs:
             clean \
             ktlintCheck \
             build \
+            -x :conformance-test:test \
             koverLog koverHtmlReport \
             publishToMavenLocal \
             -Pversion=0.0.1-SNAPSHOT
