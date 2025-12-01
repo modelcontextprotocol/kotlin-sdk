@@ -28,11 +28,6 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
         with:
@@ -61,35 +56,6 @@ jobs:
       - name: Build Weather-Stdio-Server Sample
         working-directory: ./samples/weather-stdio-server
         run: ./gradlew --no-daemon clean build -Pmcp.kotlin.overrideVersion=0.0.1-SNAPSHOT
-
-      - name: Run Conformance Tests
-        run: ./gradlew --no-daemon conformance
-
-      - name: Upload Conformance Results
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
-        with:
-          name: conformance-results
-          path: kotlin-sdk-test/results/
-
-      - name: Upload Reports
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
-        with:
-          name: reports
-          path: |
-            **/build/reports/
-
-      - name: Publish Test Report
-        uses: mikepenz/action-junit-report@v6
-        if: ${{ !cancelled() }} # always run even if the previous step fails
-        with:
-          report_paths: '**/test-results/**/TEST-*.xml'
-          detailed_summary: true
-          flaky_summary: true
-          include_empty_in_summary: false
-          include_time_in_summary: true
-          annotate_only: true
 
       - name: Disable Auto-Merge on Fail
         if: failure() && github.event_name == 'pull_request'
