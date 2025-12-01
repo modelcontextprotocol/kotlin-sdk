@@ -64,6 +64,12 @@ public interface EventStore {
         lastEventId: String,
         sender: suspend (eventId: String, message: JSONRPCMessage) -> Unit,
     ): String
+
+    /**
+     * Returns the stream ID associated with [eventId], or null if the event is unknown.
+     * Default implementation is a no-op which disables extra validation during replay.
+     */
+    public suspend fun getStreamIdForEventId(eventId: String): String?
 }
 
 /**
@@ -416,6 +422,38 @@ public class StreamableHttpServerTransport(
         val call: ApplicationCall = session.call
 
         try {
+            var lookupSupported = true
+            val lookupStreamId = try {
+                store.getStreamIdForEventId(lastEventId)
+            } catch (_: NotImplementedError) {
+                lookupSupported = false
+                null
+            } catch (_: UnsupportedOperationException) {
+                lookupSupported = false
+                null
+            }
+
+            if (lookupSupported) {
+                val streamId = lookupStreamId
+                    ?: run {
+                        call.reject(
+                            HttpStatusCode.BadRequest,
+                            RPCError.ErrorCode.CONNECTION_CLOSED,
+                            "Invalid event ID format",
+                        )
+                        return
+                    }
+
+                if (streamId in streamsMapping) {
+                    call.reject(
+                        HttpStatusCode.Conflict,
+                        RPCError.ErrorCode.CONNECTION_CLOSED,
+                        "Conflict: Stream already has an active connection",
+                    )
+                    return
+                }
+            }
+
             call.appendSseHeaders()
             session.send(data = "") // flush headers immediately
 
