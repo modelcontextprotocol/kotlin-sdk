@@ -1,13 +1,60 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
 import io.modelcontextprotocol.kotlin.sdk.shared.BaseTransportTest
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.McpException
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.asSink
 import kotlinx.io.asSource
 import kotlinx.io.buffered
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
+import org.junit.jupiter.api.assertThrows
+import java.util.concurrent.TimeUnit
 
+@Timeout(20, unit = TimeUnit.SECONDS)
 class StdioClientTransportTest : BaseTransportTest() {
+
+    @Test
+    @Timeout(30, unit = TimeUnit.SECONDS)
+    fun `handle stdio error`(): Unit = runBlocking {
+        val processBuilder = if (System.getProperty("os.name").lowercase().contains("win")) {
+            ProcessBuilder("cmd", "/c", "pause 1 && echo simulated error 1>&2 && exit 1")
+        } else {
+            ProcessBuilder("sh", "-c", "sleep 1 && echo 'simulated error' >&2 && exit 1")
+        }
+
+        val process = processBuilder.start()
+
+        val stdin = process.inputStream.asSource().buffered()
+        val stdout = process.outputStream.asSink().buffered()
+        val stderr = process.errorStream.asSource().buffered()
+
+        val transport = StdioClientTransport(
+            input = stdin,
+            output = stdout,
+            error = stderr,
+        ) {
+            println("💥Ah-oh!, error: \"$it\"")
+            true
+        }
+
+        val client = Client(
+            clientInfo = Implementation(
+                name = "test-client",
+                version = "1.0",
+            ),
+        )
+
+        // The error in stderr should cause connecting to fail
+        assertThrows<McpException> {
+            client.connect(transport)
+        }
+
+        process.destroyForcibly()
+    }
+
     @Test
     fun `should start then close cleanly`() = runTest {
         // Run process "/usr/bin/tee"
@@ -24,7 +71,7 @@ class StdioClientTransportTest : BaseTransportTest() {
 
         testTransportOpenClose(transport)
 
-        process.destroy()
+        process.destroyForcibly()
     }
 
     @Test
@@ -43,7 +90,7 @@ class StdioClientTransportTest : BaseTransportTest() {
         testTransportRead(transport)
 
         process.waitFor()
-        process.destroy()
+        process.destroyForcibly()
     }
 
     @Test
@@ -63,6 +110,6 @@ class StdioClientTransportTest : BaseTransportTest() {
         testTransportRead(transport)
 
         process.waitFor()
-        process.destroy()
+        process.destroyForcibly()
     }
 }

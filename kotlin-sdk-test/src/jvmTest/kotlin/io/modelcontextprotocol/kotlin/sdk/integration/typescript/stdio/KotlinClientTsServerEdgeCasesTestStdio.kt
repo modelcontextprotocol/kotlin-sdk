@@ -89,7 +89,7 @@ class KotlinClientTsServerEdgeCasesTestStdio : TsTestBase() {
     }
 
     @Test
-    @Timeout(60, unit = TimeUnit.SECONDS)
+    @Timeout(30, unit = TimeUnit.SECONDS)
     fun testConcurrentRequestsOverStdio(): Unit = runBlocking(Dispatchers.IO) {
         withClientStdio { client: Client, _ ->
             val concurrentCount = 5
@@ -102,8 +102,7 @@ class KotlinClientTsServerEdgeCasesTestStdio : TsTestBase() {
                         val result = client.callTool("greet", arguments)
                         assertNotNull(result, "Tool call result should not be null for client $i")
 
-                        val callResult = result
-                        val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
+                        val textContent = result.content.firstOrNull { it is TextContent } as? TextContent
                         assertNotNull(textContent, "Text content should be present for client $i")
 
                         textContent.text
