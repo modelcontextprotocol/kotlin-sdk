@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilAsserted
 
 class ServerResourcesNotificationTest : AbstractServerFeaturesTest() {
 
@@ -50,14 +52,14 @@ class ServerResourcesNotificationTest : AbstractServerFeaturesTest() {
 
         // Remove the resource
         val result = server.removeResource(testResourceUri)
-        // Close the server to stop processing further events and flush notifications
-        server.close()
 
         // Verify the resource was removed
         assertTrue(result, "Resource should be removed successfully")
 
         // Verify that the notification was sent
-        assertTrue(resourceListChangedNotificationReceived, "Notification should be sent when resource is added")
+        await untilAsserted {
+            assertTrue(resourceListChangedNotificationReceived, "Notification should be sent when resource is added")
+        }
     }
 
     @Test
@@ -110,18 +112,18 @@ class ServerResourcesNotificationTest : AbstractServerFeaturesTest() {
 
         // Remove the resources
         val result = server.removeResources(listOf(testResourceUri1, testResourceUri2))
-        // Close the server to stop processing further events and flush notifications
-        server.close()
 
         // Verify the resources were removed
         assertEquals(2, result, "Both resources should be removed")
 
         // Verify that the notifications were sent twice
-        assertEquals(
-            4,
-            resourceListChangedNotificationReceivedCount,
-            "Two notifications should be sent when resources are added and two when removed",
-        )
+        await untilAsserted {
+            assertEquals(
+                4,
+                resourceListChangedNotificationReceivedCount,
+                "Two notifications should be sent when resources are added and two when removed",
+            )
+        }
     }
 
     @Test
@@ -137,8 +139,6 @@ class ServerResourcesNotificationTest : AbstractServerFeaturesTest() {
 
         // Try to remove a non-existent resource
         val result = server.removeResource("non-existent-resource")
-        // Close the server to stop processing further events and flush notifications
-        server.close()
 
         // Verify the result
         assertFalse(result, "Removing non-existent resource should return false")

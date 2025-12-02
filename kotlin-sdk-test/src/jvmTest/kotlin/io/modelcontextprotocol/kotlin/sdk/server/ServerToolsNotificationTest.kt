@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilAsserted
 
 class ServerToolsNotificationTest : AbstractServerFeaturesTest() {
 
@@ -35,14 +37,14 @@ class ServerToolsNotificationTest : AbstractServerFeaturesTest() {
 
         // Remove the tool
         val result = server.removeTool("test-tool")
-        // Close the server to stop processing further events and flush notifications
-        server.close()
 
         // Verify the tool was removed
         assertTrue(result, "Tool should be removed successfully")
 
         // Verify that the notification was sent
-        assertTrue(toolListChangedNotificationReceived, "Notification should be sent when tool is added")
+        await untilAsserted {
+            assertTrue(toolListChangedNotificationReceived, "Notification should be sent when tool is added")
+        }
     }
 
     @Test
@@ -64,18 +66,17 @@ class ServerToolsNotificationTest : AbstractServerFeaturesTest() {
 
         // Remove the tools
         val result = server.removeTools(listOf("test-tool-1", "test-tool-2"))
-        // Close the server to stop processing further events and flush notifications
-        server.close()
-
         // Verify the tools were removed
         assertEquals(2, result, "Both tools should be removed")
 
         // Verify that the notifications were sent twice
-        assertEquals(
-            4,
-            toolListChangedNotificationReceivedCount,
-            "Two notifications should be sent when tools are added and two when removed",
-        )
+        await untilAsserted {
+            assertEquals(
+                4,
+                toolListChangedNotificationReceivedCount,
+                "Two notifications should be sent when tools are added and two when removed",
+            )
+        }
     }
 
     @Test

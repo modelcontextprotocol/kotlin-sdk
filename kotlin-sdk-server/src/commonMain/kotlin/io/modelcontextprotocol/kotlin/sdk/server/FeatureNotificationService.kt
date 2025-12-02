@@ -6,6 +6,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.PromptListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotificationParams
+import io.modelcontextprotocol.kotlin.sdk.types.ServerNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ToolListChangedNotification
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.getAndUpdate
@@ -18,6 +19,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.takeWhile
@@ -58,6 +60,17 @@ private class SessionNotificationJob {
     private val resourceSubscriptions = atomic(persistentMapOf<FeatureKey, Long>())
     private val logger = KotlinLogging.logger {}
 
+    /**
+     * Constructor for the SessionNotificationJob, responsible for processing notification events
+     * and dispatching appropriate notifications to the provided server session. The job operates
+     * within the given coroutine scope and begins handling events starting from the specified
+     * timestamp.
+     *
+     * @param session The server session where notifications will be dispatched.
+     * @param scope The coroutine scope in which this job operates.
+     * @param events A shared flow of notification events that the job listens to.
+     * @param fromTimestamp The timestamp from which the job starts processing events.
+     */
     constructor(
         session: ServerSession,
         scope: CoroutineScope,
@@ -71,23 +84,12 @@ private class SessionNotificationJob {
                     is SendEvent -> {
                         if (event.timestamp >= fromTimestamp) {
                             when (val notification = event.notification) {
-                                is PromptListChangedNotification -> {
+                                is PromptListChangedNotification,
+                                is ResourceListChangedNotification,
+                                is ToolListChangedNotification,
+                                -> {
                                     logger.info {
-                                        "Sending prompt list changed notification for sessionId: ${session.sessionId}"
-                                    }
-                                    session.notification(notification)
-                                }
-
-                                is ResourceListChangedNotification -> {
-                                    logger.info {
-                                        "Sending resourse list changed notification for sessionId: ${session.sessionId}"
-                                    }
-                                    session.notification(notification)
-                                }
-
-                                is ToolListChangedNotification -> {
-                                    logger.info {
-                                        "Sending tool list changed notification for sessionId: ${session.sessionId}"
+                                        "Sending list changed notification for sessionId: ${session.sessionId}"
                                     }
                                     session.notification(notification)
                                 }
@@ -186,6 +188,7 @@ private class SessionNotificationJob {
  * - Resource updates pertaining to specific resources.
  */
 internal class FeatureNotificationService(
+    notificationBufferCapacity: Int = Channel.UNLIMITED,
     @OptIn(ExperimentalTime::class)
     private val clock: Clock = Clock.System,
 ) {
@@ -197,8 +200,7 @@ internal class FeatureNotificationService(
 
     /** Shared flow used to emit events within the feature notification service. */
     private val notificationEvents = MutableSharedFlow<NotificationEvent>(
-        extraBufferCapacity = 100,
-        replay = 0,
+        extraBufferCapacity = notificationBufferCapacity,
         onBufferOverflow = BufferOverflow.SUSPEND,
     )
 
@@ -210,57 +212,27 @@ internal class FeatureNotificationService(
 
     private val logger = KotlinLogging.logger {}
 
-    /** Listener for tool feature events. */
-    private val toolListChangedListener: FeatureListener by lazy {
+    private fun featureListener(notificationProvider: (FeatureKey) -> ServerNotification): FeatureListener =
         object : FeatureListener {
             override fun onFeatureUpdated(featureKey: FeatureKey) {
-                logger.info { "Emitting tool list changed notification" }
-                emit(ToolListChangedNotification())
+                val notification = notificationProvider(featureKey)
+                logger.info { "Emitting notification: ${notification.method.value}" }
+                emit(notification)
             }
         }
-    }
+
+    /** Listener for tool feature events. */
+    internal val toolListChangedListener: FeatureListener = featureListener { ToolListChangedNotification() }
 
     /** Listener for prompt feature events. */
-    private val promptListChangeListener: FeatureListener by lazy {
-        object : FeatureListener {
-            override fun onFeatureUpdated(featureKey: FeatureKey) {
-                logger.info { "Emitting prompt list changed notification" }
-                emit(PromptListChangedNotification())
-            }
-        }
-    }
+    internal val promptListChangedListener: FeatureListener = featureListener { PromptListChangedNotification() }
 
     /** Listener for resource feature events. */
-    private val resourceListChangedListener: FeatureListener by lazy {
-        object : FeatureListener {
-            override fun onFeatureUpdated(featureKey: FeatureKey) {
-                logger.info { "Emitting resource list changed notification" }
-                emit(ResourceListChangedNotification())
-            }
-        }
-    }
+    internal val resourceListChangedListener: FeatureListener = featureListener { ResourceListChangedNotification() }
 
     /** Listener for resource update events. */
-    private val resourceUpdatedListener: FeatureListener by lazy {
-        object : FeatureListener {
-            override fun onFeatureUpdated(featureKey: FeatureKey) {
-                logger.info { "Emitting resource updated notification for feature key: $featureKey" }
-                emit(ResourceUpdatedNotification(ResourceUpdatedNotificationParams(uri = featureKey)))
-            }
-        }
-    }
-
-    /** Listener for the tool list changed events. */
-    internal fun getToolListChangedListener(): FeatureListener = toolListChangedListener
-
-    /** Listener for the prompt list changed events. */
-    internal fun getPromptListChangedListener(): FeatureListener = promptListChangeListener
-
-    /** Listener for the resource list changed events. */
-    internal fun getResourceListChangedListener(): FeatureListener = resourceListChangedListener
-
-    /** Listener for resource update events. */
-    internal fun getResourceUpdateListener(): FeatureListener = resourceUpdatedListener
+    internal val resourceUpdatedListener: FeatureListener =
+        featureListener { ResourceUpdatedNotification(ResourceUpdatedNotificationParams(uri = it)) }
 
     /**
      * Subscribes session to list changed notifications for all features and resource update notifications.

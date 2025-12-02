@@ -7,6 +7,8 @@ import io.modelcontextprotocol.kotlin.sdk.types.PromptListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -38,14 +40,14 @@ class ServerPromptsNotificationTest : AbstractServerFeaturesTest() {
 
         // Remove the prompt
         val result = server.removePrompt(testPrompt.name)
-        // Close the server to stop processing further events and flush notifications
-        server.close()
 
         // Verify the prompt was removed
         assertTrue(result, "Prompt should be removed successfully")
 
         // Verify that the notification was sent
-        assertTrue(promptListChangedNotificationReceived, "Notification should be sent when prompt is added")
+        await untilAsserted {
+            assertTrue(promptListChangedNotificationReceived, "Notification should be sent when prompt is added")
+        }
     }
 
     @Test
@@ -76,18 +78,18 @@ class ServerPromptsNotificationTest : AbstractServerFeaturesTest() {
 
         // Remove the prompts
         val result = server.removePrompts(listOf(testPrompt1.name, testPrompt2.name))
-        // Close the server to stop processing further events and flush notifications
-        server.close()
 
         // Verify the prompts were removed
         assertEquals(2, result, "Both prompts should be removed")
 
         // Verify that the notifications were sent twice
-        assertEquals(
-            4,
-            promptListChangedNotificationReceivedCount,
-            "Two notifications should be sent when prompts are added and two when removed",
-        )
+        await untilAsserted {
+            assertEquals(
+                4,
+                promptListChangedNotificationReceivedCount,
+                "Two notifications should be sent when prompts are added and two when removed",
+            )
+        }
     }
 
     @Test
@@ -101,11 +103,14 @@ class ServerPromptsNotificationTest : AbstractServerFeaturesTest() {
 
         // Try to remove a non-existent prompt
         val result = server.removePrompt("non-existent-prompt")
-        // Close the server to stop processing further events and flush notifications
-        server.close()
 
         // Verify the result
         assertFalse(result, "Removing non-existent prompt should return false")
-        assertFalse(promptListChangedNotificationReceived, "No notification should be sent when prompt doesn't exist")
+        await untilAsserted {
+            assertFalse(
+                promptListChangedNotificationReceived,
+                "No notification should be sent when prompt doesn't exist",
+            )
+        }
     }
 }

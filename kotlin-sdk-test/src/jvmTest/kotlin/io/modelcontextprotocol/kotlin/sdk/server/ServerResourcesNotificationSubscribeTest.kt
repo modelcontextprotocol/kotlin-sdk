@@ -10,6 +10,8 @@ import io.modelcontextprotocol.kotlin.sdk.types.SubscribeRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -26,7 +28,6 @@ class ServerResourcesNotificationSubscribeTest : AbstractServerFeaturesTest() {
         val notifications = mutableListOf<ResourceUpdatedNotification>()
         client.setNotificationHandler<ResourceUpdatedNotification>(Method.Defined.NotificationsResourcesUpdated) {
             notifications.add(it)
-            println(it)
             CompletableDeferred(Unit)
         }
 
@@ -72,15 +73,14 @@ class ServerResourcesNotificationSubscribeTest : AbstractServerFeaturesTest() {
 
         // Remove the resource
         val result = server.removeResource(testResourceUri1)
-        // Close the server to stop processing further events and flush notifications
-        server.close()
 
         // Verify the resource was removed
         assertTrue(result, "Resource should be removed successfully")
 
-        println(notifications.map { it.params.uri })
         // Verify that the notification was sent
-        assertEquals(1, notifications.size, "Notification should be sent when resource 1 was deleted")
+        await untilAsserted {
+            assertEquals(1, notifications.size, "Notification should be sent when resource 1 was deleted")
+        }
         assertEquals(testResourceUri1, notifications[0].params.uri, "Notification should contain the resource 1 URI")
     }
 
@@ -136,8 +136,6 @@ class ServerResourcesNotificationSubscribeTest : AbstractServerFeaturesTest() {
         // Remove the resource
         val result1 = server.removeResource(testResourceUri1)
         val result2 = server.removeResource(testResourceUri2)
-        // Close the server to stop processing further events and flush notifications
-        server.close()
 
         // Verify the resource was removed
         assertTrue(result1, "Resource 1 should be removed successfully")
@@ -145,7 +143,13 @@ class ServerResourcesNotificationSubscribeTest : AbstractServerFeaturesTest() {
 
         println(notifications.map { it.params.uri })
         // Verify that the notification was sent
-        assertEquals(2, notifications.size, "Notification should be sent when resource 1 and resource 2 was deleted")
+        await untilAsserted {
+            assertEquals(
+                2,
+                notifications.size,
+                "Notification should be sent when resource 1 and resource 2 was deleted",
+            )
+        }
 
         val deletedResources = listOf(notifications[0].params.uri, notifications[1].params.uri)
         assertTrue(
@@ -171,8 +175,6 @@ class ServerResourcesNotificationSubscribeTest : AbstractServerFeaturesTest() {
 
         // Try to remove a non-existent resource
         val result = server.removeResource("non-existent-resource")
-        // Close the server to stop processing further events and flush notifications
-        server.close()
 
         // Verify the result
         assertFalse(result, "Removing non-existent resource should return false")

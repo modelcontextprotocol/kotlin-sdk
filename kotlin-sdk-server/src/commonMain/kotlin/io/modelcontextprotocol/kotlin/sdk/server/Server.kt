@@ -113,20 +113,20 @@ public open class Server(
 
     private val toolRegistry = FeatureRegistry<RegisteredTool>("Tool").apply {
         if (options.capabilities.tools?.listChanged ?: false) {
-            addListener(notificationService.getToolListChangedListener())
+            addListener(notificationService.toolListChangedListener)
         }
     }
     private val promptRegistry = FeatureRegistry<RegisteredPrompt>("Prompt").apply {
         if (options.capabilities.prompts?.listChanged ?: false) {
-            addListener(notificationService.getPromptListChangedListener())
+            addListener(notificationService.promptListChangedListener)
         }
     }
     private val resourceRegistry = FeatureRegistry<RegisteredResource>("Resource").apply {
         if (options.capabilities.resources?.listChanged ?: false) {
-            addListener(notificationService.getResourceListChangedListener())
+            addListener(notificationService.resourceListChangedListener)
         }
         if (options.capabilities.resources?.subscribe ?: false) {
-            addListener(notificationService.getResourceUpdateListener())
+            addListener(notificationService.resourceUpdatedListener)
         }
     }
 
