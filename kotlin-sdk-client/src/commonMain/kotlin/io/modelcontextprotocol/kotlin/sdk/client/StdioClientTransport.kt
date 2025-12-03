@@ -49,11 +49,6 @@ import kotlin.jvm.JvmOverloads
  * Reads JSON-RPC messages from [input] and writes messages to [output]. Optionally monitors
  * [error] stream for stderr output with configurable severity handling.
  *
- * ## Structured Concurrency
- * - Parent job controls all child coroutines
- * - Proper cancellation propagation
- * - Resource cleanup guaranteed
- *
  * ## Usage Example
  * ```kotlin
  * val process = ProcessBuilder("mcp-server").start()
@@ -78,8 +73,10 @@ import kotlin.jvm.JvmOverloads
  * @param error Optional error stream for stderr monitoring.
  * @param sendChannel Channel for outbound messages. Default: buffered channel (capacity 64).
  * @param classifyStderr Callback to classify stderr lines. Return [StderrSeverity.FATAL] to fail transport,
- *                       or [StderrSeverity.WARNING]/[INFO]/[DEBUG] to log, or [IGNORE] to discard.
- *                       Default: treats all stderr as [FATAL].
+ *                       or [StderrSeverity.WARNING] / [StderrSeverity.INFO] / [StderrSeverity.DEBUG]
+ *                       to log, or [StderrSeverity.IGNORE] to discard.
+ *                       Default value: [StderrSeverity.DEBUG].
+ * @see <a href="https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#stdio">MCP Specification</a>
  */
 @OptIn(ExperimentalAtomicApi::class)
 public class StdioClientTransport @JvmOverloads public constructor(
@@ -87,7 +84,7 @@ public class StdioClientTransport @JvmOverloads public constructor(
     private val output: Sink,
     private val error: Source? = null,
     private val sendChannel: Channel<JSONRPCMessage> = Channel(Channel.BUFFERED),
-    private val classifyStderr: (String) -> StderrSeverity = { FATAL },
+    private val classifyStderr: (String) -> StderrSeverity = { DEBUG },
 ) : AbstractTransport() {
 
     private companion object {
