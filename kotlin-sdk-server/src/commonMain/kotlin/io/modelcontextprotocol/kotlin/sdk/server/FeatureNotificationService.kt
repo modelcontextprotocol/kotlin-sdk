@@ -208,9 +208,6 @@ internal class FeatureNotificationService(
     /** Coroutine scope used to handle asynchronous notifications. */
     private val notificationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    /** Flag indicating whether the service is closing. */
-    private val closingService = atomic(false)
-
     /** Shared flow used to emit events within the feature notification service. */
     private val notificationEvents = MutableSharedFlow<NotificationEvent>(
         extraBufferCapacity = notificationBufferCapacity,
@@ -218,7 +215,7 @@ internal class FeatureNotificationService(
     )
 
     /** Active emit jobs. */
-    private val activeEmitJobs = atomic(persistentSetOf<Job>())
+    private val emitJobs = atomic(persistentSetOf<Job>())
 
     /** Notification jobs associated with sessions. */
     private val sessionNotificationJobs = atomic(persistentMapOf<ServerSessionKey, SessionNotificationJob>())
@@ -259,10 +256,6 @@ internal class FeatureNotificationService(
         logger.info { "Subscribing session for notifications sessionId: ${session.sessionId}" }
 
         val timestamp = getCurrentTimestamp()
-        if (closingService.value) {
-            logger.debug { "Skipping subscription notification as service is closing: ${session.sessionId}" }
-            return
-        }
 
         sessionNotificationJobs.getAndUpdate {
             if (it.containsKey(session.sessionId)) {
@@ -333,10 +326,6 @@ internal class FeatureNotificationService(
     private fun emit(notification: Notification) {
         // Create a timestamp before emit to ensure notifications are processed in order
         val timestamp = getCurrentTimestamp()
-        if (closingService.value) {
-            logger.debug { "Skipping emitting notification as service is closing: $notification" }
-            return
-        }
 
         logger.info { "Emitting notification $timestamp: $notification" }
 
@@ -348,11 +337,11 @@ internal class FeatureNotificationService(
         }
 
         // Add job to set before starting
-        activeEmitJobs.getAndUpdate { it.add(job) }
+        emitJobs.getAndUpdate { it.add(job) }
 
         // Register completion
         job.invokeOnCompletion {
-            activeEmitJobs.getAndUpdate { it.remove(job) }
+            emitJobs.getAndUpdate { it.remove(job) }
         }
 
         // Start the job after it's safely added
@@ -365,10 +354,9 @@ internal class FeatureNotificationService(
 
     suspend fun close() {
         logger.info { "Closing feature notification service" }
-        closingService.compareAndSet(false, update = true)
 
         // Making sure all emitting jobs are completed
-        activeEmitJobs.value.joinAll()
+        emitJobs.value.joinAll()
 
         // Emitting end event to complete all session notification jobs
         notificationScope.launch {
