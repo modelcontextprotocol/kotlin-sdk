@@ -1,6 +1,5 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
-import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceListChangedNotification
@@ -8,20 +7,30 @@ import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class ServerResourcesTest : AbstractServerFeaturesTest() {
+class ServerResourcesNotificationTest : AbstractServerFeaturesTest() {
 
     override fun getServerCapabilities(): ServerCapabilities = ServerCapabilities(
-        resources = ServerCapabilities.Resources(null, null),
+        resources = ServerCapabilities.Resources(true, null),
     )
 
     @Test
-    fun `removeResource should remove a resource`() = runTest {
+    fun `addResource should send notification`() = runTest {
+        // Configure notification handler
+        var resourceListChangedNotificationReceived = false
+        client.setNotificationHandler<ResourceListChangedNotification>(
+            Method.Defined.NotificationsResourcesListChanged,
+        ) {
+            resourceListChangedNotificationReceived = true
+            CompletableDeferred(Unit)
+        }
+
         // Add a resource
         val testResourceUri = "test://resource"
         server.addResource(
@@ -46,13 +55,28 @@ class ServerResourcesTest : AbstractServerFeaturesTest() {
 
         // Verify the resource was removed
         assertTrue(result, "Resource should be removed successfully")
+
+        // Verify that the notification was sent
+        await untilAsserted {
+            assertTrue(resourceListChangedNotificationReceived, "Notification should be sent when resource is added")
+        }
     }
 
     @Test
-    fun `removeResources should remove multiple resources`() = runTest {
+    fun `removeResources should remove multiple resources and send two notifications`() = runTest {
+        // Configure notification handler
+        var resourceListChangedNotificationReceivedCount = 0
+        client.setNotificationHandler<ResourceListChangedNotification>(
+            Method.Defined.NotificationsResourcesListChanged,
+        ) {
+            resourceListChangedNotificationReceivedCount += 1
+            CompletableDeferred(Unit)
+        }
+
         // Add resources
         val testResourceUri1 = "test://resource1"
         val testResourceUri2 = "test://resource2"
+
         server.addResource(
             uri = testResourceUri1,
             name = "Test Resource 1",
@@ -91,10 +115,19 @@ class ServerResourcesTest : AbstractServerFeaturesTest() {
 
         // Verify the resources were removed
         assertEquals(2, result, "Both resources should be removed")
+
+        // Verify that the notifications were sent twice
+        await untilAsserted {
+            assertEquals(
+                4,
+                resourceListChangedNotificationReceivedCount,
+                "Two notifications should be sent when resources are added and two when removed",
+            )
+        }
     }
 
     @Test
-    fun `removeResource should return false when resource does not exist`() = runTest {
+    fun `notification should not be send when removed resource does not exists`() = runTest {
         // Track notifications
         var resourceListChangedNotificationReceived = false
         client.setNotificationHandler<ResourceListChangedNotification>(
@@ -113,23 +146,5 @@ class ServerResourcesTest : AbstractServerFeaturesTest() {
             resourceListChangedNotificationReceived,
             "No notification should be sent when resource doesn't exist",
         )
-    }
-
-    @Test
-    fun `removeResource should throw when resources capability is not supported`() = runTest {
-        // Create server without resources capability
-        val serverOptions = ServerOptions(
-            capabilities = ServerCapabilities(),
-        )
-        val server = Server(
-            Implementation(name = "test server", version = "1.0"),
-            serverOptions,
-        )
-
-        // Verify that removing a resource throws an exception
-        val exception = assertThrows<IllegalStateException> {
-            server.removeResource("test://resource")
-        }
-        assertEquals("Server does not support resources capability.", exception.message)
     }
 }
