@@ -82,58 +82,65 @@ private class SessionNotificationJob {
             events.takeWhile { it !is EndEvent }.collect { event ->
                 when (event) {
                     is SendEvent -> {
-                        if (event.timestamp >= fromTimestamp) {
-                            when (val notification = event.notification) {
-                                is PromptListChangedNotification,
-                                is ResourceListChangedNotification,
-                                is ToolListChangedNotification,
-                                -> {
-                                    logger.info {
-                                        "Sending list changed notification for sessionId: ${session.sessionId}"
-                                    }
-                                    session.notification(notification)
-                                }
-
-                                is ResourceUpdatedNotification -> {
-                                    resourceSubscriptions.value[notification.params.uri]?.let { resourceFromTimestamp ->
-                                        if (event.timestamp >= resourceFromTimestamp) {
-                                            logger.info {
-                                                "Sending resource updated notification for resource " +
-                                                    "${notification.params.uri} " +
-                                                    "to sessionId: ${session.sessionId}"
-                                            }
-                                            session.notification(notification)
-                                        } else {
-                                            logger.info {
-                                                "Skipping resource updated notification for resource " +
-                                                    "${notification.params.uri} " +
-                                                    "as it is older than subscription timestamp $resourceFromTimestamp"
-                                            }
-                                        }
-                                    } ?: run {
-                                        logger.info {
-                                            "No subscription for resource ${notification.params.uri}. " +
-                                                "Skipping notification: $notification"
-                                        }
-                                    }
-                                }
-
-                                else -> {
-                                    logger.warn { "Skipping notification: $notification" }
-                                }
-                            }
-                        } else {
-                            logger.info {
-                                "Skipping event with id: ${event.timestamp} " +
-                                    "as it is older than startingEventId $fromTimestamp: $event"
-                            }
-                        }
+                        handleSendNotificationEvent(event, session, fromTimestamp)
                     }
 
                     else -> {
                         logger.warn { "Skipping event: $event" }
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * Handles sending a notification event to a specific server session.
+     *
+     * @param event The notification event to be processed.
+     * @param session The server session to which the notification should be sent.
+     * @param fromTimestamp The timestamp to filter events.
+     * Notifications with timestamps older than this value are skipped.
+     */
+    private suspend fun handleSendNotificationEvent(event: SendEvent, session: ServerSession, fromTimestamp: Long) {
+        if (event.timestamp < fromTimestamp) {
+            logger.info {
+                "Skipping event with id: ${event.timestamp} as it is older than startingEventId $fromTimestamp: $event"
+            }
+            return
+        }
+        when (val notification = event.notification) {
+            is PromptListChangedNotification,
+            is ResourceListChangedNotification,
+            is ToolListChangedNotification,
+            -> {
+                logger.info { "Sending list changed notification for sessionId: ${session.sessionId}" }
+                session.notification(notification)
+            }
+
+            is ResourceUpdatedNotification -> {
+                resourceSubscriptions.value[notification.params.uri]?.let { resourceFromTimestamp ->
+                    if (event.timestamp >= resourceFromTimestamp) {
+                        logger.info {
+                            "Sending resource updated notification for resource ${notification.params.uri} " +
+                                "to sessionId: ${session.sessionId}"
+                        }
+                        session.notification(notification)
+                    } else {
+                        logger.info {
+                            "Skipping resource updated notification for resource ${notification.params.uri} " +
+                                "as it is older than subscription timestamp $resourceFromTimestamp"
+                        }
+                    }
+                } ?: {
+                    logger.info {
+                        "No subscription for resource ${notification.params.uri}. " +
+                            "Skipping notification: $notification"
+                    }
+                }
+            }
+
+            else -> {
+                logger.warn { "Skipping notification: $notification" }
             }
         }
     }
@@ -157,10 +164,16 @@ private class SessionNotificationJob {
         resourceSubscriptions.getAndUpdate { it.remove(resourceKey) }
     }
 
+    /**
+     * Waits for the notification service to complete its operations.
+     */
     suspend fun join() {
         job.join()
     }
 
+    /**
+     * Cancels the notification service job.
+     */
     fun cancel() {
         job.cancel()
     }
@@ -216,7 +229,7 @@ internal class FeatureNotificationService(
         object : FeatureListener {
             override fun onFeatureUpdated(featureKey: FeatureKey) {
                 val notification = notificationProvider(featureKey)
-                logger.info { "Emitting notification: ${notification.method.value}" }
+                logger.debug { "Emitting notification: ${notification.method.value}" }
                 emit(notification)
             }
         }
@@ -247,7 +260,7 @@ internal class FeatureNotificationService(
 
         val timestamp = getCurrentTimestamp()
         if (closingService.value) {
-            logger.warn { "Skipping subscription notification as service is closing: ${session.sessionId}" }
+            logger.debug { "Skipping subscription notification as service is closing: ${session.sessionId}" }
             return
         }
 
@@ -321,7 +334,7 @@ internal class FeatureNotificationService(
         // Create a timestamp before emit to ensure notifications are processed in order
         val timestamp = getCurrentTimestamp()
         if (closingService.value) {
-            logger.warn { "Skipping emitting notification as service is closing: $notification" }
+            logger.debug { "Skipping emitting notification as service is closing: $notification" }
             return
         }
 
@@ -329,9 +342,9 @@ internal class FeatureNotificationService(
 
         // Launching emit lazily to put it to the jobs queue before the completion
         val job = notificationScope.launch(start = CoroutineStart.LAZY) {
-            logger.info { "Actually emitting notification $timestamp: $notification" }
+            logger.debug { "Actually emitting notification $timestamp: $notification" }
             notificationEvents.emit(SendEvent(timestamp, notification))
-            logger.info { "Notification emitted $timestamp: $notification" }
+            logger.debug { "Notification emitted $timestamp: $notification" }
         }
 
         // Add job to set before starting
@@ -354,7 +367,7 @@ internal class FeatureNotificationService(
         logger.info { "Closing feature notification service" }
         closingService.compareAndSet(false, update = true)
 
-        // Making sure all emit jobs are completed
+        // Making sure all emitting jobs are completed
         activeEmitJobs.value.joinAll()
 
         // Emitting end event to complete all session notification jobs
@@ -364,7 +377,7 @@ internal class FeatureNotificationService(
             logger.info { "End event emitted" }
         }.join()
 
-        // Making sure all session notification jobs are completed (after receiving end event)
+        // Making sure all session notification jobs are completed (after receiving the end event)
         sessionNotificationJobs.value.values.forEach { it.join() }
         // Cancelling notification scope to stop processing further events
         notificationScope.cancel()
