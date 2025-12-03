@@ -1,6 +1,11 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport.StderrSeverity.DEBUG
+import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport.StderrSeverity.FATAL
+import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport.StderrSeverity.IGNORE
+import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport.StderrSeverity.INFO
+import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport.StderrSeverity.WARNING
 import io.modelcontextprotocol.kotlin.sdk.internal.IODispatcher
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.ReadBuffer
@@ -39,20 +44,42 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.jvm.JvmOverloads
 
 /**
- * A transport implementation for JSON-RPC communication that leverages standard input and output streams.
+ * A transport implementation for JSON-RPC communication over standard I/O streams.
  *
- * This class reads from an input stream to process incoming JSON-RPC messages and writes JSON-RPC messages
- * to an output stream.
+ * Reads JSON-RPC messages from [input] and writes messages to [output]. Optionally monitors
+ * [error] stream for stderr output with configurable severity handling.
  *
- * Uses structured concurrency principles:
+ * ## Structured Concurrency
  * - Parent job controls all child coroutines
  * - Proper cancellation propagation
- * - Resource cleanup guaranteed via structured concurrency
+ * - Resource cleanup guaranteed
+ *
+ * ## Usage Example
+ * ```kotlin
+ * val process = ProcessBuilder("mcp-server").start()
+ *
+ * val transport = StdioClientTransport(
+ *     input = process.inputStream.asSource().buffered(),
+ *     output = process.outputStream.asSink().buffered(),
+ *     error = process.errorStream.asSource().buffered()
+ * ) { stderrLine ->
+ *     when {
+ *         stderrLine.contains("error", ignoreCase = true) -> StderrSeverity.FATAL
+ *         stderrLine.contains("warning", ignoreCase = true) -> StderrSeverity.WARNING
+ *         else -> StderrSeverity.INFO
+ *     }
+ * }
+ *
+ * transport.start()
+ * ```
  *
  * @param input The input stream where messages are received.
  * @param output The output stream where messages are sent.
- * @param error Optional error stream for stderr processing.
- * @param processStdError Callback for stderr lines. Returns true for fatal errors.
+ * @param error Optional error stream for stderr monitoring.
+ * @param sendChannel Channel for outbound messages. Default: buffered channel (capacity 64).
+ * @param classifyStderr Callback to classify stderr lines. Return [StderrSeverity.FATAL] to fail transport,
+ *                       or [StderrSeverity.WARNING]/[INFO]/[DEBUG] to log, or [IGNORE] to discard.
+ *                       Default: treats all stderr as [FATAL].
  */
 @OptIn(ExperimentalAtomicApi::class)
 public class StdioClientTransport @JvmOverloads public constructor(
@@ -60,7 +87,7 @@ public class StdioClientTransport @JvmOverloads public constructor(
     private val output: Sink,
     private val error: Source? = null,
     private val sendChannel: Channel<JSONRPCMessage> = Channel(Channel.BUFFERED),
-    private val processStdError: (String) -> Boolean = { true },
+    private val classifyStderr: (String) -> StderrSeverity = { FATAL },
 ) : AbstractTransport() {
 
     private companion object {
@@ -69,9 +96,20 @@ public class StdioClientTransport @JvmOverloads public constructor(
          * 8KB is optimal for most systems (matches default page size).
          */
         const val BUFFER_SIZE = 8 * 1024L
+
+        private val logger = KotlinLogging.logger {}
     }
 
-    private val logger = KotlinLogging.logger {}
+    /**
+     * Severity classification for stderr messages.
+     *
+     * - [FATAL]: Calls error handler and terminates transport.
+     * - [WARNING]: Logs at WARN level, transport continues.
+     * - [INFO]: Logs at INFO level, transport continues.
+     * - [DEBUG]: Logs at DEBUG level, transport continues.
+     * - [IGNORE]: Discards message silently, transport continues.
+     */
+    public enum class StderrSeverity { FATAL, WARNING, INFO, DEBUG, IGNORE }
 
     private val ioCoroutineContext: CoroutineContext = IODispatcher
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -141,11 +179,32 @@ public class StdioClientTransport @JvmOverloads public constructor(
                             }
 
                             is Event.StderrEvent -> {
-                                if (processStdError(event.message)) {
-                                    runCatching {
-                                        _onError(McpException(INTERNAL_ERROR, "Message in StdErr: ${event.message}"))
+                                val errorSeverity = classifyStderr(event.message)
+                                when (errorSeverity) {
+                                    FATAL -> {
+                                        runCatching {
+                                            _onError(
+                                                McpException(INTERNAL_ERROR, "Message in StdErr: ${event.message}"),
+                                            )
+                                        }
+                                        stopProcessing("Fatal STDERR message received")
                                     }
-                                    stopProcessing("STDERR message received")
+
+                                    WARNING -> {
+                                        logger.warn { "STDERR message received: ${event.message}" }
+                                    }
+
+                                    INFO -> {
+                                        logger.info { "STDERR message received: ${event.message}" }
+                                    }
+
+                                    DEBUG -> {
+                                        logger.debug { "STDERR message received: ${event.message}" }
+                                    }
+
+                                    IGNORE -> {
+                                        // do nothing
+                                    }
                                 }
                             }
 
