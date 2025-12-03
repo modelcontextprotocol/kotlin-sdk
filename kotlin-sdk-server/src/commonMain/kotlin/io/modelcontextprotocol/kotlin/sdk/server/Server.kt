@@ -65,8 +65,8 @@ public class ServerOptions(public val capabilities: ServerCapabilities, enforceS
  *
  * In case the server supports feature list notification or resource substitution,
  * the server will automatically send notifications for all connected clients.
- * Currently, after subscription to a resource, the server will NOT send the subscription configuration
- * as this response shema is not defined in the protocol.
+ * Currently, after subscription to a resource, the server will NOT send the subscription confirmation
+ * as this response schema is not defined in the protocol.
  *
  * @param serverInfo Information about this server implementation (name, version).
  * @param options Configuration options for the server.
