@@ -63,6 +63,11 @@ public class ServerOptions(public val capabilities: ServerCapabilities, enforceS
  * You can register tools, prompts, and resources using [addTool], [addPrompt], and [addResource].
  * The server will then automatically handle listing and retrieval requests from the client.
  *
+ * In case the server supports feature list notification or resource substitution,
+ * the server will automatically send notifications for all connected clients.
+ * Currently, after subscription to a resource, the server will NOT send the subscription configuration
+ * as this response shema is not defined in the protocol.
+ *
  * @param serverInfo Information about this server implementation (name, version).
  * @param options Configuration options for the server.
  * @param instructionsProvider Optional provider for instructions from the server to the client about how to use
@@ -91,17 +96,6 @@ public open class Server(
         block: Server.() -> Unit = {},
     ) : this(serverInfo, options, { instructions }, block)
 
-    private val sessionRegistry = ServerSessionRegistry()
-
-    @OptIn(ExperimentalTime::class)
-    private val notificationService = FeatureNotificationService()
-
-    /**
-     * Provides a snapshot of all sessions currently registered in the server
-     */
-    public val sessions: Map<ServerSessionKey, ServerSession>
-        get() = sessionRegistry.sessions
-
     @Suppress("ktlint:standard:backing-property-naming")
     private var _onInitialized: (() -> Unit) = {}
 
@@ -110,6 +104,11 @@ public open class Server(
 
     @Suppress("ktlint:standard:backing-property-naming")
     private var _onClose: () -> Unit = {}
+
+    @OptIn(ExperimentalTime::class)
+    private val notificationService = FeatureNotificationService()
+
+    private val sessionRegistry = ServerSessionRegistry()
 
     private val toolRegistry = FeatureRegistry<RegisteredTool>("Tool").apply {
         if (options.capabilities.tools?.listChanged ?: false) {
@@ -130,10 +129,27 @@ public open class Server(
         }
     }
 
+    /**
+     * Provides a snapshot of all sessions currently registered in the server
+     */
+    public val sessions: Map<ServerSessionKey, ServerSession>
+        get() = sessionRegistry.sessions
+
+    /**
+     * Provides a snapshot of all tools currently registered in the server
+     */
     public val tools: Map<String, RegisteredTool>
         get() = toolRegistry.values
+
+    /**
+     * Provides a snapshot of all prompts currently registered in the server
+     */
     public val prompts: Map<String, RegisteredPrompt>
         get() = promptRegistry.values
+
+    /**
+     * Provides a snapshot of all resources currently registered in the server
+     */
     public val resources: Map<String, RegisteredResource>
         get() = resourceRegistry.values
 
@@ -209,10 +225,12 @@ public open class Server(
             if (options.capabilities.resources?.subscribe ?: false) {
                 session.setRequestHandler<SubscribeRequest>(Method.Defined.ResourcesSubscribe) { request, _ ->
                     handleSubscribeResources(session, request)
+                    // Does not return any confirmation as the structure is not stated in the protocol
                     null
                 }
                 session.setRequestHandler<UnsubscribeRequest>(Method.Defined.ResourcesUnsubscribe) { request, _ ->
                     handleUnsubscribeResources(session, request)
+                    // Does not return any confirmation as the structure is not stated in the protocol
                     null
                 }
             }
@@ -521,7 +539,7 @@ public open class Server(
     }
 
     // --- Internal Handlers ---
-    private suspend fun handleSubscribeResources(session: ServerSession, request: SubscribeRequest) {
+    private fun handleSubscribeResources(session: ServerSession, request: SubscribeRequest) {
         if (options.capabilities.resources?.subscribe ?: false) {
             logger.debug { "Subscribing to resources" }
             notificationService.subscribeToResourceUpdate(session, request.params.uri)
@@ -530,7 +548,7 @@ public open class Server(
         }
     }
 
-    private suspend fun handleUnsubscribeResources(session: ServerSession, request: UnsubscribeRequest) {
+    private fun handleUnsubscribeResources(session: ServerSession, request: UnsubscribeRequest) {
         if (options.capabilities.resources?.subscribe ?: false) {
             logger.debug { "Unsubscribing from resources" }
             notificationService.unsubscribeFromResourceUpdate(session, request.params.uri)
@@ -539,7 +557,7 @@ public open class Server(
         }
     }
 
-    private suspend fun handleListTools(): ListToolsResult {
+    private fun handleListTools(): ListToolsResult {
         val toolList = tools.values.map { it.tool }
         return ListToolsResult(tools = toolList, nextCursor = null)
     }
@@ -573,7 +591,7 @@ public open class Server(
         }
     }
 
-    private suspend fun handleListPrompts(): ListPromptsResult {
+    private fun handleListPrompts(): ListPromptsResult {
         logger.debug { "Handling list prompts request" }
         return ListPromptsResult(prompts = prompts.values.map { it.prompt })
     }
@@ -589,7 +607,7 @@ public open class Server(
         return prompt.messageProvider(request)
     }
 
-    private suspend fun handleListResources(): ListResourcesResult {
+    private fun handleListResources(): ListResourcesResult {
         logger.debug { "Handling list resources request" }
         return ListResourcesResult(resources = resources.values.map { it.resource })
     }
@@ -605,7 +623,7 @@ public open class Server(
         return resource.readHandler(request)
     }
 
-    private suspend fun handleListResourceTemplates(): ListResourceTemplatesResult {
+    private fun handleListResourceTemplates(): ListResourceTemplatesResult {
         // If you have resource templates, return them here. For now, return empty.
         return ListResourceTemplatesResult(listOf())
     }
