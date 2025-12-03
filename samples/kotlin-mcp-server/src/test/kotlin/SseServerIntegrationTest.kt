@@ -1,13 +1,14 @@
-import io.modelcontextprotocol.kotlin.sdk.EmptyJsonObject
-import io.modelcontextprotocol.kotlin.sdk.ReadResourceRequest
-import io.modelcontextprotocol.kotlin.sdk.TextContent
-import io.modelcontextprotocol.kotlin.sdk.TextResourceContents
 import io.modelcontextprotocol.kotlin.sdk.client.Client
+import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
+import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class SseServerIntegrationTest {
@@ -20,7 +21,7 @@ class SseServerIntegrationTest {
         val listToolsResult = client.listTools()
 
         // then
-        assertEquals(expected = EmptyJsonObject, actual = listToolsResult._meta)
+        assertNull(listToolsResult.meta)
 
         val tools = listToolsResult.tools
         assertEquals(actual = tools.size, expected = 1)
@@ -33,7 +34,7 @@ class SseServerIntegrationTest {
         val listPromptsResult = client.listPrompts()
 
         // then
-        assertEquals(expected = EmptyJsonObject, actual = listPromptsResult._meta)
+        assertNull(listPromptsResult.meta)
 
         val prompts = listPromptsResult.prompts
 
@@ -45,7 +46,7 @@ class SseServerIntegrationTest {
         val listResourcesResult = client.listResources()
 
         // then
-        assertEquals(expected = EmptyJsonObject, actual = listResourcesResult._meta)
+        assertNull(listResourcesResult.meta)
         val resources = listResourcesResult.resources
 
         assertEquals(expected = listOf("Web Search"), actual = resources.map { it.name })
@@ -55,11 +56,11 @@ class SseServerIntegrationTest {
     fun `should get resource`(): Unit = runBlocking {
         val testResourceUri = "https://search.com/"
         val getResourcesResult = client.readResource(
-            ReadResourceRequest(uri = testResourceUri),
+            ReadResourceRequest(ReadResourceRequestParams(uri = testResourceUri)),
         )
 
         // then
-        assertEquals(expected = EmptyJsonObject, actual = getResourcesResult._meta)
+        assertEquals(expected = null, actual = getResourcesResult.meta)
         val contents = getResourcesResult.contents
         assertEquals(expected = 1, actual = contents.size)
         assertTrue {
@@ -72,11 +73,14 @@ class SseServerIntegrationTest {
     @Test
     fun `should call tool`(): Unit = runBlocking {
         // when
-        val toolResult = client.callTool("kotlin-sdk-tool", EmptyJsonObject)
+        val toolResult = client.callTool(
+            name = "kotlin-sdk-tool",
+            arguments = emptyMap(),
+        )
 
         // then
         assertNotNull(toolResult)
-        assertEquals(expected = EmptyJsonObject, actual = toolResult._meta)
+        assertNull(toolResult.meta)
         val content = toolResult.content.single()
         assertIs<TextContent>(content, "Tool result should be a text content")
 
