@@ -23,9 +23,9 @@ class ServerPromptsNotificationTest : AbstractServerFeaturesTest() {
     @Test
     fun `addPrompt should send notification`() = runTest {
         // Configure notification handler
-        var promptListChangedNotificationReceived = false
+        val notifications = mutableListOf<PromptListChangedNotification>()
         client.setNotificationHandler<PromptListChangedNotification>(Method.Defined.NotificationsPromptsListChanged) {
-            promptListChangedNotificationReceived = true
+            notifications.add(it)
             CompletableDeferred(Unit)
         }
 
@@ -46,16 +46,16 @@ class ServerPromptsNotificationTest : AbstractServerFeaturesTest() {
 
         // Verify that the notification was sent
         await untilAsserted {
-            assertTrue(promptListChangedNotificationReceived, "Notification should be sent when prompt is added")
+            assertTrue(notifications.isNotEmpty(), "Notification should be sent when prompt is added")
         }
     }
 
     @Test
     fun `removePrompts should remove multiple prompts and send two notifications`() = runTest {
         // Configure notification handler
-        var promptListChangedNotificationReceivedCount = 0
+        val notifications = mutableListOf<PromptListChangedNotification>()
         client.setNotificationHandler<PromptListChangedNotification>(Method.Defined.NotificationsPromptsListChanged) {
-            promptListChangedNotificationReceivedCount += 1
+            notifications.add(it)
             CompletableDeferred(Unit)
         }
 
@@ -86,7 +86,7 @@ class ServerPromptsNotificationTest : AbstractServerFeaturesTest() {
         await untilAsserted {
             assertEquals(
                 4,
-                promptListChangedNotificationReceivedCount,
+                notifications.size,
                 "Two notifications should be sent when prompts are added and two when removed",
             )
         }
@@ -95,9 +95,9 @@ class ServerPromptsNotificationTest : AbstractServerFeaturesTest() {
     @Test
     fun `notification should not be send when removed prompt does not exists`() = runTest {
         // Track notifications
-        var promptListChangedNotificationReceived = false
+        val notifications = mutableListOf<PromptListChangedNotification>()
         client.setNotificationHandler<PromptListChangedNotification>(Method.Defined.NotificationsPromptsListChanged) {
-            promptListChangedNotificationReceived = true
+            notifications.add(it)
             CompletableDeferred(Unit)
         }
 
@@ -107,8 +107,8 @@ class ServerPromptsNotificationTest : AbstractServerFeaturesTest() {
         // Verify the result
         assertFalse(result, "Removing non-existent prompt should return false")
         await untilAsserted {
-            assertFalse(
-                promptListChangedNotificationReceived,
+            assertTrue(
+                notifications.isEmpty(),
                 "No notification should be sent when prompt doesn't exist",
             )
         }
