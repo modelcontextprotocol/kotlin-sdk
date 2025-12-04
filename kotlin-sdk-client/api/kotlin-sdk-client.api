@@ -71,10 +71,26 @@ public final class io/modelcontextprotocol/kotlin/sdk/client/SseClientTransport 
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/client/StdioClientTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport {
+	public static final field BUFFER_SIZE J
 	public fun <init> (Lkotlinx/io/Source;Lkotlinx/io/Sink;)V
+	public fun <init> (Lkotlinx/io/Source;Lkotlinx/io/Sink;Lkotlinx/io/Source;)V
+	public fun <init> (Lkotlinx/io/Source;Lkotlinx/io/Sink;Lkotlinx/io/Source;Lkotlinx/coroutines/channels/Channel;)V
+	public fun <init> (Lkotlinx/io/Source;Lkotlinx/io/Sink;Lkotlinx/io/Source;Lkotlinx/coroutines/channels/Channel;Lkotlin/jvm/functions/Function1;)V
+	public synthetic fun <init> (Lkotlinx/io/Source;Lkotlinx/io/Sink;Lkotlinx/io/Source;Lkotlinx/coroutines/channels/Channel;Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun send (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/client/StdioClientTransport$StderrSeverity : java/lang/Enum {
+	public static final field DEBUG Lio/modelcontextprotocol/kotlin/sdk/client/StdioClientTransport$StderrSeverity;
+	public static final field FATAL Lio/modelcontextprotocol/kotlin/sdk/client/StdioClientTransport$StderrSeverity;
+	public static final field IGNORE Lio/modelcontextprotocol/kotlin/sdk/client/StdioClientTransport$StderrSeverity;
+	public static final field INFO Lio/modelcontextprotocol/kotlin/sdk/client/StdioClientTransport$StderrSeverity;
+	public static final field WARNING Lio/modelcontextprotocol/kotlin/sdk/client/StdioClientTransport$StderrSeverity;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/client/StdioClientTransport$StderrSeverity;
+	public static fun values ()[Lio/modelcontextprotocol/kotlin/sdk/client/StdioClientTransport$StderrSeverity;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/client/StreamableHttpClientTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport {

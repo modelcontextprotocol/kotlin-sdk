@@ -5,10 +5,12 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.delay
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.test.fail
+import kotlin.time.Duration.Companion.seconds
 
 abstract class BaseTransportTest {
 
@@ -21,6 +23,8 @@ abstract class BaseTransportTest {
         transport.onClose { didClose = true }
 
         transport.start()
+        delay(1.seconds)
+
         assertFalse(didClose, "Transport should not be closed immediately after start")
 
         transport.close()

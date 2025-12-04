@@ -105,6 +105,7 @@ public class StreamableHttpClientTransport(
         resumptionToken: String?,
         onResumptionToken: ((String) -> Unit)? = null,
     ) {
+        check(initialized.load()) { "Transport is not started" }
         logger.debug { "Client sending message via POST to $url: ${McpJson.encodeToString(message)}" }
 
         // If we have a resumption token, reconnect the SSE stream with it
