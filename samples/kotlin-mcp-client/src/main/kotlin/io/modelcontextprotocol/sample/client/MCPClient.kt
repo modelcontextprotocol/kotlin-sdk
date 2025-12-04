@@ -9,12 +9,13 @@ import com.anthropic.models.messages.Tool
 import com.anthropic.models.messages.ToolUnion
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.modelcontextprotocol.kotlin.sdk.EmptyJsonObject
-import io.modelcontextprotocol.kotlin.sdk.Implementation
-import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
+import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.yield
 import kotlinx.io.asSink
 import kotlinx.io.asSource
 import kotlinx.io.buffered
@@ -137,8 +138,8 @@ class MCPClient : AutoCloseable {
                                         "type": "tool_result",
                                         "tool_name": $toolName,
                                         "result": ${
-                                    result?.content?.joinToString("\n") {
-                                        (it as TextContent).text ?: ""
+                                    result.content.joinToString("\n") {
+                                        (it as TextContent).text
                                     }
                                 }
                                 """.trimIndent(),
@@ -173,6 +174,7 @@ class MCPClient : AutoCloseable {
             if (message.lowercase() == "quit") break
             val response = processQuery(message)
             println("\n$response")
+            yield()
         }
     }
 
