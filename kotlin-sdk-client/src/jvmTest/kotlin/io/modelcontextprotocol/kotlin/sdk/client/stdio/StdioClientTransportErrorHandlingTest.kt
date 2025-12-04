@@ -1,12 +1,28 @@
 package io.modelcontextprotocol.kotlin.sdk.client.stdio
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
+import io.kotest.matchers.types.shouldBeSameInstanceAs
+import io.mockk.coEvery
+import io.mockk.mockk
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
+import io.modelcontextprotocol.kotlin.sdk.types.McpException
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.Buffer
 import kotlinx.io.writeString
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
+import java.util.stream.Stream
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.test.Test
@@ -94,5 +110,67 @@ class StdioClientTransportErrorHandlingTest {
 
         // Empty input should close cleanly without error
         errorCalled.shouldBeFalse()
+    }
+
+    companion object {
+        @JvmStatic
+        fun exceptions(): Stream<Arguments> = Stream.of(
+            Arguments.of(
+                CancellationException(),
+                false, // should not wrap, propagate
+                null,
+            ),
+            Arguments.of(
+                McpException(-1, "dummy"),
+                false, // should not wrap, propagate
+                null,
+            ),
+            Arguments.of(
+                ClosedSendChannelException("dummy"),
+                true, // should wrap in McpException
+                ErrorCode.CONNECTION_CLOSED,
+            ),
+            Arguments.of(
+                Exception(),
+                true,
+                ErrorCode.INTERNAL_ERROR,
+            ),
+            Arguments.of(
+                OutOfMemoryError(),
+                true,
+                ErrorCode.INTERNAL_ERROR,
+            ),
+
+        )
+    }
+
+    @ParameterizedTest
+    @MethodSource("exceptions")
+    fun `Send should handle exceptions`(throwable: Throwable, shouldWrap: Boolean, expectedCode: Int?) = runTest {
+        val sendChannel: Channel<JSONRPCMessage> = mockk(relaxed = true)
+
+        transport = StdioClientTransport(
+            input = Buffer(),
+            output = Buffer(),
+            sendChannel = sendChannel,
+        )
+
+        coEvery { sendChannel.send(any()) } throws throwable
+
+        transport.start()
+
+        // Cancel the coroutine while it's suspended in send()
+        val exception = shouldThrow<Throwable> {
+            transport.send(JSONRPCRequest(id = "test-1", method = "test/method"))
+        }
+
+        if (shouldWrap) {
+            exception.shouldBeInstanceOf<McpException> {
+                it.cause shouldBeSameInstanceAs throwable
+                it.code shouldBe expectedCode
+            }
+        } else {
+            exception shouldBeSameInstanceAs throwable
+        }
     }
 }

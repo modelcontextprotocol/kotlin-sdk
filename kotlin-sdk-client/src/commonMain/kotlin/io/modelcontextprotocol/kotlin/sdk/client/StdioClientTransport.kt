@@ -15,6 +15,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.CONNECTION_CLOSED
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.INTERNAL_ERROR
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -71,12 +72,14 @@ import kotlin.jvm.JvmOverloads
  * @param input The input stream where messages are received.
  * @param output The output stream where messages are sent.
  * @param error Optional error stream for stderr monitoring.
- * @param sendChannel Channel for outbound messages. Default: buffered channel (capacity 64).
+ * @param sendChannel Channel for outbound messages. Default: buffered channel
+ *  (<a jref="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/-factory/-b-u-f-f-e-r-e-d.html">implementation-default capacity</a>).
  * @param classifyStderr Callback to classify stderr lines. Return [StderrSeverity.FATAL] to fail transport,
  *                       or [StderrSeverity.WARNING] / [StderrSeverity.INFO] / [StderrSeverity.DEBUG]
  *                       to log, or [StderrSeverity.IGNORE] to discard.
  *                       Default value: [StderrSeverity.DEBUG].
- * @see <a href="https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#stdio">MCP Specification</a>
+ * @see <a href="https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#stdio">MCP Specification</a>
+ * @see [Channel.BUFFERED]
  */
 @OptIn(ExperimentalAtomicApi::class)
 public class StdioClientTransport @JvmOverloads public constructor(
@@ -232,15 +235,25 @@ public class StdioClientTransport @JvmOverloads public constructor(
         @Suppress("TooGenericExceptionCaught", "SwallowedException")
         try {
             sendChannel.send(message)
+        } catch (e: CancellationException) {
+            throw e // MUST rethrow immediately - don't log, don't wrap
         } catch (e: ClosedSendChannelException) {
             logger.debug(e) { "Cannot send message: transport is closed" }
-            throw McpException(CONNECTION_CLOSED, "Transport is closed")
+            throw McpException(
+                code = CONNECTION_CLOSED,
+                message = "Transport is closed",
+                cause = e,
+            )
         } catch (e: McpException) {
             logger.debug(e) { "Error while sending message: ${e.message}" }
             throw e
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             logger.error(e) { "Error while sending message: ${e.message}" }
-            throw McpException(INTERNAL_ERROR, "Error while sending message: ${e.message}")
+            throw McpException(
+                code = INTERNAL_ERROR,
+                message = "Error while sending message: ${e.message}",
+                cause = e,
+            )
         }
     }
 

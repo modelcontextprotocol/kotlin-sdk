@@ -1,5 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.kotlin
 
+import io.kotest.assertions.withClue
+import io.kotest.matchers.string.shouldContain
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult
@@ -391,7 +393,9 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
             }
         }
 
-        assertTrue(exception.message.contains("requiredArg2"), "Exception should mention the missing argument")
+        withClue("Exception should mention the missing argument") {
+            exception.message shouldContain "requiredArg2"
+        }
 
         // test with no args
         val exception2 = assertThrows<McpException> {
@@ -407,7 +411,9 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
             }
         }
 
-        assertTrue(exception2.message.contains("requiredArg"), "Exception should mention a missing required argument")
+        withClue("Exception should mention a missing required argument") {
+            exception2.message shouldContain "requiredArg"
+        }
 
         // test with all required args
         val result = client.getPrompt(
