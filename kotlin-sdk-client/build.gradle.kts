@@ -54,6 +54,7 @@ kotlin {
                 implementation(libs.awaitility)
                 implementation(libs.ktor.client.apache5)
                 implementation(libs.mockk)
+                implementation(libs.junit.jupiter.params)
                 implementation(libs.mokksy)
                 implementation(dependencies.platform(libs.netty.bom))
                 runtimeOnly(libs.slf4j.simple)
