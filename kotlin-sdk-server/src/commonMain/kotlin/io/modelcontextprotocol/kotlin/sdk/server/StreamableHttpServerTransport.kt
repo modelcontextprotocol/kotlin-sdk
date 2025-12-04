@@ -249,6 +249,7 @@ public class StreamableHttpServerTransport(
                 }
             }
             streamsMapping.clear()
+            requestToStreamMapping.clear()
             requestToResponseMapping.clear()
             _onClose()
         }
@@ -380,7 +381,7 @@ public class StreamableHttpServerTransport(
             )
             return
         }
-        session!!
+        val sseSession = session ?: error("Server session can't be null for streaming GET requests")
 
         val acceptHeader = call.request.header(HttpHeaders.Accept)
         if (!acceptHeader.accepts(ContentType.Text.EventStream)) {
@@ -396,7 +397,7 @@ public class StreamableHttpServerTransport(
 
         eventStore?.let { store ->
             call.request.header(MCP_RESUMPTION_TOKEN_HEADER)?.let { lastEventId ->
-                replayEvents(store, lastEventId, session)
+                replayEvents(store, lastEventId, sseSession)
                 return
             }
         }
@@ -411,10 +412,12 @@ public class StreamableHttpServerTransport(
         }
 
         call.appendSseHeaders()
-        flushSse(session) // flush headers immediately
-        streamsMapping[STANDALONE_SSE_STREAM_ID] = SessionContext(session, call)
-        maybeSendPrimingEvent(STANDALONE_SSE_STREAM_ID, session)
-        session.coroutineContext.job.invokeOnCompletion { streamsMapping.remove(STANDALONE_SSE_STREAM_ID) }
+        flushSse(sseSession) // flush headers immediately
+        streamsMapping[STANDALONE_SSE_STREAM_ID] = SessionContext(sseSession, call)
+        maybeSendPrimingEvent(STANDALONE_SSE_STREAM_ID, sseSession)
+        sseSession.coroutineContext.job.invokeOnCompletion {
+            streamsMapping.remove(STANDALONE_SSE_STREAM_ID)
+        }
     }
 
     public suspend fun handleDeleteRequest(call: ApplicationCall) {
@@ -516,19 +519,32 @@ public class StreamableHttpServerTransport(
             return false
         }
 
-        val headerId = call.request.header(MCP_SESSION_ID_HEADER)
+        val sessionHeaderValues = call.request.headers.getAll(MCP_SESSION_ID_HEADER)
 
-        return when {
-            headerId == null -> {
-                call.reject(
-                    HttpStatusCode.BadRequest,
-                    RPCError.ErrorCode.CONNECTION_CLOSED,
-                    "Bad Request: Mcp-Session-Id header is required",
-                )
-                false
-            }
+        if (sessionHeaderValues.isNullOrEmpty()) {
+            call.reject(
+                HttpStatusCode.BadRequest,
+                RPCError.ErrorCode.CONNECTION_CLOSED,
+                "Bad Request: Mcp-Session-Id header is required",
+            )
+            return false
+        }
 
-            headerId != sessionId -> {
+        if (sessionHeaderValues.size > 1) {
+            call.reject(
+                HttpStatusCode.BadRequest,
+                RPCError.ErrorCode.CONNECTION_CLOSED,
+                "Bad Request: Mcp-Session-Id header must be a single value",
+            )
+            return false
+        }
+
+        val headerId = sessionHeaderValues.single()
+
+        return when (headerId) {
+            sessionId -> true
+
+            else -> {
                 call.reject(
                     HttpStatusCode.NotFound,
                     -32001,
@@ -536,13 +552,12 @@ public class StreamableHttpServerTransport(
                 )
                 false
             }
-
-            else -> true
         }
     }
 
     private suspend fun validateProtocolVersion(call: ApplicationCall): Boolean {
-        val version = call.request.header(MCP_PROTOCOL_VERSION_HEADER) ?: DEFAULT_NEGOTIATED_PROTOCOL_VERSION
+        val protocolVersions = call.request.headers.getAll(MCP_PROTOCOL_VERSION_HEADER)
+        val version = protocolVersions?.lastOrNull() ?: DEFAULT_NEGOTIATED_PROTOCOL_VERSION
 
         return when (version) {
             !in SUPPORTED_PROTOCOL_VERSIONS -> {
@@ -631,13 +646,8 @@ public class StreamableHttpServerTransport(
         }
     }
 
-    private fun String?.accepts(mime: ContentType): Boolean {
-        if (this == null) return false
-
-        val escaped = Regex.escape(mime.toString())
-        val pattern = Regex("""(^|,\s*)$escaped(\s*(;|,|$))""", RegexOption.IGNORE_CASE)
-        return pattern.containsMatchIn(this)
-    }
+    private fun String?.accepts(mime: ContentType): Boolean =
+        this?.lowercase()?.contains(mime.toString().lowercase()) == true
 
     private suspend fun emitOnStream(streamId: String, session: ServerSSESession?, message: JSONRPCMessage) {
         val eventId = eventStore?.storeEvent(streamId, message)
