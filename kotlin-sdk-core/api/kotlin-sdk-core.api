@@ -988,6 +988,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ClientResult$Default
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/CommonKt {
+	public static final field DEFAULT_NEGOTIATED_PROTOCOL_VERSION Ljava/lang/String;
 	public static final field LATEST_PROTOCOL_VERSION Ljava/lang/String;
 	public static final fun ProgressToken (J)Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;
 	public static final fun ProgressToken (Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;
@@ -2945,6 +2946,15 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/PingRequestBuilder :
 	public fun <init> ()V
 	public fun build ()Lio/modelcontextprotocol/kotlin/sdk/types/PingRequest;
 	public synthetic fun build$kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/PrimingEventMessage : io/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/PrimingEventMessage;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getJsonrpc ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/Progress {
