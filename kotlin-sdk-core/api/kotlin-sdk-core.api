@@ -988,6 +988,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ClientResult$Default
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/CommonKt {
+	public static final field DEFAULT_NEGOTIATED_PROTOCOL_VERSION Ljava/lang/String;
 	public static final field LATEST_PROTOCOL_VERSION Ljava/lang/String;
 	public static final fun ProgressToken (J)Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;
 	public static final fun ProgressToken (Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;
@@ -2044,6 +2045,15 @@ public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/Initialize
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/InitializedNotification$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/JSONRPCEmptyMessage : io/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCEmptyMessage;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getJsonrpc ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/JSONRPCError : io/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage {

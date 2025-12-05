@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.types.CancelledNotification
 import io.modelcontextprotocol.kotlin.sdk.types.CancelledNotificationParams
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCEmptyMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
@@ -249,6 +250,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                 is JSONRPCRequest -> onRequest(message)
                 is JSONRPCNotification -> onNotification(message)
                 is JSONRPCError -> onResponse(null, message)
+                is JSONRPCEmptyMessage -> Unit
             }
         }
 

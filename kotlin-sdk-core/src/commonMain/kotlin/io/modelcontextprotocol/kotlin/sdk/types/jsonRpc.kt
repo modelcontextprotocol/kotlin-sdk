@@ -85,6 +85,11 @@ public sealed interface JSONRPCMessage {
     public val jsonrpc: String
 }
 
+@Serializable
+public data object JSONRPCEmptyMessage : JSONRPCMessage {
+    override val jsonrpc: String = JSONRPC_VERSION
+}
+
 // ============================================================================
 // JSONRPCRequest
 // ============================================================================
@@ -197,7 +202,7 @@ public data class JSONRPCResponse(val id: RequestId, val result: RequestResult =
  * @property error Details about the error that occurred, including error code and message.
  */
 @Serializable
-public data class JSONRPCError(val id: RequestId, val error: RPCError) : JSONRPCMessage {
+public data class JSONRPCError(val id: RequestId?, val error: RPCError) : JSONRPCMessage {
     @EncodeDefault
     override val jsonrpc: String = JSONRPC_VERSION
 }

@@ -384,6 +384,7 @@ internal object JSONRPCMessagePolymorphicSerializer :
             "result" in jsonObject -> JSONRPCResponse.serializer()
             "method" in jsonObject && "id" in jsonObject -> JSONRPCRequest.serializer()
             "method" in jsonObject -> JSONRPCNotification.serializer()
+            jsonObject.isEmpty() || jsonObject.keys == setOf("jsonrpc") -> JSONRPCEmptyMessage.serializer()
             else -> throw SerializationException("Invalid JSONRPCMessage type: ${jsonObject.keys}")
         }
     }

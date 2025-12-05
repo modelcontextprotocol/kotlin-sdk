@@ -26,6 +26,13 @@ kotlin {
 
         jvmTest {
             dependencies {
+                implementation(libs.ktor.client.logging)
+                implementation(libs.ktor.server.content.negotiation)
+                implementation(libs.ktor.client.content.negotiation)
+                implementation(libs.ktor.serialization)
+                implementation(libs.ktor.server.test.host)
+                implementation(libs.kotest.assertions.core)
+                implementation(libs.kotest.assertions.json)
                 runtimeOnly(libs.slf4j.simple)
             }
         }

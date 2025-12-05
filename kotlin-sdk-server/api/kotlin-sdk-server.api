@@ -1,3 +1,9 @@
+public abstract interface class io/modelcontextprotocol/kotlin/sdk/server/EventStore {
+	public abstract fun getStreamIdForEventId (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun replayEventsAfter (Ljava/lang/String;Lkotlin/jvm/functions/Function3;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun storeEvent (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
 public final class io/modelcontextprotocol/kotlin/sdk/server/KtorServerKt {
 	public static final fun mcp (Lio/ktor/server/application/Application;Lkotlin/jvm/functions/Function1;)V
 	public static final fun mcp (Lio/ktor/server/routing/Routing;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
@@ -148,6 +154,25 @@ public final class io/modelcontextprotocol/kotlin/sdk/server/StdioServerTranspor
 	public fun <init> (Lkotlinx/io/Source;Lkotlinx/io/Sink;)V
 	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun send (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/server/StreamableHttpServerTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport {
+	public static final field STANDALONE_SSE_STREAM_ID Ljava/lang/String;
+	public fun <init> ()V
+	public fun <init> (ZZLjava/util/List;Ljava/util/List;Lio/modelcontextprotocol/kotlin/sdk/server/EventStore;Ljava/lang/Long;)V
+	public synthetic fun <init> (ZZLjava/util/List;Ljava/util/List;Lio/modelcontextprotocol/kotlin/sdk/server/EventStore;Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun closeSseStream (Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun getSessionId ()Ljava/lang/String;
+	public final fun handleDeleteRequest (Lio/ktor/server/application/ApplicationCall;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun handleGetRequest (Lio/ktor/server/sse/ServerSSESession;Lio/ktor/server/application/ApplicationCall;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun handlePostRequest (Lio/ktor/server/sse/ServerSSESession;Lio/ktor/server/application/ApplicationCall;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun handleRequest (Lio/ktor/server/sse/ServerSSESession;Lio/ktor/server/application/ApplicationCall;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun send (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun setOnSessionClosed (Lkotlin/jvm/functions/Function1;)V
+	public final fun setOnSessionInitialized (Lkotlin/jvm/functions/Function1;)V
+	public final fun setSessionIdGenerator (Lkotlin/jvm/functions/Function0;)V
 	public fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 

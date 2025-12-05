@@ -430,4 +430,16 @@ class JsonRpcTest {
         request.method shouldBe "notifications/log"
         request.params shouldBeSameInstanceAs params
     }
+
+    @Test
+    fun `should deserialize JSONRPCEmptyMessage`() {
+        val json = """
+            {
+              "jsonrpc": "2.0"
+            }
+        """.trimIndent()
+
+        val message = McpJson.decodeFromString<JSONRPCMessage>(json)
+        message shouldBeSameInstanceAs JSONRPCEmptyMessage
+    }
 }
