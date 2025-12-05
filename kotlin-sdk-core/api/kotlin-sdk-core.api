@@ -2047,6 +2047,15 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/InitializedNotificat
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class io/modelcontextprotocol/kotlin/sdk/types/JSONRPCEmptyMessage : io/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCEmptyMessage;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getJsonrpc ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class io/modelcontextprotocol/kotlin/sdk/types/JSONRPCError : io/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCError$Companion;
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;Lio/modelcontextprotocol/kotlin/sdk/types/RPCError;)V
