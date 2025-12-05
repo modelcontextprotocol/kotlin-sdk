@@ -17,9 +17,9 @@ permissions:
   pull-requests: write # only required if `comment: true` was enabled
 
 jobs:
-  validate-pr:
+  build:
     runs-on: macos-latest-xlarge
-    name: Validate PR
+    name: Build
     timeout-minutes: 20
     env:
       JAVA_OPTS: "-Xmx8g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx6g"
@@ -75,7 +75,7 @@ jobs:
         if: ${{ !cancelled() }} # always run even if the previous step fails
         with:
           annotate_only: true
-          comment: true
+          comment: ${{ github.repository == 'modelcontextprotocol/kotlin-sdk' }}
           detailed_summary: true
           flaky_summary: true
           group_suite: true
@@ -83,7 +83,7 @@ jobs:
           include_time_in_summary: true
           report_paths: '**/test-results/**/TEST-*.xml'
           truncate_stack_traces: false
-          updateComment: true
+          updateComment: ${{ github.repository == 'modelcontextprotocol/kotlin-sdk' }}
 
       - name: Disable Auto-Merge on Fail
         if: failure() && github.event_name == 'pull_request'
