@@ -2957,15 +2957,6 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/PingRequestBuilder :
 	public synthetic fun build$kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/types/PrimingEventMessage : io/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage {
-	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/PrimingEventMessage;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun getJsonrpc ()Ljava/lang/String;
-	public fun hashCode ()I
-	public final fun serializer ()Lkotlinx/serialization/KSerializer;
-	public fun toString ()Ljava/lang/String;
-}
-
 public final class io/modelcontextprotocol/kotlin/sdk/types/Progress {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/Progress$Companion;
 	public fun <init> (DLjava/lang/Double;Ljava/lang/String;)V
