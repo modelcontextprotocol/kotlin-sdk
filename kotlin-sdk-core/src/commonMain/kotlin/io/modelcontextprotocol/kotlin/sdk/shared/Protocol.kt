@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.types.CancelledNotification
 import io.modelcontextprotocol.kotlin.sdk.types.CancelledNotificationParams
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCEmptyMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
@@ -13,7 +14,6 @@ import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.Notification
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
-import io.modelcontextprotocol.kotlin.sdk.types.PrimingEventMessage
 import io.modelcontextprotocol.kotlin.sdk.types.Progress
 import io.modelcontextprotocol.kotlin.sdk.types.ProgressNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ProgressToken
@@ -250,7 +250,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                 is JSONRPCRequest -> onRequest(message)
                 is JSONRPCNotification -> onNotification(message)
                 is JSONRPCError -> onResponse(null, message)
-                is PrimingEventMessage -> Unit
+                is JSONRPCEmptyMessage -> Unit
             }
         }
 

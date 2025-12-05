@@ -17,13 +17,13 @@ import io.ktor.util.collections.ConcurrentMap
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
 import io.modelcontextprotocol.kotlin.sdk.types.DEFAULT_NEGOTIATED_PROTOCOL_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCEmptyMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.Method
-import io.modelcontextprotocol.kotlin.sdk.types.PrimingEventMessage
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
@@ -42,36 +42,6 @@ internal const val MCP_SESSION_ID_HEADER = "mcp-session-id"
 private const val MCP_PROTOCOL_VERSION_HEADER = "mcp-protocol-version"
 private const val MCP_RESUMPTION_TOKEN_HEADER = "Last-Event-ID"
 private const val MAXIMUM_MESSAGE_SIZE = 4 * 1024 * 1024 // 4 MB
-
-/**
- * Interface for resumability support via event storage
- */
-public interface EventStore {
-    /**
-     * Stores an event for later retrieval
-     * @param streamId ID of the stream the event belongs to
-     * @param message The JSON-RPC message to store
-     * @returns The generated event ID for the stored event
-     */
-    public suspend fun storeEvent(streamId: String, message: JSONRPCMessage): String
-
-    /**
-     * Replays events after the specified event ID
-     * @param lastEventId The last event ID that was received
-     * @param sender Function to send events
-     * @return The stream ID for the replayed events
-     */
-    public suspend fun replayEventsAfter(
-        lastEventId: String,
-        sender: suspend (eventId: String, message: JSONRPCMessage) -> Unit,
-    ): String
-
-    /**
-     * Returns the stream ID associated with [eventId], or null if the event is unknown.
-     * Default implementation is a no-op which disables extra validation during replay.
-     */
-    public suspend fun getStreamIdForEventId(eventId: String): String?
-}
 
 /**
  * A holder for an active request call.
@@ -662,7 +632,7 @@ public class StreamableHttpServerTransport(
         val store = eventStore ?: return
         val sseSession = session ?: return
         try {
-            val primingEventId = store.storeEvent(streamId, PrimingEventMessage)
+            val primingEventId = store.storeEvent(streamId, JSONRPCEmptyMessage)
             sseSession.send(id = primingEventId, retry = retryIntervalMillis, data = "")
         } catch (e: Exception) {
             _onError(e)
