@@ -348,7 +348,7 @@ internal class FeatureNotificationService(
         job.start()
     }
 
-    /** Returns the current timestamp in milliseconds. */
+    /** Returns the current timestamp in milliseconds since Unix epoch. */
     @OptIn(ExperimentalTime::class)
     private fun getCurrentTimestamp(): Long = clock.now().toEpochMilliseconds()
 
