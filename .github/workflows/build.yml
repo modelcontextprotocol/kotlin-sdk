@@ -17,9 +17,9 @@ permissions:
   pull-requests: write # only required if `comment: true` was enabled
 
 jobs:
-  validate-pr:
-    runs-on: macos-latest-xlarge
-    name: Validate PR
+  build-linux:
+    runs-on: ubuntu-latest
+    name: Build on Linux 🐧
     timeout-minutes: 20
     env:
       JAVA_OPTS: "-Xmx8g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx6g"
@@ -32,16 +32,16 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Setup Gradle
+      - name: Setup Gradle (with caching)
         uses: gradle/actions/setup-gradle@v5
         with:
           add-job-summary: 'always'
-          cache-read-only: true
+          # allow writes so Ubuntu builds can prime cache for future Ubuntu runs
+          cache-read-only: false
 
-      - name: Build with Gradle
+      - name: Build with Gradle (tests, coverage, ktlint)
         run: |-
           ./gradlew --no-daemon \
-            --rerun-tasks \
             clean \
             ktlintCheck \
             build \
@@ -91,3 +91,59 @@ jobs:
         env:
           PR_URL: ${{github.event.pull_request.html_url}}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-macos:
+    # Run macOS-only compile as a light check on pushes (kept off for PRs to speed them up)
+    if: github.event_name != 'pull_request'
+    runs-on: macos-latest-xlarge
+    name: Build on Mac 🍏
+    timeout-minutes: 20
+    env:
+      JAVA_OPTS: "-Xmx8g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx6g"
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle (read-only cache)
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          add-job-summary: 'always'
+          cache-read-only: true
+
+      - name: Apple Tests
+        run: |-
+          ./gradlew \
+            clean \
+            macOsArm64Test \
+            macOsX64Test \
+            iosSimulatorArm64Test \
+            macOsX64Binaries
+
+      - name: Apple Binaries
+        run: |-
+          ./gradlew \
+            iosArm64Binaries \
+            iosSimulatorArm64Binaries \
+            iosX64Binaries \
+            macOsArm64Binaries \
+            macOsX64Binaries
+
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v6
+        if: ${{ !cancelled() }} # always run even if the previous step fails
+        with:
+          annotate_only: true
+          comment: true
+          detailed_summary: true
+          flaky_summary: true
+          group_suite: true
+          include_empty_in_summary: false
+          include_time_in_summary: true
+          report_paths: '**/test-results/**/TEST-*.xml'
+          truncate_stack_traces: false
+          updateComment: true
