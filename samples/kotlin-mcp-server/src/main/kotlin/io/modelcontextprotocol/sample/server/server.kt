@@ -31,6 +31,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.runBlocking
 import kotlinx.io.asSink
 import kotlinx.io.asSource
@@ -102,13 +103,13 @@ fun configureServer(): Server {
     return server
 }
 
-fun runSseMcpServerWithPlainConfiguration(port: Int, wait: Boolean = true) {
+fun runSseMcpServerWithPlainConfiguration(port: Int, wait: Boolean = true): EmbeddedServer<*, *> {
     printBanner(port = port, path = "/sse")
     val serverSessions = ConcurrentMap<String, ServerSession>()
 
     val server = configureServer()
 
-    embeddedServer(CIO, host = "127.0.0.1", port = port) {
+    val ktorServer = embeddedServer(CIO, host = "127.0.0.1", port = port) {
         installCors()
         install(SSE)
         routing {
@@ -121,6 +122,7 @@ fun runSseMcpServerWithPlainConfiguration(port: Int, wait: Boolean = true) {
                     println("Server session closed for: ${transport.sessionId}")
                     serverSessions.remove(transport.sessionId)
                 }
+                awaitCancellation()
             }
             post("/message") {
                 val sessionId: String? = call.request.queryParameters["sessionId"]
@@ -139,6 +141,8 @@ fun runSseMcpServerWithPlainConfiguration(port: Int, wait: Boolean = true) {
             }
         }
     }.start(wait = wait)
+
+    return ktorServer
 }
 
 /**
