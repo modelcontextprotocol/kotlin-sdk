@@ -103,13 +103,13 @@ fun configureServer(): Server {
     return server
 }
 
-fun runSseMcpServerWithPlainConfiguration(port: Int, wait: Boolean = true) {
+fun runSseMcpServerWithPlainConfiguration(port: Int, wait: Boolean = true): EmbeddedServer<*, *> {
     printBanner(port = port, path = "/sse")
     val serverSessions = ConcurrentMap<String, ServerSession>()
 
     val server = configureServer()
 
-    embeddedServer(CIO, host = "127.0.0.1", port = port) {
+    val ktorServer = embeddedServer(CIO, host = "127.0.0.1", port = port) {
         installCors()
         install(SSE)
         routing {
@@ -141,6 +141,8 @@ fun runSseMcpServerWithPlainConfiguration(port: Int, wait: Boolean = true) {
             }
         }
     }.start(wait = wait)
+
+    return ktorServer
 }
 
 /**

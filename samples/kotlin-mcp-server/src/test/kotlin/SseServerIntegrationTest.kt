@@ -11,9 +11,9 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class SseServerIntegrationTest {
+abstract class SseServerIntegrationTestBase {
 
-    private val client: Client = TestEnvironment.client
+    abstract val client: Client
 
     @Test
     fun `should list tools`(): Unit = runBlocking {
@@ -87,4 +87,14 @@ class SseServerIntegrationTest {
         assertEquals(expected = "Hello, world!", actual = content.text)
         assertEquals(expected = "text", actual = "${content.type}".lowercase())
     }
+}
+
+class SseServerKtorPluginIntegrationTest : SseServerIntegrationTestBase() {
+    private val testEnvironment = TestEnvironment(McpServerType.KTOR_PLUGIN)
+    override val client: Client = testEnvironment.client
+}
+
+class SseServerPlainConfigurationIntegrationTest : SseServerIntegrationTestBase() {
+    private val testEnvironment = TestEnvironment(McpServerType.PLAIN_CONFIGURATION)
+    override val client: Client = testEnvironment.client
 }

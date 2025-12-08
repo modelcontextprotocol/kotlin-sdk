@@ -1,34 +1,34 @@
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.sse.SSE
-import io.modelcontextprotocol.kotlin.sdk.Implementation
+import io.ktor.server.engine.EmbeddedServer
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.mcpSseTransport
-import io.modelcontextprotocol.sample.server.runSseMcpServerUsingKtorPlugin
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.TimeUnit
 
-object TestEnvironment {
+class TestEnvironment(private val serverConfig: McpServerType) {
 
-    val server = runSseMcpServerUsingKtorPlugin(0, wait = false)
+    val server: EmbeddedServer<*, *> = serverConfig.serverFactory(0)
     val client: Client
 
     init {
         client = runBlocking {
             val port = server.engine.resolvedConnectors().single().port
-            initClient(port)
+            initClient(port, serverConfig)
         }
 
         Runtime.getRuntime().addShutdownHook(
             Thread {
-                println("🏁 Shutting down server")
+                println("🏁 Shutting down server (${serverConfig.name})")
                 server.stop(500, 700, TimeUnit.MILLISECONDS)
                 println("☑️ Shutdown complete")
             },
         )
     }
 
-    private suspend fun initClient(port: Int): Client {
+    private suspend fun initClient(port: Int, config: McpServerType): Client {
         val client = Client(
             Implementation(name = "test-client", version = "0.1.0"),
         )
@@ -37,13 +37,7 @@ object TestEnvironment {
             install(SSE)
         }
 
-        // Create a transport wrapper that captures the session ID and received messages
-        val transport = httpClient.mcpSseTransport {
-            url {
-                this.host = "127.0.0.1"
-                this.port = port
-            }
-        }
+        val transport = httpClient.mcpSseTransport("http://127.0.0.1:$port/${config.sseEndpoint}")
         client.connect(transport)
         return client
     }
