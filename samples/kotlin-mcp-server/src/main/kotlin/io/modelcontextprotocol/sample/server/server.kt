@@ -31,6 +31,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.runBlocking
 import kotlinx.io.asSink
 import kotlinx.io.asSource
@@ -121,6 +122,7 @@ fun runSseMcpServerWithPlainConfiguration(port: Int, wait: Boolean = true) {
                     println("Server session closed for: ${transport.sessionId}")
                     serverSessions.remove(transport.sessionId)
                 }
+                awaitCancellation()
             }
             post("/message") {
                 val sessionId: String? = call.request.queryParameters["sessionId"]
