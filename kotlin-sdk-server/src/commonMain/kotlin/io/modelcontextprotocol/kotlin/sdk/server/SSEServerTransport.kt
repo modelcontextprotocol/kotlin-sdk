@@ -80,7 +80,7 @@ public class SseServerTransport(private val endpoint: String, private val sessio
 
         val body = try {
             val ct = call.request.contentType()
-            if (ct != ContentType.Application.Json) {
+            if (!ct.match(ContentType.Application.Json)) {
                 error("Unsupported content-type: $ct")
             }
 
