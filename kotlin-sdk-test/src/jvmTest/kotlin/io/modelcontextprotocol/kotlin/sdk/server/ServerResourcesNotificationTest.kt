@@ -23,11 +23,11 @@ class ServerResourcesNotificationTest : AbstractServerFeaturesTest() {
     @Test
     fun `addResource should send notification`() = runTest {
         // Configure notification handler
-        var resourceListChangedNotificationReceived = false
+        val notifications = mutableListOf<ResourceListChangedNotification>()
         client.setNotificationHandler<ResourceListChangedNotification>(
             Method.Defined.NotificationsResourcesListChanged,
         ) {
-            resourceListChangedNotificationReceived = true
+            notifications.add(it)
             CompletableDeferred(Unit)
         }
 
@@ -58,18 +58,18 @@ class ServerResourcesNotificationTest : AbstractServerFeaturesTest() {
 
         // Verify that the notification was sent
         await untilAsserted {
-            assertTrue(resourceListChangedNotificationReceived, "Notification should be sent when resource is added")
+            assertTrue(notifications.isNotEmpty(), "Notification should be sent when resource is added")
         }
     }
 
     @Test
     fun `removeResources should remove multiple resources and send two notifications`() = runTest {
         // Configure notification handler
-        var resourceListChangedNotificationReceivedCount = 0
+        val notifications = mutableListOf<ResourceListChangedNotification>()
         client.setNotificationHandler<ResourceListChangedNotification>(
             Method.Defined.NotificationsResourcesListChanged,
         ) {
-            resourceListChangedNotificationReceivedCount += 1
+            notifications.add(it)
             CompletableDeferred(Unit)
         }
 
@@ -120,7 +120,7 @@ class ServerResourcesNotificationTest : AbstractServerFeaturesTest() {
         await untilAsserted {
             assertEquals(
                 4,
-                resourceListChangedNotificationReceivedCount,
+                notifications.size,
                 "Two notifications should be sent when resources are added and two when removed",
             )
         }
@@ -129,11 +129,11 @@ class ServerResourcesNotificationTest : AbstractServerFeaturesTest() {
     @Test
     fun `notification should not be send when removed resource does not exists`() = runTest {
         // Track notifications
-        var resourceListChangedNotificationReceived = false
+        val notifications = mutableListOf<ResourceListChangedNotification>()
         client.setNotificationHandler<ResourceListChangedNotification>(
             Method.Defined.NotificationsResourcesListChanged,
         ) {
-            resourceListChangedNotificationReceived = true
+            notifications.add(it)
             CompletableDeferred(Unit)
         }
 
@@ -142,8 +142,8 @@ class ServerResourcesNotificationTest : AbstractServerFeaturesTest() {
 
         // Verify the result
         assertFalse(result, "Removing non-existent resource should return false")
-        assertFalse(
-            resourceListChangedNotificationReceived,
+        assertTrue(
+            notifications.isEmpty(),
             "No notification should be sent when resource doesn't exist",
         )
     }

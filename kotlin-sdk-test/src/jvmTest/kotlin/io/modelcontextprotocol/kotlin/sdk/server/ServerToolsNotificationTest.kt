@@ -24,9 +24,9 @@ class ServerToolsNotificationTest : AbstractServerFeaturesTest() {
     @Test
     fun `addTool should send notification`() = runTest {
         // Configure notification handler
-        var toolListChangedNotificationReceived = false
+        val notifications = mutableListOf<ToolListChangedNotification>()
         client.setNotificationHandler<ToolListChangedNotification>(Method.Defined.NotificationsToolsListChanged) {
-            toolListChangedNotificationReceived = true
+            notifications.add(it)
             CompletableDeferred(Unit)
         }
 
@@ -43,16 +43,16 @@ class ServerToolsNotificationTest : AbstractServerFeaturesTest() {
 
         // Verify that the notification was sent
         await untilAsserted {
-            assertTrue(toolListChangedNotificationReceived, "Notification should be sent when tool is added")
+            assertTrue(notifications.isNotEmpty(), "Notification should be sent when tool is added")
         }
     }
 
     @Test
     fun `removeTools should remove multiple tools and send two notifications`() = runTest {
         // Configure notification handler
-        var toolListChangedNotificationReceivedCount = 0
+        val notifications = mutableListOf<ToolListChangedNotification>()
         client.setNotificationHandler<ToolListChangedNotification>(Method.Defined.NotificationsToolsListChanged) {
-            toolListChangedNotificationReceivedCount += 1
+            notifications.add(it)
             CompletableDeferred(Unit)
         }
 
@@ -73,7 +73,7 @@ class ServerToolsNotificationTest : AbstractServerFeaturesTest() {
         await untilAsserted {
             assertEquals(
                 4,
-                toolListChangedNotificationReceivedCount,
+                notifications.size,
                 "Two notifications should be sent when tools are added and two when removed",
             )
         }
@@ -82,9 +82,9 @@ class ServerToolsNotificationTest : AbstractServerFeaturesTest() {
     @Test
     fun `notification should not be send when removed tool does not exists`() = runTest {
         // Track notifications
-        var toolListChangedNotificationReceived = false
+        val notifications = mutableListOf<ToolListChangedNotification>()
         client.setNotificationHandler<ToolListChangedNotification>(Method.Defined.NotificationsToolsListChanged) {
-            toolListChangedNotificationReceived = true
+            notifications.add(it)
             CompletableDeferred(Unit)
         }
 
@@ -95,6 +95,6 @@ class ServerToolsNotificationTest : AbstractServerFeaturesTest() {
 
         // Verify the result
         assertFalse(result, "Removing non-existent tool should return false")
-        assertFalse(toolListChangedNotificationReceived, "No notification should be sent when tool doesn't exist")
+        assertTrue(notifications.isEmpty(), "No notification should be sent when tool doesn't exist")
     }
 }

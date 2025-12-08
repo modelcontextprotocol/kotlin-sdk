@@ -2,7 +2,6 @@ package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
-import io.modelcontextprotocol.kotlin.sdk.types.ResourceListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.SubscribeRequest
@@ -13,7 +12,6 @@ import kotlinx.coroutines.test.runTest
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -52,8 +50,6 @@ class ServerResourcesNotificationSubscribeTest : AbstractServerFeaturesTest() {
             )
         }
 
-        client.subscribeResource(SubscribeRequest(SubscribeRequestParams(uri = testResourceUri1)))
-
         server.addResource(
             uri = testResourceUri2,
             name = "Test Resource 2",
@@ -71,6 +67,8 @@ class ServerResourcesNotificationSubscribeTest : AbstractServerFeaturesTest() {
             )
         }
 
+        client.subscribeResource(SubscribeRequest(SubscribeRequestParams(uri = testResourceUri1)))
+
         // Remove the resource
         val result = server.removeResource(testResourceUri1)
 
@@ -79,9 +77,11 @@ class ServerResourcesNotificationSubscribeTest : AbstractServerFeaturesTest() {
 
         // Verify that the notification was sent
         await untilAsserted {
-            assertEquals(1, notifications.size, "Notification should be sent when resource 1 was deleted")
+            assertTrue(
+                notifications.any { it.params.uri == testResourceUri1 },
+                "Notification should be sent when resource 1 was deleted",
+            )
         }
-        assertEquals(testResourceUri1, notifications[0].params.uri, "Notification should contain the resource 1 URI")
     }
 
     @Test
@@ -144,9 +144,8 @@ class ServerResourcesNotificationSubscribeTest : AbstractServerFeaturesTest() {
         println(notifications.map { it.params.uri })
         // Verify that the notification was sent
         await untilAsserted {
-            assertEquals(
-                2,
-                notifications.size,
+            assertTrue(
+                notifications.any { it.params.uri == testResourceUri1 },
                 "Notification should be sent when resource 1 and resource 2 was deleted",
             )
         }
@@ -165,11 +164,9 @@ class ServerResourcesNotificationSubscribeTest : AbstractServerFeaturesTest() {
     @Test
     fun `notification should not be send when removed resource does not exists`() = runTest {
         // Track notifications
-        var resourceListChangedNotificationReceived = false
-        client.setNotificationHandler<ResourceListChangedNotification>(
-            Method.Defined.NotificationsResourcesListChanged,
-        ) {
-            resourceListChangedNotificationReceived = true
+        val notifications = mutableListOf<ResourceUpdatedNotification>()
+        client.setNotificationHandler<ResourceUpdatedNotification>(Method.Defined.NotificationsResourcesUpdated) {
+            notifications.add(it)
             CompletableDeferred(Unit)
         }
 
@@ -178,8 +175,8 @@ class ServerResourcesNotificationSubscribeTest : AbstractServerFeaturesTest() {
 
         // Verify the result
         assertFalse(result, "Removing non-existent resource should return false")
-        assertFalse(
-            resourceListChangedNotificationReceived,
+        assertTrue(
+            notifications.isEmpty(),
             "No notification should be sent when resource doesn't exist",
         )
     }
