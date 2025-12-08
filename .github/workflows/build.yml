@@ -43,6 +43,7 @@ jobs:
           ./gradlew --no-daemon \
             --rerun-tasks \
             clean \
+            knit \
             ktlintCheck \
             build \
             -x :conformance-test:test \

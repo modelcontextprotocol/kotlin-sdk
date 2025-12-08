@@ -13,4 +13,5 @@ dependencies {
     implementation(libs.kotlinx.atomicfu.gradle)
     implementation(libs.dokka.gradle)
     implementation(libs.maven.publish)
+    implementation(libs.kotlinx.knit)
 }
