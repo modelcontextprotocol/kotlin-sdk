@@ -41,8 +41,9 @@ class StdioClientTransportErrorHandlingTest {
         val stderrBuffer = Buffer()
         // Empty stderr = immediate EOF
 
-        val inputBuffer = Buffer()
-        inputBuffer.writeString("""data: {"jsonrpc":"2.0","method":"ping","id":1}\n\n""")
+        val inputBuffer = createNonEmptyBuffer {
+            """data: {"jsonrpc":"2.0","method":"ping","id":1}\n\n"""
+        }
         val outputBuffer = Buffer()
 
         transport = StdioClientTransport(
@@ -66,8 +67,9 @@ class StdioClientTransportErrorHandlingTest {
 
     @Test
     fun `should call onClose exactly once on error scenarios`() = runTest {
-        val stderrBuffer = Buffer()
-        stderrBuffer.write("FATAL: critical error\n".encodeToByteArray())
+        val stderrBuffer = createNonEmptyBuffer {
+            "FATAL: critical error\n"
+        }
 
         val inputBuffer = Buffer()
         val outputBuffer = Buffer()
@@ -149,8 +151,9 @@ class StdioClientTransportErrorHandlingTest {
     fun `Send should handle exceptions`(throwable: Throwable, shouldWrap: Boolean, expectedCode: Int?) = runTest {
         val sendChannel: Channel<JSONRPCMessage> = mockk(relaxed = true)
 
+        val stdin = createNonEmptyBuffer { "id: 1\ndata:\n" }
         transport = StdioClientTransport(
-            input = Buffer(),
+            input = stdin,
             output = Buffer(),
             sendChannel = sendChannel,
         )
@@ -172,5 +175,11 @@ class StdioClientTransportErrorHandlingTest {
         } else {
             exception shouldBeSameInstanceAs throwable
         }
+    }
+
+    fun createNonEmptyBuffer(block: () -> String): Buffer {
+        val buffer = Buffer()
+        buffer.writeString(block())
+        return buffer
     }
 }
