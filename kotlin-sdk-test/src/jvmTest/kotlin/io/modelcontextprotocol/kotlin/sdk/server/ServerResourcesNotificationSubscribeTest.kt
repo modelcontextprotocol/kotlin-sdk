@@ -7,13 +7,13 @@ import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.SubscribeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.SubscribeRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.Test
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class ServerResourcesNotificationSubscribeTest : AbstractServerFeaturesTest() {
 
@@ -79,7 +79,7 @@ class ServerResourcesNotificationSubscribeTest : AbstractServerFeaturesTest() {
         await untilAsserted {
             assertTrue(
                 notifications.any { it.params.uri == testResourceUri1 },
-                "Notification should be sent when resource 1 was deleted"
+                "Notification should be sent when resource 1 was deleted",
             )
         }
     }
