@@ -1,5 +1,6 @@
 plugins {
     id("mcp.dokka")
+    id("knit-convention")
     alias(libs.plugins.ktlint)
     alias(libs.plugins.kover)
 }

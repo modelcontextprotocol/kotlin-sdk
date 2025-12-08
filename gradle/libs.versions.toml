@@ -1,13 +1,14 @@
 [versions]
 # plugins version
-kotlin = "2.2.21"
-dokka = "2.1.0"
 atomicfu = "0.29.0"
-ktlint = "14.0.1"
-kover = "0.9.3"
-netty = "4.2.7.Final"
-mavenPublish = "0.35.0"
 binaryCompatibilityValidatorPlugin = "0.18.1"
+dokka = "2.1.0"
+knit = "0.5.0"
+kotlin = "2.2.21"
+kover = "0.9.3"
+ktlint = "14.0.1"
+mavenPublish = "0.35.0"
+netty = "4.2.7.Final"
 openapi-generator = "7.17.0"
 
 # libraries version
@@ -30,6 +31,7 @@ dokka-gradle = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref
 kotlin-gradle = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlin-serialization = { module = "org.jetbrains.kotlin:kotlin-serialization", version.ref = "kotlin" }
 kotlinx-atomicfu-gradle = { module = "org.jetbrains.kotlinx:atomicfu-gradle-plugin", version.ref = "atomicfu" }
+kotlinx-knit = { module = "org.jetbrains.kotlinx:kotlinx-knit", version.ref = "knit" }
 maven-publish = { module = "com.vanniktech:gradle-maven-publish-plugin", version.ref = "mavenPublish" }
 
 # Kotlinx libraries
