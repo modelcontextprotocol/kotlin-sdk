@@ -7,6 +7,7 @@ dokka = "2.1.0"
 kotlin = "2.2.21"
 kover = "0.9.4"
 ktlint = "14.0.1"
+knit = "0.5.0"
 mavenPublish = "0.35.0"
 netty = "4.2.9.Final"
 openapi-generator = "7.18.0"
@@ -23,7 +24,7 @@ mockk = "1.14.7"
 mokksy = "0.6.2"
 serialization = "1.9.0"
 slf4j = "2.0.17"
-junit="5.14.2"
+junit = "5.14.2"
 
 [libraries]
 # Plugins
@@ -74,4 +75,5 @@ detekt = { id = "dev.detekt", version.ref = "detekt" }
 kotlinx-binary-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibilityValidatorPlugin" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
+knit = { id = "org.jetbrains.kotlinx.knit", version.ref = "knit" }
 openapi-generator = { id = "org.openapi.generator", version.ref = "openapi-generator" }
