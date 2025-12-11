@@ -18,33 +18,33 @@ standardized protocol interface.
 
 * [Overview](#overview)
 * [Installation](#installation)
-    * [Artifacts](#artifacts)
-    * [Gradle setup (JVM)](#gradle-setup-jvm)
-    * [Multiplatform](#multiplatform)
-    * [Ktor dependencies](#ktor-dependencies)
+  * [Artifacts](#artifacts)
+  * [Gradle setup (JVM)](#gradle-setup-jvm)
+  * [Multiplatform](#multiplatform)
+  * [Ktor dependencies](#ktor-dependencies)
 * [Quickstart](#quickstart)
-    * [Creating a Client](#creating-a-client)
-    * [Creating a Server](#creating-a-server)
+  * [Creating a Client](#creating-a-client)
+  * [Creating a Server](#creating-a-server)
 * [Core Concepts](#core-concepts)
-    * [MCP Primitives](#mcp-primitives)
-    * [Capabilities](#capabilities)
-        * [Server Capabilities](#server-capabilities)
-        * [Client Capabilities](#client-capabilities)
-    * [Server Features](#server-features)
-        * [Prompts](#prompts)
-        * [Resources](#resources)
-        * [Tools](#tools)
-        * [Completion](#completion)
-        * [Logging](#logging)
-        * [Pagination](#pagination)
-    * [Client Features](#client-features)
-        * [Roots](#roots)
-        * [Sampling](#sampling)
+  * [MCP Primitives](#mcp-primitives)
+  * [Capabilities](#capabilities)
+    * [Server Capabilities](#server-capabilities)
+    * [Client Capabilities](#client-capabilities)
+  * [Server Features](#server-features)
+    * [Prompts](#prompts)
+    * [Resources](#resources)
+    * [Tools](#tools)
+    * [Completion](#completion)
+    * [Logging](#logging)
+    * [Pagination](#pagination)
+  * [Client Features](#client-features)
+    * [Roots](#roots)
+    * [Sampling](#sampling)
 * [Transports](#transports)
-    * [STDIO Transport](#stdio-transport)
-    * [Streamable HTTP Transport](#streamable-http-transport)
-    * [SSE Transport](#sse-transport)
-    * [WebSocket Transport](#websocket-transport)
+  * [STDIO Transport](#stdio-transport)
+  * [Streamable HTTP Transport](#streamable-http-transport)
+  * [SSE Transport](#sse-transport)
+  * [WebSocket Transport](#websocket-transport)
 * [Connecting your server](#connecting-your-server)
 * [Examples](#examples)
 * [Documentation](#documentation)
@@ -289,7 +289,9 @@ up front and then resolved lazily when a client asks for it, so your handlers st
 
 #### Prompts
 
-Prompts are reusable templates that help users or clients start conversations in a consistent way.
+Prompts are user-controlled templates that clients discover via `prompts/list` and fetch with `prompts/get` when a user
+chooses one (think slash commands or saved flows). They’re best for repeatable, structured starters rather than ad-hoc
+model calls.
 
 <!--- INCLUDE
 import io.modelcontextprotocol.kotlin.sdk.server.Server
@@ -343,12 +345,15 @@ server.addPrompt(
 
 <!--- KNIT example-server-prompts-01.kt -->
 
-Use prompts for anything that deserves a template: bug triage questions, onboarding checklists, or saved searches.
+Use prompts for anything that deserves a template: bug triage questions, onboarding checklists, or saved searches. Set
+`listChanged = true` only if your prompt catalog can change at runtime and your server will emit
+`notifications/prompts/list_changed` when it does.
 
 #### Resources
 
-Resources expose read-only context. Register them with a stable URI and return a `ReadResourceResult` when the client
-reads the resource.
+Resources are application-driven context that clients discover via `resources/list` or `resources/templates/list`, then
+fetch with `resources/read`. Register each one with a stable URI and return a `ReadResourceResult` when asked—contents
+can be text or binary blobs.
 
 <!--- INCLUDE
 import io.modelcontextprotocol.kotlin.sdk.server.Server
@@ -399,12 +404,14 @@ server.addResource(
 <!--- KNIT example-server-resources-01.kt -->
 
 Resources can be static text, generated JSON, or blobs—anything the client can surface to the user or inject into the
-model context.
+model context. Set `subscribe = true` if you emit `notifications/resources/updated` for changes to specific URIs, and
+`listChanged = true` if you’ll send `notifications/resources/list_changed` when the catalog itself changes.
 
 #### Tools
 
-Tools are the imperative side of MCP. Each tool gets JSON arguments, can emit streaming logs or progress, and returns a
-`CallToolResult`.
+Tools are model-controlled capabilities the client exposes to the model. Clients discover them via `tools/list`, invoke
+them with `tools/call`, and your handlers receive JSON arguments, can emit streaming logs or progress, and return a
+`CallToolResult`. Keep a human in the loop for sensitive operations.
 
 <!--- INCLUDE
 import io.modelcontextprotocol.kotlin.sdk.server.Server
@@ -447,13 +454,198 @@ server.addTool(
 <!--- KNIT example-server-tools-01.kt -->
 
 Register as many tools as you need—long-running jobs can report progress via the request context, and tools can also
-trigger sampling (see below) when they need the client’s LLM.
+trigger sampling (see below) when they need the client’s LLM. Set `listChanged = true` only if your tool catalog can
+change at runtime and your server will emit `notifications/tools/list_changed` when it does.
 
 #### Completion
 
+Completion provides argument suggestions for prompts or resource templates. Declare the `completions` capability and
+handle `completion/complete` requests to return up to 100 ranked values (include `total`/`hasMore` if you paginate).
+
+<!--- INCLUDE
+import io.modelcontextprotocol.kotlin.sdk.server.Server
+import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
+import io.modelcontextprotocol.kotlin.sdk.server.StdioServerTransport
+import io.modelcontextprotocol.kotlin.sdk.types.CompleteRequest
+import io.modelcontextprotocol.kotlin.sdk.types.CompleteResult
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import kotlinx.io.asSink
+import kotlinx.io.asSource
+import kotlinx.io.buffered
+
+suspend fun main() {
+-->
+
+```kotlin
+val server = Server(
+    serverInfo = Implementation(
+        name = "example-server",
+        version = "1.0.0"
+    ),
+    options = ServerOptions(
+        capabilities = ServerCapabilities(
+            completions = ServerCapabilities.Completions,
+        ),
+    )
+)
+
+val session = server.createSession(
+    StdioServerTransport(
+        inputStream = System.`in`.asSource().buffered(),
+        outputStream = System.out.asSink().buffered()
+    )
+)
+
+session.setRequestHandler<CompleteRequest>(Method.Defined.CompletionComplete) { request, _ ->
+    val options = listOf("kotlin", "compose", "coroutine")
+    val matches = options.filter { it.startsWith(request.argument.value.lowercase()) }
+
+    CompleteResult(
+        completion = CompleteResult.Completion(
+            values = matches.take(3),
+            total = matches.size,
+            hasMore = matches.size > 3,
+        ),
+    )
+}
+```
+
+<!--- SUFFIX
+}
+-->
+
+<!--- KNIT example-server-util-completions-01.kt -->
+
+Use `context.arguments` to refine suggestions for dependent fields (e.g., framework list filtered by chosen language).
+
 #### Logging
 
+Logging lets the server stream structured log notifications to the client using RFC 5424 levels (`debug` → `emergency`).
+Declare the `logging` capability; clients can raise the minimum level with `logging/setLevel`, and the server emits
+`notifications/message` with severity, optional logger name, and JSON data.
+
+<!--- INCLUDE
+import io.modelcontextprotocol.kotlin.sdk.server.Server
+import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
+import io.modelcontextprotocol.kotlin.sdk.server.StdioServerTransport
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
+import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification
+import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotificationParams
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import kotlinx.io.asSink
+import kotlinx.io.asSource
+import kotlinx.io.buffered
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+
+suspend fun main() {
+-->
+
+```kotlin
+val server = Server(
+    serverInfo = Implementation("example-server", "1.0.0"),
+    options = ServerOptions(
+        capabilities = ServerCapabilities(
+            logging = ServerCapabilities.Logging,
+        ),
+    )
+)
+
+val session = server.createSession(
+    StdioServerTransport(
+        inputStream = System.`in`.asSource().buffered(),
+        outputStream = System.out.asSink().buffered()
+    )
+)
+
+session.sendLoggingMessage(
+    LoggingMessageNotification(
+        LoggingMessageNotificationParams(
+            level = LoggingLevel.Info,
+            logger = "startup",
+            data = buildJsonObject { put("message", "Server started") },
+        ),
+    ),
+)
+```
+
+<!--- SUFFIX
+}
+-->
+
+<!--- KNIT example-server-util-logging-01.kt -->
+
+Keep logs free of sensitive data, and expect clients to surface them in their own UI.
+
 #### Pagination
+
+List operations return paginated results with an opaque `nextCursor`, clients echo that cursor to fetch the next page.
+Supported list calls: `resources/list`, `resources/templates/list`, `prompts/list`, and `tools/list`.
+Treat cursors as opaque—don’t parse or persist them across sessions.
+
+<!--- INCLUDE
+import io.modelcontextprotocol.kotlin.sdk.server.Server
+import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
+import io.modelcontextprotocol.kotlin.sdk.server.StdioServerTransport
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesResult
+import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.Resource
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import kotlinx.io.asSink
+import kotlinx.io.asSource
+import kotlinx.io.buffered
+
+suspend fun main() {
+-->
+
+```kotlin
+val server = Server(
+    serverInfo = Implementation("example-server", "1.0.0"),
+    options = ServerOptions(
+        capabilities = ServerCapabilities(
+            resources = ServerCapabilities.Resources(),
+        ),
+    )
+)
+
+val session = server.createSession(
+    StdioServerTransport(
+        inputStream = System.`in`.asSource().buffered(),
+        outputStream = System.out.asSink().buffered()
+    )
+)
+
+val resources = listOf(
+    Resource(uri = "note://1", name = "Note 1", description = "First"),
+    Resource(uri = "note://2", name = "Note 2", description = "Second"),
+    Resource(uri = "note://3", name = "Note 3", description = "Third"),
+)
+val pageSize = 2
+
+session.setRequestHandler<ListResourcesRequest>(Method.Defined.ResourcesList) { request, _ ->
+    val start = request.params?.cursor?.toIntOrNull() ?: 0
+    val page = resources.drop(start).take(pageSize)
+    val next = if (start + page.size < resources.size) (start + page.size).toString() else null
+
+    ListResourcesResult(
+        resources = page,
+        nextCursor = next,
+    )
+}
+```
+
+<!--- SUFFIX
+}
+-->
+
+<!--- KNIT example-server-util-pagination-01.kt -->
+
+Include `nextCursor` only when more items remain an absent cursor ends pagination.
 
 ### Client Features
 
@@ -462,8 +654,9 @@ serve requests from the server while still initiating calls such as `listTools` 
 
 #### Roots
 
-Roots describe folders or logical mounts that the client is willing to expose. Servers can list them to understand what
-paths are available before proposing file operations.
+Roots let the client declare where the server is allowed to operate. Declare the `roots` capability, respond to
+`roots/list`, and emit `notifications/roots/list_changed` if you set `listChanged = true`. URIs **must** be `file://`
+paths.
 
 <!--- INCLUDE
 import io.modelcontextprotocol.kotlin.sdk.client.Client
@@ -496,12 +689,13 @@ client.sendRootsListChanged()
 <!--- KNIT example-client-roots-01.kt -->
 
 Call `addRoot`/`removeRoot` whenever your file system view changes, and use `sendRootsListChanged()` to notify the
-server.
+server. Keep root lists user-controlled and revoke entries that are no longer authorized.
 
 #### Sampling
 
-Sampling lets a server ask the client to call its preferred LLM. Enable it by declaring the `sampling` capability and
-handling the `sampling/createMessage` request.
+Sampling lets the server ask the client to call its preferred LLM. Declare the `sampling` capability (and
+`sampling.tools` if you allow tool-enabled sampling), and handle `sampling/createMessage`. Keep a human in the loop for
+approvals.
 
 <!--- INCLUDE
 import io.modelcontextprotocol.kotlin.sdk.client.Client
@@ -513,6 +707,8 @@ import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.Role
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.putJsonObject
 
 fun main() {
 -->
@@ -521,7 +717,9 @@ fun main() {
 val client = Client(
     clientInfo = Implementation("demo-client", "1.0.0"),
     options = ClientOptions(
-        capabilities = ClientCapabilities(sampling = ClientCapabilities.sampling),
+        capabilities = ClientCapabilities(
+            sampling = buildJsonObject { putJsonObject("tools") { } }, // drop tools if you don't support tool use
+        ),
     ),
 )
 
@@ -542,7 +740,8 @@ client.setRequestHandler<CreateMessageRequest>(Method.Defined.SamplingCreateMess
 
 <!--- KNIT example-client-sampling-01.kt -->
 
-Inside the handler you are free to choose any model/provider, collect extra approvals, or reject the request.
+Inside the handler you can pick any model/provider, require approvals, or reject the request. If you don’t support tool
+use, omit `sampling.tools` from capabilities.
 
 [//]: # (TODO: add elicitation section)
 
@@ -576,32 +775,31 @@ you expect lots of notifications or long-running sessions behind a reverse proxy
 
 ## Connecting your server
 
-1. Start a sample server:
+1. Start a sample HTTP server on port 3000:
+
+    ```bash
+    ./gradlew :samples:kotlin-mcp-server:run
+    ```
+
+2. Connect with the [MCP Inspector](https://github.com/modelcontextprotocol/inspector) or Claude Desktop/Code:
 
    ```bash
-   ./gradlew :samples:kotlin-mcp-server:run
-   ```
-
-2. Point the [MCP Inspector](https://github.com/modelcontextprotocol/inspector) or Claude Desktop/Code at the running
-   endpoint:
-
-   ```bash
-   npx -y @modelcontextprotocol/inspector --connect http://localhost:3000/mcp
+   npx -y @modelcontextprotocol/inspector --connect http://localhost:3000
    # or
-   claude mcp add --transport http kotlin-mcp http://localhost:3000/mcp
+   claude mcp add --transport http kotlin-mcp http://localhost:3000
    ```
 
-3. Watch the Inspector UI to verify prompts, tools, resources, and logs are all available, then iterate on your server
-   locally until it’s ready for production hosting.
+3. In the Inspector, confirm prompts, tools, resources, completions, and logs show up. Iterate locally until you’re
+   ready to host the server wherever you prefer.
 
 ## Examples
 
-- [kotlin-mcp-server](./samples/kotlin-mcp-server): demonstrates a MCP server setup with
-  various features and transports.
-- [weather-stdio-server](./samples/weather-stdio-server): shows how to build a Kotlin MCP server providing weather
-  forecast and alerts using STDIO transport.
-- [kotlin-mcp-client](./samples/kotlin-mcp-client): demonstrates building an interactive Kotlin MCP client that connects
-  to an MCP server via STDIO and integrates with Anthropic’s API.
+| Scenario                 | Description                                                     | Example                                                                  |
+|--------------------------|-----------------------------------------------------------------|--------------------------------------------------------------------------|
+| Streamable HTTP server   | Full MCP server with prompts, resources, tools, completions     | [samples/kotlin-mcp-server](./samples/kotlin-mcp-server)                 |
+| STDIO weather server     | Minimal STDIO transport server exposing weather info and alerts | [samples/weather-stdio-server](./samples/weather-stdio-server)           |
+| Interactive STDIO client | MCP client that connects over STDIO and pipes requests to LLMs  | [samples/kotlin-mcp-client](./samples/kotlin-mcp-client)                 |
+| Streamable HTTP client   | MCP client demo in a runnable notebook                          | [samples/notebooks/McpClient.ipynb](./samples/notebooks/McpClient.ipynb) |
 
 ## Documentation
 
