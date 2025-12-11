@@ -36,7 +36,7 @@ jobs:
         include:
           - os: ubuntu-latest
             job-name: "Linux Tests"
-            gradle-tasks: "build ktlintCheck koverLog koverHtmlReport publishToMavenLocal -Pversion=1-SNAPSHOT"
+            gradle-tasks: "build ktlintCheck knit koverLog koverHtmlReport publishToMavenLocal -Pversion=1-SNAPSHOT"
             max-workers: 3
 
           - os: windows-latest
