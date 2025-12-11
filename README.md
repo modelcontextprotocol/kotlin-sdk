@@ -18,27 +18,33 @@ standardized protocol interface.
 
 * [Overview](#overview)
 * [Installation](#installation)
+    * [Artifacts](#artifacts)
+    * [Gradle setup (JVM)](#gradle-setup-jvm)
+    * [Multiplatform](#multiplatform)
+    * [Ktor dependencies](#ktor-dependencies)
 * [Quickstart](#quickstart)
     * [Creating a Client](#creating-a-client)
     * [Creating a Server](#creating-a-server)
 * [Core Concepts](#core-concepts)
     * [MCP Primitives](#mcp-primitives)
     * [Capabilities](#capabilities)
+        * [Server Capabilities](#server-capabilities)
+        * [Client Capabilities](#client-capabilities)
     * [Server Features](#server-features)
         * [Prompts](#prompts)
         * [Resources](#resources)
         * [Tools](#tools)
+        * [Completion](#completion)
+        * [Logging](#logging)
+        * [Pagination](#pagination)
     * [Client Features](#client-features)
         * [Roots](#roots)
         * [Sampling](#sampling)
-    * [Utilities](#utilities)
-        * [Completion](#completion)
-        * [Logging](#logging)
-    * [Transports](#transports)
-        * [STDIO Transport](#stdio-transport)
-        * [Streamable HTTP Transport](#streamable-http-transport)
-        * [SSE Transport](#sse-transport)
-        * [WebSocket Transport](#websocket-transport)
+* [Transports](#transports)
+    * [STDIO Transport](#stdio-transport)
+    * [Streamable HTTP Transport](#streamable-http-transport)
+    * [SSE Transport](#sse-transport)
+    * [WebSocket Transport](#websocket-transport)
 * [Connecting your server](#connecting-your-server)
 * [Examples](#examples)
 * [Documentation](#documentation)
@@ -278,39 +284,315 @@ Clients declare their capabilities to inform servers what features they support:
 
 ### Server Features
 
+The `Server` API lets you wire prompts, resources, and tools with only a few lines of Kotlin. Each feature is registered
+up front and then resolved lazily when a client asks for it, so your handlers stay small and suspendable.
+
 #### Prompts
+
+Prompts are reusable templates that help users or clients start conversations in a consistent way.
+
+<!--- INCLUDE
+import io.modelcontextprotocol.kotlin.sdk.server.Server
+import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.PromptArgument
+import io.modelcontextprotocol.kotlin.sdk.types.PromptMessage
+import io.modelcontextprotocol.kotlin.sdk.types.Role
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
+
+fun main() {
+-->
+
+```kotlin
+val server = Server(
+    serverInfo = Implementation(
+        name = "example-server",
+        version = "1.0.0"
+    ),
+    options = ServerOptions(
+        capabilities = ServerCapabilities(
+            prompts = ServerCapabilities.Prompts(listChanged = true),
+        ),
+    )
+)
+
+server.addPrompt(
+    name = "code-review",
+    description = "Ask the model to review a diff",
+    arguments = listOf(
+        PromptArgument(name = "diff", description = "Unified diff", required = true),
+    ),
+) { request ->
+    GetPromptResult(
+        description = "Quick code review helper",
+        messages = listOf(
+            PromptMessage(
+                role = Role.User,
+                content = TextContent(text = "Review this change:\n${request.arguments?.get("diff")}"),
+            ),
+        ),
+    )
+}
+```
+
+<!--- SUFFIX
+}
+-->
+
+<!--- KNIT example-server-prompts-01.kt -->
+
+Use prompts for anything that deserves a template: bug triage questions, onboarding checklists, or saved searches.
 
 #### Resources
 
+Resources expose read-only context. Register them with a stable URI and return a `ReadResourceResult` when the client
+reads the resource.
+
+<!--- INCLUDE
+import io.modelcontextprotocol.kotlin.sdk.server.Server
+import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
+
+fun main() {
+-->
+
+```kotlin
+val server = Server(
+    serverInfo = Implementation(
+        name = "example-server",
+        version = "1.0.0"
+    ),
+    options = ServerOptions(
+        capabilities = ServerCapabilities(
+            resources = ServerCapabilities.Resources(subscribe = true, listChanged = true),
+        ),
+    )
+)
+
+server.addResource(
+    uri = "note://release/latest",
+    name = "Release notes",
+    description = "Last deployment summary",
+    mimeType = "text/markdown",
+) { request ->
+    ReadResourceResult(
+        contents = listOf(
+            TextResourceContents(
+                text = "Ship 42 reached production successfully.",
+                uri = request.uri,
+                mimeType = "text/markdown",
+            ),
+        ),
+    )
+}
+```
+
+<!--- SUFFIX
+}
+-->
+
+<!--- KNIT example-server-resources-01.kt -->
+
+Resources can be static text, generated JSON, or blobs—anything the client can surface to the user or inject into the
+model context.
+
 #### Tools
 
-### Client Features
+Tools are the imperative side of MCP. Each tool gets JSON arguments, can emit streaming logs or progress, and returns a
+`CallToolResult`.
 
-#### Roots
+<!--- INCLUDE
+import io.modelcontextprotocol.kotlin.sdk.server.Server
+import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
+import kotlinx.serialization.json.jsonPrimitive
 
-#### Sampling
+fun main() {
+-->
 
-[//]: # (TODO: add elicitation section)
+```kotlin
+val server = Server(
+    serverInfo = Implementation(
+        name = "example-server",
+        version = "1.0.0"
+    ),
+    options = ServerOptions(
+        capabilities = ServerCapabilities(
+            tools = ServerCapabilities.Tools(listChanged = true),
+        ),
+    )
+)
 
-[//]: # (#### Elicitation)
+server.addTool(
+    name = "echo",
+    description = "Return whatever the user sent back to them",
+) { request ->
+    val text = request.arguments?.get("text")?.jsonPrimitive?.content ?: "(empty)"
+    CallToolResult(content = listOf(TextContent(text = "Echo: $text")))
+}
+```
 
-### Utilities
+<!--- SUFFIX
+}
+-->
+
+<!--- KNIT example-server-tools-01.kt -->
+
+Register as many tools as you need—long-running jobs can report progress via the request context, and tools can also
+trigger sampling (see below) when they need the client’s LLM.
 
 #### Completion
 
 #### Logging
 
+#### Pagination
+
+### Client Features
+
+Clients advertise their capabilities (roots, sampling, elicitation, etc.) during initialization. After that they can
+serve requests from the server while still initiating calls such as `listTools` or `callTool`.
+
+#### Roots
+
+Roots describe folders or logical mounts that the client is willing to expose. Servers can list them to understand what
+paths are available before proposing file operations.
+
+<!--- INCLUDE
+import io.modelcontextprotocol.kotlin.sdk.client.Client
+import io.modelcontextprotocol.kotlin.sdk.client.ClientOptions
+import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+
+suspend fun main() {
+-->
+
+```kotlin
+val client = Client(
+    clientInfo = Implementation("demo-client", "1.0.0"),
+    options = ClientOptions(
+        capabilities = ClientCapabilities(roots = ClientCapabilities.Roots(listChanged = true)),
+    ),
+)
+
+client.addRoot(
+    uri = "file:///Users/demo/projects",
+    name = "Projects",
+)
+client.sendRootsListChanged()
+```
+
+<!--- SUFFIX 
+}    
+-->
+
+<!--- KNIT example-client-roots-01.kt -->
+
+Call `addRoot`/`removeRoot` whenever your file system view changes, and use `sendRootsListChanged()` to notify the
+server.
+
+#### Sampling
+
+Sampling lets a server ask the client to call its preferred LLM. Enable it by declaring the `sampling` capability and
+handling the `sampling/createMessage` request.
+
+<!--- INCLUDE
+import io.modelcontextprotocol.kotlin.sdk.client.Client
+import io.modelcontextprotocol.kotlin.sdk.client.ClientOptions
+import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
+import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageResult
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.Role
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
+
+fun main() {
+-->
+
+```kotlin
+val client = Client(
+    clientInfo = Implementation("demo-client", "1.0.0"),
+    options = ClientOptions(
+        capabilities = ClientCapabilities(sampling = ClientCapabilities.sampling),
+    ),
+)
+
+client.setRequestHandler<CreateMessageRequest>(Method.Defined.SamplingCreateMessage) { request, _ ->
+    val content = request.messages.lastOrNull()?.content
+    val prompt = if (content is TextContent) content.text else "your topic"
+    CreateMessageResult(
+        model = "gpt-4o-mini",
+        role = Role.Assistant,
+        content = TextContent(text = "Here is a short note about $prompt"),
+    )
+}
+```
+
+<!--- SUFFIX
+}
+-->
+
+<!--- KNIT example-client-sampling-01.kt -->
+
+Inside the handler you are free to choose any model/provider, collect extra approvals, or reject the request.
+
+[//]: # (TODO: add elicitation section)
+
+[//]: # (#### Elicitation)
+
 ## Transports
+
+All transports share the same API surface, so you can change deployment style without touching business logic. Pick the
+transport that best matches where the server runs.
 
 ### STDIO Transport
 
+`StdioClientTransport` and `StdioServerTransport` tunnel MCP messages over stdin/stdout—perfect for editor plugins or
+CLI tooling that spawns a helper process. No networking setup is required.
+
 ### Streamable HTTP Transport
+
+`StreamableHttpClientTransport` and the Ktor `streamableHttpApp()` helpers expose MCP over a single HTTP endpoint with
+optional JSON-only or SSE streaming responses. This is the recommended choice for remote deployments and integrates
+nicely with proxies or service meshes.
 
 ### SSE Transport
 
+Server-Sent Events remain available for backwards compatibility with older MCP clients. Use `SseServerTransport` or the
+SSE Ktor plugin when you need drop-in compatibility, but prefer Streamable HTTP for new projects.
+
 ### WebSocket Transport
 
+`WebSocketClientTransport` plus the matching server utilities provide full-duplex, low-latency connections—useful when
+you expect lots of notifications or long-running sessions behind a reverse proxy that already terminates WebSockets.
+
 ## Connecting your server
+
+1. Start a sample server:
+
+   ```bash
+   ./gradlew :samples:kotlin-mcp-server:run
+   ```
+
+2. Point the [MCP Inspector](https://github.com/modelcontextprotocol/inspector) or Claude Desktop/Code at the running
+   endpoint:
+
+   ```bash
+   npx -y @modelcontextprotocol/inspector --connect http://localhost:3000/mcp
+   # or
+   claude mcp add --transport http kotlin-mcp http://localhost:3000/mcp
+   ```
+
+3. Watch the Inspector UI to verify prompts, tools, resources, and logs are all available, then iterate on your server
+   locally until it’s ready for production hosting.
 
 ## Examples
 
@@ -322,6 +604,10 @@ Clients declare their capabilities to inform servers what features they support:
   to an MCP server via STDIO and integrates with Anthropic’s API.
 
 ## Documentation
+
+- [API Reference](https://modelcontextprotocol.github.io/kotlin-sdk/)
+- [Model Context Protocol documentation](https://modelcontextprotocol.io)
+- [MCP specification](https://modelcontextprotocol.io/specification/latest)
 
 ## Contributing
 
