@@ -10,10 +10,10 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
-import io.ktor.http.Url
+import io.ktor.http.URLBuilder
 import io.ktor.http.append
 import io.ktor.http.isSuccess
-import io.ktor.http.protocolWithAuthority
+import io.ktor.http.takeFrom
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
@@ -58,14 +58,7 @@ public class SseClientTransport(
     private var job: Job? = null
 
     private val baseUrl: String by lazy {
-        session.call.request.url.let { url ->
-            val path = url.encodedPath
-            when {
-                path.isEmpty() -> url.protocolWithAuthority
-                path.endsWith("/") -> url.protocolWithAuthority + path.removeSuffix("/")
-                else -> url.protocolWithAuthority + path.take(path.lastIndexOf("/"))
-            }
-        }
+        session.call.request.url.toString()
     }
 
     override suspend fun start() {
@@ -159,10 +152,9 @@ public class SseClientTransport(
         }
     }
 
-    private fun handleEndpoint(eventData: String) {
+    private fun handleEndpoint(endpointData: String) {
         try {
-            val path = if (eventData.startsWith("/")) eventData.substring(1) else eventData
-            val endpointUrl = Url("$baseUrl/$path")
+            val endpointUrl = URLBuilder(baseUrl).takeFrom(endpointData).build()
             endpoint.complete(endpointUrl.toString())
             logger.debug { "Client connected to endpoint: $endpointUrl" }
         } catch (e: Throwable) {
