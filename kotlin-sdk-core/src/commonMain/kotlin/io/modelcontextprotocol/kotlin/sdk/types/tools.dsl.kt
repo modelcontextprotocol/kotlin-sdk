@@ -43,7 +43,7 @@ import kotlin.contracts.contract
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-internal inline fun buildCallToolRequest(block: CallToolRequestBuilder.() -> Unit): CallToolRequest {
+public inline fun buildCallToolRequest(block: CallToolRequestBuilder.() -> Unit): CallToolRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return CallToolRequestBuilder().apply(block).build()
 }
@@ -143,7 +143,7 @@ public class CallToolRequestBuilder @PublishedApi internal constructor() : Reque
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-internal inline fun buildListToolsRequest(block: ListToolsRequestBuilder.() -> Unit): ListToolsRequest {
+public inline fun buildListToolsRequest(block: ListToolsRequestBuilder.() -> Unit): ListToolsRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return ListToolsRequestBuilder().apply(block).build()
 }

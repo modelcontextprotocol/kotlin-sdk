@@ -40,7 +40,7 @@ import kotlin.contracts.contract
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-internal inline fun buildGetPromptRequest(block: GetPromptRequestBuilder.() -> Unit): GetPromptRequest {
+public inline fun buildGetPromptRequest(block: GetPromptRequestBuilder.() -> Unit): GetPromptRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return GetPromptRequestBuilder().apply(block).build()
 }
@@ -116,7 +116,7 @@ public class GetPromptRequestBuilder @PublishedApi internal constructor() : Requ
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-internal inline fun buildListPromptsRequest(block: ListPromptsRequestBuilder.() -> Unit): ListPromptsRequest {
+public inline fun buildListPromptsRequest(block: ListPromptsRequestBuilder.() -> Unit): ListPromptsRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return ListPromptsRequestBuilder().apply(block).build()
 }

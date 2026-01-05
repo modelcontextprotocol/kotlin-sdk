@@ -31,7 +31,7 @@ import kotlin.contracts.contract
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-internal inline fun buildListResourcesRequest(block: ListResourcesRequestBuilder.() -> Unit): ListResourcesRequest {
+public inline fun buildListResourcesRequest(block: ListResourcesRequestBuilder.() -> Unit): ListResourcesRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return ListResourcesRequestBuilder().apply(block).build()
 }
@@ -82,7 +82,7 @@ public class ListResourcesRequestBuilder @PublishedApi internal constructor() : 
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-internal inline fun buildReadResourceRequest(block: ReadResourceRequestBuilder.() -> Unit): ReadResourceRequest {
+public inline fun buildReadResourceRequest(block: ReadResourceRequestBuilder.() -> Unit): ReadResourceRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return ReadResourceRequestBuilder().apply(block).build()
 }
@@ -144,7 +144,7 @@ public class ReadResourceRequestBuilder @PublishedApi internal constructor() : R
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-internal inline fun buildSubscribeRequest(block: SubscribeRequestBuilder.() -> Unit): SubscribeRequest {
+public inline fun buildSubscribeRequest(block: SubscribeRequestBuilder.() -> Unit): SubscribeRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return SubscribeRequestBuilder().apply(block).build()
 }
@@ -206,7 +206,7 @@ public class SubscribeRequestBuilder @PublishedApi internal constructor() : Requ
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-internal inline fun buildUnsubscribeRequest(block: UnsubscribeRequestBuilder.() -> Unit): UnsubscribeRequest {
+public inline fun buildUnsubscribeRequest(block: UnsubscribeRequestBuilder.() -> Unit): UnsubscribeRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return UnsubscribeRequestBuilder().apply(block).build()
 }
@@ -271,7 +271,7 @@ public class UnsubscribeRequestBuilder @PublishedApi internal constructor() : Re
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-internal inline fun buildListResourceTemplatesRequest(
+public inline fun buildListResourceTemplatesRequest(
     block: ListResourceTemplatesRequestBuilder.() -> Unit,
 ): ListResourceTemplatesRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
