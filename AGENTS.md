@@ -46,6 +46,12 @@ MCP Kotlin SDK — Kotlin Multiplatform implementation of the Model Context Prot
 - All tests for each module are located in `src/commonTest/kotlin/io/modelcontextprotocol/kotlin/sdk/`
 - Platform-specific tests go in `src/jvmTest/`, `src/jsTest/`, etc.
 - Use Kotest assertions (`shouldBe`, `shouldContain`, etc.) for readable test failures.
+- For nullable objects with nested properties, prefer `shouldNotBeNull { ... }` blocks:
+  ```kotlin
+  content.annotations shouldNotBeNull {
+      priority shouldBe 1.0
+  }
+  ```
 - Use `shouldMatchJson` from Kotest for JSON validation.
 - Mock Ktor HTTP clients using `MockEngine` from `io.ktor:ktor-client-mock`.
 - Always add tests for new features or bug fixes, even if not explicitly requested.

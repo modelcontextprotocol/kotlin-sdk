@@ -36,7 +36,7 @@ import kotlin.contracts.contract
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-internal inline fun buildSetLevelRequest(block: SetLevelRequestBuilder.() -> Unit): SetLevelRequest {
+public inline fun buildSetLevelRequest(block: SetLevelRequestBuilder.() -> Unit): SetLevelRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return SetLevelRequestBuilder().apply(block).build()
 }

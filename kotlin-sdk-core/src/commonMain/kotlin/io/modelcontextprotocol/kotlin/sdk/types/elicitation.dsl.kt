@@ -59,7 +59,7 @@ import kotlin.contracts.contract
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-internal inline fun buildElicitRequest(block: ElicitRequestBuilder.() -> Unit): ElicitRequest {
+public inline fun buildElicitRequest(block: ElicitRequestBuilder.() -> Unit): ElicitRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return ElicitRequestBuilder().apply(block).build()
 }

@@ -32,7 +32,7 @@ import kotlin.contracts.contract
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-internal inline fun buildPingRequest(block: PingRequestBuilder.() -> Unit): PingRequest {
+public inline fun buildPingRequest(block: PingRequestBuilder.() -> Unit): PingRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return PingRequestBuilder().apply(block).build()
 }

@@ -32,7 +32,7 @@ import kotlin.contracts.contract
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-internal inline fun buildListRootsRequest(block: ListRootsRequestBuilder.() -> Unit): ListRootsRequest {
+public inline fun buildListRootsRequest(block: ListRootsRequestBuilder.() -> Unit): ListRootsRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return ListRootsRequestBuilder().apply(block).build()
 }
