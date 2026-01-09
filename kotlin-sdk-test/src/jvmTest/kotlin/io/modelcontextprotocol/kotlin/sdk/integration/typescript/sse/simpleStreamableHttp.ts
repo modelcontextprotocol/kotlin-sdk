@@ -18,19 +18,17 @@ async function importFromSdk<T = any>(rel: string): Promise<T> {
 }
 
 async function main() {
-    const {McpServer} = await importFromSdk<any>('src/server/mcp.ts');
-    const {StreamableHTTPServerTransport} = await importFromSdk<any>('src/server/streamableHttp.ts');
+    const {McpServer} = await importFromSdk<any>('packages/server/src/index.ts');
+    const {StreamableHTTPServerTransport} = await importFromSdk<any>('packages/server/src/index.ts');
     const {
         getOAuthProtectedResourceMetadataUrl,
-        mcpAuthMetadataRouter
-    } = await importFromSdk<any>('src/server/auth/router.ts');
-    const {requireBearerAuth} = await importFromSdk<any>('src/server/auth/middleware/bearerAuth.ts');
-    const {
-        isInitializeRequest,
-    } = await importFromSdk<any>('src/types.ts');
-    const {InMemoryEventStore} = await importFromSdk<any>('src/examples/shared/inMemoryEventStore.ts');
-    const {setupAuthServer} = await importFromSdk<any>('src/examples/server/demoInMemoryOAuthProvider.ts');
-    const {checkResourceAllowed} = await importFromSdk<any>('src/shared/auth-utils.ts');
+        mcpAuthMetadataRouter,
+        checkResourceAllowed,
+        requireBearerAuth
+    } = await importFromSdk<any>('packages/server/src/index.ts');
+    const {InMemoryEventStore} = await importFromSdk<any>('examples/server/src/inMemoryEventStore.ts');
+    const {isInitializeRequest} = await importFromSdk<any>('packages/core/src/index.ts');
+    const {setupAuthServer} = await importFromSdk<any>('examples/shared/src/index.ts');
 
     // Check for OAuth flag
     const useOAuth = process.argv.includes('--oauth');

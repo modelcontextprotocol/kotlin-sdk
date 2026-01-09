@@ -16,7 +16,7 @@ async function main() {
 
     const path = await import('path');
     const { pathToFileURL } = await import('url');
-    const clientUrl = pathToFileURL(path.join(sdkDir, 'src', 'client', 'index.ts')).href;
+    const clientUrl = pathToFileURL(path.join(sdkDir, 'packages', 'client', 'dist', 'index.mjs')).href;
     ({ Client } = await import(clientUrl));
 
     if (!toolName) {

@@ -17,12 +17,11 @@ async function main() {
         const path = await import('path');
         // @ts-ignore
         const { pathToFileURL } = await import('url');
-        const clientUrl = pathToFileURL(path.join(sdkDir, 'src', 'client', 'index.ts')).href;
-        const streamUrl = pathToFileURL(path.join(sdkDir, 'src', 'client', 'streamableHttp.js')).href;
+        const clientUrl = pathToFileURL(path.join(sdkDir, 'packages', 'client', 'dist', 'index.mjs')).href;
         // @ts-ignore
-        ({ Client } = await import(clientUrl));
+        const clientModule = await import(clientUrl);
         // @ts-ignore
-        ({ StreamableHTTPClientTransport } = await import(streamUrl));
+        ({ Client, StreamableHTTPClientTransport } = clientModule);
     } else {
         // @ts-ignore
         ({Client} = await import("../../../../../../../resources/typescript-sdk/src/client"));

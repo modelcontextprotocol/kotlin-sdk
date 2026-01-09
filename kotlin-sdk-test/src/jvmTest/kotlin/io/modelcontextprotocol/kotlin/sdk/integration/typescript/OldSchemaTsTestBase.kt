@@ -93,8 +93,15 @@ abstract class OldSchemaTsTestBase {
                 }
             }
 
-            println("Installing TypeScript SDK dependencies")
-            executeCommand("npm install", sdkDir, allowFailure = false, timeoutSeconds = null)
+            println("Installing and build TypeScript SDK dependencies")
+            executeCommand(
+                "" +
+                    "corepack enable && " +
+                    "corepack install && " +
+                    "pnpm install && " +
+                    "pnpm build:all",
+                sdkDir, allowFailure = false, timeoutSeconds = null
+            )
         }
 
         @JvmStatic
@@ -248,21 +255,21 @@ abstract class OldSchemaTsTestBase {
                 .command(
                     "cmd.exe",
                     "/c",
-                    "set MCP_PORT=$port && set NODE_PATH=${sdkDir.absolutePath}\\node_modules && npx --prefix \"${sdkDir.absolutePath}\" tsx \"$localServerPath\"",
+                    "set MCP_PORT=$port && pnpm exec tsx --tsconfig \"${sdkDir.absolutePath}/packages/server/tsconfig.json\" \"$localServerPath\"",
                 )
         } else {
             ProcessBuilder()
                 .command(
                     "bash",
                     "-c",
-                    "MCP_PORT=$port NODE_PATH='${sdkDir.absolutePath}/node_modules' npx --prefix '${sdkDir.absolutePath}' tsx \"$localServerPath\"",
+                    "MCP_PORT=$port && pnpm exec tsx --tsconfig '${sdkDir.absolutePath}/packages/server/tsconfig.json' \"$localServerPath\"",
                 )
         }
 
         processBuilder.environment()["TYPESCRIPT_SDK_DIR"] = sdkDir.absolutePath
 
         val process = processBuilder
-            .directory(tsClientDir)
+            .directory(sdkDir)
             .redirectErrorStream(true)
             .start()
 
@@ -314,19 +321,19 @@ abstract class OldSchemaTsTestBase {
                 .command(
                     "cmd.exe",
                     "/c",
-                    "set NODE_PATH=${sdkDir.absolutePath}\\node_modules && npx --prefix \"${sdkDir.absolutePath}\" tsx \"$localServerPath\"",
+                    "pnpm exec tsx --tsconfig \"${sdkDir.absolutePath}/packages/server/tsconfig.json\" \"$localServerPath\"",
                 )
         } else {
             ProcessBuilder()
                 .command(
                     "bash",
                     "-c",
-                    "NODE_PATH='${sdkDir.absolutePath}/node_modules' npx --prefix '${sdkDir.absolutePath}' tsx \"$localServerPath\"",
+                    "pnpm exec tsx --tsconfig '${sdkDir.absolutePath}/packages/server/tsconfig.json' \"$localServerPath\"",
                 )
         }
         processBuilder.environment()["TYPESCRIPT_SDK_DIR"] = sdkDir.absolutePath
         val process = processBuilder
-            .directory(tsClientDir)
+            .directory(sdkDir)
             .redirectErrorStream(false)
             .start()
         // For stdio transports, do NOT read from stdout (it's used for protocol). Read stderr for logs only.
@@ -378,8 +385,8 @@ abstract class OldSchemaTsTestBase {
                     "/c",
                     (
                         "set TYPESCRIPT_SDK_DIR=${sdkDir.absolutePath} && " +
-                            "set NODE_PATH=${sdkDir.absolutePath}\\node_modules && " +
-                            "npx --prefix \"${sdkDir.absolutePath}\" tsx \"$clientPath\" " +
+                            "cd \"${sdkDir.absolutePath}\" && " +
+                            "pnpm exec tsx --tsconfig \"${sdkDir.absolutePath}/packages/client/tsconfig.json\" \"$clientPath\" " +
                             args.joinToString(" ")
                         ),
                 )
@@ -393,8 +400,8 @@ abstract class OldSchemaTsTestBase {
                     "-c",
                     (
                         "TYPESCRIPT_SDK_DIR='${sdkDir.absolutePath}' " +
-                            "NODE_PATH='${sdkDir.absolutePath}/node_modules' " +
-                            "npx --prefix '${sdkDir.absolutePath}' tsx \"$clientPath\" " +
+                            "cd '${sdkDir.absolutePath}' && " +
+                            "pnpm exec tsx --tsconfig '${sdkDir.absolutePath}/packages/client/tsconfig.json' \"$clientPath\" " +
                             args.joinToString(" ")
                         ),
                 )

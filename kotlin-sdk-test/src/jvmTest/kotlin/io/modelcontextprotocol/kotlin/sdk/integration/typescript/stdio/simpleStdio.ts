@@ -15,8 +15,8 @@ async function importFromSdk(rel: string): Promise<any> {
 }
 
 async function main() {
-  const { McpServer } = await importFromSdk('src/server/mcp.ts');
-  const { StdioServerTransport } = await importFromSdk('src/server/stdio.ts');
+  const { McpServer } = await importFromSdk('packages/server/src/index.ts');
+  const { StdioServerTransport } = await importFromSdk('packages/server/src/index.ts');
 
   const server = new McpServer({
     name: 'simple-stdio-server',

@@ -4,6 +4,7 @@ import io.modelcontextprotocol.kotlin.sdk.integration.typescript.AbstractTsClien
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TransportKind
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import java.io.File
 
 class TsClientKotlinServerTestSse : AbstractTsClientKotlinServerTest() {
 
@@ -37,14 +38,17 @@ class TsClientKotlinServerTestSse : AbstractTsClientKotlinServerTest() {
     override fun afterServer() {}
 
     override fun runClient(vararg args: String): String {
+        val myClientPath = File(tsClientDir, "myClient.ts").absolutePath
         val cmd = buildString {
-            append("npx tsx myClient.ts ")
+            append("pnpm exec tsx \"")
+            append(myClientPath)
+            append("\" ")
             append(serverUrl)
             if (args.isNotEmpty()) {
                 append(' ')
                 append(args.joinToString(" "))
             }
         }
-        return executeCommand(cmd, tsClientDir)
+        return executeCommand(cmd, sdkDir)
     }
 }
