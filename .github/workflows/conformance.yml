@@ -44,7 +44,7 @@ jobs:
 
       - name: Upload Conformance Results
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: conformance-results
           path: conformance-test/results/
