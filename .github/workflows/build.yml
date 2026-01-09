@@ -10,69 +10,88 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   # Cancel only when the run is NOT on `main` branch
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main'  }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   checks: write
   pull-requests: write # only required if `comment: true` was enabled
 
+env:
+  JAVA_VERSION: 21
+  JAVA_DISTRIBUTION: temurin
+  JAVA_OPTS: "-Dfile.encoding=UTF-8 -Djava.awt.headless=true"
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dkotlin.compiler.execution.strategy=in-process"
+
 jobs:
   build:
-    runs-on: macos-latest-xlarge
-    name: Build
-    timeout-minutes: 20
-    env:
-      JAVA_OPTS: "-Xmx8g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx6g"
+    runs-on: ${{ matrix.os }}
+    name: Build (${{ matrix.job-name }})
+    timeout-minutes: 30
+    permissions:
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            job-name: "Linux Tests"
+            gradle-tasks: "build ktlintCheck koverLog koverHtmlReport publishToMavenLocal -Pversion=1-SNAPSHOT"
+            max-workers: 3
+
+          - os: windows-latest
+            job-name: "Windows Tests"
+            gradle-tasks: "jvmTest"
+            max-workers: 3
+
+          - os: macos-latest
+            job-name: "iOS Simulator tests"
+            gradle-tasks: "linkIosSimulatorArm64 iosSimulatorArm64Test"
+            max-workers: 2
+
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up JDK 21
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v5
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+
+      - name: Set up Node.js
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/setup-node@v6
+        with:
+          node-version: 'lts/*'
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
         with:
+          validate-wrappers: true
           add-job-summary: 'always'
-          cache-read-only: true
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+          gradle-home-cache-includes: |
+            caches
+            notifications
+            sdks
+            .konan/**
 
-      - name: Build with Gradle
+      - name: ${{ matrix.job-name }}
         run: |-
-          ./gradlew --no-daemon \
-            --rerun-tasks \
-            clean \
-            ktlintCheck \
-            build \
-            -x :conformance-test:test \
-            koverLog koverHtmlReport \
-            publishToMavenLocal \
-            -Pversion=0.0.1-SNAPSHOT
-
-      - name: Build Kotlin-MCP-Client Sample
-        working-directory: ./samples/kotlin-mcp-client
-        run: ./gradlew --no-daemon clean build -Pmcp.kotlin.overrideVersion=0.0.1-SNAPSHOT
-
-      - name: Build Kotlin-MCP-Server Sample
-        working-directory: ./samples/kotlin-mcp-server
-        run: ./gradlew --no-daemon clean build -Pmcp.kotlin.overrideVersion=0.0.1-SNAPSHOT
-
-      - name: Build Weather-Stdio-Server Sample
-        working-directory: ./samples/weather-stdio-server
-        run: ./gradlew --no-daemon clean build -Pmcp.kotlin.overrideVersion=0.0.1-SNAPSHOT
+          ./gradlew ${{ matrix.gradle-tasks }} -x :conformance-test:test --max-workers ${{ matrix.max-workers }} --continue --configure-on-demand --parallel
 
       - name: Upload Reports
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        if: always()
+        uses: actions/upload-artifact@v6
         with:
-          name: reports
+          name: reports-build-${{ matrix.os }}
           path: |
             **/build/reports/
 
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v6
-        if: ${{ !cancelled() }} # always run even if the previous step fails
+        if: always()
         with:
           annotate_only: true
           detailed_summary: true
@@ -83,9 +102,68 @@ jobs:
           report_paths: '**/test-results/**/TEST-*.xml'
           truncate_stack_traces: false
 
-      - name: Disable Auto-Merge on Fail
-        if: failure() && github.event_name == 'pull_request'
-        run: gh pr merge --disable-auto "$PR_URL"
-        env:
-          PR_URL: ${{github.event.pull_request.html_url}}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Archive Maven Local Repository
+        if: ${{ success() && matrix.os == 'ubuntu-latest' }}
+        run: |
+          cd ~/.m2/repository && zip -r $GITHUB_WORKSPACE/local-maven-repository.zip .
+
+      - name: Upload Maven Local Repository
+        if: ${{ success() && matrix.os == 'ubuntu-latest' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: local-maven-repository
+          path: local-maven-repository.zip
+          retention-days: 1
+
+  samples:
+    needs: [ build ]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sample:
+          - kotlin-mcp-client
+          - kotlin-mcp-server
+          - weather-stdio-server
+
+    name: "Build Sample: ${{ matrix.sample }}"
+    timeout-minutes: 10
+    env:
+      JAVA_OPTS: "-Xmx8g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx6g"
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v5
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          add-job-summary: 'always'
+          cache-read-only: true
+
+      - name: Download Maven Local Repository
+        uses: actions/download-artifact@v7
+        with:
+          name: local-maven-repository
+          path: .
+
+      - name: Extract Maven Local Repository
+        run: |
+          mkdir -p ~/.m2/repository
+          unzip -o local-maven-repository.zip -d ~/.m2/repository
+
+      - name: "Build Sample: ${{ matrix.sample }}"
+        working-directory: ./samples/${{ matrix.sample }}
+        run: ./gradlew build -Pmcp.kotlin.overrideVersion=1-SNAPSHOT
+
+      - name: Upload Reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: reports-samples-snapshot-${{ matrix.sample }}
+          path: |
+            **/build/reports/

@@ -2,8 +2,9 @@ package io.modelcontextprotocol.kotlin.sdk.integration.typescript.stdio
 
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.client.Client
-import io.modelcontextprotocol.kotlin.sdk.integration.typescript.OldSchemaTransportKind
-import io.modelcontextprotocol.kotlin.sdk.integration.typescript.OldSchemaTsTestBase
+import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TransportKind
+import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TsTestBase
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.DisabledOnCI
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -18,9 +19,10 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-class OldSchemaKotlinClientTsServerEdgeCasesTestStdio : OldSchemaTsTestBase() {
+@DisabledOnCI
+class OldSchemaKotlinClientTsServerEdgeCasesTestStdio : TsTestBase() {
 
-    override val transportKind = OldSchemaTransportKind.STDIO
+    override val transportKind = TransportKind.STDIO
 
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)

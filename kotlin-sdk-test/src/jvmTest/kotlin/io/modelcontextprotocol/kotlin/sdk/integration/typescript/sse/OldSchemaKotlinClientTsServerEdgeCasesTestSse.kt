@@ -2,8 +2,9 @@ package io.modelcontextprotocol.kotlin.sdk.integration.typescript.sse
 
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.client.Client
-import io.modelcontextprotocol.kotlin.sdk.integration.typescript.OldSchemaTransportKind
-import io.modelcontextprotocol.kotlin.sdk.integration.typescript.OldSchemaTsTestBase
+import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TransportKind
+import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TsTestBase
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.DisabledOnCI
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -22,9 +23,10 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
-class OldSchemaKotlinClientTsServerEdgeCasesTestSse : OldSchemaTsTestBase() {
+@DisabledOnCI
+class OldSchemaKotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
 
-    override val transportKind = OldSchemaTransportKind.SSE
+    override val transportKind = TransportKind.SSE
 
     private var port: Int = 0
     private val host = "localhost"

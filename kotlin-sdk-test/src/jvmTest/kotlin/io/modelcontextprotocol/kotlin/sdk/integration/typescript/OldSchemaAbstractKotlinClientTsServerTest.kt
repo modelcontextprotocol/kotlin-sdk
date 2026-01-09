@@ -11,7 +11,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-abstract class OldSchemaAbstractKotlinClientTsServerTest : OldSchemaTsTestBase() {
+abstract class OldSchemaAbstractKotlinClientTsServerTest : TsTestBase() {
     protected abstract suspend fun <T> useClient(block: suspend (Client) -> T): T
 
     @Test

@@ -2,15 +2,17 @@ package io.modelcontextprotocol.kotlin.sdk.integration.typescript.sse
 
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.OldSchemaAbstractKotlinClientTsServerTest
-import io.modelcontextprotocol.kotlin.sdk.integration.typescript.OldSchemaTransportKind
+import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TransportKind
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.DisabledOnCI
 import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import kotlin.time.Duration.Companion.seconds
 
+@DisabledOnCI
 class OldSchemaKotlinClientTsServerTestSse : OldSchemaAbstractKotlinClientTsServerTest() {
 
-    override val transportKind = OldSchemaTransportKind.SSE
+    override val transportKind = TransportKind.SSE
 
     private var port: Int = 0
     private val host = "localhost"

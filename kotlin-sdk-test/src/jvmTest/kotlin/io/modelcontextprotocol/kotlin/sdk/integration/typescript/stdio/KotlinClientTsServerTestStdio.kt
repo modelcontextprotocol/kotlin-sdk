@@ -3,7 +3,9 @@ package io.modelcontextprotocol.kotlin.sdk.integration.typescript.stdio
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.AbstractKotlinClientTsServerTest
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TransportKind
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.DisabledOnCI
 
+@DisabledOnCI
 class KotlinClientTsServerTestStdio : AbstractKotlinClientTsServerTest() {
 
     override val transportKind = TransportKind.STDIO

@@ -16,43 +16,49 @@ concurrency:
   # Cancel only when the run is NOT on `main` branch
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
+env:
+  JAVA_VERSION: 21
+  JAVA_DISTRIBUTION: temurin
+
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         sample:
           - kotlin-mcp-client
           - kotlin-mcp-server
           - weather-stdio-server
 
-    name: Build Sample
+    name: Build Sample (${{ matrix.sample }})
     timeout-minutes: 10
     env:
       JAVA_OPTS: "-Xmx8g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx6g"
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up JDK 21
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v5
         with:
-          java-version: 21
-          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
         with:
+          validate-wrappers: true
           add-job-summary: 'always'
-          cache-read-only: true
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
       - name: "Build Sample: ${{ matrix.sample }}"
         working-directory: ./samples/${{ matrix.sample }}
-        run: ./gradlew --no-daemon clean build
+        run: ./gradlew --no-daemon build
 
       - name: Upload Reports
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v5
         with:
-          name: reports-${{ matrix.sample }}
+          name: reports-samples-${{ matrix.sample }}
           path: |
             **/build/reports/

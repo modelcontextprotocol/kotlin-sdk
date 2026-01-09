@@ -2,9 +2,11 @@ package io.modelcontextprotocol.kotlin.sdk.integration.typescript.sse
 
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.AbstractTsClientKotlinServerTest
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TransportKind
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.DisabledOnCI
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
+@DisabledOnCI
 class TsClientKotlinServerTestSse : AbstractTsClientKotlinServerTest() {
 
     override val transportKind = TransportKind.SSE

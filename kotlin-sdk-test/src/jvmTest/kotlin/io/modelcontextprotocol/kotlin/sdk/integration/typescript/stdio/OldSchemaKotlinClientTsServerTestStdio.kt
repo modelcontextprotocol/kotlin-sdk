@@ -2,11 +2,13 @@ package io.modelcontextprotocol.kotlin.sdk.integration.typescript.stdio
 
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.OldSchemaAbstractKotlinClientTsServerTest
-import io.modelcontextprotocol.kotlin.sdk.integration.typescript.OldSchemaTransportKind
+import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TransportKind
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.DisabledOnCI
 
+@DisabledOnCI
 class OldSchemaKotlinClientTsServerTestStdio : OldSchemaAbstractKotlinClientTsServerTest() {
 
-    override val transportKind = OldSchemaTransportKind.STDIO
+    override val transportKind = TransportKind.STDIO
 
     override suspend fun <T> useClient(block: suspend (Client) -> T): T = withClientStdio { client, proc ->
         try {

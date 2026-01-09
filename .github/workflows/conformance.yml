@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   run-conformance:
-    runs-on: macos-latest-xlarge
+    runs-on: macos-latest
     name: Run Conformance Tests
     timeout-minutes: 20
     env:
