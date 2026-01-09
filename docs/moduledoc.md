@@ -1,21 +1,17 @@
 # MCP Kotlin SDK
 
-Kotlin SDK for the Model Context Protocol (MCP).
-This is a Kotlin Multiplatform library that helps you build MCP clients and servers that speak the same protocol and
-share the same types.
-The SDK focuses on clarity, small building blocks, and first‑class coroutine support.
+Kotlin Multiplatform implementation of the Model Context Protocol (MCP). The SDK focuses on clear, explicit APIs,
+small building blocks, and first-class coroutine support so clients and servers share the same well-typed messages and
+transports.
 
-Use the umbrella `kotlin-sdk` artifact when you want a single dependency that brings the core types plus both client and
-server toolkits. If you only need one side, depend on `kotlin-sdk-client` or `kotlin-sdk-server` directly.
-
-Gradle (Kotlin DSL):
+Use the umbrella `kotlin-sdk` artifact to bring in everything at once, or depend on the focused modules directly:
 
 ```kotlin
 dependencies {
-    // Convenience bundle with everything you need to start
+    // All-in-one bundle
     implementation("io.modelcontextprotocol:kotlin-sdk:<version>")
 
-    // Or pick modules explicitly
+    // Or pick sides explicitly
     implementation("io.modelcontextprotocol:kotlin-sdk-client:<version>")
     implementation("io.modelcontextprotocol:kotlin-sdk-server:<version>")
 }
@@ -25,79 +21,73 @@ dependencies {
 
 ## Module kotlin-sdk-core
 
-Foundational, platform‑agnostic pieces:
+Foundation shared by both sides:
 
-- Protocol data model and JSON serialization (kotlinx.serialization)
-- Request/response and notification types used by both sides of MCP
-- Coroutine‑friendly protocol engine and utilities
-- Transport abstractions shared by client and server
+- Protocol data model for MCP requests, results, notifications, capabilities, and content types.
+- `McpJson` (kotlinx.serialization) with MCP-friendly defaults plus helpers for converting native values to JSON.
+- Transport abstractions (`Transport`, `AbstractTransport`, `WebSocketMcpTransport`) and streaming `ReadBuffer`.
+- `Protocol` base class that handles JSON-RPC framing, correlation, progress tokens, and capability assertions.
 
-You typically do not use `core` directly in application code; it is pulled in by the client/server modules. Use it
-explicitly if you only need the protocol types or plan to implement a custom transport.
+Use `core` when you need the raw types or want to author a custom transport. Public APIs are explicit to keep the shared
+surface stable across platforms.
 
 ---
 
 ## Module kotlin-sdk-client
 
-High‑level client API for connecting to an MCP server and invoking its tools, prompts, and resources. Ships with several
-transports:
+High-level client for connecting to MCP servers and invoking their features:
 
-- WebSocketClientTransport – low latency, full‑duplex
-- SSEClientTransport – Server‑Sent Events over HTTP
-- StdioClientTransport – CLI‑friendly stdio bridge
-- StreamableHttpClientTransport – simple HTTP streaming
+- `Client` runtime (or `mcpClient` helper) performs the MCP handshake and exposes `serverCapabilities`,
+  `serverVersion`, and `serverInstructions`.
+- Typed operations for tools, prompts, resources, completion, logging, roots, sampling, and elicitation with capability
+  enforcement.
+- Transports: `StdioClientTransport`, `SSEClientTransport`, `WebSocketClientTransport`, and `StreamableHttpClientTransport`,
+  plus Ktor client extensions for quick wiring.
 
-A minimal client:
+Minimal WebSocket client:
 
 ```kotlin
-val client = Client(
-    clientInfo = Implementation(name = "sample-client", version = "1.0.0")
+val client = mcpClient(
+    clientInfo = Implementation("sample-client", "1.0.0"),
+    clientOptions = ClientOptions(ClientCapabilities(tools = ClientCapabilities.Tools())),
+    transport = WebSocketClientTransport("ws://localhost:8080/mcp")
 )
-
-client.connect(WebSocketClientTransport("ws://localhost:8080/mcp"))
 
 val tools = client.listTools()
-val result = client.callTool(
-    name = "echo",
-    arguments = mapOf("text" to "Hello, MCP!")
-)
+val result = client.callTool("echo", mapOf("text" to "Hello, MCP!"))
+println(result.content)
 ```
 
 ---
 
 ## Module kotlin-sdk-server
 
-Lightweight server toolkit for hosting MCP tools, prompts, and resources. It provides a small, composable API and
-ready‑to‑use transports:
+Server toolkit for exposing MCP tools, prompts, and resources:
 
-- StdioServerTransport – integrates well with CLIs and editors
-- SSE/WebSocket helpers for Ktor – easy HTTP deployment
+- `Server` runtime coordinates sessions, initialization flow, and capability enforcement with registries for tools,
+  prompts, resources, and templates.
+- Transports: `StdioServerTransport` for CLI/editor bridges; Ktor extensions (`mcp` for SSE + POST back-channel and
+  `mcpWebSocket` for WebSocket) for HTTP hosting.
+- Built-in notifications for list changes and resource subscriptions when capabilities enable them.
 
-Register tools and run over stdio:
+Minimal Ktor SSE server:
 
 ```kotlin
-
-val server = Server(
-    serverInfo = Implementation(name = "sample-server", version = "1.0.0"),
-    options = ServerOptions(ServerCapabilities())
-)
-
-server.addTool(
-    name = "echo",
-    description = "Echoes the provided text"
-) { request ->
-    // Build and return a CallToolResult from request.arguments
-    // (see CallToolResult and related types in kotlin-sdk-core)
-    /* ... */
+fun Application.module() {
+    mcp {
+        Server(
+            serverInfo = Implementation("sample-server", "1.0.0"),
+            options = ServerOptions(ServerCapabilities(
+                tools = ServerCapabilities.Tools(listChanged = true),
+                resources = ServerCapabilities.Resources(listChanged = true, subscribe = true),
+            )),
+        ) {
+            addTool(name = "echo", description = "Echo text back") { request ->
+                CallToolResult(content = listOf(TextContent("You said: ${request.params.arguments["text"]}")))
+            }
+        }
+    }
 }
-
-// Bridge the protocol over stdio
-val transport = StdioServerTransport(
-    inputStream = kotlinx.io.files.Path("/dev/stdin").source(),
-    outputStream = kotlinx.io.files.Path("/dev/stdout").sink()
-)
-// Start transport and wire it with the server using provided helpers in the SDK.
 ```
 
-For HTTP deployments, use the Ktor extensions included in the module to expose an MCP WebSocket or SSE endpoint with a
-few lines of code.
+Pick the module that matches your role, or use the umbrella artifact to get both sides with the shared core.

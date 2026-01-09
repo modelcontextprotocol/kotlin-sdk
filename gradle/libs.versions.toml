@@ -4,6 +4,7 @@ kotlin = "2.2.21"
 dokka = "2.1.0"
 atomicfu = "0.29.0"
 ktlint = "14.0.1"
+knit = "0.5.0"
 kover = "0.9.4"
 netty = "4.2.7.Final"
 mavenPublish = "0.35.0"
@@ -72,4 +73,5 @@ ktor-server-cio = { group = "io.ktor", name = "ktor-server-cio", version.ref = "
 kotlinx-binary-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibilityValidatorPlugin" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
+knit = { id = "org.jetbrains.kotlinx.knit", version.ref = "knit" }
 openapi-generator = { id = "org.openapi.generator", version.ref = "openapi-generator" }
