@@ -57,7 +57,7 @@ jobs:
 
       - name: Upload Reports
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: reports-samples-${{ matrix.sample }}
           path: |
