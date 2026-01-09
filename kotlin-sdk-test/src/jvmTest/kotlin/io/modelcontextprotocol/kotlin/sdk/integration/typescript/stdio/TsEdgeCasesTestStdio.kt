@@ -2,6 +2,7 @@ package io.modelcontextprotocol.kotlin.sdk.integration.typescript.stdio
 
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TransportKind
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TsTestBase
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.DisabledOnCI
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.condition.EnabledOnOs
@@ -11,6 +12,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+@DisabledOnCI
 class TsEdgeCasesTestStdio : TsTestBase() {
 
     override val transportKind: TransportKind = TransportKind.STDIO

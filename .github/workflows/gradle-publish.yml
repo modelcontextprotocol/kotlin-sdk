@@ -13,10 +13,11 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest-xlarge
+    runs-on: macos-latest
     environment: release
     env:
-      JAVA_OPTS: "-Xmx8g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx6g"
+      JAVA_OPTS: "-Xmx4g -Dfile.encoding=UTF-8 -XX:MaxMetaspaceSize=768m -Djava.awt.headless=true"
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dkotlin.compiler.execution.strategy=in-process"
 
     permissions:
       contents: write

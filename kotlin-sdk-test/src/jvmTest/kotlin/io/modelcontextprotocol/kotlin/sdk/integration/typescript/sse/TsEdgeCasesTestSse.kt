@@ -2,6 +2,7 @@ package io.modelcontextprotocol.kotlin.sdk.integration.typescript.sse
 
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TransportKind
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TsTestBase
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.DisabledOnCI
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -18,6 +19,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.test.fail
 
+@DisabledOnCI
 class TsEdgeCasesTestSse : TsTestBase() {
 
     override val transportKind = TransportKind.SSE

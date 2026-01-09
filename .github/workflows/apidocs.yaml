@@ -1,4 +1,4 @@
-name: Build and Publish API Docs to GitHub Pages
+name: Publish API Docs
 
 on:
   release:

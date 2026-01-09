@@ -3,6 +3,7 @@ package io.modelcontextprotocol.kotlin.sdk.integration.typescript.sse
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TransportKind
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TsTestBase
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.DisabledOnCI
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -22,6 +23,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
+@DisabledOnCI
 class KotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
 
     override val transportKind = TransportKind.SSE

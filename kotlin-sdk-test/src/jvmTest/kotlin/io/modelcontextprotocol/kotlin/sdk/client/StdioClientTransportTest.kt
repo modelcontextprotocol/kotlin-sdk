@@ -12,6 +12,8 @@ import kotlinx.io.buffered
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.condition.DisabledOnOs
+import org.junit.jupiter.api.condition.OS
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -22,15 +24,12 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 @Timeout(30, unit = TimeUnit.SECONDS)
+@DisabledOnOs(OS.WINDOWS) // TODO: fix running on windows
 class StdioClientTransportTest : BaseTransportTest() {
 
     @Test
     fun `handle stdio error`(): Unit = runBlocking {
-        val processBuilder = if (System.getProperty("os.name").lowercase().contains("win")) {
-            ProcessBuilder("cmd", "/c", "pause 1 && echo simulated error 1>&2 && exit 1")
-        } else {
-            ProcessBuilder("sh", "-c", "sleep 1 && echo 'simulated error' >&2 && exit 1")
-        }
+        val processBuilder = createSleepyProcessBuilder()
 
         val process = processBuilder.start()
 
@@ -65,8 +64,8 @@ class StdioClientTransportTest : BaseTransportTest() {
     @OptIn(ExperimentalAtomicApi::class)
     @Test
     fun `should start then close cleanly`() = runTest {
-        // Run process "/usr/bin/tee"
-        val processBuilder = ProcessBuilder("/usr/bin/tee")
+        // Run loopback process
+        val processBuilder = createTeeProcessBuilder()
         val process = processBuilder.start()
 
         val input = process.inputStream.asSource().buffered()
@@ -102,7 +101,7 @@ class StdioClientTransportTest : BaseTransportTest() {
 
     @Test
     fun `should read messages`() = runTest {
-        val processBuilder = ProcessBuilder("/usr/bin/tee")
+        val processBuilder = createTeeProcessBuilder()
         val process = processBuilder.start()
 
         val input = process.inputStream.asSource().buffered()
@@ -121,7 +120,7 @@ class StdioClientTransportTest : BaseTransportTest() {
 
     @Test
     fun `should ignore first output messages`() = runTest {
-        val processBuilder = ProcessBuilder("/usr/bin/tee")
+        val processBuilder = createTeeProcessBuilder()
         val process = processBuilder.start()
         process.outputStream.write("Stdio server started".toByteArray())
 

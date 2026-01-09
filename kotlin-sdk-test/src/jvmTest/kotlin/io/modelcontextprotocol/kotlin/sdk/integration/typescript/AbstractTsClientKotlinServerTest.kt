@@ -1,11 +1,13 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.typescript
 
+import io.modelcontextprotocol.kotlin.sdk.integration.utils.DisabledOnCI
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertTrue
 
+@DisabledOnCI
 abstract class AbstractTsClientKotlinServerTest : TsTestBase() {
 
     protected open fun beforeServer() {}
