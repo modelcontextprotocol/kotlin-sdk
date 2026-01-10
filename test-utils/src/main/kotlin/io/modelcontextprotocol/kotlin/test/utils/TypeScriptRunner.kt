@@ -20,11 +20,14 @@ public object TypeScriptRunner {
     public fun run(
         typescriptDir: File,
         scriptPath: String,
+        arguments: List<String> = emptyList(),
         env: Map<String, String> = emptyMap(),
         redirectErrorStream: Boolean = false,
         logPrefix: String = "TS-RUNNER",
     ): Process {
-        val pb = ProcessBuilder("npx", "tsx", scriptPath)
+        val command = mutableListOf("npx", "tsx", scriptPath)
+        command.addAll(arguments)
+        val pb = ProcessBuilder(command)
         pb.directory(typescriptDir)
         env.forEach { (k, v) -> pb.environment()[k] = v }
         pb.redirectErrorStream(redirectErrorStream)

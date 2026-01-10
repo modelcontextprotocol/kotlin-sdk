@@ -17,8 +17,8 @@ async function main() {
         const path = await import('path');
         // @ts-ignore
         const { pathToFileURL } = await import('url');
-        const clientUrl = pathToFileURL(path.join(sdkDir, 'src', 'client', 'index.ts')).href;
-        const streamUrl = pathToFileURL(path.join(sdkDir, 'src', 'client', 'streamableHttp.js')).href;
+        const clientUrl = pathToFileURL(path.join(sdkDir, 'packages', 'client', 'src', 'index.ts')).href;
+        const streamUrl = pathToFileURL(path.join(sdkDir, 'packages', 'client', 'src', 'streamableHttp.ts')).href;
         // @ts-ignore
         ({ Client } = await import(clientUrl));
         // @ts-ignore

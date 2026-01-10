@@ -31,19 +31,24 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '24.11.1'
+          node-version: 'lts/*'
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
         with:
           add-job-summary: 'always'
-          cache-read-only: true
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+          gradle-home-cache-includes: |
+            caches
+            notifications
+            sdks
+            ../.konan/**
 
       - name: Run Conformance Tests
         run: ./gradlew --no-daemon :conformance-test:test
 
       - name: Upload Conformance Results
-        if: ${{ !cancelled() }}
+        if: always()
         uses: actions/upload-artifact@v6
         with:
           name: conformance-results

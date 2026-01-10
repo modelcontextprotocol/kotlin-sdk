@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.conformance
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.modelcontextprotocol.kotlin.test.utils.findFreePort
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DynamicTest
@@ -10,7 +11,6 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.lang.management.ManagementFactory
 import java.net.HttpURLConnection
-import java.net.ServerSocket
 import java.net.URI
 import java.util.concurrent.TimeUnit
 import kotlin.properties.Delegates
@@ -69,8 +69,6 @@ class ConformanceTest {
         private const val CONNECTION_TIMEOUT_MS = 500
         private const val GRACEFUL_SHUTDOWN_SECONDS = 5L
         private const val FORCE_SHUTDOWN_SECONDS = 2L
-
-        private fun findFreePort(): Int = ServerSocket(0).use { it.localPort }
 
         private fun getRuntimeClasspath(): String = ManagementFactory.getRuntimeMXBean().classPath
 

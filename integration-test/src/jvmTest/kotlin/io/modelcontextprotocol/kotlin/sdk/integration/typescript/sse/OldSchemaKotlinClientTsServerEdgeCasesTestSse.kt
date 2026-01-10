@@ -4,7 +4,6 @@ import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TransportKind
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TsTestBase
-import io.modelcontextprotocol.kotlin.test.utils.DisabledOnCI
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -14,7 +13,6 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.util.concurrent.TimeUnit
@@ -23,25 +21,14 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
-@DisabledOnCI
 class OldSchemaKotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
 
     override val transportKind = TransportKind.SSE
 
-    private var port: Int = 0
     private val host = "localhost"
-    private lateinit var serverUrl: String
+    private val serverUrl: String by lazy { getSharedSseUrl() }
 
     private lateinit var client: Client
-    private lateinit var tsServerProcess: Process
-
-    @BeforeEach
-    fun setUp() {
-        port = findFreePort()
-        serverUrl = "http://$host:$port/mcp"
-        tsServerProcess = startTypeScriptServer(port)
-        println("TypeScript server started on port $port")
-    }
 
     @AfterEach
     fun tearDown() {
@@ -54,15 +41,6 @@ class OldSchemaKotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
                 }
             } catch (e: Exception) {
                 println("Warning: Error during client close: ${e.message}")
-            }
-        }
-
-        if (::tsServerProcess.isInitialized) {
-            try {
-                println("Stopping TypeScript server")
-                stopProcess(tsServerProcess)
-            } catch (e: Exception) {
-                println("Warning: Error during TypeScript server stop: ${e.message}")
             }
         }
     }
