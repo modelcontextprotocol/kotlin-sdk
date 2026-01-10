@@ -21,11 +21,9 @@ import io.modelcontextprotocol.kotlin.sdk.types.Role
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertTrue
-import kotlin.time.Duration.Companion.seconds
 import io.ktor.client.engine.cio.CIO as ClientCIO
 import io.ktor.client.plugins.websocket.WebSockets as ClientWebSocket
 import io.ktor.server.cio.CIO as ServerCIO
@@ -34,16 +32,14 @@ import io.ktor.server.websocket.WebSockets as ServerWebSockets
 class WebSocketIntegrationTest {
 
     @Test
-    fun `client should be able to connect to websocket server 2`() = runTest(timeout = 5.seconds) {
+    fun `client should be able to connect to websocket server 2`() = runBlocking(Dispatchers.IO) {
         var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
         var client: Client? = null
 
         try {
-            withContext(Dispatchers.Default) {
-                server = initServer()
-                val port = server.engine.resolvedConnectors().first().port
-                client = initClient(serverPort = port)
-            }
+            server = initServer()
+            val port = server.engine.resolvedConnectors().first().port
+            client = initClient(serverPort = port)
         } finally {
             client?.close()
             server?.stop(1000, 2000)
@@ -58,19 +54,17 @@ class WebSocketIntegrationTest {
      * 3. Observe that Client A receives a response related to it.
      */
     @Test
-    fun `single websocket connection`() = runTest(timeout = 5.seconds) {
+    fun `single websocket connection`() = runBlocking(Dispatchers.IO) {
         var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
         var client: Client? = null
 
         try {
-            withContext(Dispatchers.Default) {
-                server = initServer()
-                val port = server.engine.resolvedConnectors().first().port
-                client = initClient("Client A", port)
+            server = initServer()
+            val port = server.engine.resolvedConnectors().first().port
+            client = initClient("Client A", port)
 
-                val promptA = getPrompt(client, "Client A")
-                assertTrue { "Client A" in promptA }
-            }
+            val promptA = getPrompt(client, "Client A")
+            assertTrue { "Client A" in promptA }
         } finally {
             client?.close()
             server?.stop(1000, 2000)
@@ -86,26 +80,24 @@ class WebSocketIntegrationTest {
      * 4. Observe that Client B (connection #2) receives a response related to sessionId#1.
      */
     @Test
-    fun `multiple websocket connections`() = runTest(timeout = 5.seconds) {
+    fun `multiple websocket connections`() = runBlocking(Dispatchers.IO) {
         var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
         var clientA: Client? = null
         var clientB: Client? = null
 
         try {
-            withContext(Dispatchers.Default) {
-                server = initServer()
-                val port = server.engine.resolvedConnectors().first().port
-                clientA = initClient("Client A", port)
-                clientB = initClient("Client B", port)
+            server = initServer()
+            val port = server.engine.resolvedConnectors().first().port
+            clientA = initClient("Client A", port)
+            clientB = initClient("Client B", port)
 
-                // Step 3: Send a prompt request from Client A
-                val promptA = getPrompt(clientA, "Client A")
-                //  Step 4: Send a prompt request from Client B
-                val promptB = getPrompt(clientB, "Client B")
+            // Step 3: Send a prompt request from Client A
+            val promptA = getPrompt(clientA, "Client A")
+            //  Step 4: Send a prompt request from Client B
+            val promptB = getPrompt(clientB, "Client B")
 
-                assertTrue { "Client A" in promptA }
-                assertTrue { "Client B" in promptB }
-            }
+            assertTrue { "Client A" in promptA }
+            assertTrue { "Client B" in promptB }
         } finally {
             clientA?.close()
             clientB?.close()

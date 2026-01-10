@@ -2,13 +2,11 @@ package io.modelcontextprotocol.kotlin.sdk.integration.typescript.sse
 
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.AbstractTsClientKotlinServerTest
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TransportKind
-import io.modelcontextprotocol.kotlin.test.utils.DisabledOnCI
 import io.modelcontextprotocol.kotlin.test.utils.findFreePort
 import io.modelcontextprotocol.kotlin.test.utils.killProcessOnPort
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
-@DisabledOnCI
 class TsClientKotlinServerTestSse : AbstractTsClientKotlinServerTest() {
 
     override val transportKind = TransportKind.SSE
@@ -37,18 +35,16 @@ class TsClientKotlinServerTestSse : AbstractTsClientKotlinServerTest() {
         }
     }
 
-    override fun beforeServer() {}
-    override fun afterServer() {}
-
-    override fun runClient(vararg args: String): String {
-        val cmd = buildString {
-            append("npx tsx myClient.ts ")
-            append(serverUrl)
-            if (args.isNotEmpty()) {
-                append(' ')
-                append(args.joinToString(" "))
+    override fun runClient(vararg args: String): String = tsClient.use { client ->
+        val process = client.startSse(listOf(serverUrl) + args.toList(), log = true)
+        val output = StringBuilder()
+        process.inputStream.bufferedReader().useLines { lines ->
+            lines.forEach { line ->
+                println("[TS-CLIENT-SSE] $line")
+                output.append(line).append("\n")
             }
         }
-        return executeCommand(cmd, tsClientDir)
+        process.waitFor(25, java.util.concurrent.TimeUnit.SECONDS)
+        output.toString()
     }
 }

@@ -1,36 +1,15 @@
-// @ts-ignore
+import {Client} from '@modelcontextprotocol/sdk/client/index';
+import {StreamableHTTPClientTransport} from '@modelcontextprotocol/sdk/client/streamableHttp';
+
 const args = process.argv.slice(2);
 const serverUrl = args[0] || 'http://localhost:3001/mcp';
 const toolName = args[1];
 const toolArgs = args.slice(2);
 const PROTOCOL_VERSION = "2024-11-05";
 
-// @ts-ignore
 async function main() {
-    // @ts-ignore
-    const sdkDirRaw = process.env.TYPESCRIPT_SDK_DIR;
-    const sdkDir = sdkDirRaw ? sdkDirRaw.trim() : undefined;
-    let Client: any;
-    let StreamableHTTPClientTransport: any;
-    if (sdkDir) {
-        // @ts-ignore
-        const path = await import('path');
-        // @ts-ignore
-        const { pathToFileURL } = await import('url');
-        const clientUrl = pathToFileURL(path.join(sdkDir, 'packages', 'client', 'src', 'index.ts')).href;
-        const streamUrl = pathToFileURL(path.join(sdkDir, 'packages', 'client', 'src', 'streamableHttp.ts')).href;
-        // @ts-ignore
-        ({ Client } = await import(clientUrl));
-        // @ts-ignore
-        ({ StreamableHTTPClientTransport } = await import(streamUrl));
-    } else {
-        // @ts-ignore
-        ({Client} = await import("../../../../../../../resources/typescript-sdk/src/client"));
-        // @ts-ignore
-        ({StreamableHTTPClientTransport} = await import("../../../../../../../resources/typescript-sdk/src/client/streamableHttp.js"));
-    }
     if (!toolName) {
-        console.log('Usage: npx tsx myClient.ts [server-url] <tool-name> [tool-args...]');
+        console.log('Usage: npx tsx client/sse-client.ts [server-url] <tool-name> [tool-args...]');
         console.log('Using default server URL:', serverUrl);
         console.log('Available utils will be listed after connection');
     }
@@ -85,8 +64,8 @@ async function main() {
 
         if (toolName === "greet" && toolArgs.length > 0) {
             toolArguments["name"] = toolArgs[0];
-        } else if (tool.input && tool.input.properties) {
-            const propNames = Object.keys(tool.input.properties);
+        } else if (tool.inputSchema && tool.inputSchema.properties) {
+            const propNames = Object.keys(tool.inputSchema.properties);
             if (propNames.length > 0 && toolArgs.length > 0) {
                 toolArguments[propNames[0]] = toolArgs[0];
             }

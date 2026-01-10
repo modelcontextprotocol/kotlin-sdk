@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "client:stdio": "tsx client/stdio-client.ts",
+    "client:sse": "tsx client/sse-client.ts http://localhost:3000/mcp greet Hello",
     "server:stdio": "tsx server/stdio-server.ts",
     "server:sse": "tsx server/sse-server.ts"
   },

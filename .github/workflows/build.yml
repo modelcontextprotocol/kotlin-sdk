@@ -84,7 +84,7 @@ jobs:
 
       - name: ${{ matrix.job-name }}
         run: |-
-          ./gradlew ${{ matrix.gradle-tasks }} -x :conformance-test:test --max-workers ${{ matrix.max-workers }} --continue --configure-on-demand --parallel
+          ./gradlew ${{ matrix.gradle-tasks }} -x :conformance-test:test --max-workers ${{ matrix.max-workers }} --continue --rerun-tasks --configure-on-demand --parallel
 
       - name: Upload Reports
         if: always()
@@ -168,7 +168,7 @@ jobs:
 
       - name: "Build Sample: ${{ matrix.sample }}"
         working-directory: ./samples/${{ matrix.sample }}
-        run: ./gradlew build -Pmcp.kotlin.overrideVersion=1-SNAPSHOT
+        run: ./gradlew build -Pmcp.kotlin.overrideVersion=1-SNAPSHOT --rerun-tasks
 
       - name: Upload Reports
         if: ${{ !cancelled() }}

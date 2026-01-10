@@ -10,6 +10,7 @@ kotlin {
         api(libs.kotest.assertions.core)
         api(libs.kotest.assertions.json)
         api(libs.kotlinx.coroutines.test)
+        api(libs.ktor.server.core)
         api(libs.mockk)
         api(libs.awaitility)
         api(libs.junit.jupiter.params)

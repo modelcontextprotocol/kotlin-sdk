@@ -25,8 +25,6 @@ import io.ktor.server.sse.SSE as ServerSSE
 
 open class AbstractSseIntegrationTest {
 
-    suspend fun EmbeddedServer<*, *>.actualPort() = engine.resolvedConnectors().single().port
-
     suspend fun initTestClient(serverPort: Int, name: String? = null): Client {
         val client = Client(
             Implementation(name = name ?: DEFAULT_CLIENT_NAME, version = VERSION),

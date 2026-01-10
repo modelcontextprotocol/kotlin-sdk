@@ -4,6 +4,8 @@ import org.awaitility.kotlin.await
 import java.net.ServerSocket
 import java.net.Socket
 import java.util.concurrent.TimeUnit
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Kills any process currently using the specified port.
@@ -52,9 +54,9 @@ public fun waitForPort(host: String = "localhost", port: Int, timeoutSeconds: Lo
  *
  * Attempts graceful shutdown first, then forces termination if necessary.
  */
-public fun stopProcess(process: Process) {
+public fun stopProcess(process: Process, wait: Duration = 1.seconds) {
     process.destroy()
-    if (!process.waitFor(1, TimeUnit.SECONDS)) {
+    if (!process.waitFor(wait.inWholeMilliseconds, TimeUnit.MILLISECONDS)) {
         process.destroyForcibly()
     }
 }

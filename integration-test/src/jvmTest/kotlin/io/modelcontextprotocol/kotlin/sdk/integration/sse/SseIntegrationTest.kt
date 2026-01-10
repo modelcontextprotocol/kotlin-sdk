@@ -6,26 +6,23 @@ import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
+import io.modelcontextprotocol.kotlin.test.utils.actualPort
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertTrue
-import kotlin.time.Duration.Companion.seconds
 
 class SseIntegrationTest : AbstractSseIntegrationTest() {
 
     @Test
-    fun `client should be able to connect to sse server`() = runTest(timeout = 5.seconds) {
+    fun `client should be able to connect to sse server`() = runBlocking(Dispatchers.IO) {
         var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
         var client: Client? = null
 
         try {
-            withContext(Dispatchers.Default) {
-                server = initTestServer()
-                val port = server.engine.resolvedConnectors().single().port
-                client = initTestClient(serverPort = port)
-            }
+            server = initTestServer()
+            val port = server.actualPort()
+            client = initTestClient(serverPort = port)
         } finally {
             client?.close()
             server?.stopSuspend(1000, 2000)
@@ -40,18 +37,16 @@ class SseIntegrationTest : AbstractSseIntegrationTest() {
      * 3. Observe that Client A receives a response related to it.
      */
     @Test
-    fun `single sse connection`() = runTest(timeout = 5.seconds) {
+    fun `single sse connection`() = runBlocking(Dispatchers.IO) {
         var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
         var client: Client? = null
         try {
-            withContext(Dispatchers.Default) {
-                server = initTestServer()
-                val port = server.engine.resolvedConnectors().single().port
-                client = initTestClient(port, "Client A")
+            server = initTestServer()
+            val port = server.actualPort()
+            client = initTestClient(port, "Client A")
 
-                val promptA = getPrompt(client, "Client A")
-                assertTrue { "Client A" in promptA }
-            }
+            val promptA = getPrompt(client, "Client A")
+            assertTrue { "Client A" in promptA }
         } finally {
             client?.close()
             server?.stopSuspend(1000, 2000)
@@ -67,27 +62,25 @@ class SseIntegrationTest : AbstractSseIntegrationTest() {
      * 4. Observe that Client B (connection #2) receives a response related to sessionId#1.
      */
     @Test
-    fun `multiple sse connections`() = runTest(timeout = 5.seconds) {
+    fun `multiple sse connections`() = runBlocking(Dispatchers.IO) {
         var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
         var clientA: Client? = null
         var clientB: Client? = null
 
         try {
-            withContext(Dispatchers.Default) {
-                server = initTestServer()
-                val port = server.engine.resolvedConnectors().first().port
+            server = initTestServer()
+            val port = server.actualPort()
 
-                clientA = initTestClient(port, "Client A")
-                clientB = initTestClient(port, "Client B")
+            clientA = initTestClient(port, "Client A")
+            clientB = initTestClient(port, "Client B")
 
-                // Step 3: Send a prompt request from Client A
-                val promptA = getPrompt(clientA, "Client A")
-                //  Step 4: Send a prompt request from Client B
-                val promptB = getPrompt(clientB, "Client B")
+            // Step 3: Send a prompt request from Client A
+            val promptA = getPrompt(clientA, "Client A")
+            //  Step 4: Send a prompt request from Client B
+            val promptB = getPrompt(clientB, "Client B")
 
-                assertTrue { "Client A" in promptA }
-                assertTrue { "Client B" in promptB }
-            }
+            assertTrue { "Client A" in promptA }
+            assertTrue { "Client B" in promptB }
         } finally {
             clientA?.close()
             clientB?.close()

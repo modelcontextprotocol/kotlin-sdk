@@ -25,7 +25,6 @@ class KotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
 
     override val transportKind = TransportKind.SSE
 
-    private val host = "localhost"
     private val serverUrl: String by lazy { getSharedSseUrl() }
 
     private lateinit var client: Client
