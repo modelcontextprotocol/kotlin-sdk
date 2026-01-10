@@ -7,6 +7,7 @@ plugins {
 dependencies {
     testImplementation(project(":kotlin-sdk"))
     testImplementation(kotlin("test"))
+    testImplementation(project(":test-utils"))
     testImplementation(libs.kotlin.logging)
     testImplementation(libs.ktor.client.cio)
     testImplementation(libs.ktor.server.cio)

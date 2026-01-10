@@ -12,7 +12,7 @@ dependencies {
     kover(project(":kotlin-sdk-core"))
     kover(project(":kotlin-sdk-client"))
     kover(project(":kotlin-sdk-server"))
-    kover(project(":kotlin-sdk-test"))
+    "kover"(project(":integration-test"))
 }
 
 subprojects {
