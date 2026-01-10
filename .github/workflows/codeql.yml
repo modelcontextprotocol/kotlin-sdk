@@ -69,7 +69,8 @@ jobs:
             :kotlin-sdk-client:compileKotlinJvm \
             :kotlin-sdk-server:compileKotlinJvm \
             :kotlin-sdk:compileKotlinJvm \
-            :kotlin-sdk-test:compileKotlinJvm \
+            :integration-test:compileKotlinJvm \
+            :conformance-test:testClasses \
             -Pkotlin.incremental=false \
             --no-daemon --stacktrace --rerun-tasks
 

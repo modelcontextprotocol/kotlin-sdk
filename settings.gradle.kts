@@ -18,10 +18,11 @@ dependencyResolutionManagement {
 }
 
 include(
+    ":test-utils",
     ":kotlin-sdk-core",
     ":kotlin-sdk-client",
     ":kotlin-sdk-server",
     ":kotlin-sdk",
-    ":kotlin-sdk-test",
+    ":integration-test",
     ":conformance-test",
 )

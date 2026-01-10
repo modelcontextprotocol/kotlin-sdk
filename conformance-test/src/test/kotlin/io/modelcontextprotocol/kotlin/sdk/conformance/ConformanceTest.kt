@@ -17,6 +17,8 @@ import kotlin.properties.Delegates
 
 private val logger = KotlinLogging.logger {}
 
+private const val CONFORMANCE_VERSION = "0.1.8"
+
 enum class TransportType {
     SSE,
     WEBSOCKET,
@@ -215,7 +217,7 @@ class ConformanceTest {
                 val serverUrl = "http://127.0.0.1:$serverPort/mcp"
                 ProcessBuilder(
                     "npx",
-                    "@modelcontextprotocol/conformance",
+                    "@modelcontextprotocol/conformance@$CONFORMANCE_VERSION",
                     "server",
                     "--url",
                     serverUrl,
@@ -230,7 +232,7 @@ class ConformanceTest {
                 val serverUrl = "ws://127.0.0.1:$serverPort/ws"
                 ProcessBuilder(
                     "npx",
-                    "@modelcontextprotocol/conformance",
+                    "@modelcontextprotocol/conformance@$CONFORMANCE_VERSION",
                     "server",
                     "--url",
                     serverUrl,
@@ -274,7 +276,7 @@ class ConformanceTest {
 
         val processBuilder = ProcessBuilder(
             "npx",
-            "@modelcontextprotocol/conformance",
+            "@modelcontextprotocol/conformance@$CONFORMANCE_VERSION",
             "client",
             "--command",
             clientCommand.joinToString(" "),
