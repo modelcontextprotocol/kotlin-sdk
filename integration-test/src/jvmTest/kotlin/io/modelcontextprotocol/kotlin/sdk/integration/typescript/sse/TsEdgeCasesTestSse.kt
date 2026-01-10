@@ -3,6 +3,8 @@ package io.modelcontextprotocol.kotlin.sdk.integration.typescript.sse
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TransportKind
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TsTestBase
 import io.modelcontextprotocol.kotlin.test.utils.DisabledOnCI
+import io.modelcontextprotocol.kotlin.test.utils.findFreePort
+import io.modelcontextprotocol.kotlin.test.utils.killProcessOnPort
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -35,8 +37,8 @@ class TsEdgeCasesTestSse : TsTestBase() {
         killProcessOnPort(port)
         httpServer = KotlinServerForTsClient()
         httpServer?.start(port)
-        if (!waitForPort(port = port)) {
-            throw IllegalStateException("Kotlin test server did not become ready on localhost:$port within timeout")
+        check(waitForPort(port = port)) {
+            "Kotlin test server did not become ready on localhost:$port within timeout"
         }
         println("Kotlin server started on port $port")
     }

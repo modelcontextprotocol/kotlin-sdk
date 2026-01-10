@@ -3,6 +3,8 @@ package io.modelcontextprotocol.kotlin.sdk.integration.typescript.sse
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.AbstractTsClientKotlinServerTest
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TransportKind
 import io.modelcontextprotocol.kotlin.test.utils.DisabledOnCI
+import io.modelcontextprotocol.kotlin.test.utils.findFreePort
+import io.modelcontextprotocol.kotlin.test.utils.killProcessOnPort
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
