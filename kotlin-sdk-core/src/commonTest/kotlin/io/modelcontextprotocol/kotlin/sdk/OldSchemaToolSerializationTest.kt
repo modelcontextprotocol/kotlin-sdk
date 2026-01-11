@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package io.modelcontextprotocol.kotlin.sdk
 
 import io.kotest.assertions.json.shouldEqualJson
@@ -419,7 +421,7 @@ class OldSchemaToolSerializationTest {
         name: String = "get_weather",
         title: String? = null,
         outputSchema: String? = null,
-        @Suppress("LocalVariableName") _meta: String? = null,
+        meta: String? = null,
     ): String {
         val stringBuilder = StringBuilder()
 
@@ -466,7 +468,7 @@ class OldSchemaToolSerializationTest {
             .appendLine(",")
             .append(
                 """
-                "_meta": ${_meta ?: "{}"}
+                "_meta": ${meta ?: "{}"}
                 """.trimIndent(),
             )
 
@@ -481,7 +483,7 @@ class OldSchemaToolSerializationTest {
         name: String = "get_weather",
         title: String? = null,
         outputSchema: ToolSchema? = null,
-        @Suppress("LocalVariableName") _meta: JsonObject? = null,
+        meta: JsonObject? = null,
     ): io.modelcontextprotocol.kotlin.sdk.types.Tool = Tool(
         name = name,
         title = title,
@@ -500,7 +502,7 @@ class OldSchemaToolSerializationTest {
             required = listOf("location"),
         ),
         outputSchema = outputSchema,
-        _meta = _meta ?: EmptyJsonObject,
+        _meta = meta ?: EmptyJsonObject,
     )
 
     //endregion Private Methods

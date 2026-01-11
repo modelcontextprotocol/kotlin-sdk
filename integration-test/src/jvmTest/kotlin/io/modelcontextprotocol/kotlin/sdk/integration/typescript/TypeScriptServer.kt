@@ -44,7 +44,7 @@ class TypeScriptServer(private val typescriptDir: File) {
      * @return The started Process
      * @throws IllegalStateException if the server fails to start within timeout
      */
-    fun startSse(port: Int): Process {
+    fun startSseServer(port: Int): Process {
         killProcessOnPort(port)
         val serverPath = File(typescriptDir, "server/sse-server.ts").absolutePath
         val proc = TypeScriptRunner.run(
@@ -68,7 +68,7 @@ class TypeScriptServer(private val typescriptDir: File) {
      *
      * @return The started Process
      */
-    fun startStdio(): Process {
+    fun startStdioServer(): Process {
         val serverPath = File(typescriptDir, "server/stdio-server.ts").absolutePath
         val proc = TypeScriptRunner.run(
             typescriptDir = typescriptDir,

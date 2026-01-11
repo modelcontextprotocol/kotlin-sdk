@@ -17,6 +17,7 @@ public object TypeScriptRunner {
      * @param logPrefix Prefix for log lines
      * @return The started Process
      */
+    @Suppress("LongParameterList")
     public fun run(
         typescriptDir: File,
         scriptPath: String,
@@ -81,9 +82,9 @@ public object TypeScriptRunner {
         // If npm fails and we have catalog/workspace, try patching and npm again
         println("npm install failed. Patching package.json and trying again...")
         patchPackageJsonRecursively(typescriptDir, patchProtocols = true)
-        if (tryCommand(listOf("npm", "install"), typescriptDir)) return
-
-        throw RuntimeException("Failed to install TypeScript dependencies in ${typescriptDir.absolutePath}")
+        check(tryCommand(listOf("npm", "install"), typescriptDir)) {
+            "Failed to install TypeScript dependencies in ${typescriptDir.absolutePath}"
+        }
     }
 
     private fun tryCommand(command: List<String>, workingDir: File): Boolean {
