@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package io.modelcontextprotocol.kotlin.sdk.integration.sse
 
 import io.ktor.client.HttpClient
@@ -24,8 +26,6 @@ import io.ktor.server.cio.CIO as ServerCIO
 import io.ktor.server.sse.SSE as ServerSSE
 
 open class OldSchemaAbstractSseIntegrationTest {
-
-    suspend fun EmbeddedServer<*, *>.actualPort() = engine.resolvedConnectors().single().port
 
     suspend fun initTestClient(serverPort: Int, name: String? = null): Client {
         val client = Client(

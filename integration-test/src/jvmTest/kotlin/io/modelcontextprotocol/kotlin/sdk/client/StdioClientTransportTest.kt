@@ -5,6 +5,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.test.utils.createSleepyProcessBuilder
 import io.modelcontextprotocol.kotlin.test.utils.createTeeProcessBuilder
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -30,7 +31,7 @@ import kotlin.time.Duration.Companion.seconds
 class StdioClientTransportTest : BaseTransportTest() {
 
     @Test
-    fun `handle stdio error`(): Unit = runBlocking {
+    fun `handle stdio error`(): Unit = runBlocking(Dispatchers.IO) {
         val processBuilder = createSleepyProcessBuilder()
 
         val process = processBuilder.start()

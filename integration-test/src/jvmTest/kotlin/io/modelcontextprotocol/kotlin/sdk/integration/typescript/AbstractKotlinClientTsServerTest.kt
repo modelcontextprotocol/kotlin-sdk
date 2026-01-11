@@ -2,7 +2,6 @@ package io.modelcontextprotocol.kotlin.sdk.integration.typescript
 
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
-import io.modelcontextprotocol.kotlin.test.utils.DisabledOnCI
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
@@ -12,7 +11,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-@DisabledOnCI
 abstract class AbstractKotlinClientTsServerTest : TsTestBase() {
     protected abstract suspend fun <T> useClient(block: suspend (Client) -> T): T
 

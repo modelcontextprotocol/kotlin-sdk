@@ -1,13 +1,14 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.typescript
 
-import io.modelcontextprotocol.kotlin.test.utils.DisabledOnCI
+import io.kotest.assertions.nondeterministic.eventually
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 
-@DisabledOnCI
 abstract class AbstractTsClientKotlinServerTest : TsTestBase() {
 
     protected open fun beforeServer() {}
@@ -25,8 +26,10 @@ abstract class AbstractTsClientKotlinServerTest : TsTestBase() {
         try {
             val testName = "TestUser"
             val out = runClient("greet", testName)
-            assertTrue(out.contains("Text content:"), "Output should contain the text content section.\n$out")
-            assertTrue(out.contains("Hello, $testName!"), "Tool response should contain the greeting.\n$out")
+            eventually(5.seconds) {
+                assertTrue(out.contains("Text content:"), "Output should contain the text content section.\n$out")
+                assertTrue(out.contains("Hello, $testName!"), "Tool response should contain the greeting.\n$out")
+            }
             assertTrue(
                 out.contains("Structured content:"),
                 "Output should contain the structured content section.\n$out",
@@ -46,7 +49,7 @@ abstract class AbstractTsClientKotlinServerTest : TsTestBase() {
 
     @Test
     @Timeout(60, unit = TimeUnit.SECONDS)
-    fun notifications() = runTest {
+    fun notifications() = runBlocking {
         beforeServer()
         try {
             val name = "NotifUser"
@@ -66,7 +69,7 @@ abstract class AbstractTsClientKotlinServerTest : TsTestBase() {
 
     @Test
     @Timeout(120, unit = TimeUnit.SECONDS)
-    fun multipleClientSequence() = runTest {
+    fun multipleClientSequence() = runBlocking {
         beforeServer()
         try {
             val out1 = runClient("greet", "FirstClient")

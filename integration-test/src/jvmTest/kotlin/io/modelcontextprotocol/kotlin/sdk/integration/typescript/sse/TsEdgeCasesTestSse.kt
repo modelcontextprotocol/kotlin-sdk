@@ -2,18 +2,18 @@ package io.modelcontextprotocol.kotlin.sdk.integration.typescript.sse
 
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TransportKind
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TsTestBase
-import io.modelcontextprotocol.kotlin.test.utils.DisabledOnCI
 import io.modelcontextprotocol.kotlin.test.utils.findFreePort
 import io.modelcontextprotocol.kotlin.test.utils.killProcessOnPort
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
-import org.junit.jupiter.api.condition.EnabledOnOs
+import org.junit.jupiter.api.condition.DisabledOnOs
 import org.junit.jupiter.api.condition.OS
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -21,7 +21,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.test.fail
 
-@DisabledOnCI
 class TsEdgeCasesTestSse : TsTestBase() {
 
     override val transportKind = TransportKind.SSE
@@ -56,16 +55,16 @@ class TsEdgeCasesTestSse : TsTestBase() {
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
     fun testInvalidURL() = runTest {
-        val nonExistentToolCommand = "npx tsx myClient.ts $serverUrl non-existent-tool"
-        val nonExistentToolOutput = executeCommandAllowingFailure(nonExistentToolCommand, tsClientDir)
+        val nonExistentToolCommand = "npx tsx client/sse-client.ts $serverUrl non-existent-tool"
+        val nonExistentToolOutput = executeCommandAllowingFailure(nonExistentToolCommand, typescriptDir)
 
         assertTrue(
             nonExistentToolOutput.contains("Tool \"non-existent-tool\" not found"),
             "Client should handle non-existent tool gracefully",
         )
 
-        val invalidUrlCommand = "npx tsx myClient.ts http://localhost:${port + 1000}/mcp greet TestUser"
-        val invalidUrlOutput = executeCommandAllowingFailure(invalidUrlCommand, tsClientDir)
+        val invalidUrlCommand = "npx tsx client/sse-client.ts http://localhost:${port + 1000}/mcp greet TestUser"
+        val invalidUrlOutput = executeCommandAllowingFailure(invalidUrlCommand, typescriptDir)
 
         assertTrue(
             invalidUrlOutput.contains("Invalid URL") ||
@@ -85,8 +84,8 @@ class TsEdgeCasesTestSse : TsTestBase() {
         tempFile.deleteOnExit()
 
         val specialCharsContent = tempFile.readText()
-        val specialCharsCommand = "npx tsx myClient.ts $serverUrl greet \"$specialCharsContent\""
-        val specialCharsOutput = executeCommand(specialCharsCommand, tsClientDir)
+        val specialCharsCommand = "npx tsx client/sse-client.ts $serverUrl greet \"$specialCharsContent\""
+        val specialCharsOutput = executeCommand(specialCharsCommand, typescriptDir)
 
         assertTrue(
             specialCharsOutput.contains("Hello, $specialChars!"),
@@ -100,8 +99,8 @@ class TsEdgeCasesTestSse : TsTestBase() {
 
     // skip on windows as it can't handle long commands
     @Test
-    @Timeout(30, unit = TimeUnit.SECONDS)
-    @EnabledOnOs(OS.MAC, OS.LINUX)
+    @Timeout(40, unit = TimeUnit.SECONDS)
+    @DisabledOnOs(OS.WINDOWS)
     fun testLargePayload() = runTest {
         val largeName = "A".repeat(10 * 1024)
 
@@ -110,8 +109,8 @@ class TsEdgeCasesTestSse : TsTestBase() {
         tempFile.deleteOnExit()
 
         val largeNameContent = tempFile.readText()
-        val largePayloadCommand = "npx tsx myClient.ts $serverUrl greet \"$largeNameContent\""
-        val largePayloadOutput = executeCommand(largePayloadCommand, tsClientDir)
+        val largePayloadCommand = "npx tsx client/sse-client.ts $serverUrl greet \"$largeNameContent\""
+        val largePayloadOutput = executeCommand(largePayloadCommand, typescriptDir)
 
         tempFile.delete()
 
@@ -126,8 +125,8 @@ class TsEdgeCasesTestSse : TsTestBase() {
     }
 
     @Test
-    @Timeout(60, unit = TimeUnit.SECONDS)
-    fun testComplexConcurrentRequests() = runTest {
+    @Timeout(30, unit = TimeUnit.SECONDS)
+    fun testComplexConcurrentRequests(): Unit = runBlocking {
         fun prettyFail(
             index: Int,
             command: String,
@@ -158,18 +157,18 @@ class TsEdgeCasesTestSse : TsTestBase() {
         }
 
         val commands = listOf(
-            "npx tsx myClient.ts $serverUrl greet \"Client1\"",
-            "npx tsx myClient.ts $serverUrl multi-greet \"Client2\"",
-            "npx tsx myClient.ts $serverUrl greet \"Client3\"",
-            "npx tsx myClient.ts $serverUrl",
-            "npx tsx myClient.ts $serverUrl multi-greet \"Client5\"",
+            "npx tsx client/sse-client.ts $serverUrl greet \"Client1\"",
+            "npx tsx client/sse-client.ts $serverUrl multi-greet \"Client2\"",
+            "npx tsx client/sse-client.ts $serverUrl greet \"Client3\"",
+            "npx tsx client/sse-client.ts $serverUrl",
+            "npx tsx client/sse-client.ts $serverUrl multi-greet \"Client5\"",
         )
 
         coroutineScope {
             val jobs = commands.mapIndexed { index, command ->
                 async(kotlinx.coroutines.Dispatchers.IO) {
                     println("Starting client $index")
-                    val output = executeCommand(command, tsClientDir)
+                    val output = executeCommand(command, typescriptDir)
                     println("Client $index completed")
 
                     assertContains(
@@ -241,10 +240,10 @@ class TsEdgeCasesTestSse : TsTestBase() {
 
     @Test
     @Timeout(120, unit = TimeUnit.SECONDS)
-    fun testRapidSequentialRequests() = runTest {
+    fun testRapidSequentialRequests() = runBlocking {
         val outputs = (1..10).map { i ->
-            val command = "npx tsx myClient.ts $serverUrl greet \"RapidClient$i\""
-            val output = executeCommand(command, tsClientDir)
+            val command = "npx tsx client/sse-client.ts $serverUrl greet \"RapidClient$i\""
+            val output = executeCommand(command, typescriptDir)
 
             assertTrue(
                 output.contains("Connected to server"),
