@@ -1,5 +1,6 @@
 plugins {
     id("mcp.dokka")
+    alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.kover)
 }
@@ -18,6 +19,12 @@ dependencies {
 subprojects {
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
     apply(plugin = "org.jetbrains.kotlinx.kover")
+    apply(plugin = "dev.detekt")
+
+    detekt {
+        config = files("$rootDir/detekt.yml")
+        buildUponDefaultConfig = true
+    }
 }
 
 dokka {
