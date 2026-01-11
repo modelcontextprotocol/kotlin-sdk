@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.modelcontextprotocol.kotlin.sdk.InitializedNotification

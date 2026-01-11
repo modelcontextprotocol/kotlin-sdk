@@ -20,7 +20,7 @@ class TypeScriptClient(private val typescriptDir: File) : AutoCloseable {
      * @param log Whether to automatically log process output/error
      * @return The started Process
      */
-    fun startSse(arguments: List<String>, log: Boolean = true): Process {
+    fun startSseClient(arguments: List<String>, log: Boolean = true): Process {
         val scriptPath = File(typescriptDir, "client/sse-client.ts").absolutePath
         val proc = TypeScriptRunner.run(
             typescriptDir = typescriptDir,
@@ -42,7 +42,7 @@ class TypeScriptClient(private val typescriptDir: File) : AutoCloseable {
      * @param log Whether to automatically log process output/error
      * @return The started Process
      */
-    fun startStdio(arguments: List<String>, log: Boolean = true): Process {
+    fun startStdioClient(arguments: List<String>, log: Boolean = true): Process {
         val scriptPath = File(typescriptDir, "client/stdio-client.ts").absolutePath
         val proc = TypeScriptRunner.run(
             typescriptDir = typescriptDir,

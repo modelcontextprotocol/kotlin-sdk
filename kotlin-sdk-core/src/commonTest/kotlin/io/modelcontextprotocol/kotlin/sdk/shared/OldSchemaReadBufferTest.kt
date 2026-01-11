@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package io.modelcontextprotocol.kotlin.sdk.shared
 
 import io.ktor.utils.io.charsets.Charsets

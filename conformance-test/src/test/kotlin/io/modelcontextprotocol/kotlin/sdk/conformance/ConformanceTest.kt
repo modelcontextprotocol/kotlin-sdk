@@ -166,7 +166,7 @@ class ConformanceTest {
                 }
             }
             serverProcess?.destroyForcibly()
-            throw IllegalStateException(
+            error(
                 "Server failed to start within $DEFAULT_SERVER_STARTUP_TIMEOUT_SECONDS seconds. " +
                     "Check if port $serverPort is available.$errorInfo",
             )

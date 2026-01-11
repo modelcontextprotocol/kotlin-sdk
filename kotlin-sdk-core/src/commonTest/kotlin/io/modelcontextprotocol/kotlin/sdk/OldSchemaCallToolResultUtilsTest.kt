@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package io.modelcontextprotocol.kotlin.sdk
 
 import kotlinx.serialization.json.JsonPrimitive

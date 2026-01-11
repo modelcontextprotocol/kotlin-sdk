@@ -68,7 +68,8 @@ private data class SessionContext(val session: ServerSSESession?, val call: Appl
  * @param enableJsonResponse If true, the server will return JSON responses instead of starting an SSE stream.
  * This can be useful for simple request/response scenarios without streaming.
  * Default is false (SSE streams are preferred).
- * @param enableDnsRebindingProtection Enable DNS rebinding protection (requires allowedHosts and/or allowedOrigins to be configured).
+ * @param enableDnsRebindingProtection Enable DNS rebinding protection (requires allowedHosts
+ * and/or allowedOrigins to be configured).
  * Default is false for backwards compatibility.
  * @param allowedHosts List of allowed host header values for DNS rebinding protection.
  * If not specified, host validation is disabled.
@@ -76,7 +77,8 @@ private data class SessionContext(val session: ServerSSESession?, val call: Appl
  * If not specified, origin validation is disabled.
  * @param eventStore Event store for resumability support
  * If provided, resumability will be enabled, allowing clients to reconnect and resume messages
- * @param retryIntervalMillis Retry interval (in milliseconds) advertised via SSE priming events to hint the client when to reconnect.
+ * @param retryIntervalMillis Retry interval (in milliseconds) advertised via SSE priming events to hint the client
+ * when to reconnect.
  * Applies only when an [eventStore] is configured. Defaults to `null` (no retry hint).
  */
 @OptIn(ExperimentalUuidApi::class, ExperimentalAtomicApi::class)
@@ -107,6 +109,7 @@ public class StreamableHttpServerTransport(
 
     private companion object {
         const val STANDALONE_SSE_STREAM_ID = "_GET_stream"
+        private const val ONE_MEGABYTE = 1024 * 1024
     }
 
     /**
@@ -145,7 +148,8 @@ public class StreamableHttpServerTransport(
 
     override suspend fun start() {
         check(started.compareAndSet(expectedValue = false, newValue = true)) {
-            "StreamableHttpServerTransport already started! If using Server class, note that connect() calls start() automatically."
+            "StreamableHttpServerTransport already started! If using Server class, " +
+                "note that connect() calls start() automatically."
         }
     }
 
@@ -585,7 +589,7 @@ public class StreamableHttpServerTransport(
             call.reject(
                 HttpStatusCode.PayloadTooLarge,
                 RPCError.ErrorCode.INVALID_REQUEST,
-                "Invalid Request: message size exceeds maximum of ${MAXIMUM_MESSAGE_SIZE / (1024 * 1024)} MB",
+                "Invalid Request: message size exceeds maximum of ${MAXIMUM_MESSAGE_SIZE / ONE_MEGABYTE} MB",
             )
             return null
         }
@@ -595,7 +599,7 @@ public class StreamableHttpServerTransport(
             call.reject(
                 HttpStatusCode.PayloadTooLarge,
                 RPCError.ErrorCode.INVALID_REQUEST,
-                "Invalid Request: message size exceeds maximum of ${MAXIMUM_MESSAGE_SIZE / (1024 * 1024)} MB",
+                "Invalid Request: message size exceeds maximum of ${MAXIMUM_MESSAGE_SIZE / (ONE_MEGABYTE)} MB",
             )
             return null
         }
