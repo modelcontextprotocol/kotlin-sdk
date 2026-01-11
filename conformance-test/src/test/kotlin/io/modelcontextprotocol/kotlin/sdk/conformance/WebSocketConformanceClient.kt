@@ -24,6 +24,7 @@ class WebSocketClientTransport(override val session: WebSocketSession) : WebSock
     }
 }
 
+@Suppress("LongMethod")
 fun main(args: Array<String>) {
     require(args.isNotEmpty()) {
         "Server WebSocket URL must be provided as an argument"

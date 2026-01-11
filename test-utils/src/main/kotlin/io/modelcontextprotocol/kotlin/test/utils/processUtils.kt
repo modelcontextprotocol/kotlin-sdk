@@ -13,6 +13,7 @@ import kotlin.time.Duration.Companion.seconds
  * @param port The port number to free up
  */
 public fun killProcessOnPort(port: Int) {
+    @Suppress("MaxLineLength")
     val killCommand = if (isWindows) {
         listOf(
             "cmd.exe",

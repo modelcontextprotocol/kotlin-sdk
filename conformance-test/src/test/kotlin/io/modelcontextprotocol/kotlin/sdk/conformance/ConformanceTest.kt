@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.TestFactory
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.fail
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.lang.management.ManagementFactory
@@ -30,6 +31,7 @@ enum class TransportType {
     WEBSOCKET,
 }
 
+@Suppress("ForbiddenComment")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ConformanceTest {
 
@@ -319,8 +321,9 @@ class ConformanceTest {
                 "$capitalizedType conformance test [$transportType] '$scenario' timed out after $timeoutSeconds seconds"
             }
             process.destroyForcibly()
-            throw AssertionError(
-                "❌ $capitalizedType conformance test [$transportType] '$scenario' timed out after $timeoutSeconds seconds",
+            fail(
+                "❌ $capitalizedType conformance test [$transportType] '$scenario' " +
+                    "timed out after $timeoutSeconds seconds",
             )
         }
 
@@ -331,8 +334,9 @@ class ConformanceTest {
                 logger.error {
                     "$capitalizedType conformance test [$transportType] '$scenario' failed with exit code: $exitCode"
                 }
-                throw AssertionError(
-                    "❌ $capitalizedType conformance test [$transportType] '$scenario' failed (exit code: $exitCode). Check test output above for details.",
+                fail(
+                    "❌ $capitalizedType conformance test [$transportType] '$scenario' failed (exit code: $exitCode). " +
+                        "Check test output above for details.",
                 )
             }
         }

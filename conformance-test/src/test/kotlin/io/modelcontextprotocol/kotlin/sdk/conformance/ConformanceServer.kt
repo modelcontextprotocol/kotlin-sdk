@@ -73,6 +73,7 @@ private const val MESSAGE_QUEUE_CAPACITY = 256
 private fun isInitializeRequest(json: JsonElement): Boolean =
     json is JsonObject && json["method"]?.jsonPrimitive?.contentOrNull == "initialize"
 
+@Suppress("CyclomaticComplexMethod", "LongMethod")
 fun main(args: Array<String>) {
     val port = args.getOrNull(0)?.toIntOrNull() ?: 3000
 
@@ -236,6 +237,7 @@ fun main(args: Array<String>) {
     }.start(wait = true)
 }
 
+@Suppress("LongMethod")
 private fun createConformanceServer(): Server {
     val server = Server(
         Implementation(
