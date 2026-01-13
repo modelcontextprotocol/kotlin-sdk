@@ -58,7 +58,7 @@ abstract class TsTestBase {
             if (sharedSseServer == null || !sharedSseServer!!.isAlive) {
                 sharedSsePort = io.modelcontextprotocol.kotlin.test.utils.findFreePort()
                 val server = TypeScriptServer(typescriptDir)
-                sharedSseServer = server.startSse(sharedSsePort)
+                sharedSseServer = server.startSseServer(sharedSsePort)
                 println("Shared TypeScript SSE server started on port $sharedSsePort")
 
                 Runtime.getRuntime().addShutdownHook(
@@ -161,7 +161,7 @@ abstract class TsTestBase {
     // ===== STDIO client + server helpers =====
     protected fun startTypeScriptServerStdio(): Process {
         val server = TypeScriptServer(typescriptDir)
-        return server.startStdio()
+        return server.startStdioServer()
     }
 
     protected suspend fun newClientStdio(process: Process): Client {
@@ -193,7 +193,7 @@ abstract class TsTestBase {
     // ===== Helpers to run TypeScript client over STDIO against Kotlin server over STDIO =====
     protected fun runStdioClient(vararg args: String): String = tsClient.use { client ->
         // Start Node stdio client (it will speak MCP over its stdout/stdin)
-        val process = client.startStdio(args.toList(), log = false)
+        val process = client.startStdioClient(args.toList(), log = false)
 
         // Create Kotlin server and attach stdio transport to the process streams
         val server: Server = KotlinServerForTsClient().createMcpServer()

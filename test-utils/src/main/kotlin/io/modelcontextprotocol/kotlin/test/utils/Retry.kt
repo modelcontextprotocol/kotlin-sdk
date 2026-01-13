@@ -33,6 +33,7 @@ public class RetryExtension : InvocationInterceptor {
     private fun findRetry(element: AnnotatedElement): Optional<Retry> =
         Optional.ofNullable(element.getAnnotation(Retry::class.java))
 
+    @Suppress("ThrowsCount", "CyclomaticComplexMethod")
     private fun executeWithRetry(invocation: Invocation<Void>, extensionContext: ExtensionContext) {
         val retry = resolveRetryAnnotation(extensionContext)
         if (retry == null || retry.times <= 1) {

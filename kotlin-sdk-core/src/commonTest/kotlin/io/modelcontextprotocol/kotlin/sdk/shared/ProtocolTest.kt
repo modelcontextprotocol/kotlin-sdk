@@ -154,9 +154,15 @@ class ProtocolTest {
 }
 
 private class TestProtocol : Protocol(null) {
-    override fun assertCapabilityForMethod(method: Method) {}
-    override fun assertNotificationCapability(method: Method) {}
-    override fun assertRequestHandlerCapability(method: Method) {}
+    override fun assertCapabilityForMethod(method: Method) {
+        // noop
+    }
+    override fun assertNotificationCapability(method: Method) {
+        // noop
+    }
+    override fun assertRequestHandlerCapability(method: Method) {
+        // noop
+    }
 }
 
 private class RecordingTransport : Transport {
@@ -164,7 +170,9 @@ private class RecordingTransport : Transport {
     private var onMessageCallback: (suspend (JSONRPCMessage) -> Unit)? = null
     private var onCloseCallback: (() -> Unit)? = null
 
-    override suspend fun start() {}
+    override suspend fun start() {
+        // noop
+    }
 
     override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
         sentMessages.send(message)
@@ -178,7 +186,9 @@ private class RecordingTransport : Transport {
         onCloseCallback = block
     }
 
-    override fun onError(block: (Throwable) -> Unit) {}
+    override fun onError(block: (Throwable) -> Unit) {
+        // noop
+    }
 
     override fun onMessage(block: suspend (JSONRPCMessage) -> Unit) {
         onMessageCallback = block
