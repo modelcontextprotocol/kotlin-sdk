@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.conformance
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.modelcontextprotocol.kotlin.test.utils.NPX
 import io.modelcontextprotocol.kotlin.test.utils.findFreePort
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -13,6 +14,7 @@ import java.lang.management.ManagementFactory
 import java.net.HttpURLConnection
 import java.net.URI
 import java.util.concurrent.TimeUnit
+import kotlin.io.path.createTempFile
 import kotlin.properties.Delegates
 
 private val logger = KotlinLogging.logger {}
@@ -214,31 +216,27 @@ class ConformanceTest {
             TransportType.SSE -> {
                 val serverUrl = "http://127.0.0.1:$serverPort/mcp"
                 ProcessBuilder(
-                    "npx",
+                    NPX,
                     "@modelcontextprotocol/conformance@$CONFORMANCE_VERSION",
                     "server",
                     "--url",
                     serverUrl,
                     "--scenario",
                     scenario,
-                ).apply {
-                    inheritIO()
-                }
+                )
             }
 
             TransportType.WEBSOCKET -> {
                 val serverUrl = "ws://127.0.0.1:$serverPort/ws"
                 ProcessBuilder(
-                    "npx",
+                    NPX,
                     "@modelcontextprotocol/conformance@$CONFORMANCE_VERSION",
                     "server",
                     "--url",
                     serverUrl,
                     "--scenario",
                     scenario,
-                ).apply {
-                    inheritIO()
-                }
+                )
             }
         }
 
@@ -248,41 +246,49 @@ class ConformanceTest {
     private fun runClientConformanceTest(scenario: String, transportType: TransportType) {
         val testClasspath = getTestClasspath()
 
-        val clientCommand = when (transportType) {
+        // Create an argfile to avoid Windows command line length limits
+        val argFile = createTempFile(suffix = ".args").toFile()
+        argFile.deleteOnExit()
+
+        val mainClass = when (transportType) {
             TransportType.SSE -> {
-                val serverUrl = "http://127.0.0.1:$serverPort/mcp"
-                listOf(
-                    "java",
-                    "-cp",
-                    testClasspath,
-                    "io.modelcontextprotocol.kotlin.sdk.conformance.ConformanceClientKt",
-                    serverUrl,
+                argFile.writeText(
+                    buildString {
+                        appendLine("-cp")
+                        appendLine(testClasspath)
+                        appendLine("io.modelcontextprotocol.kotlin.sdk.conformance.ConformanceClientKt")
+                    },
                 )
+                "http://127.0.0.1:$serverPort/mcp"
             }
 
             TransportType.WEBSOCKET -> {
-                val serverUrl = "ws://127.0.0.1:$serverPort/ws"
-                listOf(
-                    "java",
-                    "-cp",
-                    testClasspath,
-                    "io.modelcontextprotocol.kotlin.sdk.conformance.WebSocketConformanceClientKt",
-                    serverUrl,
+                argFile.writeText(
+                    buildString {
+                        appendLine("-cp")
+                        appendLine(testClasspath)
+                        appendLine("io.modelcontextprotocol.kotlin.sdk.conformance.WebSocketConformanceClientKt")
+                    },
                 )
+                "ws://127.0.0.1:$serverPort/ws"
             }
         }
 
+        val clientCommand = listOf(
+            "java",
+            "@${argFile.absolutePath}",
+            mainClass,
+        )
+
         val processBuilder = ProcessBuilder(
-            "npx",
+            NPX,
             "@modelcontextprotocol/conformance@$CONFORMANCE_VERSION",
             "client",
             "--command",
             clientCommand.joinToString(" "),
             "--scenario",
             scenario,
-        ).apply {
-            inheritIO()
-        }
+        )
 
         runConformanceTest("client", scenario, processBuilder, transportType)
     }
@@ -300,6 +306,34 @@ class ConformanceTest {
             ?: DEFAULT_TEST_TIMEOUT_SECONDS
 
         val process = processBuilder.start()
+        Thread {
+            try {
+                BufferedReader(InputStreamReader(process.errorStream)).use { reader ->
+                    reader.lineSequence().forEach { line ->
+                        logger.debug { "test stderr: $line" }
+                    }
+                }
+            } catch (e: Exception) {
+                logger.trace(e) { "Error reading test stderr" }
+            }
+        }.apply {
+            name = "test-stderr-reader"
+            isDaemon = true
+        }.start()
+        Thread {
+            try {
+                BufferedReader(InputStreamReader(process.inputStream)).use { reader ->
+                    reader.lineSequence().forEach { line ->
+                        logger.debug { "test stdout: $line" }
+                    }
+                }
+            } catch (e: Exception) {
+                logger.trace(e) { "Error reading server test stdout" }
+            }
+        }.apply {
+            name = "test-stderr-reader"
+            isDaemon = true
+        }.start()
         val completed = process.waitFor(timeoutSeconds, TimeUnit.SECONDS)
 
         if (!completed) {

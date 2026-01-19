@@ -31,7 +31,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 'lts/*'
+          node-version: '22' # increase only after https://github.com/nodejs/node/issues/56645 will be fixed
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
