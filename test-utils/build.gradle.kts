@@ -14,6 +14,7 @@ kotlin {
         api(libs.mockk)
         api(libs.awaitility)
         api(libs.junit.jupiter.params)
+        api(libs.kotlin.logging)
         runtimeOnly(libs.slf4j.simple)
     }
 

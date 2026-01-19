@@ -3,6 +3,7 @@ package io.modelcontextprotocol.kotlin.sdk.conformance
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.test.utils.NPX
 import io.modelcontextprotocol.kotlin.test.utils.findFreePort
+import io.modelcontextprotocol.kotlin.test.utils.startLogging
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DynamicTest
@@ -18,6 +19,9 @@ import kotlin.io.path.createTempFile
 import kotlin.properties.Delegates
 
 private val logger = KotlinLogging.logger {}
+
+val processStderrLogger = KotlinLogging.logger(name = "stderr")
+val processStdoutLogger = KotlinLogging.logger(name = "stdout")
 
 private const val CONFORMANCE_VERSION = "0.1.8"
 
@@ -302,38 +306,20 @@ class ConformanceTest {
         val capitalizedType = type.replaceFirstChar { it.uppercase() }
         logger.info { "Running $type conformance test [$transportType]: $scenario" }
 
-        val timeoutSeconds = System.getenv("CONFORMANCE_TEST_TIMEOUT_SECONDS")?.toLongOrNull()
-            ?: DEFAULT_TEST_TIMEOUT_SECONDS
+        val timeoutSeconds =
+            System.getenv("CONFORMANCE_TEST_TIMEOUT_SECONDS")?.toLongOrNull() ?: DEFAULT_TEST_TIMEOUT_SECONDS
 
         val process = processBuilder.start()
-        Thread {
-            try {
-                BufferedReader(InputStreamReader(process.errorStream)).use { reader ->
-                    reader.lineSequence().forEach { line ->
-                        logger.debug { "test stderr: $line" }
-                    }
-                }
-            } catch (e: Exception) {
-                logger.trace(e) { "Error reading test stderr" }
-            }
-        }.apply {
-            name = "test-stderr-reader"
-            isDaemon = true
-        }.start()
-        Thread {
-            try {
-                BufferedReader(InputStreamReader(process.inputStream)).use { reader ->
-                    reader.lineSequence().forEach { line ->
-                        logger.debug { "test stdout: $line" }
-                    }
-                }
-            } catch (e: Exception) {
-                logger.trace(e) { "Error reading server test stdout" }
-            }
-        }.apply {
-            name = "test-stderr-reader"
-            isDaemon = true
-        }.start()
+
+        process.errorStream.startLogging(
+            logger = processStderrLogger,
+            name = "test(PID=${process.pid()})",
+        )
+        process.inputStream.startLogging(
+            logger = processStdoutLogger,
+            name = "test(PID=${process.pid()})",
+        )
+
         val completed = process.waitFor(timeoutSeconds, TimeUnit.SECONDS)
 
         if (!completed) {
