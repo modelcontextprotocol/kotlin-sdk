@@ -216,33 +216,25 @@ class ConformanceTest {
     }
 
     private fun runServerConformanceTest(scenario: String, transportType: TransportType) {
-        val processBuilder = when (transportType) {
+        val serverUrl = when (transportType) {
             TransportType.SSE -> {
-                val serverUrl = "http://127.0.0.1:$serverPort/mcp"
-                ProcessBuilder(
-                    NPX,
-                    "@modelcontextprotocol/conformance@$CONFORMANCE_VERSION",
-                    "server",
-                    "--url",
-                    serverUrl,
-                    "--scenario",
-                    scenario,
-                )
+                "http://127.0.0.1:$serverPort/mcp"
             }
 
             TransportType.WEBSOCKET -> {
-                val serverUrl = "ws://127.0.0.1:$serverPort/ws"
-                ProcessBuilder(
-                    NPX,
-                    "@modelcontextprotocol/conformance@$CONFORMANCE_VERSION",
-                    "server",
-                    "--url",
-                    serverUrl,
-                    "--scenario",
-                    scenario,
-                )
+                "ws://127.0.0.1:$serverPort/ws"
             }
         }
+
+        val processBuilder = ProcessBuilder(
+            NPX,
+            "@modelcontextprotocol/conformance@$CONFORMANCE_VERSION",
+            "server",
+            "--url",
+            serverUrl,
+            "--scenario",
+            scenario,
+        )
 
         runConformanceTest("server", scenario, processBuilder, transportType)
     }

@@ -45,6 +45,11 @@ jobs:
         with:
           node-version: '22' # increase only after https://github.com/nodejs/node/issues/56645 will be fixed
 
+      - name: Setup Conformance Tests
+        working-directory: conformance-test
+        run: |-
+          npm install -g @modelcontextprotocol/conformance@0.1.8
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
         with:
