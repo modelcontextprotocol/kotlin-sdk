@@ -62,7 +62,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         uses: actions/setup-node@v6
         with:
-          node-version: 'lts/*'
+          node-version: '22' # increase only after https://github.com/nodejs/node/issues/56645 will be fixed
 
       - name: Set up Node Packages
         if: matrix.os == 'ubuntu-latest'

@@ -14,11 +14,23 @@ concurrency:
 
 jobs:
   run-conformance:
-    runs-on: macos-latest
-    name: Run Conformance Tests
+    runs-on: ${{ matrix.os }}
+    name: Run Conformance Tests on ${{ matrix.os }}
     timeout-minutes: 20
     env:
       JAVA_OPTS: "-Xmx8g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx6g"
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            max-workers: 3
+          - os: windows-latest
+            max-workers: 3
+          - os: macos-latest
+            max-workers: 2
+
     steps:
       - uses: actions/checkout@v6
 
@@ -31,7 +43,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 'lts/*'
+          node-version: '22' # increase only after https://github.com/nodejs/node/issues/56645 will be fixed
+
+      - name: Setup Conformance Tests
+        working-directory: conformance-test
+        run: |-
+          npm install -g @modelcontextprotocol/conformance@0.1.8
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
@@ -45,11 +62,12 @@ jobs:
             ../.konan/**
 
       - name: Run Conformance Tests
-        run: ./gradlew --no-daemon :conformance-test:test
+        run: |-
+          ./gradlew :conformance-test:test --no-daemon --max-workers ${{ matrix.max-workers }}
 
       - name: Upload Conformance Results
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: conformance-results
+          name: conformance-results-${{ matrix.os }}
           path: conformance-test/results/
