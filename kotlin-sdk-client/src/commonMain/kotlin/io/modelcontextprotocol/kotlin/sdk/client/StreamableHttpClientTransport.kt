@@ -27,7 +27,9 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
+import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.CONNECTION_CLOSED
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineName
@@ -105,7 +107,12 @@ public class StreamableHttpClientTransport(
         resumptionToken: String?,
         onResumptionToken: ((String) -> Unit)? = null,
     ) {
-        check(initialized.load()) { "Transport is not started" }
+        if (!initialized.load()) {
+            throw McpException(
+                code = CONNECTION_CLOSED,
+                message = "Transport is not started",
+            )
+        }
         logger.debug { "Client sending message via POST to $url: ${McpJson.encodeToString(message)}" }
 
         // If we have a resumption token, reconnect the SSE stream with it
