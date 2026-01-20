@@ -10,6 +10,7 @@ name: Release
 on:
   release:
     types: [ published ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -35,11 +36,25 @@ jobs:
         uses: gradle/actions/setup-gradle@v5
 
       - name: Clean Build with Gradle
-        run: ./gradlew clean build -x :conformance-test:test --rerun-tasks
+        run: ./gradlew clean build -x :conformance-test:test --rerun-tasks --max-workers 2 --continue --configure-on-demand --parallel
+
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v6
+        if: ${{ !cancelled() }}
+        with:
+          annotate_only: true
+          detailed_summary: true
+          flaky_summary: true
+          group_suite: true
+          include_empty_in_summary: false
+          include_time_in_summary: true
+          report_paths: '**/test-results/**/TEST-*.xml'
+          truncate_stack_traces: false
 
       - name: Publish to Maven Central Portal
         id: publish
-        run: ./gradlew publishToMavenCentral --no-configuration-cache
+        run: ./gradlew publishToMavenLocal --no-configuration-cache
+#        run: ./gradlew publishToMavenCentral --no-configuration-cache
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.OSSRH_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.OSSRH_TOKEN }}
