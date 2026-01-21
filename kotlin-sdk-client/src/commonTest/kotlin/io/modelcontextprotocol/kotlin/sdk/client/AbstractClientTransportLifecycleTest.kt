@@ -4,7 +4,9 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
+import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.CONNECTION_CLOSED
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
@@ -46,10 +48,11 @@ abstract class AbstractClientTransportLifecycleTest<T : AbstractTransport> {
     fun `should throw when sending before start`() = runTest {
         val transport = createTransport()
 
-        val exception = shouldThrow<IllegalStateException> {
+        val exception = shouldThrow<McpException> {
             transport.send(PingRequest().toJSON())
         }
         exception.message shouldContain "not started"
+        exception.code shouldBe CONNECTION_CLOSED
     }
 
     @Test

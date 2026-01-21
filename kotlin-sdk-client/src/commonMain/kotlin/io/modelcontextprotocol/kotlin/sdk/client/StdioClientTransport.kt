@@ -230,8 +230,18 @@ public class StdioClientTransport @JvmOverloads public constructor(
     }
 
     override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
-        check(initialized.load()) { "Transport is not started" }
-        check(!onCloseCalled.load()) { "Transport is closed" }
+        if (!initialized.load()) {
+            throw McpException(
+                code = CONNECTION_CLOSED,
+                message = "Transport is not started",
+            )
+        }
+        if (onCloseCalled.load()) {
+            throw McpException(
+                code = CONNECTION_CLOSED,
+                message = "Transport is closed",
+            )
+        }
         @Suppress("TooGenericExceptionCaught", "SwallowedException")
         try {
             sendChannel.send(message)

@@ -6,6 +6,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
@@ -151,7 +152,16 @@ class StdioClientTransportErrorHandlingTest {
     fun `Send should handle exceptions`(throwable: Throwable, shouldWrap: Boolean, expectedCode: Int?) = runTest {
         val sendChannel: Channel<JSONRPCMessage> = mockk(relaxed = true)
 
-        val stdin = createNonEmptyBuffer { "id: 1\ndata:\n" }
+        // Create a stdin Source that never returns EOF to prevent transport from closing
+        // Use mockk since Source is a sealed interface
+        val stdin: kotlinx.io.Source = mockk(relaxed = true)
+        every { stdin.readAtMostTo(any<Buffer>(), any()) } coAnswers {
+            // Return 0 to indicate no data available (but not EOF)
+            // This keeps the transport alive without blocking
+            delay(10) // Small delay to prevent busy-waiting
+            0L
+        }
+
         transport = StdioClientTransport(
             input = stdin,
             output = Buffer(),
