@@ -10,7 +10,6 @@ name: Release
 on:
   release:
     types: [ published ]
-  workflow_dispatch:
 
 jobs:
   build:
@@ -53,8 +52,7 @@ jobs:
 
       - name: Publish to Maven Central Portal
         id: publish
-        run: ./gradlew publishToMavenLocal --no-configuration-cache
-#        run: ./gradlew publishToMavenCentral --no-configuration-cache
+        run: ./gradlew publishToMavenCentral --no-configuration-cache
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.OSSRH_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.OSSRH_TOKEN }}
