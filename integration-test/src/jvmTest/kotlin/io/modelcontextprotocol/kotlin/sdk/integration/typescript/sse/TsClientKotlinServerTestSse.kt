@@ -36,7 +36,7 @@ class TsClientKotlinServerTestSse : AbstractTsClientKotlinServerTest() {
     }
 
     override fun runClient(vararg args: String): String = tsClient.use { client ->
-        val process = client.startSse(listOf(serverUrl) + args.toList(), log = true)
+        val process = client.startSseClient(listOf(serverUrl) + args.toList(), log = true)
         val output = StringBuilder()
         process.inputStream.bufferedReader().useLines { lines ->
             lines.forEach { line ->
