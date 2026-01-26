@@ -71,6 +71,7 @@ jobs:
             :kotlin-sdk:compileKotlinJvm \
             :integration-test:compileKotlinJvm \
             :conformance-test:testClasses \
+            detekt \
             -Pkotlin.incremental=false \
             --no-daemon --stacktrace --rerun-tasks
 

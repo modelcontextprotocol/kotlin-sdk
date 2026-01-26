@@ -1,13 +1,14 @@
 [versions]
 # plugins version
-kotlin = "2.2.21"
-dokka = "2.1.0"
 atomicfu = "0.29.0"
-ktlint = "14.0.1"
-kover = "0.9.4"
-netty = "4.2.9.Final"
-mavenPublish = "0.35.0"
 binaryCompatibilityValidatorPlugin = "0.18.1"
+detekt = "2.0.0-alpha.1"
+dokka = "2.1.0"
+kotlin = "2.2.21"
+kover = "0.9.4"
+ktlint = "14.0.1"
+mavenPublish = "0.35.0"
+netty = "4.2.9.Final"
 openapi-generator = "7.18.0"
 
 # libraries version
@@ -69,6 +70,7 @@ ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "
 ktor-server-cio = { group = "io.ktor", name = "ktor-server-cio", version.ref = "ktor" }
 
 [plugins]
+detekt = { id = "dev.detekt", version.ref = "detekt" }
 kotlinx-binary-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibilityValidatorPlugin" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
