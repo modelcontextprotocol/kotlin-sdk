@@ -11,13 +11,15 @@ build/
 .idea/compiler.xml
 .idea/libraries/
 .idea
-!.idea/icon.png
 *.iws
 *.iml
 *.ipr
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
+!.idea/icon.png
+!.idea/detekt.xml
+!.idea/externalDependencies.xml
 
 ### Kotlin ###
 .kotlin
