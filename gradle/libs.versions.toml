@@ -9,7 +9,7 @@ kover = "0.9.4"
 ktlint = "14.0.1"
 mavenPublish = "0.35.0"
 netty = "4.2.9.Final"
-openapi-generator = "7.18.0"
+openapi-generator = "7.19.0"
 
 # libraries version
 awaitility = "4.3.0"
