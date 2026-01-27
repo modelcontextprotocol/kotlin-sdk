@@ -19,7 +19,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.putJsonObject
 
-const val MCP_SESSION_ID_HEADER = "Mcp-Session-Id"
+const val MCP_SESSION_ID_HEADER = "mcp-session-id"
 
 internal class MockMcp(verbose: Boolean = false) {
 
