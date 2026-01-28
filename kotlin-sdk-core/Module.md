@@ -1,4 +1,4 @@
-# kotlin-sdk-core
+# Module kotlin-sdk-core
 
 `kotlin-sdk-core` is the foundation of the MCP Kotlin SDK. It contains protocol message types, JSON handling, and
 transport abstractions used by both client and server modules. No platform-specific code lives here; everything is
