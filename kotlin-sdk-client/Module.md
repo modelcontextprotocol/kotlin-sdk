@@ -1,4 +1,4 @@
-# kotlin-sdk-client
+# Module kotlin-sdk-client
 
 `kotlin-sdk-client` is the multiplatform MCP client for Kotlin. It handles the MCP handshake, enforces capabilities, and
 gives you typed APIs to call tools, prompts, resources, completions, and logging endpoints on MCP servers. It reuses

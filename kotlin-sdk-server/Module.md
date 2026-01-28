@@ -1,4 +1,4 @@
-# kotlin-sdk-server
+# Module kotlin-sdk-server
 
 `kotlin-sdk-server` contains the server-side building blocks for Model Context Protocol (MCP) applications written in
 Kotlin Multiplatform. It pairs the protocol types from `kotlin-sdk-core` with transport implementations and utilities
