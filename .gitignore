@@ -17,9 +17,6 @@ build/
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
-!.idea/icon.png
-!.idea/detekt.xml
-!.idea/externalDependencies.xml
 
 ### Kotlin ###
 .kotlin
