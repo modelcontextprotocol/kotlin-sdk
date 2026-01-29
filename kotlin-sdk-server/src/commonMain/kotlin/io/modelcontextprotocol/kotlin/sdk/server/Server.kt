@@ -173,7 +173,7 @@ public open class Server(
     @Deprecated(
         "Use createSession(transport) instead.",
         ReplaceWith("createSession(transport)"),
-        DeprecationLevel.WARNING,
+        DeprecationLevel.ERROR,
     )
     public suspend fun connect(transport: Transport): ServerSession = createSession(transport)
 
@@ -266,7 +266,7 @@ public open class Server(
     @Deprecated(
         "Initialization moved to ServerSession, use ServerSession.onInitialized instead.",
         ReplaceWith("ServerSession.onInitialized"),
-        DeprecationLevel.WARNING,
+        DeprecationLevel.ERROR,
     )
     public fun onInitialized(block: () -> Unit) {
         val old = _onInitialized
