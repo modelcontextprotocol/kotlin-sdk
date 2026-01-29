@@ -7,7 +7,7 @@ import kotlinx.serialization.json.JsonObject
 @Deprecated(
     message = "Use `io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject` instead",
     replaceWith = ReplaceWith("EmptyJsonObject", "io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject"),
-    level = DeprecationLevel.WARNING,
+    level = DeprecationLevel.ERROR,
 )
 public val EmptyJsonObject: JsonObject = io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
 
@@ -17,8 +17,9 @@ public val EmptyJsonObject: JsonObject = io.modelcontextprotocol.kotlin.sdk.type
 @Deprecated(
     message = "Use `CallToolResult.success` instead",
     replaceWith = ReplaceWith("CallToolResult.Companion.success"),
-    level = DeprecationLevel.WARNING,
+    level = DeprecationLevel.ERROR,
 )
+@Suppress("DEPRECATION_ERROR")
 public fun CallToolResult.ok(
     content: String,
     meta: JsonObject = EmptyJsonObject,
@@ -31,8 +32,9 @@ public fun CallToolResult.ok(
 @Deprecated(
     message = "Use `CallToolResult.error` instead",
     replaceWith = ReplaceWith("CallToolResult.Companion.error"),
-    level = DeprecationLevel.WARNING,
+    level = DeprecationLevel.ERROR,
 )
+@Suppress("DEPRECATION_ERROR")
 public fun CallToolResult.error(
     content: String,
     meta: JsonObject = EmptyJsonObject,
