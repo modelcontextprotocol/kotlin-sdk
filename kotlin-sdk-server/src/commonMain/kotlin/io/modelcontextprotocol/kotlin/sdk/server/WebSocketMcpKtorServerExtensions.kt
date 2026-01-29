@@ -88,8 +88,9 @@ private fun createMcpTransport(webSocketSession: WebSocketServerSession): WebSoc
 @Deprecated(
     "Use mcpWebSocket with a lambda that returns a Server instance instead",
     ReplaceWith("Routing.mcpWebSocket"),
-    DeprecationLevel.WARNING,
+    DeprecationLevel.ERROR,
 )
+@Suppress("DEPRECATION_ERROR")
 public fun Route.mcpWebSocket(options: ServerOptions? = null, handler: suspend Server.() -> Unit = {}) {
     webSocket {
         createMcpServer(this, options, handler)
@@ -99,7 +100,7 @@ public fun Route.mcpWebSocket(options: ServerOptions? = null, handler: suspend S
 @Deprecated(
     "Use mcpWebSocket with a lambda that returns a Server instance instead",
     ReplaceWith("Routing.mcpWebSocket"),
-    DeprecationLevel.WARNING,
+    DeprecationLevel.ERROR,
 )
 public fun Route.mcpWebSocket(block: () -> Server) {
     webSocket {
@@ -117,8 +118,9 @@ public fun Route.mcpWebSocket(block: () -> Server) {
 @Deprecated(
     "Use mcpWebSocket with a path and a lambda that returns a Server instance instead",
     ReplaceWith("Routing.mcpWebSocket"),
-    DeprecationLevel.WARNING,
+    DeprecationLevel.ERROR,
 )
+@Suppress("DEPRECATION_ERROR")
 public fun Route.mcpWebSocket(path: String, options: ServerOptions? = null, handler: suspend Server.() -> Unit = {}) {
     webSocket(path) {
         createMcpServer(this, options, handler)
@@ -133,7 +135,7 @@ public fun Route.mcpWebSocket(path: String, options: ServerOptions? = null, hand
 @Deprecated(
     "Use mcpWebSocket with a lambda that returns a Server instance instead",
     ReplaceWith("Routing.mcpWebSocket"),
-    DeprecationLevel.WARNING,
+    DeprecationLevel.ERROR,
 )
 public fun Route.mcpWebSocketTransport(handler: suspend WebSocketMcpServerTransport.() -> Unit = {}) {
     webSocket {
@@ -153,7 +155,7 @@ public fun Route.mcpWebSocketTransport(handler: suspend WebSocketMcpServerTransp
 @Deprecated(
     "Use mcpWebSocket with a path and a lambda that returns a Server instance instead",
     ReplaceWith("Routing.mcpWebSocket"),
-    DeprecationLevel.WARNING,
+    DeprecationLevel.ERROR,
 )
 public fun Route.mcpWebSocketTransport(path: String, handler: suspend WebSocketMcpServerTransport.() -> Unit = {}) {
     webSocket(path) {
@@ -167,7 +169,7 @@ public fun Route.mcpWebSocketTransport(path: String, handler: suspend WebSocketM
 @Deprecated(
     "Use mcpWebSocket with a lambda that returns a Server instance instead",
     ReplaceWith("mcpWebSocket"),
-    DeprecationLevel.WARNING,
+    DeprecationLevel.ERROR,
 )
 private suspend fun Route.createMcpServer(
     session: WebSocketServerSession,
