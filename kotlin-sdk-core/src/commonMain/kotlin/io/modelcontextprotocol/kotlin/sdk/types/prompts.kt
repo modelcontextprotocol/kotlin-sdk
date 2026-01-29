@@ -217,7 +217,7 @@ public data class ListPromptsRequest(override val params: PaginatedRequestParams
     @Deprecated(
         message = "Use constructor with ListPromptsParams instead",
         replaceWith = ReplaceWith("ListPromptsRequest(ListPromptsParams(name, arguments, meta))"),
-        level = DeprecationLevel.WARNING,
+        level = DeprecationLevel.ERROR,
     )
     public constructor(
         cursor: String?,
