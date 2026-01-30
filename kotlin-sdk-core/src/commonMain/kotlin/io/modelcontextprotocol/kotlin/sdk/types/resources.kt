@@ -205,7 +205,7 @@ public data class ListResourcesRequest(override val params: PaginatedRequestPara
     @Deprecated(
         message = "Use the constructor with PaginatedRequestParams property instead",
         replaceWith = ReplaceWith("ReadResourceRequest(PaginatedRequestParams(cursor, meta))"),
-        level = DeprecationLevel.WARNING,
+        level = DeprecationLevel.ERROR,
     )
     public constructor(
         cursor: String?,
@@ -265,7 +265,7 @@ public data class ReadResourceRequest(override val params: ReadResourceRequestPa
     @Deprecated(
         message = "Use the constructor with ReadResourceRequestParams property instead",
         replaceWith = ReplaceWith("ReadResourceRequest(ReadResourceRequestParams(uri, meta))"),
-        level = DeprecationLevel.WARNING,
+        level = DeprecationLevel.ERROR,
     )
     public constructor(
         uri: String,
@@ -341,7 +341,7 @@ public data class SubscribeRequest(override val params: SubscribeRequestParams) 
     @Deprecated(
         message = "Use the constructor with SubscribeRequestParams property instead",
         replaceWith = ReplaceWith("ReadResourceRequest(SubscribeRequestParams(uri, meta))"),
-        level = DeprecationLevel.WARNING,
+        level = DeprecationLevel.ERROR,
     )
     public constructor(
         uri: String,
@@ -447,7 +447,7 @@ public data class ListResourceTemplatesRequest(override val params: PaginatedReq
     @Deprecated(
         message = "Use the constructor with PaginatedRequestParams property instead",
         replaceWith = ReplaceWith("ListResourceTemplatesRequest(PaginatedRequestParams(cursor, meta))"),
-        level = DeprecationLevel.WARNING,
+        level = DeprecationLevel.ERROR,
     )
     public constructor(
         cursor: String?,

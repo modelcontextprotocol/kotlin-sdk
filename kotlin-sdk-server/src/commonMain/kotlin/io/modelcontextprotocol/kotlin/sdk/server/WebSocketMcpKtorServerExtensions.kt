@@ -90,6 +90,7 @@ private fun createMcpTransport(webSocketSession: WebSocketServerSession): WebSoc
     ReplaceWith("Routing.mcpWebSocket"),
     DeprecationLevel.WARNING,
 )
+@Suppress("DEPRECATION_ERROR")
 public fun Route.mcpWebSocket(options: ServerOptions? = null, handler: suspend Server.() -> Unit = {}) {
     webSocket {
         createMcpServer(this, options, handler)
@@ -119,6 +120,7 @@ public fun Route.mcpWebSocket(block: () -> Server) {
     ReplaceWith("Routing.mcpWebSocket"),
     DeprecationLevel.WARNING,
 )
+@Suppress("DEPRECATION_ERROR")
 public fun Route.mcpWebSocket(path: String, options: ServerOptions? = null, handler: suspend Server.() -> Unit = {}) {
     webSocket(path) {
         createMcpServer(this, options, handler)

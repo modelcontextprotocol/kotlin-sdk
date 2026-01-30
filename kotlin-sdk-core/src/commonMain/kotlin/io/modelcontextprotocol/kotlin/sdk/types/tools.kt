@@ -240,7 +240,7 @@ public data class ListToolsRequest(override val params: PaginatedRequestParams? 
     @Deprecated(
         message = "Use the constructor with BaseRequestParams property instead",
         replaceWith = ReplaceWith("ListToolsRequest(BaseRequestParams(meta))"),
-        level = DeprecationLevel.WARNING,
+        level = DeprecationLevel.ERROR,
     )
     public constructor(
         cursor: String?,

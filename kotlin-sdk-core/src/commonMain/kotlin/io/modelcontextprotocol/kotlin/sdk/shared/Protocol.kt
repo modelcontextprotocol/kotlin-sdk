@@ -55,7 +55,7 @@ public typealias ProgressCallback = (Progress) -> Unit
 @Deprecated(
     message = "Use McpJson instead",
     replaceWith = ReplaceWith("McpJson", "io.modelcontextprotocol.kotlin.sdk.types.McpJson"),
-    level = DeprecationLevel.WARNING,
+    level = DeprecationLevel.ERROR,
 )
 public val McpJson: Json by lazy {
     Json {
