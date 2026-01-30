@@ -242,7 +242,7 @@ public class StdioClientTransport @JvmOverloads public constructor(
                 message = "Transport is closed",
             )
         }
-        @Suppress("TooGenericExceptionCaught", "SwallowedException")
+        @Suppress("SwallowedException")
         try {
             sendChannel.send(message)
         } catch (e: CancellationException) {
@@ -298,7 +298,6 @@ public class StdioClientTransport @JvmOverloads public constructor(
     }
 
     private suspend fun handleJSONRPCMessage(msg: JSONRPCMessage) {
-        @Suppress("TooGenericExceptionCaught")
         try {
             _onMessage.invoke(msg)
         } catch (e: Throwable) {

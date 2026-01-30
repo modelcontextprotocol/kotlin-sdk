@@ -74,7 +74,6 @@ public class ServerOptions(public val capabilities: ServerCapabilities, enforceS
  * this server. The provider is called each time a new session is started to support dynamic instructions.
  * @param block A block to configure the mcp server.
  */
-@Suppress("TooManyFunctions")
 public open class Server(
     protected val serverInfo: Implementation,
     protected val options: ServerOptions,
@@ -96,7 +95,7 @@ public open class Server(
         block: Server.() -> Unit = {},
     ) : this(serverInfo, options, { instructions }, block)
 
-    @Suppress("ktlint:standard:backing-property-naming")
+    @Suppress("ktlint:standard:backing-property-naming") // TODO
     private var _onInitialized: (() -> Unit) = {}
 
     @Suppress("ktlint:standard:backing-property-naming")
@@ -320,7 +319,6 @@ public open class Server(
      * @param handler A suspend function that handles executing the tool when called by the client.
      * @throws IllegalStateException If the server does not support tools.
      */
-    @Suppress("LongParameterList")
     public fun addTool(
         name: String,
         description: String,
@@ -575,7 +573,6 @@ public open class Server(
             )
         }
 
-        @Suppress("TooGenericExceptionCaught")
         // Execute the tool handler and catch any errors
         return try {
             logger.trace { "Executing tool ${requestParams.name} with input: ${requestParams.arguments}" }

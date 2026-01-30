@@ -31,7 +31,6 @@ internal class MockMcp(verbose: Boolean = false) {
 
     val url = "${mokksy.baseUrl()}/mcp"
 
-    @Suppress("LongParameterList")
     fun onInitialize(
         clientName: String? = null,
         sessionId: String,
@@ -109,7 +108,6 @@ internal class MockMcp(verbose: Boolean = false) {
         }
     }
 
-    @Suppress("LongParameterList")
     fun handleWithResult(
         httpMethod: HttpMethod = HttpMethod.Post,
         jsonRpcMethod: String,
@@ -145,7 +143,6 @@ internal class MockMcp(verbose: Boolean = false) {
         }
     }
 
-    @Suppress("LongParameterList")
     fun handleWithResult(
         httpMethod: HttpMethod = HttpMethod.Post,
         jsonRpcMethod: String,
@@ -170,7 +167,6 @@ internal class MockMcp(verbose: Boolean = false) {
         )
     }
 
-    @Suppress("LongParameterList")
     fun handleJSONRPCRequest(
         httpMethod: HttpMethod = HttpMethod.Post,
         jsonRpcMethod: String,
