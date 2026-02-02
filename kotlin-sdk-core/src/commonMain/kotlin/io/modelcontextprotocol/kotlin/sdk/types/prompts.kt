@@ -116,6 +116,7 @@ public data class GetPromptRequest(override val params: GetPromptRequestParams) 
     @Deprecated(
         message = "Use constructor with GetPromptRequestParams instead",
         replaceWith = ReplaceWith("GetPromptRequest(GetPromptRequestParams(name, arguments, meta))"),
+        level = DeprecationLevel.ERROR,
     )
     public constructor(
         name: String,
