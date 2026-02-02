@@ -30,6 +30,7 @@ ktlint_class_signature_rule_force_multiline_when_parameter_count_greater_or_equa
 ktlint_function_signature_rule_force_multiline_when_parameter_count_greater_or_equal_than = 4
 ktlint_standard_chain-method-continuation = disabled
 ktlint_ignore_back_ticked_identifier = true
+ktlint_standard_backing-property-naming = disabled
 ktlint_standard_multiline-expression-wrapping = disabled
 ktlint_standard_when-entry-bracing = disabled
 

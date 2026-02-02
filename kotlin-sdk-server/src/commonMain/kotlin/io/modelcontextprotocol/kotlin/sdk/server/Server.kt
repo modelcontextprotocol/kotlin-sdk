@@ -95,13 +95,10 @@ public open class Server(
         block: Server.() -> Unit = {},
     ) : this(serverInfo, options, { instructions }, block)
 
-    @Suppress("ktlint:standard:backing-property-naming") // TODO
     private var _onInitialized: (() -> Unit) = {}
 
-    @Suppress("ktlint:standard:backing-property-naming")
     private var _onConnect: (() -> Unit) = {}
 
-    @Suppress("ktlint:standard:backing-property-naming")
     private var _onClose: () -> Unit = {}
 
     @OptIn(ExperimentalTime::class)
