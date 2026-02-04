@@ -11,19 +11,46 @@ import io.modelcontextprotocol.kotlin.sdk.types.Resource
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceTemplate
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
 
+/**
+ * Represents a unique key for a feature and allows comparing inputs with the [key].
+ */
 public abstract class FeatureKey<out T> {
+    /**
+     * The unique key identifying the feature.
+     */
     public abstract val key: String
+
+    /**
+     * The value associated with the feature key. This is used for matching inputs which do not have to match the [key].
+     */
     public abstract val value: T
 
+    /**
+     * Checks if the given [input] matches the [value] of this feature key.
+     *
+     * @param input The input string to be matched against the feature key's value.
+     * @return `true` if the input matches the value, `false` otherwise.
+     */
     public open fun matches(input: String): Boolean = value == input
     public override fun equals(other: Any?): Boolean = other is FeatureKey<*> && key == other.key
     public override fun hashCode(): Int = key.hashCode()
 }
 
+/**
+ * A [FeatureKey] implementation for string-based keys. The [value] is the same as the [key] and inputs are matched by equality with the [key].
+ *
+ * @property key The unique string key identifying the feature.
+ */
 public class StringFeatureKey(override val key: String) : FeatureKey<String>() {
     override val value: String = key
 }
 
+/**
+ * A [FeatureKey] implementation for URI template-based keys. The [value] is a regex generated from the URI template in
+ * the [key] based on RFC6570 (current support: Level 1 thereof). Inputs are matched against the generated regex.
+ *
+ * @property key The URI template string key identifying the feature.
+ */
 public class UriTemplateFeatureKey(override val key: String) : FeatureKey<Regex>() {
     override val value: Regex
     init {
@@ -49,9 +76,24 @@ public class UriTemplateFeatureKey(override val key: String) : FeatureKey<Regex>
     override fun matches(input: String): Boolean = value.matches(input)
 }
 
+/**
+ * The [FeatureKey] used for [Tool]s.
+ */
 public typealias ToolFeatureKey = StringFeatureKey
+
+/**
+ * The [FeatureKey] used for [Prompt]s.
+ */
 public typealias PromptFeatureKey = StringFeatureKey
+
+/**
+ * The [FeatureKey] used for [Resource]s.
+ */
 public typealias ResourceFeatureKey = StringFeatureKey
+
+/**
+ * The [FeatureKey] used for [ResourceTemplate]s.
+ */
 public typealias ResourceTemplateFeatureKey = UriTemplateFeatureKey
 
 /**
