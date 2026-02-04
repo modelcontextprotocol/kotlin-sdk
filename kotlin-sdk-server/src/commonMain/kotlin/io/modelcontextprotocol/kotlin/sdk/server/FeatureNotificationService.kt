@@ -57,7 +57,7 @@ private class EndEvent(override val timestamp: Long) : NotificationEvent(timesta
  */
 private class SessionNotificationJob {
     private val job: Job
-    private val resourceSubscriptions = atomic(persistentMapOf<FeatureKey, Long>())
+    private val resourceSubscriptions = atomic(persistentMapOf<ResourceFeatureKey, Long>())
     private val logger = KotlinLogging.logger {}
 
     /**
@@ -118,7 +118,7 @@ private class SessionNotificationJob {
             }
 
             is ResourceUpdatedNotification -> {
-                resourceSubscriptions.value[notification.params.uri]?.let { resourceFromTimestamp ->
+                resourceSubscriptions.value[ResourceFeatureKey(notification.params.uri)]?.let { resourceFromTimestamp ->
                     if (event.timestamp >= resourceFromTimestamp) {
                         logger.info {
                             "Sending resource updated notification for resource ${notification.params.uri} " +
@@ -151,7 +151,7 @@ private class SessionNotificationJob {
      * @param resourceKey The key representing the resource to subscribe to.
      * @param timestamp The timestamp of the subscription.
      */
-    fun subscribe(resourceKey: FeatureKey, timestamp: Long) {
+    fun subscribe(resourceKey: ResourceFeatureKey, timestamp: Long) {
         resourceSubscriptions.getAndUpdate { it.put(resourceKey, timestamp) }
     }
 
@@ -160,7 +160,7 @@ private class SessionNotificationJob {
      *
      * @param resourceKey The key representing the resource to unsubscribe from.
      */
-    fun unsubscribe(resourceKey: FeatureKey) {
+    fun unsubscribe(resourceKey: ResourceFeatureKey) {
         resourceSubscriptions.getAndUpdate { it.remove(resourceKey) }
     }
 
@@ -222,27 +222,39 @@ internal class FeatureNotificationService(
 
     private val logger = KotlinLogging.logger {}
 
-    private fun featureListener(notificationProvider: (FeatureKey) -> ServerNotification): FeatureListener =
-        object : FeatureListener {
-            override fun onFeatureUpdated(featureKey: FeatureKey) {
-                val notification = notificationProvider(featureKey)
-                logger.debug { "Emitting notification: ${notification.method.value}" }
-                emit(notification)
-            }
+    private fun <T : FeatureKey<S>, S> featureListener(
+        notificationProvider: (T) -> ServerNotification,
+    ): FeatureListener<T> = object : FeatureListener<T> {
+        override fun onFeatureUpdated(featureKey: T) {
+            val notification = notificationProvider(featureKey)
+            logger.debug { "Emitting notification: ${notification.method.value}" }
+            emit(notification)
         }
+    }
 
     /** Listener for tool feature events. */
-    internal val toolListChangedListener: FeatureListener = featureListener { ToolListChangedNotification() }
+    internal val toolListChangedListener: FeatureListener<ToolFeatureKey> =
+        featureListener { ToolListChangedNotification() }
 
     /** Listener for prompt feature events. */
-    internal val promptListChangedListener: FeatureListener = featureListener { PromptListChangedNotification() }
+    internal val promptListChangedListener: FeatureListener<PromptFeatureKey> =
+        featureListener { PromptListChangedNotification() }
 
     /** Listener for resource feature events. */
-    internal val resourceListChangedListener: FeatureListener = featureListener { ResourceListChangedNotification() }
+    internal val resourceListChangedListener: FeatureListener<ResourceFeatureKey> =
+        featureListener { ResourceListChangedNotification() }
 
     /** Listener for resource update events. */
-    internal val resourceUpdatedListener: FeatureListener =
-        featureListener { ResourceUpdatedNotification(ResourceUpdatedNotificationParams(uri = it)) }
+    internal val resourceUpdatedListener: FeatureListener<ResourceFeatureKey> =
+        featureListener { ResourceUpdatedNotification(ResourceUpdatedNotificationParams(uri = it.key)) }
+
+    /** Listener for resource template feature events. */
+    internal val resourceTemplateListChangedListener: FeatureListener<ResourceTemplateFeatureKey> =
+        featureListener { ResourceListChangedNotification() }
+
+    /** Listener for resource template update events. */
+    internal val resourceTemplateUpdatedListener: FeatureListener<ResourceTemplateFeatureKey> =
+        featureListener { ResourceUpdatedNotification(ResourceUpdatedNotificationParams(uri = it.key)) }
 
     /**
      * Subscribes session to list changed notifications for all features and resource update notifications.
@@ -299,7 +311,7 @@ internal class FeatureNotificationService(
      * @param session The session to subscribe.
      * @param resourceKey The resource key to subscribe to.
      */
-    internal fun subscribeToResourceUpdate(session: ServerSession, resourceKey: FeatureKey) {
+    internal fun subscribeToResourceUpdate(session: ServerSession, resourceKey: ResourceFeatureKey) {
         logger.info { "Subscribing to resource $resourceKey update notifications for sessionId: ${session.sessionId}" }
         // Set starting event id for resources notifications to skip events emitted before the subscription
         sessionNotificationJobs.value[session.sessionId]?.subscribe(resourceKey, getCurrentTimestamp())
@@ -312,7 +324,7 @@ internal class FeatureNotificationService(
      * @param session The session to unsubscribe from.
      * @param resourceKey The resource key to unsubscribe from.
      */
-    internal fun unsubscribeFromResourceUpdate(session: ServerSession, resourceKey: FeatureKey) {
+    internal fun unsubscribeFromResourceUpdate(session: ServerSession, resourceKey: ResourceFeatureKey) {
         logger.info {
             "Unsubscribing from resource $resourceKey update notifications for sessionId: ${session.sessionId}"
         }
