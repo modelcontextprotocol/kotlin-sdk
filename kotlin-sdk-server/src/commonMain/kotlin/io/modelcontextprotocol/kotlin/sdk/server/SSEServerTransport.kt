@@ -22,9 +22,6 @@ import kotlin.uuid.Uuid
 
 internal const val SESSION_ID_PARAM = "sessionId"
 
-@Deprecated("Use SseServerTransport instead", ReplaceWith("SseServerTransport"), DeprecationLevel.ERROR)
-public typealias SSEServerTransport = SseServerTransport
-
 /**
  * Server transport for SSE: this will send messages over an SSE connection and receive messages from HTTP POST requests.
  *

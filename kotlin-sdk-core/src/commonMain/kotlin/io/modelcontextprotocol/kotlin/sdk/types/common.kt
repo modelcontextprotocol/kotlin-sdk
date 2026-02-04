@@ -33,6 +33,7 @@ public sealed interface WithMeta {
     @Deprecated(
         message = "Use 'meta' instead.",
         replaceWith = ReplaceWith("meta"),
+        level = DeprecationLevel.ERROR,
     )
     @Suppress("PropertyName", "VariableNaming")
     public val _meta: JsonObject

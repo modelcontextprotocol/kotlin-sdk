@@ -43,7 +43,7 @@ public data class CompleteRequest(override val params: CompleteRequestParams) : 
     @Deprecated(
         message = "Will be removed in a future release.",
         replaceWith = ReplaceWith(expression = "CompleteRequest(CompleteRequestParams(argument, ref, context, meta))"),
-        level = DeprecationLevel.WARNING,
+        level = DeprecationLevel.ERROR,
     )
     public constructor(
         argument: Argument,
