@@ -8,16 +8,7 @@ class KotlinClientTsServerTestStdio : AbstractKotlinClientTsServerTest() {
 
     override val transportKind = TransportKind.STDIO
 
-    override suspend fun <T> useClient(block: suspend (Client) -> T): T = withClientStdio { client, proc ->
-        try {
-            block(client)
-        } finally {
-            try {
-                client.close()
-            } catch (_: Exception) {}
-            try {
-                stopProcess(proc, name = "TypeScript stdio server")
-            } catch (_: Exception) {}
-        }
-    }
+    override suspend fun <T> useClient(block: suspend (Client) -> T): T =
+        // TsTestBase.withClientStdio already handles client.close() + process shutdown.
+        withClientStdio { client, _ -> block(client) }
 }
