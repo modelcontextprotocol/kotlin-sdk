@@ -8,15 +8,10 @@ dependencies {
     implementation(libs.ktor.server.cio)
 }
 
-ktlint {
-    filter {
-        exclude("src/")
-    }
-}
-
-tasks.clean {
-    dependsOn("knitClean")
-    delete("src")
+tasks.matching {
+    it.name == "ktlintMainSourceSetCheck" || it.name == "ktlintMainSourceSetFormat"
+}.configureEach {
+    enabled = false
 }
 
 knit {
