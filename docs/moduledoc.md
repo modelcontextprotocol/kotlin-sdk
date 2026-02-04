@@ -83,7 +83,8 @@ fun Application.module() {
             )),
         ) {
             addTool(name = "echo", description = "Echo text back") { request ->
-                CallToolResult(content = listOf(TextContent("You said: ${request.params.arguments["text"]}")))
+                val text = request.params.arguments?.get("text")?.jsonPrimitive?.content ?: ""
+                CallToolResult(content = listOf(TextContent("You said: $text")))
             }
         }
     }

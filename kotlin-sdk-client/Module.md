@@ -13,15 +13,14 @@ protocol types from `kotlin-sdk-core` and ships with transports for CLI and Ktor
   `listPrompts`, `complete`, `setLoggingLevel`, and subscription helpers for resources.
 - **Capability enforcement**: Methods fail fast if the server does not advertise the needed capability; optional
   strictness mirrors the protocol options used by the server SDK.
-- **Transports**: Ready-to-use implementations for STDIO (CLI interoperability), Ktor SSE (`SSEClientTransport` with
+- **Transports**: Ready-to-use implementations for STDIO (CLI interoperability), Ktor SSE (`SseClientTransport` with
   POST back-channel), Ktor WebSocket, and Streamable HTTP for environments that prefer request/response streaming.
 - **Ktor client integration**: Extension helpers wire MCP over Ktor client engines with minimal setup for SSE,
   Streamable HTTP, or WebSocket.
 
 ## Typical client setup
 
-1. Declare client capabilities with `ClientOptions` (e.g., tools, prompts, resources, logging, roots, sampling,
-   elicitation).
+1. Declare client capabilities with `ClientOptions` (e.g., sampling, roots, elicitation, experimental).
 2. Create a transport suitable for your environment.
 3. Connect using `mcpClient` or instantiate `Client` and call `connect(transport)`.
 4. Use typed APIs to interact with the server; results and errors use the shared MCP types.
@@ -37,7 +36,10 @@ val client = mcpClient(
             resources = ClientCapabilities.Resources(subscribe = true),
         )
     ),
-    transport = StdioClientTransport(System.`in`.source(), System.out.sink())
+    transport = StdioClientTransport(
+        System.`in`.asSource().buffered(),
+        System.out.asSink().buffered()
+    )
 )
 
 val tools = client.listTools()
@@ -47,10 +49,12 @@ println(result.content)
 
 ### Ktor-based transports
 
-- **SSE** (streaming GET + POST back-channel): create `SSEClientTransport(baseUrl, httpClient)`; sessions are keyed by
-  `sessionId` managed by the SDK.
-- **WebSocket**: use `WebSocketClientTransport(url, httpClient)` to get bidirectional messaging in one connection.
-- **Streamable HTTP**: `StreamableHttpClientTransport` enables MCP over streaming HTTP where WebSockets are unavailable.
+- **SSE** (streaming GET + POST back-channel): create `SseClientTransport(httpClient, url)` (or
+  `HttpClient.mcpSseTransport(url)`); sessions are keyed by `sessionId` managed by the SDK.
+- **WebSocket**: use `WebSocketClientTransport(httpClient, url)` (or `HttpClient.mcpWebSocketTransport(url)`) to get
+  bidirectional messaging in one connection.
+- **Streamable HTTP**: `StreamableHttpClientTransport(httpClient, url)` enables MCP over streaming HTTP
+  (or `HttpClient.mcpStreamableHttpTransport(url)`).
 
 ## Feature usage highlights
 

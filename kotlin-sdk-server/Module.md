@@ -41,7 +41,7 @@ val server = Server(
         name = "hello",
         description = "Greets the caller by name"
     ) { request ->
-        val name = request.params.arguments["name"]?.jsonPrimitive?.content ?: "there"
+        val name = request.params.arguments?.get("name")?.jsonPrimitive?.content ?: "there"
         CallToolResult(
             content = listOf(TextContent("Hello, $name!")),
             isError = false,
@@ -49,7 +49,10 @@ val server = Server(
     }
 }
 
-val transport = StdioServerTransport(System.`in`.source(), System.out.sink())
+val transport = StdioServerTransport(
+    System.`in`.asSource().buffered(),
+    System.out.asSink().buffered()
+)
 server.createSession(transport)
 ```
 
