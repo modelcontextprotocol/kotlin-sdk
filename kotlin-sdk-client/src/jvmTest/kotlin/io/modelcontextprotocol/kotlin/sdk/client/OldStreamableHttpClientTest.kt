@@ -30,7 +30,6 @@ import kotlin.uuid.Uuid
  */
 @OptIn(ExperimentalUuidApi::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@Suppress("LongMethod")
 internal class OldStreamableHttpClientTest : AbstractStreamableHttpClientTest() {
 
     @Test
