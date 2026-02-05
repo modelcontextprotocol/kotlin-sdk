@@ -46,6 +46,7 @@ standardized protocol interface.
   * [Streamable HTTP Transport](#streamable-http-transport)
   * [SSE Transport](#sse-transport)
   * [WebSocket Transport](#websocket-transport)
+  * [ChannelTransport (testing)](#channeltransport-testing)
 * [Connecting your server](#connecting-your-server)
 * [Examples](#examples)
 * [Documentation](#documentation)
@@ -773,6 +774,12 @@ SSE Ktor plugin when you need drop-in compatibility, but prefer Streamable HTTP 
 
 `WebSocketClientTransport` plus the matching server utilities provide full-duplex, low-latency connections—useful when
 you expect lots of notifications or long-running sessions behind a reverse proxy that already terminates WebSockets.
+
+### ChannelTransport (testing)
+
+`ChannelTransport` provides a simple, non-networked transport for testing and local development.
+It uses Kotlin coroutines channels to provide a full-duplex connection between a client and server,
+allowing for easy testing of MCP functionality without the need for network setup.
 
 ## Connecting your server
 
