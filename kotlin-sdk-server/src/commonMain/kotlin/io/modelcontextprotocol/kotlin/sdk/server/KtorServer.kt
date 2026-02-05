@@ -11,6 +11,7 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.RoutingContext
 import io.ktor.server.routing.delete
+import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
@@ -137,6 +138,20 @@ public fun Application.mcpStatelessStreamableHttp(
                     allowedOrigins = allowedOrigins,
                     eventStore = eventStore,
                     block = block,
+                )
+            }
+            get {
+                call.reject(
+                    HttpStatusCode.MethodNotAllowed,
+                    RPCError.ErrorCode.CONNECTION_CLOSED,
+                    "Method not allowed.",
+                )
+            }
+            delete {
+                call.reject(
+                    HttpStatusCode.MethodNotAllowed,
+                    RPCError.ErrorCode.CONNECTION_CLOSED,
+                    "Method not allowed.",
                 )
             }
         }
