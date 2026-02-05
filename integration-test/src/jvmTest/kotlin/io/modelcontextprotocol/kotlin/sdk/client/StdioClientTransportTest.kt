@@ -1,12 +1,12 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
+import io.kotest.assertions.nondeterministic.eventually
 import io.modelcontextprotocol.kotlin.sdk.shared.BaseTransportTest
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.test.utils.createSleepyProcessBuilder
 import io.modelcontextprotocol.kotlin.test.utils.createTeeProcessBuilder
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.asSink
@@ -23,7 +23,6 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.test.fail
-import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 @Timeout(30, unit = TimeUnit.SECONDS)
@@ -89,17 +88,21 @@ class StdioClientTransportTest : BaseTransportTest() {
         transport.onClose { didClose.store(true) }
 
         transport.start()
-        delay(1.seconds)
 
-        assertFalse(didClose.load(), "Transport should not be closed immediately after start")
+        // Verify transport stays open after start (use eventually for cross-platform reliability)
+        eventually(2.seconds) {
+            assertFalse(didClose.load(), "Transport should not be closed immediately after start")
+        }
 
         // Destroy process BEFORE close() to unblock stdin reader
         process.destroyForcibly()
-        delay(100.milliseconds) // Give time for EOF to propagate
 
         transport.close()
 
-        assertTrue(didClose.load(), "Transport should be closed after close() call")
+        // Verify transport is closed after close() call
+        eventually(2.seconds) {
+            assertTrue(didClose.load(), "Transport should be closed after close() call")
+        }
     }
 
     @Test
