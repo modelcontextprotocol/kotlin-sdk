@@ -56,7 +56,7 @@ class TypeScriptServer(private val typescriptDir: File) {
         )
         process = proc
 
-        check(waitForPort(port = port, timeoutSeconds = 10)) {
+        check(waitForPort(port = port, timeoutSeconds = 60)) {
             proc.destroyForcibly()
             "TypeScript SSE server did not become ready on localhost:$port within timeout"
         }
