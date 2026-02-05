@@ -41,7 +41,7 @@ High-level client for connecting to MCP servers and invoking their features:
   `serverVersion`, and `serverInstructions`.
 - Typed operations for tools, prompts, resources, completion, logging, roots, sampling, and elicitation with capability
   enforcement.
-- Transports: `StdioClientTransport`, `SSEClientTransport`, `WebSocketClientTransport`, and `StreamableHttpClientTransport`,
+- Transports: `StdioClientTransport`, `SseClientTransport`, `WebSocketClientTransport`, and `StreamableHttpClientTransport`,
   plus Ktor client extensions for quick wiring.
 
 Minimal WebSocket client:
