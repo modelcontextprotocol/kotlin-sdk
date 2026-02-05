@@ -1,0 +1,26 @@
+public final class io/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractClientTransport {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport$Companion;
+	public fun <init> (Lkotlinx/coroutines/channels/Channel;Lkotlinx/coroutines/CoroutineDispatcher;)V
+	public synthetic fun <init> (Lkotlinx/coroutines/channels/Channel;Lkotlinx/coroutines/CoroutineDispatcher;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lkotlinx/coroutines/channels/SendChannel;Lkotlinx/coroutines/channels/ReceiveChannel;Lkotlinx/coroutines/CoroutineDispatcher;)V
+	public synthetic fun <init> (Lkotlinx/coroutines/channels/SendChannel;Lkotlinx/coroutines/channels/ReceiveChannel;Lkotlinx/coroutines/CoroutineDispatcher;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport$Companion {
+	public final fun createLinkedPair (ILkotlinx/coroutines/CoroutineDispatcher;)Lio/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport$LinkedTransports;
+	public static synthetic fun createLinkedPair$default (Lio/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport$Companion;ILkotlinx/coroutines/CoroutineDispatcher;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport$LinkedTransports;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport$LinkedTransports {
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport;Lio/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport;)V
+	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport;
+	public final fun component2 ()Lio/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport;
+	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport;Lio/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport;)Lio/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport$LinkedTransports;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport$LinkedTransports;Lio/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport;Lio/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport$LinkedTransports;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getClientTransport ()Lio/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport;
+	public final fun getServerTransport ()Lio/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
