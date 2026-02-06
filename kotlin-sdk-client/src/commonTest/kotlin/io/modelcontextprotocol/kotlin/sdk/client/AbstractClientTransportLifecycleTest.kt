@@ -1,5 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
+import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -13,6 +14,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 abstract class AbstractClientTransportLifecycleTest<T : AbstractTransport> {
 
@@ -60,11 +62,15 @@ abstract class AbstractClientTransportLifecycleTest<T : AbstractTransport> {
         val transport = createTransport()
 
         transport.start()
+        // Give transport time to initialize
         delay(50.milliseconds)
         transport.close()
 
-        shouldThrow<Exception> {
-            transport.send(PingRequest().toJSON())
+        // Verify that send throws after close using eventually for reliability
+        eventually(2.seconds) {
+            shouldThrow<Exception> {
+                transport.send(PingRequest().toJSON())
+            }
         }
     }
 
@@ -76,13 +82,17 @@ abstract class AbstractClientTransportLifecycleTest<T : AbstractTransport> {
         transport.onClose { closeCallCount++ }
 
         transport.start()
+        // Give transport time to initialize
         delay(50.milliseconds)
 
         // Multiple close attempts
         transport.close()
         transport.close()
 
-        closeCallCount shouldBe 1
+        // Verify onClose was called exactly once using eventually for cross-platform reliability
+        eventually(2.seconds) {
+            closeCallCount shouldBe 1
+        }
     }
 
     protected abstract fun createTransport(): T

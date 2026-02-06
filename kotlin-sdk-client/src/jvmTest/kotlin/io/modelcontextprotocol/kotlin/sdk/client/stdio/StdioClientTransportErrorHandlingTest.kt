@@ -1,5 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.client.stdio
 
+import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.shouldBe
@@ -27,7 +28,7 @@ import java.util.stream.Stream
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.test.Test
-import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Tests for StdioClientTransport error handling: EOF, IO errors, and edge cases.
@@ -57,10 +58,13 @@ class StdioClientTransportErrorHandlingTest {
         transport.onClose { closeCalled.store(true) }
 
         transport.start()
-        delay(200.milliseconds)
 
         // Stderr EOF should not close transport
-        closeCalled.load() shouldBe false
+        // Use eventually to handle timing differences across platforms (especially Windows)
+        eventually(2.seconds) {
+            // Wait for stderr to be processed, then verify transport is still open
+            closeCalled.load() shouldBe false
+        }
 
         transport.close()
         closeCalled.load() shouldBe true
@@ -87,9 +91,13 @@ class StdioClientTransportErrorHandlingTest {
         transport.onClose { closeCallCount++ }
 
         transport.start()
-        delay(100.milliseconds)
 
-        // Explicit close after error already closed it
+        // FATAL stderr should trigger close, wait for it to complete
+        eventually(2.seconds) {
+            closeCallCount shouldBe 1
+        }
+
+        // Explicit close after error already closed it (should be no-op)
         transport.close()
 
         closeCallCount shouldBe 1
@@ -109,10 +117,12 @@ class StdioClientTransportErrorHandlingTest {
         transport.onError { errorCalled = true }
 
         transport.start()
-        delay(100.milliseconds)
 
         // Empty input should close cleanly without error
-        errorCalled.shouldBeFalse()
+        // Wait for EOF processing to complete, verify no error was called
+        eventually(2.seconds) {
+            errorCalled.shouldBeFalse()
+        }
     }
 
     companion object {

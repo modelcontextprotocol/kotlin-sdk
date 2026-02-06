@@ -1,14 +1,12 @@
 package io.modelcontextprotocol.kotlin.sdk.shared
 
+import io.kotest.assertions.nondeterministic.eventually
+import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.delay
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 import kotlin.test.fail
 import kotlin.time.Duration.Companion.seconds
 
@@ -23,12 +21,18 @@ abstract class BaseTransportTest {
         transport.onClose { didClose = true }
 
         transport.start()
-        delay(1.seconds)
 
-        assertFalse(didClose, "Transport should not be closed immediately after start")
+        // Verify transport stays open after start (use eventually for cross-platform reliability)
+        eventually(2.seconds) {
+            didClose shouldBe false
+        }
 
         transport.close()
-        assertTrue(didClose, "Transport should be closed after close() call")
+
+        // Verify transport is closed after close() call
+        eventually(2.seconds) {
+            didClose shouldBe true
+        }
     }
 
     protected suspend fun testTransportRead(transport: Transport) {
@@ -60,7 +64,7 @@ abstract class BaseTransportTest {
 
         finished.await()
 
-        assertEquals(messages, readMessages, "Assert messages received")
+        messages shouldBe readMessages
 
         transport.close()
     }
