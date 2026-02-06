@@ -46,6 +46,12 @@ internal class TransportManager(transports: Map<String, AbstractTransport> = emp
     }
 }
 
+/**
+ * Registers a server-sent events (SSE) route at the specified path.
+ *
+ * @param path the URL path to register the route for SSE.
+ * @param block the block of code that defines the server's behavior for the SSE session.
+ */
 @KtorDsl
 public fun Routing.mcp(path: String, block: ServerSSESession.() -> Server) {
     route(path) {
@@ -53,7 +59,7 @@ public fun Routing.mcp(path: String, block: ServerSSESession.() -> Server) {
     }
 }
 
-/*
+/**
 * Configures the Ktor Application to handle Model Context Protocol (MCP) over Server-Sent Events (SSE).
 */
 @KtorDsl

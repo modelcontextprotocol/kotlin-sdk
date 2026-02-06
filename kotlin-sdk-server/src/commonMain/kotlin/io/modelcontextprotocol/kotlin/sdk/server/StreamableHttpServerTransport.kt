@@ -25,6 +25,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.REQUEST_TIMEOUT
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
 import kotlinx.coroutines.job
@@ -66,20 +67,23 @@ private data class SessionContext(val session: ServerSSESession?, val call: Appl
  * - No session validation is performed
  *
  * @param enableJsonResponse If true, the server will return JSON responses instead of starting an SSE stream.
- * This can be useful for simple request/response scenarios without streaming.
- * Default is false (SSE streams are preferred).
- * @param enableDnsRebindingProtection Enable DNS rebinding protection (requires allowedHosts and/or allowedOrigins to be configured).
- * Default is false for backwards compatibility.
+ *              This can be useful for simple request/response scenarios without streaming.
+ *              Default is false (SSE streams are preferred).
+ * @param enableDnsRebindingProtection Enable DNS rebinding protection
+ *          (requires allowedHosts and/or allowedOrigins to be configured).
+ *          Default is false for backwards compatibility.
  * @param allowedHosts List of allowed host header values for DNS rebinding protection.
- * If not specified, host validation is disabled.
+ *          If not specified, host validation is disabled.
  * @param allowedOrigins List of allowed origin header values for DNS rebinding protection.
- * If not specified, origin validation is disabled.
+ *          If not specified, origin validation is disabled.
  * @param eventStore Event store for resumability support
- * If provided, resumability will be enabled, allowing clients to reconnect and resume messages
- * @param retryIntervalMillis Retry interval (in milliseconds) advertised via SSE priming events to hint the client when to reconnect.
- * Applies only when an [eventStore] is configured. Defaults to `null` (no retry hint).
+ *          If provided, resumability will be enabled, allowing clients to reconnect and resume messages
+ * @param retryIntervalMillis Retry interval (in milliseconds) advertised via SSE priming events
+ *          to hint the client when to reconnect. Applies only when an [eventStore] is configured.
+ *          Defaults to `null` (no retry hint).
  */
 @OptIn(ExperimentalUuidApi::class, ExperimentalAtomicApi::class)
+@Suppress("TooManyFunctions")
 public class StreamableHttpServerTransport(
     private val enableJsonResponse: Boolean = false,
     private val enableDnsRebindingProtection: Boolean = false,
@@ -145,10 +149,12 @@ public class StreamableHttpServerTransport(
 
     override suspend fun start() {
         check(started.compareAndSet(expectedValue = false, newValue = true)) {
-            "StreamableHttpServerTransport already started! If using Server class, note that connect() calls start() automatically."
+            "StreamableHttpServerTransport already started! If using Server class, " +
+                "note that connect() calls start() automatically."
         }
     }
 
+    @Suppress("CyclomaticComplexMethod", "ReturnCount")
     override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
         val responseRequestId: RequestId? = when (message) {
             is JSONRPCResponse -> message.id
@@ -252,6 +258,7 @@ public class StreamableHttpServerTransport(
     /**
      * Handles POST requests containing JSON-RPC messages
      */
+    @Suppress("CyclomaticComplexMethod", "LongMethod", "ReturnCount", "TooGenericExceptionCaught")
     public suspend fun handlePostRequest(session: ServerSSESession?, call: ApplicationCall) {
         try {
             if (!enableJsonResponse && session == null) {
@@ -344,6 +351,7 @@ public class StreamableHttpServerTransport(
         }
     }
 
+    @Suppress("ReturnCount")
     public suspend fun handleGetRequest(session: ServerSSESession?, call: ApplicationCall) {
         if (enableJsonResponse) {
             call.reject(
@@ -403,6 +411,7 @@ public class StreamableHttpServerTransport(
      * Closes the SSE stream associated with the given [requestId], prompting the client to reconnect.
      * Useful for implementing polling behavior for long-running operations.
      */
+    @Suppress("ReturnCount", "TooGenericExceptionCaught")
     public suspend fun closeSseStream(requestId: RequestId) {
         if (enableJsonResponse) return
         val streamId = requestToStreamMapping[requestId] ?: return
@@ -417,6 +426,7 @@ public class StreamableHttpServerTransport(
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun replayEvents(store: EventStore, lastEventId: String, session: ServerSSESession) {
         val call: ApplicationCall = session.call
 
@@ -479,6 +489,7 @@ public class StreamableHttpServerTransport(
         }
     }
 
+    @Suppress("ReturnCount")
     private suspend fun validateSession(call: ApplicationCall): Boolean {
         if (sessionIdGenerator == null) return true
 
@@ -519,7 +530,7 @@ public class StreamableHttpServerTransport(
             else -> {
                 call.reject(
                     HttpStatusCode.NotFound,
-                    -32001,
+                    REQUEST_TIMEOUT,
                     "Session not found",
                 )
                 false
@@ -549,6 +560,7 @@ public class StreamableHttpServerTransport(
         }
     }
 
+    @Suppress("ReturnCount")
     private fun validateHeaders(call: ApplicationCall): String? {
         if (!enableDnsRebindingProtection) return null
 
@@ -573,6 +585,7 @@ public class StreamableHttpServerTransport(
         return null
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun flushSse(session: ServerSSESession?) {
         try {
             session?.send(data = "")
@@ -581,6 +594,7 @@ public class StreamableHttpServerTransport(
         }
     }
 
+    @Suppress("ReturnCount", "MagicNumber")
     private suspend fun parseBody(call: ApplicationCall): List<JSONRPCMessage>? {
         val contentLength = call.request.header(HttpHeaders.ContentLength)?.toIntOrNull() ?: 0
         if (contentLength > MAXIMUM_MESSAGE_SIZE) {
@@ -630,6 +644,7 @@ public class StreamableHttpServerTransport(
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun maybeSendPrimingEvent(streamId: String, session: ServerSSESession?) {
         val store = eventStore ?: return
         val sseSession = session ?: return

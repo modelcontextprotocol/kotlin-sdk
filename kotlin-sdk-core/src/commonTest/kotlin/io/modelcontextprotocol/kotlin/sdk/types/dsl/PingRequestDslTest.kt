@@ -49,12 +49,16 @@ class PingRequestDslTest {
         val requestInt = buildPingRequest {
             meta { progressToken(123) }
         }
-        requestInt.params?.meta?.json?.get("progressToken")?.jsonPrimitive?.int shouldBe 123
+        requestInt.params?.meta?.json
+            ?.get("progressToken")
+            ?.jsonPrimitive?.int shouldBe 123
 
         val requestLong = buildPingRequest {
             meta { progressToken(456L) }
         }
-        requestLong.params?.meta?.json?.get("progressToken")?.jsonPrimitive?.int shouldBe 456
+        requestLong.params?.meta?.json
+            ?.get("progressToken")
+            ?.jsonPrimitive?.int shouldBe 456
     }
 
     @Test

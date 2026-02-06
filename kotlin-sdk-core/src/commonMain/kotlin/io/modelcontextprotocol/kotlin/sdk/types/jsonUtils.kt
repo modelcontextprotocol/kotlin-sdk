@@ -24,6 +24,17 @@ public val McpJson: Json by lazy {
     }
 }
 
+/**
+ * Converts a [Map] with [String] keys and nullable [Any] values into a [Map] with
+ * [String] keys and [JsonElement] values.
+ *
+ * Each value in the resulting map is derived from the corresponding value
+ * in the input map, transformed into a [JsonElement]. If the transformation
+ * fails for any reason, the value is replaced with a [JsonPrimitive] containing
+ * the original value's `toString` representation.
+ *
+ * @return A new map where the values are converted to [JsonElement] instances.
+ */
 public fun Map<String, Any?>.toJson(): Map<String, JsonElement> = this.mapValues { (_, value) ->
     runCatching { convertToJsonElement(value) }
         .getOrElse { JsonPrimitive(value.toString()) }
@@ -77,7 +88,5 @@ private fun convertToJsonElement(value: Any?): JsonElement = when (value) {
 
     is UByteArray -> buildJsonArray { value.forEach { add(JsonPrimitive(it)) } }
 
-    else -> {
-        JsonPrimitive(value.toString())
-    }
+    else -> JsonPrimitive(value.toString())
 }

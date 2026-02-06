@@ -1,0 +1,47 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>AbstractClassCanBeConcreteClass:AbstractPromptIntegrationTest.kt:AbstractPromptIntegrationTest$AbstractPromptIntegrationTest</ID>
+    <ID>AbstractClassCanBeConcreteClass:AbstractResourceIntegrationTest.kt:AbstractResourceIntegrationTest$AbstractResourceIntegrationTest</ID>
+    <ID>AbstractClassCanBeConcreteClass:AbstractToolIntegrationTest.kt:AbstractToolIntegrationTest$AbstractToolIntegrationTest</ID>
+    <ID>AbstractClassCanBeConcreteClass:BaseTransportTest.kt:BaseTransportTest$BaseTransportTest</ID>
+    <ID>CyclomaticComplexMethod:AbstractToolIntegrationTest.kt:AbstractToolIntegrationTest$private fun setupCalculatorTool</ID>
+    <ID>EmptyFunctionBlock:ClientTest.kt:ClientTest.&lt;no name provided>${ }</ID>
+    <ID>EmptyFunctionBlock:ClientTest.kt:ClientTest.&lt;no name provided>${}</ID>
+    <ID>ForbiddenComment:StdioClientTransportTest.kt:StdioClientTransportTest$// TODO: fix running on windows</ID>
+    <ID>InjectDispatcher:AbstractKotlinClientTsServerTest.kt:AbstractKotlinClientTsServerTest$IO</ID>
+    <ID>InjectDispatcher:AbstractPromptIntegrationTest.kt:AbstractPromptIntegrationTest$IO</ID>
+    <ID>InjectDispatcher:AbstractResourceIntegrationTest.kt:AbstractResourceIntegrationTest$IO</ID>
+    <ID>InjectDispatcher:AbstractToolIntegrationTest.kt:AbstractToolIntegrationTest$IO</ID>
+    <ID>InjectDispatcher:KotlinClientTsServerEdgeCasesTestSse.kt:KotlinClientTsServerEdgeCasesTestSse$IO</ID>
+    <ID>InjectDispatcher:KotlinClientTsServerEdgeCasesTestStdio.kt:KotlinClientTsServerEdgeCasesTestStdio$IO</ID>
+    <ID>InjectDispatcher:SseIntegrationTest.kt:SseIntegrationTest$IO</ID>
+    <ID>InjectDispatcher:StdioClientTransportTest.kt:StdioClientTransportTest$IO</ID>
+    <ID>InjectDispatcher:StreamableHttpIntegrationTest.kt:StreamableHttpIntegrationTest$IO</ID>
+    <ID>InjectDispatcher:TsEdgeCasesTestSse.kt:TsEdgeCasesTestSse$IO</ID>
+    <ID>InjectDispatcher:WebSocketIntegrationTest.kt:WebSocketIntegrationTest$IO</ID>
+    <ID>LargeClass:AbstractToolIntegrationTest.kt:AbstractToolIntegrationTest : KotlinTestBase</ID>
+    <ID>LargeClass:ClientTest.kt:ClientTest</ID>
+    <ID>LongMethod:AbstractPromptIntegrationTest.kt:AbstractPromptIntegrationTest$@Test fun testMissingRequiredArguments</ID>
+    <ID>LongMethod:AbstractPromptIntegrationTest.kt:AbstractPromptIntegrationTest$override fun configureServer</ID>
+    <ID>LongMethod:AbstractResourceIntegrationTest.kt:AbstractResourceIntegrationTest$override fun configureServer</ID>
+    <ID>LongMethod:AbstractToolIntegrationTest.kt:AbstractToolIntegrationTest$private fun setupCalculatorTool</ID>
+    <ID>LongMethod:ClientTest.kt:ClientTest$@Test fun `JSONRPCRequest with ToolsList method and default params returns list of tools`</ID>
+    <ID>LongMethod:ClientTest.kt:ClientTest$@Test fun `should handle logging setLevel request`</ID>
+    <ID>LongMethod:KotlinServerForTsClientSse.kt:HttpServerTransport$suspend fun handleRequest</ID>
+    <ID>LongMethod:KotlinServerForTsClientSse.kt:KotlinServerForTsClient$fun createMcpServer: Server</ID>
+    <ID>LongMethod:KotlinServerForTsClientSse.kt:KotlinServerForTsClient$fun start</ID>
+    <ID>LongMethod:KotlinTestBase.kt:KotlinTestBase$protected fun setupServer</ID>
+    <ID>LongMethod:ServerResourcesNotificationSubscribeTest.kt:ServerResourcesNotificationSubscribeTest$@Test fun `should send resource notifications`</ID>
+    <ID>LongMethod:TsEdgeCasesTestSse.kt:TsEdgeCasesTestSse$@Test @Timeout(30, unit = TimeUnit.SECONDS) fun testComplexConcurrentRequests: Unit</ID>
+    <ID>MatchingDeclarationName:PromptIntegrationTestSse.kt:SchemaPromptIntegrationTestSse : AbstractPromptIntegrationTest</ID>
+    <ID>SleepInsteadOfDelay:KotlinServerForTsClientSse.kt:KotlinServerForTsClient$sleep(500)</ID>
+    <ID>ThrowsCount:AbstractPromptIntegrationTest.kt:AbstractPromptIntegrationTest$override fun configureServer</ID>
+    <ID>UnusedPrivateProperty:KotlinClientTsServerTestSse.kt:KotlinClientTsServerTestSse$private val host = "localhost"</ID>
+    <ID>UseCheckOrError:ClientTest.kt:ClientTest.&lt;no name provided>$throw IllegalStateException("Test error")</ID>
+    <ID>UseOrEmpty:AbstractToolIntegrationTest.kt:AbstractToolIntegrationTest$(request.params.arguments?.get("tags") as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.content } ?: emptyList()</ID>
+    <ID>UseRequire:AbstractPromptIntegrationTest.kt:AbstractPromptIntegrationTest$throw IllegalArgumentException("Missing required argument: $argName")</ID>
+    <ID>VarCouldBeVal:KotlinClientTsServerEdgeCasesTestSse.kt:KotlinClientTsServerEdgeCasesTestSse$private lateinit var client: Client</ID>
+  </CurrentIssues>
+</SmellBaseline>

@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:StdioClientTransport.kt:StdioClientTransport$override suspend fun initialize</ID>
+    <ID>InjectDispatcher:StdioClientTransport.kt:StdioClientTransport$Default</ID>
+    <ID>InjectDispatcher:StreamableHttpClientTransport.kt:StreamableHttpClientTransport$Default</ID>
+    <ID>LongMethod:StdioClientTransport.kt:StdioClientTransport$override suspend fun initialize</ID>
+    <ID>MaxLineLength:StdioClientTransport.kt:StdioClientTransport$*</ID>
+    <ID>NoNameShadowing:StdioClientTransport.kt:StdioClientTransport$source</ID>
+    <ID>ThrowsCount:SseClientTransport.kt:SseClientTransport$private suspend fun CoroutineScope.collectMessages</ID>
+    <ID>ThrowsCount:StreamableHttpClientTransport.kt:StreamableHttpClientTransport$@Suppress("ReturnCount", "CyclomaticComplexMethod") override suspend fun performSend</ID>
+    <ID>TooGenericExceptionCaught:Client.kt:Client$error: Throwable</ID>
+    <ID>TooGenericExceptionCaught:SseClientTransport.kt:SseClientTransport$e: Throwable</ID>
+    <ID>TooGenericExceptionCaught:StdioClientTransport.kt:StdioClientTransport$e: Throwable</ID>
+    <ID>UseCheckOrError:Client.kt:Client$throw IllegalStateException( "Server does not support resource subscriptions (required for $method)", )</ID>
+    <ID>UseCheckOrError:Client.kt:Client$throw IllegalStateException("Client does not support roots capability.")</ID>
+  </CurrentIssues>
+</SmellBaseline>
