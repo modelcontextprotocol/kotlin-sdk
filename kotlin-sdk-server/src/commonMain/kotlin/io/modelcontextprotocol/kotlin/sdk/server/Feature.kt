@@ -79,16 +79,22 @@ public class UriTemplateFeatureKey(override val key: String) :
         // - Query parameters are ignored
         val uriWithoutQueryParameters = this.key.replace(Regex("\\{\\?[^}]+}"), "")
 
-        val newRegex = Regex("\\{(<groupName>[^}*]*)(<wildcard>[*]?)}")
+        var newRegex = Regex("\\{(?<groupName>[^}*]*)(?<wildcard>\\*?)}")
             .replace(uriWithoutQueryParameters) { matchResult ->
                 val groupName = matchResult.groups["groupName"]?.value
                 checkNotNull(groupName) { "Invalid URI template: $this" }
                 groups.add(groupName)
-                if (matchResult.groups["wildcard"]?.value != null) {
+                if (matchResult.groups["wildcard"]?.value?.isNotEmpty() == true) {
                     "(?<$groupName>.+)"
                 } else {
-                    "(?<$groupName>[^/]*)"
+                    "(?<$groupName>[^/]+)"
                 }
+            }
+        newRegex =
+            if (newRegex.endsWith('/')) {
+                "^$newRegex?$"
+            } else {
+                "^$newRegex/?$"
             }
         this.value = Regex(newRegex)
     }
@@ -99,7 +105,9 @@ public class UriTemplateFeatureKey(override val key: String) :
         val matchGroups = value.matchEntire(input)?.groups
         return groups.mapNotNull { groupName ->
             val groupValue = matchGroups?.get(groupName)?.value
-            if (groupValue != null) {
+            if (groupValue?.endsWith('/') == true) {
+                groupName to groupValue.removeSuffix("/")
+            } else if (groupValue != null) {
                 groupName to groupValue
             } else {
                 null
