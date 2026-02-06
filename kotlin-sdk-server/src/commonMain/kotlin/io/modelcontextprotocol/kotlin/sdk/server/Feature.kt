@@ -66,7 +66,12 @@ public class UriTemplateFeatureKey(override val key: String) :
     FeatureKey<Regex>(),
     UriTemplateArgumentExtractor {
     override val value: Regex
-    public val groups: MutableList<String> = mutableListOf<String>()
+
+    /**
+     * A list of variable names defined in the URI template. This is populated during initialization when the URI template is converted to a regex.
+     */
+    private val groups: MutableList<String> = mutableListOf()
+
     init {
         // Convert URI template to regex as follows:
         // - A simple variable `{variable}` is replaced with `(?<variable>[^/]+)`
