@@ -20,3 +20,16 @@ knit {
     defaultLineSeparator = "\n"
     siteRoot = "" // Disable site root validation
 }
+
+// Only run knitCheck when explicitly requested, not as part of build/check
+tasks.named("knitCheck") {
+    onlyIf {
+        gradle.startParameter.taskNames.any {
+            it.contains("knitCheck") || it.contains("knit")
+        }
+    }
+}
+
+tasks.clean {
+    delete("src")
+}
