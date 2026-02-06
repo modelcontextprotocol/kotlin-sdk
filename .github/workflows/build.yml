@@ -120,6 +120,40 @@ jobs:
           path: local-maven-repository.zip
           retention-days: 1
 
+  knit:
+    runs-on: ubuntu-latest
+    name: Knit
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v5
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          validate-wrappers: true
+          add-job-summary: 'always'
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+          gradle-home-cache-includes: |
+            caches
+            notifications
+            sdks
+            ../.konan/**
+
+      - name: Run Knit
+        run: |-
+          ./gradlew knit docs:classes docs:knitCheck -x :conformance-test:test --max-workers 3 --continue --rerun-tasks --configure-on-demand --parallel
+
+
   samples:
     needs: [ build ]
     runs-on: ubuntu-latest

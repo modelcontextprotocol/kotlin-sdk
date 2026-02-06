@@ -24,5 +24,6 @@ include(
     ":kotlin-sdk-server",
     ":kotlin-sdk",
     ":integration-test",
+    ":docs",
     ":conformance-test",
 )
