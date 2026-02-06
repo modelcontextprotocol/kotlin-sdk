@@ -143,9 +143,9 @@ internal class FeatureRegistry<T : Feature<S>, S : FeatureKey<R>, R>(private val
      * @param key The key of the feature to retrieve.
      * @return The feature associated with the given key, or `null` if no such feature exists in the registry.
      */
-    internal fun get(key: String): T? {
+    internal fun get(key: String): Map.Entry<S, T>? {
         logger.info { "Getting $featureType: \"$key\"" }
-        val feature = registry.value.entries.singleOrNull { it.key.matches(key) }?.value
+        val feature = registry.value.entries.singleOrNull { it.key.matches(key) }
         if (feature != null) {
             logger.info { "Got $featureType: \"$key\"" }
         } else {

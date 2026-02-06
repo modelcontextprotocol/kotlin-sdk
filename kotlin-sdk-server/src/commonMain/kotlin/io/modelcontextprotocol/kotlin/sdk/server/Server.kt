@@ -569,7 +569,7 @@ public open class Server(
         name: String,
         description: String,
         mimeType: String = "text/html",
-        readHandler: suspend (ReadResourceRequest) -> ReadResourceResult,
+        readHandler: suspend (ReadResourceRequest, TemplateValues) -> ReadResourceResult,
     ) {
         check(options.capabilities.resources != null) {
             logger.error { "Failed to add resource template '$name': Server does not support resources capability" }
@@ -653,7 +653,7 @@ public open class Server(
         logger.debug { "Handling tool call request for tool: ${requestParams.name}" }
 
         // Check if the tool exists
-        val tool = toolRegistry.get(requestParams.name) ?: run {
+        val tool = toolRegistry.get(requestParams.name)?.value ?: run {
             logger.error { "Tool not found: ${requestParams.name}" }
             return CallToolResult(
                 content = listOf(TextContent(text = "Tool ${requestParams.name} not found")),
@@ -684,7 +684,7 @@ public open class Server(
     private suspend fun handleGetPrompt(request: GetPromptRequest): GetPromptResult {
         val requestParams = request.params
         logger.debug { "Handling get prompt request for: ${requestParams.name}" }
-        val prompt = promptRegistry.get(requestParams.name)
+        val prompt = promptRegistry.get(requestParams.name)?.value
             ?: run {
                 logger.error { "Prompt not found: ${requestParams.name}" }
                 throw IllegalArgumentException("Prompt not found: ${requestParams.name}")
@@ -700,15 +700,15 @@ public open class Server(
     private suspend fun handleReadResource(request: ReadResourceRequest): ReadResourceResult {
         val requestParams = request.params
         logger.debug { "Handling read resource request for: ${requestParams.uri}" }
-        val resource = resourceRegistry.get(requestParams.uri)
+        val resource = resourceRegistry.get(requestParams.uri)?.value
             ?: run {
                 logger.debug { "Resource not found: ${requestParams.uri}" }
-                val resourceTemplate = resourceTemplateRegistry.get(requestParams.uri)
+                val (templateParser, resourceTemplate) = resourceTemplateRegistry.get(requestParams.uri)
                     ?: run {
                         logger.error { "Resource or resource template not found: ${requestParams.uri}" }
                         throw IllegalArgumentException("Resource or resource template not found: ${requestParams.uri}")
                     }
-                return resourceTemplate.readHandler(request)
+                return resourceTemplate.readHandler(request, templateParser.extractArguments(requestParams.uri))
             }
         return resource.readHandler(request)
     }

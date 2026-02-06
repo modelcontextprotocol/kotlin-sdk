@@ -11,6 +11,17 @@ import io.modelcontextprotocol.kotlin.sdk.types.Resource
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceTemplate
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
 
+public interface UriTemplateArgumentExtractor {
+    /**
+     * Extracts the arguments from the given [input] string based on the URI template defined in this extractor.
+     *
+     * @param input The input string to extract arguments from.
+     * @return A map of argument names to their corresponding values extracted from the input string.
+     *         If the input does not match the URI template, an empty map is returned.
+     */
+    public fun extractArguments(input: String): Map<String, String>
+}
+
 /**
  * Represents a unique key for a feature and allows comparing inputs with the [key].
  */
@@ -51,8 +62,11 @@ public class StringFeatureKey(override val key: String) : FeatureKey<String>() {
  *
  * @property key The URI template string key identifying the feature.
  */
-public class UriTemplateFeatureKey(override val key: String) : FeatureKey<Regex>() {
+public class UriTemplateFeatureKey(override val key: String) :
+    FeatureKey<Regex>(),
+    UriTemplateArgumentExtractor {
     override val value: Regex
+    public val groups: MutableList<String> = mutableListOf<String>()
     init {
         // Convert URI template to regex as follows:
         // - A simple variable `{variable}` is replaced with `(?<variable>[^/]+)`
@@ -62,9 +76,10 @@ public class UriTemplateFeatureKey(override val key: String) : FeatureKey<Regex>
 
         val newRegex = Regex("\\{(<groupName>[^}*]*)(<wildcard>[*]?)}")
             .replace(uriWithoutQueryParameters) { matchResult ->
-                val groupName = matchResult.groups["groupName"]
+                val groupName = matchResult.groups["groupName"]?.value
                 checkNotNull(groupName) { "Invalid URI template: $this" }
-                if (matchResult.groups["wildcard"] != null) {
+                groups.add(groupName)
+                if (matchResult.groups["wildcard"]?.value != null) {
                     "(?<$groupName>.+)"
                 } else {
                     "(?<$groupName>[^/]*)"
@@ -74,7 +89,24 @@ public class UriTemplateFeatureKey(override val key: String) : FeatureKey<Regex>
     }
 
     override fun matches(input: String): Boolean = value.matches(input)
+
+    override fun extractArguments(input: String): TemplateValues {
+        val matchGroups = value.matchEntire(input)?.groups
+        return groups.mapNotNull { groupName ->
+            val groupValue = matchGroups?.get(groupName)?.value
+            if (groupValue != null) {
+                groupName to groupValue
+            } else {
+                null
+            }
+        }.toMap()
+    }
 }
+
+/**
+ * A map of template variable names to their corresponding values extracted from an input string based on a URI template.
+ */
+public typealias TemplateValues = Map<String, String>
 
 /**
  * The [FeatureKey] used for [Tool]s.
@@ -148,7 +180,7 @@ public data class RegisteredResource(
  */
 public data class RegisteredResourceTemplate(
     val resourceTemplate: ResourceTemplate,
-    val readHandler: suspend (ReadResourceRequest) -> ReadResourceResult,
+    val readHandler: suspend (ReadResourceRequest, TemplateValues) -> ReadResourceResult,
 ) : Feature<ResourceTemplateFeatureKey> {
     override val key: ResourceTemplateFeatureKey = UriTemplateFeatureKey(resourceTemplate.uriTemplate)
 }
