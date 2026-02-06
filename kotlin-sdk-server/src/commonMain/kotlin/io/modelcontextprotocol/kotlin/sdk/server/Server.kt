@@ -74,7 +74,6 @@ public class ServerOptions(public val capabilities: ServerCapabilities, enforceS
  * this server. The provider is called each time a new session is started to support dynamic instructions.
  * @param block A block to configure the mcp server.
  */
-@Suppress("TooManyFunctions")
 public open class Server(
     protected val serverInfo: Implementation,
     protected val options: ServerOptions,
@@ -96,13 +95,10 @@ public open class Server(
         block: Server.() -> Unit = {},
     ) : this(serverInfo, options, { instructions }, block)
 
-    @Suppress("ktlint:standard:backing-property-naming")
     private var _onInitialized: (() -> Unit) = {}
 
-    @Suppress("ktlint:standard:backing-property-naming")
     private var _onConnect: (() -> Unit) = {}
 
-    @Suppress("ktlint:standard:backing-property-naming")
     private var _onClose: () -> Unit = {}
 
     @OptIn(ExperimentalTime::class)
@@ -177,7 +173,7 @@ public open class Server(
     @Deprecated(
         "Use createSession(transport) instead.",
         ReplaceWith("createSession(transport)"),
-        DeprecationLevel.WARNING,
+        DeprecationLevel.ERROR,
     )
     public suspend fun connect(transport: Transport): ServerSession = createSession(transport)
 
@@ -270,7 +266,7 @@ public open class Server(
     @Deprecated(
         "Initialization moved to ServerSession, use ServerSession.onInitialized instead.",
         ReplaceWith("ServerSession.onInitialized"),
-        DeprecationLevel.WARNING,
+        DeprecationLevel.ERROR,
     )
     public fun onInitialized(block: () -> Unit) {
         val old = _onInitialized
@@ -320,7 +316,6 @@ public open class Server(
      * @param handler A suspend function that handles executing the tool when called by the client.
      * @throws IllegalStateException If the server does not support tools.
      */
-    @Suppress("LongParameterList")
     public fun addTool(
         name: String,
         description: String,
@@ -575,7 +570,6 @@ public open class Server(
             )
         }
 
-        @Suppress("TooGenericExceptionCaught")
         // Execute the tool handler and catch any errors
         return try {
             logger.trace { "Executing tool ${requestParams.name} with input: ${requestParams.arguments}" }

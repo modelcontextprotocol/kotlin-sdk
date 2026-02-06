@@ -1,7 +1,0 @@
-config:
-  validation: true
-  warningsAsErrors: true
-
-complexity:
-  LongMethod:
-    excludes: ['**Test.kt']

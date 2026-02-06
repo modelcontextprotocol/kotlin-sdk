@@ -43,7 +43,6 @@ private val logger = KotlinLogging.logger {}
 /**
  * Represents a server session.
  */
-@Suppress("TooManyFunctions")
 public open class ServerSession(
     protected val serverInfo: Implementation,
     options: ServerOptions,
@@ -53,10 +52,8 @@ public open class ServerSession(
     @OptIn(ExperimentalUuidApi::class)
     public val sessionId: String = Uuid.random().toString()
 
-    @Suppress("ktlint:standard:backing-property-naming")
     private var _onInitialized: (() -> Unit) = {}
 
-    @Suppress("ktlint:standard:backing-property-naming")
     private var _onClose: () -> Unit = {}
 
     /**

@@ -19,7 +19,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.putJsonObject
 
-const val MCP_SESSION_ID_HEADER = "Mcp-Session-Id"
+const val MCP_SESSION_ID_HEADER = "MCP-Session-Id"
 
 internal class MockMcp(verbose: Boolean = false) {
 
@@ -31,7 +31,6 @@ internal class MockMcp(verbose: Boolean = false) {
 
     val url = "${mokksy.baseUrl()}/mcp"
 
-    @Suppress("LongParameterList")
     fun onInitialize(
         clientName: String? = null,
         sessionId: String,
@@ -109,7 +108,6 @@ internal class MockMcp(verbose: Boolean = false) {
         }
     }
 
-    @Suppress("LongParameterList")
     fun handleWithResult(
         httpMethod: HttpMethod = HttpMethod.Post,
         jsonRpcMethod: String,
@@ -145,7 +143,6 @@ internal class MockMcp(verbose: Boolean = false) {
         }
     }
 
-    @Suppress("LongParameterList")
     fun handleWithResult(
         httpMethod: HttpMethod = HttpMethod.Post,
         jsonRpcMethod: String,
@@ -170,7 +167,6 @@ internal class MockMcp(verbose: Boolean = false) {
         )
     }
 
-    @Suppress("LongParameterList")
     fun handleJSONRPCRequest(
         httpMethod: HttpMethod = HttpMethod.Post,
         jsonRpcMethod: String,

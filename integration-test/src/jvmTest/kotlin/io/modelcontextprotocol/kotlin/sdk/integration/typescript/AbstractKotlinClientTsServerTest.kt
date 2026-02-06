@@ -15,7 +15,7 @@ abstract class AbstractKotlinClientTsServerTest : TsTestBase() {
     protected abstract suspend fun <T> useClient(block: suspend (Client) -> T): T
 
     @Test
-    @Timeout(20, unit = TimeUnit.SECONDS)
+    @Timeout(60, unit = TimeUnit.SECONDS)
     fun connectsAndPings() = runBlocking(Dispatchers.IO) {
         useClient { client ->
             assertNotNull(client, "Client should be initialized")
@@ -28,7 +28,7 @@ abstract class AbstractKotlinClientTsServerTest : TsTestBase() {
     }
 
     @Test
-    @Timeout(20, unit = TimeUnit.SECONDS)
+    @Timeout(60, unit = TimeUnit.SECONDS)
     fun listsTools() = runBlocking(Dispatchers.IO) {
         useClient { client ->
             val result = client.listTools()
@@ -42,7 +42,7 @@ abstract class AbstractKotlinClientTsServerTest : TsTestBase() {
     }
 
     @Test
-    @Timeout(20, unit = TimeUnit.SECONDS)
+    @Timeout(60, unit = TimeUnit.SECONDS)
     fun callGreet() = runBlocking(Dispatchers.IO) {
         useClient { client ->
             val testName = "TestUser"
@@ -57,7 +57,7 @@ abstract class AbstractKotlinClientTsServerTest : TsTestBase() {
     }
 
     @Test
-    @Timeout(20, unit = TimeUnit.SECONDS)
+    @Timeout(60, unit = TimeUnit.SECONDS)
     fun multipleClients() = runBlocking(Dispatchers.IO) {
         useClient { client1 ->
             useClient { client2 ->

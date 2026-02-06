@@ -99,8 +99,9 @@ async function main() {
 
         const tool = tools.find((t: { name: string; }) => t.name === toolName);
         if (!tool) {
-            console.error(`Tool "${toolName}" not found`);
-            process.exit(1);
+            // Don't call process.exit() here: it prevents finally{} from running,
+            // which breaks tests that expect a clean disconnect signal.
+            throw new Error(`Tool "${toolName}" not found`);
         }
 
         const toolArguments: any = {};
@@ -136,7 +137,8 @@ async function main() {
 
     } catch (error) {
         console.error('Error:', error);
-        process.exit(1);
+        // Don't hard-exit; allow finally{} to run so the client always closes cleanly.
+        process.exitCode = 1;
     } finally {
         await client.close();
         console.error('Disconnected from server');

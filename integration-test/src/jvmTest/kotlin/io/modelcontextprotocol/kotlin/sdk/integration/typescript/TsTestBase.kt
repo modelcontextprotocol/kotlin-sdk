@@ -213,14 +213,19 @@ abstract class TsTestBase {
         serverThread.isDaemon = true
         serverThread.start()
 
-        // Read ONLY stderr from client for human-readable output
+        // Read ONLY stderr from client for human-readable output.
+        // Also use it as a signal that the client is done (some Node processes keep the event-loop alive).
         val output = StringBuilder()
+        val doneLatch = java.util.concurrent.CountDownLatch(1)
         val errReader = Thread {
             try {
                 process.errorStream.bufferedReader().useLines { lines ->
                     lines.forEach { line ->
                         println("[TS-CLIENT-STDIO][err] $line")
                         output.append(line).append('\n')
+                        if (line.contains("Disconnected from server")) {
+                            doneLatch.countDown()
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -230,11 +235,26 @@ abstract class TsTestBase {
         errReader.isDaemon = true
         errReader.start()
 
-        // Wait up to 25s for client to exit
-        val finished = process.waitFor(25, TimeUnit.SECONDS)
+        // Wait for a "done" signal first, then give the process a short grace period to exit.
+        // This avoids hanging under the test's outer timeout (often ~30s).
+        val doneTimeoutSeconds = System.getenv("MCP_TS_CLIENT_DONE_TIMEOUT_SECONDS")?.toLongOrNull() ?: 25L
+        val sawDone = doneLatch.await(doneTimeoutSeconds, TimeUnit.SECONDS)
+        if (sawDone) {
+            // Encourage Node to exit if it is waiting on stdin.
+            try {
+                process.outputStream.close()
+            } catch (_: Exception) {
+            }
+        }
+
+        // Primary completion condition: the process exits.
+        // (Some error-paths may not print the disconnect line, but should still exit.)
+        val clientTimeoutSeconds = System.getenv("MCP_TS_CLIENT_TIMEOUT_SECONDS")?.toLongOrNull() ?: 30L
+        val finished = process.waitFor(clientTimeoutSeconds, TimeUnit.SECONDS)
         if (!finished) {
-            println("Stdio client did not finish in time; destroying")
+            println("Stdio client did not finish in time (${clientTimeoutSeconds}s); destroying")
             process.destroyForcibly()
+            process.waitFor(2, TimeUnit.SECONDS)
         }
 
         try {
