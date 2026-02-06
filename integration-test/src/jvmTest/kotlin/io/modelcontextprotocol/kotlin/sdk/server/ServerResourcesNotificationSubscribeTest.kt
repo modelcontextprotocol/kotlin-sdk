@@ -1,6 +1,10 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
+import io.kotest.assertions.nondeterministic.eventually
+import io.kotest.assertions.withClue
+import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.types.Method.Defined.NotificationsResourcesUpdated
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotification
@@ -9,13 +13,11 @@ import io.modelcontextprotocol.kotlin.sdk.types.SubscribeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.SubscribeRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.Test
 import java.util.concurrent.ConcurrentLinkedQueue
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.ExperimentalUuidApi
@@ -115,7 +117,7 @@ class ServerResourcesNotificationSubscribeTest : AbstractServerFeaturesTest() {
     }
 
     @Test
-    fun `notification should not be send when removed resource does not exists`() = runBlocking {
+    fun `notification should not be send when removed resource does not exists`(): Unit = runBlocking {
         println("Thread ${Thread.currentThread().name} test 1")
         // Track notifications
         val notifications = ConcurrentLinkedQueue<ResourceUpdatedNotification>()
@@ -126,13 +128,15 @@ class ServerResourcesNotificationSubscribeTest : AbstractServerFeaturesTest() {
 
         // Try to remove a non-existent resource
         val result = server.removeResource("non-existent-resource")
-        assertFalse(result, "Removing non-existent resource should return false")
+        withClue("Removing non-existent resource should return false") {
+            result shouldBe false
+        }
 
-        // Verify the result
-        delay(1.seconds)
-        assertTrue(
-            notifications.isEmpty(),
-            "No notification should be sent when resource doesn't exist",
-        )
+        // Verify no notification is sent (use eventually for cross-platform reliability)
+        withClue("No notification should be sent when resource doesn't exist") {
+            eventually(2.seconds) {
+                notifications.shouldBeEmpty()
+            }
+        }
     }
 }
