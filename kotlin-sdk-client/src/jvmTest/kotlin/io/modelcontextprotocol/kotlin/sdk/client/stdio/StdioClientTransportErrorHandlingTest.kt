@@ -7,7 +7,6 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.mockk.coEvery
-import io.mockk.every
 import io.mockk.mockk
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
@@ -15,19 +14,26 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.Buffer
+import kotlinx.io.asSource
+import kotlinx.io.buffered
 import kotlinx.io.writeString
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import java.io.PipedInputStream
+import java.io.PipedOutputStream
 import java.util.stream.Stream
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -39,17 +45,23 @@ class StdioClientTransportErrorHandlingTest {
 
     @OptIn(ExperimentalAtomicApi::class)
     @Test
-    fun `should continue on stderr EOF`() = runTest {
-        val stderrBuffer = Buffer()
+    fun `should continue on stderr EOF`(): Unit = runBlocking(Dispatchers.IO) {
         // Empty stderr = immediate EOF
+        val stderrBuffer = Buffer()
 
-        val inputBuffer = createNonEmptyBuffer {
-            """data: {"jsonrpc":"2.0","method":"ping","id":1}\n\n"""
-        }
+        // Create a pipe for stdin that stays open (simulates real stdin behavior)
+        val pipedOutputStream = PipedOutputStream()
+        val pipedInputStream = PipedInputStream(pipedOutputStream)
+
+        // Write one message to stdin
+        pipedOutputStream.write("""data: {"jsonrpc":"2.0","method":"ping","id":1}\n\n""".toByteArray())
+        pipedOutputStream.flush()
+        // Keep the pipe open by not closing pipedOutputStream - this prevents stdin EOF
+
         val outputBuffer = Buffer()
 
         transport = StdioClientTransport(
-            input = inputBuffer,
+            input = pipedInputStream.asSource().buffered(),
             output = outputBuffer,
             error = stderrBuffer,
         )
@@ -59,15 +71,21 @@ class StdioClientTransportErrorHandlingTest {
 
         transport.start()
 
-        // Stderr EOF should not close transport
-        // Use eventually to handle timing differences across platforms (especially Windows)
-        eventually(2.seconds) {
-            // Wait for stderr to be processed, then verify transport is still open
-            closeCalled.load() shouldBe false
-        }
+        // Wait for stderr EOF and stdin message to be processed
+        delay(500.milliseconds)
 
-        transport.close()
-        closeCalled.load() shouldBe true
+        // Transport should still be alive because stdin is still open (not EOF'd)
+        closeCalled.load() shouldBe false
+
+        // Close pipes to trigger stdin EOF.
+        // `transport.close()` cann't help here, since the underlying Java read() is blocked on I/O operation
+        pipedOutputStream.close()
+        pipedInputStream.close()
+
+        // Transport should close when stdin EOF is detected
+        eventually(2.seconds) {
+            closeCalled.load() shouldBe true
+        }
     }
 
     @Test
@@ -162,18 +180,13 @@ class StdioClientTransportErrorHandlingTest {
     fun `Send should handle exceptions`(throwable: Throwable, shouldWrap: Boolean, expectedCode: Int?) = runTest {
         val sendChannel: Channel<JSONRPCMessage> = mockk(relaxed = true)
 
-        // Create a stdin Source that never returns EOF to prevent transport from closing
-        // Use mockk since Source is a sealed interface
-        val stdin: kotlinx.io.Source = mockk(relaxed = true)
-        every { stdin.readAtMostTo(any<Buffer>(), any()) } coAnswers {
-            // Return 0 to indicate no data available (but not EOF)
-            // This keeps the transport alive without blocking
-            delay(10) // Small delay to prevent busy-waiting
-            0L
-        }
+        // Create stdin pipe that stays open to prevent transport from closing
+        val pipedOutputStream = PipedOutputStream()
+        val pipedInputStream = PipedInputStream(pipedOutputStream)
+        // Keep pipe open (don't write or close) - stdin will block on read, not EOF
 
         transport = StdioClientTransport(
-            input = stdin,
+            input = pipedInputStream.asSource().buffered(),
             output = Buffer(),
             sendChannel = sendChannel,
         )
@@ -195,6 +208,10 @@ class StdioClientTransportErrorHandlingTest {
         } else {
             exception shouldBeSameInstanceAs throwable
         }
+
+        // Cleanup
+        pipedOutputStream.close()
+        pipedInputStream.close()
     }
 
     fun createNonEmptyBuffer(block: () -> String): Buffer {
