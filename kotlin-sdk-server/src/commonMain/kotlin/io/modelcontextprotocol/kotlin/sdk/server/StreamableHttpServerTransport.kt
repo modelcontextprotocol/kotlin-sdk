@@ -345,6 +345,14 @@ public class StreamableHttpServerTransport(
     }
 
     public suspend fun handleGetRequest(session: ServerSSESession?, call: ApplicationCall) {
+        if (enableJsonResponse) {
+            call.reject(
+                HttpStatusCode.MethodNotAllowed,
+                RPCError.ErrorCode.CONNECTION_CLOSED,
+                "Method not allowed.",
+            )
+            return
+        }
         val sseSession = session ?: error("Server session can't be null for streaming GET requests")
 
         val acceptHeader = call.request.header(HttpHeaders.Accept)
