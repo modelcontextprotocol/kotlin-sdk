@@ -254,7 +254,9 @@ public class StreamableHttpServerTransport(
      */
     public suspend fun handlePostRequest(session: ServerSSESession?, call: ApplicationCall) {
         try {
-            if (!enableJsonResponse && session == null) error("Server session can't be null with json response")
+            if (!enableJsonResponse && session == null) {
+                error("Server session can't be null for SSE responses")
+            }
 
             val acceptHeader = call.request.header(HttpHeaders.Accept)
             val isAcceptEventStream = acceptHeader.accepts(ContentType.Text.EventStream)
