@@ -193,7 +193,7 @@ public open class Server(
                 handleListTools()
             }
             session.setRequestHandler<CallToolRequest>(Method.Defined.ToolsCall) { request, _ ->
-                handleCallTool(request)
+                handleCallTool(session, request)
             }
         }
 
@@ -203,7 +203,7 @@ public open class Server(
                 handleListPrompts()
             }
             session.setRequestHandler<GetPromptRequest>(Method.Defined.PromptsGet) { request, _ ->
-                handleGetPrompt(request)
+                handleGetPrompt(session, request)
             }
         }
 
@@ -213,7 +213,7 @@ public open class Server(
                 handleListResources()
             }
             session.setRequestHandler<ReadResourceRequest>(Method.Defined.ResourcesRead) { request, _ ->
-                handleReadResource(request)
+                handleReadResource(session, request)
             }
             session.setRequestHandler<ListResourceTemplatesRequest>(Method.Defined.ResourcesTemplatesList) { _, _ ->
                 handleListResourceTemplates()
@@ -294,7 +294,7 @@ public open class Server(
      * @param handler A suspend function that handles executing the tool when called by the client.
      * @throws IllegalStateException If the server does not support tools.
      */
-    public fun addTool(tool: Tool, handler: suspend (CallToolRequest) -> CallToolResult) {
+    public fun addTool(tool: Tool, handler: Handler<CallToolRequest, CallToolResult>) {
         check(options.capabilities.tools != null) {
             logger.error { "Failed to add tool '${tool.name}': Server does not support tools capability" }
             "Server does not support tools capability. Enable it in ServerOptions."
@@ -324,7 +324,7 @@ public open class Server(
         outputSchema: ToolSchema? = null,
         toolAnnotations: ToolAnnotations? = null,
         meta: JsonObject? = null,
-        handler: suspend (CallToolRequest) -> CallToolResult,
+        handler: Handler<CallToolRequest, CallToolResult>,
     ) {
         val tool = Tool(
             name = name,
@@ -391,7 +391,7 @@ public open class Server(
      * @param promptProvider A suspend function that returns the prompt content when requested by the client.
      * @throws IllegalStateException If the server does not support prompts.
      */
-    public fun addPrompt(prompt: Prompt, promptProvider: suspend (GetPromptRequest) -> GetPromptResult) {
+    public fun addPrompt(prompt: Prompt, promptProvider: Handler<GetPromptRequest, GetPromptResult>) {
         check(options.capabilities.prompts != null) {
             logger.error { "Failed to add prompt '${prompt.name}': Server does not support prompts capability" }
             "Server does not support prompts capability."
@@ -412,7 +412,7 @@ public open class Server(
         name: String,
         description: String? = null,
         arguments: List<PromptArgument>? = null,
-        promptProvider: suspend (GetPromptRequest) -> GetPromptResult,
+        promptProvider: Handler<GetPromptRequest, GetPromptResult>,
     ) {
         val prompt = Prompt(name = name, description = description, arguments = arguments)
         addPrompt(prompt, promptProvider)
@@ -479,7 +479,7 @@ public open class Server(
         name: String,
         description: String,
         mimeType: String = "text/html",
-        readHandler: suspend (ReadResourceRequest) -> ReadResourceResult,
+        readHandler: Handler<ReadResourceRequest, ReadResourceResult>,
     ) {
         check(options.capabilities.resources != null) {
             logger.error { "Failed to add resource '$name': Server does not support resources capability" }
@@ -557,7 +557,7 @@ public open class Server(
         return ListToolsResult(tools = toolList, nextCursor = null)
     }
 
-    private suspend fun handleCallTool(request: CallToolRequest): CallToolResult {
+    private suspend fun handleCallTool(session: ServerSession, request: CallToolRequest): CallToolResult {
         val requestParams = request.params
         logger.debug { "Handling tool call request for tool: ${requestParams.name}" }
 
@@ -573,7 +573,9 @@ public open class Server(
         // Execute the tool handler and catch any errors
         return try {
             logger.trace { "Executing tool ${requestParams.name} with input: ${requestParams.arguments}" }
-            tool.handler(request)
+            tool.run {
+                ContextImpl(session).handler(request)
+            }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -590,7 +592,7 @@ public open class Server(
         return ListPromptsResult(prompts = prompts.values.map { it.prompt })
     }
 
-    private suspend fun handleGetPrompt(request: GetPromptRequest): GetPromptResult {
+    private suspend fun handleGetPrompt(session: ServerSession, request: GetPromptRequest): GetPromptResult {
         val requestParams = request.params
         logger.debug { "Handling get prompt request for: ${requestParams.name}" }
         val prompt = promptRegistry.get(requestParams.name)
@@ -598,7 +600,9 @@ public open class Server(
                 logger.error { "Prompt not found: ${requestParams.name}" }
                 throw IllegalArgumentException("Prompt not found: ${requestParams.name}")
             }
-        return prompt.messageProvider(request)
+        return prompt.run {
+            ContextImpl(session).messageProvider(request)
+        }
     }
 
     private fun handleListResources(): ListResourcesResult {
@@ -606,7 +610,7 @@ public open class Server(
         return ListResourcesResult(resources = resources.values.map { it.resource })
     }
 
-    private suspend fun handleReadResource(request: ReadResourceRequest): ReadResourceResult {
+    private suspend fun handleReadResource(session: ServerSession, request: ReadResourceRequest): ReadResourceResult {
         val requestParams = request.params
         logger.debug { "Handling read resource request for: ${requestParams.uri}" }
         val resource = resourceRegistry.get(requestParams.uri)
@@ -614,7 +618,9 @@ public open class Server(
                 logger.error { "Resource not found: ${requestParams.uri}" }
                 throw IllegalArgumentException("Resource not found: ${requestParams.uri}")
             }
-        return resource.readHandler(request)
+        return resource.run {
+            ContextImpl(session).readHandler(request)
+        }
     }
 
     private fun handleListResourceTemplates(): ListResourceTemplatesResult {
