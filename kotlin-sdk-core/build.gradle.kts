@@ -110,12 +110,13 @@ kotlin {
         commonMain {
             kotlin.srcDir(generateLibVersion)
             dependencies {
-                api(libs.kotlinx.serialization.json)
+                api(libs.kotlinx.collections.immutable)
                 api(libs.kotlinx.coroutines.core)
                 api(libs.kotlinx.io.core)
-                api(libs.kotlinx.collections.immutable)
-                implementation(libs.ktor.server.websockets)
+                api(libs.kotlinx.schema.json)
+                api(libs.kotlinx.serialization.json)
                 implementation(libs.kotlin.logging)
+                implementation(libs.ktor.server.websockets)
             }
         }
 
@@ -128,6 +129,7 @@ kotlin {
 
         jvmTest {
             dependencies {
+                implementation(libs.kotlinx.schema.generator.json)
                 implementation(libs.junit.jupiter.params)
                 implementation(libs.mockk)
                 runtimeOnly(libs.slf4j.simple)
