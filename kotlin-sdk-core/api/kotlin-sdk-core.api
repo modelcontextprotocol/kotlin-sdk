@@ -413,7 +413,7 @@ public abstract class io/modelcontextprotocol/kotlin/sdk/shared/AbstractClientTr
 	protected final fun checkState (Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;Lkotlin/jvm/functions/Function1;)V
 	public static synthetic fun checkState$default (Lio/modelcontextprotocol/kotlin/sdk/shared/AbstractClientTransport;Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
 	public final fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	protected fun closeResources (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	protected abstract fun closeResources (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	protected final fun getState ()Ljava/util/concurrent/atomic/AtomicReference;
 	protected abstract fun initialize (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	protected abstract fun performSend (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -434,13 +434,13 @@ public abstract class io/modelcontextprotocol/kotlin/sdk/shared/AbstractTranspor
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState : java/lang/Enum {
-	public static final field INITIALIZATION_FAILED Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
-	public static final field INITIALIZING Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
-	public static final field NEW Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
-	public static final field OPERATIONAL Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
-	public static final field SHUTDOWN_FAILED Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
-	public static final field SHUTTING_DOWN Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
-	public static final field STOPPED Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
+	public static final field InitializationFailed Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
+	public static final field Initializing Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
+	public static final field New Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
+	public static final field Operational Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
+	public static final field ShutdownFailed Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
+	public static final field ShuttingDown Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
+	public static final field Stopped Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
 	public static fun values ()[Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;

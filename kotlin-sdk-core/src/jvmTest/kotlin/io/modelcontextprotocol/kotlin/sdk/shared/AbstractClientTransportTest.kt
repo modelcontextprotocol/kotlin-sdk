@@ -51,14 +51,14 @@ class AbstractClientTransportTest {
 
         @Test
         fun `should start with NEW state`() {
-            transport.currentState shouldBe ClientTransportState.NEW
+            transport.currentState shouldBe ClientTransportState.New
         }
 
         @Test
         fun `should transition to OPERATIONAL after successful start`() = runTest {
             transport.start()
 
-            transport.currentState shouldBe ClientTransportState.OPERATIONAL
+            transport.currentState shouldBe ClientTransportState.Operational
             transport.initializeCalled shouldBe true
         }
 
@@ -67,7 +67,7 @@ class AbstractClientTransportTest {
             transport.start()
 
             transport.initializeCalled shouldBe true
-            transport.currentState shouldBe ClientTransportState.OPERATIONAL
+            transport.currentState shouldBe ClientTransportState.Operational
         }
 
         @Test
@@ -78,7 +78,7 @@ class AbstractClientTransportTest {
                 transport.start()
             }
 
-            transport.currentState shouldBe ClientTransportState.INITIALIZATION_FAILED
+            transport.currentState shouldBe ClientTransportState.InitializationFailed
             transport.closeResourcesCalled shouldBe true
         }
 
@@ -100,7 +100,7 @@ class AbstractClientTransportTest {
             val exception = shouldThrow<IllegalStateException> {
                 transport.start()
             }
-            exception.message shouldContain "expected transport state NEW"
+            exception.message shouldContain "expected transport state New"
         }
 
         @Test
@@ -108,7 +108,7 @@ class AbstractClientTransportTest {
             transport.start()
             transport.close()
 
-            transport.currentState shouldBe ClientTransportState.STOPPED
+            transport.currentState shouldBe ClientTransportState.Stopped
             transport.closeResourcesCalled shouldBe true
         }
 
@@ -119,7 +119,7 @@ class AbstractClientTransportTest {
             transport.close()
 
             transport.closeResourcesCalled shouldBe true
-            transport.currentState shouldBe ClientTransportState.STOPPED
+            transport.currentState shouldBe ClientTransportState.Stopped
         }
 
         @Test
@@ -131,7 +131,7 @@ class AbstractClientTransportTest {
             transport.close()
             transport.close()
 
-            transport.currentState shouldBe ClientTransportState.STOPPED
+            transport.currentState shouldBe ClientTransportState.Stopped
             transport.closeResourcesCallCount shouldBe 1
         }
 
@@ -154,7 +154,7 @@ class AbstractClientTransportTest {
 
             transport.close()
 
-            transport.currentState shouldBe ClientTransportState.SHUTDOWN_FAILED
+            transport.currentState shouldBe ClientTransportState.ShutdownFailed
         }
 
         @Test
@@ -180,7 +180,7 @@ class AbstractClientTransportTest {
                 transport.close()
             }
 
-            transport.currentState shouldBe ClientTransportState.SHUTDOWN_FAILED
+            transport.currentState shouldBe ClientTransportState.ShutdownFailed
         }
 
         @Test
@@ -204,13 +204,13 @@ class AbstractClientTransportTest {
 
         @ParameterizedTest
         @CsvSource(
-            "NEW, INITIALIZING",
-            "NEW, STOPPED",
-            "INITIALIZING, OPERATIONAL",
-            "INITIALIZING, INITIALIZATION_FAILED",
-            "OPERATIONAL, SHUTTING_DOWN",
-            "SHUTTING_DOWN, STOPPED",
-            "SHUTTING_DOWN, SHUTDOWN_FAILED",
+            "New, Initializing",
+            "New, Stopped",
+            "Initializing, Operational",
+            "Initializing, InitializationFailed",
+            "Operational, ShuttingDown",
+            "ShuttingDown, Stopped",
+            "ShuttingDown, ShutdownFailed",
         )
         fun `should allow valid transitions`(fromName: String, toName: String) {
             val from = ClientTransportState.valueOf(fromName)
@@ -224,37 +224,37 @@ class AbstractClientTransportTest {
 
         @ParameterizedTest
         @CsvSource(
-            // From NEW: only INITIALIZING is valid
-            "NEW, OPERATIONAL",
-            "NEW, INITIALIZATION_FAILED",
-            "NEW, SHUTTING_DOWN",
-            "NEW, SHUTDOWN_FAILED",
-            // From INITIALIZING: only OPERATIONAL or INITIALIZATION_FAILED are valid
-            "INITIALIZING, NEW",
-            "INITIALIZING, INITIALIZING",
-            "INITIALIZING, SHUTTING_DOWN",
-            "INITIALIZING, STOPPED",
-            "INITIALIZING, SHUTDOWN_FAILED",
-            // From OPERATIONAL: only SHUTTING_DOWN is valid
-            "OPERATIONAL, NEW",
-            "OPERATIONAL, INITIALIZING",
-            "OPERATIONAL, INITIALIZATION_FAILED",
-            "OPERATIONAL, OPERATIONAL",
-            "OPERATIONAL, STOPPED",
-            "OPERATIONAL, SHUTDOWN_FAILED",
-            // From SHUTTING_DOWN: only STOPPED or SHUTDOWN_FAILED are valid
-            "SHUTTING_DOWN, NEW",
-            "SHUTTING_DOWN, INITIALIZING",
-            "SHUTTING_DOWN, INITIALIZATION_FAILED",
-            "SHUTTING_DOWN, OPERATIONAL",
-            "SHUTTING_DOWN, SHUTTING_DOWN",
+            // From New: only Initializing is valid
+            "New, Operational",
+            "New, InitializationFailed",
+            "New, ShuttingDown",
+            "New, ShutdownFailed",
+            // From Initializing: only Operational or InitializationFailed are valid
+            "Initializing, New",
+            "Initializing, Initializing",
+            "Initializing, ShuttingDown",
+            "Initializing, Stopped",
+            "Initializing, ShutdownFailed",
+            // From Operational: only ShuttingDown is valid
+            "Operational, New",
+            "Operational, Initializing",
+            "Operational, InitializationFailed",
+            "Operational, Operational",
+            "Operational, Stopped",
+            "Operational, ShutdownFailed",
+            // From ShuttingDown: only Stopped or ShutdownFailed are valid
+            "ShuttingDown, New",
+            "ShuttingDown, Initializing",
+            "ShuttingDown, InitializationFailed",
+            "ShuttingDown, Operational",
+            "ShuttingDown, ShuttingDown",
             // From terminal states: no transitions allowed
-            "INITIALIZATION_FAILED, NEW",
-            "INITIALIZATION_FAILED, OPERATIONAL",
-            "STOPPED, NEW",
-            "STOPPED, OPERATIONAL",
-            "SHUTDOWN_FAILED, NEW",
-            "SHUTDOWN_FAILED, OPERATIONAL",
+            "InitializationFailed, New",
+            "InitializationFailed, Operational",
+            "Stopped, New",
+            "Stopped, Operational",
+            "ShutdownFailed, New",
+            "ShutdownFailed, Operational",
         )
         fun `should reject invalid transitions`(fromName: String, toName: String) {
             val from = ClientTransportState.valueOf(fromName)
@@ -321,7 +321,7 @@ class AbstractClientTransportTest {
         @ParameterizedTest
         @EnumSource(
             value = ClientTransportState::class,
-            names = ["OPERATIONAL"],
+            names = ["Operational"],
             mode = EnumSource.Mode.EXCLUDE,
         )
         fun `should throw when sending in non-OPERATIONAL state`(state: ClientTransportState) = runTest {
@@ -404,7 +404,7 @@ class AbstractClientTransportTest {
         fun `should be idempotent when closing from NEW state`() = runTest {
             transport.close()
 
-            transport.currentState shouldBe ClientTransportState.STOPPED
+            transport.currentState shouldBe ClientTransportState.Stopped
             transport.closeResourcesCalled shouldBe false
         }
 
@@ -415,7 +415,7 @@ class AbstractClientTransportTest {
 
             transport.close()
 
-            transport.currentState shouldBe ClientTransportState.INITIALIZATION_FAILED
+            transport.currentState shouldBe ClientTransportState.InitializationFailed
             // closeResources was called during a failed start, but not during this close
             transport.closeResourcesCallCount shouldBe 1
         }
@@ -423,7 +423,7 @@ class AbstractClientTransportTest {
         @ParameterizedTest
         @EnumSource(
             value = ClientTransportState::class,
-            names = ["SHUTTING_DOWN", "SHUTDOWN_FAILED", "STOPPED"],
+            names = ["ShuttingDown", "ShutdownFailed", "Stopped"],
         )
         fun `should be idempotent when closing from terminal or shutdown states`(state: ClientTransportState) =
             runTest {

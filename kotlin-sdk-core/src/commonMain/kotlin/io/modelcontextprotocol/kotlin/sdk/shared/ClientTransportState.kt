@@ -13,13 +13,13 @@ public enum class ClientTransportState {
      *
      * This is the Initial state
      */
-    NEW,
+    New,
 
     /**
      * Indicates that the protocol
      * is in the [Initialization Phase](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle#initialization).
      */
-    INITIALIZING,
+    Initializing,
 
     /**
      * Indicates that the initialization phase of the protocol lifecycle has failed.
@@ -27,7 +27,7 @@ public enum class ClientTransportState {
      * This state suggests that the transport encountered an error or issue during
      * initialization, preventing it from successfully transitioning to a fully operational state.
      */
-    INITIALIZATION_FAILED,
+    InitializationFailed,
 
     /**
      * Represents the [operational phase](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle#operation)
@@ -35,7 +35,7 @@ public enum class ClientTransportState {
      *
      * During the operation phase, the client and server exchange messages according to the negotiated capabilities.
      */
-    OPERATIONAL,
+    Operational,
 
     /**
      * Represents the shutting down phase of the protocol lifecycle.
@@ -45,14 +45,14 @@ public enum class ClientTransportState {
      *
      * During this phase, no new outgoing messages should be accepted.
      */
-    SHUTTING_DOWN,
+    ShuttingDown,
 
     /**
      * Indicates that the shutdown phase of the protocol lifecycle has failed.
      *
      * This state signifies that an error was encountered during the shutdown phase.
      */
-    SHUTDOWN_FAILED,
+    ShutdownFailed,
 
     /**
      * Indicates that the transport has fully stopped.
@@ -60,20 +60,20 @@ public enum class ClientTransportState {
      * This state represents the final phase of the lifecycle, where the transport is no longer
      * operational and all cleanup routines or resource deallocations have been completed.
      */
-    STOPPED,
+    Stopped,
 
     ;
 
     internal companion object {
         val VALID_TRANSITIONS: Map<ClientTransportState, Set<ClientTransportState>> = mapOf(
-            NEW to setOf(INITIALIZING, STOPPED),
-            INITIALIZING to setOf(OPERATIONAL, INITIALIZATION_FAILED),
-            OPERATIONAL to setOf(SHUTTING_DOWN),
-            SHUTTING_DOWN to setOf(STOPPED, SHUTDOWN_FAILED),
+            New to setOf(Initializing, Stopped),
+            Initializing to setOf(Operational, InitializationFailed),
+            Operational to setOf(ShuttingDown),
+            ShuttingDown to setOf(Stopped, ShutdownFailed),
             // Terminal states allow no transitions
-            INITIALIZATION_FAILED to emptySet(),
-            STOPPED to emptySet(),
-            SHUTDOWN_FAILED to emptySet(),
+            InitializationFailed to emptySet(),
+            Stopped to emptySet(),
+            ShutdownFailed to emptySet(),
         )
     }
 }

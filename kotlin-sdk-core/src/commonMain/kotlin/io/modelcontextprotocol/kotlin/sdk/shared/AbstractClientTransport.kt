@@ -29,15 +29,15 @@ public abstract class AbstractClientTransport : AbstractTransport() {
 
     /**
      * Current transport state. Thread-safe via atomic reference.
-     * Initial state is [ClientTransportState.NEW].
+     * Initial state is [ClientTransportState.New].
      */
-    protected val state: AtomicReference<ClientTransportState> = AtomicReference(ClientTransportState.NEW)
+    protected val state: AtomicReference<ClientTransportState> = AtomicReference(ClientTransportState.New)
 
     /**
      * Performs transport-specific initialization (connections, I/O streams, background coroutines).
      *
-     * Called by [start] during [ClientTransportState.INITIALIZING]. On exception, state transitions to
-     * [ClientTransportState.INITIALIZATION_FAILED], [closeResources] is called, and exception propagates.
+     * Called by [start] during [ClientTransportState.Initializing]. On exception, state transitions to
+     * [ClientTransportState.InitializationFailed], [closeResources] is called, and exception propagates.
      */
     protected abstract suspend fun initialize()
 
@@ -85,22 +85,22 @@ public abstract class AbstractClientTransport : AbstractTransport() {
     /**
      * Initiates the transport by transitioning through the required states to prepare it for operation.
      *
-     * This method transitions the transport state from `NEW` to `INITIALIZING`, performs initialization
-     * logic specific to the transport implementation, and then transitions the state to `OPERATIONAL`
+     * This method transitions the transport state from `New` to `Initializing`, performs initialization
+     * logic specific to the transport implementation, and then transitions the state to `Operational`
      * upon successful initialization. If an exception occurs during initialization, the state is transitioned
-     * to `INITIALIZATION_FAILED`, resources are cleaned up, and the exception is rethrown.
+     * to `InitializationFailed`, resources are cleaned up, and the exception is rethrown.
      *
      * This method operates within a suspend context to allow for asynchronous initialization tasks.
      *
-     * Throws exception if the initialization process fails and transfer state to [ClientTransportState.INITIALIZATION_FAILED].
+     * Throws exception if the initialization process fails and transfer state to [ClientTransportState.InitializationFailed].
      */
     public final override suspend fun start() {
-        stateTransition(from = ClientTransportState.NEW, to = ClientTransportState.INITIALIZING)
+        stateTransition(from = ClientTransportState.New, to = ClientTransportState.Initializing)
         try {
             initialize()
-            stateTransition(from = ClientTransportState.INITIALIZING, to = ClientTransportState.OPERATIONAL)
+            stateTransition(from = ClientTransportState.Initializing, to = ClientTransportState.Operational)
         } catch (e: Exception) {
-            state.store(ClientTransportState.INITIALIZATION_FAILED)
+            state.store(ClientTransportState.InitializationFailed)
             closeResources()
             throw e
         }
@@ -125,7 +125,7 @@ public abstract class AbstractClientTransport : AbstractTransport() {
      */
     public final override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
         // fast path - state check to avoid nonsense operations
-        if (state.load() != ClientTransportState.OPERATIONAL) {
+        if (state.load() != ClientTransportState.Operational) {
             throw McpException(
                 code = CONNECTION_CLOSED,
                 message = "Transport is not started",
@@ -172,25 +172,25 @@ public abstract class AbstractClientTransport : AbstractTransport() {
      * The method is designed to operate within a suspendable context, allowing support for asynchronous
      * behavior during the resource cleanup and state transitions.
      *
-     * Transitions [ClientTransportState.OPERATIONAL] → [ClientTransportState.SHUTTING_DOWN] → [ClientTransportState.STOPPED].
+     * Transitions [ClientTransportState.Operational] → [ClientTransportState.ShuttingDown] → [ClientTransportState.Stopped].
      * Calls [closeResources] then invokes [_onClose] callbacks exactly once.
-     * On [kotlin.coroutines.cancellation.CancellationException], transitions to [ClientTransportState.UNKNOWN] and propagates.
+     * On [kotlin.coroutines.cancellation.CancellationException], transitions to [ClientTransportState.ShutdownFailed] and propagates.
      *
      * The method also handles unexpected exceptions gracefully during resource cleanup by transitioning
-     * the transport to the `SHUTDOWN_FAILED` state.
+     * the transport to the `ShutdownFailed` state.
      */
     public final override suspend fun close() {
         val performClose: Boolean
         when (state.load()) {
-            ClientTransportState.OPERATIONAL -> {
-                // Only OPERATIONAL state can transition to SHUTTING_DOWN
-                stateTransition(ClientTransportState.OPERATIONAL, ClientTransportState.SHUTTING_DOWN)
+            ClientTransportState.Operational -> {
+                // Only Operational state can transition to ShuttingDown
+                stateTransition(ClientTransportState.Operational, ClientTransportState.ShuttingDown)
                 performClose = true
             }
 
-            ClientTransportState.NEW -> {
-                // NEW state transitions directly to STOPPED without any cleanup
-                stateTransition(ClientTransportState.NEW, ClientTransportState.STOPPED)
+            ClientTransportState.New -> {
+                // New state transitions directly to Stopped without any cleanup
+                stateTransition(ClientTransportState.New, ClientTransportState.Stopped)
                 performClose = false
             }
 
@@ -202,14 +202,14 @@ public abstract class AbstractClientTransport : AbstractTransport() {
         if (performClose) {
             try {
                 closeResources()
-                stateTransition(from = ClientTransportState.SHUTTING_DOWN, to = ClientTransportState.STOPPED)
+                stateTransition(from = ClientTransportState.ShuttingDown, to = ClientTransportState.Stopped)
             } catch (e: CancellationException) {
-                stateTransition(from = ClientTransportState.SHUTTING_DOWN, to = ClientTransportState.SHUTDOWN_FAILED)
+                stateTransition(from = ClientTransportState.ShuttingDown, to = ClientTransportState.ShutdownFailed)
                 throw e // Always propagate cancellation
             } catch (e: Exception) {
                 // Ignore errors during cleanup
                 logger.error(e) { "Error during transport shutdown" }
-                stateTransition(from = ClientTransportState.SHUTTING_DOWN, to = ClientTransportState.SHUTDOWN_FAILED)
+                stateTransition(from = ClientTransportState.ShuttingDown, to = ClientTransportState.ShutdownFailed)
             } finally {
                 invokeOnCloseCallback()
             }
@@ -219,11 +219,9 @@ public abstract class AbstractClientTransport : AbstractTransport() {
     /**
      * Releases transport-specific resources (coroutines, connections, streams).
      *
-     * Called by [close] during [ClientTransportState.SHUTTING_DOWN].
+     * Called by [close] during [ClientTransportState.ShuttingDown].
      * May be called even if [initialize] failed partially.
      * **DO NOT** call [_onClose] from this method - [close] handles it in the finally block.
      */
-    protected open suspend fun closeResources() {
-        // noop
-    }
+    protected abstract suspend fun closeResources()
 }
