@@ -9,6 +9,17 @@ import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.cancellation.CancellationException
 
+/**
+ * Abstract base class representing a client-side transport layer for communication.
+ *
+ * This class is responsible for managing the lifecycle of a transport instance, including its initialization,
+ * state transitions, message transmission, and graceful shutdown. It provides a framework for implementing
+ * specific transport mechanisms by defining abstract methods that subclasses must implement.
+ *
+ * Thread-safety is achieved through the use of atomic references to manage transport state transitions and
+ * to ensure invariants during lifecycle events. The initialization and shutdown logic is designed to handle
+ * async workflows, ensuring proper resource cleanup in the case of failure or cancellation.
+ */
 @OptIn(ExperimentalAtomicApi::class)
 public abstract class AbstractClientTransport : AbstractTransport() {
 
@@ -95,6 +106,23 @@ public abstract class AbstractClientTransport : AbstractTransport() {
         }
     }
 
+    /**
+     * Sends a JSON-RPC message using the transport layer.
+     *
+     * This method ensures that the transport is operational before attempting to send the message.
+     * If the transport's state does not allow sending operations, an exception is thrown.
+     * It delegates the actual transmission to the abstract [performSend] method, which must be
+     * implemented by subclasses to handle the specifics of the transmission mechanism. Errors
+     * during the send operation are handled appropriately, and cancellation exceptions are always
+     * propagated.
+     *
+     * @param message The JSON-RPC message to be sent. Must adhere to the JSON-RPC 2.0 specification.
+     * @param options Optional parameters that influence how the message is transmitted, such as
+     *                timeout specifications or message delivery guarantees. Can be null if no
+     *                specific options are required.
+     * @throws McpException If the transport is not operational or other application-specific errors occur.
+     * @throws CancellationException If the coroutine is canceled.
+     */
     public final override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
         // fast path - state check to avoid nonsense operations
         if (state.load() != ClientTransportState.OPERATIONAL) {
@@ -152,35 +180,39 @@ public abstract class AbstractClientTransport : AbstractTransport() {
      * the transport to the `SHUTDOWN_FAILED` state.
      */
     public final override suspend fun close() {
-        when (val currentState = state.load()) {
-            // fast track - idempotency check for terminal and shutdown states
-            ClientTransportState.INITIALIZING,
-            ClientTransportState.INITIALIZATION_FAILED,
-            ClientTransportState.SHUTTING_DOWN,
-            ClientTransportState.SHUTDOWN_FAILED,
-            ClientTransportState.STOPPED,
-            -> return
-
-            ClientTransportState.NEW -> {
-                stateTransition(currentState, ClientTransportState.STOPPED)
-                return
+        val performClose: Boolean
+        when (state.load()) {
+            ClientTransportState.OPERATIONAL -> {
+                // Only OPERATIONAL state can transition to SHUTTING_DOWN
+                stateTransition(ClientTransportState.OPERATIONAL, ClientTransportState.SHUTTING_DOWN)
+                performClose = true
             }
 
-            // Only OPERATIONAL state can transition to SHUTTING_DOWN
-            ClientTransportState.OPERATIONAL -> stateTransition(currentState, ClientTransportState.SHUTTING_DOWN)
+            ClientTransportState.NEW -> {
+                // NEW state transitions directly to STOPPED without any cleanup
+                stateTransition(ClientTransportState.NEW, ClientTransportState.STOPPED)
+                performClose = false
+            }
+
+            else -> {
+                // Already shutting down or in terminal state - idempotent, do nothing
+                performClose = false
+            }
         }
-        try {
-            closeResources()
-            stateTransition(from = ClientTransportState.SHUTTING_DOWN, to = ClientTransportState.STOPPED)
-        } catch (e: CancellationException) {
-            stateTransition(from = ClientTransportState.SHUTTING_DOWN, to = ClientTransportState.SHUTDOWN_FAILED)
-            throw e // Always propagate cancellation
-        } catch (e: Exception) {
-            // Ignore errors during cleanup
-            logger.error(e) { "Error during transport shutdown" }
-            stateTransition(from = ClientTransportState.SHUTTING_DOWN, to = ClientTransportState.SHUTDOWN_FAILED)
-        } finally {
-            invokeOnCloseCallback()
+        if (performClose) {
+            try {
+                closeResources()
+                stateTransition(from = ClientTransportState.SHUTTING_DOWN, to = ClientTransportState.STOPPED)
+            } catch (e: CancellationException) {
+                stateTransition(from = ClientTransportState.SHUTTING_DOWN, to = ClientTransportState.SHUTDOWN_FAILED)
+                throw e // Always propagate cancellation
+            } catch (e: Exception) {
+                // Ignore errors during cleanup
+                logger.error(e) { "Error during transport shutdown" }
+                stateTransition(from = ClientTransportState.SHUTTING_DOWN, to = ClientTransportState.SHUTDOWN_FAILED)
+            } finally {
+                invokeOnCloseCallback()
+            }
         }
     }
 
