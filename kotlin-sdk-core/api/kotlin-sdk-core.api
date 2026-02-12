@@ -441,7 +441,6 @@ public final class io/modelcontextprotocol/kotlin/sdk/shared/ClientTransportStat
 	public static final field SHUTDOWN_FAILED Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
 	public static final field SHUTTING_DOWN Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
 	public static final field STOPPED Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
-	public static final field UNKNOWN Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
 	public static fun values ()[Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;

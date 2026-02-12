@@ -62,13 +62,6 @@ public enum class ClientTransportState {
      */
     STOPPED,
 
-    /**
-     * Represents an undefined or placeholder entity, when the actual state could not be determined.
-     *
-     * Normally, this value should not be used.
-     */
-    UNKNOWN,
-
     ;
 
     internal companion object {
@@ -81,7 +74,6 @@ public enum class ClientTransportState {
             INITIALIZATION_FAILED to emptySet(),
             STOPPED to emptySet(),
             SHUTDOWN_FAILED to emptySet(),
-            UNKNOWN to emptySet(),
         )
     }
 }

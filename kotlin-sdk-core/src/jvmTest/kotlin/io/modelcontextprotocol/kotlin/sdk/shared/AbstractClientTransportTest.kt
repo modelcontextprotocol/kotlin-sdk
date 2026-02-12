@@ -27,7 +27,6 @@ import kotlin.coroutines.cancellation.CancellationException
  * and message sending without relying on mocking frameworks.
  */
 @OptIn(ExperimentalAtomicApi::class)
-@DisplayName("AbstractClientTransport")
 class AbstractClientTransportTest {
 
     companion object {
@@ -181,7 +180,7 @@ class AbstractClientTransportTest {
                 transport.close()
             }
 
-            transport.currentState shouldBe ClientTransportState.UNKNOWN
+            transport.currentState shouldBe ClientTransportState.SHUTDOWN_FAILED
         }
 
         @Test
@@ -230,14 +229,12 @@ class AbstractClientTransportTest {
             "NEW, INITIALIZATION_FAILED",
             "NEW, SHUTTING_DOWN",
             "NEW, SHUTDOWN_FAILED",
-            "NEW, UNKNOWN",
             // From INITIALIZING: only OPERATIONAL or INITIALIZATION_FAILED are valid
             "INITIALIZING, NEW",
             "INITIALIZING, INITIALIZING",
             "INITIALIZING, SHUTTING_DOWN",
             "INITIALIZING, STOPPED",
             "INITIALIZING, SHUTDOWN_FAILED",
-            "INITIALIZING, UNKNOWN",
             // From OPERATIONAL: only SHUTTING_DOWN is valid
             "OPERATIONAL, NEW",
             "OPERATIONAL, INITIALIZING",
@@ -245,14 +242,12 @@ class AbstractClientTransportTest {
             "OPERATIONAL, OPERATIONAL",
             "OPERATIONAL, STOPPED",
             "OPERATIONAL, SHUTDOWN_FAILED",
-            "OPERATIONAL, UNKNOWN",
             // From SHUTTING_DOWN: only STOPPED or SHUTDOWN_FAILED are valid
             "SHUTTING_DOWN, NEW",
             "SHUTTING_DOWN, INITIALIZING",
             "SHUTTING_DOWN, INITIALIZATION_FAILED",
             "SHUTTING_DOWN, OPERATIONAL",
             "SHUTTING_DOWN, SHUTTING_DOWN",
-            "SHUTTING_DOWN, UNKNOWN",
             // From terminal states: no transitions allowed
             "INITIALIZATION_FAILED, NEW",
             "INITIALIZATION_FAILED, OPERATIONAL",
@@ -260,8 +255,6 @@ class AbstractClientTransportTest {
             "STOPPED, OPERATIONAL",
             "SHUTDOWN_FAILED, NEW",
             "SHUTDOWN_FAILED, OPERATIONAL",
-            "UNKNOWN, NEW",
-            "UNKNOWN, OPERATIONAL",
         )
         fun `should reject invalid transitions`(fromName: String, toName: String) {
             val from = ClientTransportState.valueOf(fromName)
@@ -430,7 +423,7 @@ class AbstractClientTransportTest {
         @ParameterizedTest
         @EnumSource(
             value = ClientTransportState::class,
-            names = ["SHUTTING_DOWN", "SHUTDOWN_FAILED", "STOPPED", "UNKNOWN"],
+            names = ["SHUTTING_DOWN", "SHUTDOWN_FAILED", "STOPPED"],
         )
         fun `should be idempotent when closing from terminal or shutdown states`(state: ClientTransportState) =
             runTest {

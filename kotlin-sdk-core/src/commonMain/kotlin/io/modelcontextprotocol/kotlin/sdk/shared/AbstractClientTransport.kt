@@ -108,7 +108,7 @@ public abstract class AbstractClientTransport : AbstractTransport() {
             performSend(message, options)
         } catch (e: CancellationException) {
             throw e // Always propagate cancellation
-        } catch (e: Throwable) {
+        } catch (e: Exception) {
             _onError(e)
             if (e is McpException) {
                 throw e
@@ -159,7 +159,6 @@ public abstract class AbstractClientTransport : AbstractTransport() {
             ClientTransportState.SHUTTING_DOWN,
             ClientTransportState.SHUTDOWN_FAILED,
             ClientTransportState.STOPPED,
-            ClientTransportState.UNKNOWN,
             -> return
 
             ClientTransportState.NEW -> {
@@ -174,7 +173,7 @@ public abstract class AbstractClientTransport : AbstractTransport() {
             closeResources()
             stateTransition(from = ClientTransportState.SHUTTING_DOWN, to = ClientTransportState.STOPPED)
         } catch (e: CancellationException) {
-            state.store(ClientTransportState.UNKNOWN)
+            stateTransition(from = ClientTransportState.SHUTTING_DOWN, to = ClientTransportState.SHUTDOWN_FAILED)
             throw e // Always propagate cancellation
         } catch (e: Exception) {
             // Ignore errors during cleanup
