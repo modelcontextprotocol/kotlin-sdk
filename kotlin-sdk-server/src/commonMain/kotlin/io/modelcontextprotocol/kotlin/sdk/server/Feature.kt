@@ -19,13 +19,15 @@ internal interface Feature {
     val key: FeatureKey
 }
 
+public typealias Handler<T, R> = suspend Context.(T) -> R
+
 /**
  * A wrapper class representing a registered tool on the server.
  *
  * @property tool The tool definition.
  * @property handler A suspend function to handle the tool call requests.
  */
-public data class RegisteredTool(val tool: Tool, val handler: suspend (CallToolRequest) -> CallToolResult) : Feature {
+public data class RegisteredTool(val tool: Tool, val handler: Handler<CallToolRequest, CallToolResult>) : Feature {
     override val key: String = tool.name
 }
 
@@ -37,7 +39,7 @@ public data class RegisteredTool(val tool: Tool, val handler: suspend (CallToolR
  */
 public data class RegisteredPrompt(
     val prompt: Prompt,
-    val messageProvider: suspend (GetPromptRequest) -> GetPromptResult,
+    val messageProvider: Handler<GetPromptRequest, GetPromptResult>,
 ) : Feature {
     override val key: String = prompt.name
 }
@@ -50,7 +52,7 @@ public data class RegisteredPrompt(
  */
 public data class RegisteredResource(
     val resource: Resource,
-    val readHandler: suspend (ReadResourceRequest) -> ReadResourceResult,
+    val readHandler: Handler<ReadResourceRequest, ReadResourceResult>,
 ) : Feature {
     override val key: String = resource.uri
 }
