@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.CONNECTION_CLOSED
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.INTERNAL_ERROR
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.cancellation.CancellationException
@@ -103,7 +104,22 @@ public abstract class AbstractClientTransport : AbstractTransport() {
             )
         }
         // limitation: state could still change at the time of use
-        performSend(message, options)
+        try {
+            performSend(message, options)
+        } catch (e: CancellationException) {
+            throw e // Always propagate cancellation
+        } catch (e: Throwable) {
+            _onError(e)
+            if (e is McpException) {
+                throw e
+            } else {
+                throw McpException(
+                    code = INTERNAL_ERROR,
+                    message = "Error while sending message: ${e.message}",
+                    cause = e,
+                )
+            }
+        }
     }
 
     /**
@@ -165,7 +181,7 @@ public abstract class AbstractClientTransport : AbstractTransport() {
             logger.error(e) { "Error during transport shutdown" }
             stateTransition(from = ClientTransportState.SHUTTING_DOWN, to = ClientTransportState.SHUTDOWN_FAILED)
         } finally {
-            _onClose()
+            invokeOnCloseCallback()
         }
     }
 

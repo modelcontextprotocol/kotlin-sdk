@@ -425,9 +425,9 @@ public abstract class io/modelcontextprotocol/kotlin/sdk/shared/AbstractClientTr
 
 public abstract class io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport : io/modelcontextprotocol/kotlin/sdk/shared/Transport {
 	public fun <init> ()V
-	protected final fun get_onClose ()Lkotlin/jvm/functions/Function0;
 	protected final fun get_onError ()Lkotlin/jvm/functions/Function1;
 	protected final fun get_onMessage ()Lkotlin/jvm/functions/Function2;
+	protected final fun invokeOnCloseCallback ()V
 	public fun onClose (Lkotlin/jvm/functions/Function0;)V
 	public fun onError (Lkotlin/jvm/functions/Function1;)V
 	public fun onMessage (Lkotlin/jvm/functions/Function2;)V
@@ -445,17 +445,6 @@ public final class io/modelcontextprotocol/kotlin/sdk/shared/ClientTransportStat
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
 	public static fun values ()[Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
-}
-
-public final class io/modelcontextprotocol/kotlin/sdk/shared/LifecyclePhase : java/lang/Enum {
-	public static final field FAILED Lio/modelcontextprotocol/kotlin/sdk/shared/LifecyclePhase;
-	public static final field INITIALIZING Lio/modelcontextprotocol/kotlin/sdk/shared/LifecyclePhase;
-	public static final field OPERATIONAL Lio/modelcontextprotocol/kotlin/sdk/shared/LifecyclePhase;
-	public static final field SHUTDOWN Lio/modelcontextprotocol/kotlin/sdk/shared/LifecyclePhase;
-	public static final field UNKNOWN Lio/modelcontextprotocol/kotlin/sdk/shared/LifecyclePhase;
-	public static fun getEntries ()Lkotlin/enums/EnumEntries;
-	public static fun valueOf (Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/shared/LifecyclePhase;
-	public static fun values ()[Lio/modelcontextprotocol/kotlin/sdk/shared/LifecyclePhase;
 }
 
 public abstract class io/modelcontextprotocol/kotlin/sdk/shared/Protocol {

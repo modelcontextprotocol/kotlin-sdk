@@ -2,6 +2,7 @@ package io.modelcontextprotocol.kotlin.sdk.shared
 
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import kotlinx.coroutines.CompletableDeferred
+import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 /**
@@ -11,8 +12,8 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 @OptIn(ExperimentalAtomicApi::class)
 @Suppress("PropertyName")
 public abstract class AbstractTransport : Transport {
-    protected var _onClose: (() -> Unit) = {}
-        private set
+    private val onCloseCalled = AtomicBoolean(false)
+    private var _onClose: (() -> Unit) = {}
     protected var _onError: ((Throwable) -> Unit) = {}
         private set
 
@@ -52,5 +53,19 @@ public abstract class AbstractTransport : Transport {
         }
 
         _onMessageInitialized.complete(Unit)
+    }
+
+    /**
+     * Invokes the `_onClose` callback if it has not been already triggered.
+     *
+     * This method ensures the `_onClose` callback is executed only once by utilizing
+     * an atomic flag (`onCloseCalled`). If the callback has already been executed,
+     * the method does nothing. Any exceptions thrown during the execution of the
+     * `_onClose` callback are caught and suppressed.
+     */
+    protected fun invokeOnCloseCallback() {
+        if (onCloseCalled.compareAndSet(expectedValue = false, newValue = true)) {
+            runCatching { _onClose() }
+        }
     }
 }

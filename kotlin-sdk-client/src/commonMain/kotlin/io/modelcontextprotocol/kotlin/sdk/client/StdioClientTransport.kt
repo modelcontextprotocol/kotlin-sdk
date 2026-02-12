@@ -220,7 +220,7 @@ public class StdioClientTransport @JvmOverloads public constructor(
                 // Wait for write job to complete before closing, matching old implementation
                 writeJob?.cancelAndJoin()
                 logger.debug { "Transport coroutine completed, calling onClose" }
-                callOnCloseOnce()
+                invokeOnCloseCallback()
             }
         }
     }
@@ -244,28 +244,12 @@ public class StdioClientTransport @JvmOverloads public constructor(
                 message = "Transport is closed",
                 cause = e,
             )
-        } catch (e: McpException) {
-            logger.debug(e) { "Error while sending message: ${e.message}" }
-            throw e
-        } catch (e: Throwable) {
-            logger.error(e) { "Error while sending message: ${e.message}" }
-            throw McpException(
-                code = INTERNAL_ERROR,
-                message = "Error while sending message: ${e.message}",
-                cause = e,
-            )
         }
     }
 
     override suspend fun closeResources() {
         scope.stopProcessing("Closed")
         scope.coroutineContext[Job]?.join() // Wait for all coroutines to complete
-    }
-
-    private fun callOnCloseOnce() {
-        if (onCloseCalled.compareAndSet(expectedValue = false, newValue = true)) {
-            runCatching { _onClose() }
-        }
     }
 
     private fun sendOutboundMessage(message: JSONRPCMessage, sink: Sink, mainScope: CoroutineScope) {
@@ -295,7 +279,7 @@ public class StdioClientTransport @JvmOverloads public constructor(
 
     private fun CoroutineScope.stopProcessing(reason: String, cause: Throwable? = null) {
         sendChannel.close() // Stop accepting new messages
-        callOnCloseOnce()
+        invokeOnCloseCallback()
         cancel(reason, cause) // cancel current coroutine context
     }
 

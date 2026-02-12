@@ -48,6 +48,7 @@ public class SseClientTransport(
     private companion object {
         private val logger = KotlinLogging.logger {}
     }
+
     private val endpoint = CompletableDeferred<String>()
 
     private lateinit var session: ClientSSESession
@@ -90,23 +91,18 @@ public class SseClientTransport(
         check(job?.isActive == true) { "SseClientTransport is closed!" }
         check(endpoint.isCompleted) { "Not connected!" }
 
-        try {
-            val response = client.post(endpoint.getCompleted()) {
-                requestBuilder()
-                headers.append(HttpHeaders.ContentType, ContentType.Application.Json)
-                setBody(McpJson.encodeToString(message))
-            }
-
-            if (!response.status.isSuccess()) {
-                val text = response.bodyAsText()
-                error("Error POSTing to endpoint (HTTP ${response.status}): $text")
-            }
-
-            logger.debug { "Client successfully sent message via SSE $endpoint" }
-        } catch (e: Throwable) {
-            _onError(e)
-            throw e
+        val response = client.post(endpoint.getCompleted()) {
+            requestBuilder()
+            headers.append(HttpHeaders.ContentType, ContentType.Application.Json)
+            setBody(McpJson.encodeToString(message))
         }
+
+        if (!response.status.isSuccess()) {
+            val text = response.bodyAsText()
+            error("Error POSTing to endpoint (HTTP ${response.status}): $text")
+        }
+
+        logger.debug { "Client successfully sent message via SSE $endpoint" }
     }
 
     private suspend fun CoroutineScope.collectMessages() {

@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.EnumSource
+import org.junit.jupiter.params.provider.MethodSource
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -28,6 +29,15 @@ import kotlin.coroutines.cancellation.CancellationException
 @OptIn(ExperimentalAtomicApi::class)
 @DisplayName("AbstractClientTransport")
 class AbstractClientTransportTest {
+
+    companion object {
+        @JvmStatic
+        fun nonMcpExceptions() = listOf(
+            TestException("Generic failure"),
+            java.io.IOException("Network error"),
+            IllegalStateException("Invalid state"),
+        )
+    }
 
     private lateinit var transport: TestClientTransport
 
@@ -332,6 +342,65 @@ class AbstractClientTransportTest {
             exception.message shouldContain "not started"
             transport.sentMessages.isEmpty() shouldBe true
         }
+
+        @Test
+        fun `should call onError when performSend throws McpException`() = runTest {
+            var errorCallCount = 0
+            var capturedError: Throwable? = null
+            transport.onError { error ->
+                errorCallCount++
+                capturedError = error
+            }
+            transport.shouldFailSend = true
+            transport.sendException = McpException(RPCError.ErrorCode.INTERNAL_ERROR, "Send failed")
+
+            transport.start()
+            val exception = shouldThrow<McpException> {
+                transport.send(PingRequest().toJSON())
+            }
+
+            errorCallCount shouldBe 1
+            capturedError shouldBe transport.sendException
+            exception shouldBe transport.sendException
+        }
+
+        @ParameterizedTest
+        @MethodSource("io.modelcontextprotocol.kotlin.sdk.shared.AbstractClientTransportTest#nonMcpExceptions")
+        fun `should call onError when performSend throws non-MCP exception`(testException: Throwable) = runTest {
+            var errorCallCount = 0
+            var capturedError: Throwable? = null
+            transport.onError { error ->
+                errorCallCount++
+                capturedError = error
+            }
+            transport.shouldFailSend = true
+            transport.sendException = testException
+
+            transport.start()
+            val exception = shouldThrow<McpException> {
+                transport.send(PingRequest().toJSON())
+            }
+
+            errorCallCount shouldBe 1
+            capturedError shouldBe testException
+            exception.code shouldBe RPCError.ErrorCode.INTERNAL_ERROR
+            exception.cause shouldBe testException
+        }
+
+        @Test
+        fun `should NOT call onError when performSend throws CancellationException`() = runTest {
+            var errorCallCount = 0
+            transport.onError { errorCallCount++ }
+            transport.shouldFailSend = true
+            transport.sendException = CancellationException("Operation cancelled")
+
+            transport.start()
+            shouldThrow<CancellationException> {
+                transport.send(PingRequest().toJSON())
+            }
+
+            errorCallCount shouldBe 0
+        }
     }
 
     @Nested
@@ -388,6 +457,8 @@ class AbstractClientTransportTest {
         var shouldFailInitialization = false
         var shouldFailClose = false
         var shouldThrowCancellation = false
+        var shouldFailSend = false
+        var sendException: Throwable? = null
 
         val currentState: ClientTransportState
             get() = state.load()
@@ -400,6 +471,9 @@ class AbstractClientTransportTest {
         }
 
         override suspend fun performSend(message: JSONRPCMessage, options: TransportSendOptions?) {
+            if (shouldFailSend) {
+                throw sendException ?: TestException("Send failed")
+            }
             sentMessages.add(message)
             lastSendOptions = options
         }
