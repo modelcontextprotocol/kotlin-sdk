@@ -21,15 +21,13 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.utils.io.readUTF8Line
-import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
+import io.modelcontextprotocol.kotlin.sdk.shared.AbstractClientTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
-import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
-import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.CONNECTION_CLOSED
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineName
@@ -40,7 +38,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
-import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.time.Duration
 
@@ -65,7 +62,7 @@ public class StreamableHttpClientTransport(
     private val url: String,
     private val reconnectionTime: Duration? = null,
     private val requestBuilder: HttpRequestBuilder.() -> Unit = {},
-) : AbstractTransport() {
+) : AbstractClientTransport() {
 
     private companion object {
         private val logger = KotlinLogging.logger {}
@@ -75,8 +72,6 @@ public class StreamableHttpClientTransport(
         private set
     public var protocolVersion: String? = null
 
-    private val initialized: AtomicBoolean = AtomicBoolean(false)
-
     private var sseSession: ClientSSESession? = null
     private var sseJob: Job? = null
 
@@ -84,42 +79,21 @@ public class StreamableHttpClientTransport(
 
     private var lastEventId: String? = null
 
-    override suspend fun start() {
-        if (!initialized.compareAndSet(expectedValue = false, newValue = true)) {
-            error("StreamableHttpClientTransport already started!")
-        }
-        logger.debug { "Client transport starting..." }
+    override suspend fun initialize() {
+        logger.debug { "Client transport is starting..." }
     }
 
     /**
      * Sends a single message with optional resumption support
      */
-    override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
-        send(message, options?.resumptionToken, options?.onResumptionToken)
-    }
-
-    /**
-     * Sends one or more messages with optional resumption support.
-     * This is the main send method that matches the TypeScript implementation.
-     */
-    public suspend fun send(
-        message: JSONRPCMessage,
-        resumptionToken: String?,
-        onResumptionToken: ((String) -> Unit)? = null,
-    ) {
-        if (!initialized.load()) {
-            throw McpException(
-                code = CONNECTION_CLOSED,
-                message = "Transport is not started",
-            )
-        }
+    override suspend fun performSend(message: JSONRPCMessage, options: TransportSendOptions?) {
         logger.debug { "Client sending message via POST to $url: ${McpJson.encodeToString(message)}" }
 
         // If we have a resumption token, reconnect the SSE stream with it
-        resumptionToken?.let { token ->
+        options?.resumptionToken?.let { token ->
             startSseSession(
                 resumptionToken = token,
-                onResumptionToken = onResumptionToken,
+                onResumptionToken = options.onResumptionToken,
                 replayMessageId = if (message is JSONRPCRequest) message.id else null,
             )
             return
@@ -138,7 +112,7 @@ public class StreamableHttpClientTransport(
 
         if (response.status == HttpStatusCode.Accepted) {
             if (message is JSONRPCNotification && message.method == "notifications/initialized") {
-                startSseSession(onResumptionToken = onResumptionToken)
+                startSseSession(onResumptionToken = options?.onResumptionToken)
             }
             return
         }
@@ -161,7 +135,7 @@ public class StreamableHttpClientTransport(
 
             ContentType.Text.EventStream -> handleInlineSse(
                 response,
-                onResumptionToken = onResumptionToken,
+                onResumptionToken = options?.onResumptionToken,
                 replayMessageId = if (message is JSONRPCRequest) message.id else null,
             )
 
@@ -177,23 +151,31 @@ public class StreamableHttpClientTransport(
         }
     }
 
-    override suspend fun close() {
-        if (!initialized.load()) return // Already closed or never started
+    /**
+     * Sends one or more messages with optional resumption support.
+     * This is the main send method that matches the TypeScript implementation.
+     */
+    public suspend fun send(
+        message: JSONRPCMessage,
+        resumptionToken: String?,
+        onResumptionToken: ((String) -> Unit)? = null,
+    ): Unit = send(
+        message = message,
+        options = TransportSendOptions(
+            resumptionToken = resumptionToken,
+            onResumptionToken = onResumptionToken,
+        ),
+    )
+
+    override suspend fun closeResources() {
         logger.debug { "Client transport closing." }
 
-        try {
-            // Try to terminate session if we have one
-            terminateSession()
+        // Try to terminate session if we have one
+        terminateSession()
 
-            sseSession?.cancel()
-            sseJob?.cancelAndJoin()
-            scope.cancel()
-        } catch (_: Exception) {
-            // Ignore errors during cleanup
-        } finally {
-            initialized.store(false)
-            _onClose()
-        }
+        sseSession?.cancel()
+        sseJob?.cancelAndJoin()
+        scope.cancel()
     }
 
     /**

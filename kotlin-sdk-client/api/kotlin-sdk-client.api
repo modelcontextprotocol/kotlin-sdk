@@ -62,24 +62,18 @@ public final class io/modelcontextprotocol/kotlin/sdk/client/KtorClientKt {
 	public static synthetic fun mcpSseTransport-5_5nbZA$default (Lio/ktor/client/HttpClient;Ljava/lang/String;Lkotlin/time/Duration;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/client/SseClientTransport;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/client/SseClientTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport {
+public final class io/modelcontextprotocol/kotlin/sdk/client/SseClientTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractClientTransport {
 	public synthetic fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Lkotlin/time/Duration;Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public synthetic fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Lkotlin/time/Duration;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun send (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/client/StdioClientTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport {
+public final class io/modelcontextprotocol/kotlin/sdk/client/StdioClientTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractClientTransport {
 	public static final field BUFFER_SIZE J
 	public fun <init> (Lkotlinx/io/Source;Lkotlinx/io/Sink;)V
 	public fun <init> (Lkotlinx/io/Source;Lkotlinx/io/Sink;Lkotlinx/io/Source;)V
 	public fun <init> (Lkotlinx/io/Source;Lkotlinx/io/Sink;Lkotlinx/io/Source;Lkotlinx/coroutines/channels/Channel;)V
 	public fun <init> (Lkotlinx/io/Source;Lkotlinx/io/Sink;Lkotlinx/io/Source;Lkotlinx/coroutines/channels/Channel;Lkotlin/jvm/functions/Function1;)V
 	public synthetic fun <init> (Lkotlinx/io/Source;Lkotlinx/io/Sink;Lkotlinx/io/Source;Lkotlinx/coroutines/channels/Channel;Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun send (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/client/StdioClientTransport$StderrSeverity : java/lang/Enum {
@@ -93,17 +87,14 @@ public final class io/modelcontextprotocol/kotlin/sdk/client/StdioClientTranspor
 	public static fun values ()[Lio/modelcontextprotocol/kotlin/sdk/client/StdioClientTransport$StderrSeverity;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/client/StreamableHttpClientTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport {
+public final class io/modelcontextprotocol/kotlin/sdk/client/StreamableHttpClientTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractClientTransport {
 	public synthetic fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Lkotlin/time/Duration;Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public synthetic fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Lkotlin/time/Duration;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun getProtocolVersion ()Ljava/lang/String;
 	public final fun getSessionId ()Ljava/lang/String;
-	public fun send (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun send (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun send$default (Lio/modelcontextprotocol/kotlin/sdk/client/StreamableHttpClientTransport;Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public final fun setProtocolVersion (Ljava/lang/String;)V
-	public fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun terminateSession (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 

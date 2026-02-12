@@ -14,7 +14,7 @@ import io.ktor.http.Url
 import io.ktor.http.append
 import io.ktor.http.isSuccess
 import io.ktor.http.protocolWithAuthority
-import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
+import io.modelcontextprotocol.kotlin.sdk.shared.AbstractClientTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
@@ -30,7 +30,6 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.SerializationException
-import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.time.Duration
 
@@ -44,10 +43,11 @@ public class SseClientTransport(
     private val urlString: String?,
     private val reconnectionTime: Duration? = null,
     private val requestBuilder: HttpRequestBuilder.() -> Unit = {},
-) : AbstractTransport() {
-    private val logger = KotlinLogging.logger {}
+) : AbstractClientTransport() {
 
-    private val initialized: AtomicBoolean = AtomicBoolean(false)
+    private companion object {
+        private val logger = KotlinLogging.logger {}
+    }
     private val endpoint = CompletableDeferred<String>()
 
     private lateinit var session: ClientSSESession
@@ -65,39 +65,28 @@ public class SseClientTransport(
         }
     }
 
-    override suspend fun start() {
-        check(initialized.compareAndSet(expectedValue = false, newValue = true)) {
-            "SSEClientTransport already started! If using Client class, note that connect() calls start() automatically."
-        }
-
-        try {
-            session = urlString?.let {
-                client.sseSession(
-                    urlString = it,
-                    reconnectionTime = reconnectionTime,
-                    block = requestBuilder,
-                )
-            } ?: client.sseSession(
+    override suspend fun initialize() {
+        session = urlString?.let {
+            client.sseSession(
+                urlString = it,
                 reconnectionTime = reconnectionTime,
                 block = requestBuilder,
             )
-            scope = CoroutineScope(session.coroutineContext + SupervisorJob())
+        } ?: client.sseSession(
+            reconnectionTime = reconnectionTime,
+            block = requestBuilder,
+        )
+        scope = CoroutineScope(session.coroutineContext + SupervisorJob())
 
-            job = scope.launch(CoroutineName("SseMcpClientTransport.connect#${hashCode()}")) {
-                collectMessages()
-            }
-
-            endpoint.await()
-        } catch (e: Exception) {
-            closeResources()
-            initialized.store(false)
-            throw e
+        job = scope.launch(CoroutineName("SseMcpClientTransport.connect#${hashCode()}")) {
+            collectMessages()
         }
+
+        endpoint.await()
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
-        check(initialized.load()) { "SseClientTransport is not initialized!" }
+    override suspend fun performSend(message: JSONRPCMessage, options: TransportSendOptions?) {
         check(job?.isActive == true) { "SseClientTransport is closed!" }
         check(endpoint.isCompleted) { "Not connected!" }
 
@@ -118,11 +107,6 @@ public class SseClientTransport(
             _onError(e)
             throw e
         }
-    }
-
-    override suspend fun close() {
-        check(initialized.load()) { "SseClientTransport is not initialized!" }
-        closeResources()
     }
 
     private suspend fun CoroutineScope.collectMessages() {
@@ -178,9 +162,7 @@ public class SseClientTransport(
         }
     }
 
-    private suspend fun closeResources() {
-        if (!initialized.compareAndSet(expectedValue = true, newValue = false)) return
-
+    override suspend fun closeResources() {
         job?.cancelAndJoin()
         try {
             if (::session.isInitialized) session.cancel()
@@ -189,7 +171,5 @@ public class SseClientTransport(
         } catch (e: Throwable) {
             _onError(e)
         }
-
-        _onClose()
     }
 }

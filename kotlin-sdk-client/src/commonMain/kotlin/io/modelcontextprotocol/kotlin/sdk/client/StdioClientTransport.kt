@@ -7,7 +7,7 @@ import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport.StderrSeve
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport.StderrSeverity.INFO
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport.StderrSeverity.WARNING
 import io.modelcontextprotocol.kotlin.sdk.internal.IODispatcher
-import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
+import io.modelcontextprotocol.kotlin.sdk.shared.AbstractClientTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.ReadBuffer
 import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.serializeMessage
@@ -88,7 +88,7 @@ public class StdioClientTransport @JvmOverloads public constructor(
     private val error: Source? = null,
     private val sendChannel: Channel<JSONRPCMessage> = Channel(Channel.BUFFERED),
     private val classifyStderr: (String) -> StderrSeverity = { DEBUG },
-) : AbstractTransport() {
+) : AbstractClientTransport() {
 
     private companion object {
         /**
@@ -113,13 +113,9 @@ public class StdioClientTransport @JvmOverloads public constructor(
 
     private val ioCoroutineContext: CoroutineContext = IODispatcher
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private val initialized = AtomicBoolean(false)
     private val onCloseCalled = AtomicBoolean(false)
 
-    override suspend fun start() {
-        if (!initialized.compareAndSet(expectedValue = false, newValue = true)) {
-            error("StdioClientTransport already started!")
-        }
+    override suspend fun initialize() {
         logger.debug { "Starting StdioClientTransport..." }
 
         // Producers run on IODispatcher for I/O
@@ -229,13 +225,7 @@ public class StdioClientTransport @JvmOverloads public constructor(
         }
     }
 
-    override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
-        if (!initialized.load()) {
-            throw McpException(
-                code = CONNECTION_CLOSED,
-                message = "Transport is not started",
-            )
-        }
+    override suspend fun performSend(message: JSONRPCMessage, options: TransportSendOptions?) {
         if (onCloseCalled.load()) {
             throw McpException(
                 code = CONNECTION_CLOSED,
@@ -267,10 +257,7 @@ public class StdioClientTransport @JvmOverloads public constructor(
         }
     }
 
-    override suspend fun close() {
-        if (!initialized.compareAndSet(expectedValue = true, newValue = false)) {
-            return // Already closed
-        }
+    override suspend fun closeResources() {
         scope.stopProcessing("Closed")
         scope.coroutineContext[Job]?.join() // Wait for all coroutines to complete
     }

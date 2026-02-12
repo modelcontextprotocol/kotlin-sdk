@@ -2,11 +2,13 @@ package io.modelcontextprotocol.kotlin.sdk.shared
 
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import kotlinx.coroutines.CompletableDeferred
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 /**
  * Implements [onClose], [onError] and [onMessage] functions of [Transport] providing
  * corresponding [_onClose], [_onError] and [_onMessage] properties to use for an implementation.
  */
+@OptIn(ExperimentalAtomicApi::class)
 @Suppress("PropertyName")
 public abstract class AbstractTransport : Transport {
     protected var _onClose: (() -> Unit) = {}

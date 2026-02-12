@@ -130,6 +130,7 @@ kotlin {
 
         jvmTest {
             dependencies {
+                implementation(libs.junit.jupiter.params)
                 runtimeOnly(libs.slf4j.simple)
             }
         }
