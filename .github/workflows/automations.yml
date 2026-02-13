@@ -1,0 +1,69 @@
+name: Automations
+
+on:
+  schedule:
+  # Runs every day at 2:00 AM UTC
+  - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  # contents: write # only for delete-branch option
+  issues: write
+  pull-requests: write
+
+jobs:
+  close-question-prs:
+    name: Mark/Close stale PRs and issues
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/stale@v10
+      ## https://github.com/marketplace/actions/close-stale-issues
+      with:
+        debug-only: true # 'true' for dry run
+        exempt-draft-pr: true # pull requests currently in draft will not be marked as stale
+        exempt-issue-labels: 'awaiting-approval,work-in-progress'
+        stale-pr-label: 'stale'
+        only-labels: 'awaiting-feedback,awaiting-answers'
+
+        # --- Scope: only PRs, not issues ---
+        stale-issue-message: >
+          👋 **This issue has been marked as Stale.**
+          
+          This issue was awaiting feedback and has had no activity for **30 days**.
+          
+          — 🤖 Stale PR Bot
+        days-before-issue-stale: 30
+        days-before-issue-close: -1
+
+        # --- Timing ---
+        # Since we target PRs already labeled "question",
+        # days-before-stale counts from last activity.
+        days-before-pr-stale: 30
+        days-before-pr-close: 15
+
+        # --- Labels ---
+        remove-stale-when-updated: true
+        remove-pr-stale-when-updated: true
+
+        # --- Messages ---
+        stale-pr-message: >
+          👋 **This PR has been marked as Stale.**
+          
+          This PR was awaiting feedback and has had no activity for **30 days**.
+          
+          — 🤖 Stale PR Bot
+        close-pr-message:  >
+          👋 **This PR has been automatically closed.**
+          
+          This PR was labeled with `stale` and has had no activity
+          for **15 days** since that.
+          
+          If this is still relevant, please feel free to reopen it
+          or create a new PR.
+          
+          — 🤖 Stale PR Bot
+
+        # --- Operations ---
+        operations-per-run: 100
+        ascending: true
