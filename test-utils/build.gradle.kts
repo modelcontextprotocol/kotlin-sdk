@@ -27,13 +27,11 @@ kotlin {
     }
 
     sourceSets {
-        commonMain {
-            dependencies {
-
-                api(kotlin("test"))
-                api(libs.kotest.assertions.core)
-                api(libs.kotest.assertions.json)
-                api(libs.kotlinx.serialization.json)
+        commonMain {dependencies {
+        api(project(":kotlin-sdk-core"))
+        api(kotlin("test"))
+        api(libs.kotest.assertions.core)
+        api(libs.kotest.assertions.json)api(libs.kotlinx.serialization.json)
                 api(libs.kotlinx.coroutines.test)
                 api(libs.ktor.server.core)
                 api(libs.kotlin.logging)

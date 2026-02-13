@@ -52,6 +52,7 @@ kotlin {
 
         jvmTest {
             dependencies {
+                implementation(project(":test-utils"))
                 implementation(libs.awaitility)
                 implementation(libs.ktor.client.apache5)
                 implementation(libs.mockk)
