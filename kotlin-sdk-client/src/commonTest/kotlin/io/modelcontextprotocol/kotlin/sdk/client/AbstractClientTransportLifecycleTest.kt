@@ -32,7 +32,7 @@ abstract class AbstractClientTransportLifecycleTest<T : AbstractTransport> {
         val exception = shouldThrow<IllegalStateException> {
             transport.start()
         }
-        exception.message shouldContain "already started"
+        exception.message shouldContain "Can't change state: expected transport state"
     }
 
     @Test
@@ -53,8 +53,8 @@ abstract class AbstractClientTransportLifecycleTest<T : AbstractTransport> {
         val exception = shouldThrow<McpException> {
             transport.send(PingRequest().toJSON())
         }
-        exception.message shouldContain "not started"
         exception.code shouldBe CONNECTION_CLOSED
+        exception.message shouldContain "Transport is not ready"
     }
 
     @Test

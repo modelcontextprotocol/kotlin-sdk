@@ -1,5 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
+import io.github.oshai.kotlinlogging.KLogger
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport.StderrSeverity.DEBUG
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport.StderrSeverity.FATAL
@@ -7,7 +8,7 @@ import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport.StderrSeve
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport.StderrSeverity.INFO
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport.StderrSeverity.WARNING
 import io.modelcontextprotocol.kotlin.sdk.internal.IODispatcher
-import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
+import io.modelcontextprotocol.kotlin.sdk.shared.AbstractClientTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.ReadBuffer
 import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.serializeMessage
@@ -39,7 +40,6 @@ import kotlinx.io.buffered
 import kotlinx.io.readByteArray
 import kotlinx.io.writeString
 import kotlinx.serialization.SerializationException
-import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.CoroutineContext
 import kotlin.jvm.JvmOverloads
@@ -88,7 +88,9 @@ public class StdioClientTransport @JvmOverloads public constructor(
     private val error: Source? = null,
     private val sendChannel: Channel<JSONRPCMessage> = Channel(Channel.BUFFERED),
     private val classifyStderr: (String) -> StderrSeverity = { DEBUG },
-) : AbstractTransport() {
+) : AbstractClientTransport() {
+
+    override val logger: KLogger = KotlinLogging.logger {}
 
     private companion object {
         /**
@@ -96,8 +98,6 @@ public class StdioClientTransport @JvmOverloads public constructor(
          * 8KB is optimal for most systems (matches default page size).
          */
         const val BUFFER_SIZE = 8 * 1024L
-
-        private val logger = KotlinLogging.logger {}
     }
 
     /**
@@ -113,13 +113,8 @@ public class StdioClientTransport @JvmOverloads public constructor(
 
     private val ioCoroutineContext: CoroutineContext = IODispatcher
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private val initialized = AtomicBoolean(false)
-    private val onCloseCalled = AtomicBoolean(false)
 
-    override suspend fun start() {
-        if (!initialized.compareAndSet(expectedValue = false, newValue = true)) {
-            error("StdioClientTransport already started!")
-        }
+    override suspend fun initialize() {
         logger.debug { "Starting StdioClientTransport..." }
 
         // Producers run on IODispatcher for I/O
@@ -224,24 +219,12 @@ public class StdioClientTransport @JvmOverloads public constructor(
                 // Wait for write job to complete before closing, matching old implementation
                 writeJob?.cancelAndJoin()
                 logger.debug { "Transport coroutine completed, calling onClose" }
-                callOnCloseOnce()
+                invokeOnCloseCallback()
             }
         }
     }
 
-    override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
-        if (!initialized.load()) {
-            throw McpException(
-                code = CONNECTION_CLOSED,
-                message = "Transport is not started",
-            )
-        }
-        if (onCloseCalled.load()) {
-            throw McpException(
-                code = CONNECTION_CLOSED,
-                message = "Transport is closed",
-            )
-        }
+    override suspend fun performSend(message: JSONRPCMessage, options: TransportSendOptions?) {
         @Suppress("SwallowedException")
         try {
             sendChannel.send(message)
@@ -254,31 +237,12 @@ public class StdioClientTransport @JvmOverloads public constructor(
                 message = "Transport is closed",
                 cause = e,
             )
-        } catch (e: McpException) {
-            logger.debug(e) { "Error while sending message: ${e.message}" }
-            throw e
-        } catch (e: Throwable) {
-            logger.error(e) { "Error while sending message: ${e.message}" }
-            throw McpException(
-                code = INTERNAL_ERROR,
-                message = "Error while sending message: ${e.message}",
-                cause = e,
-            )
         }
     }
 
-    override suspend fun close() {
-        if (!initialized.compareAndSet(expectedValue = true, newValue = false)) {
-            return // Already closed
-        }
+    override suspend fun closeResources() {
         scope.stopProcessing("Closed")
         scope.coroutineContext[Job]?.join() // Wait for all coroutines to complete
-    }
-
-    private fun callOnCloseOnce() {
-        if (onCloseCalled.compareAndSet(expectedValue = false, newValue = true)) {
-            runCatching { _onClose() }
-        }
     }
 
     private fun sendOutboundMessage(message: JSONRPCMessage, sink: Sink, mainScope: CoroutineScope) {
@@ -308,7 +272,7 @@ public class StdioClientTransport @JvmOverloads public constructor(
 
     private fun CoroutineScope.stopProcessing(reason: String, cause: Throwable? = null) {
         sendChannel.close() // Stop accepting new messages
-        callOnCloseOnce()
+        invokeOnCloseCallback()
         cancel(reason, cause) // cancel current coroutine context
     }
 

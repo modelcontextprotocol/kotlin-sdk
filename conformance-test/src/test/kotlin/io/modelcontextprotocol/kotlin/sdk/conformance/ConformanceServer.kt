@@ -417,6 +417,6 @@ private class HttpServerTransport(private val sessionId: String) : AbstractTrans
         logger.debug { "Closing transport for session $sessionId" }
         messageQueue.close()
         pendingResponses.clear()
-        _onClose.invoke()
+        invokeOnCloseCallback()
     }
 }

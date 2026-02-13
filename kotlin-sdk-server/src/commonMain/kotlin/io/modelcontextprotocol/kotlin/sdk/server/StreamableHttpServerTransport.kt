@@ -221,7 +221,7 @@ public class StreamableHttpServerTransport(
             streamsMapping.clear()
             requestToStreamMapping.clear()
             requestToResponseMapping.clear()
-            _onClose()
+            invokeOnCloseCallback()
         }
     }
 
