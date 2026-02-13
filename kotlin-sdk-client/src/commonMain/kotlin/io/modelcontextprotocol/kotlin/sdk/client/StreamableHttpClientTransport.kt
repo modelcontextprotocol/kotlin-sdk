@@ -1,5 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
+import io.github.oshai.kotlinlogging.KLogger
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.sse.ClientSSESession
@@ -64,9 +65,7 @@ public class StreamableHttpClientTransport(
     private val requestBuilder: HttpRequestBuilder.() -> Unit = {},
 ) : AbstractClientTransport() {
 
-    private companion object {
-        private val logger = KotlinLogging.logger {}
-    }
+    override val logger: KLogger = KotlinLogging.logger {}
 
     public var sessionId: String? = null
         private set

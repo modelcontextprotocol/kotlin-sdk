@@ -1,5 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
+import io.github.oshai.kotlinlogging.KLogger
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport.StderrSeverity.DEBUG
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport.StderrSeverity.FATAL
@@ -39,7 +40,6 @@ import kotlinx.io.buffered
 import kotlinx.io.readByteArray
 import kotlinx.io.writeString
 import kotlinx.serialization.SerializationException
-import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.CoroutineContext
 import kotlin.jvm.JvmOverloads
@@ -90,14 +90,14 @@ public class StdioClientTransport @JvmOverloads public constructor(
     private val classifyStderr: (String) -> StderrSeverity = { DEBUG },
 ) : AbstractClientTransport() {
 
+    override val logger: KLogger = KotlinLogging.logger {}
+
     private companion object {
         /**
          * Buffer size for I/O operations.
          * 8KB is optimal for most systems (matches default page size).
          */
         const val BUFFER_SIZE = 8 * 1024L
-
-        private val logger = KotlinLogging.logger {}
     }
 
     /**
@@ -113,7 +113,6 @@ public class StdioClientTransport @JvmOverloads public constructor(
 
     private val ioCoroutineContext: CoroutineContext = IODispatcher
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private val onCloseCalled = AtomicBoolean(false)
 
     override suspend fun initialize() {
         logger.debug { "Starting StdioClientTransport..." }
@@ -226,12 +225,6 @@ public class StdioClientTransport @JvmOverloads public constructor(
     }
 
     override suspend fun performSend(message: JSONRPCMessage, options: TransportSendOptions?) {
-        if (onCloseCalled.load()) {
-            throw McpException(
-                code = CONNECTION_CLOSED,
-                message = "Transport is closed",
-            )
-        }
         @Suppress("SwallowedException")
         try {
             sendChannel.send(message)

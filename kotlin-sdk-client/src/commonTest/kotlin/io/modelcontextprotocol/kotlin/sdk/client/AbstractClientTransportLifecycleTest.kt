@@ -53,8 +53,8 @@ abstract class AbstractClientTransportLifecycleTest<T : AbstractTransport> {
         val exception = shouldThrow<McpException> {
             transport.send(PingRequest().toJSON())
         }
-        exception.message shouldContain "not started"
         exception.code shouldBe CONNECTION_CLOSED
+        exception.message shouldContain "Transport is not ready"
     }
 
     @Test

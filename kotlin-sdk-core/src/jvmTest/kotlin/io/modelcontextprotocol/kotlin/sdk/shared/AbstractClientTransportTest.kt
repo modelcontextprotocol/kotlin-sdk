@@ -1,8 +1,12 @@
 package io.modelcontextprotocol.kotlin.sdk.shared
 
+import io.github.oshai.kotlinlogging.KLogger
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import io.mockk.spyk
+import io.modelcontextprotocol.kotlin.sdk.InternalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
@@ -42,7 +46,7 @@ class AbstractClientTransportTest {
 
     @BeforeEach
     fun beforeEach() {
-        transport = TestClientTransport()
+        transport = spyk(TestClientTransport())
     }
 
     @Nested
@@ -302,7 +306,7 @@ class AbstractClientTransportTest {
             }
 
             exception.code shouldBe RPCError.ErrorCode.CONNECTION_CLOSED
-            exception.message shouldContain "not started"
+            exception.message shouldContain "Transport is not ready"
         }
 
         @Test
@@ -315,7 +319,7 @@ class AbstractClientTransportTest {
             }
 
             exception.code shouldBe RPCError.ErrorCode.CONNECTION_CLOSED
-            exception.message shouldContain "not started"
+            exception.message shouldContain "Transport is not ready"
         }
 
         @ParameterizedTest
@@ -332,7 +336,7 @@ class AbstractClientTransportTest {
             }
 
             exception.code shouldBe RPCError.ErrorCode.CONNECTION_CLOSED
-            exception.message shouldContain "not started"
+            exception.message shouldContain "Transport is not ready"
             transport.sentMessages.isEmpty() shouldBe true
         }
 
@@ -441,7 +445,9 @@ class AbstractClientTransportTest {
      * Simple test implementation of [AbstractClientTransport] for behavioral testing.
      * Tracks method calls without mocking frameworks.
      */
+    @OptIn(InternalMcpApi::class)
     private class TestClientTransport : AbstractClientTransport() {
+        override val logger: KLogger = KotlinLogging.logger {}
         val sentMessages = mutableListOf<JSONRPCMessage>()
         var lastSendOptions: TransportSendOptions? = null
         var initializeCalled = false
@@ -454,7 +460,7 @@ class AbstractClientTransportTest {
         var sendException: Throwable? = null
 
         val currentState: ClientTransportState
-            get() = state.load()
+            get() = state
 
         override suspend fun initialize() {
             initializeCalled = true
@@ -485,9 +491,7 @@ class AbstractClientTransportTest {
             stateTransition(from, to)
         }
 
-        fun forceState(newState: ClientTransportState) {
-            state.store(newState)
-        }
+        fun forceState(newState: ClientTransportState) = updateState(newState)
     }
 
     private class TestException(message: String) : Exception(message)
