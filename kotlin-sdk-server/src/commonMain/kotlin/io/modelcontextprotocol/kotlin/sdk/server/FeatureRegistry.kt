@@ -12,8 +12,8 @@ import kotlinx.collections.immutable.toPersistentSet
 /**
  * A listener interface for receiving notifications about feature changes in registry.
  */
-internal interface FeatureListener {
-    fun onFeatureUpdated(featureKey: String)
+internal interface FeatureListener<FeatureKey> {
+    fun onFeatureUpdated(featureKey: FeatureKey)
 }
 
 /**
@@ -24,7 +24,7 @@ internal interface FeatureListener {
  * @param featureType A string description of the type of feature being managed.
  *                    Used primarily for logging purposes.
  */
-internal class FeatureRegistry<T : Feature>(private val featureType: String) {
+internal class FeatureRegistry<T : Feature<S>, S : FeatureKey<R>, R>(private val featureType: String) {
 
     private val logger = KotlinLogging.logger(name = "FeatureRegistry[$featureType]")
 
@@ -32,22 +32,22 @@ internal class FeatureRegistry<T : Feature>(private val featureType: String) {
      * Atomic variable used to maintain a thread-safe registry of features.
      * Stores a persistent map where each feature is identified by a unique key.
      */
-    private val registry = atomic(persistentMapOf<FeatureKey, T>())
+    private val registry = atomic(persistentMapOf<S, T>())
 
     /**
      * Provides a snapshot of all features currently registered in the registry.
      * Keys represent unique identifiers for each feature, and values represent the associated features.
      */
-    internal val values: Map<FeatureKey, T>
+    internal val values: Map<S, T>
         get() = registry.value
 
-    private val listeners = atomic(persistentListOf<FeatureListener>())
+    private val listeners = atomic(persistentListOf<FeatureListener<S>>())
 
-    internal fun addListener(listener: FeatureListener) {
+    internal fun addListener(listener: FeatureListener<S>) {
         listeners.update { it.add(listener) }
     }
 
-    internal fun removeListener(listener: FeatureListener) {
+    internal fun removeListener(listener: FeatureListener<S>) {
         listeners.update { it.remove(listener) }
     }
 
@@ -88,15 +88,21 @@ internal class FeatureRegistry<T : Feature>(private val featureType: String) {
      * @param key The key of the feature to be removed.
      * @return `true` if the feature was successfully removed, or `false` if the feature was not found.
      */
-    internal fun remove(key: FeatureKey): Boolean {
+    internal fun remove(key: String): Boolean {
         logger.info { "Removing $featureType: \"$key\"" }
-        val oldMap = registry.getAndUpdate { current -> current.remove(key) }
+        var removedKey: S? = null
+        val oldMap = registry.getAndUpdate { current ->
+            current.keys.singleOrNull { it.key == key }?.let { actualKey ->
+                removedKey = actualKey
+                current.remove(actualKey)
+            } ?: current
+        }
 
-        val removedFeature = oldMap[key]
-        val removed = removedFeature != null
+        val removedFeature = oldMap[removedKey]
+        val removed = removedKey != null
 
         if (removed) {
-            logger.info { "Removed $featureType: \"$key\"" }
+            logger.info { "Removed $featureType: \"$removedKey\"" }
             notifyFeatureUpdated(removedFeature, null)
         } else {
             logger.info { "$featureType not found: \"$key\"" }
@@ -111,11 +117,12 @@ internal class FeatureRegistry<T : Feature>(private val featureType: String) {
      * @param keys The list of keys whose associated features are to be removed.
      * @return The number of features that were successfully removed.
      */
-    internal fun removeAll(keys: List<FeatureKey>): Int {
+    internal fun removeAll(keys: List<String>): Int {
         logger.info { "Removing ${featureType}s: ${keys.size}" }
-        val oldMap = registry.getAndUpdate { current -> current - keys.toPersistentSet() }
+        val keysToRemove = registry.value.keys.filter { key -> key.key in keys }
+        val oldMap = registry.getAndUpdate { current -> current - keysToRemove.toPersistentSet() }
 
-        val removedFeatures = keys.mapNotNull { oldMap[it] }
+        val removedFeatures = keysToRemove.mapNotNull { oldMap[it] }
         val removedCount = removedFeatures.size
 
         if (removedCount > 0) {
@@ -136,9 +143,9 @@ internal class FeatureRegistry<T : Feature>(private val featureType: String) {
      * @param key The key of the feature to retrieve.
      * @return The feature associated with the given key, or `null` if no such feature exists in the registry.
      */
-    internal fun get(key: FeatureKey): T? {
+    internal fun get(key: String): Map.Entry<S, T>? {
         logger.info { "Getting $featureType: \"$key\"" }
-        val feature = registry.value[key]
+        val feature = registry.value.entries.singleOrNull { it.key.matches(key) }
         if (feature != null) {
             logger.info { "Got $featureType: \"$key\"" }
         } else {

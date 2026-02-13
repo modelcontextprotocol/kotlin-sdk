@@ -32,6 +32,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.PromptArgument
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
 import io.modelcontextprotocol.kotlin.sdk.types.Resource
+import io.modelcontextprotocol.kotlin.sdk.types.ResourceTemplate
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.SubscribeRequest
@@ -106,22 +107,36 @@ public open class Server(
 
     private val sessionRegistry = ServerSessionRegistry()
 
-    private val toolRegistry = FeatureRegistry<RegisteredTool>("Tool").apply {
+    private val toolRegistry = FeatureRegistry<RegisteredTool, ToolFeatureKey, String>("Tool").apply {
         if (options.capabilities.tools?.listChanged ?: false) {
             addListener(notificationService.toolListChangedListener)
         }
     }
-    private val promptRegistry = FeatureRegistry<RegisteredPrompt>("Prompt").apply {
+    private val promptRegistry = FeatureRegistry<RegisteredPrompt, PromptFeatureKey, String>("Prompt").apply {
         if (options.capabilities.prompts?.listChanged ?: false) {
             addListener(notificationService.promptListChangedListener)
         }
     }
-    private val resourceRegistry = FeatureRegistry<RegisteredResource>("Resource").apply {
+    private val resourceRegistry = FeatureRegistry<RegisteredResource, ResourceFeatureKey, String>("Resource").apply {
         if (options.capabilities.resources?.listChanged ?: false) {
             addListener(notificationService.resourceListChangedListener)
         }
         if (options.capabilities.resources?.subscribe ?: false) {
             addListener(notificationService.resourceUpdatedListener)
+        }
+    }
+    private val resourceTemplateRegistry = FeatureRegistry<
+        RegisteredResourceTemplate,
+        ResourceTemplateFeatureKey,
+        Regex,
+        >(
+        "ResourceTemplate",
+    ).apply {
+        if (options.capabilities.resources?.listChanged ?: false) {
+            addListener(notificationService.resourceTemplateListChangedListener)
+        }
+        if (options.capabilities.resources?.subscribe ?: false) {
+            addListener(notificationService.resourceTemplateUpdatedListener)
         }
     }
 
@@ -134,20 +149,26 @@ public open class Server(
     /**
      * Provides a snapshot of all tools currently registered in the server
      */
-    public val tools: Map<String, RegisteredTool>
+    public val tools: Map<ToolFeatureKey, RegisteredTool>
         get() = toolRegistry.values
 
     /**
      * Provides a snapshot of all prompts currently registered in the server
      */
-    public val prompts: Map<String, RegisteredPrompt>
+    public val prompts: Map<PromptFeatureKey, RegisteredPrompt>
         get() = promptRegistry.values
 
     /**
      * Provides a snapshot of all resources currently registered in the server
      */
-    public val resources: Map<String, RegisteredResource>
+    public val resources: Map<ResourceFeatureKey, RegisteredResource>
         get() = resourceRegistry.values
+
+    /**
+     * Provides a snapshot of all resource templates currently registered in the server
+     */
+    public val resourceTemplates: Map<ResourceTemplateFeatureKey, RegisteredResourceTemplate>
+        get() = resourceTemplateRegistry.values
 
     init {
         block(this)
@@ -533,11 +554,81 @@ public open class Server(
         return resourceRegistry.removeAll(uris)
     }
 
+    /**
+     * Registers a single resource template. The client can then read the resource content.
+     *
+     * @param uri The URI of the resource.
+     * @param name A human-readable name for the resource.
+     * @param description A description of the resource's content.
+     * @param mimeType The MIME type of the resource content.
+     * @param readHandler A suspend function that returns the resource content when read by the client.
+     * @throws IllegalStateException If the server does not support resources.
+     */
+    public fun addResourceTemplate(
+        uri: String,
+        name: String,
+        description: String,
+        mimeType: String = "text/html",
+        readHandler: suspend (ReadResourceRequest, TemplateValues) -> ReadResourceResult,
+    ) {
+        check(options.capabilities.resources != null) {
+            logger.error { "Failed to add resource template '$name': Server does not support resources capability" }
+            "Server does not support resource templates capability."
+        }
+        val resourceTemplate = ResourceTemplate(uri, name, description, mimeType)
+        resourceTemplateRegistry.add(RegisteredResourceTemplate(resourceTemplate, readHandler))
+    }
+
+    /**
+     * Registers multiple resource templates at once.
+     *
+     * @param resourceTemplatesToAdd A list of [RegisteredResourceTemplate] objects representing the resources to
+     * register.
+     * @throws IllegalStateException If the server does not support resources.
+     */
+    public fun addResourceTemplates(resourceTemplatesToAdd: List<RegisteredResourceTemplate>) {
+        check(options.capabilities.resources != null) {
+            logger.error { "Failed to add resource templates: Server does not support resources capability" }
+            "Server does not support resource templates capability."
+        }
+        resourceTemplateRegistry.addAll(resourceTemplatesToAdd)
+    }
+
+    /**
+     * Removes a single resource template by URI.
+     *
+     * @param uri The URI of the resource to remove.
+     * @return True if the resource was removed, false if it wasn't found.
+     * @throws IllegalStateException If the server does not support resources.
+     */
+    public fun removeResourceTemplate(uri: String): Boolean {
+        check(options.capabilities.resources != null) {
+            logger.error { "Failed to remove resource template '$uri': Server does not support resources capability" }
+            "Server does not support resource templates capability."
+        }
+        return resourceTemplateRegistry.remove(uri)
+    }
+
+    /**
+     * Removes multiple resource templates at once.
+     *
+     * @param uris A list of resource URIs to remove.
+     * @return The number of resources that were successfully removed.
+     * @throws IllegalStateException If the server does not support resources.
+     */
+    public fun removeResourceTemplates(uris: List<String>): Int {
+        check(options.capabilities.resources != null) {
+            logger.error { "Failed to remove resource templates: Server does not support resources capability" }
+            "Server does not support resource templates capability."
+        }
+        return resourceTemplateRegistry.removeAll(uris)
+    }
+
     // --- Internal Handlers ---
     private fun handleSubscribeResources(session: ServerSession, request: SubscribeRequest) {
         if (options.capabilities.resources?.subscribe ?: false) {
             logger.debug { "Subscribing to resources" }
-            notificationService.subscribeToResourceUpdate(session, request.params.uri)
+            notificationService.subscribeToResourceUpdate(session, ResourceFeatureKey(request.params.uri))
         } else {
             logger.debug { "Failed to subscribe to resources: Server does not support resources capability" }
         }
@@ -546,7 +637,7 @@ public open class Server(
     private fun handleUnsubscribeResources(session: ServerSession, request: UnsubscribeRequest) {
         if (options.capabilities.resources?.subscribe ?: false) {
             logger.debug { "Unsubscribing from resources" }
-            notificationService.unsubscribeFromResourceUpdate(session, request.params.uri)
+            notificationService.unsubscribeFromResourceUpdate(session, ResourceFeatureKey(request.params.uri))
         } else {
             logger.debug { "Failed to unsubscribe from resources: Server does not support resources capability" }
         }
@@ -562,7 +653,7 @@ public open class Server(
         logger.debug { "Handling tool call request for tool: ${requestParams.name}" }
 
         // Check if the tool exists
-        val tool = toolRegistry.get(requestParams.name) ?: run {
+        val tool = toolRegistry.get(requestParams.name)?.value ?: run {
             logger.error { "Tool not found: ${requestParams.name}" }
             return CallToolResult(
                 content = listOf(TextContent(text = "Tool ${requestParams.name} not found")),
@@ -593,7 +684,7 @@ public open class Server(
     private suspend fun handleGetPrompt(request: GetPromptRequest): GetPromptResult {
         val requestParams = request.params
         logger.debug { "Handling get prompt request for: ${requestParams.name}" }
-        val prompt = promptRegistry.get(requestParams.name)
+        val prompt = promptRegistry.get(requestParams.name)?.value
             ?: run {
                 logger.error { "Prompt not found: ${requestParams.name}" }
                 throw IllegalArgumentException("Prompt not found: ${requestParams.name}")
@@ -609,17 +700,22 @@ public open class Server(
     private suspend fun handleReadResource(request: ReadResourceRequest): ReadResourceResult {
         val requestParams = request.params
         logger.debug { "Handling read resource request for: ${requestParams.uri}" }
-        val resource = resourceRegistry.get(requestParams.uri)
+        val resource = resourceRegistry.get(requestParams.uri)?.value
             ?: run {
-                logger.error { "Resource not found: ${requestParams.uri}" }
-                throw IllegalArgumentException("Resource not found: ${requestParams.uri}")
+                logger.debug { "Resource not found: ${requestParams.uri}" }
+                val (templateParser, resourceTemplate) = resourceTemplateRegistry.get(requestParams.uri)
+                    ?: run {
+                        logger.error { "Resource or resource template not found: ${requestParams.uri}" }
+                        throw IllegalArgumentException("Resource or resource template not found: ${requestParams.uri}")
+                    }
+                return resourceTemplate.readHandler(request, templateParser.extractArguments(requestParams.uri))
             }
         return resource.readHandler(request)
     }
 
     private fun handleListResourceTemplates(): ListResourceTemplatesResult {
-        // If you have resource templates, return them here. For now, return empty.
-        return ListResourceTemplatesResult(listOf())
+        logger.debug { "Handling list resource templates request" }
+        return ListResourceTemplatesResult(resourceTemplates = resourceTemplates.values.map { it.resourceTemplate })
     }
 
     // Start the ServerSession redirection section
