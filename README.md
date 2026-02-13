@@ -7,6 +7,7 @@
 [![Kotlin Multiplatform](https://img.shields.io/badge/Platforms-%20JVM%20%7C%20Wasm%2FJS%20%7C%20Native%20-blueviolet?logo=kotlin)](https://kotlinlang.org/docs/multiplatform.html)
 [![JVM](https://img.shields.io/badge/JVM-11+-red.svg?logo=jvm)](http://java.com)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/modelcontextprotocol/kotlin-sdk)
 
 Kotlin Multiplatform SDK for the [Model Context Protocol](https://modelcontextprotocol.io).
 It enables Kotlin applications targeting JVM, Native, JS, and Wasm to implement MCP clients and servers using a
