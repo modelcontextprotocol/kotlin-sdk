@@ -5,6 +5,11 @@ on:
   # Runs every day at 2:00 AM UTC
   - cron: '0 2 * * *'
   workflow_dispatch:
+    inputs:
+      DRY_RUN:
+        type: boolean
+        description: 'Run in dry run mode'
+        default: true
 
 permissions:
   actions: write
@@ -12,58 +17,87 @@ permissions:
   issues: write
   pull-requests: write
 
+env:
+  DRY_RUN: true
+  MOVE_TO_STALE_DAYS: 30
+  CLOSE_AFTER_STALE_DAYS: 15
+
 jobs:
-  close-question-prs:
-    name: Mark/Close stale PRs and issues
+  mark-stale:
+    name: Mark/unmark stale PRs and issues
     runs-on: ubuntu-latest
     steps:
     - uses: actions/stale@v10
-      ## https://github.com/marketplace/actions/close-stale-issues
       with:
-        debug-only: true # 'true' for dry run
-        exempt-draft-pr: true # pull requests currently in draft will not be marked as stale
+        debug-only: ${{ env.DRY_RUN }}
+        exempt-draft-pr: true
         exempt-issue-labels: 'awaiting-approval,work-in-progress'
+        stale-issue-label: 'stale'
         stale-pr-label: 'stale'
-        only-labels: 'awaiting-feedback,awaiting-answers'
-
-        # --- Scope: only PRs, not issues ---
-        stale-issue-message: >
-          👋 **This issue has been marked as Stale.**
-          
-          This issue was awaiting feedback and has had no activity for **30 days**.
-          
-          — 🤖 Stale PR Bot
-        days-before-issue-stale: 30
-        days-before-issue-close: -1
 
         # --- Timing ---
-        # Since we target PRs already labeled "question",
-        # days-before-stale counts from last activity.
-        days-before-pr-stale: 30
-        days-before-pr-close: 15
+        # Job 1 marks/unmarks, but never closes.
+        days-before-issue-stale: ${{ env.MOVE_TO_STALE_DAYS }}
+        days-before-issue-close: -1
+        days-before-pr-stale: ${{ env.MOVE_TO_STALE_DAYS }}
+        days-before-pr-close: -1
 
-        # --- Labels ---
         remove-stale-when-updated: true
         remove-pr-stale-when-updated: true
 
         # --- Messages ---
+        stale-issue-message: >
+          👋 **This issue has been marked as Stale.**
+
+          This issue has had no activity for **${{ env.MOVE_TO_STALE_DAYS }} days**.
+
+          — 🤖 Stale Bot
         stale-pr-message: >
           👋 **This PR has been marked as Stale.**
-          
-          This PR was awaiting feedback and has had no activity for **30 days**.
-          
-          — 🤖 Stale PR Bot
+
+          This PR has had no activity for **${{ env.MOVE_TO_STALE_DAYS }} days**.
+
+          — 🤖 Stale Bot
+
+        operations-per-run: 100
+        ascending: true
+
+  close-stale:
+    name: Close stale PRs and issues
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/stale@v10
+      with:
+        debug-only: ${{ env.DRY_RUN }}
+        only-labels: 'stale'
+        stale-issue-label: 'stale'
+        stale-pr-label: 'stale'
+
+        # --- Timing ---
+        # Job 2 only closes already marked items.
+        days-before-issue-stale: -1
+        days-before-pr-stale: -1
+        days-before-issue-close: ${{ env.CLOSE_AFTER_STALE_DAYS }}
+        days-before-pr-close: ${{ env.CLOSE_AFTER_STALE_DAYS }}
+
+        # --- Messages ---
+        close-issue-message: >
+          👋 **This issue has been automatically closed.**
+
+          This issue was labeled with `stale` and has had no activity
+          for **${{ env.CLOSE_AFTER_STALE_DAYS }} days** since that.
+
+          — 🤖 Stale Bot
         close-pr-message:  >
           👋 **This PR has been automatically closed.**
-          
+
           This PR was labeled with `stale` and has had no activity
-          for **15 days** since that.
-          
+          for **${{ env.CLOSE_AFTER_STALE_DAYS }} days** since that.
+
           If this is still relevant, please feel free to reopen it
           or create a new PR.
-          
-          — 🤖 Stale PR Bot
 
-        # --- Operations ---
+          — 🤖 Stale Bot
+
         operations-per-run: 100
         ascending: true
