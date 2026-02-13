@@ -17,6 +17,7 @@ import java.net.URI
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.createTempFile
 import kotlin.properties.Delegates
+import kotlin.test.fail
 
 private val logger = KotlinLogging.logger {}
 
@@ -320,7 +321,8 @@ class ConformanceTest {
             }
             process.destroyForcibly()
             throw AssertionError(
-                "❌ $capitalizedType conformance test [$transportType] '$scenario' timed out after $timeoutSeconds seconds",
+                "❌ $capitalizedType conformance test [$transportType] '$scenario' " +
+                    "timed out after $timeoutSeconds seconds",
             )
         }
 
@@ -331,8 +333,9 @@ class ConformanceTest {
                 logger.error {
                     "$capitalizedType conformance test [$transportType] '$scenario' failed with exit code: $exitCode"
                 }
-                throw AssertionError(
-                    "❌ $capitalizedType conformance test [$transportType] '$scenario' failed (exit code: $exitCode). Check test output above for details.",
+                fail(
+                    "❌ $capitalizedType conformance test [$transportType] '$scenario' " +
+                        "failed (exit code: $exitCode). Check test output above for details.",
                 )
             }
         }

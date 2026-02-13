@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:Retry.kt:RetryExtension$private fun executeWithRetry</ID>
+    <ID>ReturnCount:TypeScriptRunner.kt:TypeScriptRunner$public fun installDependencies</ID>
+    <ID>ThrowsCount:Retry.kt:RetryExtension$private fun executeWithRetry</ID>
+  </CurrentIssues>
+</SmellBaseline>

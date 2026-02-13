@@ -50,12 +50,12 @@ class ServerResourcesNotificationSubscribeTest : AbstractServerFeaturesTest() {
             name = "Test Resource 1",
             description = "A test resource 1",
             mimeType = "text/plain",
-        ) {
+        ) { request ->
             ReadResourceResult(
                 contents = listOf(
                     TextResourceContents(
                         text = "Test resource content 1",
-                        uri = it.uri,
+                        uri = request.uri,
                         mimeType = "text/plain",
                     ),
                 ),
@@ -67,12 +67,12 @@ class ServerResourcesNotificationSubscribeTest : AbstractServerFeaturesTest() {
             name = "Test Resource 2",
             description = "A test resource 2",
             mimeType = "text/plain",
-        ) {
+        ) { request ->
             ReadResourceResult(
                 contents = listOf(
                     TextResourceContents(
                         text = "Test resource content 2",
-                        uri = it.uri,
+                        uri = request.uri,
                         mimeType = "text/plain",
                     ),
                 ),
@@ -121,8 +121,8 @@ class ServerResourcesNotificationSubscribeTest : AbstractServerFeaturesTest() {
         println("Thread ${Thread.currentThread().name} test 1")
         // Track notifications
         val notifications = ConcurrentLinkedQueue<ResourceUpdatedNotification>()
-        client.setNotificationHandler<ResourceUpdatedNotification>(NotificationsResourcesUpdated) {
-            notifications.add(it)
+        client.setNotificationHandler<ResourceUpdatedNotification>(NotificationsResourcesUpdated) { notification ->
+            notifications.add(notification)
             CompletableDeferred(Unit)
         }
 

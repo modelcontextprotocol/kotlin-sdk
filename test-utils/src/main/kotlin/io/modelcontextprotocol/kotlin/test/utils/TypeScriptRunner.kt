@@ -1,5 +1,6 @@
 package io.modelcontextprotocol.kotlin.test.utils
 
+import org.junit.jupiter.api.fail
 import java.io.File
 
 /**
@@ -83,7 +84,7 @@ public object TypeScriptRunner {
         patchPackageJsonRecursively(typescriptDir, patchProtocols = true)
         if (tryCommand(listOf("npm", "install"), typescriptDir)) return
 
-        throw RuntimeException("Failed to install TypeScript dependencies in ${typescriptDir.absolutePath}")
+        fail("Failed to install TypeScript dependencies in ${typescriptDir.absolutePath}")
     }
 
     private fun tryCommand(command: List<String>, workingDir: File): Boolean {

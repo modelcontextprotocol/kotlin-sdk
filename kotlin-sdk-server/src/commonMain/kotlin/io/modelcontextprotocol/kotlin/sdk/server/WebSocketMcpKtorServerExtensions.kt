@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions")
+
 package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging

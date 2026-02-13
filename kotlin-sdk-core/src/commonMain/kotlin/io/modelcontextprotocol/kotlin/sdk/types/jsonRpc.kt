@@ -16,8 +16,22 @@ import kotlin.uuid.Uuid
 
 public const val JSONRPC_VERSION: String = "2.0"
 
+/**
+ * Creates a `RequestId` instance using the provided string value.
+ *
+ * @param value The string representation of the request ID. This value is used
+ *              to uniquely identify a request in the JSON-RPC context.
+ * @return A `RequestId` instance of type `StringId` with the provided string value.
+ */
 public fun RequestId(value: String): RequestId = RequestId.StringId(value)
 
+/**
+ * Creates a `RequestId` instance using the given numeric value.
+ *
+ * @param value The numeric value to be used for the `RequestId`. This should uniquely
+ *              identify a request when represented as a `NumberId`.
+ * @return A `RequestId.NumberId` instance encapsulating the provided numeric value.
+ */
 public fun RequestId(value: Long): RequestId = RequestId.NumberId(value)
 
 /**

@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>BracesOnWhenStatements:ConformanceServer.kt:HttpServerTransport$when</ID>
+    <ID>BracesOnWhenStatements:ConformanceTest.kt:ConformanceTest$when</ID>
+    <ID>ForbiddenComment:ConformanceTest.kt:ConformanceTest.Companion$// TODO: Fix</ID>
+  </CurrentIssues>
+</SmellBaseline>

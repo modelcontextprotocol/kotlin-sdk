@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.kotest.assertions.json.shouldEqualJson
+import io.kotest.matchers.shouldBe
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.double
 import kotlinx.serialization.json.jsonPrimitive
@@ -149,7 +150,9 @@ class RequestTest {
         val method = custom.method
         val customMethod = assertIs<Method.Custom>(method)
         assertEquals("extensions/customAction", customMethod.value)
-        assertEquals("custom-1", custom.params?.meta?.json?.get("progressToken")?.jsonPrimitive?.content)
+        custom.params?.meta?.json
+            ?.get("progressToken")
+            ?.jsonPrimitive?.content shouldBe "custom-1"
     }
 
     @Test
