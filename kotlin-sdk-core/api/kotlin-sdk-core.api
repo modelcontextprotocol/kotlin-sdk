@@ -139,6 +139,9 @@ public final class io/modelcontextprotocol/kotlin/sdk/InitializedNotification {
 	public static synthetic fun Params$default (Lio/modelcontextprotocol/kotlin/sdk/InitializedNotification;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/BaseNotificationParams;
 }
 
+public abstract interface annotation class io/modelcontextprotocol/kotlin/sdk/InternalMcpApi : java/lang/annotation/Annotation {
+}
+
 public final class io/modelcontextprotocol/kotlin/sdk/LibVersionKt {
 	public static final field LIB_VERSION Ljava/lang/String;
 }
@@ -408,14 +411,44 @@ public final class io/modelcontextprotocol/kotlin/sdk/internal/Utils_jvmKt {
 	public static final fun getIODispatcher ()Lkotlinx/coroutines/CoroutineDispatcher;
 }
 
+public abstract class io/modelcontextprotocol/kotlin/sdk/shared/AbstractClientTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport {
+	public fun <init> ()V
+	protected final fun checkState (Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;Lkotlin/jvm/functions/Function1;)V
+	public static synthetic fun checkState$default (Lio/modelcontextprotocol/kotlin/sdk/shared/AbstractClientTransport;Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	protected abstract fun closeResources (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	protected abstract fun getLogger ()Lio/github/oshai/kotlinlogging/KLogger;
+	protected final fun getState ()Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
+	protected abstract fun initialize (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	protected abstract fun performSend (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun performSend$default (Lio/modelcontextprotocol/kotlin/sdk/shared/AbstractClientTransport;Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public fun send (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	protected final fun stateTransition (Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;)V
+	protected final fun updateState (Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;)V
+}
+
 public abstract class io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport : io/modelcontextprotocol/kotlin/sdk/shared/Transport {
 	public fun <init> ()V
-	protected final fun get_onClose ()Lkotlin/jvm/functions/Function0;
 	protected final fun get_onError ()Lkotlin/jvm/functions/Function1;
 	protected final fun get_onMessage ()Lkotlin/jvm/functions/Function2;
+	protected final fun invokeOnCloseCallback ()V
 	public fun onClose (Lkotlin/jvm/functions/Function0;)V
 	public fun onError (Lkotlin/jvm/functions/Function1;)V
 	public fun onMessage (Lkotlin/jvm/functions/Function2;)V
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState : java/lang/Enum {
+	public static final field InitializationFailed Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
+	public static final field Initializing Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
+	public static final field New Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
+	public static final field Operational Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
+	public static final field ShutdownFailed Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
+	public static final field ShuttingDown Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
+	public static final field Stopped Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
+	public static fun values ()[Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
 }
 
 public abstract class io/modelcontextprotocol/kotlin/sdk/shared/Protocol {

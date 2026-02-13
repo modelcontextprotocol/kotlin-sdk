@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>LongMethod:StreamableHttpClientTransportTest.kt:StreamableHttpClientTransportTest$@Ignore @Test fun testNotificationSchemaE2E</ID>
+    <ID>MaxLineLength:StreamableHttpClientTransportTest.kt:StreamableHttpClientTransportTest$"""data: {"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"upload-123","progress":50,"total":100}}"""</ID>
+    <ID>MaxLineLength:StreamableHttpClientTransportTest.kt:StreamableHttpClientTransportTest$"""data: {"jsonrpc":"2.0","method":"notifications/resumed","params":{"fromToken":"$lastEventIdSent"}}"""</ID>
+  </CurrentIssues>
+</SmellBaseline>

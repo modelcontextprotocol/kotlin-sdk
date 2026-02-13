@@ -26,8 +26,8 @@ class ServerResourcesNotificationTest : AbstractServerFeaturesTest() {
         val notifications = mutableListOf<ResourceListChangedNotification>()
         client.setNotificationHandler<ResourceListChangedNotification>(
             Method.Defined.NotificationsResourcesListChanged,
-        ) {
-            notifications.add(it)
+        ) { notification ->
+            notifications.add(notification)
             CompletableDeferred(Unit)
         }
 

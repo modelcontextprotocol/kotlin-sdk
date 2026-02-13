@@ -132,6 +132,8 @@ kotlin {
         jvmTest {
             dependencies {
                 implementation(libs.kotlinx.schema.generator.json)
+                implementation(libs.junit.jupiter.params)
+                implementation(libs.mockk)
                 runtimeOnly(libs.slf4j.simple)
             }
         }

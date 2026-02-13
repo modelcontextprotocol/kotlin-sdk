@@ -9,7 +9,7 @@
     "server:sse": "tsx server/sse-server.ts"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.25.2",
+    "@modelcontextprotocol/sdk": "^1.26.0",
     "body-parser": "^2.2.2",
     "express": "^5.2.1",
     "uuid": "^13.0.0",

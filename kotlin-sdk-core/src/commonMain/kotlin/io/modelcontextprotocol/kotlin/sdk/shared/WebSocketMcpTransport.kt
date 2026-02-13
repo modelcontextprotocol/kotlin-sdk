@@ -85,7 +85,7 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
             if (it != null) {
                 _onError.invoke(it)
             } else {
-                _onClose.invoke()
+                invokeOnCloseCallback()
             }
         }
     }

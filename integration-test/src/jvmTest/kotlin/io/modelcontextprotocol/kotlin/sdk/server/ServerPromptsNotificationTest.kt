@@ -24,8 +24,10 @@ class ServerPromptsNotificationTest : AbstractServerFeaturesTest() {
     fun `addPrompt should send notification`() = runTest {
         // Configure notification handler
         val notifications = mutableListOf<PromptListChangedNotification>()
-        client.setNotificationHandler<PromptListChangedNotification>(Method.Defined.NotificationsPromptsListChanged) {
-            notifications.add(it)
+        client.setNotificationHandler<PromptListChangedNotification>(
+            Method.Defined.NotificationsPromptsListChanged,
+        ) { notification ->
+            notifications.add(notification)
             CompletableDeferred(Unit)
         }
 
@@ -96,8 +98,10 @@ class ServerPromptsNotificationTest : AbstractServerFeaturesTest() {
     fun `notification should not be send when removed prompt does not exists`() = runTest {
         // Track notifications
         val notifications = mutableListOf<PromptListChangedNotification>()
-        client.setNotificationHandler<PromptListChangedNotification>(Method.Defined.NotificationsPromptsListChanged) {
-            notifications.add(it)
+        client.setNotificationHandler<PromptListChangedNotification>(
+            Method.Defined.NotificationsPromptsListChanged,
+        ) { notification ->
+            notifications.add(notification)
             CompletableDeferred(Unit)
         }
 

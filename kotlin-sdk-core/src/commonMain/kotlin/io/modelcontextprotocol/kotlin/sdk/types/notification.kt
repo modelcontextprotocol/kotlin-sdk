@@ -262,7 +262,8 @@ public data class PromptListChangedNotification(override val params: BaseNotific
 // ============================================================================
 
 /**
- * An optional notification from the server to the client, informing it that the list of resources it can read from has changed.
+ * An optional notification from the server to the client,
+ * informing it that the list of resources it can read from has changed.
  *
  * Servers may issue this without any previous subscription from the client.
  * Sent only if the server's [ServerCapabilities.resources] has `listChanged = true`.

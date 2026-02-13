@@ -26,8 +26,8 @@ public class WebSocketClientTransport(
     override suspend fun initializeSession() {
         logger.debug { "Websocket session initialization started..." }
 
-        session = urlString?.let {
-            client.webSocketSession(it) {
+        session = urlString?.let { url ->
+            client.webSocketSession(url) {
                 requestBuilder()
 
                 header(HttpHeaders.SecWebSocketProtocol, MCP_SUBPROTOCOL)

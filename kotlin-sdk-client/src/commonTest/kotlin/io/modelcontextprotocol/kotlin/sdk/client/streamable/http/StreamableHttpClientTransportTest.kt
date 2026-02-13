@@ -1,5 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.client.streamable.http
 
+import io.kotest.matchers.shouldBe
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandler
@@ -18,7 +19,9 @@ import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
+import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
@@ -94,7 +97,11 @@ class StreamableHttpClientTransportTest {
         )
 
         val transport = createTransport { request ->
-            when (val msg = McpJson.decodeFromString<JSONRPCMessage>((request.body as TextContent).text)) {
+            when (
+                val msg = McpJson.decodeFromString<JSONRPCMessage>(
+                    (request.body as TextContent).text,
+                )
+            ) {
                 is JSONRPCRequest if msg.method == "initialize" -> respond(
                     content = "",
                     status = HttpStatusCode.OK,
@@ -407,7 +414,7 @@ class StreamableHttpClientTransportTest {
 
         try {
             // Real time-keeping is needed; otherwise Protocol will always throw TimeoutCancellationException in tests
-            assertFailsWith<IllegalStateException>(
+            val mcpException = assertFailsWith<McpException>(
                 message = "Expected client.connect to fail on invalid JSON response",
             ) {
                 withContext(Dispatchers.Default.limitedParallelism(1)) {
@@ -416,6 +423,7 @@ class StreamableHttpClientTransportTest {
                     }
                 }
             }
+            mcpException.code shouldBe RPCError.ErrorCode.INTERNAL_ERROR
         } finally {
             transport.close()
         }

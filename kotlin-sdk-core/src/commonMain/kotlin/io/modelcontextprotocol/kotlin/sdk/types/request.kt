@@ -22,6 +22,12 @@ public value class RequestMeta(public val json: JsonObject) {
             }
         }
 
+    /**
+     * Retrieves the value associated with the specified key from the JSON object.
+     *
+     * @param key the key whose corresponding value is to be returned
+     * @return the JsonElement associated with the specified key, or null if the key does not exist
+     */
     public operator fun get(key: String): JsonElement? = json[key]
 }
 

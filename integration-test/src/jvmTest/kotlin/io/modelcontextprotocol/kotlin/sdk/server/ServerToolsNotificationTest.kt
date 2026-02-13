@@ -51,8 +51,10 @@ class ServerToolsNotificationTest : AbstractServerFeaturesTest() {
     fun `removeTools should remove multiple tools and send two notifications`() = runTest {
         // Configure notification handler
         val notifications = mutableListOf<ToolListChangedNotification>()
-        client.setNotificationHandler<ToolListChangedNotification>(Method.Defined.NotificationsToolsListChanged) {
-            notifications.add(it)
+        client.setNotificationHandler<ToolListChangedNotification>(
+            Method.Defined.NotificationsToolsListChanged,
+        ) { notification ->
+            notifications.add(notification)
             CompletableDeferred(Unit)
         }
 
@@ -83,8 +85,10 @@ class ServerToolsNotificationTest : AbstractServerFeaturesTest() {
     fun `notification should not be send when removed tool does not exists`() = runTest {
         // Track notifications
         val notifications = mutableListOf<ToolListChangedNotification>()
-        client.setNotificationHandler<ToolListChangedNotification>(Method.Defined.NotificationsToolsListChanged) {
-            notifications.add(it)
+        client.setNotificationHandler<ToolListChangedNotification>(
+            Method.Defined.NotificationsToolsListChanged,
+        ) { notification ->
+            notifications.add(notification)
             CompletableDeferred(Unit)
         }
 

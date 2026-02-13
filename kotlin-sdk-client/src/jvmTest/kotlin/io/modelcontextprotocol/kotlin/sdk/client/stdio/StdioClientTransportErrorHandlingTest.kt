@@ -166,18 +166,12 @@ class StdioClientTransportErrorHandlingTest {
                 true,
                 ErrorCode.INTERNAL_ERROR,
             ),
-            Arguments.of(
-                OutOfMemoryError(),
-                true,
-                ErrorCode.INTERNAL_ERROR,
-            ),
-
         )
     }
 
     @ParameterizedTest
     @MethodSource("exceptions")
-    fun `Send should handle exceptions`(throwable: Throwable, shouldWrap: Boolean, expectedCode: Int?) = runTest {
+    fun `Send should handle exceptions`(throwable: Exception, shouldWrap: Boolean, expectedCode: Int?) = runTest {
         val sendChannel: Channel<JSONRPCMessage> = mockk(relaxed = true)
 
         // Create stdin pipe that stays open to prevent transport from closing

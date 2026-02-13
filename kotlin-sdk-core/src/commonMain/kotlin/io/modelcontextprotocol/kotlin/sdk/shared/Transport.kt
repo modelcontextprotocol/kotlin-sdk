@@ -11,6 +11,8 @@ public interface Transport {
      *
      * This method should only be called after callbacks are installed, or else messages may be lost.
      *
+     * Method waits for the initialization flow to complete and then returns, so the transport is ready to send and receive user messages.
+     *
      * NOTE: This method should not be called explicitly when using Client, Server, or Protocol classes,
      * as they will implicitly call start().
      */
@@ -26,7 +28,7 @@ public interface Transport {
     public suspend fun send(message: JSONRPCMessage, options: TransportSendOptions? = null)
 
     /**
-     * Closes the connection.
+     * Closes the transport.
      */
     public suspend fun close()
 

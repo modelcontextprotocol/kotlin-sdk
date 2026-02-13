@@ -26,7 +26,7 @@ subprojects {
     detekt {
         config = files("$rootDir/config/detekt/detekt.yml")
         buildUponDefaultConfig = true
-        failOnSeverity.set(FailOnSeverity.Never)
+        failOnSeverity.set(FailOnSeverity.Error)
     }
 }
 

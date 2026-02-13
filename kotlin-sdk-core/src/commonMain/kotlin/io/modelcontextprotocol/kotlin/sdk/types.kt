@@ -1,16 +1,14 @@
-@file:Suppress("FunctionName")
+@file:Suppress("FunctionName", "TooManyFunctions")
 
 package io.modelcontextprotocol.kotlin.sdk
 
-import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities.Roots
 import io.modelcontextprotocol.kotlin.sdk.types.ContentBlock
 import io.modelcontextprotocol.kotlin.sdk.types.fromJSON
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
-import kotlin.concurrent.atomics.AtomicLong
-import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities.Roots as TypesRoots
 
 @Deprecated(
     message = "Use `LATEST_PROTOCOL_VERSION` instead",
@@ -39,14 +37,6 @@ public val SUPPORTED_PROTOCOL_VERSIONS: List<String> =
     level = DeprecationLevel.ERROR,
 )
 public const val JSONRPC_VERSION: String = io.modelcontextprotocol.kotlin.sdk.types.JSONRPC_VERSION
-
-@OptIn(ExperimentalAtomicApi::class)
-@Deprecated(
-    message = "Use `REQUEST_MESSAGE_ID` instead",
-    replaceWith = ReplaceWith("REQUEST_MESSAGE_ID", "io.modelcontextprotocol.kotlin.sdk.types.REQUEST_MESSAGE_ID"),
-    level = DeprecationLevel.ERROR,
-)
-private val REQUEST_MESSAGE_ID: AtomicLong = AtomicLong(0L)
 
 /**
  * A progress token, used to associate progress notifications with the original request.
@@ -81,8 +71,6 @@ public typealias WithMeta = io.modelcontextprotocol.kotlin.sdk.types.WithMeta
 
 /**
  * An implementation of [WithMeta] containing custom metadata.
- *
- * @param _meta The JSON object holding metadata. Defaults to an empty JSON object.
  */
 @Deprecated(
     message = "This class will be removed. Use `WithMeta` instead",
@@ -431,8 +419,6 @@ internal fun JSONRPCRequest.fromJSON(): Request = this.fromJSON()
 
 /**
  * A custom request with a specified method.
- *
- * @param method The method associated with the request.
  */
 @Deprecated(
     message = "Use `CustomRequest` instead",
@@ -489,8 +475,6 @@ public typealias RequestResult = io.modelcontextprotocol.kotlin.sdk.types.Reques
 
 /**
  * An empty result for a request containing optional metadata.
- *
- * @param _meta Additional metadata for the response. Defaults to an empty JSON object.
  */
 @Deprecated(
     message = "Use `EmptyResult` instead",
@@ -708,7 +692,8 @@ public object CancelledNotification {
 /**
  * This notification can be sent by either side to indicate that it is cancelling a previously issued request.
  *
- * The request SHOULD still be in-flight, but due to communication latency, it is always possible that this notification MAY arrive after the request has already finished.
+ * The request SHOULD still be in-flight, but due to communication latency, it is always possible that
+ * this notification MAY arrive after the request has already finished.
  *
  * This notification indicates that the result will be unused, so any associated processing SHOULD cease.
  *
@@ -745,6 +730,15 @@ public typealias Implementation = io.modelcontextprotocol.kotlin.sdk.types.Imple
     level = DeprecationLevel.ERROR,
 )
 public object ClientCapabilities {
+    /**
+     * Creates an instance of [Roots], representing the client's capability
+     * to list roots and optionally listen for changes in the roots list.
+     *
+     * @param listChanged Optional flag indicating whether the client supports notifications
+     * for changes to the roots list. If set to true, the client will notify the server when
+     * roots are added or removed.
+     * @return A new instance of [Roots] configured with the provided [listChanged] value.
+     */
     @Deprecated(
         message = "Use `ClientCapabilities.Roots` instead",
         replaceWith = ReplaceWith(
@@ -753,8 +747,7 @@ public object ClientCapabilities {
         ),
         level = DeprecationLevel.ERROR,
     )
-    public fun Roots(listChanged: Boolean? = null): io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities.Roots =
-        io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities.Roots(listChanged)
+    public fun Roots(listChanged: Boolean? = null): TypesRoots = TypesRoots(listChanged)
 }
 
 /**
@@ -769,7 +762,7 @@ public object ClientCapabilities {
 )
 public fun ClientCapabilities(
     sampling: JsonObject? = null,
-    roots: Roots? = null,
+    roots: TypesRoots? = null,
     elicitation: JsonObject? = null,
     experimental: JsonObject? = null,
 ): io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities =
@@ -918,6 +911,7 @@ public object ServerCapabilities {
     replaceWith = ReplaceWith("ServerCapabilities", "io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities"),
     level = DeprecationLevel.ERROR,
 )
+@Suppress("LongParameterList")
 public fun ServerCapabilities(
     tools: io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities.Tools? = null,
     resources: io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities.Resources? = null,
@@ -1027,9 +1021,6 @@ public sealed interface ProgressBase {
 
 /**
  * Represents a progress notification.
- *
- * @property progress The current progress value.
- * @property total The total progress required, if known.
  */
 @Deprecated(
     message = "Use `Progress` instead",
@@ -1117,8 +1108,6 @@ public typealias ResourceContents = io.modelcontextprotocol.kotlin.sdk.types.Res
 
 /**
  * Represents the text contents of a resource.
- *
- * @property text The text of the item. This must only be set if the item can actually be represented as text (not binary data).
  */
 @Deprecated(
     message = "Use `TextResourceContents` instead",
@@ -1129,8 +1118,6 @@ public typealias TextResourceContents = io.modelcontextprotocol.kotlin.sdk.types
 
 /**
  * Represents the binary contents of a resource encoded as a base64 string.
- *
- * @property blob A base64-encoded string representing the binary data of the item.
  */
 @Deprecated(
     message = "Use `BlobResourceContents` instead",
@@ -1278,7 +1265,8 @@ public fun ResourceListChangedNotification(
     io.modelcontextprotocol.kotlin.sdk.types.ResourceListChangedNotification(params)
 
 /**
- * Sent from the client to request resources/updated notifications from the server whenever a particular resource changes.
+ * Sent from the client to request resources/updated notifications from the server
+ * whenever a particular resource changes.
  */
 @Deprecated(
     message = "Use `SubscribeRequest` instead",
@@ -1288,7 +1276,8 @@ public fun ResourceListChangedNotification(
 public typealias SubscribeRequest = io.modelcontextprotocol.kotlin.sdk.types.SubscribeRequest
 
 /**
- * Sent from the client to request cancellation of resources/updated notifications from the server. This should follow a previous resources/subscribe request.
+ * Sent from the client to request cancellation of resources/updated notifications from the server.
+ * This should follow a previous resources/subscribe request.
  */
 @Deprecated(
     message = "Use `UnsubscribeRequest` instead",
@@ -1322,7 +1311,8 @@ public object ResourceUpdatedNotification {
 }
 
 /**
- * A notification from the server to the client, informing it that a resource has changed and may need to be read again. This should only be sent if the client previously sent a resources/subscribe request.
+ * A notification from the server to the client, informing it that a resource has changed and may need to be read again.
+ * This should only be sent if the client previously sent a resources/subscribe request.
  */
 @Deprecated(
     message = "Use `ResourceUpdatedNotification` instead",
@@ -1397,7 +1387,7 @@ public typealias GetPromptRequest = io.modelcontextprotocol.kotlin.sdk.types.Get
     replaceWith = ReplaceWith("ContentBlock"),
     level = DeprecationLevel.ERROR,
 )
-public typealias PromptMessageContent = io.modelcontextprotocol.kotlin.sdk.types.ContentBlock
+public typealias PromptMessageContent = ContentBlock
 
 /**
  * Represents prompt message content that is either text, image or audio.
@@ -1610,6 +1600,7 @@ public object Tool {
     replaceWith = ReplaceWith("Tool", "io.modelcontextprotocol.kotlin.sdk.types.Tool"),
     level = DeprecationLevel.ERROR,
 )
+@Suppress("LongParameterList", "FunctionParameterNaming")
 public fun Tool(
     name: String,
     inputSchema: io.modelcontextprotocol.kotlin.sdk.types.ToolSchema,
@@ -1698,7 +1689,7 @@ public fun CallToolResult(
     replaceWith = ReplaceWith("ToolCallResult"),
     level = DeprecationLevel.ERROR,
 )
-@Suppress("DEPRECATION_ERROR")
+@Suppress("DEPRECATION_ERROR", "ConstructorParameterNaming")
 public class CompatibilityCallToolResult(
     public val content: List<PromptMessageContent>,
     public val structuredContent: JsonObject? = null,
@@ -2250,10 +2241,6 @@ public fun CreateElicitationResult(
 
 /**
  * Represents an error specific to the MCP protocol.
- *
- * @property code The error code.
- * @property message The error message.
- * @property data Additional error data as a JSON object.
  */
 @Deprecated(
     message = "Use `McpException` instead",

@@ -58,7 +58,7 @@ public class SseServerTransport(private val endpoint: String, private val sessio
             if (it != null && it !is CancellationException) {
                 _onError.invoke(it)
             } else {
-                _onClose.invoke()
+                invokeOnCloseCallback()
             }
         }
     }
@@ -114,7 +114,7 @@ public class SseServerTransport(private val endpoint: String, private val sessio
 
     override suspend fun close() {
         session.close()
-        _onClose.invoke()
+        invokeOnCloseCallback()
     }
 
     override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {

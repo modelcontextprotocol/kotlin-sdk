@@ -255,7 +255,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         }
 
         logger.info { "Starting transport" }
-        return transport.start()
+        transport.start()
     }
 
     private fun doClose() {

@@ -266,7 +266,7 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
                 ),
             ),
         ) { request ->
-            val args = request.params.arguments ?: emptyMap()
+            val args = request.params.arguments.orEmpty()
             val arg1 = args["requiredArg1"] ?: throw IllegalArgumentException(
                 "Missing required argument: requiredArg1",
             )
