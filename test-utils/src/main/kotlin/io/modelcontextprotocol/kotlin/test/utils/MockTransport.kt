@@ -1,4 +1,4 @@
-package io.modelcontextprotocol.kotlin.sdk.client
+package io.modelcontextprotocol.kotlin.test.utils
 
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
 import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
@@ -12,19 +12,19 @@ import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-class MockTransport : Transport {
+public class MockTransport : Transport {
     private val _sentMessages = mutableListOf<JSONRPCMessage>()
     private val _receivedMessages = mutableListOf<JSONRPCMessage>()
     private val mutex = Mutex()
 
-    suspend fun getSentMessages() = mutex.withLock { _sentMessages.toList() }
-    suspend fun getReceivedMessages() = mutex.withLock { _receivedMessages.toList() }
+    public suspend fun getSentMessages(): List<JSONRPCMessage> = mutex.withLock { _sentMessages.toList() }
+    public suspend fun getReceivedMessages(): List<JSONRPCMessage> = mutex.withLock { _receivedMessages.toList() }
 
     private var onMessageBlock: (suspend (JSONRPCMessage) -> Unit)? = null
     private var onCloseBlock: (() -> Unit)? = null
     private var onErrorBlock: ((Throwable) -> Unit)? = null
 
-    override suspend fun start() = Unit
+    override suspend fun start(): Unit = Unit
 
     override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
         mutex.withLock {
@@ -89,7 +89,7 @@ class MockTransport : Transport {
         onErrorBlock = block
     }
 
-    fun setupInitializationResponse() {
+    public fun setupInitializationResponse() {
         // This method helps set up the mock for proper initialization
     }
 }

@@ -6,6 +6,7 @@ kotlin {
     explicitApi()
 
     dependencies {
+        api(project(":kotlin-sdk-core"))
         api(kotlin("test"))
         api(libs.kotest.assertions.core)
         api(libs.kotest.assertions.json)
