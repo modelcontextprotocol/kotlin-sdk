@@ -294,7 +294,7 @@ public open class Server(
      * @param handler A suspend function that handles executing the tool when called by the client.
      * @throws IllegalStateException If the server does not support tools.
      */
-    public fun addTool(tool: Tool, handler: suspend Context.(CallToolRequest) -> CallToolResult) {
+    public fun addTool(tool: Tool, handler: suspend ServerHandlerContext.(CallToolRequest) -> CallToolResult) {
         check(options.capabilities.tools != null) {
             logger.error { "Failed to add tool '${tool.name}': Server does not support tools capability" }
             "Server does not support tools capability. Enable it in ServerOptions."
@@ -324,7 +324,7 @@ public open class Server(
         outputSchema: ToolSchema? = null,
         toolAnnotations: ToolAnnotations? = null,
         meta: JsonObject? = null,
-        handler: suspend Context.(CallToolRequest) -> CallToolResult,
+        handler: suspend ServerHandlerContext.(CallToolRequest) -> CallToolResult,
     ) {
         val tool = Tool(
             name = name,
@@ -391,7 +391,10 @@ public open class Server(
      * @param promptProvider A suspend function that returns the prompt content when requested by the client.
      * @throws IllegalStateException If the server does not support prompts.
      */
-    public fun addPrompt(prompt: Prompt, promptProvider: suspend Context.(GetPromptRequest) -> GetPromptResult) {
+    public fun addPrompt(
+        prompt: Prompt,
+        promptProvider: suspend ServerHandlerContext.(GetPromptRequest) -> GetPromptResult,
+    ) {
         check(options.capabilities.prompts != null) {
             logger.error { "Failed to add prompt '${prompt.name}': Server does not support prompts capability" }
             "Server does not support prompts capability."
@@ -412,7 +415,7 @@ public open class Server(
         name: String,
         description: String? = null,
         arguments: List<PromptArgument>? = null,
-        promptProvider: suspend Context.(GetPromptRequest) -> GetPromptResult,
+        promptProvider: suspend ServerHandlerContext.(GetPromptRequest) -> GetPromptResult,
     ) {
         val prompt = Prompt(name = name, description = description, arguments = arguments)
         addPrompt(prompt, promptProvider)
@@ -479,7 +482,7 @@ public open class Server(
         name: String,
         description: String,
         mimeType: String = "text/html",
-        readHandler: suspend Context.(ReadResourceRequest) -> ReadResourceResult,
+        readHandler: suspend ServerHandlerContext.(ReadResourceRequest) -> ReadResourceResult,
     ) {
         check(options.capabilities.resources != null) {
             logger.error { "Failed to add resource '$name': Server does not support resources capability" }
@@ -574,7 +577,7 @@ public open class Server(
         return try {
             logger.trace { "Executing tool ${requestParams.name} with input: ${requestParams.arguments}" }
             tool.run {
-                ContextImpl(session).handler(request)
+                ServerHandlerContextImpl(session).handler(request)
             }
         } catch (e: CancellationException) {
             throw e
@@ -601,7 +604,7 @@ public open class Server(
                 throw IllegalArgumentException("Prompt not found: ${requestParams.name}")
             }
         return prompt.run {
-            ContextImpl(session).messageProvider(request)
+            ServerHandlerContextImpl(session).messageProvider(request)
         }
     }
 
@@ -619,7 +622,7 @@ public open class Server(
                 throw IllegalArgumentException("Resource not found: ${requestParams.uri}")
             }
         return resource.run {
-            ContextImpl(session).readHandler(request)
+            ServerHandlerContextImpl(session).readHandler(request)
         }
     }
 
