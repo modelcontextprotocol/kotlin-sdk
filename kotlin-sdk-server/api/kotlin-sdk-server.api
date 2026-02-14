@@ -113,6 +113,10 @@ public class io/modelcontextprotocol/kotlin/sdk/server/Server {
 	public final fun setNotificationHandler (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/Method;Lkotlin/jvm/functions/Function1;)V
 }
 
+public abstract interface class io/modelcontextprotocol/kotlin/sdk/server/ServerHandlerContext {
+	public abstract fun getSession ()Lio/modelcontextprotocol/kotlin/sdk/server/ServerSession;
+}
+
 public final class io/modelcontextprotocol/kotlin/sdk/server/ServerOptions : io/modelcontextprotocol/kotlin/sdk/shared/ProtocolOptions {
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/ServerCapabilities;Z)V
 	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/ServerCapabilities;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
