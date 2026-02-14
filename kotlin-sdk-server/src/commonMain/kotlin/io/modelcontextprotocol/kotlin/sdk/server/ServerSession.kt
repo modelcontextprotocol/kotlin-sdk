@@ -41,13 +41,90 @@ import kotlin.uuid.Uuid
 private val logger = KotlinLogging.logger {}
 
 /**
+ * Methods for communicating from the server back to the client.
+ */
+public interface ServerCommunication {
+    /**
+     * Sends a ping request to the client to check connectivity.
+     *
+     * @return The result of the ping request.
+     * @throws IllegalStateException If for some reason the method is not supported or the connection is closed.
+     */
+    public suspend fun ping(): EmptyResult
+
+    /**
+     * Creates a message using the server's sampling capability.
+     *
+     * @param params The parameters for creating a message.
+     * @param options Optional request options.
+     * @return The created message result.
+     * @throws IllegalStateException If the server does not support sampling or if the request fails.
+     */
+    public suspend fun createMessage(
+        params: CreateMessageRequest,
+        options: RequestOptions? = null,
+    ): CreateMessageResult
+
+    /**
+     * Lists the available "roots" from the client's perspective (if supported).
+     *
+     * @param params JSON parameters for the request, usually empty.
+     * @param options Optional request options.
+     * @return The list of roots.
+     * @throws IllegalStateException If the server or client does not support roots.
+     */
+    public suspend fun listRoots(
+        params: JsonObject = EmptyJsonObject,
+        options: RequestOptions? = null,
+    ): ListRootsResult
+
+    public suspend fun createElicitation(
+        message: String,
+        requestedSchema: ElicitRequestParams.RequestedSchema,
+        options: RequestOptions? = null,
+    ): ElicitResult
+
+    /**
+     * Sends a logging message notification to the client.
+     * Messages are filtered based on the current logging level set by the client.
+     * If no logging level is set, all messages are sent.
+     *
+     * @param notification The logging message notification.
+     */
+    public suspend fun sendLoggingMessage(notification: LoggingMessageNotification)
+
+    /**
+     * Sends a resource-updated notification to the client, indicating that a specific resource has changed.
+     *
+     * @param notification Details of the updated resource.
+     */
+    public suspend fun sendResourceUpdated(notification: ResourceUpdatedNotification)
+
+    /**
+     * Sends a notification to the client indicating that the list of resources has changed.
+     */
+    public suspend fun sendResourceListChanged()
+
+    /**
+     * Sends a notification to the client indicating that the list of tools has changed.
+     */
+    public suspend fun sendToolListChanged()
+
+    /**
+     * Sends a notification to the client indicating that the list of prompts has changed.
+     */
+    public suspend fun sendPromptListChanged()
+}
+
+/**
  * Represents a server session.
  */
 public open class ServerSession(
     protected val serverInfo: Implementation,
     options: ServerOptions,
     protected val instructions: String?,
-) : Protocol(options) {
+) : Protocol(options),
+    ServerCommunication {
 
     @OptIn(ExperimentalUuidApi::class)
     public val sessionId: String = Uuid.random().toString()
@@ -129,25 +206,11 @@ public open class ServerSession(
         _onClose()
     }
 
-    /**
-     * Sends a ping request to the client to check connectivity.
-     *
-     * @return The result of the ping request.
-     * @throws IllegalStateException If for some reason the method is not supported or the connection is closed.
-     */
-    public suspend fun ping(): EmptyResult = request(PingRequest())
+    public override suspend fun ping(): EmptyResult = request(PingRequest())
 
-    /**
-     * Creates a message using the server's sampling capability.
-     *
-     * @param params The parameters for creating a message.
-     * @param options Optional request options.
-     * @return The created message result.
-     * @throws IllegalStateException If the server does not support sampling or if the request fails.
-     */
-    public suspend fun createMessage(
+    public override suspend fun createMessage(
         params: CreateMessageRequest,
-        options: RequestOptions? = null,
+        options: RequestOptions?,
     ): CreateMessageResult {
         logger.debug {
             "Creating message with ${params.params.messages.size} messages, maxTokens=${params.params.maxTokens}, temperature=${params.params.temperature}, systemPrompt=${if (params.params.systemPrompt != null) "present" else "absent"}"
@@ -156,26 +219,15 @@ public open class ServerSession(
         return request(params, options)
     }
 
-    /**
-     * Lists the available "roots" from the client's perspective (if supported).
-     *
-     * @param params JSON parameters for the request, usually empty.
-     * @param options Optional request options.
-     * @return The list of roots.
-     * @throws IllegalStateException If the server or client does not support roots.
-     */
-    public suspend fun listRoots(
-        params: JsonObject = EmptyJsonObject,
-        options: RequestOptions? = null,
-    ): ListRootsResult {
+    public override suspend fun listRoots(params: JsonObject, options: RequestOptions?): ListRootsResult {
         logger.debug { "Listing roots with params: $params" }
         return request(ListRootsRequest(BaseRequestParams(RequestMeta(params))), options)
     }
 
-    public suspend fun createElicitation(
+    public override suspend fun createElicitation(
         message: String,
         requestedSchema: ElicitRequestParams.RequestedSchema,
-        options: RequestOptions? = null,
+        options: RequestOptions?,
     ): ElicitResult {
         logger.debug {
             "Creating elicitation with message length=${message.length}, " +
@@ -185,14 +237,7 @@ public open class ServerSession(
         return request(ElicitRequest(ElicitRequestParams(message, requestedSchema)), options)
     }
 
-    /**
-     * Sends a logging message notification to the client.
-     * Messages are filtered based on the current logging level set by the client.
-     * If no logging level is set, all messages are sent.
-     *
-     * @param notification The logging message notification.
-     */
-    public suspend fun sendLoggingMessage(notification: LoggingMessageNotification) {
+    public override suspend fun sendLoggingMessage(notification: LoggingMessageNotification) {
         if (serverCapabilities.logging != null) {
             if (isMessageAccepted(notification.params.level)) {
                 logger.trace { "Sending logging message: ${notification.params.data}" }
@@ -203,20 +248,12 @@ public open class ServerSession(
         }
     }
 
-    /**
-     * Sends a resource-updated notification to the client, indicating that a specific resource has changed.
-     *
-     * @param notification Details of the updated resource.
-     */
-    public suspend fun sendResourceUpdated(notification: ResourceUpdatedNotification) {
+    public override suspend fun sendResourceUpdated(notification: ResourceUpdatedNotification) {
         logger.debug { "Sending resource updated notification for: ${notification.params.uri}" }
         notification(notification)
     }
 
-    /**
-     * Sends a notification to the client indicating that the list of resources has changed.
-     */
-    public suspend fun sendResourceListChanged() {
+    public override suspend fun sendResourceListChanged() {
         logger.debug { "Sending resource list changed notification" }
         notification(ResourceListChangedNotification())
     }
@@ -224,7 +261,7 @@ public open class ServerSession(
     /**
      * Sends a notification to the client indicating that the list of tools has changed.
      */
-    public suspend fun sendToolListChanged() {
+    public override suspend fun sendToolListChanged() {
         logger.debug { "Sending tool list changed notification" }
         notification(ToolListChangedNotification())
     }
@@ -232,7 +269,7 @@ public open class ServerSession(
     /**
      * Sends a notification to the client indicating that the list of prompts has changed.
      */
-    public suspend fun sendPromptListChanged() {
+    public override suspend fun sendPromptListChanged() {
         logger.debug { "Sending prompt list changed notification" }
         notification(PromptListChangedNotification())
     }
