@@ -78,6 +78,16 @@ public interface ServerCommunication {
         options: RequestOptions? = null,
     ): ListRootsResult
 
+    /**
+     * Sends a message to the client requesting an elicitation.
+     * This typically results in a form being displayed to the end user.
+     *
+     * @param message The message for the elicitation to display.
+     * @param requestedSchema The schema requested by the client for the elicitation result. Influences the form displayed to the user.
+     * @param options Optional request options.
+     * @return The result of the elicitation request.
+     * @throws IllegalStateException If the server or client does not support elicitation.
+     */
     public suspend fun createElicitation(
         message: String,
         requestedSchema: ElicitRequestParams.RequestedSchema,
