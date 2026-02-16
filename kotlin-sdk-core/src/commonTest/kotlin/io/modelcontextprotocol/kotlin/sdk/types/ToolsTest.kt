@@ -154,67 +154,11 @@ class ToolsTest {
 
     @Test
     fun `should serialize ToolSchema with defs`() {
-        val inputSchema = ToolSchema(
-            properties = buildJsonObject {
-                put(
-                    "parent",
-                    buildJsonObject {
-                        put($$"$ref", $$"#/$defs/parentRequest")
-                    },
-                )
-            },
-            required = listOf("parent"),
-            defs = buildJsonObject {
-                put(
-                    "parentRequest",
-                    buildJsonObject {
-                        put("type", "object")
-                        put(
-                            "properties",
-                            buildJsonObject {
-                                put(
-                                    "page_id",
-                                    buildJsonObject {
-                                        put("type", "string")
-                                    },
-                                )
-                            },
-                        )
-                    },
-                )
-            },
-        )
-        val tool = Tool(
-            name = "create-page",
-            inputSchema = inputSchema,
-        )
+        val tool = toolWithDefs()
 
         val json = McpJson.encodeToString(tool)
 
-        json shouldEqualJson $$"""
-            {
-              "name": "create-page",
-              "inputSchema": {
-                "type": "object",
-                "$defs": {
-                  "parentRequest": {
-                    "type": "object",
-                    "properties": {
-                      "page_id": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                },
-                "properties": {
-                  "parent": {
-                    "$ref": "#/$defs/parentRequest"
-                  }
-                },
-                "required": ["parent"]
-              }
-            }
-        """.trimIndent()
+        json shouldEqualJson toolWithDefsJson()
     }
 
     @Test
@@ -624,6 +568,67 @@ class ToolsTest {
           },
           "_meta": {
             "_for_test_only": true
+          }
+        }
+    """.trimIndent()
+
+    private fun toolWithDefs(): Tool = Tool(
+        name = "create-page",
+        inputSchema = toolSchemaWithDefs(),
+    )
+
+    private fun toolSchemaWithDefs(): ToolSchema = ToolSchema(
+        properties = buildJsonObject {
+            put(
+                "parent",
+                buildJsonObject {
+                    put($$"$ref", $$"#/$defs/parentRequest")
+                },
+            )
+        },
+        required = listOf("parent"),
+        defs = buildJsonObject {
+            put(
+                "parentRequest",
+                buildJsonObject {
+                    put("type", "object")
+                    put(
+                        "properties",
+                        buildJsonObject {
+                            put(
+                                "page_id",
+                                buildJsonObject {
+                                    put("type", "string")
+                                },
+                            )
+                        },
+                    )
+                },
+            )
+        },
+    )
+
+    private fun toolWithDefsJson(): String = $$"""
+        {
+          "name": "create-page",
+          "inputSchema": {
+            "type": "object",
+            "$defs": {
+              "parentRequest": {
+                "type": "object",
+                "properties": {
+                  "page_id": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "properties": {
+              "parent": {
+                "$ref": "#/$defs/parentRequest"
+              }
+            },
+            "required": ["parent"]
           }
         }
     """.trimIndent()
