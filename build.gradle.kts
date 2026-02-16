@@ -11,11 +11,13 @@ dependencies {
     dokka(project(":kotlin-sdk-core"))
     dokka(project(":kotlin-sdk-client"))
     dokka(project(":kotlin-sdk-server"))
+    dokka(project(":kotlin-sdk-testing"))
 
     kover(project(":kotlin-sdk-core"))
     kover(project(":kotlin-sdk-client"))
     kover(project(":kotlin-sdk-server"))
-    "kover"(project(":integration-test"))
+    kover(project(":kotlin-sdk-testing"))
+    kover(project(":integration-test"))
 }
 
 subprojects {
