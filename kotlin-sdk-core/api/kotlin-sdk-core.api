@@ -4492,13 +4492,15 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ToolListChangedNotif
 public final class io/modelcontextprotocol/kotlin/sdk/types/ToolSchema {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/ToolSchema$Companion;
 	public fun <init> ()V
-	public fun <init> (Lkotlinx/serialization/json/JsonObject;Ljava/util/List;)V
-	public synthetic fun <init> (Lkotlinx/serialization/json/JsonObject;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lkotlinx/serialization/json/JsonObject;Ljava/util/List;Lkotlinx/serialization/json/JsonObject;)V
+	public synthetic fun <init> (Lkotlinx/serialization/json/JsonObject;Ljava/util/List;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lkotlinx/serialization/json/JsonObject;
 	public final fun component2 ()Ljava/util/List;
-	public final fun copy (Lkotlinx/serialization/json/JsonObject;Ljava/util/List;)Lio/modelcontextprotocol/kotlin/sdk/types/ToolSchema;
-	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ToolSchema;Lkotlinx/serialization/json/JsonObject;Ljava/util/List;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ToolSchema;
+	public final fun component3 ()Lkotlinx/serialization/json/JsonObject;
+	public final fun copy (Lkotlinx/serialization/json/JsonObject;Ljava/util/List;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/ToolSchema;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ToolSchema;Lkotlinx/serialization/json/JsonObject;Ljava/util/List;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ToolSchema;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDefs ()Lkotlinx/serialization/json/JsonObject;
 	public final fun getProperties ()Lkotlinx/serialization/json/JsonObject;
 	public final fun getRequired ()Ljava/util/List;
 	public final fun getType ()Ljava/lang/String;
