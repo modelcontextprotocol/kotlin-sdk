@@ -4,6 +4,7 @@ This document is for autonomous agents and AI copilots contributing code to this
 Follow these rules to keep changes safe, comprehensible, and easy to maintain.
 
 ## Repository Layout
+
 - `kotlin-sdk-core`: Core protocol types, transport abstractions, serialization utilities
 - `kotlin-sdk-client`: Client transports (STDIO, SSE, StreamableHttp, WebSocket)
 - `kotlin-sdk-server`: Server transports + Ktor integration (STDIO, SSE, WebSocket)
@@ -30,19 +31,21 @@ Follow these rules to keep changes safe, comprehensible, and easy to maintain.
     - Interface Segregation: keep abstractions small and focused.
     - Dependency Inversion: depend on abstractions, not concretions.
 4. **Make the minimal change** that satisfies the tests and the issue.
-     Stay focused on a single concern and avoid "drive-by" changes.
+   Stay focused on a single concern and avoid "drive-by" changes.
 5. **Never commit changes!** It's human who should verify and commit to git.
 6. **Keep the build green.** Do not merge changes that break existing tests.
 7. **Prefer clarity** over micro-optimizations and cleverness.
 8. **Ask when uncertain.** If requirements are ambiguous, request clarification with a concise question.
 9. **Write code with the quality of a Kotlin Champion.**
-10. **Prefer using MCP servers** like `jetbrains` and `intellij-index` for code navigation, analysis, and refactoring.
+10. **Use MCP servers** like `jetbrains` and `intellij-index` to explore the codebase, for code navigation, analysis,
+    refactoring, and running tests.
 11. **Use the Bash tool for terminal commands** instead of MCP terminal execution features.
 12. **Suggest updates** to AGENTS.md/CLAUDE.md with best practices and guidelines.
 
 ## Code Style
 
 ### Kotlin
+
 - Avoid changing public API signatures. Run `./gradlew apiCheck` before every commit.
 - **Explicit API mode** is strict: all public APIs must have explicit visibility modifiers and return types.
 - Anything under an `internal` directory is not part of the public API and may change freely.
@@ -51,7 +54,8 @@ Follow these rules to keep changes safe, comprehensible, and easy to maintain.
 - Use the provided `.editorconfig` for consistent formatting
 - Use Kotlin typesafe DSL builders where possible; prioritize fluent builder style over standard builder methods
 - Prefer DSL builder style (method with lambda blocks) over constructors, if possible
-- Use `val` for immutable properties and `var` for mutable; consider `lateinit var` instead of nullable types when appropriate
+- Use `val` for immutable properties and `var` for mutable; consider `lateinit var` instead of nullable types when
+  appropriate
 - Use multi-dollar interpolation prefix for strings where applicable
 - Use fully qualified imports instead of star imports
 - Ensure backward compatibility when making changes
@@ -59,6 +63,7 @@ Follow these rules to keep changes safe, comprehensible, and easy to maintain.
 ## Testing Guidance
 
 ### Test Organization
+
 - **Location**: `src/commonTest/kotlin/io/modelcontextprotocol/kotlin/sdk/`
 - **Platform-specific**: `src/jvmTest/`, `src/jsTest/`, etc.
 - **Naming**: Use function `Names with backticks`, e.g., `fun \`should return 200 OK\`()`
@@ -66,21 +71,24 @@ Follow these rules to keep changes safe, comprehensible, and easy to maintain.
 - **Documentation**: Keep tests self-documenting; don't add KDocs to tests.
 
 ### Test Principles
-- Write comprehensive tests for new features. Always add tests for new features or bug fixes, even if not explicitly requested.
+
+- Write comprehensive tests for new features. Always add tests for new features or bug fixes, even if not explicitly
+  requested.
 - **Prioritize test readability**
 - Avoid creating too many test methods; use parametrized tests when testing multiple similar scenarios
 - When running tests on Kotlin Multiplatform projects, run JVM tests only unless asked for other platforms
 
 ### Test Framework Stack
+
 - **kotlin-test**: Core test framework
 - **Kotest assertions**: Use infix style (`shouldBe`, `shouldContain`) instead of `assertEquals`.
-  - Use `shouldMatchJson` from kotest-assertions-json for JSON validation.
-  - For nullable objects with nested properties, prefer `shouldNotBeNull { ... }` blocks:
-    ```kotlin
-    content.annotations shouldNotBeNull {
-        priority shouldBe 1.0
-    }
-    ```
+    - Use `shouldMatchJson` from kotest-assertions-json for JSON validation.
+    - For nullable objects with nested properties, prefer `shouldNotBeNull { ... }` blocks:
+      ```kotlin
+      content.annotations shouldNotBeNull {
+          priority shouldBe 1.0
+      }
+      ```
 - **mockk**: Mocking library
 - **Ktor MockEngine**: For HTTP client mocking (`io.ktor:ktor-client-mock`)
 - **Java tests**: Use JUnit5, Mockito, AssertJ core
@@ -129,6 +137,7 @@ Follow these rules to keep changes safe, comprehensible, and easy to maintain.
     ```
 
 #### Avoiding `this.` in Lambda Blocks
+
 ```kotlin
 // Avoid explicit `this.` unless necessary for disambiguation
 prop.shouldNotBeNull {
@@ -138,6 +147,7 @@ prop.shouldNotBeNull {
 ```
 
 ### Multiplatform Patterns
+
 - Use `expect`/`actual` pattern for platform-specific implementations in `utils.*` files.
 - Test changes on JVM first, then verify platform-specific behavior if needed.
 - Supported targets: JVM (11+), JS/Wasm, iOS, watchOS, tvOS.
@@ -145,22 +155,26 @@ prop.shouldNotBeNull {
 ## Coding Guidance
 
 ### Module Boundaries
+
 - Respect separation of concerns between modules
 - Keep abstractions framework-agnostic
 - Avoid leaking implementation details across module boundaries
 
 ### Serialization
+
 - Use Kotlinx Serialization with explicit `@Serializable` annotations
 - JSON config is defined in `jsonUtils.kt` as `McpJson` — use it consistently
 - Register custom serializers in companion objects
 
 ### Error Handling
+
 - Use sealed classes for result states
 - Map errors to JSON-RPC error codes in protocol handlers
 - Log errors using `io.github.oshai.kotlinlogging.KotlinLogging`
 - Never log sensitive data (credentials, tokens)
 
 ### Code Quality
+
 - Handle nullability and references as established patterns
 - Keep changes small and reversible; prefer adding functions over editing many call sites
 - Add focused comments **only** where intent is non-obvious
@@ -228,7 +242,7 @@ prop.shouldNotBeNull {
 
 ## Definition of done
 
-- Tests for affected functionality exist 
+- Tests for affected functionality exist
 - All tests pass across all targets
 - Changes are focused on a single concern.
 - Code respects module boundaries
@@ -238,6 +252,7 @@ prop.shouldNotBeNull {
 ## Documentation
 
 ### General Guidelines
+
 - **Never make up documentation/facts**
 - Update README files when adding new features
 - Document API changes in the appropriate module
@@ -246,6 +261,7 @@ prop.shouldNotBeNull {
 - Write tutorials in Markdown format in README.md
 
 ### KDoc Guidelines
+
 - Properly document interfaces and abstract classes in production code
 - Avoid KDocs on override functions to reduce verbosity
 - Update KDocs when API changes
@@ -258,11 +274,13 @@ prop.shouldNotBeNull {
 Each module must have a `Module.md` file at the module root for Dokka-generated API documentation.
 
 **Format Requirements** (per [Dokka specification](https://kotlinlang.org/docs/dokka-module-and-package-docs.html)):
+
 - Must start with `# Module module-name` (level 1 header)
 - Package documentation uses `# Package package.name` (level 1 header)
 - All other content uses level 2+ headers (`##`, `###`, etc.)
 
 **Content Guidelines**:
+
 - **Purpose**: Provide module-level overview in generated API docs
 - **Detail level**: API documentation style (concise, focused on classes/interfaces)
 - **Module section**:
@@ -304,7 +322,6 @@ Each module must have a `Module.md` file at the module root for Dokka-generated 
     # Package another.package
     
     Another package description.
-
 
 ## When to Ask for Help
 
