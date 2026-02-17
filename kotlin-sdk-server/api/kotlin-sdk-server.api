@@ -54,15 +54,15 @@ public final class io/modelcontextprotocol/kotlin/sdk/server/RegisteredResource 
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/server/RegisteredResourceTemplate : io/modelcontextprotocol/kotlin/sdk/server/Feature {
-	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/ResourceTemplate;Lkotlin/jvm/functions/Function2;)V
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/ResourceTemplate;Lkotlin/jvm/functions/Function3;)V
 	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/types/ResourceTemplate;
-	public final fun component2 ()Lkotlin/jvm/functions/Function2;
-	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/ResourceTemplate;Lkotlin/jvm/functions/Function2;)Lio/modelcontextprotocol/kotlin/sdk/server/RegisteredResourceTemplate;
-	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/server/RegisteredResourceTemplate;Lio/modelcontextprotocol/kotlin/sdk/types/ResourceTemplate;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/server/RegisteredResourceTemplate;
+	public final fun component2 ()Lkotlin/jvm/functions/Function3;
+	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/ResourceTemplate;Lkotlin/jvm/functions/Function3;)Lio/modelcontextprotocol/kotlin/sdk/server/RegisteredResourceTemplate;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/server/RegisteredResourceTemplate;Lio/modelcontextprotocol/kotlin/sdk/types/ResourceTemplate;Lkotlin/jvm/functions/Function3;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/server/RegisteredResourceTemplate;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getKey ()Lio/modelcontextprotocol/kotlin/sdk/server/UriTemplateFeatureKey;
 	public synthetic fun getKey ()Ljava/lang/Object;
-	public final fun getReadHandler ()Lkotlin/jvm/functions/Function2;
+	public final fun getReadHandler ()Lkotlin/jvm/functions/Function3;
 	public final fun getResourceTemplate ()Lio/modelcontextprotocol/kotlin/sdk/types/ResourceTemplate;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -94,8 +94,8 @@ public class io/modelcontextprotocol/kotlin/sdk/server/Server {
 	public final fun addPrompts (Ljava/util/List;)V
 	public final fun addResource (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function2;)V
 	public static synthetic fun addResource$default (Lio/modelcontextprotocol/kotlin/sdk/server/Server;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)V
-	public final fun addResourceTemplate (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function2;)V
-	public static synthetic fun addResourceTemplate$default (Lio/modelcontextprotocol/kotlin/sdk/server/Server;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)V
+	public final fun addResourceTemplate (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function3;)V
+	public static synthetic fun addResourceTemplate$default (Lio/modelcontextprotocol/kotlin/sdk/server/Server;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function3;ILjava/lang/Object;)V
 	public final fun addResourceTemplates (Ljava/util/List;)V
 	public final fun addResources (Ljava/util/List;)V
 	public final fun addTool (Lio/modelcontextprotocol/kotlin/sdk/types/Tool;Lkotlin/jvm/functions/Function2;)V
@@ -228,8 +228,13 @@ public final class io/modelcontextprotocol/kotlin/sdk/server/UriTemplate : io/mo
 	public fun matches (Ljava/lang/String;)Z
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/server/UriTemplateFeatureKey : io/modelcontextprotocol/kotlin/sdk/server/FeatureKey {
+public abstract interface class io/modelcontextprotocol/kotlin/sdk/server/UriTemplateArgumentExtractor {
+	public abstract fun extractArguments (Ljava/lang/String;)Ljava/util/Map;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/server/UriTemplateFeatureKey : io/modelcontextprotocol/kotlin/sdk/server/FeatureKey, io/modelcontextprotocol/kotlin/sdk/server/UriTemplateArgumentExtractor {
 	public fun <init> (Ljava/lang/String;)V
+	public fun extractArguments (Ljava/lang/String;)Ljava/util/Map;
 	public fun getKey ()Ljava/lang/String;
 	public synthetic fun getValue ()Ljava/lang/Object;
 	public fun getValue ()Lkotlin/text/Regex;
