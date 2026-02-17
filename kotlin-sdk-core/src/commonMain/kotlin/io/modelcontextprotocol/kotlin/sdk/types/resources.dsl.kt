@@ -1,6 +1,9 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonObjectBuilder
+import kotlinx.serialization.json.buildJsonObject
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
@@ -298,5 +301,225 @@ public class ListResourceTemplatesRequestBuilder @PublishedApi internal construc
     override fun build(): ListResourceTemplatesRequest {
         val params = paginatedRequestParams(cursor = cursor, meta = meta)
         return ListResourceTemplatesRequest(params)
+    }
+}
+
+// ============================================================================
+// Result Builders (Server-side)
+// ============================================================================
+
+/**
+ * Creates a [ListResourcesResult] using a type-safe DSL builder.
+ *
+ * Example:
+ * ```kotlin
+ * val result = buildListResourcesResult {
+ *     resource {
+ *         uri = "file:///path/to/file.txt"
+ *         name = "file.txt"
+ *         description = "A text file"
+ *         mimeType = "text/plain"
+ *     }
+ * }
+ * ```
+ */
+@OptIn(ExperimentalContracts::class)
+@ExperimentalMcpApi
+public inline fun buildListResourcesResult(block: ListResourcesResultBuilder.() -> Unit): ListResourcesResult {
+    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
+    return ListResourcesResultBuilder().apply(block).build()
+}
+
+/**
+ * DSL builder for constructing [ListResourcesResult] instances.
+ */
+@McpDsl
+public class ListResourcesResultBuilder @PublishedApi internal constructor() : PaginatedResultBuilder() {
+    private val resourcesList: MutableList<Resource> = mutableListOf()
+
+    public fun resource(resource: Resource) {
+        resourcesList.add(resource)
+    }
+
+    public fun resource(block: ResourceBuilder.() -> Unit) {
+        resourcesList.add(ResourceBuilder().apply(block).build())
+    }
+
+    @PublishedApi
+    override fun build(): ListResourcesResult {
+        require(resourcesList.isNotEmpty()) {
+            "At least one resource is required. Use resource() or resource { } to add resources."
+        }
+
+        return ListResourcesResult(
+            resources = resourcesList.toList(),
+            nextCursor = nextCursor,
+            meta = meta,
+        )
+    }
+}
+
+/**
+ * DSL builder for constructing [Resource] instances.
+ */
+@McpDsl
+public class ResourceBuilder @PublishedApi internal constructor() {
+    public var uri: String? = null
+    public var name: String? = null
+    public var description: String? = null
+    public var mimeType: String? = null
+    public var size: Long? = null
+    public var title: String? = null
+    public var annotations: Annotations? = null
+    public var icons: List<Icon>? = null
+    private var metaValue: JsonObject? = null
+
+    public fun meta(meta: JsonObject) {
+        this.metaValue = meta
+    }
+
+    public fun meta(block: JsonObjectBuilder.() -> Unit) {
+        meta(buildJsonObject(block))
+    }
+
+    @PublishedApi
+    internal fun build(): Resource {
+        val uri = requireNotNull(uri) { "Missing required field 'uri'" }
+        val name = requireNotNull(name) { "Missing required field 'name'" }
+
+        return Resource(
+            uri = uri,
+            name = name,
+            description = description,
+            mimeType = mimeType,
+            size = size,
+            title = title,
+            annotations = annotations,
+            icons = icons,
+            meta = metaValue,
+        )
+    }
+}
+
+/**
+ * Creates a [ReadResourceResult] using a type-safe DSL builder.
+ */
+@OptIn(ExperimentalContracts::class)
+@ExperimentalMcpApi
+public inline fun buildReadResourceResult(block: ReadResourceResultBuilder.() -> Unit): ReadResourceResult {
+    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
+    return ReadResourceResultBuilder().apply(block).build()
+}
+
+/**
+ * DSL builder for constructing [ReadResourceResult] instances.
+ */
+@McpDsl
+public class ReadResourceResultBuilder @PublishedApi internal constructor() : ResultBuilder() {
+    private val contentsList: MutableList<ResourceContents> = mutableListOf()
+
+    public fun textContent(uri: String, text: String, mimeType: String? = null) {
+        contentsList.add(TextResourceContents(text = text, uri = uri, mimeType = mimeType))
+    }
+
+    public fun blobContent(uri: String, blob: String, mimeType: String? = null) {
+        contentsList.add(BlobResourceContents(blob = blob, uri = uri, mimeType = mimeType))
+    }
+
+    public fun content(content: ResourceContents) {
+        contentsList.add(content)
+    }
+
+    @PublishedApi
+    override fun build(): ReadResourceResult {
+        require(contentsList.isNotEmpty()) {
+            "At least one content block is required. Use textContent(), blobContent(), or content()."
+        }
+
+        return ReadResourceResult(
+            contents = contentsList.toList(),
+            meta = meta,
+        )
+    }
+}
+
+/**
+ * Creates a [ListResourceTemplatesResult] using a type-safe DSL builder.
+ */
+@OptIn(ExperimentalContracts::class)
+@ExperimentalMcpApi
+public inline fun buildListResourceTemplatesResult(
+    block: ListResourceTemplatesResultBuilder.() -> Unit,
+): ListResourceTemplatesResult {
+    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
+    return ListResourceTemplatesResultBuilder().apply(block).build()
+}
+
+/**
+ * DSL builder for constructing [ListResourceTemplatesResult] instances.
+ */
+@McpDsl
+public class ListResourceTemplatesResultBuilder @PublishedApi internal constructor() : PaginatedResultBuilder() {
+    private val templatesList: MutableList<ResourceTemplate> = mutableListOf()
+
+    public fun template(template: ResourceTemplate) {
+        templatesList.add(template)
+    }
+
+    public fun template(block: ResourceTemplateBuilder.() -> Unit) {
+        templatesList.add(ResourceTemplateBuilder().apply(block).build())
+    }
+
+    @PublishedApi
+    override fun build(): ListResourceTemplatesResult {
+        require(templatesList.isNotEmpty()) {
+            "At least one template is required. Use template() or template { } to add templates."
+        }
+
+        return ListResourceTemplatesResult(
+            resourceTemplates = templatesList.toList(),
+            nextCursor = nextCursor,
+            meta = meta,
+        )
+    }
+}
+
+/**
+ * DSL builder for constructing [ResourceTemplate] instances.
+ */
+@McpDsl
+public class ResourceTemplateBuilder @PublishedApi internal constructor() {
+    public var uriTemplate: String? = null
+    public var name: String? = null
+    public var description: String? = null
+    public var mimeType: String? = null
+    public var title: String? = null
+    public var annotations: Annotations? = null
+    public var icons: List<Icon>? = null
+    private var metaValue: JsonObject? = null
+
+    public fun meta(meta: JsonObject) {
+        this.metaValue = meta
+    }
+
+    public fun meta(block: JsonObjectBuilder.() -> Unit) {
+        meta(buildJsonObject(block))
+    }
+
+    @PublishedApi
+    internal fun build(): ResourceTemplate {
+        val uriTemplate = requireNotNull(uriTemplate) { "Missing required field 'uriTemplate'" }
+        val name = requireNotNull(name) { "Missing required field 'name'" }
+
+        return ResourceTemplate(
+            uriTemplate = uriTemplate,
+            name = name,
+            description = description,
+            mimeType = mimeType,
+            title = title,
+            annotations = annotations,
+            icons = icons,
+            meta = metaValue,
+        )
     }
 }
