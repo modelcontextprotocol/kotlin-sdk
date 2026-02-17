@@ -3,6 +3,8 @@ package io.modelcontextprotocol.kotlin.sdk.types
 import io.kotest.assertions.json.shouldEqualJson
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
+import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
+import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.int
@@ -43,7 +45,7 @@ class JsonRpcTest {
 
     @Test
     fun `should convert JSONRPCRequest to Request`() {
-        val jsonRpc = McpJson.decodeFromString<JSONRPCRequest>(
+        val jsonRpc = verifyDeserialization<JSONRPCRequest>(McpJson, 
             """
             {
               "id": 17,
@@ -101,7 +103,7 @@ class JsonRpcTest {
 
     @Test
     fun `should convert JSONRPCNotification to Notification`() {
-        val jsonRpc = McpJson.decodeFromString<JSONRPCNotification>(
+        val jsonRpc = verifyDeserialization<JSONRPCNotification>(McpJson, 
             """
             {
               "method": "notifications/message",
@@ -147,9 +149,10 @@ class JsonRpcTest {
             },
         )
 
-        val json = McpJson.encodeToString(request)
-
-        json shouldEqualJson """
+        verifySerialization(
+            request,
+            McpJson,
+            """
             {
               "id": "req-1",
               "method": "tools/list",
@@ -159,7 +162,8 @@ class JsonRpcTest {
               },
               "jsonrpc": "2.0"
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -175,7 +179,7 @@ class JsonRpcTest {
             }
         """.trimIndent()
 
-        val request = McpJson.decodeFromString<JSONRPCRequest>(json)
+        val request = verifyDeserialization<JSONRPCRequest>(McpJson, json)
 
         val id = request.id
         assertIs<RequestId.NumberId>(id)
@@ -196,9 +200,10 @@ class JsonRpcTest {
             },
         )
 
-        val json = McpJson.encodeToString(notification)
-
-        json shouldEqualJson """
+        verifySerialization(
+            notification,
+            McpJson,
+            """
             {
               "method": "notifications/log",
               "params": {
@@ -207,7 +212,8 @@ class JsonRpcTest {
               },
               "jsonrpc": "2.0"
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -223,7 +229,7 @@ class JsonRpcTest {
             }
         """.trimIndent()
 
-        val notification = McpJson.decodeFromString<JSONRPCNotification>(json)
+        val notification = verifyDeserialization<JSONRPCNotification>(McpJson, json)
         assertEquals("notifications/progress", notification.method)
         val params = notification.params?.jsonObject
         assertNotNull(params)
@@ -240,9 +246,10 @@ class JsonRpcTest {
             ),
         )
 
-        val json = McpJson.encodeToString(response)
-
-        json shouldEqualJson """
+        verifySerialization(
+            response,
+            McpJson,
+            """
             {
               "id": "call-1",
               "result": {
@@ -252,7 +259,8 @@ class JsonRpcTest {
               },
               "jsonrpc": "2.0"
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -269,7 +277,7 @@ class JsonRpcTest {
             }
         """.trimIndent()
 
-        val response = McpJson.decodeFromString<JSONRPCResponse>(json)
+        val response = verifyDeserialization<JSONRPCResponse>(McpJson, json)
         val result = response.result
         assertIs<EmptyResult>(result)
         assertEquals(RequestId.NumberId(7L), response.id)
@@ -289,9 +297,10 @@ class JsonRpcTest {
             ),
         )
 
-        val json = McpJson.encodeToString(error)
-
-        json shouldEqualJson """
+        verifySerialization(
+            error,
+            McpJson,
+            """
             {
               "id": 99,
               "error": {
@@ -303,7 +312,8 @@ class JsonRpcTest {
               },
               "jsonrpc": "2.0"
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -323,7 +333,7 @@ class JsonRpcTest {
             }
         """.trimIndent()
 
-        val error = McpJson.decodeFromString<JSONRPCError>(json)
+        val error = verifyDeserialization<JSONRPCError>(McpJson, json)
         assertEquals(RequestId("req-404"), error.id)
         assertEquals(RPCError.ErrorCode.INVALID_PARAMS, error.error.code)
         assertEquals("Invalid params", error.error.message)
@@ -348,7 +358,7 @@ class JsonRpcTest {
             }
         """.trimIndent()
 
-        val message = McpJson.decodeFromString<JSONRPCMessage>(json)
+        val message = verifyDeserialization<JSONRPCMessage>(McpJson, json)
         val request = assertIs<JSONRPCRequest>(message)
         assertEquals("sampling/create", request.method)
         val params = request.params?.jsonObject
@@ -373,7 +383,7 @@ class JsonRpcTest {
             }
         """.trimIndent()
 
-        val message = McpJson.decodeFromString<JSONRPCMessage>(json)
+        val message = verifyDeserialization<JSONRPCMessage>(McpJson, json)
         val error = assertIs<JSONRPCError>(message)
         assertEquals(RPCError.ErrorCode.REQUEST_TIMEOUT, error.error.code)
         val data = error.error.data?.jsonObject
@@ -388,9 +398,10 @@ class JsonRpcTest {
             params = buildJsonObject { put("message", "Polymorphic") },
         )
 
-        val json = McpJson.encodeToString(message)
-
-        json shouldEqualJson """
+        verifySerialization(
+            message,
+            McpJson,
+            """
             {
               "method": "notifications/log",
               "params": {
@@ -398,7 +409,8 @@ class JsonRpcTest {
               },
               "jsonrpc": "2.0"
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test

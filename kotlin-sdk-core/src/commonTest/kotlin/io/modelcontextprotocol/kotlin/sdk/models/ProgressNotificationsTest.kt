@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.models
 
 import io.kotest.matchers.shouldBe
+import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.ProgressNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ProgressNotificationParams
