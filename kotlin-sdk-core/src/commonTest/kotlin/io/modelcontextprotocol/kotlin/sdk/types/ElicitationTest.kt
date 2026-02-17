@@ -1,6 +1,8 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.kotest.assertions.json.shouldEqualJson
+import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
+import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.int
@@ -16,6 +18,7 @@ import kotlin.test.assertNull
 class ElicitationTest {
 
     @Test
+    @Suppress("LongMethod")
     fun `should serialize ElicitRequest with requested schema`() {
         val request = ElicitRequest(
             ElicitRequestParams(
@@ -54,9 +57,10 @@ class ElicitationTest {
             ),
         )
 
-        val json = McpJson.encodeToString(request)
-
-        json shouldEqualJson """
+        verifySerialization(
+            request,
+            McpJson,
+            """
             {
               "method": "elicitation/create",
               "params": {
@@ -84,7 +88,8 @@ class ElicitationTest {
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -111,7 +116,7 @@ class ElicitationTest {
             }
         """.trimIndent()
 
-        val request = McpJson.decodeFromString<ElicitRequest>(json)
+        val request = verifyDeserialization<ElicitRequest>(McpJson, json)
         assertEquals(Method.Defined.ElicitationCreate, request.method)
 
         val params = request.params
@@ -163,7 +168,7 @@ class ElicitationTest {
             }
         """.trimIndent()
 
-        val decoded = McpJson.decodeFromString<ElicitResult>(json)
+        val decoded = verifyDeserialization<ElicitResult>(McpJson, json)
         assertEquals(ElicitResult.Action.Accept, decoded.action)
 
         val content = decoded.content
@@ -188,7 +193,7 @@ class ElicitationTest {
             }
         """.trimIndent()
 
-        val result = McpJson.decodeFromString<ElicitResult>(json)
+        val result = verifyDeserialization<ElicitResult>(McpJson, json)
         assertEquals(ElicitResult.Action.Decline, result.action)
         assertNull(result.content)
         assertEquals("User skipped", result.meta?.get("reason")?.jsonPrimitive?.content)

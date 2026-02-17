@@ -1,6 +1,9 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.kotest.assertions.json.shouldEqualJson
+import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
+import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
+import io.modelcontextprotocol.kotlin.test.utils.verifySerializationRoundTrip
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlin.test.Test
@@ -15,14 +18,16 @@ class CapabilitiesTest {
             name = "test-server",
             version = "1.0.0",
         )
-        val json = McpJson.encodeToString(implementation)
-
-        json shouldEqualJson """
+        verifySerialization(
+            implementation,
+            McpJson,
+            """
             {
               "name": "test-server",
               "version": "1.0.0"
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -36,9 +41,10 @@ class CapabilitiesTest {
                 Icon(src = "https://example.com/icon.png"),
             ),
         )
-        val json = McpJson.encodeToString(implementation)
-
-        json shouldEqualJson """
+        verifySerialization(
+            implementation,
+            McpJson,
+            """
             {
               "name": "test-server",
               "version": "1.0.0",
@@ -48,7 +54,8 @@ class CapabilitiesTest {
                 {"src": "https://example.com/icon.png"}
               ]
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -62,7 +69,7 @@ class CapabilitiesTest {
             }
         """.trimIndent()
 
-        val implementation = McpJson.decodeFromString<Implementation>(json)
+        val implementation = verifyDeserialization<Implementation>(McpJson, json)
 
         assertEquals("test-server", implementation.name)
         assertEquals("2.1.3-beta", implementation.version)
@@ -79,7 +86,7 @@ class CapabilitiesTest {
             }
         """.trimIndent()
 
-        val implementation = McpJson.decodeFromString<Implementation>(json)
+        val implementation = verifyDeserialization<Implementation>(McpJson, json)
 
         assertEquals("minimal-server", implementation.name)
         assertEquals("0.1.0", implementation.version)
@@ -97,13 +104,7 @@ class CapabilitiesTest {
             websiteUrl = "https://test.com",
         )
 
-        val json = McpJson.encodeToString(original)
-        val decoded = McpJson.decodeFromString<Implementation>(json)
-
-        assertEquals(original.name, decoded.name)
-        assertEquals(original.version, decoded.version)
-        assertEquals(original.title, decoded.title)
-        assertEquals(original.websiteUrl, decoded.websiteUrl)
+        verifySerializationRoundTrip(original, McpJson)
     }
 
     // ClientCapabilities tests
@@ -120,13 +121,15 @@ class CapabilitiesTest {
         val capabilities = ClientCapabilities(
             sampling = ClientCapabilities.sampling,
         )
-        val json = McpJson.encodeToString(capabilities)
-
-        json shouldEqualJson """
+        verifySerialization(
+            capabilities,
+            McpJson,
+            """
             {
               "sampling": {}
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -134,13 +137,15 @@ class CapabilitiesTest {
         val capabilities = ClientCapabilities(
             roots = ClientCapabilities.Roots(),
         )
-        val json = McpJson.encodeToString(capabilities)
-
-        json shouldEqualJson """
+        verifySerialization(
+            capabilities,
+            McpJson,
+            """
             {
               "roots": {}
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -148,15 +153,17 @@ class CapabilitiesTest {
         val capabilities = ClientCapabilities(
             roots = ClientCapabilities.Roots(listChanged = true),
         )
-        val json = McpJson.encodeToString(capabilities)
-
-        json shouldEqualJson """
+        verifySerialization(
+            capabilities,
+            McpJson,
+            """
             {
               "roots": {
                 "listChanged": true
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -164,13 +171,15 @@ class CapabilitiesTest {
         val capabilities = ClientCapabilities(
             elicitation = ClientCapabilities.elicitation,
         )
-        val json = McpJson.encodeToString(capabilities)
-
-        json shouldEqualJson """
+        verifySerialization(
+            capabilities,
+            McpJson,
+            """
             {
               "elicitation": {}
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -186,9 +195,10 @@ class CapabilitiesTest {
         val capabilities = ClientCapabilities(
             experimental = experimental,
         )
-        val json = McpJson.encodeToString(capabilities)
-
-        json shouldEqualJson """
+        verifySerialization(
+            capabilities,
+            McpJson,
+            """
             {
               "experimental": {
                 "customFeature": {
@@ -196,7 +206,8 @@ class CapabilitiesTest {
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -210,9 +221,10 @@ class CapabilitiesTest {
             elicitation = ClientCapabilities.elicitation,
             experimental = experimental,
         )
-        val json = McpJson.encodeToString(capabilities)
-
-        json shouldEqualJson """
+        verifySerialization(
+            capabilities,
+            McpJson,
+            """
             {
               "sampling": {},
               "roots": {
@@ -225,7 +237,8 @@ class CapabilitiesTest {
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -240,7 +253,7 @@ class CapabilitiesTest {
             }
         """.trimIndent()
 
-        val capabilities = McpJson.decodeFromString<ClientCapabilities>(json)
+        val capabilities = verifyDeserialization<ClientCapabilities>(McpJson, json)
 
         assertEquals(EmptyJsonObject, capabilities.sampling)
         assertEquals(true, capabilities.roots?.listChanged)
@@ -251,7 +264,7 @@ class CapabilitiesTest {
     fun `should deserialize empty ClientCapabilities from JSON`() {
         val json = "{}"
 
-        val capabilities = McpJson.decodeFromString<ClientCapabilities>(json)
+        val capabilities = verifyDeserialization<ClientCapabilities>(McpJson, json)
 
         assertNull(capabilities.sampling)
         assertNull(capabilities.roots)
@@ -267,12 +280,7 @@ class CapabilitiesTest {
             elicitation = ClientCapabilities.elicitation,
         )
 
-        val json = McpJson.encodeToString(original)
-        val decoded = McpJson.decodeFromString<ClientCapabilities>(json)
-
-        assertEquals(original.sampling, decoded.sampling)
-        assertEquals(original.roots?.listChanged, decoded.roots?.listChanged)
-        assertEquals(original.elicitation, decoded.elicitation)
+        verifySerializationRoundTrip(original, McpJson)
     }
 
     // ServerCapabilities tests
@@ -289,13 +297,15 @@ class CapabilitiesTest {
         val capabilities = ServerCapabilities(
             tools = ServerCapabilities.Tools(),
         )
-        val json = McpJson.encodeToString(capabilities)
-
-        json shouldEqualJson """
+        verifySerialization(
+            capabilities,
+            McpJson,
+            """
             {
               "tools": {}
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -303,15 +313,17 @@ class CapabilitiesTest {
         val capabilities = ServerCapabilities(
             tools = ServerCapabilities.Tools(listChanged = true),
         )
-        val json = McpJson.encodeToString(capabilities)
-
-        json shouldEqualJson """
+        verifySerialization(
+            capabilities,
+            McpJson,
+            """
             {
               "tools": {
                 "listChanged": true
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -319,13 +331,15 @@ class CapabilitiesTest {
         val capabilities = ServerCapabilities(
             resources = ServerCapabilities.Resources(),
         )
-        val json = McpJson.encodeToString(capabilities)
-
-        json shouldEqualJson """
+        verifySerialization(
+            capabilities,
+            McpJson,
+            """
             {
               "resources": {}
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -333,15 +347,17 @@ class CapabilitiesTest {
         val capabilities = ServerCapabilities(
             resources = ServerCapabilities.Resources(listChanged = true),
         )
-        val json = McpJson.encodeToString(capabilities)
-
-        json shouldEqualJson """
+        verifySerialization(
+            capabilities,
+            McpJson,
+            """
             {
               "resources": {
                 "listChanged": true
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -349,15 +365,17 @@ class CapabilitiesTest {
         val capabilities = ServerCapabilities(
             resources = ServerCapabilities.Resources(subscribe = true),
         )
-        val json = McpJson.encodeToString(capabilities)
-
-        json shouldEqualJson """
+        verifySerialization(
+            capabilities,
+            McpJson,
+            """
             {
               "resources": {
                 "subscribe": true
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -368,16 +386,18 @@ class CapabilitiesTest {
                 subscribe = false,
             ),
         )
-        val json = McpJson.encodeToString(capabilities)
-
-        json shouldEqualJson """
+        verifySerialization(
+            capabilities,
+            McpJson,
+            """
             {
               "resources": {
                 "listChanged": true,
                 "subscribe": false
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -385,13 +405,15 @@ class CapabilitiesTest {
         val capabilities = ServerCapabilities(
             prompts = ServerCapabilities.Prompts(),
         )
-        val json = McpJson.encodeToString(capabilities)
-
-        json shouldEqualJson """
+        verifySerialization(
+            capabilities,
+            McpJson,
+            """
             {
               "prompts": {}
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -399,15 +421,17 @@ class CapabilitiesTest {
         val capabilities = ServerCapabilities(
             prompts = ServerCapabilities.Prompts(listChanged = false),
         )
-        val json = McpJson.encodeToString(capabilities)
-
-        json shouldEqualJson """
+        verifySerialization(
+            capabilities,
+            McpJson,
+            """
             {
               "prompts": {
                 "listChanged": false
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -415,13 +439,15 @@ class CapabilitiesTest {
         val capabilities = ServerCapabilities(
             logging = ServerCapabilities.Logging,
         )
-        val json = McpJson.encodeToString(capabilities)
-
-        json shouldEqualJson """
+        verifySerialization(
+            capabilities,
+            McpJson,
+            """
             {
               "logging": {}
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -429,13 +455,15 @@ class CapabilitiesTest {
         val capabilities = ServerCapabilities(
             completions = ServerCapabilities.Completions,
         )
-        val json = McpJson.encodeToString(capabilities)
-
-        json shouldEqualJson """
+        verifySerialization(
+            capabilities,
+            McpJson,
+            """
             {
               "completions": {}
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -451,9 +479,10 @@ class CapabilitiesTest {
         val capabilities = ServerCapabilities(
             experimental = experimental,
         )
-        val json = McpJson.encodeToString(capabilities)
-
-        json shouldEqualJson """
+        verifySerialization(
+            capabilities,
+            McpJson,
+            """
             {
               "experimental": {
                 "customCapability": {
@@ -461,7 +490,8 @@ class CapabilitiesTest {
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -480,9 +510,10 @@ class CapabilitiesTest {
             completions = ServerCapabilities.Completions,
             experimental = experimental,
         )
-        val json = McpJson.encodeToString(capabilities)
-
-        json shouldEqualJson """
+        verifySerialization(
+            capabilities,
+            McpJson,
+            """
             {
               "tools": {
                 "listChanged": true
@@ -502,7 +533,8 @@ class CapabilitiesTest {
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -524,7 +556,7 @@ class CapabilitiesTest {
             }
         """.trimIndent()
 
-        val capabilities = McpJson.decodeFromString<ServerCapabilities>(json)
+        val capabilities = verifyDeserialization<ServerCapabilities>(McpJson, json)
 
         assertEquals(true, capabilities.tools?.listChanged)
         assertEquals(false, capabilities.resources?.listChanged)
@@ -538,7 +570,7 @@ class CapabilitiesTest {
     fun `should deserialize empty ServerCapabilities from JSON`() {
         val json = "{}"
 
-        val capabilities = McpJson.decodeFromString<ServerCapabilities>(json)
+        val capabilities = verifyDeserialization<ServerCapabilities>(McpJson, json)
 
         assertNull(capabilities.tools)
         assertNull(capabilities.resources)
@@ -560,14 +592,7 @@ class CapabilitiesTest {
             logging = ServerCapabilities.Logging,
         )
 
-        val json = McpJson.encodeToString(original)
-        val decoded = McpJson.decodeFromString<ServerCapabilities>(json)
-
-        assertEquals(original.tools?.listChanged, decoded.tools?.listChanged)
-        assertEquals(original.resources?.listChanged, decoded.resources?.listChanged)
-        assertEquals(original.resources?.subscribe, decoded.resources?.subscribe)
-        assertEquals(original.prompts?.listChanged, decoded.prompts?.listChanged)
-        assertEquals(original.logging, decoded.logging)
+        verifySerializationRoundTrip(original, McpJson)
     }
 
     // Additional nested type tests
@@ -579,7 +604,7 @@ class CapabilitiesTest {
             }
         """.trimIndent()
 
-        val capabilities = McpJson.decodeFromString<ClientCapabilities>(json)
+        val capabilities = verifyDeserialization<ClientCapabilities>(McpJson, json)
 
         assertNull(capabilities.roots?.listChanged)
     }
@@ -594,7 +619,7 @@ class CapabilitiesTest {
             }
         """.trimIndent()
 
-        val capabilities = McpJson.decodeFromString<ServerCapabilities>(json)
+        val capabilities = verifyDeserialization<ServerCapabilities>(McpJson, json)
 
         assertNull(capabilities.tools?.listChanged)
         assertNull(capabilities.resources?.listChanged)
@@ -612,7 +637,7 @@ class CapabilitiesTest {
             }
         """.trimIndent()
 
-        val capabilities = McpJson.decodeFromString<ClientCapabilities>(json)
+        val capabilities = verifyDeserialization<ClientCapabilities>(McpJson, json)
 
         // Should not fail - additionalProperties are allowed
         assertEquals("customValue", capabilities.sampling?.get("customProperty")?.toString()?.trim('"'))
@@ -628,7 +653,7 @@ class CapabilitiesTest {
             }
         """.trimIndent()
 
-        val capabilities = McpJson.decodeFromString<ServerCapabilities>(json)
+        val capabilities = verifyDeserialization<ServerCapabilities>(McpJson, json)
 
         // Should not fail - additionalProperties are allowed
         assertEquals("debug", capabilities.logging?.get("level")?.toString()?.trim('"'))

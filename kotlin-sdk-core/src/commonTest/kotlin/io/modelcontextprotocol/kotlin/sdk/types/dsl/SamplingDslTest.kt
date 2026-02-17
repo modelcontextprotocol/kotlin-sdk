@@ -28,6 +28,7 @@ import kotlin.test.Test
 @OptIn(ExperimentalMcpApi::class)
 class SamplingDslTest {
     @Test
+    @Suppress("LongMethod")
     fun `buildCreateMessageRequest should build with all fields`() {
         val request = buildCreateMessageRequest {
             maxTokens = 1000

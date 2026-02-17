@@ -22,6 +22,7 @@ include(
     ":kotlin-sdk-core",
     ":kotlin-sdk-client",
     ":kotlin-sdk-server",
+    ":kotlin-sdk-testing",
     ":kotlin-sdk",
     ":integration-test",
     ":docs",

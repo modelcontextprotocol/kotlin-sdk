@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
-import io.kotest.assertions.json.shouldEqualJson
+import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
+import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
@@ -14,6 +15,7 @@ import kotlin.test.assertNull
 class InitializeTest {
 
     @Test
+    @Suppress("LongMethod")
     fun `should serialize InitializeRequest with capabilities and meta`() {
         val request = InitializeRequest(
             InitializeRequestParams(
@@ -41,9 +43,10 @@ class InitializeTest {
             ),
         )
 
-        val json = McpJson.encodeToString(request)
-
-        json shouldEqualJson """
+        verifySerialization(
+            request,
+            McpJson,
+            """
             {
               "method": "initialize",
               "params": {
@@ -73,7 +76,8 @@ class InitializeTest {
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -106,7 +110,7 @@ class InitializeTest {
             }
         """.trimIndent()
 
-        val request = McpJson.decodeFromString<InitializeRequest>(json)
+        val request = verifyDeserialization<InitializeRequest>(McpJson, json)
         assertEquals(Method.Defined.Initialize, request.method)
 
         val params = request.params
@@ -149,9 +153,10 @@ class InitializeTest {
             meta = buildJsonObject { put("issuedAt", "2025-01-12T15:00:58Z") },
         )
 
-        val json = McpJson.encodeToString(result)
-
-        json shouldEqualJson """
+        verifySerialization(
+            result,
+            McpJson,
+            """
             {
               "protocolVersion": "2024-11-05",
               "capabilities": {
@@ -180,7 +185,8 @@ class InitializeTest {
                 "issuedAt": "2025-01-12T15:00:58Z"
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -201,7 +207,7 @@ class InitializeTest {
             }
         """.trimIndent()
 
-        val result = McpJson.decodeFromString<InitializeResult>(json)
+        val result = verifyDeserialization<InitializeResult>(McpJson, json)
 
         assertEquals("2025-03-26", result.protocolVersion)
         assertEquals("result-server", result.serverInfo.name)

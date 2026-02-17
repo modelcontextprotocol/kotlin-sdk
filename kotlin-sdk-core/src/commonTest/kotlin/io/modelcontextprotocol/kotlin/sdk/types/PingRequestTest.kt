@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
-import io.kotest.assertions.json.shouldEqualJson
+import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
+import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonObject
@@ -17,13 +18,15 @@ class PingRequestTest {
     fun `should serialize PingRequest without params`() {
         val request = PingRequest()
 
-        val json = McpJson.encodeToString(request)
-
-        json shouldEqualJson """
+        verifySerialization(
+            request,
+            McpJson,
+            """
             {
               "method": "ping"
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -36,9 +39,10 @@ class PingRequestTest {
             ),
         )
 
-        val json = McpJson.encodeToString(request)
-
-        json shouldEqualJson """
+        verifySerialization(
+            request,
+            McpJson,
+            """
             {
               "method": "ping",
               "params": {
@@ -47,7 +51,8 @@ class PingRequestTest {
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -84,7 +89,7 @@ class PingRequestTest {
             }
         """.trimIndent()
 
-        val jsonRpc = McpJson.decodeFromString<JSONRPCRequest>(json)
+        val jsonRpc = verifyDeserialization<JSONRPCRequest>(McpJson, json)
         val request = jsonRpc.fromJSON()
 
         val pingRequest = assertIs<PingRequest>(request)

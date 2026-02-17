@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
-import io.kotest.assertions.json.shouldEqualJson
+import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
+import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
@@ -15,14 +16,16 @@ class ContentTest {
     fun `should serialize TextContent with minimal fields`() {
         val content = TextContent(text = "Hello, MCP!")
 
-        val json = McpJson.encodeToString(content)
-
-        json shouldEqualJson """
+        verifySerialization(
+            content,
+            McpJson,
+            """
             {
               "type": "text",
               "text": "Hello, MCP!"
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -33,9 +36,10 @@ class ContentTest {
             meta = buildJsonObject { put("origin", "assistant") },
         )
 
-        val json = McpJson.encodeToString(content)
-
-        json shouldEqualJson """
+        verifySerialization(
+            content,
+            McpJson,
+            """
             {
               "type": "text",
               "text": "Need help?",
@@ -46,12 +50,8 @@ class ContentTest {
                 "origin": "assistant"
               }
             }
-        """.trimIndent()
-
-        val decoded = McpJson.decodeFromString<MediaContent>(json) as TextContent
-        assertEquals("Need help?", decoded.text)
-        assertEquals(listOf(Role.User), decoded.annotations?.audience)
-        assertEquals("assistant", decoded.meta?.get("origin")?.jsonPrimitive?.content)
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -61,15 +61,17 @@ class ContentTest {
             mimeType = "image/png",
         )
 
-        val json = McpJson.encodeToString(content)
-
-        json shouldEqualJson """
+        verifySerialization(
+            content,
+            McpJson,
+            """
             {
               "type": "image",
               "data": "aW1hZ2VEYXRh",
               "mimeType": "image/png"
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -83,7 +85,7 @@ class ContentTest {
             }
         """.trimIndent()
 
-        val content = McpJson.decodeFromString<MediaContent>(json) as ImageContent
+        val content = verifyDeserialization<MediaContent>(McpJson, json) as ImageContent
         assertEquals("Zm9vYmFy", content.data)
         assertEquals("image/jpeg", content.mimeType)
         assertEquals(0.6, content.annotations?.priority)
@@ -98,9 +100,10 @@ class ContentTest {
             meta = buildJsonObject { put("durationMs", 1200) },
         )
 
-        val json = McpJson.encodeToString(content)
-
-        json shouldEqualJson """
+        verifySerialization(
+            content,
+            McpJson,
+            """
             {
               "type": "audio",
               "data": "YXVkaW9kYXRh",
@@ -109,7 +112,8 @@ class ContentTest {
                 "durationMs": 1200
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -123,7 +127,7 @@ class ContentTest {
             }
         """.trimIndent()
 
-        val content = McpJson.decodeFromString<MediaContent>(json) as AudioContent
+        val content = verifyDeserialization<MediaContent>(McpJson, json) as AudioContent
         assertEquals("audio/mpeg", content.mimeType)
         assertEquals("YmF6", content.data)
         assertEquals("user", content.meta?.get("speaker")?.jsonPrimitive?.content)
@@ -136,15 +140,17 @@ class ContentTest {
             uri = "file:///workspace/README.md",
         )
 
-        val json = McpJson.encodeToString(resource)
-
-        json shouldEqualJson """
+        verifySerialization(
+            resource,
+            McpJson,
+            """
             {
               "type": "resource_link",
               "name": "README",
               "uri": "file:///workspace/README.md"
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -161,9 +167,10 @@ class ContentTest {
             meta = buildJsonObject { put("etag", "1234") },
         )
 
-        val json = McpJson.encodeToString(resource)
-
-        json shouldEqualJson """
+        verifySerialization(
+            resource,
+            McpJson,
+            """
             {
               "type": "resource_link",
               "name": "README",
@@ -184,7 +191,8 @@ class ContentTest {
                 "etag": "1234"
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -199,7 +207,7 @@ class ContentTest {
             }
         """.trimIndent()
 
-        val resource = McpJson.decodeFromString<ContentBlock>(json) as ResourceLink
+        val resource = verifyDeserialization<ContentBlock>(McpJson, json) as ResourceLink
         assertEquals("config", resource.name)
         assertEquals("file:///config.yaml", resource.uri)
         assertEquals(512, resource.size)
@@ -220,9 +228,10 @@ class ContentTest {
             meta = buildJsonObject { put("source", "analysis") },
         )
 
-        val json = McpJson.encodeToString(embedded)
-
-        json shouldEqualJson """
+        verifySerialization(
+            embedded,
+            McpJson,
+            """
             {
               "type": "resource",
               "resource": {
@@ -240,7 +249,8 @@ class ContentTest {
                 "source": "analysis"
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -257,7 +267,7 @@ class ContentTest {
             }
         """.trimIndent()
 
-        val embedded = McpJson.decodeFromString<ContentBlock>(json) as EmbeddedResource
+        val embedded = verifyDeserialization<ContentBlock>(McpJson, json) as EmbeddedResource
         assertEquals(ContentTypes.EMBEDDED_RESOURCE, embedded.type)
         assertNull(embedded.annotations)
         assertEquals("base64", embedded.meta?.get("encoding")?.jsonPrimitive?.content)
@@ -292,7 +302,7 @@ class ContentTest {
             ]
         """.trimIndent()
 
-        val content = McpJson.decodeFromString<List<ContentBlock>>(json)
+        val content = verifyDeserialization<List<ContentBlock>>(McpJson, json)
         assertEquals(3, content.size)
         assertIs<TextContent>(content[0])
         assertIs<ResourceLink>(content[1])

@@ -1,6 +1,8 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.kotest.assertions.json.shouldEqualJson
+import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
+import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonPrimitive
@@ -20,14 +22,16 @@ class ResourcesTest {
             name = "README",
         )
 
-        val json = McpJson.encodeToString(resource)
-
-        json shouldEqualJson """
+        verifySerialization(
+            resource,
+            McpJson,
+            """
             {
               "uri": "file:///workspace/README.md",
               "name": "README"
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -46,9 +50,10 @@ class ResourcesTest {
             meta = buildJsonObject { put("etag", "abc123") },
         )
 
-        val json = McpJson.encodeToString(resource)
-
-        json shouldEqualJson """
+        verifySerialization(
+            resource,
+            McpJson,
+            """
             {
               "uri": "file:///workspace/CHANGELOG.md",
               "name": "CHANGELOG",
@@ -67,7 +72,8 @@ class ResourcesTest {
                 "etag": "abc123"
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -92,7 +98,7 @@ class ResourcesTest {
             }
         """.trimIndent()
 
-        val resource = McpJson.decodeFromString<Resource>(json)
+        val resource = verifyDeserialization<Resource>(McpJson, json)
 
         assertEquals("file:///config/settings.json", resource.uri)
         assertEquals("config-settings", resource.name)
@@ -122,9 +128,10 @@ class ResourcesTest {
             meta = buildJsonObject { put("requiresAuth", true) },
         )
 
-        val json = McpJson.encodeToString(template)
-
-        json shouldEqualJson """
+        verifySerialization(
+            template,
+            McpJson,
+            """
             {
               "uriTemplate": "file:///workspace/{path}",
               "name": "workspace-file",
@@ -145,7 +152,8 @@ class ResourcesTest {
                 "requiresAuth": true
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -161,7 +169,7 @@ class ResourcesTest {
             }
         """.trimIndent()
 
-        val template = McpJson.decodeFromString<ResourceTemplate>(json)
+        val template = verifyDeserialization<ResourceTemplate>(McpJson, json)
 
         assertEquals("db://users/{id}", template.uriTemplate)
         assertEquals("user-record", template.name)
@@ -183,7 +191,7 @@ class ResourcesTest {
             }
         """.trimIndent()
 
-        val decoded = McpJson.decodeFromString<Reference>(json)
+        val decoded = verifyDeserialization<Reference>(McpJson, json)
         val templateReference = assertIs<ResourceTemplateReference>(decoded)
         assertEquals("file:///workspace/{path}", templateReference.uri)
         assertEquals(ReferenceType.ResourceTemplate, templateReference.type)
@@ -198,9 +206,10 @@ class ResourcesTest {
             meta = buildJsonObject { put("encoding", "utf-8") },
         )
 
-        val json = McpJson.encodeToString<ResourceContents>(contents)
-
-        json shouldEqualJson """
+        verifySerialization(
+            contents,
+            McpJson,
+            """
             {
               "text": "Hello, MCP!",
               "uri": "file:///workspace/hello.txt",
@@ -209,7 +218,8 @@ class ResourcesTest {
                 "encoding": "utf-8"
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -225,7 +235,7 @@ class ResourcesTest {
             }
         """.trimIndent()
 
-        val contents = McpJson.decodeFromString<ResourceContents>(json)
+        val contents = verifyDeserialization<ResourceContents>(McpJson, json)
         val blobContents = assertIs<BlobResourceContents>(contents)
         assertEquals("YmluYXJ5ZGF0YQ==", blobContents.blob)
         assertEquals("file:///workspace/logo.png", blobContents.uri)
@@ -240,14 +250,16 @@ class ResourcesTest {
             mimeType = "application/octet-stream",
         )
 
-        val json = McpJson.encodeToString<ResourceContents>(contents)
-
-        json shouldEqualJson """
+        verifySerialization(
+            contents,
+            McpJson,
+            """
             {
               "uri": "custom://resource/42",
               "mimeType": "application/octet-stream"
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -259,9 +271,10 @@ class ResourcesTest {
             ),
         )
 
-        val json = McpJson.encodeToString(request)
-
-        json shouldEqualJson """
+        verifySerialization(
+            request,
+            McpJson,
+            """
             {
               "method": "resources/list",
               "params": {
@@ -271,20 +284,23 @@ class ResourcesTest {
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
     fun `should serialize ListResourcesRequest without params`() {
         val request = ListResourcesRequest()
 
-        val json = McpJson.encodeToString(request)
-
-        json shouldEqualJson """
+        verifySerialization(
+            request,
+            McpJson,
+            """
             {
               "method": "resources/list"
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -298,9 +314,10 @@ class ResourcesTest {
             meta = buildJsonObject { put("page", 1) },
         )
 
-        val json = McpJson.encodeToString(result)
-
-        json shouldEqualJson """
+        verifySerialization(
+            result,
+            McpJson,
+            """
             {
               "resources": [
                 {"uri": "file:///workspace/README.md", "name": "README"},
@@ -311,7 +328,8 @@ class ResourcesTest {
                 "page": 1
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -332,7 +350,7 @@ class ResourcesTest {
             }
         """.trimIndent()
 
-        val result = McpJson.decodeFromString<ListResourcesResult>(json)
+        val result = verifyDeserialization<ListResourcesResult>(McpJson, json)
 
         assertEquals("cursor-next", result.nextCursor)
         val resources = result.resources
@@ -353,9 +371,10 @@ class ResourcesTest {
             ),
         )
 
-        val json = McpJson.encodeToString(request)
-
-        json shouldEqualJson """
+        verifySerialization(
+            request,
+            McpJson,
+            """
             {
               "method": "resources/read",
               "params": {
@@ -365,7 +384,8 @@ class ResourcesTest {
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -390,7 +410,7 @@ class ResourcesTest {
             }
         """.trimIndent()
 
-        val result = McpJson.decodeFromString<ReadResourceResult>(json)
+        val result = verifyDeserialization<ReadResourceResult>(McpJson, json)
 
         val contents = result.contents
         assertEquals(2, contents.size)
@@ -410,9 +430,10 @@ class ResourcesTest {
             ),
         )
 
-        val json = McpJson.encodeToString(request)
-
-        json shouldEqualJson """
+        verifySerialization(
+            request,
+            McpJson,
+            """
             {
               "method": "resources/subscribe",
               "params": {
@@ -422,7 +443,8 @@ class ResourcesTest {
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -434,9 +456,10 @@ class ResourcesTest {
             ),
         )
 
-        val json = McpJson.encodeToString(request)
-
-        json shouldEqualJson """
+        verifySerialization(
+            request,
+            McpJson,
+            """
             {
               "method": "resources/unsubscribe",
               "params": {
@@ -446,7 +469,8 @@ class ResourcesTest {
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -458,9 +482,10 @@ class ResourcesTest {
             ),
         )
 
-        val json = McpJson.encodeToString(request)
-
-        json shouldEqualJson """
+        verifySerialization(
+            request,
+            McpJson,
+            """
             {
               "method": "resources/templates/list",
               "params": {
@@ -470,7 +495,8 @@ class ResourcesTest {
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -483,9 +509,10 @@ class ResourcesTest {
             meta = buildJsonObject { put("page", 3) },
         )
 
-        val json = McpJson.encodeToString(result)
-
-        json shouldEqualJson """
+        verifySerialization(
+            result,
+            McpJson,
+            """
             {
               "resourceTemplates": [
                 {
@@ -498,7 +525,8 @@ class ResourcesTest {
                 "page": 3
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -522,7 +550,7 @@ class ResourcesTest {
             }
         """.trimIndent()
 
-        val result = McpJson.decodeFromString<ListResourceTemplatesResult>(json)
+        val result = verifyDeserialization<ListResourceTemplatesResult>(McpJson, json)
 
         assertEquals("cursor-next", result.nextCursor)
         val templates = result.resourceTemplates

@@ -1,10 +1,12 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
-import io.kotest.assertions.json.shouldEqualJson
+import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
+import io.kotest.matchers.shouldBe
+import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
+import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
+import io.modelcontextprotocol.kotlin.test.utils.verifySerializationRoundTrip
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertIs
-import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -12,29 +14,30 @@ class CommonTypeTest {
 
     @Test
     fun `should have correct latest protocol version`() {
-        assertNotEquals("", LATEST_PROTOCOL_VERSION)
-        assertEquals("2025-06-18", LATEST_PROTOCOL_VERSION)
+        LATEST_PROTOCOL_VERSION shouldBe "2025-06-18"
     }
 
     @Test
     fun `should have correct supported protocol versions`() {
-        assertIs<List<String>>(SUPPORTED_PROTOCOL_VERSIONS)
-        assertTrue(SUPPORTED_PROTOCOL_VERSIONS.contains(LATEST_PROTOCOL_VERSION))
-        assertTrue(SUPPORTED_PROTOCOL_VERSIONS.contains("2025-03-26"))
-        assertTrue(SUPPORTED_PROTOCOL_VERSIONS.contains("2024-11-05"))
-        assertEquals(3, SUPPORTED_PROTOCOL_VERSIONS.size)
+        SUPPORTED_PROTOCOL_VERSIONS shouldContainExactlyInAnyOrder listOf(
+            LATEST_PROTOCOL_VERSION,
+            "2025-03-26",
+            "2024-11-05",
+        )
     }
 
     @Test
     fun `should serialize Icon with minimal fields`() {
         val icon = Icon(src = "https://example.com/icon.png")
-        val json = McpJson.encodeToString(icon)
-
-        json shouldEqualJson """
+        verifySerialization(
+            icon,
+            McpJson,
+            """
             {
               "src": "https://example.com/icon.png"
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -45,16 +48,18 @@ class CommonTypeTest {
             sizes = listOf("48x48", "96x96"),
             theme = Icon.Theme.Light,
         )
-        val json = McpJson.encodeToString(icon)
-
-        json shouldEqualJson """
+        verifySerialization(
+            icon,
+            McpJson,
+            """
             {
               "src": "https://example.com/icon.png",
               "mimeType": "image/png",
               "sizes": ["48x48", "96x96"],
               "theme": "light"
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -68,7 +73,7 @@ class CommonTypeTest {
             }
         """.trimIndent()
 
-        val icon = McpJson.decodeFromString<Icon>(json)
+        val icon = verifyDeserialization<Icon>(McpJson, json)
 
         assertEquals("https://example.com/icon.png", icon.src)
         assertEquals("image/png", icon.mimeType)
@@ -80,7 +85,7 @@ class CommonTypeTest {
     fun `should deserialize Icon with minimal fields from JSON`() {
         val json = """{"src": "https://example.com/icon.png"}"""
 
-        val icon = McpJson.decodeFromString<Icon>(json)
+        val icon = verifyDeserialization<Icon>(McpJson, json)
 
         assertEquals("https://example.com/icon.png", icon.src)
         assertNull(icon.mimeType)
@@ -111,8 +116,8 @@ class CommonTypeTest {
 
     @Test
     fun `should deserialize Role from lowercase strings`() {
-        val user = McpJson.decodeFromString<Role>("\"user\"")
-        val assistant = McpJson.decodeFromString<Role>("\"assistant\"")
+        val user = verifyDeserialization<Role>(McpJson, "\"user\"")
+        val assistant = verifyDeserialization<Role>(McpJson, "\"assistant\"")
 
         assertEquals(Role.User, user)
         assertEquals(Role.Assistant, assistant)
@@ -126,28 +131,32 @@ class CommonTypeTest {
             lastModified = "2025-01-12T15:00:58Z",
         )
 
-        val json = McpJson.encodeToString(annotations)
-
-        json shouldEqualJson """
+        verifySerialization(
+            annotations,
+            McpJson,
+            """
             {
               "audience": ["user", "assistant"],
               "priority": 0.8,
               "lastModified": "2025-01-12T15:00:58Z"
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
     fun `should serialize Annotations with minimal fields`() {
         val annotations = Annotations(priority = 0.5)
 
-        val json = McpJson.encodeToString(annotations)
-
-        json shouldEqualJson """
+        verifySerialization(
+            annotations,
+            McpJson,
+            """
             {
               "priority": 0.5
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -160,7 +169,7 @@ class CommonTypeTest {
             }
         """.trimIndent()
 
-        val annotations = McpJson.decodeFromString<Annotations>(json)
+        val annotations = verifyDeserialization<Annotations>(McpJson, json)
 
         assertEquals(listOf(Role.User), annotations.audience)
         assertEquals(0.9, annotations.priority)
@@ -175,11 +184,6 @@ class CommonTypeTest {
             lastModified = "2025-01-12T15:00:58Z",
         )
 
-        val json = McpJson.encodeToString(original)
-        val decoded = McpJson.decodeFromString<Annotations>(json)
-
-        assertEquals(original.audience, decoded.audience)
-        assertEquals(original.priority, decoded.priority)
-        assertEquals(original.lastModified, decoded.lastModified)
+        verifySerializationRoundTrip(original, McpJson)
     }
 }

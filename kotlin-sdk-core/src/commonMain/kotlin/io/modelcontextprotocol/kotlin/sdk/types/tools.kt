@@ -78,9 +78,15 @@ public data class Tool(
  * @property type Always "object" for tool schemas.
  * @property properties Optional map of property names to their schema definitions.
  * @property required Optional list of property names that are required.
+ * @property defs Optional schema definitions available to references in [properties]. Serialized as `$defs`.
  */
 @Serializable
-public data class ToolSchema(val properties: JsonObject? = null, val required: List<String>? = null) {
+public data class ToolSchema(
+    val properties: JsonObject? = null,
+    val required: List<String>? = null,
+    @SerialName("\$defs")
+    val defs: JsonObject? = null,
+) {
     @OptIn(ExperimentalSerializationApi::class)
     @EncodeDefault
     val type: String = "object"

@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
-import io.kotest.assertions.json.shouldEqualJson
+import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
+import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
@@ -20,9 +21,10 @@ class NotificationTest {
             ),
         )
 
-        val json = McpJson.encodeToString(notification)
-
-        json shouldEqualJson """
+        verifySerialization(
+            notification,
+            McpJson,
+            """
             {
               "method": "notifications/cancelled",
               "params": {
@@ -33,7 +35,8 @@ class NotificationTest {
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -48,7 +51,7 @@ class NotificationTest {
             }
         """.trimIndent()
 
-        val notification = McpJson.decodeFromString<CancelledNotification>(json)
+        val notification = verifyDeserialization<CancelledNotification>(McpJson, json)
         val params = notification.params
 
         assertEquals(Method.Defined.NotificationsCancelled, notification.method)
@@ -65,9 +68,10 @@ class NotificationTest {
             ),
         )
 
-        val json = McpJson.encodeToString(notification)
-
-        json shouldEqualJson """
+        verifySerialization(
+            notification,
+            McpJson,
+            """
             {
               "method": "notifications/initialized",
               "params": {
@@ -76,7 +80,8 @@ class NotificationTest {
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -87,7 +92,7 @@ class NotificationTest {
             }
         """.trimIndent()
 
-        val notification = McpJson.decodeFromString<InitializedNotification>(json)
+        val notification = verifyDeserialization<InitializedNotification>(McpJson, json)
 
         assertEquals(Method.Defined.NotificationsInitialized, notification.method)
         assertNull(notification.params)
@@ -105,9 +110,10 @@ class NotificationTest {
             ),
         )
 
-        val json = McpJson.encodeToString(notification)
-
-        json shouldEqualJson """
+        verifySerialization(
+            notification,
+            McpJson,
+            """
             {
               "method": "notifications/progress",
               "params": {
@@ -120,7 +126,8 @@ class NotificationTest {
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -135,7 +142,7 @@ class NotificationTest {
             }
         """.trimIndent()
 
-        val notification = McpJson.decodeFromString<ProgressNotification>(json)
+        val notification = verifyDeserialization<ProgressNotification>(McpJson, json)
         val params = notification.params
 
         assertEquals(Method.Defined.NotificationsProgress, notification.method)
@@ -155,9 +162,10 @@ class NotificationTest {
             ),
         )
 
-        val json = McpJson.encodeToString(notification)
-
-        json shouldEqualJson """
+        verifySerialization(
+            notification,
+            McpJson,
+            """
             {
               "method": "notifications/resources/updated",
               "params": {
@@ -167,7 +175,8 @@ class NotificationTest {
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -184,7 +193,7 @@ class NotificationTest {
             }
         """.trimIndent()
 
-        val notification = McpJson.decodeFromString<ResourceUpdatedNotification>(json)
+        val notification = verifyDeserialization<ResourceUpdatedNotification>(McpJson, json)
         val params = notification.params
 
         assertEquals(Method.Defined.NotificationsResourcesUpdated, notification.method)
@@ -200,9 +209,10 @@ class NotificationTest {
             ),
         )
 
-        val json = McpJson.encodeToString(notification)
-
-        json shouldEqualJson """
+        verifySerialization(
+            notification,
+            McpJson,
+            """
             {
               "method": "notifications/prompts/list_changed",
               "params": {
@@ -211,7 +221,8 @@ class NotificationTest {
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -222,7 +233,7 @@ class NotificationTest {
             }
         """.trimIndent()
 
-        val notification = McpJson.decodeFromString<PromptListChangedNotification>(json)
+        val notification = verifyDeserialization<PromptListChangedNotification>(McpJson, json)
 
         assertEquals(Method.Defined.NotificationsPromptsListChanged, notification.method)
         assertNull(notification.params)
@@ -236,9 +247,10 @@ class NotificationTest {
             ),
         )
 
-        val json = McpJson.encodeToString(notification)
-
-        json shouldEqualJson """
+        verifySerialization(
+            notification,
+            McpJson,
+            """
             {
               "method": "notifications/resources/list_changed",
               "params": {
@@ -247,7 +259,8 @@ class NotificationTest {
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -258,9 +271,10 @@ class NotificationTest {
             ),
         )
 
-        val json = McpJson.encodeToString(notification)
-
-        json shouldEqualJson """
+        verifySerialization(
+            notification,
+            McpJson,
+            """
             {
               "method": "notifications/roots/list_changed",
               "params": {
@@ -269,7 +283,8 @@ class NotificationTest {
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -280,9 +295,10 @@ class NotificationTest {
             ),
         )
 
-        val json = McpJson.encodeToString(notification)
-
-        json shouldEqualJson """
+        verifySerialization(
+            notification,
+            McpJson,
+            """
             {
               "method": "notifications/tools/list_changed",
               "params": {
@@ -291,6 +307,7 @@ class NotificationTest {
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 }

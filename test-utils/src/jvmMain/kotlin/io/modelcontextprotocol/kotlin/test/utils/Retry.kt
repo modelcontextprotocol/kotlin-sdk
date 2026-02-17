@@ -16,6 +16,7 @@ import java.util.Optional
 @ExtendWith(RetryExtension::class)
 public annotation class Retry(val times: Int = 3, val delayMs: Long = 1000)
 
+@Suppress("ForbiddenVoid") // needed for Java API interop
 public class RetryExtension : InvocationInterceptor {
     override fun interceptTestMethod(
         invocation: Invocation<Void>,
@@ -87,7 +88,7 @@ public class RetryExtension : InvocationInterceptor {
             }
         }
 
-        throw lastError ?: IllegalStateException("Unexpected state in retry logic")
+        throw lastError ?: error("Unexpected state in retry logic")
     }
 
     private fun describeTest(ctx: ExtensionContext): String {

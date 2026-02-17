@@ -30,6 +30,7 @@ kotlin {
         jvmTest {
             dependencies {
                 implementation(project(":test-utils"))
+                implementation(project(":kotlin-sdk-testing"))
             }
         }
     }
