@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
@@ -74,6 +75,7 @@ public class ServerOptions(public val capabilities: ServerCapabilities, enforceS
  * this server. The provider is called each time a new session is started to support dynamic instructions.
  * @param block A block to configure the mcp server.
  */
+@OptIn(ExperimentalMcpApi::class)
 public open class Server(
     protected val serverInfo: Implementation,
     protected val options: ServerOptions,
@@ -294,7 +296,7 @@ public open class Server(
      * @param handler A suspend function that handles executing the tool when called by the client.
      * @throws IllegalStateException If the server does not support tools.
      */
-    public fun addTool(tool: Tool, handler: suspend ServerHandlerContext.(CallToolRequest) -> CallToolResult) {
+    public fun addTool(tool: Tool, handler: suspend ServerCommunication.(CallToolRequest) -> CallToolResult) {
         check(options.capabilities.tools != null) {
             logger.error { "Failed to add tool '${tool.name}': Server does not support tools capability" }
             "Server does not support tools capability. Enable it in ServerOptions."
@@ -324,7 +326,7 @@ public open class Server(
         outputSchema: ToolSchema? = null,
         toolAnnotations: ToolAnnotations? = null,
         meta: JsonObject? = null,
-        handler: suspend ServerHandlerContext.(CallToolRequest) -> CallToolResult,
+        handler: suspend ServerCommunication.(CallToolRequest) -> CallToolResult,
     ) {
         val tool = Tool(
             name = name,
@@ -393,7 +395,7 @@ public open class Server(
      */
     public fun addPrompt(
         prompt: Prompt,
-        promptProvider: suspend ServerHandlerContext.(GetPromptRequest) -> GetPromptResult,
+        promptProvider: suspend ServerCommunication.(GetPromptRequest) -> GetPromptResult,
     ) {
         check(options.capabilities.prompts != null) {
             logger.error { "Failed to add prompt '${prompt.name}': Server does not support prompts capability" }
@@ -415,7 +417,7 @@ public open class Server(
         name: String,
         description: String? = null,
         arguments: List<PromptArgument>? = null,
-        promptProvider: suspend ServerHandlerContext.(GetPromptRequest) -> GetPromptResult,
+        promptProvider: suspend ServerCommunication.(GetPromptRequest) -> GetPromptResult,
     ) {
         val prompt = Prompt(name = name, description = description, arguments = arguments)
         addPrompt(prompt, promptProvider)
@@ -482,7 +484,7 @@ public open class Server(
         name: String,
         description: String,
         mimeType: String = "text/html",
-        readHandler: suspend ServerHandlerContext.(ReadResourceRequest) -> ReadResourceResult,
+        readHandler: suspend ServerCommunication.(ReadResourceRequest) -> ReadResourceResult,
     ) {
         check(options.capabilities.resources != null) {
             logger.error { "Failed to add resource '$name': Server does not support resources capability" }

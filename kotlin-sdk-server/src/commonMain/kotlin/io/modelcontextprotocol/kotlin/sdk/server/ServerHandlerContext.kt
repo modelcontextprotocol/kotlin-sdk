@@ -5,6 +5,7 @@ import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 /**
  * Contextual information made available to server request handlers.
  */
+@OptIn(ExperimentalMcpApi::class)
 @SubclassOptInRequired(ExperimentalMcpApi::class)
 public interface ServerHandlerContext : ServerCommunication {
     public val session: ServerSession
