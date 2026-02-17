@@ -9,6 +9,7 @@ import io.modelcontextprotocol.kotlin.test.utils.createTeeProcessBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import kotlinx.io.asSink
 import kotlinx.io.asSource
 import kotlinx.io.buffered
@@ -56,8 +57,11 @@ class StdioClientTransportTest : BaseTransportTest() {
         )
 
         // The error in stderr should cause connecting to fail
+        // Use explicit timeout to avoid blocking indefinitely due to kotlinx.io cancellation issue (#514)
         assertThrows<McpException> {
-            client.connect(transport)
+            withTimeout(5.seconds) {
+                client.connect(transport)
+            }
         }
 
         process.destroyForcibly()

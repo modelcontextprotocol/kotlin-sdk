@@ -142,7 +142,7 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
                 outputWriter.close()
             }.onFailure { logger.warn(it) { "Failed to close stdout" } }
 
-            _onClose.invoke()
+            invokeOnCloseCallback()
         }
     }
 

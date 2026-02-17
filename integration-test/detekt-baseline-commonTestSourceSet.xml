@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>EmptyFunctionBlock:ClientTest.kt:ClientTest.&lt;no name provided>${ }</ID>
+    <ID>EmptyFunctionBlock:ClientTest.kt:ClientTest.&lt;no name provided>${}</ID>
+    <ID>LargeClass:ClientTest.kt:ClientTest</ID>
+    <ID>LongMethod:ClientTest.kt:ClientTest$@Test fun `JSONRPCRequest with ToolsList method and default params returns list of tools`</ID>
+    <ID>LongMethod:ClientTest.kt:ClientTest$@Test fun `should handle logging setLevel request`</ID>
+  </CurrentIssues>
+</SmellBaseline>

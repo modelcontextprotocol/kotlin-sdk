@@ -41,6 +41,7 @@ kotlin {
         commonTest {
             dependencies {
                 implementation(kotlin("test"))
+                implementation(project(":kotlin-sdk-testing"))
                 implementation(libs.kotest.assertions.core)
                 implementation(libs.kotlinx.coroutines.test)
                 implementation(libs.ktor.client.logging)

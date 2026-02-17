@@ -1,6 +1,9 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.kotest.assertions.json.shouldEqualJson
+import io.kotest.matchers.shouldBe
+import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
+import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.double
 import kotlinx.serialization.json.jsonPrimitive
@@ -40,16 +43,18 @@ class RequestTest {
             ),
         )
 
-        val json = McpJson.encodeToString(params)
-
-        json shouldEqualJson """
+        verifySerialization(
+            params,
+            McpJson,
+            """
             {
               "_meta": {
                 "progressToken": "base-42",
                 "origin": "test-suite"
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -63,7 +68,7 @@ class RequestTest {
             }
         """.trimIndent()
 
-        val params = McpJson.decodeFromString<BaseRequestParams>(json)
+        val params = verifyDeserialization<BaseRequestParams>(McpJson, json)
 
         val meta = params.meta
         assertNotNull(meta)
@@ -78,16 +83,18 @@ class RequestTest {
             meta = RequestMeta(buildJsonObject { put("progressToken", "page-req") }),
         )
 
-        val json = McpJson.encodeToString(params)
-
-        json shouldEqualJson """
+        verifySerialization(
+            params,
+            McpJson,
+            """
             {
               "cursor": "cursor-1",
               "_meta": {
                 "progressToken": "page-req"
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -101,7 +108,7 @@ class RequestTest {
             }
         """.trimIndent()
 
-        val params = McpJson.decodeFromString<PaginatedRequestParams>(json)
+        val params = verifyDeserialization<PaginatedRequestParams>(McpJson, json)
 
         assertEquals("cursor-2", params.cursor)
         assertEquals(ProgressToken(99), params.meta?.progressToken)
@@ -149,7 +156,9 @@ class RequestTest {
         val method = custom.method
         val customMethod = assertIs<Method.Custom>(method)
         assertEquals("extensions/customAction", customMethod.value)
-        assertEquals("custom-1", custom.params?.meta?.json?.get("progressToken")?.jsonPrimitive?.content)
+        custom.params?.meta?.json
+            ?.get("progressToken")
+            ?.jsonPrimitive?.content shouldBe "custom-1"
     }
 
     @Test
@@ -160,22 +169,24 @@ class RequestTest {
             },
         )
 
-        val json = McpJson.encodeToString(result)
-
-        json shouldEqualJson """
+        verifySerialization(
+            result,
+            McpJson,
+            """
             {
               "_meta": {
                 "processedBy": "worker-1"
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
     fun `should deserialize EmptyResult without meta`() {
         val json = "{}"
 
-        val result = McpJson.decodeFromString<EmptyResult>(json)
+        val result = verifyDeserialization<EmptyResult>(McpJson, json)
 
         assertNull(result.meta)
     }

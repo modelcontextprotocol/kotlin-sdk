@@ -4,7 +4,7 @@ import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
-import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
+import io.modelcontextprotocol.kotlin.sdk.shared.AbstractClientTransport
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.CONNECTION_CLOSED
@@ -16,7 +16,7 @@ import kotlin.test.Test
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
-abstract class AbstractClientTransportLifecycleTest<T : AbstractTransport> {
+abstract class AbstractClientTransportLifecycleTest<T : AbstractClientTransport> {
 
     protected lateinit var transport: T
 
@@ -32,7 +32,7 @@ abstract class AbstractClientTransportLifecycleTest<T : AbstractTransport> {
         val exception = shouldThrow<IllegalStateException> {
             transport.start()
         }
-        exception.message shouldContain "already started"
+        exception.message shouldContain "Can't change state: expected transport state"
     }
 
     @Test
@@ -53,8 +53,8 @@ abstract class AbstractClientTransportLifecycleTest<T : AbstractTransport> {
         val exception = shouldThrow<McpException> {
             transport.send(PingRequest().toJSON())
         }
-        exception.message shouldContain "not started"
         exception.code shouldBe CONNECTION_CLOSED
+        exception.message shouldContain "Transport is not ready"
     }
 
     @Test

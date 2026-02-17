@@ -1,6 +1,8 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.kotest.assertions.json.shouldEqualJson
+import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
+import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.double
 import kotlinx.serialization.json.int
@@ -18,13 +20,15 @@ class PromptsTest {
     fun `should serialize PromptArgument with minimal fields`() {
         val argument = PromptArgument(name = "repository")
 
-        val json = McpJson.encodeToString(argument)
-
-        json shouldEqualJson """
+        verifySerialization(
+            argument,
+            McpJson,
+            """
             {
               "name": "repository"
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -36,16 +40,18 @@ class PromptsTest {
             title = "Language",
         )
 
-        val json = McpJson.encodeToString(argument)
-
-        json shouldEqualJson """
+        verifySerialization(
+            argument,
+            McpJson,
+            """
             {
               "name": "language",
               "description": "Programming language to use",
               "required": true,
               "title": "Language"
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -69,9 +75,10 @@ class PromptsTest {
             meta = buildJsonObject { put("category", "status-report") },
         )
 
-        val json = McpJson.encodeToString(prompt)
-
-        json shouldEqualJson """
+        verifySerialization(
+            prompt,
+            McpJson,
+            """
             {
               "name": "summarize_update",
               "description": "Summarize the latest repository changes.",
@@ -97,7 +104,8 @@ class PromptsTest {
                 "category": "status-report"
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -127,7 +135,7 @@ class PromptsTest {
             }
         """.trimIndent()
 
-        val prompt = McpJson.decodeFromString<Prompt>(json)
+        val prompt = verifyDeserialization<Prompt>(McpJson, json)
 
         assertEquals("code_review", prompt.name)
         assertEquals("Generate a succinct code review.", prompt.description)
@@ -151,9 +159,10 @@ class PromptsTest {
             content = TextContent(text = "Provide a concise summary of the changes."),
         )
 
-        val json = McpJson.encodeToString(message)
-
-        json shouldEqualJson """
+        verifySerialization(
+            message,
+            McpJson,
+            """
             {
               "role": "assistant",
               "content": {
@@ -161,7 +170,8 @@ class PromptsTest {
                 "text": "Provide a concise summary of the changes."
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -180,7 +190,7 @@ class PromptsTest {
             }
         """.trimIndent()
 
-        val message = McpJson.decodeFromString<PromptMessage>(json)
+        val message = verifyDeserialization<PromptMessage>(McpJson, json)
 
         assertEquals(Role.User, message.role)
         val content = message.content
@@ -203,7 +213,7 @@ class PromptsTest {
             }
         """.trimIndent()
 
-        val decoded = McpJson.decodeFromString<Reference>(json)
+        val decoded = verifyDeserialization<Reference>(McpJson, json)
         val promptReference = assertIs<PromptReference>(decoded)
         assertEquals("daily-summary", promptReference.name)
         assertEquals("Daily Summary", promptReference.title)
@@ -222,9 +232,10 @@ class PromptsTest {
             ),
         )
 
-        val json = McpJson.encodeToString(request)
-
-        json shouldEqualJson """
+        verifySerialization(
+            request,
+            McpJson,
+            """
             {
               "method": "prompts/get",
               "params": {
@@ -237,7 +248,8 @@ class PromptsTest {
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -258,7 +270,7 @@ class PromptsTest {
             }
         """.trimIndent()
 
-        val request = McpJson.decodeFromString<GetPromptRequest>(json)
+        val request = verifyDeserialization<GetPromptRequest>(McpJson, json)
 
         assertEquals(Method.Defined.PromptsGet, request.method)
         val params = request.params
@@ -287,9 +299,10 @@ class PromptsTest {
             meta = buildJsonObject { put("generatedAt", "2025-01-12T15:00:58Z") },
         )
 
-        val json = McpJson.encodeToString(result)
-
-        json shouldEqualJson """
+        verifySerialization(
+            result,
+            McpJson,
+            """
             {
               "messages": [
                 {
@@ -312,7 +325,8 @@ class PromptsTest {
                 "generatedAt": "2025-01-12T15:00:58Z"
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -332,7 +346,7 @@ class PromptsTest {
             }
         """.trimIndent()
 
-        val result = McpJson.decodeFromString<GetPromptResult>(json)
+        val result = verifyDeserialization<GetPromptResult>(McpJson, json)
 
         val messages = result.messages
         assertEquals(1, messages.size)
@@ -354,9 +368,10 @@ class PromptsTest {
             ),
         )
 
-        val json = McpJson.encodeToString(request)
-
-        json shouldEqualJson """
+        verifySerialization(
+            request,
+            McpJson,
+            """
             {
               "method": "prompts/list",
               "params": {
@@ -366,20 +381,23 @@ class PromptsTest {
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
     fun `should serialize ListPromptsRequest without params`() {
         val request = ListPromptsRequest()
 
-        val json = McpJson.encodeToString(request)
-
-        json shouldEqualJson """
+        verifySerialization(
+            request,
+            McpJson,
+            """
             {
               "method": "prompts/list"
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -393,9 +411,10 @@ class PromptsTest {
             meta = buildJsonObject { put("page", 1) },
         )
 
-        val json = McpJson.encodeToString(result)
-
-        json shouldEqualJson """
+        verifySerialization(
+            result,
+            McpJson,
+            """
             {
               "prompts": [
                 {"name": "morning-briefing"},
@@ -406,7 +425,8 @@ class PromptsTest {
                 "page": 1
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -433,7 +453,7 @@ class PromptsTest {
             }
         """.trimIndent()
 
-        val result = McpJson.decodeFromString<ListPromptsResult>(json)
+        val result = verifyDeserialization<ListPromptsResult>(McpJson, json)
 
         val prompts = result.prompts
         assertEquals(1, prompts.size)

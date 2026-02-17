@@ -19,6 +19,8 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.test)
                 implementation(libs.ktor.client.cio)
                 implementation(libs.ktor.server.cio)
+                implementation(libs.ktor.server.content.negotiation)
+                implementation(libs.ktor.serialization)
                 implementation(libs.ktor.server.websockets)
                 implementation(libs.ktor.server.test.host)
                 implementation(libs.ktor.server.content.negotiation)
@@ -28,6 +30,7 @@ kotlin {
         jvmTest {
             dependencies {
                 implementation(project(":test-utils"))
+                implementation(project(":kotlin-sdk-testing"))
             }
         }
     }

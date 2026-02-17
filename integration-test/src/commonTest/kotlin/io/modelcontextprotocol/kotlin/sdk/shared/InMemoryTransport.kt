@@ -36,11 +36,11 @@ class InMemoryTransport : AbstractTransport() {
         val other = otherTransport
         otherTransport = null
         other?.close()
-        _onClose.invoke()
+        invokeOnCloseCallback()
     }
 
     override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
-        val other = otherTransport ?: throw IllegalStateException("Not connected")
+        val other = checkNotNull(otherTransport) { "Not connected" }
 
         other._onMessage.invoke(message)
     }

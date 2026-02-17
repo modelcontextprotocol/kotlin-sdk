@@ -1,0 +1,27 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:jsonUtils.kt:@OptIn(ExperimentalUnsignedTypes::class, ExperimentalSerializationApi::class) private fun convertToJsonElement: JsonElement</ID>
+    <ID>LongMethod:Protocol.kt:Protocol$public suspend fun &lt;T : RequestResult> request: T</ID>
+    <ID>MagicNumber:completion.kt:CompleteResult.Completion$100</ID>
+    <ID>MatchingDeclarationName:capabilities.dsl.kt:ClientCapabilitiesBuilder</ID>
+    <ID>MatchingDeclarationName:methods.kt:Method</ID>
+    <ID>MaxLineLength:AbstractClientTransport.kt:AbstractClientTransport$*</ID>
+    <ID>MaxLineLength:ClientTransportState.kt:ClientTransportState.Initializing$*</ID>
+    <ID>MaxLineLength:Protocol.kt:Protocol$"Received progress notification: token=${notification.params.progressToken}, progress=${notification.params.progress}/${notification.params.total}"</ID>
+    <ID>MaxLineLength:Protocol.kt:Protocol$*</ID>
+    <ID>MaxLineLength:Protocol.kt:RequestOptions$*</ID>
+    <ID>MaxLineLength:Transport.kt:Transport$*</ID>
+    <ID>MaxLineLength:TransportSendOptions.kt:TransportSendOptions$*</ID>
+    <ID>ReturnCount:ReadBuffer.kt:ReadBuffer$public fun readMessage: JSONRPCMessage?</ID>
+    <ID>ThrowsCount:AbstractClientTransport.kt:AbstractClientTransport$public override suspend fun send</ID>
+    <ID>TooGenericExceptionCaught:AbstractClientTransport.kt:AbstractClientTransport$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:Protocol.kt:Protocol$cause: Throwable</ID>
+    <ID>TooGenericExceptionCaught:Protocol.kt:Protocol$error: Throwable</ID>
+    <ID>TooGenericExceptionCaught:Protocol.kt:Protocol$sendError: Throwable</ID>
+    <ID>TooGenericExceptionCaught:ReadBuffer.kt:ReadBuffer$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:WebSocketMcpTransport.kt:WebSocketMcpTransport$e: Exception</ID>
+    <ID>TooManyFunctions:Protocol.kt:Protocol</ID>
+  </CurrentIssues>
+</SmellBaseline>

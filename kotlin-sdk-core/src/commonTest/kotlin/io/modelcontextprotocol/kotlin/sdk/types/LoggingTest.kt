@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
-import io.kotest.assertions.json.shouldEqualJson
+import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
+import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
@@ -47,9 +48,10 @@ class LoggingTest {
             ),
         )
 
-        val json = McpJson.encodeToString(request)
-
-        json shouldEqualJson """
+        verifySerialization(
+            request,
+            McpJson,
+            """
             {
               "method": "logging/setLevel",
               "params": {
@@ -59,7 +61,8 @@ class LoggingTest {
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -76,7 +79,7 @@ class LoggingTest {
             }
         """.trimIndent()
 
-        val request = McpJson.decodeFromString<SetLevelRequest>(json)
+        val request = verifyDeserialization<SetLevelRequest>(McpJson, json)
         assertEquals(Method.Defined.LoggingSetLevel, request.method)
         assertEquals(LoggingLevel.Alert, request.params.level)
         assertEquals(ProgressToken(1001), request.params.meta?.progressToken)
@@ -93,9 +96,10 @@ class LoggingTest {
             ),
         )
 
-        val json = McpJson.encodeToString(notification)
-
-        json shouldEqualJson """
+        verifySerialization(
+            notification,
+            McpJson,
+            """
             {
               "method": "notifications/message",
               "params": {
@@ -109,7 +113,8 @@ class LoggingTest {
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -124,7 +129,7 @@ class LoggingTest {
             }
         """.trimIndent()
 
-        val notification = McpJson.decodeFromString<LoggingMessageNotification>(json)
+        val notification = verifyDeserialization<LoggingMessageNotification>(McpJson, json)
         assertEquals(Method.Defined.NotificationsMessage, notification.method)
 
         val params = notification.params
@@ -153,7 +158,7 @@ class LoggingTest {
             }
         """.trimIndent()
 
-        val notification = McpJson.decodeFromString<LoggingMessageNotification>(json)
+        val notification = verifyDeserialization<LoggingMessageNotification>(McpJson, json)
         val params = notification.params
         assertEquals(LoggingLevel.Critical, params.level)
         val data = params.data.jsonObject

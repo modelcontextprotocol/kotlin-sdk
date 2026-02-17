@@ -34,7 +34,7 @@ class ServerPromptsTest : AbstractServerFeaturesTest() {
         server.addPrompt(testPrompt) {
             GetPromptResult(
                 description = "Test prompt description",
-                messages = listOf(),
+                messages = emptyList(),
             )
         }
 
@@ -70,13 +70,13 @@ class ServerPromptsTest : AbstractServerFeaturesTest() {
         server.addPrompt(testPrompt1) {
             GetPromptResult(
                 description = "Test prompt description 1",
-                messages = listOf(),
+                messages = emptyList(),
             )
         }
         server.addPrompt(testPrompt2) {
             GetPromptResult(
                 description = "Test prompt description 2",
-                messages = listOf(),
+                messages = emptyList(),
             )
         }
 

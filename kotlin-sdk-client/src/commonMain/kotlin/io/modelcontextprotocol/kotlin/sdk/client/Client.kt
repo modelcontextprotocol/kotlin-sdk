@@ -107,6 +107,7 @@ public suspend fun mcpClient(
  * @param clientInfo Information about the client implementation (name, version).
  * @param options Configuration options for this client.
  */
+@Suppress("TooManyFunctions")
 public open class Client(private val clientInfo: Implementation, options: ClientOptions = ClientOptions()) :
     Protocol(options) {
 
@@ -159,8 +160,8 @@ public open class Client(private val clientInfo: Implementation, options: Client
             else -> true
         }
 
-        if (!hasCapability) {
-            throw IllegalStateException("Server does not support $capability (required for $method)")
+        check(hasCapability) {
+            "Server does not support $capability (required for $method)"
         }
     }
 
@@ -184,7 +185,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
             val result = request<InitializeResult>(message)
 
             if (!SUPPORTED_PROTOCOL_VERSIONS.contains(result.protocolVersion)) {
-                throw IllegalStateException(
+                error(
                     "Server's protocol version is not supported: ${result.protocolVersion}",
                 )
             }
@@ -213,8 +214,8 @@ public open class Client(private val clientInfo: Implementation, options: Client
     override fun assertCapabilityForMethod(method: Method) {
         when (method) {
             Method.Defined.LoggingSetLevel -> {
-                if (serverCapabilities?.logging == null) {
-                    throw IllegalStateException("Server does not support logging (required for $method)")
+                checkNotNull(serverCapabilities?.logging) {
+                    "Server does not support logging (required for $method)"
                 }
             }
 
@@ -222,7 +223,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
             Method.Defined.PromptsList,
             Method.Defined.CompletionComplete,
             -> {
-                if (serverCapabilities?.prompts == null) {
+                checkNotNull(serverCapabilities?.prompts) {
                     throw IllegalStateException("Server does not support prompts (required for $method)")
                 }
             }
@@ -244,8 +245,8 @@ public open class Client(private val clientInfo: Implementation, options: Client
             }
 
             Method.Defined.ToolsCall, Method.Defined.ToolsList -> {
-                if (serverCapabilities?.tools == null) {
-                    throw IllegalStateException("Server does not support tools (required for $method)")
+                checkNotNull(serverCapabilities?.tools) {
+                    "Server does not support tools (required for $method)"
                 }
             }
 
@@ -262,10 +263,8 @@ public open class Client(private val clientInfo: Implementation, options: Client
     override fun assertNotificationCapability(method: Method) {
         when (method) {
             Method.Defined.NotificationsRootsListChanged -> {
-                if (capabilities.roots?.listChanged != true) {
-                    throw IllegalStateException(
-                        "Client does not support roots list changed notifications (required for $method)",
-                    )
+                check(capabilities.roots?.listChanged == true) {
+                    "Client does not support roots list changed notifications (required for $method)"
                 }
             }
 
@@ -285,26 +284,20 @@ public open class Client(private val clientInfo: Implementation, options: Client
     override fun assertRequestHandlerCapability(method: Method) {
         when (method) {
             Method.Defined.SamplingCreateMessage -> {
-                if (capabilities.sampling == null) {
-                    throw IllegalStateException(
-                        "Client does not support sampling capability (required for $method)",
-                    )
+                checkNotNull(capabilities.sampling) {
+                    "Client does not support sampling capability (required for $method)"
                 }
             }
 
             Method.Defined.RootsList -> {
-                if (capabilities.roots == null) {
-                    throw IllegalStateException(
-                        "Client does not support roots capability (required for $method)",
-                    )
+                checkNotNull(capabilities.roots) {
+                    "Client does not support roots capability (required for $method)"
                 }
             }
 
             Method.Defined.ElicitationCreate -> {
-                if (capabilities.elicitation == null) {
-                    throw IllegalStateException(
-                        "Client does not support elicitation capability (required for $method)",
-                    )
+                checkNotNull(capabilities.elicitation) {
+                    "Client does not support elicitation capability (required for $method)"
                 }
             }
 
@@ -494,9 +487,9 @@ public open class Client(private val clientInfo: Implementation, options: Client
      * @throws IllegalStateException If the client does not support roots.
      */
     public fun addRoot(uri: String, name: String) {
-        if (capabilities.roots == null) {
+        checkNotNull(capabilities.roots) {
             logger.error { "Failed to add root '$name': Client does not support roots capability" }
-            throw IllegalStateException("Client does not support roots capability.")
+            "Client does not support roots capability."
         }
         logger.info { "Adding root: $name ($uri)" }
         roots.update { current -> current.put(uri, Root(uri, name)) }
@@ -509,9 +502,9 @@ public open class Client(private val clientInfo: Implementation, options: Client
      * @throws IllegalStateException If the client does not support roots.
      */
     public fun addRoots(rootsToAdd: List<Root>) {
-        if (capabilities.roots == null) {
+        checkNotNull(capabilities.roots) {
             logger.error { "Failed to add roots: Client does not support roots capability" }
-            throw IllegalStateException("Client does not support roots capability.")
+            "Client does not support roots capability."
         }
         logger.info { "Adding ${rootsToAdd.size} roots" }
         roots.update { current -> current.putAll(rootsToAdd.associateBy { it.uri }) }
@@ -550,9 +543,9 @@ public open class Client(private val clientInfo: Implementation, options: Client
      * @throws IllegalStateException If the client does not support roots.
      */
     public fun removeRoots(uris: List<String>): Int {
-        if (capabilities.roots == null) {
+        checkNotNull(capabilities.roots) {
             logger.error { "Failed to remove roots: Client does not support roots capability" }
-            throw IllegalStateException("Client does not support roots capability.")
+            "Client does not support roots capability."
         }
         logger.info { "Removing ${uris.size} roots" }
 
@@ -587,9 +580,9 @@ public open class Client(private val clientInfo: Implementation, options: Client
      * @throws IllegalStateException if the client does not support elicitation.
      */
     public fun setElicitationHandler(handler: (ElicitRequest) -> ElicitResult) {
-        if (capabilities.elicitation == null) {
+        checkNotNull(capabilities.elicitation) {
             logger.error { "Failed to set elicitation handler: Client does not support elicitation" }
-            throw IllegalStateException("Client does not support elicitation.")
+            "Client does not support elicitation."
         }
         logger.info { "Setting the elicitation handler" }
 
@@ -600,7 +593,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
 
     // --- Internal Handlers ---
 
-    private suspend fun handleListRoots(): ListRootsResult {
+    private fun handleListRoots(): ListRootsResult {
         val rootList = roots.value.values.toList()
         return ListRootsResult(rootList)
     }
@@ -634,7 +627,8 @@ public open class Client(private val clientInfo: Implementation, options: Client
 
                 val labels = it.split('.')
                 require(labels.all { label -> label.matches(labelPattern) }) {
-                    "Invalid _meta key '$key': prefix labels must start with a letter, end with letter/digit, and contain only letters, digits, or hyphens"
+                    "Invalid _meta key '$key': prefix labels must start with a letter, end with letter/digit, " +
+                        "and contain only letters, digits, or hyphens"
                 }
 
                 require(
@@ -649,7 +643,8 @@ public open class Client(private val clientInfo: Implementation, options: Client
 
             // Validate name (empty allowed)
             require(name.isEmpty() || name.matches(namePattern)) {
-                "Invalid _meta key '$key': name must start and end with alphanumeric characters, and contain only alphanumerics, hyphens, underscores, or dots"
+                "Invalid _meta key '$key': name must start and end with alphanumeric characters, " +
+                    "and contain only alphanumerics, hyphens, underscores, or dots"
             }
         }
     }

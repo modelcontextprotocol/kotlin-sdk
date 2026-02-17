@@ -121,15 +121,15 @@ kotlin {
 
         commonTest {
             dependencies {
+                implementation(project(":test-utils"))
                 implementation(kotlin("test"))
-                implementation(libs.kotlinx.coroutines.test)
-                implementation(libs.kotest.assertions.core)
-                implementation(libs.kotest.assertions.json)
             }
         }
 
         jvmTest {
             dependencies {
+                implementation(libs.junit.jupiter.params)
+                implementation(libs.mockk)
                 runtimeOnly(libs.slf4j.simple)
             }
         }

@@ -455,7 +455,7 @@ class HttpServerTransport(private val sessionId: String) : AbstractTransport() {
     override suspend fun close() {
         logger.debug { "Closing HTTP server transport for session: $sessionId" }
         messageQueue.close()
-        _onClose.invoke()
+        invokeOnCloseCallback()
     }
 }
 

@@ -160,7 +160,8 @@ public class CompleteRequestBuilder @PublishedApi internal constructor() : Reque
         }
 
         val reference = requireNotNull(ref) {
-            "Missing required field 'ref(Reference)'. Use ref(PromptReference(\"name\")) or ref(ResourceTemplateReference(\"uri\"))"
+            "Missing required field 'ref(Reference)'. Use ref(PromptReference(\"name\")) " +
+                "or ref(ResourceTemplateReference(\"uri\"))"
         }
 
         val params = CompleteRequestParams(argument = argument, ref = reference, context = ctx, meta = meta)

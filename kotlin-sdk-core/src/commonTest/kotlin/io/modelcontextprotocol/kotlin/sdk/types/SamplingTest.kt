@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
-import io.kotest.assertions.json.shouldEqualJson
+import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
+import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.double
 import kotlinx.serialization.json.jsonPrimitive
@@ -17,13 +18,15 @@ class SamplingTest {
     fun `should serialize ModelHint`() {
         val hint = ModelHint(name = "claude-3-5-sonnet")
 
-        val json = McpJson.encodeToString(hint)
-
-        json shouldEqualJson """
+        verifySerialization(
+            hint,
+            McpJson,
+            """
             {
               "name": "claude-3-5-sonnet"
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -35,9 +38,10 @@ class SamplingTest {
             intelligencePriority = 1.0,
         )
 
-        val json = McpJson.encodeToString(preferences)
-
-        json shouldEqualJson """
+        verifySerialization(
+            preferences,
+            McpJson,
+            """
             {
               "hints": [
                 {"name": "haiku"},
@@ -47,7 +51,8 @@ class SamplingTest {
               "speedPriority": 0.75,
               "intelligencePriority": 1.0
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -64,9 +69,10 @@ class SamplingTest {
             content = TextContent(text = "Summarize the latest release."),
         )
 
-        val json = McpJson.encodeToString(message)
-
-        json shouldEqualJson """
+        verifySerialization(
+            message,
+            McpJson,
+            """
             {
               "role": "user",
               "content": {
@@ -74,10 +80,12 @@ class SamplingTest {
                 "text": "Summarize the latest release."
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
+    @Suppress("LongMethod")
     fun `should serialize CreateMessageRequest with all fields`() {
         val request = CreateMessageRequest(
             CreateMessageRequestParams(
@@ -105,9 +113,10 @@ class SamplingTest {
             ),
         )
 
-        val json = McpJson.encodeToString(request)
-
-        json shouldEqualJson """
+        verifySerialization(
+            request,
+            McpJson,
+            """
             {
               "method": "sampling/createMessage",
               "params": {
@@ -146,7 +155,8 @@ class SamplingTest {
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -181,7 +191,7 @@ class SamplingTest {
             }
         """.trimIndent()
 
-        val request = McpJson.decodeFromString<CreateMessageRequest>(json)
+        val request = verifyDeserialization<CreateMessageRequest>(McpJson, json)
 
         assertEquals(Method.Defined.SamplingCreateMessage, request.method)
         val params = request.params
@@ -209,9 +219,10 @@ class SamplingTest {
             meta = buildJsonObject { put("latencyMs", 850) },
         )
 
-        val json = McpJson.encodeToString(result)
-
-        json shouldEqualJson """
+        verifySerialization(
+            result,
+            McpJson,
+            """
             {
               "role": "assistant",
               "content": {
@@ -224,7 +235,8 @@ class SamplingTest {
                 "latencyMs": 850
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -244,7 +256,7 @@ class SamplingTest {
             }
         """.trimIndent()
 
-        val result = McpJson.decodeFromString<CreateMessageResult>(json)
+        val result = verifyDeserialization<CreateMessageResult>(McpJson, json)
 
         assertEquals(Role.Assistant, result.role)
         val text = assertIs<TextContent>(result.content)
