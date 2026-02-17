@@ -83,7 +83,8 @@ public interface ServerCommunication {
      * This typically results in a form being displayed to the end user.
      *
      * @param message The message for the elicitation to display.
-     * @param requestedSchema The schema requested by the client for the elicitation result. Influences the form displayed to the user.
+     * @param requestedSchema The schema requested by the client for the elicitation result.
+     *          Influences the form displayed to the user.
      * @param options Optional request options.
      * @return The result of the elicitation request.
      * @throws IllegalStateException If the server or client does not support elicitation.
@@ -129,6 +130,7 @@ public interface ServerCommunication {
 /**
  * Represents a server session.
  */
+@Suppress("TooManyFunctions")
 public open class ServerSession(
     protected val serverInfo: Implementation,
     options: ServerOptions,
@@ -442,7 +444,7 @@ public open class ServerSession(
         }
     }
 
-    private suspend fun handleInitialize(request: InitializeRequest): InitializeResult {
+    private fun handleInitialize(request: InitializeRequest): InitializeResult {
         logger.debug { "Handling initialization request from client" }
         clientCapabilities = request.params.capabilities
         clientVersion = request.params.clientInfo
