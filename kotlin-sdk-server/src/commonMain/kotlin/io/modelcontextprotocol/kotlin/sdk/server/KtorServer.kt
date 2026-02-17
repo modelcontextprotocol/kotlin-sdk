@@ -8,7 +8,7 @@ import io.ktor.server.application.install
 import io.ktor.server.request.ApplicationRequest
 import io.ktor.server.request.header
 import io.ktor.server.response.respond
-import io.ktor.server.routing.Routing
+import io.ktor.server.routing.Route
 import io.ktor.server.routing.RoutingContext
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
@@ -53,17 +53,17 @@ internal class TransportManager(transports: Map<String, AbstractTransport> = emp
  * @param block the block of code that defines the server's behavior for the SSE session.
  */
 @KtorDsl
-public fun Routing.mcp(path: String, block: ServerSSESession.() -> Server) {
+public fun Route.mcp(path: String, block: ServerSSESession.() -> Server) {
     route(path) {
         mcp(block)
     }
 }
 
 /**
-* Configures the Ktor Application to handle Model Context Protocol (MCP) over Server-Sent Events (SSE).
-*/
+ * Configures the Ktor Application to handle Model Context Protocol (MCP) over Server-Sent Events (SSE).
+ */
 @KtorDsl
-public fun Routing.mcp(block: ServerSSESession.() -> Server) {
+public fun Route.mcp(block: ServerSSESession.() -> Server) {
     val transportManager = TransportManager()
 
     sse {
