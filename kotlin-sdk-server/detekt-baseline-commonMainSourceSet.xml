@@ -16,6 +16,5 @@
     <ID>TooGenericExceptionCaught:StdioServerTransport.kt:StdioServerTransport$e: Throwable</ID>
     <ID>TooManyFunctions:KtorServer.kt:io.modelcontextprotocol.kotlin.sdk.server.KtorServer.kt</ID>
     <ID>TooManyFunctions:Server.kt:Server</ID>
-    <ID>TooManyFunctions:ServerSession.kt:ServerSession : Protocol</ID>
   </CurrentIssues>
 </SmellBaseline>
