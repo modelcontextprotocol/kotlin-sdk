@@ -113,6 +113,41 @@ class ToolsResultDslTest {
     }
 
     @Test
+    fun `CallToolResult should support error with structuredContent`() {
+        val result = buildCallToolResult {
+            textContent("Operation failed: timeout exceeded")
+            isError = true
+            structuredContent {
+                put("errorCode", "TIMEOUT")
+                put("retryAfter", 5000)
+                put("message", "The operation timed out after 30 seconds")
+            }
+        }
+
+        result.isError shouldBe true
+        result.content shouldHaveSize 1
+        result.structuredContent shouldNotBeNull {
+            get("errorCode")?.jsonPrimitive?.content shouldBe "TIMEOUT"
+            get("retryAfter")?.jsonPrimitive?.int shouldBe 5000
+        }
+    }
+
+    @Test
+    fun `CallToolResult should support error with multiple content items`() {
+        val result = buildCallToolResult {
+            textContent("Error occurred during processing")
+            textContent("Stack trace: at line 42 in module.kt")
+            textContent("Please contact support if this persists")
+            isError = true
+        }
+
+        result.isError shouldBe true
+        result.content shouldHaveSize 3
+        (result.content[0] as TextContent).text shouldBe "Error occurred during processing"
+        (result.content[2] as TextContent).text shouldBe "Please contact support if this persists"
+    }
+
+    @Test
     fun `CallToolResult should throw if no content provided`() {
         shouldThrow<IllegalArgumentException> {
             buildCallToolResult { }
