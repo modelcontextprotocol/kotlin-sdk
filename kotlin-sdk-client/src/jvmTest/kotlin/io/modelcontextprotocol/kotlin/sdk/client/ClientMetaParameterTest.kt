@@ -1,8 +1,16 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
+import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
+import io.modelcontextprotocol.kotlin.test.utils.ChannelTransport
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.InitializeResult
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
-import io.modelcontextprotocol.kotlin.test.utils.MockTransport
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
@@ -24,18 +32,47 @@ import kotlin.test.assertTrue
  * - Error handling for invalid meta keys
  * - Integration with callTool method
  */
+@OptIn(ExperimentalMcpApi::class, ExperimentalCoroutinesApi::class)
 class ClientMetaParameterTest {
 
     private lateinit var client: Client
-    private lateinit var mockTransport: MockTransport
+    private lateinit var clientTransport: ChannelTransport
+    private lateinit var serverChannel: Channel<JSONRPCMessage>
+    private lateinit var clientChannel: Channel<JSONRPCMessage>
+    private lateinit var sentMessages: Channel<JSONRPCMessage>
     private val clientInfo = Implementation("test-client", "1.0.0")
 
     @BeforeTest
     fun setup() = runTest {
-        mockTransport = MockTransport()
+        sentMessages = Channel(Channel.UNLIMITED)
+        serverChannel = Channel(Channel.UNLIMITED)
+        clientChannel = Channel(Channel.UNLIMITED)
+
+        clientTransport = ChannelTransport(serverChannel, clientChannel)
+
         client = Client(clientInfo = clientInfo)
-        mockTransport.setupInitializationResponse()
-        client.connect(mockTransport)
+
+        // Capture sent messages and auto-respond
+        launch {
+            for (message in serverChannel) {
+                sentMessages.send(message)
+
+                // Auto-respond to initialize request
+                if (message is JSONRPCRequest && message.method == "initialize") {
+                    val response = JSONRPCResponse(
+                        id = message.id,
+                        result = InitializeResult(
+                            protocolVersion = "2024-11-05",
+                            serverInfo = Implementation(name = "test-server", version = "1.0.0"),
+                            capabilities = ServerCapabilities()
+                        )
+                    )
+                    clientChannel.send(response)
+                }
+            }
+        }
+
+        client.connect(clientTransport)
     }
 
     @Test
@@ -58,7 +95,7 @@ class ClientMetaParameterTest {
         }
 
         assertTrue(result.isSuccess, "Valid meta keys should not cause exceptions")
-        mockTransport.lastJsonRpcRequest()?.let { request ->
+        lastJsonRpcRequest()?.let { request ->
             val params = request.params as JsonObject
             assertTrue(params.containsKey("_meta"), "Request should contain _meta field")
             val metaField = params["_meta"] as JsonObject
@@ -209,7 +246,7 @@ class ClientMetaParameterTest {
 
         assertTrue(result.isSuccess, "Complex data type conversion should not throw exceptions")
 
-        mockTransport.lastJsonRpcRequest()?.let { request ->
+        lastJsonRpcRequest()?.let { request ->
             assertEquals("tools/call", request.method)
             val params = request.params as JsonObject
             assertTrue(params.containsKey("_meta"), "Request should contain _meta field")
@@ -226,7 +263,7 @@ class ClientMetaParameterTest {
 
         assertTrue(result.isSuccess)
 
-        mockTransport.lastJsonRpcRequest()?.let { request ->
+        lastJsonRpcRequest()?.let { request ->
             val params = request.params as JsonObject
             val metaField = params["_meta"] as JsonObject
             assertTrue(metaField.containsKey("config"))
@@ -237,7 +274,7 @@ class ClientMetaParameterTest {
     fun `should include empty meta object when meta parameter not provided`() = runTest {
         client.callTool("test-tool", mapOf("arg" to "value"))
 
-        mockTransport.lastJsonRpcRequest()?.let { request ->
+        lastJsonRpcRequest()?.let { request ->
             val params = request.params as JsonObject
             val metaField = params["_meta"] as JsonObject
             assertTrue(metaField.isEmpty(), "Meta field should be empty when not provided")
@@ -270,6 +307,12 @@ class ClientMetaParameterTest {
             },
         )
     }
-}
 
-suspend fun MockTransport.lastJsonRpcRequest(): JSONRPCRequest? = getSentMessages().lastOrNull() as? JSONRPCRequest
+    private suspend fun lastJsonRpcRequest(): JSONRPCRequest? {
+        val messages = mutableListOf<JSONRPCMessage>()
+        while (!sentMessages.isEmpty) {
+            messages.add(sentMessages.receive())
+        }
+        return messages.lastOrNull() as? JSONRPCRequest
+    }
+}

@@ -1,4 +1,4 @@
-package io.modelcontextprotocol.kotlin.sdk.testing
+package io.modelcontextprotocol.kotlin.test.utils
 
 import io.github.oshai.kotlinlogging.KLogger
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -16,7 +16,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.launch
@@ -27,10 +26,10 @@ import kotlinx.coroutines.yield
  * communication of JSON-RPC messages. This is useful in scenarios where communication is
  * message-based and channels are used as the underlying mechanism for delivery.
  *
- * @constructor Initializes the transport with the specified [SendChannel] and [ReceiveChannel].
+ * @constructor Initializes the transport with the specified [kotlinx.coroutines.channels.SendChannel] and [kotlinx.coroutines.channels.ReceiveChannel].
  * @property sendChannel The channel used to send JSON-RPC messages.
  * @property receiveChannel The channel used to receive JSON-RPC messages.
- * @param dispatcher The coroutine dispatcher for the event loop. Defaults to [Dispatchers.Default].
+ * @param dispatcher The coroutine dispatcher for the event loop. Defaults to [kotlinx.coroutines.Dispatchers.Default].
  */
 @ExperimentalMcpApi
 public class ChannelTransport(
@@ -55,7 +54,7 @@ public class ChannelTransport(
      * @param dispatcher The coroutine dispatcher for the event loop. Defaults to [Dispatchers.Default].
      */
     public constructor(
-        channel: Channel<JSONRPCMessage> = Channel(UNLIMITED),
+        channel: Channel<JSONRPCMessage> = Channel(Channel.UNLIMITED),
         dispatcher: CoroutineDispatcher = Dispatchers.Default,
     ) : this(channel, channel, dispatcher)
 
@@ -170,7 +169,7 @@ public class ChannelTransport(
             receiveChannel.cancel()
         }
         scope.cancel()
-        scope.coroutineContext[Job]?.join() // Wait for cleanup
+        scope.coroutineContext[Job.Key]?.join() // Wait for cleanup
         logger.info { "ChannelTransport closed" }
     }
 }
