@@ -242,6 +242,16 @@ public inline fun buildCallToolResult(block: CallToolResultBuilder.() -> Unit): 
  * - [structuredContent] - Machine-readable structured output
  * - [meta] - Metadata for the response
  *
+ * ## Implementation Notes
+ *
+ * **Mutability:** This builder uses mutable collections during construction for efficient accumulation.
+ * The [build] method creates defensive copies (`.toList()`) to ensure the returned [CallToolResult]
+ * is immutable and safe to share.
+ *
+ * **Nullability:** Optional fields use nullable types (`Boolean?`, `JsonObject?`) rather than defaults
+ * to avoid serializing default values in the MCP protocol. When these fields are `null`, they are
+ * omitted from the JSON output, reducing message size and following protocol conventions.
+ *
  * @see buildCallToolResult
  * @see CallToolResult
  */
@@ -254,6 +264,10 @@ public class CallToolResultBuilder @PublishedApi internal constructor() : Result
      *
      * When true, the content should describe the error that occurred.
      * If not set, this is assumed to be false (success).
+     *
+     * **Design note:** This field is nullable rather than defaulting to `false` to avoid
+     * serializing the default value in the JSON protocol. When `null`, the field is omitted
+     * from the serialized output, reducing message size and following MCP protocol conventions.
      *
      * Example: `isError = true`
      */
@@ -333,15 +347,20 @@ public class CallToolResultBuilder @PublishedApi internal constructor() : Result
     /**
      * Sets structured content directly from a JsonObject.
      *
+     * **Note:** Prefer using the DSL lambda variant [structuredContent] for more idiomatic Kotlin code.
+     * This overload is provided for cases where you already have a constructed JsonObject.
+     *
      * Example:
      * ```kotlin
-     * structuredContent(buildJsonObject {
+     * val existingData = buildJsonObject {
      *     put("status", "success")
      *     put("recordsAffected", 5)
-     * })
+     * }
+     * structuredContent(existingData)
      * ```
      *
      * @param content The structured content as a JsonObject
+     * @see structuredContent
      */
     public fun structuredContent(content: JsonObject) {
         this.structuredContentValue = content
@@ -350,9 +369,12 @@ public class CallToolResultBuilder @PublishedApi internal constructor() : Result
     /**
      * Sets structured content using a DSL builder.
      *
+     * **This is the preferred way to set structured content.** The DSL syntax is more idiomatic
+     * and integrates better with Kotlin's type-safe builders.
+     *
      * Provides machine-readable output in addition to the human-readable content.
      *
-     * Example:
+     * Example (preferred):
      * ```kotlin
      * structuredContent {
      *     put("status", "success")

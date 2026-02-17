@@ -22,13 +22,18 @@ public abstract class ResultBuilder {
     /**
      * Sets result metadata directly from a JsonObject.
      *
+     * **Note:** Prefer using the DSL lambda variant [meta] for more idiomatic Kotlin code.
+     * This overload is provided for cases where you already have a constructed JsonObject.
+     *
      * Example:
      * ```kotlin
-     * meta(buildJsonObject {
+     * val existingMeta = buildJsonObject {
      *     put("source", "server")
-     *     put("timestamp", System.currentTimeMillis())
-     * })
+     * }
+     * meta(existingMeta)
      * ```
+     *
+     * @see meta
      */
     public fun meta(meta: JsonObject) {
         this.meta = meta
@@ -37,10 +42,13 @@ public abstract class ResultBuilder {
     /**
      * Sets result metadata using a DSL builder.
      *
+     * **This is the preferred way to set metadata.** The DSL syntax is more idiomatic
+     * and integrates better with Kotlin's type-safe builders.
+     *
      * Metadata can include custom fields for tracking responses and providing
      * additional context to clients.
      *
-     * Example:
+     * Example (preferred):
      * ```kotlin
      * listToolsResult {
      *     tools { /* ... */ }
@@ -76,6 +84,10 @@ public abstract class PaginatedResultBuilder : ResultBuilder() {
      *
      * If present, indicates there may be more results available.
      * Clients can pass this cursor in a subsequent paginated request.
+     *
+     * **Design note:** This field is nullable to distinguish between "no next page" (`null`)
+     * and "next page exists" (non-null string). When `null`, the field is omitted from the
+     * serialized JSON, keeping the protocol efficient.
      *
      * Example: `nextCursor = "eyJwYWdlIjogMn0="`
      */
