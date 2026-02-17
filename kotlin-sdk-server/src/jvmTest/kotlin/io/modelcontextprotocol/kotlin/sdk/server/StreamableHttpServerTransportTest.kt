@@ -21,6 +21,7 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
+import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
@@ -32,12 +33,10 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesResult
-import io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
-import io.modelcontextprotocol.kotlin.sdk.types.Tool
-import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
+import io.modelcontextprotocol.kotlin.sdk.types.buildListToolsResult
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.buildJsonObject
@@ -50,6 +49,7 @@ import kotlin.test.assertNotNull
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation as ClientContentNegotiation
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation as ServerContentNegotiation
 
+@OptIn(ExperimentalMcpApi::class)
 class StreamableHttpServerTransportTest {
     private val path = "/transport"
 
@@ -161,12 +161,15 @@ class StreamableHttpServerTransportTest {
         val firstRequest = JSONRPCRequest(id = RequestId("first"), method = Method.Defined.ToolsList.value)
         val secondRequest = JSONRPCRequest(id = RequestId("second"), method = Method.Defined.ResourcesList.value)
 
-        val firstResult = ListToolsResult(
-            tools = listOf(
-                Tool(name = "tool-1", inputSchema = ToolSchema()),
-            ),
-            meta = buildJsonObject { put("label", "first") },
-        )
+        val firstResult = buildListToolsResult {
+            tool {
+                name = "tool-1"
+                inputSchema { }
+            }
+            meta {
+                put("label", "first")
+            }
+        }
         val secondResult = ListResourcesResult(
             resources = emptyList(),
             meta = buildJsonObject { put("label", "second") },
