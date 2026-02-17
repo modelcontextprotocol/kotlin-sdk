@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
-import io.kotest.assertions.json.shouldEqualJson
+import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
+import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -15,13 +16,15 @@ class RootsTest {
     fun `should serialize Root with minimal fields`() {
         val root = Root(uri = "file:///workspace/project")
 
-        val json = McpJson.encodeToString(root)
-
-        json shouldEqualJson """
+        verifySerialization(
+            root,
+            McpJson,
+            """
             {
               "uri": "file:///workspace/project"
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -32,9 +35,10 @@ class RootsTest {
             meta = buildJsonObject { put("writable", true) },
         )
 
-        val json = McpJson.encodeToString(root)
-
-        json shouldEqualJson """
+        verifySerialization(
+            root,
+            McpJson,
+            """
             {
               "uri": "file:///workspace/docs",
               "name": "Docs",
@@ -42,7 +46,8 @@ class RootsTest {
                 "writable": true
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -57,7 +62,7 @@ class RootsTest {
             }
         """.trimIndent()
 
-        val root = McpJson.decodeFromString<Root>(json)
+        val root = verifyDeserialization<Root>(McpJson, json)
 
         assertEquals("file:///workspace/code", root.uri)
         assertEquals("Code", root.name)
@@ -74,9 +79,10 @@ class RootsTest {
             ),
         )
 
-        val json = McpJson.encodeToString(request)
-
-        json shouldEqualJson """
+        verifySerialization(
+            request,
+            McpJson,
+            """
             {
               "method": "roots/list",
               "params": {
@@ -85,20 +91,23 @@ class RootsTest {
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
     fun `should serialize ListRootsRequest without params`() {
         val request = ListRootsRequest()
 
-        val json = McpJson.encodeToString(request)
-
-        json shouldEqualJson """
+        verifySerialization(
+            request,
+            McpJson,
+            """
             {
               "method": "roots/list"
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -111,9 +120,10 @@ class RootsTest {
             meta = buildJsonObject { put("issuedAt", "2025-01-12T15:00:58Z") },
         )
 
-        val json = McpJson.encodeToString(result)
-
-        json shouldEqualJson """
+        verifySerialization(
+            result,
+            McpJson,
+            """
             {
               "roots": [
                 {"uri": "file:///workspace/project", "name": "Project"},
@@ -123,7 +133,8 @@ class RootsTest {
                 "issuedAt": "2025-01-12T15:00:58Z"
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -142,7 +153,7 @@ class RootsTest {
             }
         """.trimIndent()
 
-        val result = McpJson.decodeFromString<ListRootsResult>(json)
+        val result = verifyDeserialization<ListRootsResult>(McpJson, json)
 
         val roots = result.roots
         assertEquals(1, roots.size)

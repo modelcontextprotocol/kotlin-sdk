@@ -121,10 +121,8 @@ kotlin {
 
         commonTest {
             dependencies {
+                implementation(project(":test-utils"))
                 implementation(kotlin("test"))
-                implementation(libs.kotlinx.coroutines.test)
-                implementation(libs.kotest.assertions.core)
-                implementation(libs.kotest.assertions.json)
             }
         }
 

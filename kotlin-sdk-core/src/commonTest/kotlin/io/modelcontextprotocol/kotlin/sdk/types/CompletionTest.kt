@@ -1,6 +1,8 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.kotest.assertions.json.shouldEqualJson
+import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
+import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
@@ -25,9 +27,10 @@ class CompletionTest {
             ),
         )
 
-        val json = McpJson.encodeToString(request)
-
-        json shouldEqualJson """
+        verifySerialization(
+            request,
+            McpJson,
+            """
             {
               "method": "completion/complete",
               "params": {
@@ -41,7 +44,8 @@ class CompletionTest {
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -67,9 +71,10 @@ class CompletionTest {
             ),
         )
 
-        val json = McpJson.encodeToString(request)
-
-        json shouldEqualJson """
+        verifySerialization(
+            request,
+            McpJson,
+            """
             {
               "method": "completion/complete",
               "params": {
@@ -92,7 +97,8 @@ class CompletionTest {
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -121,7 +127,7 @@ class CompletionTest {
             }
         """.trimIndent()
 
-        val request = McpJson.decodeFromString<CompleteRequest>(json)
+        val request = verifyDeserialization<CompleteRequest>(McpJson, json)
         assertEquals(Method.Defined.CompletionComplete, request.method)
 
         val params = request.params
@@ -148,9 +154,10 @@ class CompletionTest {
             },
         )
 
-        val json = McpJson.encodeToString(result)
-
-        json shouldEqualJson """
+        verifySerialization(
+            result,
+            McpJson,
+            """
             {
               "completion": {
                 "values": [
@@ -164,7 +171,8 @@ class CompletionTest {
                 "source": "cache"
               }
             }
-        """.trimIndent()
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -182,7 +190,7 @@ class CompletionTest {
             }
         """.trimIndent()
 
-        val result = McpJson.decodeFromString<CompleteResult>(json)
+        val result = verifyDeserialization<CompleteResult>(McpJson, json)
         assertEquals(listOf("README.md", "CONTRIBUTING.md"), result.completion.values)
         assertEquals(2, result.completion.total)
         assertEquals(false, result.completion.hasMore)
@@ -209,7 +217,7 @@ class CompletionTest {
             }
         """.trimIndent()
 
-        val decoded = McpJson.decodeFromString<CompleteResult>(json)
+        val decoded = verifyDeserialization<CompleteResult>(McpJson, json)
         assertEquals(listOf("foo"), decoded.completion.values)
         assertNull(decoded.completion.total)
         assertNull(decoded.completion.hasMore)
