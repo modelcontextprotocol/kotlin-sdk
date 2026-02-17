@@ -45,7 +45,8 @@ class JsonRpcTest {
 
     @Test
     fun `should convert JSONRPCRequest to Request`() {
-        val jsonRpc = verifyDeserialization<JSONRPCRequest>(McpJson, 
+        val jsonRpc = verifyDeserialization<JSONRPCRequest>(
+            McpJson,
             """
             {
               "id": 17,
@@ -103,7 +104,8 @@ class JsonRpcTest {
 
     @Test
     fun `should convert JSONRPCNotification to Notification`() {
-        val jsonRpc = verifyDeserialization<JSONRPCNotification>(McpJson, 
+        val jsonRpc = verifyDeserialization<JSONRPCNotification>(
+            McpJson,
             """
             {
               "method": "notifications/message",

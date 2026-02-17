@@ -18,6 +18,7 @@ import kotlin.test.assertNull
 class ElicitationTest {
 
     @Test
+    @Suppress("LongMethod")
     fun `should serialize ElicitRequest with requested schema`() {
         val request = ElicitRequest(
             ElicitRequestParams(
