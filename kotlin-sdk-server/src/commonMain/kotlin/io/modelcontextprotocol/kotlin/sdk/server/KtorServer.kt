@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
+import io.ktor.server.application.MissingApplicationPluginException
 import io.ktor.server.application.install
 import io.ktor.server.request.ApplicationRequest
 import io.ktor.server.request.header
@@ -61,9 +62,25 @@ public fun Route.mcp(path: String, block: ServerSSESession.() -> Server) {
 
 /**
  * Configures the Ktor Application to handle Model Context Protocol (MCP) over Server-Sent Events (SSE).
+ *
+ * **Precondition:** the [SSE] plugin must be installed on the application before calling this function.
+ * Use [Application.mcp] if you want SSE to be installed automatically.
+ *
+ * @throws IllegalStateException if the [SSE] plugin is not installed.
  */
 @KtorDsl
 public fun Route.mcp(block: ServerSSESession.() -> Server) {
+    try {
+        plugin(SSE)
+    } catch (e: MissingApplicationPluginException) {
+        throw IllegalStateException(
+            "The SSE plugin must be installed before registering MCP routes. " +
+                "Add `install(SSE)` to your application configuration, " +
+                "or use Application.mcp() which installs it automatically.",
+            e,
+        )
+    }
+
     val transportManager = TransportManager()
 
     sse {
