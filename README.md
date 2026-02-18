@@ -183,6 +183,7 @@ fun main(args: Array<String>) = runBlocking {
 
 Create an MCP server that exposes a simple tool and runs on an embedded Ktor server with SSE transport:
 
+<!--- CLEAR -->
 ```kotlin
 import io.ktor.server.cio.CIO
 import io.ktor.server.engine.embeddedServer
@@ -761,14 +762,89 @@ CLI tooling that spawns a helper process. No networking setup is required.
 
 ### Streamable HTTP Transport
 
-`StreamableHttpClientTransport` and the Ktor `streamableHttpApp()` helpers expose MCP over a single HTTP endpoint with
-optional JSON-only or SSE streaming responses. This is the recommended choice for remote deployments and integrates
-nicely with proxies or service meshes.
+`StreamableHttpClientTransport` and the Ktor `mcpStreamableHttp()` / `mcpStatelessStreamableHttp()` helpers expose MCP
+over a single HTTP endpoint with optional JSON-only or SSE streaming responses. This is the recommended choice for
+remote deployments and integrates nicely with proxies or service meshes. Both accept a `path` parameter (default:
+`"/mcp"`) to mount the endpoint at any URL:
+
+<!--- CLEAR -->
+<!--- INCLUDE 
+import io.ktor.server.cio.CIO
+import io.ktor.server.engine.embeddedServer
+import io.modelcontextprotocol.kotlin.sdk.server.Server
+import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
+import io.modelcontextprotocol.kotlin.sdk.server.mcpStreamableHttp
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+
+private class MyServer :
+    Server(
+        serverInfo = Implementation(name = "ExampleServer", version = "1.0"),
+        options = ServerOptions(capabilities = ServerCapabilities()),
+    )
+
+fun main() {
+-->
+```kotlin
+embeddedServer(CIO, port = 3000) {
+    mcpStreamableHttp(path = "/api/mcp") {
+        MyServer()
+    }
+}.start(wait = true)
+```
+<!--- SUFFIX 
+}
+-->
+<!--- KNIT example-server-routes-01.kt -->
 
 ### SSE Transport
 
-Server-Sent Events remain available for backwards compatibility with older MCP clients. Use `SseServerTransport` or the
-SSE Ktor plugin when you need drop-in compatibility, but prefer Streamable HTTP for new projects.
+Server-Sent Events remain available for backwards compatibility with older MCP clients. Two Ktor helpers are provided:
+
+- **`Application.mcp { }`** — installs the SSE plugin automatically and registers MCP endpoints at `/`.
+- **`Route.mcp { }`** — registers MCP endpoints at the current route path; requires `install(SSE)` in the application
+  first. Use this to host MCP alongside other routes or under a path prefix:
+
+<!--- CLEAR -->
+<!--- INCLUDE 
+import io.ktor.server.application.install
+import io.ktor.server.cio.CIO
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.get
+import io.ktor.server.routing.route
+import io.ktor.server.routing.routing
+import io.ktor.server.sse.SSE
+import io.modelcontextprotocol.kotlin.sdk.server.Server
+import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
+import io.modelcontextprotocol.kotlin.sdk.server.mcp
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+
+private class MyServer :
+    Server(
+        serverInfo = Implementation(name = "ExampleServer", version = "1.0"),
+        options = ServerOptions(capabilities = ServerCapabilities()),
+    )
+
+fun main() {
+-->
+```kotlin
+embeddedServer(CIO, port = 3000) {
+    install(SSE)
+    routing {
+        route("/api/mcp") {
+            mcp { MyServer() }
+        }
+    }
+}.start(wait = true)
+```
+<!--- SUFFIX 
+}
+-->
+<!--- KNIT example-server-routes-02.kt -->
+
+Prefer Streamable HTTP for new projects.
 
 ### WebSocket Transport
 

@@ -4,11 +4,12 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
+import io.ktor.server.application.MissingApplicationPluginException
 import io.ktor.server.application.install
 import io.ktor.server.request.ApplicationRequest
 import io.ktor.server.request.header
 import io.ktor.server.response.respond
-import io.ktor.server.routing.Routing
+import io.ktor.server.routing.Route
 import io.ktor.server.routing.RoutingContext
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
@@ -53,17 +54,33 @@ internal class TransportManager(transports: Map<String, AbstractTransport> = emp
  * @param block the block of code that defines the server's behavior for the SSE session.
  */
 @KtorDsl
-public fun Routing.mcp(path: String, block: ServerSSESession.() -> Server) {
+public fun Route.mcp(path: String, block: ServerSSESession.() -> Server) {
     route(path) {
         mcp(block)
     }
 }
 
 /**
-* Configures the Ktor Application to handle Model Context Protocol (MCP) over Server-Sent Events (SSE).
-*/
+ * Configures the Ktor Application to handle Model Context Protocol (MCP) over Server-Sent Events (SSE).
+ *
+ * **Precondition:** the [SSE] plugin must be installed on the application before calling this function.
+ * Use [Application.mcp] if you want SSE to be installed automatically.
+ *
+ * @throws IllegalStateException if the [SSE] plugin is not installed.
+ */
 @KtorDsl
-public fun Routing.mcp(block: ServerSSESession.() -> Server) {
+public fun Route.mcp(block: ServerSSESession.() -> Server) {
+    try {
+        plugin(SSE)
+    } catch (e: MissingApplicationPluginException) {
+        throw IllegalStateException(
+            "The SSE plugin must be installed before registering MCP routes. " +
+                "Add `install(SSE)` to your application configuration, " +
+                "or use Application.mcp() which installs it automatically.",
+            e,
+        )
+    }
+
     val transportManager = TransportManager()
 
     sse {
@@ -85,7 +102,9 @@ public fun Application.mcp(block: ServerSSESession.() -> Server) {
 }
 
 @KtorDsl
+@Suppress("LongParameterList")
 public fun Application.mcpStreamableHttp(
+    path: String = "/mcp",
     enableDnsRebindingProtection: Boolean = false,
     allowedHosts: List<String>? = null,
     allowedOrigins: List<String>? = null,
@@ -97,7 +116,7 @@ public fun Application.mcpStreamableHttp(
     val transportManager = TransportManager()
 
     routing {
-        route("/mcp") {
+        route(path) {
             sse {
                 val transport = existingStreamableTransport(call, transportManager) ?: return@sse
                 transport.handleRequest(this, call)
@@ -126,7 +145,9 @@ public fun Application.mcpStreamableHttp(
 }
 
 @KtorDsl
+@Suppress("LongParameterList")
 public fun Application.mcpStatelessStreamableHttp(
+    path: String = "/mcp",
     enableDnsRebindingProtection: Boolean = false,
     allowedHosts: List<String>? = null,
     allowedOrigins: List<String>? = null,
@@ -136,7 +157,7 @@ public fun Application.mcpStatelessStreamableHttp(
     install(SSE)
 
     routing {
-        route("/mcp") {
+        route(path) {
             post {
                 mcpStatelessStreamableHttpEndpoint(
                     enableDnsRebindingProtection = enableDnsRebindingProtection,
@@ -164,7 +185,7 @@ public fun Application.mcpStatelessStreamableHttp(
     }
 }
 
-internal suspend fun ServerSSESession.mcpSseEndpoint(
+private suspend fun ServerSSESession.mcpSseEndpoint(
     postEndpoint: String,
     transportManager: TransportManager,
     block: ServerSSESession.() -> Server,
@@ -185,7 +206,7 @@ internal suspend fun ServerSSESession.mcpSseEndpoint(
     awaitCancellation()
 }
 
-internal fun ServerSSESession.mcpSseTransport(
+private fun ServerSSESession.mcpSseTransport(
     postEndpoint: String,
     transportManager: TransportManager,
 ): SseServerTransport {
@@ -196,7 +217,7 @@ internal fun ServerSSESession.mcpSseTransport(
     return transport
 }
 
-internal suspend fun RoutingContext.mcpStatelessStreamableHttpEndpoint(
+private suspend fun RoutingContext.mcpStatelessStreamableHttpEndpoint(
     enableDnsRebindingProtection: Boolean = false,
     allowedHosts: List<String>? = null,
     allowedOrigins: List<String>? = null,
@@ -221,7 +242,7 @@ internal suspend fun RoutingContext.mcpStatelessStreamableHttpEndpoint(
     logger.debug { "Server connected to transport without sessionId" }
 }
 
-internal suspend fun RoutingContext.mcpPostEndpoint(transportManager: TransportManager) {
+private suspend fun RoutingContext.mcpPostEndpoint(transportManager: TransportManager) {
     val sessionId: String = call.request.queryParameters["sessionId"] ?: run {
         call.respond(HttpStatusCode.BadRequest, "sessionId query parameter is not provided")
         return
