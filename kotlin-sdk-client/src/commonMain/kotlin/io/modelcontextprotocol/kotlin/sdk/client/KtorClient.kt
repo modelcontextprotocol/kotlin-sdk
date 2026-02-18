@@ -13,7 +13,7 @@ import kotlin.time.Duration
  * @param urlString Optional URL of the MCP server.
  * @param reconnectionTime Optional duration to wait before attempting to reconnect.
  * @param requestBuilder Optional lambda to configure the HTTP request.
- * @return A [SSEClientTransport] configured for MCP communication.
+ * @return A [SseClientTransport] configured for MCP communication.
  */
 public fun HttpClient.mcpSseTransport(
     urlString: String? = null,
