@@ -29,7 +29,6 @@ import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
 import io.modelcontextprotocol.kotlin.test.utils.actualPort
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import java.util.UUID
 import kotlin.test.Test
@@ -39,10 +38,6 @@ import io.ktor.server.sse.SSE as ServerSSE
 
 /**
  * Base class for MCP authentication integration tests.
- *
- * This class provides a common setup for testing MCP servers behind Ktor authentication.
- * It verifies that unauthenticated requests are rejected and that the authenticated principal
- * is accessible within MCP resource handlers.
  */
 abstract class AbstractAuthenticationTest {
 
@@ -57,10 +52,6 @@ abstract class AbstractAuthenticationTest {
 
     /**
      * Installs Ktor plugins required by the transport under test.
-     *
-     * The default installs [ServerSSE] (required by both SSE and StreamableHttp transports)
-     * and [ContentNegotiation] with [McpJson] (required by StreamableHttp for JSON body
-     * serialization). Subclasses may override to add transport-specific plugins.
      */
     protected open fun Application.configurePlugins() {
         install(ServerSSE)
@@ -71,7 +62,6 @@ abstract class AbstractAuthenticationTest {
 
     /**
      * Registers the MCP server on the given route.
-     * Concrete implementations should use transport-specific extensions (e.g., [Route.mcp] for SSE).
      */
     abstract fun Route.registerMcpServer(serverFactory: ApplicationCall.() -> Server)
 
@@ -81,90 +71,86 @@ abstract class AbstractAuthenticationTest {
     abstract fun createClientTransport(baseUrl: String, user: String, pass: String): Transport
 
     @Test
-    fun `mcp behind basic auth rejects unauthenticated requests with 401`() {
-        runBlocking(Dispatchers.IO) {
-            val server = embeddedServer(ServerCIO, host = HOST, port = 0) {
-                configurePlugins()
-                install(Authentication) {
-                    basic(AUTH_REALM) {
-                        validate { credentials ->
-                            if (credentials.name == validUser && credentials.password == validPassword) {
-                                UserIdPrincipal(credentials.name)
-                            } else {
-                                null
-                            }
+    fun `mcp behind basic auth rejects unauthenticated requests with 401`(): Unit = runBlocking {
+        val server = embeddedServer(ServerCIO, host = HOST, port = 0) {
+            configurePlugins()
+            install(Authentication) {
+                basic(AUTH_REALM) {
+                    validate { credentials ->
+                        if (credentials.name == validUser && credentials.password == validPassword) {
+                            UserIdPrincipal(credentials.name)
+                        } else {
+                            null
                         }
                     }
                 }
-                routing {
-                    authenticate(AUTH_REALM) {
-                        registerMcpServer {
-                            createMcpServer { principal<UserIdPrincipal>()?.name }
-                        }
-                    }
-                }
-            }.startSuspend(wait = false)
-
-            val httpClient = HttpClient(ClientCIO)
-            try {
-                httpClient.get("http://$HOST:${server.actualPort()}").status shouldBe HttpStatusCode.Unauthorized
-            } finally {
-                httpClient.close()
-                server.stopSuspend(500, 1000)
             }
+            routing {
+                authenticate(AUTH_REALM) {
+                    registerMcpServer {
+                        createMcpServer { principal<UserIdPrincipal>()?.name }
+                    }
+                }
+            }
+        }.startSuspend(wait = false)
+
+        val httpClient = HttpClient(ClientCIO)
+        try {
+            httpClient.get("http://$HOST:${server.actualPort()}").status shouldBe HttpStatusCode.Unauthorized
+        } finally {
+            httpClient.close()
+            server.stopSuspend(500, 1000)
         }
     }
 
     @Test
-    fun `authenticated mcp client can read resource scoped to principal`() {
-        runBlocking(Dispatchers.IO) {
-            val server = embeddedServer(ServerCIO, host = HOST, port = 0) {
-                configurePlugins()
-                install(Authentication) {
-                    basic(AUTH_REALM) {
-                        validate { credentials ->
-                            if (credentials.name == validUser && credentials.password == validPassword) {
-                                UserIdPrincipal(credentials.name)
-                            } else {
-                                null
-                            }
+    fun `authenticated mcp client can read resource scoped to principal`(): Unit = runBlocking {
+        val server = embeddedServer(ServerCIO, host = HOST, port = 0) {
+            configurePlugins()
+            install(Authentication) {
+                basic(AUTH_REALM) {
+                    validate { credentials ->
+                        if (credentials.name == validUser && credentials.password == validPassword) {
+                            UserIdPrincipal(credentials.name)
+                        } else {
+                            null
                         }
                     }
                 }
-                routing {
-                    authenticate(AUTH_REALM) {
-                        registerMcpServer {
-                            // `this` is the ApplicationCall at connection time.
-                            // The lambda passed to createMcpServer captures this call;
-                            // principal<T>() is safe to call from resource handlers because
-                            // the call's authentication context remains valid for the session lifetime.
-                            createMcpServer { principal<UserIdPrincipal>()?.name }
-                        }
-                    }
-                }
-            }.startSuspend(wait = false)
-
-            val baseUrl = "http://$HOST:${server.actualPort()}"
-            var mcpClient: Client? = null
-            try {
-                mcpClient = Client(Implementation(name = "test-client", version = "1.0.0"))
-                mcpClient.connect(createClientTransport(baseUrl, validUser, validPassword))
-
-                val result = mcpClient.readResource(
-                    ReadResourceRequest(ReadResourceRequestParams(uri = WHOAMI_URI)),
-                )
-
-                result.contents shouldBe listOf(
-                    TextResourceContents(
-                        text = validUser,
-                        uri = WHOAMI_URI,
-                        mimeType = "text/plain",
-                    ),
-                )
-            } finally {
-                mcpClient?.close()
-                server.stopSuspend(500, 1000)
             }
+            routing {
+                authenticate(AUTH_REALM) {
+                    registerMcpServer {
+                        // `this` is the ApplicationCall at connection time.
+                        // The lambda passed to createMcpServer captures this call;
+                        // principal<T>() is safe to call from resource handlers because
+                        // the call's authentication context remains valid for the session lifetime.
+                        createMcpServer { principal<UserIdPrincipal>()?.name }
+                    }
+                }
+            }
+        }.startSuspend(wait = false)
+
+        val baseUrl = "http://$HOST:${server.actualPort()}"
+        var mcpClient: Client? = null
+        try {
+            mcpClient = Client(Implementation(name = "test-client", version = "1.0.0"))
+            mcpClient.connect(createClientTransport(baseUrl, validUser, validPassword))
+
+            val result = mcpClient.readResource(
+                ReadResourceRequest(ReadResourceRequestParams(uri = WHOAMI_URI)),
+            )
+
+            result.contents shouldBe listOf(
+                TextResourceContents(
+                    text = validUser,
+                    uri = WHOAMI_URI,
+                    mimeType = "text/plain",
+                ),
+            )
+        } finally {
+            mcpClient?.close()
+            server.stopSuspend(500, 1000)
         }
     }
 
