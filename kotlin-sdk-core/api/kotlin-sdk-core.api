@@ -3675,6 +3675,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/RequestMeta$Companio
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/RequestMetaBuilder {
+	public fun <init> ()V
 	public final fun progressToken (I)V
 	public final fun progressToken (J)V
 	public final fun progressToken (Ljava/lang/String;)V

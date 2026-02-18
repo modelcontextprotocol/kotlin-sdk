@@ -16,7 +16,7 @@ import kotlinx.serialization.json.buildJsonObject
  * @see ServerResult
  */
 @McpDsl
-public abstract class ResultBuilder {
+public abstract class ResultBuilder @PublishedApi internal constructor() {
     protected var meta: JsonObject? = null
 
     /**
@@ -78,7 +78,7 @@ public abstract class ResultBuilder {
  * @see PaginatedResult
  */
 @McpDsl
-public abstract class PaginatedResultBuilder : ResultBuilder() {
+public abstract class PaginatedResultBuilder @PublishedApi internal constructor() : ResultBuilder() {
     /**
      * Optional pagination cursor for fetching the next page of results.
      *

@@ -155,7 +155,7 @@ public class ListPromptsRequestBuilder @PublishedApi internal constructor() : Pa
  * Creates a [GetPromptResult] using a type-safe DSL builder.
  *
  * ## Required
- * - [messages][GetPromptResultBuilder.messages] - List of prompt messages (at least one)
+ * - [messages][GetPromptResultBuilder.messagesList] - List of prompt messages (at least one)
  *
  * ## Optional
  * - [description][GetPromptResultBuilder.description] - Description of the prompt
@@ -260,7 +260,7 @@ public class GetPromptResultBuilder @PublishedApi internal constructor() : Resul
  * Creates a [ListPromptsResult] using a type-safe DSL builder.
  *
  * ## Required
- * - [prompts][ListPromptsResultBuilder.prompts] - List of available prompts (at least one)
+ * - [prompts][ListPromptsResultBuilder.promptsList] - List of available prompts (at least one)
  *
  * ## Optional
  * - [nextCursor][ListPromptsResultBuilder.nextCursor] - Pagination cursor for next page
