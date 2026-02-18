@@ -3,6 +3,7 @@ package io.modelcontextprotocol.kotlin.sdk.server
 import io.kotest.assertions.ktor.client.shouldHaveContentType
 import io.kotest.assertions.ktor.client.shouldHaveStatus
 import io.ktor.client.HttpClient
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.post
 import io.ktor.client.request.prepareGet
 import io.ktor.client.request.setBody
@@ -29,9 +30,14 @@ abstract class AbstractKtorExtensionsTest {
      * - GET returns 200 with `text/event-stream` content type (SSE endpoint)
      * - POST with a valid MCP payload and session returns 202 Accepted
      * - POST without a sessionId returns 400 Bad Request
+     *
+     * Use [configureRequest] to add headers (e.g. `basicAuth(...)`) to every request.
      */
-    protected suspend fun HttpClient.assertMcpEndpointsAt(path: String) {
-        prepareGet(path).execute { response ->
+    protected suspend fun HttpClient.assertMcpEndpointsAt(
+        path: String,
+        configureRequest: HttpRequestBuilder.() -> Unit = {},
+    ) {
+        prepareGet(path) { configureRequest() }.execute { response ->
             response.shouldHaveStatus(HttpStatusCode.OK)
             response.shouldHaveContentType(sseContentType)
 
@@ -58,11 +64,12 @@ abstract class AbstractKtorExtensionsTest {
             val postResponse = post("$path?sessionId=$sessionId") {
                 contentType(ContentType.Application.Json)
                 setBody("""{"jsonrpc":"2.0","id":1,"method":"ping"}""")
+                configureRequest()
             }
             postResponse.shouldHaveStatus(HttpStatusCode.Accepted)
         }
 
         // POST without sessionId returns 400 Bad Request
-        post(path).shouldHaveStatus(HttpStatusCode.BadRequest)
+        post(path) { configureRequest() }.shouldHaveStatus(HttpStatusCode.BadRequest)
     }
 }
