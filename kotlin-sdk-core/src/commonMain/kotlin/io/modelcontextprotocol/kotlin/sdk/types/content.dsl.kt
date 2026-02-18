@@ -21,7 +21,7 @@ import kotlinx.serialization.json.buildJsonObject
  * @see AudioContentBuilder
  */
 @McpDsl
-public abstract class MediaContentBuilder {
+public abstract class MediaContentBuilder @PublishedApi internal constructor() {
     protected var annotations: Annotations? = null
     protected var meta: JsonObject? = null
 
