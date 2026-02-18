@@ -8,10 +8,6 @@ import io.ktor.server.application.install
 import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.server.routing.delete
-import io.ktor.server.routing.get
-import io.ktor.server.routing.post
-import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.SseClientTransport
@@ -22,6 +18,7 @@ import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.StdioServerTransport
 import io.modelcontextprotocol.kotlin.sdk.server.StreamableHttpServerTransport
 import io.modelcontextprotocol.kotlin.sdk.server.mcp
+import io.modelcontextprotocol.kotlin.sdk.server.mcpStreamableHttp
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
@@ -54,6 +51,7 @@ abstract class KotlinTestBase {
 
     // Transport selection
     protected enum class TransportKind { SSE, STDIO, STREAMABLE_HTTP }
+
     protected open val transportKind: TransportKind = TransportKind.STDIO
 
     // STDIO-specific fields
@@ -168,19 +166,7 @@ abstract class KotlinTestBase {
                     install(ContentNegotiation) {
                         json(McpJson)
                     }
-                    routing {
-                        route("/mcp") {
-                            post {
-                                transport.handlePostRequest(null, call)
-                            }
-                            get {
-                                transport.handleGetRequest(null, call)
-                            }
-                            delete {
-                                transport.handleDeleteRequest(call)
-                            }
-                        }
-                    }
+                    mcpStreamableHttp(path = "/mcp") { server }
                 }.start(wait = false)
             }
 

@@ -85,7 +85,9 @@ public fun Application.mcp(block: ServerSSESession.() -> Server) {
 }
 
 @KtorDsl
+@Suppress("LongParameterList")
 public fun Application.mcpStreamableHttp(
+    path: String = "/mcp",
     enableDnsRebindingProtection: Boolean = false,
     allowedHosts: List<String>? = null,
     allowedOrigins: List<String>? = null,
@@ -97,7 +99,7 @@ public fun Application.mcpStreamableHttp(
     val transportManager = TransportManager()
 
     routing {
-        route("/mcp") {
+        route(path) {
             sse {
                 val transport = existingStreamableTransport(call, transportManager) ?: return@sse
                 transport.handleRequest(this, call)
@@ -126,7 +128,9 @@ public fun Application.mcpStreamableHttp(
 }
 
 @KtorDsl
+@Suppress("LongParameterList")
 public fun Application.mcpStatelessStreamableHttp(
+    path: String = "/mcp",
     enableDnsRebindingProtection: Boolean = false,
     allowedHosts: List<String>? = null,
     allowedOrigins: List<String>? = null,
@@ -136,7 +140,7 @@ public fun Application.mcpStatelessStreamableHttp(
     install(SSE)
 
     routing {
-        route("/mcp") {
+        route(path) {
             post {
                 mcpStatelessStreamableHttpEndpoint(
                     enableDnsRebindingProtection = enableDnsRebindingProtection,
@@ -164,7 +168,7 @@ public fun Application.mcpStatelessStreamableHttp(
     }
 }
 
-internal suspend fun ServerSSESession.mcpSseEndpoint(
+private suspend fun ServerSSESession.mcpSseEndpoint(
     postEndpoint: String,
     transportManager: TransportManager,
     block: ServerSSESession.() -> Server,
@@ -185,7 +189,7 @@ internal suspend fun ServerSSESession.mcpSseEndpoint(
     awaitCancellation()
 }
 
-internal fun ServerSSESession.mcpSseTransport(
+private fun ServerSSESession.mcpSseTransport(
     postEndpoint: String,
     transportManager: TransportManager,
 ): SseServerTransport {
@@ -196,7 +200,7 @@ internal fun ServerSSESession.mcpSseTransport(
     return transport
 }
 
-internal suspend fun RoutingContext.mcpStatelessStreamableHttpEndpoint(
+private suspend fun RoutingContext.mcpStatelessStreamableHttpEndpoint(
     enableDnsRebindingProtection: Boolean = false,
     allowedHosts: List<String>? = null,
     allowedOrigins: List<String>? = null,
@@ -221,7 +225,7 @@ internal suspend fun RoutingContext.mcpStatelessStreamableHttpEndpoint(
     logger.debug { "Server connected to transport without sessionId" }
 }
 
-internal suspend fun RoutingContext.mcpPostEndpoint(transportManager: TransportManager) {
+private suspend fun RoutingContext.mcpPostEndpoint(transportManager: TransportManager) {
     val sessionId: String = call.request.queryParameters["sessionId"] ?: run {
         call.respond(HttpStatusCode.BadRequest, "sessionId query parameter is not provided")
         return
