@@ -4,9 +4,6 @@ import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.buildJsonObject
-import kotlin.contracts.ExperimentalContracts
-import kotlin.contracts.InvocationKind
-import kotlin.contracts.contract
 
 /**
  * Creates an [ElicitRequest] using a type-safe DSL builder.
@@ -20,7 +17,7 @@ import kotlin.contracts.contract
  *
  * Example requesting user information:
  * ```kotlin
- * val request = buildElicitRequest {
+ * val request = ElicitRequest {
  *     message = "Please provide your contact information"
  *     requestedSchema {
  *         properties {
@@ -39,7 +36,7 @@ import kotlin.contracts.contract
  *
  * Example with simple text input:
  * ```kotlin
- * val request = buildElicitRequest {
+ * val request = ElicitRequest {
  *     message = "Enter a project name"
  *     requestedSchema {
  *         properties {
@@ -57,12 +54,9 @@ import kotlin.contracts.contract
  * @see ElicitRequestBuilder
  * @see ElicitRequest
  */
-@OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun buildElicitRequest(block: ElicitRequestBuilder.() -> Unit): ElicitRequest {
-    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
-    return ElicitRequestBuilder().apply(block).build()
-}
+public inline operator fun ElicitRequest.Companion.invoke(block: ElicitRequestBuilder.() -> Unit): ElicitRequest =
+    ElicitRequestBuilder().apply(block).build()
 
 /**
  * DSL builder for constructing [ElicitRequest] instances.
@@ -77,7 +71,6 @@ public inline fun buildElicitRequest(block: ElicitRequestBuilder.() -> Unit): El
  * ## Optional
  * - [meta] - Metadata for the request
  *
- * @see buildElicitRequest
  * @see ElicitRequest
  */
 @McpDsl
@@ -95,7 +88,7 @@ public class ElicitRequestBuilder @PublishedApi internal constructor() : Request
      *
      * Example:
      * ```kotlin
-     * buildElicitRequest {
+     * ElicitRequest {
      *     message = "Enter details"
      *     requestedSchema(ElicitRequestParams.RequestedSchema(
      *         properties = buildJsonObject {
@@ -119,7 +112,7 @@ public class ElicitRequestBuilder @PublishedApi internal constructor() : Request
      *
      * Example:
      * ```kotlin
-     * buildElicitRequest {
+     * ElicitRequest {
      *     message = "Configure settings"
      *     requestedSchema {
      *         properties {

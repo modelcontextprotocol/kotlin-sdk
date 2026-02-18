@@ -1,9 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
-import kotlin.contracts.ExperimentalContracts
-import kotlin.contracts.InvocationKind
-import kotlin.contracts.contract
 
 /**
  * Creates a [PingRequest] using a type-safe DSL builder.
@@ -13,12 +10,12 @@ import kotlin.contracts.contract
  *
  * Example with no parameters:
  * ```kotlin
- * val request = buildPingRequest { }
+ * val request = PingRequest { }
  * ```
  *
  * Example with metadata:
  * ```kotlin
- * val request = buildPingRequest {
+ * val request = PingRequest {
  *     meta {
  *         put("timestamp", JsonPrimitive(System.currentTimeMillis()))
  *     }
@@ -30,12 +27,9 @@ import kotlin.contracts.contract
  * @see PingRequestBuilder
  * @see PingRequest
  */
-@OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun buildPingRequest(block: PingRequestBuilder.() -> Unit): PingRequest {
-    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
-    return PingRequestBuilder().apply(block).build()
-}
+public inline operator fun PingRequest.Companion.invoke(block: PingRequestBuilder.() -> Unit): PingRequest =
+    PingRequestBuilder().apply(block).build()
 
 /**
  * DSL builder for constructing [PingRequest] instances.
@@ -46,7 +40,6 @@ public inline fun buildPingRequest(block: PingRequestBuilder.() -> Unit): PingRe
  * ## Optional
  * - [meta] - Metadata for the request
  *
- * @see buildPingRequest
  * @see PingRequest
  */
 @McpDsl

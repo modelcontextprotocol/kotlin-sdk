@@ -4,18 +4,19 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
-import io.modelcontextprotocol.kotlin.sdk.types.buildListResourceTemplatesRequest
-import io.modelcontextprotocol.kotlin.sdk.types.buildListResourcesRequest
-import io.modelcontextprotocol.kotlin.sdk.types.buildReadResourceRequest
-import io.modelcontextprotocol.kotlin.sdk.types.buildSubscribeRequest
-import io.modelcontextprotocol.kotlin.sdk.types.buildUnsubscribeRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ListResourceTemplatesRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
+import io.modelcontextprotocol.kotlin.sdk.types.SubscribeRequest
+import io.modelcontextprotocol.kotlin.sdk.types.UnsubscribeRequest
+import io.modelcontextprotocol.kotlin.sdk.types.invoke
 import kotlin.test.Test
 
 @OptIn(ExperimentalMcpApi::class)
 class ResourcesDslTest {
     @Test
     fun `buildListResourcesRequest should create request with cursor`() {
-        val request = buildListResourcesRequest {
+        val request = ListResourcesRequest {
             cursor = "next"
         }
         request.params shouldNotBeNull {
@@ -25,7 +26,7 @@ class ResourcesDslTest {
 
     @Test
     fun `buildReadResourceRequest should create request with uri`() {
-        val request = buildReadResourceRequest {
+        val request = ReadResourceRequest {
             uri = "test://resource"
         }
         request.params.uri shouldBe "test://resource"
@@ -33,7 +34,7 @@ class ResourcesDslTest {
 
     @Test
     fun `buildSubscribeRequest should create request with uri`() {
-        val request = buildSubscribeRequest {
+        val request = SubscribeRequest {
             uri = "test://resource"
         }
         request.params.uri shouldBe "test://resource"
@@ -41,7 +42,7 @@ class ResourcesDslTest {
 
     @Test
     fun `buildUnsubscribeRequest should create request with uri`() {
-        val request = buildUnsubscribeRequest {
+        val request = UnsubscribeRequest {
             uri = "test://resource"
         }
         request.params.uri shouldBe "test://resource"
@@ -49,7 +50,7 @@ class ResourcesDslTest {
 
     @Test
     fun `buildListResourceTemplatesRequest should create request with cursor`() {
-        val request = buildListResourceTemplatesRequest {
+        val request = ListResourceTemplatesRequest {
             cursor = "template-cursor"
         }
         request.params shouldNotBeNull {
@@ -60,33 +61,33 @@ class ResourcesDslTest {
     @Test
     fun `buildReadResourceRequest should throw if uri is missing`() {
         shouldThrow<IllegalArgumentException> {
-            buildReadResourceRequest { }
+            ReadResourceRequest { }
         }
     }
 
     @Test
     fun `buildSubscribeRequest should throw if uri is missing`() {
         shouldThrow<IllegalArgumentException> {
-            buildSubscribeRequest { }
+            SubscribeRequest { }
         }
     }
 
     @Test
     fun `buildUnsubscribeRequest should throw if uri is missing`() {
         shouldThrow<IllegalArgumentException> {
-            buildUnsubscribeRequest { }
+            UnsubscribeRequest { }
         }
     }
 
     @Test
     fun `buildListResourcesRequest should create request without params if empty`() {
-        val request = buildListResourcesRequest { }
+        val request = ListResourcesRequest { }
         request.params shouldBe null
     }
 
     @Test
     fun `buildListResourceTemplatesRequest should create request without params if empty`() {
-        val request = buildListResourceTemplatesRequest { }
+        val request = ListResourceTemplatesRequest { }
         request.params shouldBe null
     }
 }

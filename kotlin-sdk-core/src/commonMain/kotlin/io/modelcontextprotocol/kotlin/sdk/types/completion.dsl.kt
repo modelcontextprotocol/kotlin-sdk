@@ -1,9 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
-import kotlin.contracts.ExperimentalContracts
-import kotlin.contracts.InvocationKind
-import kotlin.contracts.contract
 
 /**
  * Creates a [CompleteRequest] using a type-safe DSL builder.
@@ -18,7 +15,7 @@ import kotlin.contracts.contract
  *
  * Example with [PromptReference]:
  * ```kotlin
- * val request = buildCompleteRequest {
+ * val request = CompleteRequest {
  *     argument("query", "user input")
  *     ref(PromptReference("searchPrompt"))
  * }
@@ -26,7 +23,7 @@ import kotlin.contracts.contract
  *
  * Example with [ResourceTemplateReference]:
  * ```kotlin
- * val request = buildCompleteRequest {
+ * val request = CompleteRequest {
  *     argument("path", "/users/123")
  *     ref(ResourceTemplateReference("file:///{path}"))
  *     context {
@@ -40,12 +37,9 @@ import kotlin.contracts.contract
  * @return A configured [CompleteRequest] instance
  * @see CompleteRequestBuilder
  */
-@OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun buildCompleteRequest(block: CompleteRequestBuilder.() -> Unit): CompleteRequest {
-    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
-    return CompleteRequestBuilder().apply(block).build()
-}
+public inline operator fun CompleteRequest.Companion.invoke(block: CompleteRequestBuilder.() -> Unit): CompleteRequest =
+    CompleteRequestBuilder().apply(block).build()
 
 /**
  * DSL builder for constructing [CompleteRequest] instances.
@@ -53,7 +47,7 @@ public inline fun buildCompleteRequest(block: CompleteRequestBuilder.() -> Unit)
  * This builder provides methods to configure completion requests for prompts or resource templates.
  * Both [argument] and [ref] are required; [context] is optional.
  *
- * @see buildCompleteRequest
+ * @see CompleteRequest
  */
 @McpDsl
 public class CompleteRequestBuilder @PublishedApi internal constructor() : RequestBuilder() {
@@ -178,18 +172,15 @@ public class CompleteRequestBuilder @PublishedApi internal constructor() : Reque
  *
  * Example:
  * ```kotlin
- * val result = buildCompleteResult {
+ * val result = CompleteResult {
  *     values("user1", "user2", "user3")
  *     total = 3
  * }
  * ```
  */
-@OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun buildCompleteResult(block: CompleteResultBuilder.() -> Unit): CompleteResult {
-    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
-    return CompleteResultBuilder().apply(block).build()
-}
+public inline operator fun CompleteResult.Companion.invoke(block: CompleteResultBuilder.() -> Unit): CompleteResult =
+    CompleteResultBuilder().apply(block).build()
 
 private const val MAX_ITEMS = 100
 

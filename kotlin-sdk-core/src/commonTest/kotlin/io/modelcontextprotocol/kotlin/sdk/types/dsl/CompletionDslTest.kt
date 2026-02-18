@@ -4,16 +4,17 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
+import io.modelcontextprotocol.kotlin.sdk.types.CompleteRequest
 import io.modelcontextprotocol.kotlin.sdk.types.PromptReference
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceTemplateReference
-import io.modelcontextprotocol.kotlin.sdk.types.buildCompleteRequest
+import io.modelcontextprotocol.kotlin.sdk.types.invoke
 import kotlin.test.Test
 
 @OptIn(ExperimentalMcpApi::class)
 class CompletionDslTest {
     @Test
     fun `buildCompleteRequest should build with prompt reference and context`() {
-        val request = buildCompleteRequest {
+        val request = CompleteRequest {
             argument("query", "user input")
             ref(PromptReference("searchPrompt"))
             context {
@@ -31,7 +32,7 @@ class CompletionDslTest {
 
     @Test
     fun `buildCompleteRequest should build with resource template reference and map context`() {
-        val request = buildCompleteRequest {
+        val request = CompleteRequest {
             argument("path", "/users/123")
             ref(ResourceTemplateReference("file:///{path}"))
             context(mapOf("role" to "admin"))
@@ -48,7 +49,7 @@ class CompletionDslTest {
     @Test
     fun `buildCompleteRequest should throw if argument is missing`() {
         shouldThrow<IllegalArgumentException> {
-            buildCompleteRequest {
+            CompleteRequest {
                 ref(PromptReference("name"))
             }
         }
@@ -57,7 +58,7 @@ class CompletionDslTest {
     @Test
     fun `buildCompleteRequest should throw if ref is missing`() {
         shouldThrow<IllegalArgumentException> {
-            buildCompleteRequest {
+            CompleteRequest {
                 argument("name", "value")
             }
         }

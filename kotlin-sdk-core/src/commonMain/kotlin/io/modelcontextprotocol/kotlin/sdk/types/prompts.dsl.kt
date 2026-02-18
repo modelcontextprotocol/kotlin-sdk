@@ -4,9 +4,6 @@ import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.buildJsonObject
-import kotlin.contracts.ExperimentalContracts
-import kotlin.contracts.InvocationKind
-import kotlin.contracts.contract
 
 /**
  * Creates a [GetPromptRequest] using a type-safe DSL builder.
@@ -20,14 +17,14 @@ import kotlin.contracts.contract
  *
  * Example without arguments:
  * ```kotlin
- * val request = buildGetPromptRequest {
+ * val request = GetPromptRequest {
  *     name = "greeting"
  * }
  * ```
  *
  * Example with arguments:
  * ```kotlin
- * val request = buildGetPromptRequest {
+ * val request = GetPromptRequest {
  *     name = "userProfile"
  *     arguments = mapOf(
  *         "userId" to "123",
@@ -41,12 +38,10 @@ import kotlin.contracts.contract
  * @see GetPromptRequestBuilder
  * @see GetPromptRequest
  */
-@OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun buildGetPromptRequest(block: GetPromptRequestBuilder.() -> Unit): GetPromptRequest {
-    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
-    return GetPromptRequestBuilder().apply(block).build()
-}
+public inline operator fun GetPromptRequest.Companion.invoke(
+    block: GetPromptRequestBuilder.() -> Unit,
+): GetPromptRequest = GetPromptRequestBuilder().apply(block).build()
 
 /**
  * DSL builder for constructing [GetPromptRequest] instances.
@@ -60,7 +55,6 @@ public inline fun buildGetPromptRequest(block: GetPromptRequestBuilder.() -> Uni
  * - [arguments] - Arguments to pass to the prompt
  * - [meta] - Metadata for the request
  *
- * @see buildGetPromptRequest
  * @see GetPromptRequest
  */
 @McpDsl
@@ -102,12 +96,12 @@ public class GetPromptRequestBuilder @PublishedApi internal constructor() : Requ
  *
  * Example without pagination:
  * ```kotlin
- * val request = buildListPromptsRequest { }
+ * val request = ListPromptsRequest { }
  * ```
  *
  * Example with pagination:
  * ```kotlin
- * val request = buildListPromptsRequest {
+ * val request = ListPromptsRequest {
  *     cursor = "eyJwYWdlIjogMn0="
  * }
  * ```
@@ -117,12 +111,10 @@ public class GetPromptRequestBuilder @PublishedApi internal constructor() : Requ
  * @see ListPromptsRequestBuilder
  * @see ListPromptsRequest
  */
-@OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun buildListPromptsRequest(block: ListPromptsRequestBuilder.() -> Unit): ListPromptsRequest {
-    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
-    return ListPromptsRequestBuilder().apply(block).build()
-}
+public inline operator fun ListPromptsRequest.Companion.invoke(
+    block: ListPromptsRequestBuilder.() -> Unit,
+): ListPromptsRequest = ListPromptsRequestBuilder().apply(block).build()
 
 /**
  * DSL builder for constructing [ListPromptsRequest] instances.
@@ -134,7 +126,6 @@ public inline fun buildListPromptsRequest(block: ListPromptsRequestBuilder.() ->
  * - [cursor] - Pagination cursor (inherited from [PaginatedRequestBuilder])
  * - [meta] - Metadata for the request (inherited from [RequestBuilder])
  *
- * @see buildListPromptsRequest
  * @see ListPromptsRequest
  * @see PaginatedRequestBuilder
  */
@@ -163,7 +154,7 @@ public class ListPromptsRequestBuilder @PublishedApi internal constructor() : Pa
  *
  * Example:
  * ```kotlin
- * val result = buildGetPromptResult {
+ * val result = GetPromptResult {
  *     description = "A greeting prompt"
  *     message {
  *         role = Role.User
@@ -177,12 +168,9 @@ public class ListPromptsRequestBuilder @PublishedApi internal constructor() : Pa
  * @see GetPromptResultBuilder
  * @see GetPromptResult
  */
-@OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun buildGetPromptResult(block: GetPromptResultBuilder.() -> Unit): GetPromptResult {
-    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
-    return GetPromptResultBuilder().apply(block).build()
-}
+public inline operator fun GetPromptResult.Companion.invoke(block: GetPromptResultBuilder.() -> Unit): GetPromptResult =
+    GetPromptResultBuilder().apply(block).build()
 
 /**
  * DSL builder for constructing [GetPromptResult] instances.
@@ -196,7 +184,6 @@ public inline fun buildGetPromptResult(block: GetPromptResultBuilder.() -> Unit)
  * - [description] - Description of the prompt
  * - [meta] - Metadata for the response
  *
- * @see buildGetPromptResult
  * @see GetPromptResult
  */
 @McpDsl
@@ -268,7 +255,7 @@ public class GetPromptResultBuilder @PublishedApi internal constructor() : Resul
  *
  * Example:
  * ```kotlin
- * val result = buildListPromptsResult {
+ * val result = ListPromptsResult {
  *     prompt {
  *         name = "greeting"
  *         description = "A friendly greeting prompt"
@@ -285,12 +272,10 @@ public class GetPromptResultBuilder @PublishedApi internal constructor() : Resul
  * @see ListPromptsResultBuilder
  * @see ListPromptsResult
  */
-@OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun buildListPromptsResult(block: ListPromptsResultBuilder.() -> Unit): ListPromptsResult {
-    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
-    return ListPromptsResultBuilder().apply(block).build()
-}
+public inline operator fun ListPromptsResult.Companion.invoke(
+    block: ListPromptsResultBuilder.() -> Unit,
+): ListPromptsResult = ListPromptsResultBuilder().apply(block).build()
 
 /**
  * DSL builder for constructing [ListPromptsResult] instances.
@@ -305,7 +290,6 @@ public inline fun buildListPromptsResult(block: ListPromptsResultBuilder.() -> U
  * - [nextCursor] - Pagination cursor (inherited from [PaginatedResultBuilder])
  * - [meta] - Metadata for the response (inherited from [ResultBuilder])
  *
- * @see buildListPromptsResult
  * @see ListPromptsResult
  * @see PaginatedResultBuilder
  */

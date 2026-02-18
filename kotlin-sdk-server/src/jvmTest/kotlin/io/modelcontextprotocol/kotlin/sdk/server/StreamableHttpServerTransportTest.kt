@@ -33,10 +33,11 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesResult
+import io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
-import io.modelcontextprotocol.kotlin.sdk.types.buildListToolsResult
+import io.modelcontextprotocol.kotlin.sdk.types.invoke
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.buildJsonObject
@@ -161,7 +162,7 @@ class StreamableHttpServerTransportTest {
         val firstRequest = JSONRPCRequest(id = RequestId("first"), method = Method.Defined.ToolsList.value)
         val secondRequest = JSONRPCRequest(id = RequestId("second"), method = Method.Defined.ResourcesList.value)
 
-        val firstResult = buildListToolsResult {
+        val firstResult = ListToolsResult {
             tool {
                 name = "tool-1"
                 inputSchema { }

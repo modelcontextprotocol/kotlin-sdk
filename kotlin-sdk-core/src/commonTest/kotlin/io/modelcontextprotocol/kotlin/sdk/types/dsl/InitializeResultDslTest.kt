@@ -6,9 +6,10 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
+import io.modelcontextprotocol.kotlin.sdk.types.InitializeResult
 import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
-import io.modelcontextprotocol.kotlin.sdk.types.buildInitializeResult
+import io.modelcontextprotocol.kotlin.sdk.types.invoke
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlin.test.Test
@@ -24,7 +25,7 @@ class InitializeResultDslTest {
 
     @Test
     fun `InitializeResult should build minimal with default protocol version`() {
-        val result = buildInitializeResult {
+        val result = InitializeResult {
             capabilities(ServerCapabilities())
             info("MyServer", "1.0.0")
         }
@@ -41,7 +42,7 @@ class InitializeResultDslTest {
 
     @Test
     fun `InitializeResult should build full with all fields`() {
-        val result = buildInitializeResult {
+        val result = InitializeResult {
             protocolVersion = "2024-11-05"
 
             capabilities(
@@ -104,7 +105,7 @@ class InitializeResultDslTest {
 
     @Test
     fun `InitializeResult should support partial capabilities`() {
-        val result = buildInitializeResult {
+        val result = InitializeResult {
             capabilities(
                 ServerCapabilities(
                     tools = ServerCapabilities.Tools(listChanged = true),
@@ -125,7 +126,7 @@ class InitializeResultDslTest {
 
     @Test
     fun `InitializeResult should support capabilities with false flags`() {
-        val result = buildInitializeResult {
+        val result = InitializeResult {
             capabilities(
                 ServerCapabilities(
                     tools = ServerCapabilities.Tools(listChanged = false),
@@ -149,7 +150,7 @@ class InitializeResultDslTest {
     @Test
     fun `InitializeResult should throw if capabilities missing`() {
         shouldThrow<IllegalArgumentException> {
-            buildInitializeResult {
+            InitializeResult {
                 info("Server", "1.0")
             }
         }
@@ -158,7 +159,7 @@ class InitializeResultDslTest {
     @Test
     fun `InitializeResult should throw if info missing`() {
         shouldThrow<IllegalArgumentException> {
-            buildInitializeResult {
+            InitializeResult {
                 capabilities(ServerCapabilities())
             }
         }
@@ -168,7 +169,7 @@ class InitializeResultDslTest {
     fun `InitializeResult should support long instructions`() {
         val longInstructions = "This is a very long instruction text. ".repeat(100)
 
-        val result = buildInitializeResult {
+        val result = InitializeResult {
             capabilities(ServerCapabilities())
             info("Server", "1.0")
             instructions = longInstructions
@@ -179,7 +180,7 @@ class InitializeResultDslTest {
 
     @Test
     fun `InitializeResult should support custom protocol versions`() {
-        val result = buildInitializeResult {
+        val result = InitializeResult {
             protocolVersion = "2025-01-01"
             capabilities(ServerCapabilities())
             info("FutureServer", "3.0")
@@ -190,7 +191,7 @@ class InitializeResultDslTest {
 
     @Test
     fun `InitializeResult should support unicode in instructions`() {
-        val result = buildInitializeResult {
+        val result = InitializeResult {
             capabilities(ServerCapabilities())
             info("Server", "1.0")
             instructions = "サーバーの使い方: 🚀 Start here! Ça va?"

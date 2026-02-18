@@ -3,8 +3,9 @@ package io.modelcontextprotocol.kotlin.sdk.types.dsl
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestParams
-import io.modelcontextprotocol.kotlin.sdk.types.buildElicitRequest
+import io.modelcontextprotocol.kotlin.sdk.types.invoke
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlin.test.Test
@@ -13,7 +14,7 @@ import kotlin.test.Test
 class ElicitationDslTest {
     @Test
     fun `buildElicitRequest should build with all fields`() {
-        val request = buildElicitRequest {
+        val request = ElicitRequest {
             message = "Provide info"
             requestedSchema {
                 properties {
@@ -34,7 +35,7 @@ class ElicitationDslTest {
             properties = buildJsonObject { put("name", buildJsonObject { put("type", "string") }) },
             required = listOf("name"),
         )
-        val request = buildElicitRequest {
+        val request = ElicitRequest {
             message = "Test"
             requestedSchema(schema)
         }
@@ -45,7 +46,7 @@ class ElicitationDslTest {
     @Test
     fun `ElicitRequestedSchemaBuilder should support direct properties assignment`() {
         val props = buildJsonObject { put("key", "value") }
-        val request = buildElicitRequest {
+        val request = ElicitRequest {
             message = "Test"
             requestedSchema {
                 properties(props)
@@ -57,7 +58,7 @@ class ElicitationDslTest {
     @Test
     fun `buildElicitRequest should throw if message is missing`() {
         shouldThrow<IllegalArgumentException> {
-            buildElicitRequest {
+            ElicitRequest {
                 requestedSchema { properties { put("a", 1) } }
             }
         }
@@ -66,7 +67,7 @@ class ElicitationDslTest {
     @Test
     fun `buildElicitRequest should throw if requestedSchema is missing`() {
         shouldThrow<IllegalArgumentException> {
-            buildElicitRequest {
+            ElicitRequest {
                 message = "Test"
             }
         }
@@ -75,7 +76,7 @@ class ElicitationDslTest {
     @Test
     fun `ElicitRequestedSchemaBuilder should throw if properties are missing`() {
         shouldThrow<IllegalArgumentException> {
-            buildElicitRequest {
+            ElicitRequest {
                 message = "Test"
                 requestedSchema { }
             }

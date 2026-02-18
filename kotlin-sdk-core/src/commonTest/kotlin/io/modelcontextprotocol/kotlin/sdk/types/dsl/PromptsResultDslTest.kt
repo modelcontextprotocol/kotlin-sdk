@@ -6,11 +6,12 @@ import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult
+import io.modelcontextprotocol.kotlin.sdk.types.ListPromptsResult
 import io.modelcontextprotocol.kotlin.sdk.types.PromptArgument
 import io.modelcontextprotocol.kotlin.sdk.types.Role
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
-import io.modelcontextprotocol.kotlin.sdk.types.buildGetPromptResult
-import io.modelcontextprotocol.kotlin.sdk.types.buildListPromptsResult
+import io.modelcontextprotocol.kotlin.sdk.types.invoke
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlin.test.Test
@@ -30,7 +31,7 @@ class PromptsResultDslTest {
 
     @Test
     fun `GetPromptResult should build minimal with single message`() {
-        val result = buildGetPromptResult {
+        val result = GetPromptResult {
             message(Role.User, TextContent("Hello, how can I help you?"))
         }
 
@@ -43,7 +44,7 @@ class PromptsResultDslTest {
 
     @Test
     fun `GetPromptResult should build full with multiple messages and description`() {
-        val result = buildGetPromptResult {
+        val result = GetPromptResult {
             description = "A customer service greeting prompt with context"
 
             message(Role.User, TextContent("You are a helpful customer service assistant."))
@@ -74,7 +75,7 @@ class PromptsResultDslTest {
     @Test
     fun `GetPromptResult should throw if no messages provided`() {
         shouldThrow<IllegalArgumentException> {
-            buildGetPromptResult { }
+            GetPromptResult { }
         }
     }
 
@@ -84,7 +85,7 @@ class PromptsResultDslTest {
 
     @Test
     fun `ListPromptsResult should build minimal with single prompt`() {
-        val result = buildListPromptsResult {
+        val result = ListPromptsResult {
             prompt {
                 name = "greeting"
             }
@@ -98,7 +99,7 @@ class PromptsResultDslTest {
 
     @Test
     fun `ListPromptsResult should build full with multiple prompts and pagination`() {
-        val result = buildListPromptsResult {
+        val result = ListPromptsResult {
             prompt {
                 name = "greeting"
                 description = "A friendly greeting prompt"
@@ -164,13 +165,13 @@ class PromptsResultDslTest {
     @Test
     fun `ListPromptsResult should throw if no prompts provided`() {
         shouldThrow<IllegalArgumentException> {
-            buildListPromptsResult { }
+            ListPromptsResult { }
         }
     }
 
     @Test
     fun `ListPromptsResult should support prompt without arguments`() {
-        val result = buildListPromptsResult {
+        val result = ListPromptsResult {
             prompt {
                 name = "simplePrompt"
                 description = "A prompt with no arguments"
@@ -182,7 +183,7 @@ class PromptsResultDslTest {
 
     @Test
     fun `ListPromptsResult should support empty arguments list`() {
-        val result = buildListPromptsResult {
+        val result = ListPromptsResult {
             prompt {
                 name = "emptyArgs"
                 arguments = emptyList()

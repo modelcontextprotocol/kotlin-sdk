@@ -4,9 +4,6 @@ import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.buildJsonObject
-import kotlin.contracts.ExperimentalContracts
-import kotlin.contracts.InvocationKind
-import kotlin.contracts.contract
 
 /**
  * Creates a [CallToolRequest] using a type-safe DSL builder.
@@ -20,14 +17,14 @@ import kotlin.contracts.contract
  *
  * Example without arguments:
  * ```kotlin
- * val request = buildCallToolRequest {
+ * val request = CallToolRequest {
  *     name = "getCurrentTime"
  * }
  * ```
  *
  * Example with arguments:
  * ```kotlin
- * val request = buildCallToolRequest {
+ * val request = CallToolRequest {
  *     name = "searchDatabase"
  *     arguments {
  *         put("query", "users")
@@ -41,12 +38,9 @@ import kotlin.contracts.contract
  * @see CallToolRequestBuilder
  * @see CallToolRequest
  */
-@OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun buildCallToolRequest(block: CallToolRequestBuilder.() -> Unit): CallToolRequest {
-    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
-    return CallToolRequestBuilder().apply(block).build()
-}
+public inline operator fun CallToolRequest.Companion.invoke(block: CallToolRequestBuilder.() -> Unit): CallToolRequest =
+    CallToolRequestBuilder().apply(block).build()
 
 /**
  * DSL builder for constructing [CallToolRequest] instances.
@@ -60,7 +54,6 @@ public inline fun buildCallToolRequest(block: CallToolRequestBuilder.() -> Unit)
  * - [arguments] - Arguments to pass to the tool
  * - [meta] - Metadata for the request
  *
- * @see buildCallToolRequest
  * @see CallToolRequest
  */
 @McpDsl
@@ -126,12 +119,12 @@ public class CallToolRequestBuilder @PublishedApi internal constructor() : Reque
  *
  * Example without pagination:
  * ```kotlin
- * val request = buildListToolsRequest { }
+ * val request = ListToolsRequest { }
  * ```
  *
  * Example with pagination:
  * ```kotlin
- * val request = buildListToolsRequest {
+ * val request = ListToolsRequest {
  *     cursor = "eyJwYWdlIjogMn0="
  * }
  * ```
@@ -141,12 +134,10 @@ public class CallToolRequestBuilder @PublishedApi internal constructor() : Reque
  * @see ListToolsRequestBuilder
  * @see ListToolsRequest
  */
-@OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun buildListToolsRequest(block: ListToolsRequestBuilder.() -> Unit): ListToolsRequest {
-    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
-    return ListToolsRequestBuilder().apply(block).build()
-}
+public inline operator fun ListToolsRequest.Companion.invoke(
+    block: ListToolsRequestBuilder.() -> Unit,
+): ListToolsRequest = ListToolsRequestBuilder().apply(block).build()
 
 /**
  * DSL builder for constructing [ListToolsRequest] instances.
@@ -158,7 +149,6 @@ public inline fun buildListToolsRequest(block: ListToolsRequestBuilder.() -> Uni
  * - [cursor] - Pagination cursor (inherited from [PaginatedRequestBuilder])
  * - [meta] - Metadata for the request (inherited from [RequestBuilder])
  *
- * @see buildListToolsRequest
  * @see ListToolsRequest
  * @see PaginatedRequestBuilder
  */
@@ -188,14 +178,14 @@ public class ListToolsRequestBuilder @PublishedApi internal constructor() : Pagi
  *
  * Example success response:
  * ```kotlin
- * val result = buildCallToolResult {
+ * val result = CallToolResult {
  *     textContent("Operation completed successfully")
  * }
  * ```
  *
  * Example error response:
  * ```kotlin
- * val result = buildCallToolResult {
+ * val result = CallToolResult {
  *     textContent("Failed to connect to database")
  *     isError = true
  * }
@@ -203,7 +193,7 @@ public class ListToolsRequestBuilder @PublishedApi internal constructor() : Pagi
  *
  * Example with structured content:
  * ```kotlin
- * val result = buildCallToolResult {
+ * val result = CallToolResult {
  *     textContent("Query returned 3 results")
  *     structuredContent {
  *         put("count", 3)
@@ -221,12 +211,9 @@ public class ListToolsRequestBuilder @PublishedApi internal constructor() : Pagi
  * @see CallToolResultBuilder
  * @see CallToolResult
  */
-@OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun buildCallToolResult(block: CallToolResultBuilder.() -> Unit): CallToolResult {
-    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
-    return CallToolResultBuilder().apply(block).build()
-}
+public inline operator fun CallToolResult.Companion.invoke(block: CallToolResultBuilder.() -> Unit): CallToolResult =
+    CallToolResultBuilder().apply(block).build()
 
 /**
  * DSL builder for constructing [CallToolResult] instances.
@@ -252,7 +239,6 @@ public inline fun buildCallToolResult(block: CallToolResultBuilder.() -> Unit): 
  * to avoid serializing default values in the MCP protocol. When these fields are `null`, they are
  * omitted from the JSON output, reducing message size and following protocol conventions.
  *
- * @see buildCallToolResult
  * @see CallToolResult
  */
 @McpDsl
@@ -419,7 +405,7 @@ public class CallToolResultBuilder @PublishedApi internal constructor() : Result
  *
  * Example with single tool:
  * ```kotlin
- * val result = buildListToolsResult {
+ * val result = ListToolsResult {
  *     tool {
  *         name = "searchDatabase"
  *         description = "Search the database for records"
@@ -441,7 +427,7 @@ public class CallToolResultBuilder @PublishedApi internal constructor() : Result
  *
  * Example with pagination:
  * ```kotlin
- * val result = buildListToolsResult {
+ * val result = ListToolsResult {
  *     tool(Tool("tool1", ToolSchema()))
  *     tool(Tool("tool2", ToolSchema()))
  *     nextCursor = "eyJwYWdlIjogMn0="
@@ -453,12 +439,9 @@ public class CallToolResultBuilder @PublishedApi internal constructor() : Result
  * @see ListToolsResultBuilder
  * @see ListToolsResult
  */
-@OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun buildListToolsResult(block: ListToolsResultBuilder.() -> Unit): ListToolsResult {
-    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
-    return ListToolsResultBuilder().apply(block).build()
-}
+public inline operator fun ListToolsResult.Companion.invoke(block: ListToolsResultBuilder.() -> Unit): ListToolsResult =
+    ListToolsResultBuilder().apply(block).build()
 
 /**
  * DSL builder for constructing [ListToolsResult] instances.
@@ -473,7 +456,6 @@ public inline fun buildListToolsResult(block: ListToolsResultBuilder.() -> Unit)
  * - [nextCursor] - Pagination cursor (inherited from [PaginatedResultBuilder])
  * - [meta] - Metadata for the response (inherited from [ResultBuilder])
  *
- * @see buildListToolsResult
  * @see ListToolsResult
  * @see PaginatedResultBuilder
  */

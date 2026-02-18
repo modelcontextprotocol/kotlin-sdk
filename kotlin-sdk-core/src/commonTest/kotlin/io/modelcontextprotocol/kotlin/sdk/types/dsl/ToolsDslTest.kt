@@ -4,8 +4,9 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
-import io.modelcontextprotocol.kotlin.sdk.types.buildCallToolRequest
-import io.modelcontextprotocol.kotlin.sdk.types.buildListToolsRequest
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ListToolsRequest
+import io.modelcontextprotocol.kotlin.sdk.types.invoke
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonPrimitive
@@ -16,7 +17,7 @@ import kotlin.test.Test
 class ToolsDslTest {
     @Test
     fun `buildCallToolRequest should build with name and arguments`() {
-        val request = buildCallToolRequest {
+        val request = CallToolRequest {
             name = "test-tool"
             arguments {
                 put("key", "value")
@@ -33,7 +34,7 @@ class ToolsDslTest {
 
     @Test
     fun `buildListToolsRequest should build with cursor`() {
-        val request = buildListToolsRequest {
+        val request = ListToolsRequest {
             cursor = "tool-cursor"
         }
 
@@ -45,7 +46,7 @@ class ToolsDslTest {
     @Test
     fun `buildCallToolRequest should support direct arguments assignment`() {
         val args = buildJsonObject { put("key", "value") }
-        val request = buildCallToolRequest {
+        val request = CallToolRequest {
             name = "test-tool"
             arguments(args)
         }
@@ -55,13 +56,13 @@ class ToolsDslTest {
     @Test
     fun `buildCallToolRequest should throw if name is missing`() {
         shouldThrow<IllegalArgumentException> {
-            buildCallToolRequest { }
+            CallToolRequest { }
         }
     }
 
     @Test
     fun `buildListToolsRequest should build without params if empty`() {
-        val request = buildListToolsRequest { }
+        val request = ListToolsRequest { }
         request.params shouldBe null
     }
 }

@@ -22,6 +22,7 @@ import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
@@ -40,7 +41,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
-import io.modelcontextprotocol.kotlin.sdk.types.buildCallToolResult
+import io.modelcontextprotocol.kotlin.sdk.types.invoke
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.Channel
@@ -175,9 +176,7 @@ class KotlinServerForTsClient {
                         logger.info { "Terminating session: $sessionId" }
                         val transport = serverTransports[sessionId]!!
                         serverTransports.remove(sessionId)
-                        runBlocking {
-                            transport.close()
-                        }
+                        transport.close()
                         call.respond(HttpStatusCode.OK)
                     } else {
                         logger.warn { "Invalid session termination request: $sessionId" }
@@ -228,7 +227,7 @@ class KotlinServerForTsClient {
             ),
         ) { request ->
             val name = (request.params.arguments?.get("name") as? JsonPrimitive)?.content ?: "World"
-            buildCallToolResult {
+            CallToolResult {
                 textContent("Hello, $name!")
                 structuredContent {
                     put("greeting", JsonPrimitive("Hello, $name!"))
@@ -254,7 +253,7 @@ class KotlinServerForTsClient {
         ) { request ->
             val name = (request.params.arguments?.get("name") as? JsonPrimitive)?.content ?: "World"
 
-            buildCallToolResult {
+            CallToolResult {
                 textContent("Multiple greetings sent to $name!")
                 structuredContent {
                     put("greeting", JsonPrimitive("Multiple greetings sent to $name!"))

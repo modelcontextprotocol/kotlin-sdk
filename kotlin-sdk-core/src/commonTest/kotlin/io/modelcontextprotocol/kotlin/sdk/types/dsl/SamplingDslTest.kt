@@ -7,6 +7,7 @@ import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.types.Annotations
 import io.modelcontextprotocol.kotlin.sdk.types.AudioContent
+import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ImageContent
 import io.modelcontextprotocol.kotlin.sdk.types.IncludeContext
 import io.modelcontextprotocol.kotlin.sdk.types.ModelPreferences
@@ -16,7 +17,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.assistant
 import io.modelcontextprotocol.kotlin.sdk.types.assistantAudio
 import io.modelcontextprotocol.kotlin.sdk.types.assistantImage
-import io.modelcontextprotocol.kotlin.sdk.types.buildCreateMessageRequest
+import io.modelcontextprotocol.kotlin.sdk.types.invoke
 import io.modelcontextprotocol.kotlin.sdk.types.user
 import io.modelcontextprotocol.kotlin.sdk.types.userAudio
 import io.modelcontextprotocol.kotlin.sdk.types.userImage
@@ -30,7 +31,7 @@ class SamplingDslTest {
     @Test
     @Suppress("LongMethod")
     fun `buildCreateMessageRequest should build with all fields`() {
-        val request = buildCreateMessageRequest {
+        val request = CreateMessageRequest {
             maxTokens = 1000
             systemPrompt = "System prompt"
             temperature = 0.5
@@ -104,7 +105,7 @@ class SamplingDslTest {
     fun `buildCreateMessageRequest should support direct assignments`() {
         val messages = listOf(SamplingMessage(Role.User, TextContent("Hello")))
         val preferences = ModelPreferences(costPriority = 0.1)
-        val request = buildCreateMessageRequest {
+        val request = CreateMessageRequest {
             maxTokens = 100
             messages(messages)
             preferences(preferences)
@@ -119,7 +120,7 @@ class SamplingDslTest {
     @Test
     fun `SamplingMessageBuilder should support direct content assignment`() {
         val content = TextContent("Direct")
-        val request = buildCreateMessageRequest {
+        val request = CreateMessageRequest {
             maxTokens = 100
             messages {
                 user(content)
@@ -133,7 +134,7 @@ class SamplingDslTest {
     @Test
     fun `buildCreateMessageRequest should throw if maxTokens is missing`() {
         shouldThrow<IllegalArgumentException> {
-            buildCreateMessageRequest {
+            CreateMessageRequest {
                 messages { user { "Hi" } }
             }
         }
@@ -142,7 +143,7 @@ class SamplingDslTest {
     @Test
     fun `buildCreateMessageRequest should throw if messages are missing`() {
         shouldThrow<IllegalArgumentException> {
-            buildCreateMessageRequest {
+            CreateMessageRequest {
                 maxTokens = 100
             }
         }
@@ -151,7 +152,7 @@ class SamplingDslTest {
     @Test
     fun `TextContentBuilder should throw if text is missing`() {
         shouldThrow<IllegalArgumentException> {
-            buildCreateMessageRequest {
+            CreateMessageRequest {
                 maxTokens = 100
                 messages {
                     userText { }
@@ -163,7 +164,7 @@ class SamplingDslTest {
     @Test
     fun `ImageContentBuilder should throw if data or mimeType is missing`() {
         shouldThrow<IllegalArgumentException> {
-            buildCreateMessageRequest {
+            CreateMessageRequest {
                 maxTokens = 100
                 messages {
                     userImage { data = "abc" }
@@ -171,7 +172,7 @@ class SamplingDslTest {
             }
         }
         shouldThrow<IllegalArgumentException> {
-            buildCreateMessageRequest {
+            CreateMessageRequest {
                 maxTokens = 100
                 messages {
                     userImage { mimeType = "image/png" }
@@ -183,7 +184,7 @@ class SamplingDslTest {
     @Test
     fun `AudioContentBuilder should throw if data or mimeType is missing`() {
         shouldThrow<IllegalArgumentException> {
-            buildCreateMessageRequest {
+            CreateMessageRequest {
                 maxTokens = 100
                 messages {
                     userAudio { data = "abc" }
@@ -191,7 +192,7 @@ class SamplingDslTest {
             }
         }
         shouldThrow<IllegalArgumentException> {
-            buildCreateMessageRequest {
+            CreateMessageRequest {
                 maxTokens = 100
                 messages {
                     userAudio { mimeType = "audio/wav" }

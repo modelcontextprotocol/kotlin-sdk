@@ -4,9 +4,6 @@ import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.buildJsonObject
-import kotlin.contracts.ExperimentalContracts
-import kotlin.contracts.InvocationKind
-import kotlin.contracts.contract
 
 /**
  * Creates a [CreateMessageRequest] using a type-safe DSL builder.
@@ -26,7 +23,7 @@ import kotlin.contracts.contract
  *
  * Example:
  * ```kotlin
- * val request = buildCreateMessageRequest {
+ * val request = CreateMessageRequest {
  *     maxTokens = 1000
  *     systemPrompt = "You are a helpful assistant"
  *     messages {
@@ -39,7 +36,7 @@ import kotlin.contracts.contract
  *
  * Example with preferences:
  * ```kotlin
- * val request = buildCreateMessageRequest {
+ * val request = CreateMessageRequest {
  *     maxTokens = 500
  *     temperature = 0.7
  *     preferences(
@@ -57,12 +54,10 @@ import kotlin.contracts.contract
  * @see CreateMessageRequestBuilder
  * @see CreateMessageRequest
  */
-@OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun buildCreateMessageRequest(block: CreateMessageRequestBuilder.() -> Unit): CreateMessageRequest {
-    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
-    return CreateMessageRequestBuilder().apply(block).build()
-}
+public inline operator fun CreateMessageRequest.Companion.invoke(
+    block: CreateMessageRequestBuilder.() -> Unit,
+): CreateMessageRequest = CreateMessageRequestBuilder().apply(block).build()
 
 /**
  * DSL builder for constructing [CreateMessageRequest] instances.
@@ -82,7 +77,7 @@ public inline fun buildCreateMessageRequest(block: CreateMessageRequestBuilder.(
  * - [metadata] - Additional metadata
  * - [meta] - Request metadata
  *
- * @see buildCreateMessageRequest
+ * @see CreateMessageRequest
  * @see CreateMessageRequest
  */
 @McpDsl

@@ -6,7 +6,8 @@ import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
-import io.modelcontextprotocol.kotlin.sdk.types.buildInitializeRequest
+import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
+import io.modelcontextprotocol.kotlin.sdk.types.invoke
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonPrimitive
@@ -17,7 +18,7 @@ import kotlin.test.Test
 class InitializeDslTest {
     @Test
     fun `buildInitializeRequest should create request with all fields`() {
-        val request = buildInitializeRequest {
+        val request = InitializeRequest {
             protocolVersion = "2024-11-05"
             capabilities {
                 sampling {
@@ -59,7 +60,7 @@ class InitializeDslTest {
         val capabilities = ClientCapabilities(roots = ClientCapabilities.Roots(listChanged = false))
         val info = Implementation(name = "Direct", version = "0.1")
 
-        val request = buildInitializeRequest {
+        val request = InitializeRequest {
             protocolVersion = "1.0"
             capabilities(capabilities)
             info(info)
@@ -75,7 +76,7 @@ class InitializeDslTest {
         val elicitationObj = buildJsonObject { put("key", "value") }
         val experimentalObj = buildJsonObject { put("key", "value") }
 
-        val request = buildInitializeRequest {
+        val request = InitializeRequest {
             protocolVersion = "1.0"
             capabilities {
                 sampling(samplingObj)
@@ -94,7 +95,7 @@ class InitializeDslTest {
 
     @Test
     fun `ClientCapabilitiesBuilder roots should support default arguments`() {
-        val request = buildInitializeRequest {
+        val request = InitializeRequest {
             protocolVersion = "1.0"
             capabilities {
                 roots()
@@ -109,7 +110,7 @@ class InitializeDslTest {
     @Test
     fun `buildInitializeRequest should throw if protocolVersion is missing`() {
         shouldThrow<IllegalArgumentException> {
-            buildInitializeRequest {
+            InitializeRequest {
                 capabilities { }
                 info("Test", "1.0")
             }
@@ -119,7 +120,7 @@ class InitializeDslTest {
     @Test
     fun `buildInitializeRequest should throw if capabilities are missing`() {
         shouldThrow<IllegalArgumentException> {
-            buildInitializeRequest {
+            InitializeRequest {
                 protocolVersion = "1.0"
                 info("Test", "1.0")
             }
@@ -129,7 +130,7 @@ class InitializeDslTest {
     @Test
     fun `buildInitializeRequest should throw if info is missing`() {
         shouldThrow<IllegalArgumentException> {
-            buildInitializeRequest {
+            InitializeRequest {
                 protocolVersion = "1.0"
                 capabilities { }
             }

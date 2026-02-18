@@ -8,11 +8,12 @@ import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.types.Annotations
 import io.modelcontextprotocol.kotlin.sdk.types.BlobResourceContents
+import io.modelcontextprotocol.kotlin.sdk.types.ListResourceTemplatesResult
+import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesResult
+import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
 import io.modelcontextprotocol.kotlin.sdk.types.Role
 import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
-import io.modelcontextprotocol.kotlin.sdk.types.buildListResourceTemplatesResult
-import io.modelcontextprotocol.kotlin.sdk.types.buildListResourcesResult
-import io.modelcontextprotocol.kotlin.sdk.types.buildReadResourceResult
+import io.modelcontextprotocol.kotlin.sdk.types.invoke
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
@@ -28,7 +29,7 @@ class ResourcesResultDslTest {
 
     @Test
     fun `ListResourcesResult should build minimal with single resource`() {
-        val result = buildListResourcesResult {
+        val result = ListResourcesResult {
             resource {
                 uri = "file:///path/to/file.txt"
                 name = "file.txt"
@@ -42,7 +43,7 @@ class ResourcesResultDslTest {
 
     @Test
     fun `ListResourcesResult should build full with multiple resources`() {
-        val result = buildListResourcesResult {
+        val result = ListResourcesResult {
             resource {
                 uri = "file:///docs/readme.md"
                 name = "readme.md"
@@ -75,7 +76,7 @@ class ResourcesResultDslTest {
 
     @Test
     fun `ReadResourceResult should build with text content`() {
-        val result = buildReadResourceResult {
+        val result = ReadResourceResult {
             textContent(
                 uri = "file:///docs/readme.md",
                 text = "# Project README\n\nWelcome!",
@@ -93,7 +94,7 @@ class ResourcesResultDslTest {
 
     @Test
     fun `ReadResourceResult should build with blob content`() {
-        val result = buildReadResourceResult {
+        val result = ReadResourceResult {
             blobContent(
                 uri = "file:///images/logo.png",
                 blob = "iVBORw0KGgoggg==",
@@ -110,7 +111,7 @@ class ResourcesResultDslTest {
 
     @Test
     fun `ListResourceTemplatesResult should build with templates`() {
-        val result = buildListResourceTemplatesResult {
+        val result = ListResourceTemplatesResult {
             template {
                 uriTemplate = "file:///{path}"
                 name = "file-template"
@@ -133,20 +134,20 @@ class ResourcesResultDslTest {
     @Test
     fun `ListResourcesResult should throw if no resources`() {
         shouldThrow<IllegalArgumentException> {
-            buildListResourcesResult { }
+            ListResourcesResult { }
         }
     }
 
     @Test
     fun `ReadResourceResult should throw if no contents`() {
         shouldThrow<IllegalArgumentException> {
-            buildReadResourceResult { }
+            ReadResourceResult { }
         }
     }
 
     @Test
     fun `ListResourcesResult should build full with all optional fields`() {
-        val result = buildListResourcesResult {
+        val result = ListResourcesResult {
             resource {
                 uri = "file:///docs/api.md"
                 name = "api-documentation"
@@ -185,7 +186,7 @@ class ResourcesResultDslTest {
 
     @Test
     fun `ReadResourceResult should build with multiple content items`() {
-        val result = buildReadResourceResult {
+        val result = ReadResourceResult {
             textContent(
                 uri = "file:///docs/part1.md",
                 text = "# Part 1\n\nIntroduction",
@@ -211,7 +212,7 @@ class ResourcesResultDslTest {
 
     @Test
     fun `ReadResourceResult should support meta field`() {
-        val result = buildReadResourceResult {
+        val result = ReadResourceResult {
             textContent(
                 uri = "file:///data.json",
                 text = """{"key": "value"}""",
@@ -232,7 +233,7 @@ class ResourcesResultDslTest {
 
     @Test
     fun `ListResourceTemplatesResult should support pagination with nextCursor`() {
-        val result = buildListResourceTemplatesResult {
+        val result = ListResourceTemplatesResult {
             template {
                 uriTemplate = "db://users/{userId}"
                 name = "user-template"
@@ -250,7 +251,7 @@ class ResourcesResultDslTest {
 
     @Test
     fun `ListResourceTemplatesResult should support meta field`() {
-        val result = buildListResourceTemplatesResult {
+        val result = ListResourceTemplatesResult {
             template {
                 uriTemplate = "api://{endpoint}"
                 name = "api-template"
@@ -268,7 +269,7 @@ class ResourcesResultDslTest {
 
     @Test
     fun `ListResourcesResult should support resources with minimal and full fields together`() {
-        val result = buildListResourcesResult {
+        val result = ListResourcesResult {
             resource {
                 uri = "simple://resource1"
                 name = "minimal"

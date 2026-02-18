@@ -6,7 +6,8 @@ import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
-import io.modelcontextprotocol.kotlin.sdk.types.buildCompleteResult
+import io.modelcontextprotocol.kotlin.sdk.types.CompleteResult
+import io.modelcontextprotocol.kotlin.sdk.types.invoke
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonPrimitive
@@ -24,7 +25,7 @@ class CompletionResultDslTest {
 
     @Test
     fun `CompleteResult should build minimal with values only`() {
-        val result = buildCompleteResult {
+        val result = CompleteResult {
             values("user1", "user2", "user3")
         }
 
@@ -37,7 +38,7 @@ class CompletionResultDslTest {
 
     @Test
     fun `CompleteResult should build full with all fields`() {
-        val result = buildCompleteResult {
+        val result = CompleteResult {
             values(listOf("admin", "moderator", "user", "guest"))
             total = 42
             hasMore = true
@@ -60,7 +61,7 @@ class CompletionResultDslTest {
 
     @Test
     fun `CompleteResult should support values via vararg`() {
-        val result = buildCompleteResult {
+        val result = CompleteResult {
             values("a", "b", "c", "d", "e")
         }
 
@@ -71,7 +72,7 @@ class CompletionResultDslTest {
     fun `CompleteResult should support values via list`() {
         val completions = listOf("option1", "option2", "option3")
 
-        val result = buildCompleteResult {
+        val result = CompleteResult {
             values(completions)
         }
 
@@ -81,7 +82,7 @@ class CompletionResultDslTest {
     @Test
     fun `CompleteResult should throw if no values provided`() {
         shouldThrow<IllegalArgumentException> {
-            buildCompleteResult { }
+            CompleteResult { }
         }
     }
 
@@ -90,7 +91,7 @@ class CompletionResultDslTest {
         val tooManyValues = (1..101).map { "value$it" }
 
         shouldThrow<IllegalArgumentException> {
-            buildCompleteResult {
+            CompleteResult {
                 values(tooManyValues)
             }
         }
@@ -100,7 +101,7 @@ class CompletionResultDslTest {
     fun `CompleteResult should support exactly 100 values`() {
         val maxValues = (1..100).map { "value$it" }
 
-        val result = buildCompleteResult {
+        val result = CompleteResult {
             values(maxValues)
         }
 
@@ -109,7 +110,7 @@ class CompletionResultDslTest {
 
     @Test
     fun `CompleteResult should support empty strings in values`() {
-        val result = buildCompleteResult {
+        val result = CompleteResult {
             values("", "non-empty", "")
         }
 
@@ -118,7 +119,7 @@ class CompletionResultDslTest {
 
     @Test
     fun `CompleteResult should support unicode in values`() {
-        val result = buildCompleteResult {
+        val result = CompleteResult {
             values("Hello 🌍", "Ça va?", "北京", "مرحبا")
         }
 
@@ -128,7 +129,7 @@ class CompletionResultDslTest {
 
     @Test
     fun `CompleteResult should support total without hasMore`() {
-        val result = buildCompleteResult {
+        val result = CompleteResult {
             values("a", "b", "c")
             total = 10
         }
@@ -139,7 +140,7 @@ class CompletionResultDslTest {
 
     @Test
     fun `CompleteResult should support hasMore without total`() {
-        val result = buildCompleteResult {
+        val result = CompleteResult {
             values("a", "b", "c")
             hasMore = true
         }

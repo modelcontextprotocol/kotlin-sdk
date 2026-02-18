@@ -1,9 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
-import kotlin.contracts.ExperimentalContracts
-import kotlin.contracts.InvocationKind
-import kotlin.contracts.contract
 
 /**
  * Creates an [InitializeRequest] using a type-safe DSL builder.
@@ -18,7 +15,7 @@ import kotlin.contracts.contract
  *
  * Example:
  * ```kotlin
- * val request = buildInitializeRequest {
+ * val request = InitializeRequest {
  *     protocolVersion = "2024-11-05"
  *     capabilities {
  *         sampling(ClientCapabilities.sampling)
@@ -30,7 +27,7 @@ import kotlin.contracts.contract
  *
  * Example with full client info:
  * ```kotlin
- * val request = buildInitializeRequest {
+ * val request = InitializeRequest {
  *     protocolVersion = "2024-11-05"
  *     capabilities {
  *         sampling(ClientCapabilities.sampling)
@@ -52,12 +49,10 @@ import kotlin.contracts.contract
  * @see InitializeRequestBuilder
  * @see InitializeRequest
  */
-@OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun buildInitializeRequest(block: InitializeRequestBuilder.() -> Unit): InitializeRequest {
-    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
-    return InitializeRequestBuilder().apply(block).build()
-}
+public inline operator fun InitializeRequest.Companion.invoke(
+    block: InitializeRequestBuilder.() -> Unit,
+): InitializeRequest = InitializeRequestBuilder().apply(block).build()
 
 /**
  * DSL builder for constructing [InitializeRequest] instances.
@@ -73,7 +68,6 @@ public inline fun buildInitializeRequest(block: InitializeRequestBuilder.() -> U
  * ## Optional
  * - [meta] - Metadata for the request
  *
- * @see buildInitializeRequest
  * @see InitializeRequest
  */
 @McpDsl
@@ -214,7 +208,7 @@ public class InitializeRequestBuilder @PublishedApi internal constructor() : Req
  *
  * Example:
  * ```kotlin
- * val result = buildInitializeResult {
+ * val result = InitializeResult {
  *     protocolVersion = "2024-11-05"
  *     capabilities {
  *         prompts(listChanged = true)
@@ -226,12 +220,10 @@ public class InitializeRequestBuilder @PublishedApi internal constructor() : Req
  * }
  * ```
  */
-@OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun buildInitializeResult(block: InitializeResultBuilder.() -> Unit): InitializeResult {
-    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
-    return InitializeResultBuilder().apply(block).build()
-}
+public inline operator fun InitializeResult.Companion.invoke(
+    block: InitializeResultBuilder.() -> Unit,
+): InitializeResult = InitializeResultBuilder().apply(block).build()
 
 /**
  * DSL builder for constructing [InitializeResult] instances.

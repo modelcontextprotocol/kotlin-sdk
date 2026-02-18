@@ -3,7 +3,8 @@ package io.modelcontextprotocol.kotlin.sdk.types.dsl
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
-import io.modelcontextprotocol.kotlin.sdk.types.buildPingRequest
+import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
+import io.modelcontextprotocol.kotlin.sdk.types.invoke
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.int
@@ -15,7 +16,7 @@ import kotlin.test.Test
 class PingRequestDslTest {
     @Test
     fun `buildPingRequest should create request with meta containing all field types`() {
-        val request = buildPingRequest {
+        val request = PingRequest {
             meta {
                 progressToken("token-123")
                 put("string", "value")
@@ -46,14 +47,14 @@ class PingRequestDslTest {
 
     @Test
     fun `RequestMeta DSL should support numeric progress tokens`() {
-        val requestInt = buildPingRequest {
+        val requestInt = PingRequest {
             meta { progressToken(123) }
         }
         requestInt.params?.meta?.json
             ?.get("progressToken")
             ?.jsonPrimitive?.int shouldBe 123
 
-        val requestLong = buildPingRequest {
+        val requestLong = PingRequest {
             meta { progressToken(456L) }
         }
         requestLong.params?.meta?.json
@@ -63,7 +64,7 @@ class PingRequestDslTest {
 
     @Test
     fun `buildPingRequest should create request without params if meta is empty`() {
-        val request = buildPingRequest { }
+        val request = PingRequest { }
         request.params shouldBe null
     }
 }

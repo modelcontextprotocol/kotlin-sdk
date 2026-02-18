@@ -10,7 +10,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ImageContent
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
-import io.modelcontextprotocol.kotlin.sdk.types.buildCallToolResult
+import io.modelcontextprotocol.kotlin.sdk.types.invoke
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -87,7 +87,7 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
         ) { request ->
             val text = (request.params.arguments?.get("text") as? JsonPrimitive)?.content ?: "No text provided"
 
-            buildCallToolResult {
+            CallToolResult {
                 textContent("Echo: $text")
                 structuredContent {
                     put("result", text)
@@ -115,7 +115,7 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
         ) { request ->
             val text = (request.params.arguments?.get("text") as? JsonPrimitive)?.content ?: "No text provided"
 
-            buildCallToolResult {
+            CallToolResult {
                 textContent("Echo: $text")
                 structuredContent {
                     put("result", text)

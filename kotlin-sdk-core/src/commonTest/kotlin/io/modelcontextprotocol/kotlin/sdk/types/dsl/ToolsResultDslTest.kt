@@ -9,11 +9,12 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.types.AudioContent
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.ImageContent
+import io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.ToolAnnotations
-import io.modelcontextprotocol.kotlin.sdk.types.buildCallToolResult
-import io.modelcontextprotocol.kotlin.sdk.types.buildListToolsResult
+import io.modelcontextprotocol.kotlin.sdk.types.invoke
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.buildJsonObject
@@ -40,7 +41,7 @@ class ToolsResultDslTest {
 
     @Test
     fun `CallToolResult should build minimal with single text content`() {
-        val result = buildCallToolResult {
+        val result = CallToolResult {
             textContent("Operation successful")
         }
 
@@ -53,7 +54,7 @@ class ToolsResultDslTest {
 
     @Test
     fun `CallToolResult should build full with all content types and structured data`() {
-        val result = buildCallToolResult {
+        val result = CallToolResult {
             textContent("Database query completed")
             @Suppress("MaxLineLength")
             imageContent(
@@ -103,7 +104,7 @@ class ToolsResultDslTest {
 
     @Test
     fun `CallToolResult should support error status`() {
-        val result = buildCallToolResult {
+        val result = CallToolResult {
             textContent("Failed to connect to database")
             isError = true
         }
@@ -114,7 +115,7 @@ class ToolsResultDslTest {
 
     @Test
     fun `CallToolResult should support error with structuredContent`() {
-        val result = buildCallToolResult {
+        val result = CallToolResult {
             textContent("Operation failed: timeout exceeded")
             isError = true
             structuredContent {
@@ -134,7 +135,7 @@ class ToolsResultDslTest {
 
     @Test
     fun `CallToolResult should support error with multiple content items`() {
-        val result = buildCallToolResult {
+        val result = CallToolResult {
             textContent("Error occurred during processing")
             textContent("Stack trace: at line 42 in module.kt")
             textContent("Please contact support if this persists")
@@ -150,7 +151,7 @@ class ToolsResultDslTest {
     @Test
     fun `CallToolResult should throw if no content provided`() {
         shouldThrow<IllegalArgumentException> {
-            buildCallToolResult { }
+            CallToolResult { }
         }
     }
 
@@ -160,7 +161,7 @@ class ToolsResultDslTest {
 
     @Test
     fun `ListToolsResult should build minimal with single tool`() {
-        val result = buildListToolsResult {
+        val result = ListToolsResult {
             tool {
                 name = "getCurrentTime"
                 inputSchema {
@@ -178,7 +179,7 @@ class ToolsResultDslTest {
     @Test
     @Suppress("LongMethod")
     fun `ListToolsResult should build full with multiple tools and pagination`() {
-        val result = buildListToolsResult {
+        val result = ListToolsResult {
             tool {
                 name = "searchDatabase"
                 description = "Search the database for records"
@@ -270,7 +271,7 @@ class ToolsResultDslTest {
 
     @Test
     fun `ListToolsResult should support tool with defs in schema`() {
-        val result = buildListToolsResult {
+        val result = ListToolsResult {
             tool {
                 name = "createUser"
                 inputSchema {
@@ -304,13 +305,13 @@ class ToolsResultDslTest {
     @Test
     fun `ListToolsResult should throw if no tools provided`() {
         shouldThrow<IllegalArgumentException> {
-            buildListToolsResult { }
+            ListToolsResult { }
         }
     }
 
     @Test
     fun `ListToolsResult should support empty input schema`() {
-        val result = buildListToolsResult {
+        val result = ListToolsResult {
             tool {
                 name = "noArgs"
                 inputSchema {

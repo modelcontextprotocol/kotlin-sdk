@@ -1,9 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
-import kotlin.contracts.ExperimentalContracts
-import kotlin.contracts.InvocationKind
-import kotlin.contracts.contract
 
 /**
  * Creates a [SetLevelRequest] using a type-safe DSL builder.
@@ -16,14 +13,14 @@ import kotlin.contracts.contract
  *
  * Example setting info level:
  * ```kotlin
- * val request = buildSetLevelRequest {
+ * val request = SetLevelRequest {
  *     loggingLevel = LoggingLevel.Info
  * }
  * ```
  *
  * Example setting debug level:
  * ```kotlin
- * val request = buildSetLevelRequest {
+ * val request = SetLevelRequest {
  *     loggingLevel = LoggingLevel.Debug
  * }
  * ```
@@ -34,12 +31,9 @@ import kotlin.contracts.contract
  * @see SetLevelRequest
  * @see LoggingLevel
  */
-@OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
-public inline fun buildSetLevelRequest(block: SetLevelRequestBuilder.() -> Unit): SetLevelRequest {
-    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
-    return SetLevelRequestBuilder().apply(block).build()
-}
+public inline operator fun SetLevelRequest.Companion.invoke(block: SetLevelRequestBuilder.() -> Unit): SetLevelRequest =
+    SetLevelRequestBuilder().apply(block).build()
 
 /**
  * DSL builder for constructing [SetLevelRequest] instances.
@@ -52,7 +46,6 @@ public inline fun buildSetLevelRequest(block: SetLevelRequestBuilder.() -> Unit)
  * ## Optional
  * - [meta] - Metadata for the request
  *
- * @see buildSetLevelRequest
  * @see SetLevelRequest
  * @see LoggingLevel
  */
