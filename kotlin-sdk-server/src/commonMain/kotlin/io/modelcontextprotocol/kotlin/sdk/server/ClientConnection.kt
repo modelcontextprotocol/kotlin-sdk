@@ -36,6 +36,7 @@ private val logger = KotlinLogging.logger {}
  * Methods for communicating from the server back to the client.
  */
 @ExperimentalMcpApi
+@Suppress("TooManyFunctions")
 public class ClientConnection internal constructor(private val session: ServerSession) {
 
     /**
@@ -53,7 +54,8 @@ public class ClientConnection internal constructor(private val session: ServerSe
     /**
      * The client's reported capabilities after initialization.
      */
-    public val clientCapabilities: ClientCapabilities get() = session.clientCapabilities ?: error("Session not yet initialized")
+    public val clientCapabilities: ClientCapabilities get() = session.clientCapabilities
+        ?: error("Session not yet initialized")
 
     /**
      * The client's version information.
@@ -105,7 +107,8 @@ public class ClientConnection internal constructor(private val session: ServerSe
         options: RequestOptions? = null,
     ): CreateMessageResult {
         logger.debug {
-            "Creating message with ${params.params.messages.size} messages, maxTokens=${params.params.maxTokens}, temperature=${params.params.temperature}, systemPrompt=${if (params.params.systemPrompt != null) "present" else "absent"}"
+            "Creating message with ${params.params.messages.size} messages, maxTokens=${params.params.maxTokens}, " +
+                "temperature=${params.params.temperature}, systemPrompt=${if (params.params.systemPrompt != null) "present" else "absent"}"
         }
         logger.trace { "Full createMessage params: $params" }
         return request(params, options)
@@ -132,7 +135,8 @@ public class ClientConnection internal constructor(private val session: ServerSe
      * This typically results in a form being displayed to the end user.
      *
      * @param message The message for the elicitation to display.
-     * @param requestedSchema The schema requested by the client for the elicitation result. Influences the form displayed to the user.
+     * @param requestedSchema The schema requested by the client for the elicitation result.
+     * Influences the form displayed to the user.
      * @param options Optional request options.
      * @return The result of the elicitation request.
      * @throws IllegalStateException If the server or client does not support elicitation.
