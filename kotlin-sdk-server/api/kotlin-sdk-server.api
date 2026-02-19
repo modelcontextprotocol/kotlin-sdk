@@ -7,6 +7,8 @@ public final class io/modelcontextprotocol/kotlin/sdk/server/ClientConnection {
 	public final fun getClientVersion ()Lio/modelcontextprotocol/kotlin/sdk/types/Implementation;
 	public final fun getServerCapabilities ()Lio/modelcontextprotocol/kotlin/sdk/types/ServerCapabilities;
 	public final fun getSessionId ()Ljava/lang/String;
+	public final fun isMessageAccepted (Lio/modelcontextprotocol/kotlin/sdk/types/LoggingLevel;)Z
+	public final fun isMessageIgnored (Lio/modelcontextprotocol/kotlin/sdk/types/LoggingLevel;)Z
 	public final fun listRoots (Lkotlinx/serialization/json/JsonObject;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun listRoots$default (Lio/modelcontextprotocol/kotlin/sdk/server/ClientConnection;Lkotlinx/serialization/json/JsonObject;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public final fun notification (Lio/modelcontextprotocol/kotlin/sdk/types/Notification;Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
