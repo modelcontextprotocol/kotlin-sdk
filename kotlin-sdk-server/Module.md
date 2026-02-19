@@ -12,7 +12,7 @@ that make it straightforward to expose tools, prompts, and resources to MCP clie
   listeners emit list-changed notifications when the capability is enabled.
 - **Transports**: Ready-to-use transports for STDIO (CLI-style hosting), Ktor Server-Sent Events (SSE) with POST
   back-channel, and Ktor WebSocket. All share the common `Transport` abstraction from the SDK.
-- **Ktor integration**: Extension functions (`Routing.mcp`, `Routing.mcpWebSocket`, and `Application` variants) that
+- **Ktor integration**: Extension functions (`Route.mcp`, `Route.mcpWebSocket`, and `Application` variants) that
   plug MCP into an existing Ktor server with minimal boilerplate.
 - **Notifications**: Built-in support for resource subscription, resource-updated events, and feature list change
   notifications when capabilities are set accordingly.
