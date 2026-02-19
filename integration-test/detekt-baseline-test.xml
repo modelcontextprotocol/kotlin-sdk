@@ -32,7 +32,6 @@
     <ID>LongMethod:KotlinServerForTsClientSse.kt:HttpServerTransport$suspend fun handleRequest</ID>
     <ID>LongMethod:KotlinServerForTsClientSse.kt:KotlinServerForTsClient$fun createMcpServer: Server</ID>
     <ID>LongMethod:KotlinServerForTsClientSse.kt:KotlinServerForTsClient$fun start</ID>
-    <ID>LongMethod:KotlinTestBase.kt:KotlinTestBase$protected fun setupServer</ID>
     <ID>LongMethod:ServerResourcesNotificationSubscribeTest.kt:ServerResourcesNotificationSubscribeTest$@Test fun `should send resource notifications`</ID>
     <ID>LongMethod:TsEdgeCasesTestSse.kt:TsEdgeCasesTestSse$@Test @Timeout(30, unit = TimeUnit.SECONDS) fun testComplexConcurrentRequests: Unit</ID>
     <ID>MatchingDeclarationName:PromptIntegrationTestSse.kt:SchemaPromptIntegrationTestSse : AbstractPromptIntegrationTest</ID>
