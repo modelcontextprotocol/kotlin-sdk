@@ -2,40 +2,30 @@ package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
-import io.modelcontextprotocol.kotlin.sdk.types.BaseRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageResult
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitResult
-import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
-import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsResult
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification
-import io.modelcontextprotocol.kotlin.sdk.types.Notification
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.types.PromptListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.Request
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
-import io.modelcontextprotocol.kotlin.sdk.types.RequestMeta
 import io.modelcontextprotocol.kotlin.sdk.types.RequestResult
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotification
+import io.modelcontextprotocol.kotlin.sdk.types.ServerNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ToolListChangedNotification
-import kotlinx.serialization.json.JsonObject
 
 private val logger = KotlinLogging.logger {}
 
 @Suppress("TooManyFunctions")
 public interface ClientConnection {
-
-    /**
-     * The client's version information.
-     */
-    public val clientVersion: Implementation
 
     /**
      * A unique identifier identifying the current session.
@@ -44,46 +34,56 @@ public interface ClientConnection {
     public val sessionId: String
 
     /**
-     * Emits a notification, which is a one-way message that does not expect a response.
+     * Sends a server-side notification to the client.
+     *
+     * @param notification The notification to be sent to the client. This typically represents
+     *                     a specific event or update from the server.
+     * @param relatedRequestId An optional identifier linking this notification to a prior request.
+     *                         Useful for correlating notifications with originating requests.
      */
-    public suspend fun notification(notification: Notification, relatedRequestId: RequestId? = null)
+    public suspend fun notification(notification: ServerNotification, relatedRequestId: RequestId? = null)
 
     /**
      * Sends a ping request to the client to check connectivity.
      *
+     * @param request Optional request parameters for the ping operation.
+     * @param options Optional request options, such as timeout or progress callback settings.
      * @return The result of the ping request.
      * @throws IllegalStateException If for some reason the method is not supported or the connection is closed.
      */
-    public suspend fun ping(): EmptyResult
+    public suspend fun ping(request: PingRequest = PingRequest(), options: RequestOptions? = null): EmptyResult
 
     /**
      * Creates a message using the server's sampling capability.
      *
-     * @param params The parameters for creating a message.
+     * @param request The parameters for creating a message.
      * @param options Optional request options.
      * @return The created message result.
      * @throws IllegalStateException If the server does not support sampling or if the request fails.
      */
     public suspend fun createMessage(
-        params: CreateMessageRequest,
+        request: CreateMessageRequest,
         options: RequestOptions? = null,
     ): CreateMessageResult
 
     /**
      * Lists the available "roots" from the client's perspective (if supported).
      *
-     * @param params JSON parameters for the request, usually empty.
-     * @param options Optional request options.
+     * Roots define the boundaries of where servers can operate within the filesystem,
+     * allowing them to understand which directories and files they have access to
+     *
+     * @param request Optional request parameters containing metadata for the list roots operation.
+     * @param options Optional request options, such as timeout or progress callback settings.
      * @return The list of roots.
      * @throws IllegalStateException If the server or client does not support roots.
      */
     public suspend fun listRoots(
-        params: JsonObject = EmptyJsonObject,
+        request: ListRootsRequest = ListRootsRequest(),
         options: RequestOptions? = null,
     ): ListRootsResult
 
     /**
-     * Sends a message to the client requesting an elicitation.
+     * Sends a message to the client requesting elicitation.
      * This typically results in a form being displayed to the end user.
      *
      * @param message The message for the elicitation to display.
@@ -98,6 +98,17 @@ public interface ClientConnection {
         requestedSchema: ElicitRequestParams.RequestedSchema,
         options: RequestOptions? = null,
     ): ElicitResult
+
+    /**
+     * Sends a message to the client requesting elicitation.
+     * This typically results in a form being displayed to the user.
+     *
+     * @param request The elicitation request parameters.
+     * @param options Optional request options.
+     * @return The result of the elicitation request.
+     * @throws IllegalStateException If the server or client does not support elicitation.
+     */
+    public suspend fun createElicitation(request: ElicitRequest, options: RequestOptions? = null): ElicitResult
 
     /**
      * Sends a logging message notification to the client.
@@ -129,14 +140,6 @@ public interface ClientConnection {
      * Sends a notification to the client indicating that the list of prompts has changed.
      */
     public suspend fun sendPromptListChanged()
-
-    /**
-     * Checks if a message with the given level should be accepted based on the current logging level.
-     *
-     * @param level The level of the message to check.
-     * @return true if the message should be accepted (not filtered out), false otherwise.
-     */
-    public fun isMessageAccepted(level: LoggingLevel): Boolean
 }
 
 /**
@@ -145,8 +148,6 @@ public interface ClientConnection {
 @Suppress("TooManyFunctions")
 internal class ClientConnectionImpl(private val session: ServerSession) : ClientConnection {
 
-    override val clientVersion: Implementation get() = session.clientVersion ?: error("Session not yet initialized")
-
     override val sessionId: String get() = session.sessionId
 
     private suspend fun <T : RequestResult> request(request: Request, options: RequestOptions? = null): T {
@@ -154,7 +155,7 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
         return session.request(request, options)
     }
 
-    override suspend fun notification(notification: Notification, relatedRequestId: RequestId?) {
+    override suspend fun notification(notification: ServerNotification, relatedRequestId: RequestId?) {
         if (notification is LoggingMessageNotification && !isMessageAccepted(notification.params.level)) {
             logger.trace { "Filtering out logging message with level ${notification.params.level}" }
             return
@@ -163,35 +164,47 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
         session.notification(notification, relatedRequestId)
     }
 
-    override suspend fun ping(): EmptyResult = request(PingRequest(), options = null)
-
-    override suspend fun createMessage(params: CreateMessageRequest, options: RequestOptions?): CreateMessageResult {
-        logger.debug {
-            "Creating message with ${params.params.messages.size} messages, maxTokens=${params.params.maxTokens}, " +
-                "temperature=${params.params.temperature}, " +
-                "systemPrompt=${if (params.params.systemPrompt != null) "present" else "absent"}"
-        }
-        logger.trace { "Full createMessage params: $params" }
-        return request(params, options)
+    override suspend fun ping(request: PingRequest, options: RequestOptions?): EmptyResult {
+        logger.trace { "Sending ping request: $request" }
+        return request(request, options)
     }
 
-    override suspend fun listRoots(params: JsonObject, options: RequestOptions?): ListRootsResult {
-        logger.debug { "Listing roots with params: $params" }
-        return request(ListRootsRequest(BaseRequestParams(RequestMeta(params))), options)
+    override suspend fun createMessage(request: CreateMessageRequest, options: RequestOptions?): CreateMessageResult {
+        with(request.params) {
+            logger.debug {
+                "Creating message with ${messages.size} messages, maxTokens=$maxTokens, " +
+                    "temperature=$temperature, " +
+                    "systemPrompt=${if (systemPrompt != null) "present" else "absent"}"
+            }
+        }
+        logger.trace { "Full createMessage params: $request" }
+        return request(request, options)
+    }
+
+    override suspend fun listRoots(request: ListRootsRequest, options: RequestOptions?): ListRootsResult {
+        logger.debug { "Listing roots" }
+        return request(request, options)
+    }
+
+    override suspend fun createElicitation(request: ElicitRequest, options: RequestOptions?): ElicitResult {
+        with(request.params) {
+            logger.debug {
+                "Creating elicitation with message length=${message.length}, " +
+                    "schema properties count=${requestedSchema.properties.size}"
+            }
+        }
+        logger.trace { "ElicitRequest: $request" }
+        return request(request, options)
     }
 
     override suspend fun createElicitation(
         message: String,
         requestedSchema: ElicitRequestParams.RequestedSchema,
         options: RequestOptions?,
-    ): ElicitResult {
-        logger.debug {
-            "Creating elicitation with message length=${message.length}, " +
-                "schema properties count=${requestedSchema.properties.size}"
-        }
-        logger.trace { "Full elicitation message: $message, requestedSchema: $requestedSchema" }
-        return request(ElicitRequest(ElicitRequestParams(message, requestedSchema)), options)
-    }
+    ): ElicitResult = createElicitation(
+        request = ElicitRequest(params = ElicitRequestParams(message, requestedSchema)),
+        options = options,
+    )
 
     override suspend fun sendLoggingMessage(notification: LoggingMessageNotification) {
         notification(notification)
@@ -217,7 +230,16 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
         notification(PromptListChangedNotification())
     }
 
-    override fun isMessageAccepted(level: LoggingLevel): Boolean {
+    /**
+     * Determines whether a message with the specified logging level is accepted
+     * based on the current logging level of the session.
+     *
+     * @param level The logging level of the message to be evaluated.
+     * @return True if the message is accepted (i.e., its level meets or exceeds
+     *         the current session's logging level), or if no current logging
+     *         level is set. Otherwise, false.
+     */
+    private fun isMessageAccepted(level: LoggingLevel): Boolean {
         val current = session.currentLoggingLevel.value ?: return true // If no level is set, don't filter
 
         return level >= current
