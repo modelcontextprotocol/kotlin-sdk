@@ -332,6 +332,10 @@ public class StreamableHttpClientTransport(
                         throw it
                     }
             }
+            if (eventName == "error") {
+                _onError(StreamableHttpError(null, data))
+                return
+            }
         }
 
         @Suppress("LoopWithTooManyJumpStatements")
