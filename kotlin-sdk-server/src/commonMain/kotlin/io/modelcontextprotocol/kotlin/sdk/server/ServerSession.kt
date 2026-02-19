@@ -37,7 +37,6 @@ private val logger = KotlinLogging.logger {}
  * Represents a server session.
  */
 @OptIn(ExperimentalMcpApi::class)
-@Suppress("TooManyFunctions")
 public open class ServerSession(
     protected val serverInfo: Implementation,
     options: ServerOptions,
