@@ -1,7 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.types.BaseRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
@@ -35,7 +34,6 @@ private val logger = KotlinLogging.logger {}
 /**
  * Methods for communicating from the server back to the client.
  */
-@ExperimentalMcpApi
 @Suppress("TooManyFunctions")
 public class ClientConnection internal constructor(private val session: ServerSession) {
 
@@ -54,8 +52,9 @@ public class ClientConnection internal constructor(private val session: ServerSe
     /**
      * The client's reported capabilities after initialization.
      */
-    public val clientCapabilities: ClientCapabilities get() = session.clientCapabilities
-        ?: error("Session not yet initialized")
+    public val clientCapabilities: ClientCapabilities
+        get() = session.clientCapabilities
+            ?: error("Session not yet initialized")
 
     /**
      * The client's version information.
