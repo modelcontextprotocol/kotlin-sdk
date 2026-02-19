@@ -2,6 +2,7 @@ package io.modelcontextprotocol.kotlin.sdk.integration
 
 import io.kotest.matchers.shouldBe
 import io.ktor.client.HttpClient
+import io.ktor.client.request.basicAuth
 import io.ktor.client.request.get
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
@@ -49,6 +50,8 @@ abstract class AbstractAuthenticationTest {
 
     protected val validUser: String = "user-${UUID.randomUUID().toString().take(8)}"
     protected val validPassword: String = UUID.randomUUID().toString()
+    protected val invalidUser: String = "user-${UUID.randomUUID().toString().take(8)}"
+    protected val invalidPassword: String = UUID.randomUUID().toString()
 
     /**
      * Installs Ktor plugins required by the transport under test.
@@ -72,27 +75,7 @@ abstract class AbstractAuthenticationTest {
 
     @Test
     fun `mcp behind basic auth rejects unauthenticated requests with 401`(): Unit = runBlocking {
-        val server = embeddedServer(ServerCIO, host = HOST, port = 0) {
-            configurePlugins()
-            install(Authentication) {
-                basic(AUTH_REALM) {
-                    validate { credentials ->
-                        if (credentials.name == validUser && credentials.password == validPassword) {
-                            UserIdPrincipal(credentials.name)
-                        } else {
-                            null
-                        }
-                    }
-                }
-            }
-            routing {
-                authenticate(AUTH_REALM) {
-                    registerMcpServer {
-                        createMcpServer { principal<UserIdPrincipal>()?.name }
-                    }
-                }
-            }
-        }.startSuspend(wait = false)
+        val server = startAuthenticatedServer()
 
         val httpClient = HttpClient(ClientCIO)
         try {
@@ -104,32 +87,25 @@ abstract class AbstractAuthenticationTest {
     }
 
     @Test
+    fun `mcp rejects requests with invalid credentials`(): Unit = runBlocking {
+        val server = startAuthenticatedServer()
+
+        val httpClient = HttpClient(ClientCIO) {
+            expectSuccess = false
+        }
+        try {
+            httpClient.get("http://$HOST:${server.actualPort()}") {
+                basicAuth(invalidUser, invalidPassword)
+            }.status shouldBe HttpStatusCode.Unauthorized
+        } finally {
+            httpClient.close()
+            server.stopSuspend(500, 1000)
+        }
+    }
+
+    @Test
     fun `authenticated mcp client can read resource scoped to principal`(): Unit = runBlocking {
-        val server = embeddedServer(ServerCIO, host = HOST, port = 0) {
-            configurePlugins()
-            install(Authentication) {
-                basic(AUTH_REALM) {
-                    validate { credentials ->
-                        if (credentials.name == validUser && credentials.password == validPassword) {
-                            UserIdPrincipal(credentials.name)
-                        } else {
-                            null
-                        }
-                    }
-                }
-            }
-            routing {
-                authenticate(AUTH_REALM) {
-                    registerMcpServer {
-                        // `this` is the ApplicationCall at connection time.
-                        // The lambda passed to createMcpServer captures this call;
-                        // principal<T>() is safe to call from resource handlers because
-                        // the call's authentication context remains valid for the session lifetime.
-                        createMcpServer { principal<UserIdPrincipal>()?.name }
-                    }
-                }
-            }
-        }.startSuspend(wait = false)
+        val server = startAuthenticatedServer()
 
         val baseUrl = "http://$HOST:${server.actualPort()}"
         var mcpClient: Client? = null
@@ -151,6 +127,32 @@ abstract class AbstractAuthenticationTest {
         } finally {
             mcpClient?.close()
             server.stopSuspend(500, 1000)
+        }
+    }
+
+    private suspend fun startAuthenticatedServer() = embeddedServer(ServerCIO, host = HOST, port = 0) {
+        configurePlugins()
+        installBasicAuth()
+        routing {
+            authenticate(AUTH_REALM) {
+                registerMcpServer {
+                    createMcpServer { principal<UserIdPrincipal>()?.name }
+                }
+            }
+        }
+    }.startSuspend(wait = false)
+
+    private fun Application.installBasicAuth() {
+        install(Authentication) {
+            basic(AUTH_REALM) {
+                validate { credentials ->
+                    if (credentials.name == validUser && credentials.password == validPassword) {
+                        UserIdPrincipal(credentials.name)
+                    } else {
+                        null
+                    }
+                }
+            }
         }
     }
 
