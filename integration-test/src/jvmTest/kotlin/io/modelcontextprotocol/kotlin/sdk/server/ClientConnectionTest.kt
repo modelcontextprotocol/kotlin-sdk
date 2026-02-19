@@ -1,5 +1,8 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
+import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
@@ -27,8 +30,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class ClientConnectionTest : AbstractServerFeaturesTest() {
 
@@ -78,11 +79,11 @@ class ClientConnectionTest : AbstractServerFeaturesTest() {
         }
 
         client.callTool(CallToolRequest(CallToolRequestParams("test-ping")))
-        assertTrue(pingReceived.isCompleted)
+        pingReceived.isCompleted shouldBe true
     }
 
     @Test
-    fun `notification should work from server to client`() = runTest {
+    fun `notification should send logging message to client`() = runTest {
         val notificationReceived = onClientNotification<LoggingMessageNotification>(Method.Defined.NotificationsMessage)
 
         val expectedLevel = LoggingLevel.Info
@@ -101,13 +102,44 @@ class ClientConnectionTest : AbstractServerFeaturesTest() {
 
         client.callTool(CallToolRequest(CallToolRequestParams("test-notification")))
         val received = notificationReceived.await()
-        assertEquals(expectedLevel, received.params.level)
-        assertEquals(expectedData, received.params.data)
+        received.params.level shouldBe expectedLevel
+        received.params.data shouldBe expectedData
     }
 
     @ParameterizedTest
     @EnumSource(LoggingLevel::class)
-    fun `sendLoggingMessage should work`(expectedLevel: LoggingLevel) = runTest {
+    fun `notification should filter logging messages below set level`(minLevel: LoggingLevel) = runTest {
+        val receivedMessages = mutableListOf<LoggingMessageNotification>()
+        client.setNotificationHandler<LoggingMessageNotification>(Method.Defined.NotificationsMessage) {
+            receivedMessages.add(it)
+            CompletableDeferred(Unit)
+        }
+
+        client.setLoggingLevel(minLevel)
+
+        addTool("test-notification-filtered") {
+            LoggingLevel.entries.forEach { level ->
+                notification(
+                    LoggingMessageNotification(
+                        LoggingMessageNotificationParams(
+                            level = level,
+                            data = JsonPrimitive(level.name),
+                        ),
+                    ),
+                )
+            }
+        }
+
+        client.callTool(CallToolRequest(CallToolRequestParams("test-notification-filtered")))
+
+        val expectedLevels = LoggingLevel.entries.filter { it >= minLevel }
+        receivedMessages shouldHaveSize expectedLevels.size
+        receivedMessages.map { it.params.level } shouldBe expectedLevels
+    }
+
+    @ParameterizedTest
+    @EnumSource(LoggingLevel::class)
+    fun `sendLoggingMessage should send message at each level`(expectedLevel: LoggingLevel) = runTest {
         val notificationReceived = onClientNotification<LoggingMessageNotification>(
             Method.Defined.NotificationsMessage,
         )
@@ -127,8 +159,96 @@ class ClientConnectionTest : AbstractServerFeaturesTest() {
 
         client.callTool(CallToolRequest(CallToolRequestParams("test-logging")))
         val received = notificationReceived.await()
-        assertEquals(expectedLevel, received.params.level)
-        assertEquals(expectedData, received.params.data)
+        received.params.level shouldBe expectedLevel
+        received.params.data shouldBe expectedData
+    }
+
+    @Test
+    fun `sendLoggingMessage should filter messages below set level`() = runTest {
+        val receivedMessages = mutableListOf<LoggingMessageNotification>()
+        client.setNotificationHandler<LoggingMessageNotification>(Method.Defined.NotificationsMessage) {
+            receivedMessages.add(it)
+            CompletableDeferred(Unit)
+        }
+
+        client.setLoggingLevel(LoggingLevel.Warning)
+
+        addTool("test-logging-filtered") {
+            LoggingLevel.entries.forEach { level ->
+                sendLoggingMessage(
+                    LoggingMessageNotification(
+                        LoggingMessageNotificationParams(
+                            level = level,
+                            data = JsonPrimitive(level.name),
+                        ),
+                    ),
+                )
+            }
+        }
+
+        client.callTool(CallToolRequest(CallToolRequestParams("test-logging-filtered")))
+
+        val expectedLevels = LoggingLevel.entries.filter { it >= LoggingLevel.Warning }
+        receivedMessages shouldHaveSize expectedLevels.size
+        receivedMessages.map { it.params.level } shouldBe expectedLevels
+    }
+
+    @ParameterizedTest
+    @EnumSource(LoggingLevel::class)
+    fun `sendLoggingMessage should filter all messages below set level`(minLevel: LoggingLevel) = runTest {
+        val receivedMessages = mutableListOf<LoggingMessageNotification>()
+        client.setNotificationHandler<LoggingMessageNotification>(Method.Defined.NotificationsMessage) {
+            receivedMessages.add(it)
+            CompletableDeferred(Unit)
+        }
+
+        client.setLoggingLevel(minLevel)
+
+        addTool("test-logging-level") {
+            LoggingLevel.entries.forEach { level ->
+                sendLoggingMessage(
+                    LoggingMessageNotification(
+                        LoggingMessageNotificationParams(
+                            level = level,
+                            data = JsonPrimitive(level.name),
+                        ),
+                    ),
+                )
+            }
+        }
+
+        client.callTool(CallToolRequest(CallToolRequestParams("test-logging-level")))
+
+        val expectedLevels = LoggingLevel.entries.filter { it >= minLevel }
+        receivedMessages shouldHaveSize expectedLevels.size
+        receivedMessages.map { it.params.level } shouldBe expectedLevels
+    }
+
+    @Test
+    fun `sendLoggingMessage should send no messages when level is set to highest`() = runTest {
+        val receivedMessages = mutableListOf<LoggingMessageNotification>()
+        client.setNotificationHandler<LoggingMessageNotification>(Method.Defined.NotificationsMessage) {
+            receivedMessages.add(it)
+            CompletableDeferred(Unit)
+        }
+
+        client.setLoggingLevel(LoggingLevel.Emergency)
+
+        addTool("test-logging-highest") {
+            LoggingLevel.entries.dropLast(1).forEach { level ->
+                sendLoggingMessage(
+                    LoggingMessageNotification(
+                        LoggingMessageNotificationParams(
+                            level = level,
+                            data = JsonPrimitive(level.name),
+                        ),
+                    ),
+                )
+            }
+        }
+
+        client.callTool(CallToolRequest(CallToolRequestParams("test-logging-highest")))
+        receivedMessages.shouldBeEmpty()
     }
 
     @Test
@@ -143,8 +263,8 @@ class ClientConnectionTest : AbstractServerFeaturesTest() {
 
         addTool("test-list-roots") {
             val result = listRoots()
-            assertEquals(expectedRoots.size, result.roots.size)
-            assertEquals(expectedRoots, result.roots)
+            result.roots shouldHaveSize expectedRoots.size
+            result.roots shouldBe expectedRoots
         }
 
         client.callTool(CallToolRequest(CallToolRequestParams("test-list-roots")))
@@ -160,7 +280,7 @@ class ClientConnectionTest : AbstractServerFeaturesTest() {
         }
 
         client.callTool(CallToolRequest(CallToolRequestParams("test-tool-changed")))
-        assertTrue(notificationReceived.isCompleted)
+        notificationReceived.isCompleted shouldBe true
     }
 
     @Test
@@ -173,7 +293,7 @@ class ClientConnectionTest : AbstractServerFeaturesTest() {
         }
 
         client.callTool(CallToolRequest(CallToolRequestParams("test-resource-changed")))
-        assertTrue(notificationReceived.isCompleted)
+        notificationReceived.isCompleted shouldBe true
     }
 
     @Test
@@ -186,6 +306,6 @@ class ClientConnectionTest : AbstractServerFeaturesTest() {
         }
 
         client.callTool(CallToolRequest(CallToolRequestParams("test-prompt-changed")))
-        assertTrue(notificationReceived.isCompleted)
+        notificationReceived.isCompleted shouldBe true
     }
 }
