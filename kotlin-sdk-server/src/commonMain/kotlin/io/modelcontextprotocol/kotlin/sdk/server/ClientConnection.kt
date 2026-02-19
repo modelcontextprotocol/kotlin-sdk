@@ -3,7 +3,6 @@ package io.modelcontextprotocol.kotlin.sdk.server
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.types.BaseRequestParams
-import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageResult
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequest
@@ -25,7 +24,6 @@ import io.modelcontextprotocol.kotlin.sdk.types.RequestMeta
 import io.modelcontextprotocol.kotlin.sdk.types.RequestResult
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotification
-import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.ToolListChangedNotification
 import kotlinx.serialization.json.JsonObject
 
@@ -33,15 +31,6 @@ private val logger = KotlinLogging.logger {}
 
 @Suppress("TooManyFunctions")
 public interface ClientConnection {
-    /**
-     * The capabilities supported by the server, related to the session.
-     */
-    public val serverCapabilities: ServerCapabilities
-
-    /**
-     * The client's reported capabilities after initialization.
-     */
-    public val clientCapabilities: ClientCapabilities
 
     /**
      * The client's version information.
@@ -53,18 +42,6 @@ public interface ClientConnection {
      * Has no inherent meaning.
      */
     public val sessionId: String
-
-    /**
-     * Registers a callback to be invoked when the server session is closing.
-     */
-    public fun onClose(block: () -> Unit)
-
-    /**
-     * Sends a request and waits for a response.
-     *
-     * Do not use this method to emit notifications! Use notification() instead.
-     */
-    public suspend fun <T : RequestResult> request(request: Request, options: RequestOptions? = null): T
 
     /**
      * Emits a notification, which is a one-way message that does not expect a response.
@@ -154,14 +131,6 @@ public interface ClientConnection {
     public suspend fun sendPromptListChanged()
 
     /**
-     * Checks if a message with the given level should be ignored based on the current logging level.
-     *
-     * @param level The level of the message to check.
-     * @return true if the message should be ignored (filtered out), false otherwise.
-     */
-    public fun isMessageIgnored(level: LoggingLevel): Boolean
-
-    /**
      * Checks if a message with the given level should be accepted based on the current logging level.
      *
      * @param level The level of the message to check.
@@ -176,36 +145,31 @@ public interface ClientConnection {
 @Suppress("TooManyFunctions")
 internal class ClientConnectionImpl(private val session: ServerSession) : ClientConnection {
 
-    override fun onClose(block: () -> Unit) {
-        session.onClose(block)
-    }
-
-    override val serverCapabilities: ServerCapabilities get() = session.serverCapabilities
-
-    override val clientCapabilities: ClientCapabilities
-        get() = session.clientCapabilities
-            ?: error("Session not yet initialized")
-
     override val clientVersion: Implementation get() = session.clientVersion ?: error("Session not yet initialized")
 
     override val sessionId: String get() = session.sessionId
 
-    override suspend fun <T : RequestResult> request(request: Request, options: RequestOptions?): T {
+    private suspend fun <T : RequestResult> request(request: Request, options: RequestOptions? = null): T {
         logger.trace { "Sending request to client for session $sessionId: $request" }
         return session.request(request, options)
     }
 
     override suspend fun notification(notification: Notification, relatedRequestId: RequestId?) {
+        if (notification is LoggingMessageNotification && !isMessageAccepted(notification.params.level)) {
+            logger.trace { "Filtering out logging message with level ${notification.params.level}" }
+            return
+        }
         logger.trace { "Sending notification to client for session $sessionId: $notification" }
         session.notification(notification, relatedRequestId)
     }
 
-    override suspend fun ping(): EmptyResult = request(PingRequest())
+    override suspend fun ping(): EmptyResult = request(PingRequest(), options = null)
 
     override suspend fun createMessage(params: CreateMessageRequest, options: RequestOptions?): CreateMessageResult {
         logger.debug {
             "Creating message with ${params.params.messages.size} messages, maxTokens=${params.params.maxTokens}, " +
-                "temperature=${params.params.temperature}, systemPrompt=${if (params.params.systemPrompt != null) "present" else "absent"}"
+                "temperature=${params.params.temperature}, " +
+                "systemPrompt=${if (params.params.systemPrompt != null) "present" else "absent"}"
         }
         logger.trace { "Full createMessage params: $params" }
         return request(params, options)
@@ -230,14 +194,7 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
     }
 
     override suspend fun sendLoggingMessage(notification: LoggingMessageNotification) {
-        if (serverCapabilities.logging != null) {
-            if (isMessageAccepted(notification.params.level)) {
-                logger.trace { "Sending logging message: ${notification.params.data}" }
-                notification(notification)
-            } else {
-                logger.trace { "Filtering out logging message with level ${notification.params.level}" }
-            }
-        }
+        notification(notification)
     }
 
     override suspend fun sendResourceUpdated(notification: ResourceUpdatedNotification) {
@@ -260,11 +217,9 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
         notification(PromptListChangedNotification())
     }
 
-    override fun isMessageIgnored(level: LoggingLevel): Boolean {
-        val current = session.currentLoggingLevel.value ?: return false // If no level is set, don't filter
+    override fun isMessageAccepted(level: LoggingLevel): Boolean {
+        val current = session.currentLoggingLevel.value ?: return true // If no level is set, don't filter
 
-        return level < current
+        return level >= current
     }
-
-    override fun isMessageAccepted(level: LoggingLevel): Boolean = !isMessageIgnored(level)
 }

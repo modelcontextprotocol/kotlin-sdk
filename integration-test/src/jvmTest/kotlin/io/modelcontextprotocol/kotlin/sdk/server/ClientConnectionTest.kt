@@ -1,6 +1,5 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
-import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
@@ -26,10 +25,11 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalMcpApi::class)
 class ClientConnectionTest : AbstractServerFeaturesTest() {
 
     private inline fun <reified T : Notification> onClientNotification(method: Method): Deferred<T> {
@@ -82,29 +82,6 @@ class ClientConnectionTest : AbstractServerFeaturesTest() {
     }
 
     @Test
-    fun `request should work from server to client`() = runTest {
-        val expectedRoots = listOf(
-            Root("file:///test/root1", "Root 1"),
-            Root("file:///test/root2", "Root 2"),
-        )
-        onClientRequest<ListRootsRequest, ListRootsResult>(Method.Defined.RootsList) {
-            ListRootsResult(expectedRoots)
-        }
-
-        addTool("test-request") {
-            val result = request<ListRootsResult>(ListRootsRequest())
-            assertEquals(expectedRoots.size, result.roots.size)
-            assertEquals(expectedRoots[0].uri, result.roots[0].uri)
-            assertEquals(expectedRoots[0].name, result.roots[0].name)
-            assertEquals(expectedRoots[1].uri, result.roots[1].uri)
-            assertEquals(expectedRoots[1].name, result.roots[1].name)
-        }
-
-        val result = client.callTool(CallToolRequest(CallToolRequestParams("test-request")))
-        assertEquals("Success", (result.content[0] as TextContent).text)
-    }
-
-    @Test
     fun `notification should work from server to client`() = runTest {
         val notificationReceived = onClientNotification<LoggingMessageNotification>(Method.Defined.NotificationsMessage)
 
@@ -128,11 +105,13 @@ class ClientConnectionTest : AbstractServerFeaturesTest() {
         assertEquals(expectedData, received.params.data)
     }
 
-    @Test
-    fun `sendLoggingMessage should work`() = runTest {
-        val notificationReceived = onClientNotification<LoggingMessageNotification>(Method.Defined.NotificationsMessage)
+    @ParameterizedTest
+    @EnumSource(LoggingLevel::class)
+    fun `sendLoggingMessage should work`(expectedLevel: LoggingLevel) = runTest {
+        val notificationReceived = onClientNotification<LoggingMessageNotification>(
+            Method.Defined.NotificationsMessage,
+        )
 
-        val expectedLevel = LoggingLevel.Warning
         val expectedData = JsonObject(mapOf("key" to JsonPrimitive("value")))
 
         addTool("test-logging") {
@@ -208,15 +187,5 @@ class ClientConnectionTest : AbstractServerFeaturesTest() {
 
         client.callTool(CallToolRequest(CallToolRequestParams("test-prompt-changed")))
         assertTrue(notificationReceived.isCompleted)
-    }
-
-    @Test
-    fun `isMessageAccepted and isMessageIgnored should work`() = runTest {
-        addTool("test-log-level") {
-            assertTrue(isMessageAccepted(LoggingLevel.Info))
-            assertTrue(isMessageAccepted(LoggingLevel.Debug))
-        }
-
-        client.callTool(CallToolRequest(CallToolRequestParams("test-log-level")))
     }
 }
