@@ -212,7 +212,7 @@ public class ClientConnection internal constructor(private val session: ServerSe
      * @param level The level of the message to check.
      * @return true if the message should be ignored (filtered out), false otherwise.
      */
-    private fun isMessageIgnored(level: LoggingLevel): Boolean {
+    public fun isMessageIgnored(level: LoggingLevel): Boolean {
         val current = session.currentLoggingLevel.value ?: return false // If no level is set, don't filter
 
         return level < current
@@ -224,5 +224,5 @@ public class ClientConnection internal constructor(private val session: ServerSe
      * @param level The level of the message to check.
      * @return true if the message should be accepted (not filtered out), false otherwise.
      */
-    private fun isMessageAccepted(level: LoggingLevel): Boolean = !isMessageIgnored(level)
+    public fun isMessageAccepted(level: LoggingLevel): Boolean = !isMessageIgnored(level)
 }
