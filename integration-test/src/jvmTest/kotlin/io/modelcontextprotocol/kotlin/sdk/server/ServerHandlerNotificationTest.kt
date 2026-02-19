@@ -50,7 +50,7 @@ class ServerHandlerNotificationTest : AbstractServerFeaturesTest() {
         // Add a tool that sends a notification
         server.addTool(toolName, "A tool that notifies") { _ ->
             // Use the session from context to send a notification
-            session.sendLoggingMessage(
+            sendLoggingMessage(
                 LoggingMessageNotification(
                     LoggingMessageNotificationParams(
                         level = LoggingLevel.Info,
@@ -91,7 +91,7 @@ class ServerHandlerNotificationTest : AbstractServerFeaturesTest() {
         // Add a prompt that sends a notification
         server.addPrompt(promptName, "A prompt that notifies") { _ ->
             // Use the session from context to send a notification
-            session.sendLoggingMessage(
+            sendLoggingMessage(
                 LoggingMessageNotification(
                     LoggingMessageNotificationParams(
                         level = LoggingLevel.Info,
@@ -134,7 +134,7 @@ class ServerHandlerNotificationTest : AbstractServerFeaturesTest() {
         // Add a resource that sends a notification
         server.addResource(resourceUri, "Notify Resource", "A resource that notifies") { _ ->
             // Use the session from context to send a notification
-            session.sendLoggingMessage(
+            sendLoggingMessage(
                 LoggingMessageNotification(
                     LoggingMessageNotificationParams(
                         level = LoggingLevel.Info,
