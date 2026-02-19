@@ -42,6 +42,78 @@ val request = CallToolRequest {
 val message: JSONRPCMessage = McpJson.decodeFromString(jsonString)
 ```
 
+## JSON Schema integration
+
+The module integrates with [kotlinx-schema](https://kotlin.github.io/kotlinx-schema/) to enable type-safe schema
+generation from Kotlin data classes. Extension functions convert between kotlinx-schema types and MCP's [ToolSchema],
+allowing you to define tool schemas using `@Description` annotations and other schema metadata.
+
+### Supported conversions
+
+- [JsonObject.asToolSchema][asToolSchema] — converts a raw JSON Schema object
+- [JsonSchema.asToolSchema][asToolSchema] — converts kotlinx-schema's [JsonSchema]
+- [FunctionCallingSchema.asToolSchema][asToolSchema] — extracts parameters from [FunctionCallingSchema]
+
+### Example: generating tool schema from a data class
+
+```kotlin
+import kotlinx.schema.Description
+import kotlinx.schema.generator.core.SchemaGeneratorService
+import kotlinx.schema.json.JsonSchema
+
+data class SearchParams(
+    @property:Description("Search query")
+    val query: String,
+    @property:Description("Maximum number of results")
+    val limit: Int = 10,
+)
+
+// Generate schema from data class
+val generator = SchemaGeneratorService.getGenerator(KClass::class, JsonSchema::class)
+val schema = generator.generateSchema(SearchParams::class)
+
+// Convert to MCP ToolSchema
+val toolSchema = schema.asToolSchema()
+
+// Use in Tool definition
+val tool = Tool(
+    name = "web-search",
+    description = "Search the web",
+    inputSchema = toolSchema,
+)
+```
+
+### Example: using FunctionCallingSchema
+
+```kotlin
+import kotlinx.schema.json.FunctionCallingSchema
+import kotlinx.schema.json.ObjectPropertyDefinition
+import kotlinx.schema.json.StringPropertyDefinition
+
+val functionSchema = FunctionCallingSchema(
+    name = "calculate",
+    description = "Perform a calculation",
+    parameters = ObjectPropertyDefinition(
+        properties = mapOf(
+            "expression" to StringPropertyDefinition(
+                description = "Mathematical expression to evaluate"
+            ),
+        ),
+        required = listOf("expression"),
+    ),
+)
+
+val toolSchema = functionSchema.asToolSchema()
+```
+
+### Schema validation
+
+All conversion functions validate that the schema type is `"object"` (or omit validation if the type field is absent).
+Only object schemas are supported for MCP tool input/output schemas. Attempting to convert array, string, or other
+non-object schemas will throw [IllegalArgumentException].
+
+---
+
 Use this module when you need the raw building blocks of MCP—types, JSON config, and transport base classes—whether to
 embed in another runtime, author new transports, or contribute higher-level features in the client/server modules. The
 APIs are explicit to keep the shared surface stable for downstream users.
