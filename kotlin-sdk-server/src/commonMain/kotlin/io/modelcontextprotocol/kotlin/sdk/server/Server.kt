@@ -1,7 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
@@ -75,7 +74,6 @@ public class ServerOptions(public val capabilities: ServerCapabilities, enforceS
  * this server. The provider is called each time a new session is started to support dynamic instructions.
  * @param block A block to configure the mcp server.
  */
-@OptIn(ExperimentalMcpApi::class)
 public open class Server(
     protected val serverInfo: Implementation,
     protected val options: ServerOptions,

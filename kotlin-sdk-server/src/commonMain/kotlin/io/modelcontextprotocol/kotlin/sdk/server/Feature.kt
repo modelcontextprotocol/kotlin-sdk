@@ -1,6 +1,5 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
-import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest
@@ -26,7 +25,6 @@ internal interface Feature {
  * @property tool The tool definition.
  * @property handler A suspend function to handle the tool call requests.
  */
-@OptIn(ExperimentalMcpApi::class)
 public data class RegisteredTool(
     val tool: Tool,
     val handler: suspend ClientConnection.(CallToolRequest) -> CallToolResult,
@@ -40,7 +38,6 @@ public data class RegisteredTool(
  * @property prompt The prompt definition.
  * @property messageProvider A suspend function that returns the prompt content when requested by the client.
  */
-@OptIn(ExperimentalMcpApi::class)
 public data class RegisteredPrompt(
     val prompt: Prompt,
     val messageProvider: suspend ClientConnection.(GetPromptRequest) -> GetPromptResult,
@@ -54,7 +51,6 @@ public data class RegisteredPrompt(
  * @property resource The resource definition.
  * @property readHandler A suspend function to handle read requests for this resource.
  */
-@OptIn(ExperimentalMcpApi::class)
 public data class RegisteredResource(
     val resource: Resource,
     val readHandler: suspend ClientConnection.(ReadResourceRequest) -> ReadResourceResult,
