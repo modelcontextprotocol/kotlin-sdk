@@ -4,6 +4,9 @@ import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.buildJsonObject
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 
 /**
  * Creates a [GetPromptRequest] using a type-safe DSL builder.
@@ -42,6 +45,50 @@ import kotlinx.serialization.json.buildJsonObject
 public inline operator fun GetPromptRequest.Companion.invoke(
     block: GetPromptRequestBuilder.() -> Unit,
 ): GetPromptRequest = GetPromptRequestBuilder().apply(block).build()
+
+/**
+ * Creates a [GetPromptRequest] using a type-safe DSL builder.
+ *
+ * ## Required
+ * - [name][GetPromptRequestBuilder.name] - The name of the prompt to retrieve
+ *
+ * ## Optional
+ * - [arguments][GetPromptRequestBuilder.arguments] - Arguments to pass to the prompt
+ * - [meta][GetPromptRequestBuilder.meta] - Metadata for the request
+ *
+ * Example without arguments:
+ * ```kotlin
+ * val request = buildGetPromptRequest {
+ *     name = "greeting"
+ * }
+ * ```
+ *
+ * Example with arguments:
+ * ```kotlin
+ * val request = buildGetPromptRequest {
+ *     name = "userProfile"
+ *     arguments = mapOf(
+ *         "userId" to "123",
+ *         "includeDetails" to "true"
+ *     )
+ * }
+ * ```
+ *
+ * @param block Configuration lambda for setting up the get prompt request
+ * @return A configured [GetPromptRequest] instance
+ * @see GetPromptRequestBuilder
+ * @see GetPromptRequest
+ */
+@OptIn(ExperimentalContracts::class)
+@Deprecated(
+    message = "Use GetPromptRequest { } instead",
+    level = DeprecationLevel.WARNING,
+    replaceWith = ReplaceWith("GetPromptRequest{apply(block)}"),
+)
+public inline fun buildGetPromptRequest(block: GetPromptRequestBuilder.() -> Unit): GetPromptRequest {
+    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
+    return GetPromptRequestBuilder().apply(block).build()
+}
 
 /**
  * DSL builder for constructing [GetPromptRequest] instances.
@@ -115,6 +162,42 @@ public class GetPromptRequestBuilder @PublishedApi internal constructor() : Requ
 public inline operator fun ListPromptsRequest.Companion.invoke(
     block: ListPromptsRequestBuilder.() -> Unit,
 ): ListPromptsRequest = ListPromptsRequestBuilder().apply(block).build()
+
+/**
+ * Creates a [ListPromptsRequest] using a type-safe DSL builder.
+ *
+ * ## Optional
+ * - [cursor][ListPromptsRequestBuilder.cursor] - Pagination cursor for fetching next page
+ * - [meta][ListPromptsRequestBuilder.meta] - Metadata for the request
+ *
+ * Example without pagination:
+ * ```kotlin
+ * val request = buildListPromptsRequest { }
+ * ```
+ *
+ * Example with pagination:
+ * ```kotlin
+ * val request = buildListPromptsRequest {
+ *     cursor = "eyJwYWdlIjogMn0="
+ * }
+ * ```
+ *
+ * @param block Configuration lambda for setting up the list prompts request
+ * @return A configured [ListPromptsRequest] instance
+ * @see ListPromptsRequestBuilder
+ * @see ListPromptsRequest
+ */
+@OptIn(ExperimentalContracts::class)
+@ExperimentalMcpApi
+@Deprecated(
+    message = "Use ListPromptsRequest { } instead",
+    level = DeprecationLevel.WARNING,
+    replaceWith = ReplaceWith("ListPromptsRequest{apply(block)}"),
+)
+public inline fun buildListPromptsRequest(block: ListPromptsRequestBuilder.() -> Unit): ListPromptsRequest {
+    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
+    return ListPromptsRequestBuilder().apply(block).build()
+}
 
 /**
  * DSL builder for constructing [ListPromptsRequest] instances.

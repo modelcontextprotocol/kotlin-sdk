@@ -1,6 +1,9 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 
 /**
  * Creates a [PingRequest] using a type-safe DSL builder.
@@ -30,6 +33,43 @@ import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 @ExperimentalMcpApi
 public inline operator fun PingRequest.Companion.invoke(block: PingRequestBuilder.() -> Unit): PingRequest =
     PingRequestBuilder().apply(block).build()
+
+/**
+ * Creates a [PingRequest] using a type-safe DSL builder.
+ *
+ * ## Optional
+ * - [meta][PingRequestBuilder.meta] - Metadata for the request
+ *
+ * Example with no parameters:
+ * ```kotlin
+ * val request = buildPingRequest { }
+ * ```
+ *
+ * Example with metadata:
+ * ```kotlin
+ * val request = buildPingRequest {
+ *     meta {
+ *         put("timestamp", JsonPrimitive(System.currentTimeMillis()))
+ *     }
+ * }
+ * ```
+ *
+ * @param block Configuration lambda for setting up the ping request
+ * @return A configured [PingRequest] instance
+ * @see PingRequestBuilder
+ * @see PingRequest
+ */
+@OptIn(ExperimentalContracts::class)
+@ExperimentalMcpApi
+@Deprecated(
+    message = "Use PingRequest { } instead",
+    level = DeprecationLevel.WARNING,
+    replaceWith = ReplaceWith("PingRequest{apply(block)}"),
+)
+public inline fun buildPingRequest(block: PingRequestBuilder.() -> Unit): PingRequest {
+    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
+    return PingRequestBuilder().apply(block).build()
+}
 
 /**
  * DSL builder for constructing [PingRequest] instances.

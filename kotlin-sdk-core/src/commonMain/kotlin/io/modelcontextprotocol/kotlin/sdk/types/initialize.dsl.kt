@@ -1,6 +1,9 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 
 /**
  * Creates an [InitializeRequest] using a type-safe DSL builder.
@@ -53,6 +56,65 @@ import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 public inline operator fun InitializeRequest.Companion.invoke(
     block: InitializeRequestBuilder.() -> Unit,
 ): InitializeRequest = InitializeRequestBuilder().apply(block).build()
+
+/**
+ * Creates an [InitializeRequest] using a type-safe DSL builder.
+ *
+ * ## Required
+ * - [protocolVersion][InitializeRequestBuilder.protocolVersion] - MCP protocol version
+ * - [capabilities][InitializeRequestBuilder.capabilities] - Client capabilities
+ * - [info][InitializeRequestBuilder.info] - Client implementation information
+ *
+ * ## Optional
+ * - [meta][InitializeRequestBuilder.meta] - Metadata for the request
+ *
+ * Example:
+ * ```kotlin
+ * val request = buildInitializeRequest {
+ *     protocolVersion = "2024-11-05"
+ *     capabilities {
+ *         sampling(ClientCapabilities.sampling)
+ *         roots(listChanged = true)
+ *     }
+ *     info("MyClient", "1.0.0")
+ * }
+ * ```
+ *
+ * Example with full client info:
+ * ```kotlin
+ * val request = buildInitializeRequest {
+ *     protocolVersion = "2024-11-05"
+ *     capabilities {
+ *         sampling(ClientCapabilities.sampling)
+ *         experimental {
+ *             put("feature", JsonPrimitive(true))
+ *         }
+ *     }
+ *     info(
+ *         name = "MyAdvancedClient",
+ *         version = "2.0.0",
+ *         title = "Advanced MCP Client",
+ *         websiteUrl = "https://example.com"
+ *     )
+ * }
+ * ```
+ *
+ * @param block Configuration lambda for setting up the initialize request
+ * @return A configured [InitializeRequest] instance
+ * @see InitializeRequestBuilder
+ * @see InitializeRequest
+ */
+@OptIn(ExperimentalContracts::class)
+@ExperimentalMcpApi
+@Deprecated(
+    message = "Use InitializeRequest { } instead",
+    level = DeprecationLevel.WARNING,
+    replaceWith = ReplaceWith("InitializeRequest{apply(block)}"),
+)
+public inline fun buildInitializeRequest(block: InitializeRequestBuilder.() -> Unit): InitializeRequest {
+    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
+    return InitializeRequestBuilder().apply(block).build()
+}
 
 /**
  * DSL builder for constructing [InitializeRequest] instances.

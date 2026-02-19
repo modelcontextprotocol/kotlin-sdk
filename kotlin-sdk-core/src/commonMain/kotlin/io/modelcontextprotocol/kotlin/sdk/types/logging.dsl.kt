@@ -1,6 +1,9 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 
 /**
  * Creates a [SetLevelRequest] using a type-safe DSL builder.
@@ -34,6 +37,47 @@ import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 @ExperimentalMcpApi
 public inline operator fun SetLevelRequest.Companion.invoke(block: SetLevelRequestBuilder.() -> Unit): SetLevelRequest =
     SetLevelRequestBuilder().apply(block).build()
+
+/**
+ * Creates a [SetLevelRequest] using a type-safe DSL builder.
+ *
+ * ## Required
+ * - [loggingLevel][SetLevelRequestBuilder.loggingLevel] - The logging level to set
+ *
+ * ## Optional
+ * - [meta][SetLevelRequestBuilder.meta] - Metadata for the request
+ *
+ * Example setting info level:
+ * ```kotlin
+ * val request = buildSetLevelRequest {
+ *     loggingLevel = LoggingLevel.Info
+ * }
+ * ```
+ *
+ * Example setting debug level:
+ * ```kotlin
+ * val request = buildSetLevelRequest {
+ *     loggingLevel = LoggingLevel.Debug
+ * }
+ * ```
+ *
+ * @param block Configuration lambda for setting up the logging level request
+ * @return A configured [SetLevelRequest] instance
+ * @see SetLevelRequestBuilder
+ * @see SetLevelRequest
+ * @see LoggingLevel
+ */
+@OptIn(ExperimentalContracts::class)
+@ExperimentalMcpApi
+@Deprecated(
+    message = "Use SetLevelRequest { } instead",
+    level = DeprecationLevel.WARNING,
+    replaceWith = ReplaceWith("SetLevelRequest{apply(block)}"),
+)
+public inline fun buildSetLevelRequest(block: SetLevelRequestBuilder.() -> Unit): SetLevelRequest {
+    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
+    return SetLevelRequestBuilder().apply(block).build()
+}
 
 /**
  * DSL builder for constructing [SetLevelRequest] instances.

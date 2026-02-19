@@ -4,6 +4,7 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
+import io.modelcontextprotocol.kotlin.sdk.types.buildPingRequest
 import io.modelcontextprotocol.kotlin.sdk.types.invoke
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.boolean
@@ -14,9 +15,10 @@ import kotlin.test.Test
 
 @OptIn(ExperimentalMcpApi::class)
 class PingRequestDslTest {
+
     @Test
     fun `buildPingRequest should create request with meta containing all field types`() {
-        val request = PingRequest {
+        val request = buildPingRequest {
             meta {
                 progressToken("token-123")
                 put("string", "value")
@@ -47,6 +49,60 @@ class PingRequestDslTest {
 
     @Test
     fun `RequestMeta DSL should support numeric progress tokens`() {
+        val requestInt = buildPingRequest {
+            meta { progressToken(123) }
+        }
+        requestInt.params?.meta?.json
+            ?.get("progressToken")
+            ?.jsonPrimitive?.int shouldBe 123
+
+        val requestLong = buildPingRequest {
+            meta { progressToken(456L) }
+        }
+        requestLong.params?.meta?.json
+            ?.get("progressToken")
+            ?.jsonPrimitive?.int shouldBe 456
+    }
+
+    @Test
+    fun `buildPingRequest should create request without params if meta is empty`() {
+        val request = buildPingRequest { }
+        request.params shouldBe null
+    }
+
+    @Test
+    fun `PingRequest should create request with meta containing all field types`() {
+        val request = PingRequest {
+            meta {
+                progressToken("token-123")
+                put("string", "value")
+                put("number", 42)
+                put("boolean", true)
+                put("null", null)
+                putJsonObject("obj") {
+                    put("key", "val")
+                }
+                putJsonArray("arr") {
+                    add("item")
+                }
+            }
+        }
+
+        request.params.shouldNotBeNull {
+            meta.shouldNotBeNull {
+                json["progressToken"]?.jsonPrimitive?.content shouldBe "token-123"
+                json["string"]?.jsonPrimitive?.content shouldBe "value"
+                json["number"]?.jsonPrimitive?.int shouldBe 42
+                json["boolean"]?.jsonPrimitive?.boolean shouldBe true
+                json["null"] shouldBe kotlinx.serialization.json.JsonNull
+                json["obj"]?.shouldNotBeNull()
+                json["arr"]?.shouldNotBeNull()
+            }
+        }
+    }
+
+    @Test
+    fun `PingRequest RequestMeta DSL should support numeric progress tokens`() {
         val requestInt = PingRequest {
             meta { progressToken(123) }
         }
@@ -63,7 +119,7 @@ class PingRequestDslTest {
     }
 
     @Test
-    fun `buildPingRequest should create request without params if meta is empty`() {
+    fun `PingRequest should create request without params if meta is empty`() {
         val request = PingRequest { }
         request.params shouldBe null
     }

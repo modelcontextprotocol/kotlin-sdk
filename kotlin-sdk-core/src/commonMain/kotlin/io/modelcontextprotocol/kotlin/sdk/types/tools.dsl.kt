@@ -4,6 +4,9 @@ import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.buildJsonObject
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 
 /**
  * Creates a [CallToolRequest] using a type-safe DSL builder.
@@ -41,6 +44,51 @@ import kotlinx.serialization.json.buildJsonObject
 @ExperimentalMcpApi
 public inline operator fun CallToolRequest.Companion.invoke(block: CallToolRequestBuilder.() -> Unit): CallToolRequest =
     CallToolRequestBuilder().apply(block).build()
+
+/**
+ * Creates a [CallToolRequest] using a type-safe DSL builder.
+ *
+ * ## Required
+ * - [name][CallToolRequestBuilder.name] - The name of the tool to call
+ *
+ * ## Optional
+ * - [arguments][CallToolRequestBuilder.arguments] - Arguments to pass to the tool
+ * - [meta][CallToolRequestBuilder.meta] - Metadata for the request
+ *
+ * Example without arguments:
+ * ```kotlin
+ * val request = buildCallToolRequest {
+ *     name = "getCurrentTime"
+ * }
+ * ```
+ *
+ * Example with arguments:
+ * ```kotlin
+ * val request = buildCallToolRequest {
+ *     name = "searchDatabase"
+ *     arguments {
+ *         put("query", "users")
+ *         put("limit", 10)
+ *     }
+ * }
+ * ```
+ *
+ * @param block Configuration lambda for setting up the call tool request
+ * @return A configured [CallToolRequest] instance
+ * @see CallToolRequestBuilder
+ * @see CallToolRequest
+ */
+@OptIn(ExperimentalContracts::class)
+@ExperimentalMcpApi
+@Deprecated(
+    message = "Use CallToolRequest { } instead",
+    level = DeprecationLevel.WARNING,
+    replaceWith = ReplaceWith("CallToolRequest{apply(block)}"),
+)
+public inline fun buildCallToolRequest(block: CallToolRequestBuilder.() -> Unit): CallToolRequest {
+    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
+    return CallToolRequestBuilder().apply(block).build()
+}
 
 /**
  * DSL builder for constructing [CallToolRequest] instances.
@@ -138,6 +186,42 @@ public class CallToolRequestBuilder @PublishedApi internal constructor() : Reque
 public inline operator fun ListToolsRequest.Companion.invoke(
     block: ListToolsRequestBuilder.() -> Unit,
 ): ListToolsRequest = ListToolsRequestBuilder().apply(block).build()
+
+/**
+ * Creates a [ListToolsRequest] using a type-safe DSL builder.
+ *
+ * ## Optional
+ * - [cursor][ListToolsRequestBuilder.cursor] - Pagination cursor for fetching next page
+ * - [meta][ListToolsRequestBuilder.meta] - Metadata for the request
+ *
+ * Example without pagination:
+ * ```kotlin
+ * val request = buildListToolsRequest { }
+ * ```
+ *
+ * Example with pagination:
+ * ```kotlin
+ * val request = buildListToolsRequest {
+ *     cursor = "eyJwYWdlIjogMn0="
+ * }
+ * ```
+ *
+ * @param block Configuration lambda for setting up the list tools request
+ * @return A configured [ListToolsRequest] instance
+ * @see ListToolsRequestBuilder
+ * @see ListToolsRequest
+ */
+@OptIn(ExperimentalContracts::class)
+@ExperimentalMcpApi
+@Deprecated(
+    message = "Use ListToolsRequest { } instead",
+    level = DeprecationLevel.WARNING,
+    replaceWith = ReplaceWith("ListToolsRequest{apply(block)}"),
+)
+public inline fun buildListToolsRequest(block: ListToolsRequestBuilder.() -> Unit): ListToolsRequest {
+    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
+    return ListToolsRequestBuilder().apply(block).build()
+}
 
 /**
  * DSL builder for constructing [ListToolsRequest] instances.

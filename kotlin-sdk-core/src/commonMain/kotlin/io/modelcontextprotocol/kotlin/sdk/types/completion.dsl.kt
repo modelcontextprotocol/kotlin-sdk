@@ -1,6 +1,9 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 
 /**
  * Creates a [CompleteRequest] using a type-safe DSL builder.
@@ -40,6 +43,52 @@ import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 @ExperimentalMcpApi
 public inline operator fun CompleteRequest.Companion.invoke(block: CompleteRequestBuilder.() -> Unit): CompleteRequest =
     CompleteRequestBuilder().apply(block).build()
+
+/**
+ * Creates a [CompleteRequest] using a type-safe DSL builder.
+ *
+ * ## Required
+ * - [argument][CompleteRequestBuilder.argument] - Sets the argument name and value to complete
+ * - [ref][CompleteRequestBuilder.ref] - Sets the reference to a prompt or resource template
+ *
+ * ## Optional
+ * - [context][CompleteRequestBuilder.context] - Adds additional context for the completion
+ * - [meta][CompleteRequestBuilder.meta] - Adds metadata to the request
+ *
+ * Example with [PromptReference]:
+ * ```kotlin
+ * val request = buildCompleteRequest {
+ *     argument("query", "user input")
+ *     ref(PromptReference("searchPrompt"))
+ * }
+ * ```
+ *
+ * Example with [ResourceTemplateReference]:
+ * ```kotlin
+ * val request = buildCompleteRequest {
+ *     argument("path", "/users/123")
+ *     ref(ResourceTemplateReference("file:///{path}"))
+ *     context {
+ *         put("userId", "123")
+ *         put("role", "admin")
+ *     }
+ * }
+ * ```
+ *
+ * @param block Configuration lambda for setting up the completion request
+ * @return A configured [CompleteRequest] instance
+ * @see CompleteRequestBuilder
+ */
+@OptIn(ExperimentalContracts::class)
+@Deprecated(
+    message = "Use CompleteRequest { } instead",
+    level = DeprecationLevel.WARNING,
+    replaceWith = ReplaceWith("CompleteRequest{apply(block)}"),
+)
+public inline fun buildCompleteRequest(block: CompleteRequestBuilder.() -> Unit): CompleteRequest {
+    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
+    return CompleteRequestBuilder().apply(block).build()
+}
 
 /**
  * DSL builder for constructing [CompleteRequest] instances.

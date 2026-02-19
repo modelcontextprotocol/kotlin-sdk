@@ -4,6 +4,9 @@ import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.buildJsonObject
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 
 /**
  * Creates an [ElicitRequest] using a type-safe DSL builder.
@@ -57,6 +60,68 @@ import kotlinx.serialization.json.buildJsonObject
 @ExperimentalMcpApi
 public inline operator fun ElicitRequest.Companion.invoke(block: ElicitRequestBuilder.() -> Unit): ElicitRequest =
     ElicitRequestBuilder().apply(block).build()
+
+/**
+ * Creates an [ElicitRequest] using a type-safe DSL builder.
+ *
+ * ## Required
+ * - [message][ElicitRequestBuilder.message] - The message to present to the user
+ * - [requestedSchema][ElicitRequestBuilder.requestedSchema] - Schema defining the structure of requested data
+ *
+ * ## Optional
+ * - [meta][ElicitRequestBuilder.meta] - Metadata for the request
+ *
+ * Example requesting user information:
+ * ```kotlin
+ * val request = buildElicitRequest {
+ *     message = "Please provide your contact information"
+ *     requestedSchema {
+ *         properties {
+ *             put("email", JsonObject(mapOf(
+ *                 "type" to JsonPrimitive("string"),
+ *                 "description" to JsonPrimitive("Your email address")
+ *             )))
+ *             put("name", JsonObject(mapOf(
+ *                 "type" to JsonPrimitive("string")
+ *             )))
+ *         }
+ *         required = listOf("email")
+ *     }
+ * }
+ * ```
+ *
+ * Example with simple text input:
+ * ```kotlin
+ * val request = buildElicitRequest {
+ *     message = "Enter a project name"
+ *     requestedSchema {
+ *         properties {
+ *             put("projectName", JsonObject(mapOf(
+ *                 "type" to JsonPrimitive("string"),
+ *                 "description" to JsonPrimitive("Name for the new project")
+ *             )))
+ *         }
+ *     }
+ * }
+ * ```
+ *
+ * @param block Configuration lambda for setting up the elicitation request
+ * @return A configured [ElicitRequest] instance
+ * @see ElicitRequestBuilder
+ * @see ElicitRequest
+ */
+@OptIn(ExperimentalContracts::class)
+@ExperimentalMcpApi
+@Deprecated(
+    message = "Use ElicitRequest { } instead",
+    level = DeprecationLevel.WARNING,
+    replaceWith = ReplaceWith("ElicitRequest{apply(block)}"),
+
+)
+public inline fun buildElicitRequest(block: ElicitRequestBuilder.() -> Unit): ElicitRequest {
+    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
+    return ElicitRequestBuilder().apply(block).build()
+}
 
 /**
  * DSL builder for constructing [ElicitRequest] instances.
