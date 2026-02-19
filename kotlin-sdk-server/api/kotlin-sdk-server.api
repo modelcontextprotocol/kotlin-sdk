@@ -157,7 +157,6 @@ public class io/modelcontextprotocol/kotlin/sdk/server/ServerSession : io/modelc
 	public static synthetic fun createMessage$default (Lio/modelcontextprotocol/kotlin/sdk/server/ServerSession;Lio/modelcontextprotocol/kotlin/sdk/types/CreateMessageRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getClientCapabilities ()Lio/modelcontextprotocol/kotlin/sdk/types/ClientCapabilities;
-	public final fun getClientConnection ()Lio/modelcontextprotocol/kotlin/sdk/server/ClientConnection;
 	public final fun getClientVersion ()Lio/modelcontextprotocol/kotlin/sdk/types/Implementation;
 	protected final fun getInstructions ()Ljava/lang/String;
 	protected final fun getServerInfo ()Lio/modelcontextprotocol/kotlin/sdk/types/Implementation;

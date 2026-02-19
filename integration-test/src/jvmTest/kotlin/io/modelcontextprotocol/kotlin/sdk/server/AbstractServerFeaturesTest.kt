@@ -3,9 +3,11 @@ package io.modelcontextprotocol.kotlin.sdk.server
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.ClientOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.InMemoryTransport
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
@@ -14,6 +16,13 @@ abstract class AbstractServerFeaturesTest {
 
     protected lateinit var server: Server
     protected lateinit var client: Client
+
+    protected fun addTool(name: String, block: suspend ClientConnection.() -> Unit) {
+        server.addTool(name, "Test $name") {
+            block()
+            CallToolResult(listOf(TextContent("Success")))
+        }
+    }
 
     abstract fun getServerCapabilities(): ServerCapabilities
 

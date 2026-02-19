@@ -67,7 +67,7 @@ public open class ServerSession(
     /**
      * The capabilities supported by the server, related to the session.
      */
-    internal val serverCapabilities = options.capabilities
+    private val serverCapabilities = options.capabilities
 
     /**
      * The current logging level set by the client.
@@ -95,7 +95,7 @@ public open class ServerSession(
         }
     }
 
-    public val clientConnection: ClientConnection = ClientConnectionImpl(this)
+    internal val clientConnection: ClientConnection = ClientConnectionImpl(this)
 
     /**
      * Registers a callback to be invoked when the server has completed initialization.
