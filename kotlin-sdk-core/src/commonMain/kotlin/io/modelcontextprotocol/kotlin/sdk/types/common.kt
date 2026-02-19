@@ -8,12 +8,13 @@ import kotlinx.serialization.json.JsonObject
 // Protocol Version Constants
 // ============================================================================
 
-public const val LATEST_PROTOCOL_VERSION: String = "2025-06-18"
+public const val LATEST_PROTOCOL_VERSION: String = "2025-11-25"
 
-public const val DEFAULT_NEGOTIATED_PROTOCOL_VERSION: String = "2025-03-26"
+public const val DEFAULT_NEGOTIATED_PROTOCOL_VERSION: String = "2025-06-18"
 
 public val SUPPORTED_PROTOCOL_VERSIONS: List<String> = listOf(
     LATEST_PROTOCOL_VERSION,
+    DEFAULT_NEGOTIATED_PROTOCOL_VERSION,
     "2025-03-26",
     "2024-11-05",
 )
