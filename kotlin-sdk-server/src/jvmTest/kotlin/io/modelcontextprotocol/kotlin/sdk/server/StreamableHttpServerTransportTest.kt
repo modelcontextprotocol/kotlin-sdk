@@ -42,6 +42,8 @@ import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -51,6 +53,18 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation as ClientCon
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation as ServerContentNegotiation
 
 class StreamableHttpServerTransportTest {
+    companion object {
+        @JvmStatic
+        @MethodSource
+        fun providePayloads() = listOf(
+            "",
+            "   ",
+            "  \n  \t  ",
+            null,
+            "lolol"
+        )
+    }
+
     private val path = "/transport"
 
     @Test
@@ -114,7 +128,86 @@ class StreamableHttpServerTransportTest {
     }
 
     @Test
-    fun `notifications only payload responds with 202 Accepted`() = testApplication {
+    fun `second initialization request returns an HTTP error`() = testApplication {
+        configTestServer()
+
+        val client = createTestClient()
+
+        val transport = StreamableHttpServerTransport(enableJsonResponse = true)
+        transport.onMessage { message ->
+            if (message is JSONRPCRequest) {
+                transport.send(JSONRPCResponse(message.id, EmptyResult()))
+            }
+        }
+
+        configureTransportEndpoint(transport)
+
+        val payload = buildInitializeRequestPayload()
+
+        val firstResponse = client.post(path) {
+            addStreamableHeaders()
+            setBody(payload)
+        }
+
+        firstResponse.status shouldBe HttpStatusCode.OK
+
+        val secondResponse = client.post(path) {
+            addStreamableHeaders()
+            header("mcp-session-id", firstResponse.headers[MCP_SESSION_ID_HEADER])
+            setBody(payload)
+        }
+
+        secondResponse.status shouldBe HttpStatusCode.BadRequest
+    }
+
+    @Test
+    fun `request with unsupported protocol version returns an HTTP error`() = testApplication {
+        configTestServer()
+
+        val client = createTestClient()
+
+        val transport = StreamableHttpServerTransport(enableJsonResponse = true)
+        transport.onMessage { message ->
+            if (message is JSONRPCRequest) {
+                transport.send(JSONRPCResponse(message.id, EmptyResult()))
+            }
+        }
+
+        configureTransportEndpoint(transport)
+
+        val initPayload = buildInitializeRequestPayload()
+        val initResponse = client.post(path) {
+            addStreamableHeaders()
+            setBody(initPayload)
+        }
+
+        initResponse.status shouldBe HttpStatusCode.OK
+        val sessionId = initResponse.headers[MCP_SESSION_ID_HEADER]
+        assertNotNull(sessionId)
+
+        // TODO When https://github.com/modelcontextprotocol/kotlin-sdk/issues/547 is fixed,
+        //  check the incompatible mcp-protocol-version in the InitializeRequest and delete the part below
+        val response = client.post(path) {
+            addStreamableHeaders()
+            header("mcp-session-id", sessionId)
+            header("mcp-protocol-version", "1900-01-01")
+            setBody(
+                encodeMessages(
+                    listOf(
+                        JSONRPCRequest(
+                            id = RequestId("test-1"),
+                            method = Method.Defined.ToolsList.value,
+                        )
+                    )
+                )
+            )
+        }
+
+        response.status shouldBe HttpStatusCode.BadRequest
+    }
+
+    @Test
+    fun `notifications only payload is accepted`() = testApplication {
         configTestServer()
 
         val client = createTestClient()
@@ -202,15 +295,68 @@ class StreamableHttpServerTransportTest {
 
         assertEquals(HttpStatusCode.OK, response.status)
 
-        val responses = response.body<List<JSONRPCResponse>>().map { it.result }
-        responses shouldContain (firstResult)
-        responses shouldContain (secondResult)
-        // TODO(check order)
-//        assertEquals(listOf(firstRequest.id, secondRequest.id), responses.map { it.id })
-//        val firstMeta = (responses[0].result as EmptyResult).meta
-//        val secondMeta = (responses[1].result as EmptyResult).meta
-//        assertEquals("first", firstMeta?.get("label")?.jsonPrimitive?.content)
-//        assertEquals("second", secondMeta?.get("label")?.jsonPrimitive?.content)
+        val responses = response.body<List<JSONRPCResponse>>()
+        val results = responses.map { it.result }
+        results shouldContain (firstResult)
+        results shouldContain (secondResult)
+
+        // Check responses' order
+
+        // TODO Uncomment when fixed https://github.com/modelcontextprotocol/kotlin-sdk/issues/548
+        /*assertEquals(listOf(firstRequest.id, secondRequest.id), responses.map { it.id })
+        val firstMeta = (responses[0] as ListToolsResult).meta
+        val secondMeta = (responses[1] as ListResourcesResult).meta
+        assertEquals("first", firstMeta?.get("label")?.jsonPrimitive?.content)
+        assertEquals("second", secondMeta?.get("label")?.jsonPrimitive?.content)*/
+    }
+
+    @ParameterizedTest
+    @MethodSource("providePayloads")
+    fun `POST with a null or empty body returns an error`(payload: String?) = testApplication {
+        configTestServer()
+
+        val client = createTestClient()
+
+        val transport = StreamableHttpServerTransport(enableJsonResponse = true)
+        transport.onMessage { message ->
+            if (message is JSONRPCRequest) {
+                transport.send(JSONRPCResponse(message.id, EmptyResult()))
+            }
+        }
+
+        configureTransportEndpoint(transport)
+
+        val response = client.post(path) {
+            addStreamableHeaders()
+            setBody(payload)
+        }
+
+        response.status shouldBe HttpStatusCode.BadRequest
+    }
+
+    @Test
+    fun `POST with an oversized body returns an error`() = testApplication {
+        configTestServer()
+
+        val client = createTestClient()
+
+        val transport = StreamableHttpServerTransport(enableJsonResponse = true)
+        transport.onMessage { message ->
+            if (message is JSONRPCRequest) {
+                transport.send(JSONRPCResponse(message.id, EmptyResult()))
+            }
+        }
+
+        configureTransportEndpoint(transport)
+
+        val oversizedPayload = "x".repeat(5 * 1024 * 1024)
+
+        val response = client.post(path) {
+            addStreamableHeaders()
+            setBody(oversizedPayload)
+        }
+
+        response.status shouldBe HttpStatusCode.PayloadTooLarge
     }
 
     private fun ApplicationTestBuilder.configureTransportEndpoint(transport: StreamableHttpServerTransport) {
