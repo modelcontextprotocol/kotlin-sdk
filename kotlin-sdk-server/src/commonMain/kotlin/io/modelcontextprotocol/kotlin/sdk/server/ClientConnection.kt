@@ -24,6 +24,11 @@ import io.modelcontextprotocol.kotlin.sdk.types.ToolListChangedNotification
 
 private val logger = KotlinLogging.logger {}
 
+/**
+ * Represents a connection interface between a server and a client, enabling
+ * communication through notifications, requests, and other operations.
+ * This interface defines various methods to facilitate the interaction.
+ */
 @Suppress("TooManyFunctions")
 public interface ClientConnection {
 
@@ -142,9 +147,6 @@ public interface ClientConnection {
     public suspend fun sendPromptListChanged()
 }
 
-/**
- * Methods for communicating from the server back to the client.
- */
 @Suppress("TooManyFunctions")
 internal class ClientConnectionImpl(private val session: ServerSession) : ClientConnection {
 
