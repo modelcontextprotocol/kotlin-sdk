@@ -1,7 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.shared.Protocol
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
@@ -93,8 +92,7 @@ public open class ServerSession(
         }
     }
 
-    @ExperimentalMcpApi
-    public val clientConnection: ClientConnection = ClientConnection(this)
+    public val clientConnection: ClientConnection = ClientConnectionImpl(this)
 
     /**
      * Registers a callback to be invoked when the server has completed initialization.
