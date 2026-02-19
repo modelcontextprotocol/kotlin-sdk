@@ -1,5 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
+import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
@@ -21,7 +22,6 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.jupiter.api.Test
-import kotlin.test.assertEquals
 
 class ServerHandlerNotificationTest : AbstractServerFeaturesTest() {
 
@@ -33,23 +33,15 @@ class ServerHandlerNotificationTest : AbstractServerFeaturesTest() {
     )
 
     @Test
-    fun `tool should be able to send notification to client`() = runTest {
+    fun `tool handler can send notification to client`() = runTest {
         val notificationReceived = CompletableDeferred<LoggingMessageNotification>()
-
-        // Setup client notification handler
-        client.setNotificationHandler<LoggingMessageNotification>(
-            Method.Defined.NotificationsMessage,
-        ) { notification ->
+        client.setNotificationHandler<LoggingMessageNotification>(Method.Defined.NotificationsMessage) { notification ->
             notificationReceived.complete(notification)
             CompletableDeferred(Unit)
         }
 
-        val toolName = "notify-tool"
         val notificationText = "Notification from tool"
-
-        // Add a tool that sends a notification
-        server.addTool(toolName, "A tool that notifies") { _ ->
-            // Use the session from context to send a notification
+        server.addTool("notify-tool", "A tool that notifies") {
             sendLoggingMessage(
                 LoggingMessageNotification(
                     LoggingMessageNotificationParams(
@@ -61,36 +53,24 @@ class ServerHandlerNotificationTest : AbstractServerFeaturesTest() {
             CallToolResult(listOf(TextContent("Tool executed")))
         }
 
-        // Call the tool
-        val result = client.callTool(CallToolRequest(CallToolRequestParams(name = toolName)))
+        val result = client.callTool(CallToolRequest(CallToolRequestParams(name = "notify-tool")))
 
-        assertEquals(1, result.content.size)
-        assertEquals("Tool executed", (result.content[0] as TextContent).text)
-
-        // Verify notification was received
-        val receivedNotification = notificationReceived.await()
-        assertEquals(LoggingLevel.Info, receivedNotification.params.level)
-        assertEquals(JsonPrimitive(notificationText), receivedNotification.params.data)
+        (result.content[0] as TextContent).text shouldBe "Tool executed"
+        val received = notificationReceived.await()
+        received.params.level shouldBe LoggingLevel.Info
+        received.params.data shouldBe JsonPrimitive(notificationText)
     }
 
     @Test
-    fun `prompt should be able to send notification to client`() = runTest {
+    fun `prompt handler can send notification to client`() = runTest {
         val notificationReceived = CompletableDeferred<LoggingMessageNotification>()
-
-        // Setup client notification handler
-        client.setNotificationHandler<LoggingMessageNotification>(
-            Method.Defined.NotificationsMessage,
-        ) { notification ->
+        client.setNotificationHandler<LoggingMessageNotification>(Method.Defined.NotificationsMessage) { notification ->
             notificationReceived.complete(notification)
             CompletableDeferred(Unit)
         }
 
-        val promptName = "notify-prompt"
         val notificationText = "Notification from prompt"
-
-        // Add a prompt that sends a notification
-        server.addPrompt(promptName, "A prompt that notifies") { _ ->
-            // Use the session from context to send a notification
+        server.addPrompt("notify-prompt", "A prompt that notifies") {
             sendLoggingMessage(
                 LoggingMessageNotification(
                     LoggingMessageNotificationParams(
@@ -99,41 +79,28 @@ class ServerHandlerNotificationTest : AbstractServerFeaturesTest() {
                     ),
                 ),
             )
-            GetPromptResult(
-                messages = listOf(),
-                description = "Prompt executed",
-            )
+            GetPromptResult(messages = listOf(), description = "Prompt executed")
         }
 
-        // Get the prompt
-        val result = client.getPrompt(GetPromptRequest(GetPromptRequestParams(name = promptName)))
+        val result = client.getPrompt(GetPromptRequest(GetPromptRequestParams(name = "notify-prompt")))
 
-        assertEquals("Prompt executed", result.description)
-
-        // Verify notification was received
-        val receivedNotification = notificationReceived.await()
-        assertEquals(LoggingLevel.Info, receivedNotification.params.level)
-        assertEquals(JsonPrimitive(notificationText), receivedNotification.params.data)
+        result.description shouldBe "Prompt executed"
+        val received = notificationReceived.await()
+        received.params.level shouldBe LoggingLevel.Info
+        received.params.data shouldBe JsonPrimitive(notificationText)
     }
 
     @Test
-    fun `resource should be able to send notification to client`() = runTest {
+    fun `resource handler can send notification to client`() = runTest {
         val notificationReceived = CompletableDeferred<LoggingMessageNotification>()
-
-        // Setup client notification handler
-        client.setNotificationHandler<LoggingMessageNotification>(
-            Method.Defined.NotificationsMessage,
-        ) { notification ->
+        client.setNotificationHandler<LoggingMessageNotification>(Method.Defined.NotificationsMessage) { notification ->
             notificationReceived.complete(notification)
             CompletableDeferred(Unit)
         }
 
         val resourceUri = "test://notify-resource"
         val notificationText = "Notification from resource"
-
-        // Add a resource that sends a notification
-        server.addResource(resourceUri, "Notify Resource", "A resource that notifies") { _ ->
-            // Use the session from context to send a notification
+        server.addResource(resourceUri, "Notify Resource", "A resource that notifies") {
             sendLoggingMessage(
                 LoggingMessageNotification(
                     LoggingMessageNotificationParams(
@@ -143,24 +110,15 @@ class ServerHandlerNotificationTest : AbstractServerFeaturesTest() {
                 ),
             )
             ReadResourceResult(
-                contents = listOf(
-                    TextResourceContents(
-                        uri = resourceUri,
-                        text = "Resource read",
-                    ),
-                ),
+                contents = listOf(TextResourceContents(uri = resourceUri, text = "Resource read")),
             )
         }
 
-        // Read the resource
         val result = client.readResource(ReadResourceRequest(ReadResourceRequestParams(uri = resourceUri)))
 
-        assertEquals(1, result.contents.size)
-        assertEquals("Resource read", (result.contents[0] as TextResourceContents).text)
-
-        // Verify notification was received
-        val receivedNotification = notificationReceived.await()
-        assertEquals(LoggingLevel.Info, receivedNotification.params.level)
-        assertEquals(JsonPrimitive(notificationText), receivedNotification.params.data)
+        (result.contents[0] as TextResourceContents).text shouldBe "Resource read"
+        val received = notificationReceived.await()
+        received.params.level shouldBe LoggingLevel.Info
+        received.params.data shouldBe JsonPrimitive(notificationText)
     }
 }

@@ -3,6 +3,7 @@ package io.modelcontextprotocol.kotlin.sdk.server
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.shared.Protocol
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
+import io.modelcontextprotocol.kotlin.sdk.types.BaseRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageResult
@@ -15,11 +16,13 @@ import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeResult
 import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.ListRootsRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsResult
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.Method.Defined
+import io.modelcontextprotocol.kotlin.sdk.types.RequestMeta
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.types.SetLevelRequest
@@ -138,21 +141,21 @@ public open class ServerSession(
             Defined.SamplingCreateMessage -> {
                 if (clientCapabilities?.sampling == null) {
                     logger.error { "Client capability assertion failed: sampling not supported" }
-                    throw IllegalStateException("Client does not support sampling (required for ${method.value})")
+                    error("Client does not support sampling (required for ${method.value})")
                 }
             }
 
             Defined.RootsList -> {
                 if (clientCapabilities?.roots == null) {
                     logger.error { "Client capability assertion failed: listing roots not supported" }
-                    throw IllegalStateException("Client does not support listing roots (required for ${method.value})")
+                    error("Client does not support listing roots (required for ${method.value})")
                 }
             }
 
             Defined.ElicitationCreate -> {
                 if (clientCapabilities?.elicitation == null) {
                     logger.error { "Client capability assertion failed: elicitation not supported" }
-                    throw IllegalStateException("Client does not support elicitation (required for ${method.value})")
+                    error("Client does not support elicitation (required for ${method.value})")
                 }
             }
 
@@ -179,7 +182,7 @@ public open class ServerSession(
             Defined.NotificationsMessage -> {
                 if (serverCapabilities.logging == null) {
                     logger.error { "Server capability assertion failed: logging not supported" }
-                    throw IllegalStateException("Server does not support logging (required for ${method.value})")
+                    error("Server does not support logging (required for ${method.value})")
                 }
             }
 
@@ -187,7 +190,7 @@ public open class ServerSession(
             Defined.NotificationsResourcesListChanged,
             -> {
                 if (serverCapabilities.resources == null) {
-                    throw IllegalStateException(
+                    error(
                         "Server does not support notifying about resources (required for ${method.value})",
                     )
                 }
@@ -195,7 +198,7 @@ public open class ServerSession(
 
             Defined.NotificationsToolsListChanged -> {
                 if (serverCapabilities.tools == null) {
-                    throw IllegalStateException(
+                    error(
                         "Server does not support notifying of tool list changes (required for ${method.value})",
                     )
                 }
@@ -203,7 +206,7 @@ public open class ServerSession(
 
             Defined.NotificationsPromptsListChanged -> {
                 if (serverCapabilities.prompts == null) {
-                    throw IllegalStateException(
+                    error(
                         "Server does not support notifying of prompt list changes (required for ${method.value})",
                     )
                 }
@@ -234,14 +237,14 @@ public open class ServerSession(
             Defined.SamplingCreateMessage -> {
                 if (serverCapabilities.experimental?.get("sampling") == null) {
                     logger.error { "Server capability assertion failed: sampling not supported" }
-                    throw IllegalStateException("Server does not support sampling (required for $method)")
+                    error("Server does not support sampling (required for $method)")
                 }
             }
 
             Defined.LoggingSetLevel -> {
                 if (serverCapabilities.logging == null) {
                     logger.error { "Server does not support logging (required for $method)" }
-                    throw IllegalStateException("Server does not support logging (required for $method)")
+                    error("Server does not support logging (required for $method)")
                 }
             }
 
@@ -249,7 +252,7 @@ public open class ServerSession(
             Defined.PromptsList,
             -> {
                 if (serverCapabilities.prompts == null) {
-                    throw IllegalStateException("Server does not support prompts (required for $method)")
+                    error("Server does not support prompts (required for $method)")
                 }
             }
 
@@ -260,7 +263,7 @@ public open class ServerSession(
             Defined.ResourcesUnsubscribe,
             -> {
                 if (serverCapabilities.resources == null) {
-                    throw IllegalStateException("Server does not support resources (required for $method)")
+                    error("Server does not support resources (required for $method)")
                 }
             }
 
@@ -268,7 +271,7 @@ public open class ServerSession(
             Defined.ToolsList,
             -> {
                 if (serverCapabilities.tools == null) {
-                    throw IllegalStateException("Server does not support tools (required for $method)")
+                    error("Server does not support tools (required for $method)")
                 }
             }
 
@@ -292,7 +295,8 @@ public open class ServerSession(
             requestedVersion
         } else {
             logger.warn {
-                "Client requested unsupported protocol version $requestedVersion, falling back to $LATEST_PROTOCOL_VERSION"
+                "Client requested unsupported protocol version $requestedVersion, " +
+                    "falling back to $LATEST_PROTOCOL_VERSION"
             }
             LATEST_PROTOCOL_VERSION
         }
@@ -347,7 +351,10 @@ public open class ServerSession(
     public suspend fun listRoots(
         params: JsonObject = EmptyJsonObject,
         options: RequestOptions? = null,
-    ): ListRootsResult = clientConnection.listRoots(params, options)
+    ): ListRootsResult {
+        logger.debug { "Listing roots with params: $params" }
+        return request(ListRootsRequest(BaseRequestParams(RequestMeta(params))), options)
+    }
 
     /**
      * Sends a message to the client requesting an elicitation.
