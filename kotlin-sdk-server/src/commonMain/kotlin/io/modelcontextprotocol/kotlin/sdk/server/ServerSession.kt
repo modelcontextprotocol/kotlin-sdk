@@ -188,7 +188,7 @@ public open class ServerSession(
 
             Defined.NotificationsResourcesUpdated,
             Defined.NotificationsResourcesListChanged,
-                -> {
+            -> {
                 if (serverCapabilities.resources == null) {
                     throw IllegalStateException(
                         "Server does not support notifying about resources (required for ${method.value})",
@@ -214,7 +214,7 @@ public open class ServerSession(
 
             Defined.NotificationsCancelled,
             Defined.NotificationsProgress,
-                -> {
+            -> {
                 // Always allowed
             }
 
@@ -250,7 +250,7 @@ public open class ServerSession(
 
             Defined.PromptsGet,
             Defined.PromptsList,
-                -> {
+            -> {
                 if (serverCapabilities.prompts == null) {
                     throw IllegalStateException("Server does not support prompts (required for $method)")
                 }
@@ -261,7 +261,7 @@ public open class ServerSession(
             Defined.ResourcesRead,
             Defined.ResourcesSubscribe,
             Defined.ResourcesUnsubscribe,
-                -> {
+            -> {
                 if (serverCapabilities.resources == null) {
                     throw IllegalStateException("Server does not support resources (required for $method)")
                 }
@@ -269,7 +269,7 @@ public open class ServerSession(
 
             Defined.ToolsCall,
             Defined.ToolsList,
-                -> {
+            -> {
                 if (serverCapabilities.tools == null) {
                     throw IllegalStateException("Server does not support tools (required for $method)")
                 }
@@ -328,8 +328,7 @@ public open class ServerSession(
     public suspend fun listRoots(
         params: JsonObject = EmptyJsonObject,
         options: RequestOptions? = null,
-    ): ListRootsResult =
-        clientConnection.listRoots(params, options)
+    ): ListRootsResult = clientConnection.listRoots(params, options)
 
     public suspend fun createElicitation(
         message: String,

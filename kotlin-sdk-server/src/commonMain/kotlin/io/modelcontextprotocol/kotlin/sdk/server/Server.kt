@@ -579,7 +579,7 @@ public open class Server(
         return try {
             logger.trace { "Executing tool ${requestParams.name} with input: ${requestParams.arguments}" }
             tool.run {
-               session.clientConnection.handler(request)
+                session.clientConnection.handler(request)
             }
         } catch (e: CancellationException) {
             throw e
