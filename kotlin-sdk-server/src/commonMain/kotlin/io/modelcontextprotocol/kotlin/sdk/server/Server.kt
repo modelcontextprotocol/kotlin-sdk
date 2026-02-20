@@ -74,6 +74,7 @@ public class ServerOptions(public val capabilities: ServerCapabilities, enforceS
  * this server. The provider is called each time a new session is started to support dynamic instructions.
  * @param block A block to configure the mcp server.
  */
+@Suppress("TooManyFunctions")
 public open class Server(
     protected val serverInfo: Implementation,
     protected val options: ServerOptions,
@@ -193,7 +194,7 @@ public open class Server(
                 handleListTools()
             }
             session.setRequestHandler<CallToolRequest>(Method.Defined.ToolsCall) { request, _ ->
-                handleCallTool(request)
+                handleCallTool(session, request)
             }
         }
 
@@ -203,7 +204,7 @@ public open class Server(
                 handleListPrompts()
             }
             session.setRequestHandler<GetPromptRequest>(Method.Defined.PromptsGet) { request, _ ->
-                handleGetPrompt(request)
+                handleGetPrompt(session, request)
             }
         }
 
@@ -213,7 +214,7 @@ public open class Server(
                 handleListResources()
             }
             session.setRequestHandler<ReadResourceRequest>(Method.Defined.ResourcesRead) { request, _ ->
-                handleReadResource(request)
+                handleReadResource(session, request)
             }
             session.setRequestHandler<ListResourceTemplatesRequest>(Method.Defined.ResourcesTemplatesList) { _, _ ->
                 handleListResourceTemplates()
@@ -294,7 +295,7 @@ public open class Server(
      * @param handler A suspend function that handles executing the tool when called by the client.
      * @throws IllegalStateException If the server does not support tools.
      */
-    public fun addTool(tool: Tool, handler: suspend (CallToolRequest) -> CallToolResult) {
+    public fun addTool(tool: Tool, handler: suspend ClientConnection.(CallToolRequest) -> CallToolResult) {
         check(options.capabilities.tools != null) {
             logger.error { "Failed to add tool '${tool.name}': Server does not support tools capability" }
             "Server does not support tools capability. Enable it in ServerOptions."
@@ -316,6 +317,7 @@ public open class Server(
      * @param handler A suspend function that handles executing the tool when called by the client.
      * @throws IllegalStateException If the server does not support tools.
      */
+    @Suppress("LongParameterList")
     public fun addTool(
         name: String,
         description: String,
@@ -324,7 +326,7 @@ public open class Server(
         outputSchema: ToolSchema? = null,
         toolAnnotations: ToolAnnotations? = null,
         meta: JsonObject? = null,
-        handler: suspend (CallToolRequest) -> CallToolResult,
+        handler: suspend ClientConnection.(CallToolRequest) -> CallToolResult,
     ) {
         val tool = Tool(
             name = name,
@@ -391,7 +393,10 @@ public open class Server(
      * @param promptProvider A suspend function that returns the prompt content when requested by the client.
      * @throws IllegalStateException If the server does not support prompts.
      */
-    public fun addPrompt(prompt: Prompt, promptProvider: suspend (GetPromptRequest) -> GetPromptResult) {
+    public fun addPrompt(
+        prompt: Prompt,
+        promptProvider: suspend ClientConnection.(GetPromptRequest) -> GetPromptResult,
+    ) {
         check(options.capabilities.prompts != null) {
             logger.error { "Failed to add prompt '${prompt.name}': Server does not support prompts capability" }
             "Server does not support prompts capability."
@@ -412,7 +417,7 @@ public open class Server(
         name: String,
         description: String? = null,
         arguments: List<PromptArgument>? = null,
-        promptProvider: suspend (GetPromptRequest) -> GetPromptResult,
+        promptProvider: suspend ClientConnection.(GetPromptRequest) -> GetPromptResult,
     ) {
         val prompt = Prompt(name = name, description = description, arguments = arguments)
         addPrompt(prompt, promptProvider)
@@ -479,7 +484,7 @@ public open class Server(
         name: String,
         description: String,
         mimeType: String = "text/html",
-        readHandler: suspend (ReadResourceRequest) -> ReadResourceResult,
+        readHandler: suspend ClientConnection.(ReadResourceRequest) -> ReadResourceResult,
     ) {
         check(options.capabilities.resources != null) {
             logger.error { "Failed to add resource '$name': Server does not support resources capability" }
@@ -557,7 +562,7 @@ public open class Server(
         return ListToolsResult(tools = toolList, nextCursor = null)
     }
 
-    private suspend fun handleCallTool(request: CallToolRequest): CallToolResult {
+    private suspend fun handleCallTool(session: ServerSession, request: CallToolRequest): CallToolResult {
         val requestParams = request.params
         logger.debug { "Handling tool call request for tool: ${requestParams.name}" }
 
@@ -571,9 +576,12 @@ public open class Server(
         }
 
         // Execute the tool handler and catch any errors
+        @Suppress("TooGenericExceptionCaught")
         return try {
             logger.trace { "Executing tool ${requestParams.name} with input: ${requestParams.arguments}" }
-            tool.handler(request)
+            tool.run {
+                session.clientConnection.handler(request)
+            }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -590,7 +598,7 @@ public open class Server(
         return ListPromptsResult(prompts = prompts.values.map { it.prompt })
     }
 
-    private suspend fun handleGetPrompt(request: GetPromptRequest): GetPromptResult {
+    private suspend fun handleGetPrompt(session: ServerSession, request: GetPromptRequest): GetPromptResult {
         val requestParams = request.params
         logger.debug { "Handling get prompt request for: ${requestParams.name}" }
         val prompt = promptRegistry.get(requestParams.name)
@@ -598,7 +606,9 @@ public open class Server(
                 logger.error { "Prompt not found: ${requestParams.name}" }
                 throw IllegalArgumentException("Prompt not found: ${requestParams.name}")
             }
-        return prompt.messageProvider(request)
+        return prompt.run {
+            session.clientConnection.messageProvider(request)
+        }
     }
 
     private fun handleListResources(): ListResourcesResult {
@@ -606,7 +616,7 @@ public open class Server(
         return ListResourcesResult(resources = resources.values.map { it.resource })
     }
 
-    private suspend fun handleReadResource(request: ReadResourceRequest): ReadResourceResult {
+    private suspend fun handleReadResource(session: ServerSession, request: ReadResourceRequest): ReadResourceResult {
         val requestParams = request.params
         logger.debug { "Handling read resource request for: ${requestParams.uri}" }
         val resource = resourceRegistry.get(requestParams.uri)
@@ -614,7 +624,9 @@ public open class Server(
                 logger.error { "Resource not found: ${requestParams.uri}" }
                 throw IllegalArgumentException("Resource not found: ${requestParams.uri}")
             }
-        return resource.readHandler(request)
+        return resource.run {
+            session.clientConnection.readHandler(request)
+        }
     }
 
     private fun handleListResourceTemplates(): ListResourceTemplatesResult {
@@ -622,18 +634,19 @@ public open class Server(
         return ListResourceTemplatesResult(listOf())
     }
 
-    // Start the ServerSession redirection section
+    // Start the ServerSession / ClientConnection redirection section
+
+    public fun clientConnection(sessionId: String): ClientConnection =
+        sessionRegistry.getSession(sessionId).clientConnection
 
     /**
-     * Triggers [ServerSession.ping] request for session by provided [sessionId].
+     * Triggers [ClientConnection.ping] request for session by provided [sessionId].
      * @param sessionId The session ID to ping
      */
-    public suspend fun ping(sessionId: String): EmptyResult = with(sessionRegistry.getSession(sessionId)) {
-        ping()
-    }
+    public suspend fun ping(sessionId: String): EmptyResult = clientConnection(sessionId).ping()
 
     /**
-     * Triggers [ServerSession.createMessage] request for session by provided [sessionId].
+     * Triggers [ClientConnection.createMessage] request for session by provided [sessionId].
      *
      * @param sessionId The session ID to create a message.
      * @param params The parameters for creating a message.
@@ -645,12 +658,10 @@ public open class Server(
         sessionId: String,
         params: CreateMessageRequest,
         options: RequestOptions? = null,
-    ): CreateMessageResult = with(sessionRegistry.getSession(sessionId)) {
-        request(params, options)
-    }
+    ): CreateMessageResult = clientConnection(sessionId).createMessage(params, options)
 
     /**
-     * Triggers [ServerSession.listRoots] request for session by provided [sessionId].
+     * Triggers [ClientConnection.listRoots] request for session by provided [sessionId].
      *
      * @param sessionId The session ID to list roots for.
      * @param params JSON parameters for the request, usually empty.
@@ -662,12 +673,10 @@ public open class Server(
         sessionId: String,
         params: JsonObject = EmptyJsonObject,
         options: RequestOptions? = null,
-    ): ListRootsResult = with(sessionRegistry.getSession(sessionId)) {
-        listRoots(params, options)
-    }
+    ): ListRootsResult = sessionRegistry.getSession(sessionId).listRoots(params, options)
 
     /**
-     * Triggers [ServerSession.createElicitation] request for session by provided [sessionId].
+     * Triggers [ClientConnection.createElicitation] request for session by provided [sessionId].
      *
      * @param sessionId The session ID to create elicitation for.
      * @param message The elicitation message.
@@ -681,67 +690,59 @@ public open class Server(
         message: String,
         requestedSchema: ElicitRequestParams.RequestedSchema,
         options: RequestOptions? = null,
-    ): ElicitResult = with(sessionRegistry.getSession(sessionId)) {
-        createElicitation(message, requestedSchema, options)
-    }
+    ): ElicitResult = clientConnection(sessionId).createElicitation(
+        message = message,
+        requestedSchema = requestedSchema,
+        options = options,
+    )
 
     /**
-     * Triggers [ServerSession.sendLoggingMessage] for session by provided [sessionId].
+     * Triggers [ClientConnection.sendLoggingMessage] for session by provided [sessionId].
      *
      * @param sessionId The session ID to send the logging message to.
      * @param notification The logging message notification.
      */
     public suspend fun sendLoggingMessage(sessionId: String, notification: LoggingMessageNotification) {
-        with(sessionRegistry.getSession(sessionId)) {
-            sendLoggingMessage(notification)
-        }
+        clientConnection(sessionId).sendLoggingMessage(notification)
     }
 
     /**
-     * Triggers [ServerSession.sendResourceUpdated] for session by provided [sessionId].
+     * Triggers [ClientConnection.sendResourceUpdated] for session by provided [sessionId].
      *
      * @param sessionId The session ID to send the resource updated notification to.
      * @param notification Details of the updated resource.
      */
     public suspend fun sendResourceUpdated(sessionId: String, notification: ResourceUpdatedNotification) {
-        with(sessionRegistry.getSession(sessionId)) {
-            sendResourceUpdated(notification)
-        }
+        clientConnection(sessionId).sendResourceUpdated(notification)
     }
 
     /**
-     * Triggers [ServerSession.sendResourceListChanged] for session by provided [sessionId].
+     * Triggers [ClientConnection.sendResourceListChanged] for session by provided [sessionId].
      *
      * @param sessionId The session ID to send the resource list changed notification to.
      */
     public suspend fun sendResourceListChanged(sessionId: String) {
-        with(sessionRegistry.getSession(sessionId)) {
-            sendResourceListChanged()
-        }
+        clientConnection(sessionId).sendResourceListChanged()
     }
 
     /**
-     * Triggers [ServerSession.sendToolListChanged] for session by provided [sessionId].
+     * Triggers [ClientConnection.sendToolListChanged] for session by provided [sessionId].
      *
      * @param sessionId The session ID to send the tool list changed notification to.
      */
     public suspend fun sendToolListChanged(sessionId: String) {
-        with(sessionRegistry.getSession(sessionId)) {
-            sendToolListChanged()
-        }
+        clientConnection(sessionId).sendToolListChanged()
     }
 
     /**
-     * Triggers [ServerSession.sendPromptListChanged] for session by provided [sessionId].
+     * Triggers [ClientConnection.sendPromptListChanged] for session by provided [sessionId].
      *
      * @param sessionId The session ID to send the prompt list changed notification to.
      */
     public suspend fun sendPromptListChanged(sessionId: String) {
-        with(sessionRegistry.getSession(sessionId)) {
-            sendPromptListChanged()
-        }
+        clientConnection(sessionId).sendPromptListChanged()
     }
-    // End the ServerSession redirection section
+    // End the ServerSession / ClientConnection redirection section
 
     // Start the notification handling section
     public fun <T : Notification> setNotificationHandler(method: Method, handler: (notification: T) -> Deferred<Unit>) {

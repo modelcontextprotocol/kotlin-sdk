@@ -7,7 +7,6 @@ import io.modelcontextprotocol.kotlin.sdk.types.BaseRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageResult
-import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitResult
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
@@ -23,14 +22,10 @@ import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.Method.Defined
-import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
-import io.modelcontextprotocol.kotlin.sdk.types.PromptListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.RequestMeta
-import io.modelcontextprotocol.kotlin.sdk.types.ResourceListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.types.SetLevelRequest
-import io.modelcontextprotocol.kotlin.sdk.types.ToolListChangedNotification
 import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CompletableDeferred
@@ -43,6 +38,7 @@ private val logger = KotlinLogging.logger {}
 /**
  * Represents a server session.
  */
+@Suppress("TooManyFunctions")
 public open class ServerSession(
     protected val serverInfo: Implementation,
     options: ServerOptions,
@@ -77,7 +73,7 @@ public open class ServerSession(
      * The current logging level set by the client.
      * When null, all messages are sent (no filtering).
      */
-    private val currentLoggingLevel: AtomicRef<LoggingLevel?> = atomic(null)
+    internal val currentLoggingLevel: AtomicRef<LoggingLevel?> = atomic(null)
 
     init {
         // Core protocol handlers
@@ -98,6 +94,8 @@ public open class ServerSession(
             }
         }
     }
+
+    internal val clientConnection: ClientConnection = ClientConnectionImpl(this)
 
     /**
      * Registers a callback to be invoked when the server has completed initialization.
@@ -130,114 +128,6 @@ public open class ServerSession(
     }
 
     /**
-     * Sends a ping request to the client to check connectivity.
-     *
-     * @return The result of the ping request.
-     * @throws IllegalStateException If for some reason the method is not supported or the connection is closed.
-     */
-    public suspend fun ping(): EmptyResult = request(PingRequest())
-
-    /**
-     * Creates a message using the server's sampling capability.
-     *
-     * @param params The parameters for creating a message.
-     * @param options Optional request options.
-     * @return The created message result.
-     * @throws IllegalStateException If the server does not support sampling or if the request fails.
-     */
-    public suspend fun createMessage(
-        params: CreateMessageRequest,
-        options: RequestOptions? = null,
-    ): CreateMessageResult {
-        logger.debug {
-            "Creating message with ${params.params.messages.size} messages, maxTokens=${params.params.maxTokens}, temperature=${params.params.temperature}, systemPrompt=${if (params.params.systemPrompt != null) "present" else "absent"}"
-        }
-        logger.trace { "Full createMessage params: $params" }
-        return request(params, options)
-    }
-
-    /**
-     * Lists the available "roots" from the client's perspective (if supported).
-     *
-     * @param params JSON parameters for the request, usually empty.
-     * @param options Optional request options.
-     * @return The list of roots.
-     * @throws IllegalStateException If the server or client does not support roots.
-     */
-    public suspend fun listRoots(
-        params: JsonObject = EmptyJsonObject,
-        options: RequestOptions? = null,
-    ): ListRootsResult {
-        logger.debug { "Listing roots with params: $params" }
-        return request(ListRootsRequest(BaseRequestParams(RequestMeta(params))), options)
-    }
-
-    public suspend fun createElicitation(
-        message: String,
-        requestedSchema: ElicitRequestParams.RequestedSchema,
-        options: RequestOptions? = null,
-    ): ElicitResult {
-        logger.debug {
-            "Creating elicitation with message length=${message.length}, " +
-                "schema properties count=${requestedSchema.properties.size}"
-        }
-        logger.trace { "Full elicitation message: $message, requestedSchema: $requestedSchema" }
-        return request(ElicitRequest(ElicitRequestParams(message, requestedSchema)), options)
-    }
-
-    /**
-     * Sends a logging message notification to the client.
-     * Messages are filtered based on the current logging level set by the client.
-     * If no logging level is set, all messages are sent.
-     *
-     * @param notification The logging message notification.
-     */
-    public suspend fun sendLoggingMessage(notification: LoggingMessageNotification) {
-        if (serverCapabilities.logging != null) {
-            if (isMessageAccepted(notification.params.level)) {
-                logger.trace { "Sending logging message: ${notification.params.data}" }
-                notification(notification)
-            } else {
-                logger.trace { "Filtering out logging message with level ${notification.params.level}" }
-            }
-        }
-    }
-
-    /**
-     * Sends a resource-updated notification to the client, indicating that a specific resource has changed.
-     *
-     * @param notification Details of the updated resource.
-     */
-    public suspend fun sendResourceUpdated(notification: ResourceUpdatedNotification) {
-        logger.debug { "Sending resource updated notification for: ${notification.params.uri}" }
-        notification(notification)
-    }
-
-    /**
-     * Sends a notification to the client indicating that the list of resources has changed.
-     */
-    public suspend fun sendResourceListChanged() {
-        logger.debug { "Sending resource list changed notification" }
-        notification(ResourceListChangedNotification())
-    }
-
-    /**
-     * Sends a notification to the client indicating that the list of tools has changed.
-     */
-    public suspend fun sendToolListChanged() {
-        logger.debug { "Sending tool list changed notification" }
-        notification(ToolListChangedNotification())
-    }
-
-    /**
-     * Sends a notification to the client indicating that the list of prompts has changed.
-     */
-    public suspend fun sendPromptListChanged() {
-        logger.debug { "Sending prompt list changed notification" }
-        notification(PromptListChangedNotification())
-    }
-
-    /**
      * Asserts that the client supports the capability required for the given [method].
      *
      * This method is automatically called by the [Protocol] framework before handling requests.
@@ -251,21 +141,21 @@ public open class ServerSession(
             Defined.SamplingCreateMessage -> {
                 if (clientCapabilities?.sampling == null) {
                     logger.error { "Client capability assertion failed: sampling not supported" }
-                    throw IllegalStateException("Client does not support sampling (required for ${method.value})")
+                    error("Client does not support sampling (required for ${method.value})")
                 }
             }
 
             Defined.RootsList -> {
                 if (clientCapabilities?.roots == null) {
                     logger.error { "Client capability assertion failed: listing roots not supported" }
-                    throw IllegalStateException("Client does not support listing roots (required for ${method.value})")
+                    error("Client does not support listing roots (required for ${method.value})")
                 }
             }
 
             Defined.ElicitationCreate -> {
                 if (clientCapabilities?.elicitation == null) {
                     logger.error { "Client capability assertion failed: elicitation not supported" }
-                    throw IllegalStateException("Client does not support elicitation (required for ${method.value})")
+                    error("Client does not support elicitation (required for ${method.value})")
                 }
             }
 
@@ -292,7 +182,7 @@ public open class ServerSession(
             Defined.NotificationsMessage -> {
                 if (serverCapabilities.logging == null) {
                     logger.error { "Server capability assertion failed: logging not supported" }
-                    throw IllegalStateException("Server does not support logging (required for ${method.value})")
+                    error("Server does not support logging (required for ${method.value})")
                 }
             }
 
@@ -300,7 +190,7 @@ public open class ServerSession(
             Defined.NotificationsResourcesListChanged,
             -> {
                 if (serverCapabilities.resources == null) {
-                    throw IllegalStateException(
+                    error(
                         "Server does not support notifying about resources (required for ${method.value})",
                     )
                 }
@@ -308,7 +198,7 @@ public open class ServerSession(
 
             Defined.NotificationsToolsListChanged -> {
                 if (serverCapabilities.tools == null) {
-                    throw IllegalStateException(
+                    error(
                         "Server does not support notifying of tool list changes (required for ${method.value})",
                     )
                 }
@@ -316,7 +206,7 @@ public open class ServerSession(
 
             Defined.NotificationsPromptsListChanged -> {
                 if (serverCapabilities.prompts == null) {
-                    throw IllegalStateException(
+                    error(
                         "Server does not support notifying of prompt list changes (required for ${method.value})",
                     )
                 }
@@ -347,14 +237,14 @@ public open class ServerSession(
             Defined.SamplingCreateMessage -> {
                 if (serverCapabilities.experimental?.get("sampling") == null) {
                     logger.error { "Server capability assertion failed: sampling not supported" }
-                    throw IllegalStateException("Server does not support sampling (required for $method)")
+                    error("Server does not support sampling (required for $method)")
                 }
             }
 
             Defined.LoggingSetLevel -> {
                 if (serverCapabilities.logging == null) {
                     logger.error { "Server does not support logging (required for $method)" }
-                    throw IllegalStateException("Server does not support logging (required for $method)")
+                    error("Server does not support logging (required for $method)")
                 }
             }
 
@@ -362,7 +252,7 @@ public open class ServerSession(
             Defined.PromptsList,
             -> {
                 if (serverCapabilities.prompts == null) {
-                    throw IllegalStateException("Server does not support prompts (required for $method)")
+                    error("Server does not support prompts (required for $method)")
                 }
             }
 
@@ -373,7 +263,7 @@ public open class ServerSession(
             Defined.ResourcesUnsubscribe,
             -> {
                 if (serverCapabilities.resources == null) {
-                    throw IllegalStateException("Server does not support resources (required for $method)")
+                    error("Server does not support resources (required for $method)")
                 }
             }
 
@@ -381,7 +271,7 @@ public open class ServerSession(
             Defined.ToolsList,
             -> {
                 if (serverCapabilities.tools == null) {
-                    throw IllegalStateException("Server does not support tools (required for $method)")
+                    error("Server does not support tools (required for $method)")
                 }
             }
 
@@ -395,7 +285,7 @@ public open class ServerSession(
         }
     }
 
-    private suspend fun handleInitialize(request: InitializeRequest): InitializeResult {
+    private fun handleInitialize(request: InitializeRequest): InitializeResult {
         logger.debug { "Handling initialization request from client" }
         clientCapabilities = request.params.capabilities
         clientVersion = request.params.clientInfo
@@ -405,7 +295,8 @@ public open class ServerSession(
             requestedVersion
         } else {
             logger.warn {
-                "Client requested unsupported protocol version $requestedVersion, falling back to $LATEST_PROTOCOL_VERSION"
+                "Client requested unsupported protocol version $requestedVersion, " +
+                    "falling back to $LATEST_PROTOCOL_VERSION"
             }
             LATEST_PROTOCOL_VERSION
         }
@@ -418,26 +309,6 @@ public open class ServerSession(
         )
     }
 
-    /**
-     * Checks if a message with the given level should be ignored based on the current logging level.
-     *
-     * @param level The level of the message to check.
-     * @return true if the message should be ignored (filtered out), false otherwise.
-     */
-    private fun isMessageIgnored(level: LoggingLevel): Boolean {
-        val current = currentLoggingLevel.value ?: return false // If no level is set, don't filter
-
-        return level < current
-    }
-
-    /**
-     * Checks if a message with the given level should be accepted based on the current logging level.
-     *
-     * @param level The level of the message to check.
-     * @return true if the message should be accepted (not filtered out), false otherwise.
-     */
-    private fun isMessageAccepted(level: LoggingLevel): Boolean = !isMessageIgnored(level)
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is ServerSession) return false
@@ -445,4 +316,94 @@ public open class ServerSession(
     }
 
     override fun hashCode(): Int = sessionId.hashCode()
+
+    // Start the ClientConnection redirection section
+
+    /**
+     * Sends a ping request to the client to check connectivity.
+     *
+     * @return The result of the ping request.
+     * @throws IllegalStateException If for some reason the method is not supported or the connection is closed.
+     */
+    public suspend fun ping(): EmptyResult = clientConnection.ping()
+
+    /**
+     * Creates a message using the server's sampling capability.
+     *
+     * @param params The parameters for creating a message.
+     * @param options Optional request options.
+     * @return The created message result.
+     * @throws IllegalStateException If the server does not support sampling or if the request fails.
+     */
+    public suspend fun createMessage(
+        params: CreateMessageRequest,
+        options: RequestOptions? = null,
+    ): CreateMessageResult = clientConnection.createMessage(params, options)
+
+    /**
+     * Lists the available "roots" from the client's perspective (if supported).
+     *
+     * @param params JSON parameters for the request, usually empty.
+     * @param options Optional request options.
+     * @return The list of roots.
+     * @throws IllegalStateException If the server or client does not support roots.
+     */
+    public suspend fun listRoots(
+        params: JsonObject = EmptyJsonObject,
+        options: RequestOptions? = null,
+    ): ListRootsResult {
+        logger.debug { "Listing roots with params: $params" }
+        return request(ListRootsRequest(BaseRequestParams(RequestMeta(params))), options)
+    }
+
+    /**
+     * Sends a message to the client requesting an elicitation.
+     * This typically results in a form being displayed to the end user.
+     *
+     * @param message The message for the elicitation to display.
+     * @param requestedSchema The schema requested by the client for the elicitation result.
+     * Influences the form displayed to the user.
+     * @param options Optional request options.
+     * @return The result of the elicitation request.
+     * @throws IllegalStateException If the server or client does not support elicitation.
+     */
+    public suspend fun createElicitation(
+        message: String,
+        requestedSchema: ElicitRequestParams.RequestedSchema,
+        options: RequestOptions? = null,
+    ): ElicitResult = clientConnection.createElicitation(message, requestedSchema, options)
+
+    /**
+     * Sends a logging message notification to the client.
+     * Messages are filtered based on the current logging level set by the client.
+     * If no logging level is set, all messages are sent.
+     *
+     * @param notification The logging message notification.
+     */
+    public suspend fun sendLoggingMessage(notification: LoggingMessageNotification): Unit =
+        clientConnection.sendLoggingMessage(notification)
+
+    /**
+     * Sends a resource-updated notification to the client, indicating that a specific resource has changed.
+     *
+     * @param notification Details of the updated resource.
+     */
+    public suspend fun sendResourceUpdated(notification: ResourceUpdatedNotification): Unit =
+        clientConnection.sendResourceUpdated(notification)
+
+    /**
+     * Sends a notification to the client indicating that the list of resources has changed.
+     */
+    public suspend fun sendResourceListChanged(): Unit = clientConnection.sendResourceListChanged()
+
+    /**
+     * Sends a notification to the client indicating that the list of tools has changed.
+     */
+    public suspend fun sendToolListChanged(): Unit = clientConnection.sendToolListChanged()
+
+    /**
+     * Sends a notification to the client indicating that the list of prompts has changed.
+     */
+    public suspend fun sendPromptListChanged(): Unit = clientConnection.sendPromptListChanged()
+    // End the ClientConnection redirection section
 }
