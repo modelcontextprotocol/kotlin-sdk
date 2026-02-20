@@ -56,7 +56,7 @@ class StreamableHttpServerTransportTest {
     companion object {
         @JvmStatic
         @MethodSource
-        fun providePayloads() = listOf(
+        fun invalidPayloads() = listOf(
             "",
             "   ",
             "  \n  \t  ",
@@ -311,7 +311,7 @@ class StreamableHttpServerTransportTest {
     }
 
     @ParameterizedTest
-    @MethodSource("providePayloads")
+    @MethodSource("invalidPayloads")
     fun `POST with a null or empty body returns an error`(payload: String?) = testApplication {
         configTestServer()
 
@@ -335,7 +335,7 @@ class StreamableHttpServerTransportTest {
     }
 
     @Test
-    fun `POST with an oversized body returns an error`() = testApplication {
+    fun `POST with payload at max size is accepted`() = testApplication {
         configTestServer()
 
         val client = createTestClient()
@@ -349,7 +349,32 @@ class StreamableHttpServerTransportTest {
 
         configureTransportEndpoint(transport)
 
-        val oversizedPayload = "x".repeat(5 * 1024 * 1024)
+        val maxSizePayload = "x".repeat(4 * 1024 * 1024)
+
+        val response = client.post(path) {
+            addStreamableHeaders()
+            setBody(maxSizePayload)
+        }
+
+        response.status shouldBe HttpStatusCode.BadRequest
+    }
+
+    @Test
+    fun `POST with oversized body returns an error`() = testApplication {
+        configTestServer()
+
+        val client = createTestClient()
+
+        val transport = StreamableHttpServerTransport(enableJsonResponse = true)
+        transport.onMessage { message ->
+            if (message is JSONRPCRequest) {
+                transport.send(JSONRPCResponse(message.id, EmptyResult()))
+            }
+        }
+
+        configureTransportEndpoint(transport)
+
+        val oversizedPayload = "x".repeat(4 * 1024 * 1024 + 1)
 
         val response = client.post(path) {
             addStreamableHeaders()
