@@ -21,8 +21,8 @@ dokka {
 
         documentedVisibilities(VisibilityModifier.Public)
 
-        externalDocumentationLinks.register("ktor-client") {
-            url("https://api.ktor.io/ktor-client/")
+        externalDocumentationLinks.register("ktor") {
+            url("https://api.ktor.io/")
             packageListUrl("https://api.ktor.io/package-list")
         }
 

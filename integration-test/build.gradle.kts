@@ -22,6 +22,7 @@ kotlin {
                 implementation(libs.ktor.server.content.negotiation)
                 implementation(libs.ktor.serialization)
                 implementation(libs.ktor.server.websockets)
+                implementation(libs.ktor.server.auth)
                 implementation(libs.ktor.server.test.host)
                 implementation(libs.ktor.server.content.negotiation)
                 implementation(libs.ktor.serialization)

@@ -12,6 +12,7 @@ import io.ktor.server.request.receiveText
 import io.ktor.server.response.header
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondNullable
+import io.ktor.server.response.respondText
 import io.ktor.server.sse.ServerSSESession
 import io.ktor.util.collections.ConcurrentMap
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
@@ -666,6 +667,6 @@ public class StreamableHttpServerTransport(
 }
 
 internal suspend fun ApplicationCall.reject(status: HttpStatusCode, code: Int, message: String) {
-    this.response.status(status)
-    this.respond(JSONRPCError(id = null, error = RPCError(code = code, message = message)))
+    val body = McpJson.encodeToString(JSONRPCError(id = null, error = RPCError(code = code, message = message)))
+    respondText(body, ContentType.Application.Json, status)
 }
