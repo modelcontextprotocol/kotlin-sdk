@@ -1,8 +1,9 @@
 package io.modelcontextprotocol.kotlin.sdk.client.streamable.http
 
 import io.kotest.assertions.withClue
-import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandler
@@ -593,18 +594,15 @@ class StreamableHttpClientTransportTest {
                     appendLine("id: 1")
                     appendLine("""data: {"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"task-1","progress":25}}""")
                     appendLine()
-
                     appendLine("event: message")
                     appendLine("id: 2")
                     appendLine("""data: {"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"task-1","progress":50}}""")
                     appendLine()
-
                     appendLine("event: message")
                     appendLine("id: 3")
                     appendLine("""data: {"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"task-1","progress":75}}""")
                     appendLine()
                 }
-
                 respond(
                     content = ByteReadChannel(sseContent),
                     status = HttpStatusCode.OK,
@@ -619,6 +617,7 @@ class StreamableHttpClientTransportTest {
         }
 
         val receivedMessages = mutableListOf<JSONRPCMessage>()
+        val receivedErrors = mutableListOf<Throwable>()
         val firstMessageReceived = CompletableDeferred<Unit>()
 
         transport.onMessage { message ->
@@ -626,6 +625,10 @@ class StreamableHttpClientTransportTest {
             if (!firstMessageReceived.isCompleted) {
                 firstMessageReceived.complete(Unit)
             }
+        }
+
+        transport.onError { error ->
+            receivedErrors.add(error)
         }
 
         transport.start()
@@ -647,10 +650,9 @@ class StreamableHttpClientTransportTest {
         assertTrue(receivedMessages.isNotEmpty())
 
         receivedMessages.forEach { message ->
-            (message is JSONRPCNotification).shouldBeTrue()
-            (message as JSONRPCNotification).method shouldBe "notifications/progress"
+            message.shouldBeInstanceOf<JSONRPCNotification>()
+            message.method shouldBe "notifications/progress"
         }
-
-        transport.close()
+        receivedErrors shouldHaveSize 0
     }
 }
