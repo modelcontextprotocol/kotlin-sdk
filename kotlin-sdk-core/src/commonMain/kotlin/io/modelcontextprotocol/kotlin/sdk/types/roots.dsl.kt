@@ -13,6 +13,36 @@ import kotlin.contracts.contract
  *
  * Example with no parameters:
  * ```kotlin
+ * val request = ListRootsRequest { }
+ * ```
+ *
+ * Example with metadata:
+ * ```kotlin
+ * val request = ListRootsRequest {
+ *     meta {
+ *         put("context", "initialization")
+ *     }
+ * }
+ * ```
+ *
+ * @param block Configuration lambda for setting up the list roots request
+ * @return A configured [ListRootsRequest] instance
+ * @see ListRootsRequestBuilder
+ * @see ListRootsRequest
+ */
+@ExperimentalMcpApi
+public inline operator fun ListRootsRequest.Companion.invoke(
+    block: ListRootsRequestBuilder.() -> Unit,
+): ListRootsRequest = ListRootsRequestBuilder().apply(block).build()
+
+/**
+ * Creates a [ListRootsRequest] using a type-safe DSL builder.
+ *
+ * ## Optional
+ * - [meta][ListRootsRequestBuilder.meta] - Metadata for the request
+ *
+ * Example with no parameters:
+ * ```kotlin
  * val request = buildListRootsRequest { }
  * ```
  *
@@ -32,6 +62,11 @@ import kotlin.contracts.contract
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
+@Deprecated(
+    message = "Use ListRootsRequest { } instead",
+    level = DeprecationLevel.WARNING,
+    replaceWith = ReplaceWith("ListRootsRequest{apply(block)}"),
+)
 public inline fun buildListRootsRequest(block: ListRootsRequestBuilder.() -> Unit): ListRootsRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return ListRootsRequestBuilder().apply(block).build()
@@ -46,7 +81,6 @@ public inline fun buildListRootsRequest(block: ListRootsRequestBuilder.() -> Uni
  * ## Optional
  * - [meta] - Metadata for the request
  *
- * @see buildListRootsRequest
  * @see ListRootsRequest
  */
 @McpDsl

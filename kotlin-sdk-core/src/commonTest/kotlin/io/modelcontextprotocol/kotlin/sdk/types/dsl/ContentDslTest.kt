@@ -7,12 +7,13 @@ import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.types.Annotations
 import io.modelcontextprotocol.kotlin.sdk.types.AudioContent
+import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ImageContent
 import io.modelcontextprotocol.kotlin.sdk.types.Role
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.assistantAudio
 import io.modelcontextprotocol.kotlin.sdk.types.assistantImage
-import io.modelcontextprotocol.kotlin.sdk.types.buildCreateMessageRequest
+import io.modelcontextprotocol.kotlin.sdk.types.invoke
 import io.modelcontextprotocol.kotlin.sdk.types.userText
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
@@ -33,7 +34,7 @@ class ContentDslTest {
 
     @Test
     fun `userText should build minimal with text only`() {
-        val request = buildCreateMessageRequest {
+        val request = CreateMessageRequest {
             maxTokens = 100
             messages {
                 userText {
@@ -51,7 +52,7 @@ class ContentDslTest {
 
     @Test
     fun `userText should build full with all fields and nested meta`() {
-        val request = buildCreateMessageRequest {
+        val request = CreateMessageRequest {
             maxTokens = 100
             messages {
                 userText {
@@ -89,7 +90,7 @@ class ContentDslTest {
 
     @Test
     fun `userText should handle unicode and special characters`() {
-        val request = buildCreateMessageRequest {
+        val request = CreateMessageRequest {
             maxTokens = 100
             messages {
                 userText {
@@ -103,7 +104,7 @@ class ContentDslTest {
 
     @Test
     fun `userText should handle empty string`() {
-        val request = buildCreateMessageRequest {
+        val request = CreateMessageRequest {
             maxTokens = 100
             messages {
                 userText {
@@ -118,7 +119,7 @@ class ContentDslTest {
     @Test
     fun `userText should throw if text is missing`() {
         shouldThrow<IllegalArgumentException> {
-            buildCreateMessageRequest {
+            CreateMessageRequest {
                 maxTokens = 100
                 messages {
                     userText { }
@@ -133,12 +134,12 @@ class ContentDslTest {
 
     @Test
     fun `assistantImage should build minimal with data and mimeType`() {
-        val request = buildCreateMessageRequest {
+        val request = CreateMessageRequest {
             maxTokens = 100
             messages {
                 assistantImage {
                     data =
-                        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+                        "iVBORw0KGgoggg=="
                     mimeType = "image/png"
                 }
             }
@@ -146,7 +147,7 @@ class ContentDslTest {
 
         (request.params.messages[0].content as ImageContent).shouldNotBeNull {
             data shouldBe
-                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+                "iVBORw0KGgoggg=="
             mimeType shouldBe "image/png"
             annotations.shouldBeNull()
             meta.shouldBeNull()
@@ -155,7 +156,7 @@ class ContentDslTest {
 
     @Test
     fun `assistantImage should build full with all fields and image metadata`() {
-        val request = buildCreateMessageRequest {
+        val request = CreateMessageRequest {
             maxTokens = 100
             messages {
                 assistantImage {
@@ -199,7 +200,7 @@ class ContentDslTest {
         val mimeTypes = listOf("image/png", "image/jpeg", "image/webp", "image/gif", "image/svg+xml")
 
         mimeTypes.forEach { mime ->
-            val request = buildCreateMessageRequest {
+            val request = CreateMessageRequest {
                 maxTokens = 100
                 messages {
                     assistantImage {
@@ -215,7 +216,7 @@ class ContentDslTest {
     @Test
     fun `assistantImage should throw if data is missing`() {
         shouldThrow<IllegalArgumentException> {
-            buildCreateMessageRequest {
+            CreateMessageRequest {
                 maxTokens = 100
                 messages {
                     assistantImage {
@@ -229,7 +230,7 @@ class ContentDslTest {
     @Test
     fun `assistantImage should throw if mimeType is missing`() {
         shouldThrow<IllegalArgumentException> {
-            buildCreateMessageRequest {
+            CreateMessageRequest {
                 maxTokens = 100
                 messages {
                     assistantImage {
@@ -246,7 +247,7 @@ class ContentDslTest {
 
     @Test
     fun `assistantAudio should build minimal with data and mimeType`() {
-        val request = buildCreateMessageRequest {
+        val request = CreateMessageRequest {
             maxTokens = 100
             messages {
                 assistantAudio {
@@ -266,7 +267,7 @@ class ContentDslTest {
 
     @Test
     fun `assistantAudio should build full with all fields and audio metadata`() {
-        val request = buildCreateMessageRequest {
+        val request = CreateMessageRequest {
             maxTokens = 100
             messages {
                 assistantAudio {
@@ -308,7 +309,7 @@ class ContentDslTest {
     @Test
     fun `assistantAudio should throw if data is missing`() {
         shouldThrow<IllegalArgumentException> {
-            buildCreateMessageRequest {
+            CreateMessageRequest {
                 maxTokens = 100
                 messages {
                     assistantAudio {
@@ -322,7 +323,7 @@ class ContentDslTest {
     @Test
     fun `assistantAudio should throw if mimeType is missing`() {
         shouldThrow<IllegalArgumentException> {
-            buildCreateMessageRequest {
+            CreateMessageRequest {
                 maxTokens = 100
                 messages {
                     assistantAudio {
@@ -340,7 +341,7 @@ class ContentDslTest {
     @Test
     fun `annotations should support boundary priority values`() {
         // Priority = 0.0 (minimum)
-        val requestMin = buildCreateMessageRequest {
+        val requestMin = CreateMessageRequest {
             maxTokens = 100
             messages {
                 userText {
@@ -352,7 +353,7 @@ class ContentDslTest {
         (requestMin.params.messages[0].content as TextContent).annotations?.priority shouldBe 0.0
 
         // Priority = 1.0 (maximum)
-        val requestMax = buildCreateMessageRequest {
+        val requestMax = CreateMessageRequest {
             maxTokens = 100
             messages {
                 userText {
@@ -366,7 +367,7 @@ class ContentDslTest {
 
     @Test
     fun `annotations should support direct object construction`() {
-        val request = buildCreateMessageRequest {
+        val request = CreateMessageRequest {
             maxTokens = 100
             messages {
                 userText {

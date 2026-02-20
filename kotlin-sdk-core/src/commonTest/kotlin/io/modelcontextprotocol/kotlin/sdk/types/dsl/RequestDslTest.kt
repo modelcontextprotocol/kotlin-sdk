@@ -6,9 +6,10 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
+import io.modelcontextprotocol.kotlin.sdk.types.ListToolsRequest
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
-import io.modelcontextprotocol.kotlin.sdk.types.buildListToolsRequest
+import io.modelcontextprotocol.kotlin.sdk.types.invoke
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.boolean
@@ -30,7 +31,7 @@ import kotlin.test.Test
 class RequestDslTest {
     @Test
     fun `request should build minimal without any params`() {
-        val request = buildListToolsRequest { }
+        val request = ListToolsRequest { }
 
         request.params.shouldBeNull()
         request.method shouldBe Method.Defined.ToolsList
@@ -38,7 +39,7 @@ class RequestDslTest {
 
     @Test
     fun `request should build full with cursor and meta containing all field types`() {
-        val request = buildListToolsRequest {
+        val request = ListToolsRequest {
             cursor = "next-page-eyJvZmZzZXQiOjEwMH0"
             meta {
                 // ProgressToken
@@ -125,7 +126,7 @@ class RequestDslTest {
     @Test
     fun `meta progressToken should support String Int and Long types`() {
         // String progressToken
-        val stringRequest = buildListToolsRequest {
+        val stringRequest = ListToolsRequest {
             meta { progressToken("token-abc") }
         }
         stringRequest.params?.meta?.progressToken shouldNotBeNull {
@@ -134,7 +135,7 @@ class RequestDslTest {
         }
 
         // Int progressToken
-        val intRequest = buildListToolsRequest {
+        val intRequest = ListToolsRequest {
             meta { progressToken(42) }
         }
         intRequest.params?.meta?.progressToken shouldNotBeNull {
@@ -143,7 +144,7 @@ class RequestDslTest {
         }
 
         // Long progressToken
-        val longRequest = buildListToolsRequest {
+        val longRequest = ListToolsRequest {
             meta { progressToken(999L) }
         }
         longRequest.params?.meta?.progressToken shouldNotBeNull {
@@ -154,7 +155,7 @@ class RequestDslTest {
 
     @Test
     fun `meta should support custom fields without progressToken`() {
-        val request = buildListToolsRequest {
+        val request = ListToolsRequest {
             meta {
                 put("requestId", "req-123")
                 put("source", "cli")
@@ -173,7 +174,7 @@ class RequestDslTest {
 
     @Test
     fun `cursor should work without meta`() {
-        val request = buildListToolsRequest {
+        val request = ListToolsRequest {
             cursor = "page-2-cursor"
         }
 
@@ -185,7 +186,7 @@ class RequestDslTest {
 
     @Test
     fun `cursor should handle empty string`() {
-        val request = buildListToolsRequest {
+        val request = ListToolsRequest {
             cursor = ""
         }
 
@@ -196,7 +197,7 @@ class RequestDslTest {
 
     @Test
     fun `meta should handle special characters in keys`() {
-        val request = buildListToolsRequest {
+        val request = ListToolsRequest {
             meta {
                 put("key-with-dashes", "value1")
                 put("key.with.dots", "value2")
@@ -215,7 +216,7 @@ class RequestDslTest {
 
     @Test
     fun `meta should overwrite when progressToken set multiple times`() {
-        val request = buildListToolsRequest {
+        val request = ListToolsRequest {
             meta {
                 progressToken("first")
                 progressToken(123) // Different type
@@ -231,7 +232,7 @@ class RequestDslTest {
 
     @Test
     fun `meta should overwrite when custom field set multiple times`() {
-        val request = buildListToolsRequest {
+        val request = ListToolsRequest {
             meta {
                 put("key", "first")
                 put("key", 123) // Different type
@@ -247,7 +248,7 @@ class RequestDslTest {
     @Test
     fun `meta should handle very long cursor strings`() {
         val longCursor = "x".repeat(1000)
-        val request = buildListToolsRequest {
+        val request = ListToolsRequest {
             cursor = longCursor
         }
 
