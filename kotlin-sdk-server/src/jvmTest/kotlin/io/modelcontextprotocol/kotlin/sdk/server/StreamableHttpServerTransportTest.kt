@@ -1,6 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
-import io.kotest.matchers.collections.shouldContain
+import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.equals.shouldBeEqual
 import io.kotest.matchers.shouldBe
 import io.ktor.client.HttpClient
@@ -297,8 +297,7 @@ class StreamableHttpServerTransportTest {
 
         val responses = response.body<List<JSONRPCResponse>>()
         val results = responses.map { it.result }
-        results shouldContain (firstResult)
-        results shouldContain (secondResult)
+        results.shouldContainAll(firstResult, secondResult)
 
         // Check responses' order
 
