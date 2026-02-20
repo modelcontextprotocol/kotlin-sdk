@@ -55,11 +55,7 @@ class StreamableHttpClientTransportTest {
         return StreamableHttpClientTransport(httpClient, url = "http://localhost:8080/mcp")
     }
 
-    private fun buildSseMessage(
-        id: String,
-        method: String,
-        params: String,
-    ): String = buildString {
+    private fun buildSseMessage(id: String, method: String, params: String): String = buildString {
         appendLine("event: message")
         appendLine("id: $id")
         val data = """{"jsonrpc":"2.0","method":"$method","params":$params}"""
@@ -491,14 +487,14 @@ class StreamableHttpClientTransportTest {
                             id = "1",
                             method = "notifications/progress",
                             params = """{"progressToken":"task-1","progress":50}""",
-                        )
+                        ),
                     )
                     append(
                         buildSseMessage(
                             id = "2",
                             method = "notifications/tools/list_changed",
                             params = "{}",
-                        )
+                        ),
                     )
                 }
 
@@ -612,21 +608,21 @@ class StreamableHttpClientTransportTest {
                             id = "1",
                             method = "notifications/progress",
                             params = """{"progressToken":"task-1","progress":25}""",
-                        )
+                        ),
                     )
                     append(
                         buildSseMessage(
                             id = "2",
                             method = "notifications/progress",
                             params = """{"progressToken":"task-1","progress":50}""",
-                        )
+                        ),
                     )
                     append(
                         buildSseMessage(
                             id = "3",
                             method = "notifications/progress",
                             params = """{"progressToken":"task-1","progress":75}""",
-                        )
+                        ),
                     )
                 }
                 respond(

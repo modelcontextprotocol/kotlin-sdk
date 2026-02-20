@@ -61,7 +61,7 @@ class StreamableHttpServerTransportTest {
             "   ",
             "  \n  \t  ",
             null,
-            "lolol"
+            "lolol",
         )
     }
 
@@ -197,9 +197,9 @@ class StreamableHttpServerTransportTest {
                         JSONRPCRequest(
                             id = RequestId("test-1"),
                             method = Method.Defined.ToolsList.value,
-                        )
-                    )
-                )
+                        ),
+                    ),
+                ),
             )
         }
 
