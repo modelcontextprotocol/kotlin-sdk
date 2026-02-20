@@ -1,6 +1,9 @@
 package io.modelcontextprotocol.kotlin.sdk.client.streamable.http
 
+import io.kotest.assertions.withClue
+import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandler
@@ -22,6 +25,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
@@ -51,6 +55,14 @@ class StreamableHttpClientTransportTest {
         return StreamableHttpClientTransport(httpClient, url = "http://localhost:8080/mcp")
     }
 
+    private fun buildSseMessage(id: String, method: String, params: String): String = buildString {
+        appendLine("event: message")
+        appendLine("id: $id")
+        val data = """{"jsonrpc":"2.0","method":"$method","params":$params}"""
+        appendLine("data: $data")
+        appendLine()
+    }
+
     @Test
     fun testSendJsonRpcMessage() = runTest {
         val message = JSONRPCRequest(
@@ -77,6 +89,42 @@ class StreamableHttpClientTransportTest {
         transport.start()
         transport.send(message)
         transport.close()
+    }
+
+    @Test
+    fun testStartTransportTwoTimesThrowsException() = runTest {
+        val transport = createTransport { _ ->
+            respond(
+                content = "",
+                status = HttpStatusCode.Accepted,
+            )
+        }
+
+        transport.start()
+        try {
+            transport.start()
+        } catch (e: IllegalStateException) {
+            e shouldBe IllegalStateException("Can't change state: expected transport state New, but found Operational.")
+        }
+        transport.close()
+    }
+
+    @Test
+    fun testCloseTransportTwoTimesIsPossible() = runTest {
+        val transport = createTransport { _ ->
+            respond(
+                content = "",
+                status = HttpStatusCode.Accepted,
+            )
+        }
+
+        transport.start()
+        transport.close()
+        try {
+            transport.close()
+        } catch (e: Exception) {
+            withClue("We expect no exceptions when closing already closed transport") { e shouldBe null }
+        }
     }
 
     @Test
@@ -427,5 +475,212 @@ class StreamableHttpClientTransportTest {
         } finally {
             transport.close()
         }
+    }
+
+    @Test
+    fun testInlineSSEInResponse() = runTest {
+        val transport = createTransport { request ->
+            if (request.method == HttpMethod.Post) {
+                val sseContent = buildString {
+                    append(
+                        buildSseMessage(
+                            id = "1",
+                            method = "notifications/progress",
+                            params = """{"progressToken":"task-1","progress":50}""",
+                        ),
+                    )
+                    append(
+                        buildSseMessage(
+                            id = "2",
+                            method = "notifications/tools/list_changed",
+                            params = "{}",
+                        ),
+                    )
+                }
+
+                respond(
+                    content = ByteReadChannel(sseContent),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(
+                        HttpHeaders.ContentType,
+                        ContentType.Text.EventStream.toString(),
+                    ),
+                )
+            } else {
+                respond("", HttpStatusCode.OK)
+            }
+        }
+
+        val receivedMessages = mutableListOf<JSONRPCMessage>()
+        val twoMessagesReceived = CompletableDeferred<Unit>()
+
+        transport.onMessage { message ->
+            receivedMessages.add(message)
+            if (receivedMessages.size >= 2 && !twoMessagesReceived.isCompleted) {
+                twoMessagesReceived.complete(Unit)
+            }
+        }
+
+        transport.start()
+
+        transport.send(
+            JSONRPCRequest(
+                id = "test-1",
+                method = "test",
+                params = buildJsonObject { },
+            ),
+        )
+
+        withTimeout(2.seconds) {
+            twoMessagesReceived.await()
+        }
+
+        receivedMessages.size shouldBe 2
+
+        val firstNotification = receivedMessages[0] as JSONRPCNotification
+        firstNotification.method shouldBe "notifications/progress"
+
+        val secondNotification = receivedMessages[1] as JSONRPCNotification
+        secondNotification.method shouldBe "notifications/tools/list_changed"
+
+        transport.close()
+    }
+
+    @Test
+    fun testErrorInSSEResponse() = runTest {
+        val errorMessage = "Something went wrong on the server"
+        val transport = createTransport { request ->
+            if (request.method == HttpMethod.Post) {
+                val sseContent = buildString {
+                    appendLine("event: error")
+                    appendLine("data: $errorMessage")
+                    appendLine()
+                }
+
+                respond(
+                    content = ByteReadChannel(sseContent),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(
+                        HttpHeaders.ContentType,
+                        ContentType.Text.EventStream.toString(),
+                    ),
+                )
+            } else {
+                respond("", HttpStatusCode.OK)
+            }
+        }
+
+        val receivedErrors = mutableListOf<Throwable>()
+        val errorDeferred = CompletableDeferred<Throwable>()
+
+        transport.onError { error ->
+            receivedErrors.add(error)
+            if (!errorDeferred.isCompleted) {
+                errorDeferred.complete(error)
+            }
+        }
+
+        transport.start()
+
+        transport.send(
+            JSONRPCRequest(
+                id = "test-error",
+                method = "test",
+                params = buildJsonObject { },
+            ),
+        )
+
+        val error = withTimeout(2.seconds) { errorDeferred.await() }
+
+        receivedErrors.size shouldBe 1
+        error.message shouldBe "Streamable HTTP error: $errorMessage"
+
+        transport.close()
+    }
+
+    @Test
+    fun testCloseTransportDuringEventStream() = runTest {
+        val transport = createTransport { request ->
+            if (request.method == HttpMethod.Post) {
+                val sseContent = buildString {
+                    append(
+                        buildSseMessage(
+                            id = "1",
+                            method = "notifications/progress",
+                            params = """{"progressToken":"task-1","progress":25}""",
+                        ),
+                    )
+                    append(
+                        buildSseMessage(
+                            id = "2",
+                            method = "notifications/progress",
+                            params = """{"progressToken":"task-1","progress":50}""",
+                        ),
+                    )
+                    append(
+                        buildSseMessage(
+                            id = "3",
+                            method = "notifications/progress",
+                            params = """{"progressToken":"task-1","progress":75}""",
+                        ),
+                    )
+                }
+                respond(
+                    content = ByteReadChannel(sseContent),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(
+                        HttpHeaders.ContentType,
+                        ContentType.Text.EventStream.toString(),
+                    ),
+                )
+            } else {
+                respond("", HttpStatusCode.OK)
+            }
+        }
+
+        val (receivedMessages, receivedErrors) = setupTransportAndCollectMessages(transport)
+
+        withTimeout(2.seconds) {
+            while (receivedMessages.isEmpty()) {
+                delay(10)
+            }
+        }
+
+        transport.close()
+
+        assertTrue(receivedMessages.isNotEmpty())
+
+        receivedMessages.forEach { message ->
+            message.shouldBeInstanceOf<JSONRPCNotification>()
+            message.method shouldBe "notifications/progress"
+        }
+        receivedErrors shouldHaveSize 0
+    }
+
+    private suspend fun setupTransportAndCollectMessages(
+        transport: StreamableHttpClientTransport,
+    ): Pair<MutableList<JSONRPCMessage>, MutableList<Throwable>> {
+        val receivedMessages = mutableListOf<JSONRPCMessage>()
+        val receivedErrors = mutableListOf<Throwable>()
+
+        transport.onMessage { message ->
+            receivedMessages.add(message)
+        }
+
+        transport.onError { error ->
+            receivedErrors.add(error)
+        }
+
+        transport.start()
+
+        transport.send(
+            JSONRPCRequest(
+                id = "test-close",
+                method = "test",
+                params = buildJsonObject { },
+            ),
+        )
+
+        return receivedMessages to receivedErrors
     }
 }
