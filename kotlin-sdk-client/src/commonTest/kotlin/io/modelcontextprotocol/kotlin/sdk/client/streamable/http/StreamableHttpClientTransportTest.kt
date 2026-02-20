@@ -55,6 +55,18 @@ class StreamableHttpClientTransportTest {
         return StreamableHttpClientTransport(httpClient, url = "http://localhost:8080/mcp")
     }
 
+    private fun buildSseMessage(
+        id: String,
+        method: String,
+        params: String,
+    ): String = buildString {
+        appendLine("event: message")
+        appendLine("id: $id")
+        val data = """{"jsonrpc":"2.0","method":"$method","params":$params}"""
+        appendLine("data: $data")
+        appendLine()
+    }
+
     @Test
     fun testSendJsonRpcMessage() = runTest {
         val message = JSONRPCRequest(
@@ -474,15 +486,20 @@ class StreamableHttpClientTransportTest {
         val transport = createTransport { request ->
             if (request.method == HttpMethod.Post) {
                 val sseContent = buildString {
-                    appendLine("event: message")
-                    appendLine("id: 1")
-                    appendLine("""data: {"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"task-1","progress":50}}""")
-                    appendLine()
-
-                    appendLine("event: message")
-                    appendLine("id: 2")
-                    appendLine("""data: {"jsonrpc":"2.0","method":"notifications/tools/list_changed"}""")
-                    appendLine()
+                    append(
+                        buildSseMessage(
+                            id = "1",
+                            method = "notifications/progress",
+                            params = """{"progressToken":"task-1","progress":50}""",
+                        )
+                    )
+                    append(
+                        buildSseMessage(
+                            id = "2",
+                            method = "notifications/tools/list_changed",
+                            params = "{}",
+                        )
+                    )
                 }
 
                 respond(
@@ -590,18 +607,27 @@ class StreamableHttpClientTransportTest {
         val transport = createTransport { request ->
             if (request.method == HttpMethod.Post) {
                 val sseContent = buildString {
-                    appendLine("event: message")
-                    appendLine("id: 1")
-                    appendLine("""data: {"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"task-1","progress":25}}""")
-                    appendLine()
-                    appendLine("event: message")
-                    appendLine("id: 2")
-                    appendLine("""data: {"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"task-1","progress":50}}""")
-                    appendLine()
-                    appendLine("event: message")
-                    appendLine("id: 3")
-                    appendLine("""data: {"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"task-1","progress":75}}""")
-                    appendLine()
+                    append(
+                        buildSseMessage(
+                            id = "1",
+                            method = "notifications/progress",
+                            params = """{"progressToken":"task-1","progress":25}""",
+                        )
+                    )
+                    append(
+                        buildSseMessage(
+                            id = "2",
+                            method = "notifications/progress",
+                            params = """{"progressToken":"task-1","progress":50}""",
+                        )
+                    )
+                    append(
+                        buildSseMessage(
+                            id = "3",
+                            method = "notifications/progress",
+                            params = """{"progressToken":"task-1","progress":75}""",
+                        )
+                    )
                 }
                 respond(
                     content = ByteReadChannel(sseContent),
@@ -616,15 +642,33 @@ class StreamableHttpClientTransportTest {
             }
         }
 
+        val (receivedMessages, receivedErrors) = setupTransportAndCollectMessages(transport)
+
+        withTimeout(2.seconds) {
+            while (receivedMessages.isEmpty()) {
+                delay(10)
+            }
+        }
+
+        transport.close()
+
+        assertTrue(receivedMessages.isNotEmpty())
+
+        receivedMessages.forEach { message ->
+            message.shouldBeInstanceOf<JSONRPCNotification>()
+            message.method shouldBe "notifications/progress"
+        }
+        receivedErrors shouldHaveSize 0
+    }
+
+    private suspend fun setupTransportAndCollectMessages(
+        transport: StreamableHttpClientTransport,
+    ): Pair<MutableList<JSONRPCMessage>, MutableList<Throwable>> {
         val receivedMessages = mutableListOf<JSONRPCMessage>()
         val receivedErrors = mutableListOf<Throwable>()
-        val firstMessageReceived = CompletableDeferred<Unit>()
 
         transport.onMessage { message ->
             receivedMessages.add(message)
-            if (!firstMessageReceived.isCompleted) {
-                firstMessageReceived.complete(Unit)
-            }
         }
 
         transport.onError { error ->
@@ -641,18 +685,6 @@ class StreamableHttpClientTransportTest {
             ),
         )
 
-        withTimeout(2.seconds) {
-            firstMessageReceived.await()
-        }
-
-        transport.close()
-
-        assertTrue(receivedMessages.isNotEmpty())
-
-        receivedMessages.forEach { message ->
-            message.shouldBeInstanceOf<JSONRPCNotification>()
-            message.method shouldBe "notifications/progress"
-        }
-        receivedErrors shouldHaveSize 0
+        return receivedMessages to receivedErrors
     }
 }
