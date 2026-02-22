@@ -17,11 +17,11 @@ import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
+import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
-import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
@@ -40,6 +40,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
+import io.modelcontextprotocol.kotlin.sdk.types.buildCallToolResult
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.Channel
@@ -59,6 +60,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 private val logger = KotlinLogging.logger {}
 
+@OptIn(ExperimentalMcpApi::class)
 class KotlinServerForTsClient {
     private val serverTransports = ConcurrentHashMap<String, HttpServerTransport>()
     private val jsonFormat = Json { ignoreUnknownKeys = true }
@@ -226,12 +228,12 @@ class KotlinServerForTsClient {
             ),
         ) { request ->
             val name = (request.params.arguments?.get("name") as? JsonPrimitive)?.content ?: "World"
-            CallToolResult(
-                content = listOf(TextContent("Hello, $name!")),
-                structuredContent = buildJsonObject {
+            buildCallToolResult {
+                textContent("Hello, $name!")
+                structuredContent {
                     put("greeting", JsonPrimitive("Hello, $name!"))
-                },
-            )
+                }
+            }
         }
 
         server.addTool(
@@ -252,13 +254,13 @@ class KotlinServerForTsClient {
         ) { request ->
             val name = (request.params.arguments?.get("name") as? JsonPrimitive)?.content ?: "World"
 
-            CallToolResult(
-                content = listOf(TextContent("Multiple greetings sent to $name!")),
-                structuredContent = buildJsonObject {
+            buildCallToolResult {
+                textContent("Multiple greetings sent to $name!")
+                structuredContent {
                     put("greeting", JsonPrimitive("Multiple greetings sent to $name!"))
                     put("notificationCount", JsonPrimitive(3))
-                },
-            )
+                }
+            }
         }
 
         server.addPrompt(

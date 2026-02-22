@@ -21,7 +21,7 @@ import kotlinx.serialization.json.buildJsonObject
  * @see PaginatedRequestBuilder
  */
 @McpDsl
-public abstract class RequestBuilder {
+public abstract class RequestBuilder @PublishedApi internal constructor() {
     protected var meta: RequestMeta? = null
 
     /**
@@ -73,7 +73,7 @@ public abstract class RequestBuilder {
  * @see RequestBuilder.meta
  */
 @McpDsl
-public class RequestMetaBuilder internal constructor() {
+public class RequestMetaBuilder @PublishedApi internal constructor() {
     private val content: MutableMap<String, JsonElement> = linkedMapOf()
 
     /**
@@ -196,7 +196,7 @@ public class RequestMetaBuilder internal constructor() {
  * @see RequestBuilder
  */
 @McpDsl
-public abstract class PaginatedRequestBuilder : RequestBuilder() {
+public abstract class PaginatedRequestBuilder @PublishedApi internal constructor() : RequestBuilder() {
     /**
      * Optional pagination cursor for fetching the next page of results.
      *

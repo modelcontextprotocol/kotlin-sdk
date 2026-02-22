@@ -138,7 +138,7 @@ class ContentDslTest {
             messages {
                 assistantImage {
                     data =
-                        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+                        "iVBORw0KGgoggg=="
                     mimeType = "image/png"
                 }
             }
@@ -146,7 +146,7 @@ class ContentDslTest {
 
         (request.params.messages[0].content as ImageContent).shouldNotBeNull {
             data shouldBe
-                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+                "iVBORw0KGgoggg=="
             mimeType shouldBe "image/png"
             annotations.shouldBeNull()
             meta.shouldBeNull()

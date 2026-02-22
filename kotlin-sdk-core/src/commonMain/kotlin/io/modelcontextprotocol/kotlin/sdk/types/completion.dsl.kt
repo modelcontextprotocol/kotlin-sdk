@@ -168,3 +168,79 @@ public class CompleteRequestBuilder @PublishedApi internal constructor() : Reque
         return CompleteRequest(params)
     }
 }
+
+// ============================================================================
+// Result Builders (Server-side)
+// ============================================================================
+
+/**
+ * Creates a [CompleteResult] using a type-safe DSL builder.
+ *
+ * Example:
+ * ```kotlin
+ * val result = buildCompleteResult {
+ *     values("user1", "user2", "user3")
+ *     total = 3
+ * }
+ * ```
+ */
+@OptIn(ExperimentalContracts::class)
+@ExperimentalMcpApi
+public inline fun buildCompleteResult(block: CompleteResultBuilder.() -> Unit): CompleteResult {
+    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
+    return CompleteResultBuilder().apply(block).build()
+}
+
+private const val MAX_ITEMS = 100
+
+/**
+ * DSL builder for constructing [CompleteResult] instances.
+ */
+@McpDsl
+public class CompleteResultBuilder @PublishedApi internal constructor() : ResultBuilder() {
+    private var completionValues: List<String>? = null
+    private var completionTotal: Int? = null
+    private var completionHasMore: Boolean? = null
+
+    public fun values(vararg values: String) {
+        this.completionValues = values.toList()
+    }
+
+    public fun values(values: List<String>) {
+        this.completionValues = values
+    }
+
+    public var total: Int? = null
+        set(value) {
+            field = value
+            completionTotal = value
+        }
+
+    public var hasMore: Boolean? = null
+        set(value) {
+            field = value
+            completionHasMore = value
+        }
+
+    @PublishedApi
+    override fun build(): CompleteResult {
+        val values = requireNotNull(completionValues) {
+            "Missing required field 'values'. Use values() to set completion values."
+        }
+
+        require(values.size <= MAX_ITEMS) {
+            "Completion values must not exceed $MAX_ITEMS items, got ${values.size}"
+        }
+
+        val completion = CompleteResult.Completion(
+            values = values,
+            total = completionTotal,
+            hasMore = completionHasMore,
+        )
+
+        return CompleteResult(
+            completion = completion,
+            meta = meta,
+        )
+    }
+}
