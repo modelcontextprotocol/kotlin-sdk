@@ -72,8 +72,7 @@ private data class SessionContext(val session: ServerSSESession?, val call: Appl
  */
 @OptIn(ExperimentalUuidApi::class, ExperimentalAtomicApi::class)
 @Suppress("TooManyFunctions")
-public class StreamableHttpServerTransport(private val configuration: Configuration = Configuration.Default) :
-    AbstractTransport() {
+public class StreamableHttpServerTransport(private val configuration: Configuration) : AbstractTransport() {
 
     /**
      * Secondary constructor for `StreamableHttpServerTransport` that simplifies initialization by directly taking the
@@ -142,11 +141,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         public val allowedOrigins: List<String>? = null,
         public val eventStore: EventStore? = null,
         public val retryInterval: Duration? = null,
-    ) {
-        public companion object {
-            public val Default: Configuration = Configuration()
-        }
-    }
+    )
 
     public var sessionId: String? = null
         private set
