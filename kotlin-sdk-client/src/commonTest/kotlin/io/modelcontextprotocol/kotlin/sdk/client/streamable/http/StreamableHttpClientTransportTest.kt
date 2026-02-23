@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.client.streamable.http
 
-import io.kotest.assertions.withClue
+import io.kotest.assertions.fail
+import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -122,8 +123,8 @@ class StreamableHttpClientTransportTest {
         transport.close()
         try {
             transport.close()
-        } catch (e: Exception) {
-            withClue("We expect no exceptions when closing already closed transport") { e shouldBe null }
+        } catch (_: Exception) {
+            fail("We expect no exceptions when closing already closed transport")
         }
     }
 
@@ -323,10 +324,9 @@ class StreamableHttpClientTransportTest {
         assertTrue(sseStarted, "SSE should start after initialized notification")
 
         // Test 2: Verify received notifications
-        assertEquals(3, receivedMessages.size)
-        assertTrue(receivedMessages.all { it is JSONRPCNotification })
-
+        receivedMessages shouldHaveSize 3
         val notifications = receivedMessages.filterIsInstance<JSONRPCNotification>()
+        notifications shouldHaveSize 3
 
         // Verify progress notification
         val progressNotif = notifications[0]
@@ -531,11 +531,11 @@ class StreamableHttpClientTransportTest {
             ),
         )
 
-        withTimeout(2.seconds) {
+        eventually {
             twoMessagesReceived.await()
         }
 
-        receivedMessages.size shouldBe 2
+        receivedMessages shouldHaveSize 2
 
         val firstNotification = receivedMessages[0] as JSONRPCNotification
         firstNotification.method shouldBe "notifications/progress"
@@ -590,7 +590,7 @@ class StreamableHttpClientTransportTest {
             ),
         )
 
-        val error = withTimeout(2.seconds) { errorDeferred.await() }
+        val error = eventually { errorDeferred.await() }
 
         receivedErrors.size shouldBe 1
         error.message shouldBe "Streamable HTTP error: $errorMessage"
@@ -640,7 +640,7 @@ class StreamableHttpClientTransportTest {
 
         val (receivedMessages, receivedErrors) = setupTransportAndCollectMessages(transport)
 
-        withTimeout(2.seconds) {
+        eventually {
             while (receivedMessages.isEmpty()) {
                 delay(10)
             }
@@ -648,7 +648,7 @@ class StreamableHttpClientTransportTest {
 
         transport.close()
 
-        assertTrue(receivedMessages.isNotEmpty())
+        receivedMessages shouldHaveSize 3
 
         receivedMessages.forEach { message ->
             message.shouldBeInstanceOf<JSONRPCNotification>()
