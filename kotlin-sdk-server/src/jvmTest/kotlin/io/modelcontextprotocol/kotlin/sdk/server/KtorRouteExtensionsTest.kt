@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.kotest.assertions.ktor.client.shouldHaveStatus
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.ktor.client.request.get
@@ -24,7 +25,7 @@ import kotlin.test.assertFailsWith
  * The key issue was that Routing.mcp() registered at top-level, preventing use on subpaths.
  * Now Route.mcp() allows registration on any route path.
  */
-class KtorRouteExtensionsTest : AbstractKtorExtensionsTest() {
+class KtorRouteExtensionsTest {
 
     /**
      * Verifies that Route.mcp() throws immediately at route registration time
@@ -43,8 +44,10 @@ class KtorRouteExtensionsTest : AbstractKtorExtensionsTest() {
                 client.get("/")
             }
         }
-        exception.message shouldContain "SSE"
-        exception.message shouldContain "install"
+        exception.message shouldNotBeNull {
+            shouldContain("SSE")
+            shouldContain("install")
+        }
     }
 
     /**

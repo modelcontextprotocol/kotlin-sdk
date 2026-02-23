@@ -3,7 +3,6 @@
   <ManuallySuppressedIssues/>
   <CurrentIssues>
     <ID>InjectDispatcher:FeatureNotificationService.kt:FeatureNotificationService$Default</ID>
-    <ID>LongParameterList:KtorServer.kt:private suspend fun RoutingContext.streamableTransport: StreamableHttpServerTransport?</ID>
     <ID>LongParameterList:Server.kt:Server$public fun addTool</ID>
     <ID>MagicNumber:StdioServerTransport.kt:StdioServerTransport$8192</ID>
     <ID>MaxLineLength:SSEServerTransport.kt:SseServerTransport$"SSEServerTransport already started! If using Server class, note that connect() calls start() automatically."</ID>
@@ -12,14 +11,12 @@
     <ID>MaxLineLength:ServerSession.kt:ServerSession$"Creating message with ${params.params.messages.size} messages, maxTokens=${params.params.maxTokens}, temperature=${params.params.temperature}, systemPrompt=${if (params.params.systemPrompt != null) "present" else "absent"}"</ID>
     <ID>NoNameShadowing:FeatureNotificationService.kt:FeatureNotificationService${ it.remove(job) }</ID>
     <ID>RedundantSuspendModifier:ServerSession.kt:ServerSession$suspend</ID>
-    <ID>ReturnCount:KtorServer.kt:private suspend fun existingStreamableTransport: StreamableHttpServerTransport?</ID>
     <ID>ThrowsCount:ServerSession.kt:ServerSession$override fun assertCapabilityForMethod</ID>
     <ID>ThrowsCount:ServerSession.kt:ServerSession$override fun assertNotificationCapability</ID>
     <ID>ThrowsCount:ServerSession.kt:ServerSession$override fun assertRequestHandlerCapability</ID>
     <ID>TooGenericExceptionCaught:SSEServerTransport.kt:SseServerTransport$e: Exception</ID>
     <ID>TooGenericExceptionCaught:Server.kt:Server$e: Exception</ID>
     <ID>TooGenericExceptionCaught:StdioServerTransport.kt:StdioServerTransport$e: Throwable</ID>
-    <ID>TooManyFunctions:KtorServer.kt:io.modelcontextprotocol.kotlin.sdk.server.KtorServer.kt</ID>
     <ID>TooManyFunctions:Server.kt:Server</ID>
     <ID>TooManyFunctions:ServerSession.kt:ServerSession : Protocol</ID>
     <ID>UnsafeCallOnNullableType:StreamableHttpServerTransport.kt:StreamableHttpServerTransport$responseRequestId!!</ID>

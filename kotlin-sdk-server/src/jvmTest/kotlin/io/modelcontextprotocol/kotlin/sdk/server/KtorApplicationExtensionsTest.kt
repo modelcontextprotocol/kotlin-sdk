@@ -12,19 +12,15 @@ import io.ktor.server.testing.testApplication
 import kotlin.test.Test
 
 /**
- * Integration tests for Ktor Application.mcp() extension.
+ * Integration tests for [Application.mcp] extension.
  *
- * Verifies that Application.mcp() installs SSE automatically and registers
- * MCP endpoints at the application root, without requiring explicit install(SSE).
+ * Verifies that [Application.mcp] installs the SSE plugin automatically and registers
+ * MCP endpoints at the application root, without requiring an explicit `install(SSE)` call.
  */
-class KtorApplicationExtensionsTest : AbstractKtorExtensionsTest() {
+class KtorApplicationExtensionsTest {
 
-    /**
-     * Verifies that Application.mcp() does not interfere with other routes
-     * added to the same application.
-     */
     @Test
-    fun `Application mcp should installs SSE and coexist with other routes`() = testApplication {
+    fun `Application mcp should coexist with other routes`() = testApplication {
         application {
             mcp { testServer() }
 

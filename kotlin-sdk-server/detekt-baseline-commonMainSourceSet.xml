@@ -7,14 +7,12 @@
     <ID>MaxLineLength:SSEServerTransport.kt:SseServerTransport$*</ID>
     <ID>MaxLineLength:ServerSession.kt:ServerSession$"Client requested unsupported protocol version $requestedVersion, falling back to $LATEST_PROTOCOL_VERSION"</ID>
     <ID>MaxLineLength:ServerSession.kt:ServerSession$"Creating message with ${params.params.messages.size} messages, maxTokens=${params.params.maxTokens}, temperature=${params.params.temperature}, systemPrompt=${if (params.params.systemPrompt != null) "present" else "absent"}"</ID>
-    <ID>ReturnCount:KtorServer.kt:private suspend fun existingStreamableTransport: StreamableHttpServerTransport?</ID>
     <ID>ThrowsCount:ServerSession.kt:ServerSession$override fun assertCapabilityForMethod</ID>
     <ID>ThrowsCount:ServerSession.kt:ServerSession$override fun assertNotificationCapability</ID>
     <ID>ThrowsCount:ServerSession.kt:ServerSession$override fun assertRequestHandlerCapability</ID>
     <ID>TooGenericExceptionCaught:SSEServerTransport.kt:SseServerTransport$e: Exception</ID>
     <ID>TooGenericExceptionCaught:Server.kt:Server$e: Exception</ID>
     <ID>TooGenericExceptionCaught:StdioServerTransport.kt:StdioServerTransport$e: Throwable</ID>
-    <ID>TooManyFunctions:KtorServer.kt:io.modelcontextprotocol.kotlin.sdk.server.KtorServer.kt</ID>
     <ID>TooManyFunctions:Server.kt:Server</ID>
     <ID>TooManyFunctions:ServerSession.kt:ServerSession : Protocol</ID>
   </CurrentIssues>
