@@ -225,11 +225,13 @@ private suspend fun RoutingContext.mcpStatelessStreamableHttpEndpoint(
     block: RoutingContext.() -> Server,
 ) {
     val transport = StreamableHttpServerTransport(
-        enableDnsRebindingProtection = enableDnsRebindingProtection,
-        allowedHosts = allowedHosts,
-        allowedOrigins = allowedOrigins,
-        eventStore = eventStore,
-        enableJsonResponse = true,
+        StreamableHttpServerTransport.Configuration(
+            enableDnsRebindingProtection = enableDnsRebindingProtection,
+            allowedHosts = allowedHosts,
+            allowedOrigins = allowedOrigins,
+            eventStore = eventStore,
+            enableJsonResponse = true,
+        ),
     ).also { it.setSessionIdGenerator(null) }
 
     logger.info { "New stateless StreamableHttp connection established without sessionId" }
@@ -305,11 +307,13 @@ private suspend fun RoutingContext.streamableTransport(
     }
 
     val transport = StreamableHttpServerTransport(
-        enableDnsRebindingProtection = enableDnsRebindingProtection,
-        allowedHosts = allowedHosts,
-        allowedOrigins = allowedOrigins,
-        eventStore = eventStore,
-        enableJsonResponse = true,
+        StreamableHttpServerTransport.Configuration(
+            enableDnsRebindingProtection = enableDnsRebindingProtection,
+            allowedHosts = allowedHosts,
+            allowedOrigins = allowedOrigins,
+            eventStore = eventStore,
+            enableJsonResponse = true,
+        ),
     )
 
     transport.setOnSessionInitialized { initializedSessionId ->
