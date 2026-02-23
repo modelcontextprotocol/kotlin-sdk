@@ -228,7 +228,7 @@ private fun ServerSSESession.mcpSseTransport(
 }
 
 private suspend fun RoutingContext.mcpStatelessStreamableHttpEndpoint(
-    configuration: StreamableHttpServerTransport.Configuration,
+    configuration: StreamableHttpServerTransport.Configuration = StreamableHttpServerTransport.Configuration(),
     block: RoutingContext.() -> Server,
 ) {
     val transport = StreamableHttpServerTransport(
