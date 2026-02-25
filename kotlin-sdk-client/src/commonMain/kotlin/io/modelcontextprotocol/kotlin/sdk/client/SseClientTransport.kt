@@ -135,11 +135,18 @@ public class SseClientTransport(
         }
     }
 
+    /**
+     * Resolves and completes [endpoint] based on [eventData]
+     * Treats absolute paths as relative to origin and relative paths as relative to [baseUrl]
+     */
     private fun handleEndpoint(eventData: String) {
         try {
-            val path = if (eventData.startsWith("/")) eventData.substring(1) else eventData
-            val endpointUrl = Url("$baseUrl/$path")
-            endpoint.complete(endpointUrl.toString())
+            val endpointUrl = if (eventData.startsWith("/")) {
+                Url(baseUrl).protocolWithAuthority + eventData
+            } else {
+                "$baseUrl/$eventData"
+            }
+            endpoint.complete(endpointUrl)
             logger.debug { "Client connected to endpoint: $endpointUrl" }
         } catch (e: Throwable) {
             _onError(e)
