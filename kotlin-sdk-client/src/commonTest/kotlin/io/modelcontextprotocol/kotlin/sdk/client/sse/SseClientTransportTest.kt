@@ -64,6 +64,32 @@ class SseClientTransportTest {
         engine.close()
     }
 
+    @Test
+    fun `full url endpoint is used as-is`() = runTest {
+        // Given
+        val sseUrl = "http://example.com/api/mcp/sse"
+
+        // And
+        val endpointEvent = "https://example.com/messages?sessionId=abc"
+
+        // And
+        val engine = CapturingSseClientEngine(endpoint = endpointEvent)
+        val transport = sseTransport(sseUrl, engine)
+
+        // When
+        transport.start()
+        transport.send(JSONRPCNotification(method = "test"))
+
+        // Then
+        val capturedPosts = engine.capturedPosts
+        capturedPosts shouldHaveSize 1
+        capturedPosts[0].url.toString() shouldBe "https://example.com/messages?sessionId=abc"
+
+        // Cleanup
+        transport.close()
+        engine.close()
+    }
+
     private fun sseTransport(sseUrl: String, engine: CapturingSseClientEngine) =
         SseClientTransport(HttpClient(engine) { install(SSE) }, sseUrl)
 

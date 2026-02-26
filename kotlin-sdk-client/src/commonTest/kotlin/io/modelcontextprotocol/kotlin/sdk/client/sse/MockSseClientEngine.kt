@@ -50,7 +50,7 @@ internal open class MockSseClientEngine(
 
     override fun close() {
         channel.close()
-        job.complete()
+        job.cancel()
     }
 
     private fun responseContext(): CoroutineContext = dispatcher + Job()

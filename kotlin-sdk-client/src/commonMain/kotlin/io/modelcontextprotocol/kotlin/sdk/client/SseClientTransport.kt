@@ -11,7 +11,6 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
-import io.ktor.http.Url
 import io.ktor.http.append
 import io.ktor.http.isSuccess
 import io.ktor.http.protocolWithAuthority
@@ -54,13 +53,17 @@ public class SseClientTransport(
     private lateinit var scope: CoroutineScope
     private var job: Job? = null
 
+    private val origin: String by lazy {
+        session.call.request.url.protocolWithAuthority
+    }
+
     private val baseUrl: String by lazy {
         session.call.request.url.let { url ->
             val path = url.encodedPath
             when {
-                path.isEmpty() -> url.protocolWithAuthority
-                path.endsWith("/") -> url.protocolWithAuthority + path.removeSuffix("/")
-                else -> url.protocolWithAuthority + path.take(path.lastIndexOf("/"))
+                path.isEmpty() -> origin
+                path.endsWith("/") -> origin + path.removeSuffix("/")
+                else -> origin + path.take(path.lastIndexOf("/"))
             }
         }
     }
@@ -136,13 +139,16 @@ public class SseClientTransport(
     }
 
     /**
-     * Resolves and completes [endpoint] based on [eventData]
-     * Treats absolute paths as relative to origin and relative paths as relative to [baseUrl]
+     * Resolves and completes [endpoint] based on [eventData].
+     * Uses full URLs as-is, treats absolute paths as origin-relative,
+     * and relative paths as relative to [baseUrl].
      */
     private fun handleEndpoint(eventData: String) {
         try {
-            val endpointUrl = if (eventData.startsWith("/")) {
-                Url(baseUrl).protocolWithAuthority + eventData
+            val endpointUrl = if (eventData.startsWith("http://") || eventData.startsWith("https://")) {
+                eventData
+            } else if (eventData.startsWith("/")) {
+                origin + eventData
             } else {
                 "$baseUrl/$eventData"
             }
