@@ -38,10 +38,10 @@ public final class io/modelcontextprotocol/kotlin/sdk/server/KtorServerKt {
 	public static final fun mcp (Lio/ktor/server/application/Application;Lkotlin/jvm/functions/Function1;)V
 	public static final fun mcp (Lio/ktor/server/routing/Route;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
 	public static final fun mcp (Lio/ktor/server/routing/Route;Lkotlin/jvm/functions/Function1;)V
-	public static final fun mcpStatelessStreamableHttp (Lio/ktor/server/application/Application;Ljava/lang/String;ZLjava/util/List;Ljava/util/List;Lio/modelcontextprotocol/kotlin/sdk/server/EventStore;Lkotlin/jvm/functions/Function1;)V
-	public static synthetic fun mcpStatelessStreamableHttp$default (Lio/ktor/server/application/Application;Ljava/lang/String;ZLjava/util/List;Ljava/util/List;Lio/modelcontextprotocol/kotlin/sdk/server/EventStore;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
-	public static final fun mcpStreamableHttp (Lio/ktor/server/application/Application;Ljava/lang/String;ZLjava/util/List;Ljava/util/List;Lio/modelcontextprotocol/kotlin/sdk/server/EventStore;Lkotlin/jvm/functions/Function1;)V
-	public static synthetic fun mcpStreamableHttp$default (Lio/ktor/server/application/Application;Ljava/lang/String;ZLjava/util/List;Ljava/util/List;Lio/modelcontextprotocol/kotlin/sdk/server/EventStore;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public static final fun mcpStatelessStreamableHttp (Lio/ktor/server/application/Application;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/server/StreamableHttpServerTransport$Configuration;Lkotlin/jvm/functions/Function1;)V
+	public static synthetic fun mcpStatelessStreamableHttp$default (Lio/ktor/server/application/Application;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/server/StreamableHttpServerTransport$Configuration;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public static final fun mcpStreamableHttp (Lio/ktor/server/application/Application;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/server/StreamableHttpServerTransport$Configuration;Lkotlin/jvm/functions/Function1;)V
+	public static synthetic fun mcpStreamableHttp$default (Lio/ktor/server/application/Application;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/server/StreamableHttpServerTransport$Configuration;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/server/RegisteredPrompt : io/modelcontextprotocol/kotlin/sdk/server/Feature {
@@ -194,7 +194,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/server/StdioServerTranspor
 
 public final class io/modelcontextprotocol/kotlin/sdk/server/StreamableHttpServerTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport {
 	public static final field STANDALONE_SSE_STREAM_ID Ljava/lang/String;
-	public fun <init> ()V
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/server/StreamableHttpServerTransport$Configuration;)V
 	public fun <init> (ZZLjava/util/List;Ljava/util/List;Lio/modelcontextprotocol/kotlin/sdk/server/EventStore;Ljava/lang/Long;)V
 	public synthetic fun <init> (ZZLjava/util/List;Ljava/util/List;Lio/modelcontextprotocol/kotlin/sdk/server/EventStore;Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -209,6 +209,17 @@ public final class io/modelcontextprotocol/kotlin/sdk/server/StreamableHttpServe
 	public final fun setOnSessionInitialized (Lkotlin/jvm/functions/Function1;)V
 	public final fun setSessionIdGenerator (Lkotlin/jvm/functions/Function0;)V
 	public fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/server/StreamableHttpServerTransport$Configuration {
+	public synthetic fun <init> (ZZLjava/util/List;Ljava/util/List;Lio/modelcontextprotocol/kotlin/sdk/server/EventStore;Lkotlin/time/Duration;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (ZZLjava/util/List;Ljava/util/List;Lio/modelcontextprotocol/kotlin/sdk/server/EventStore;Lkotlin/time/Duration;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getAllowedHosts ()Ljava/util/List;
+	public final fun getAllowedOrigins ()Ljava/util/List;
+	public final fun getEnableDnsRebindingProtection ()Z
+	public final fun getEnableJsonResponse ()Z
+	public final fun getEventStore ()Lio/modelcontextprotocol/kotlin/sdk/server/EventStore;
+	public final fun getRetryInterval-FghU774 ()Lkotlin/time/Duration;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/server/WebSocketMcpKtorServerExtensionsKt {

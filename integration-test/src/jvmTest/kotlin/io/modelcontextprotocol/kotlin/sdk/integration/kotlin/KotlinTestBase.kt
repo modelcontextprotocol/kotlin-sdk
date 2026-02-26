@@ -148,7 +148,9 @@ abstract class KotlinTestBase {
                 // Create StreamableHTTP server transport
                 // Using JSON response mode for simpler testing (no SSE session required)
                 val transport = StreamableHttpServerTransport(
-                    enableJsonResponse = true, // Use JSON response mode for testing
+                    StreamableHttpServerTransport.Configuration(
+                        enableJsonResponse = true, // Use JSON response mode for testing
+                    ),
                 )
                 // Use stateless mode to skip session validation for simpler testing
                 transport.setSessionIdGenerator(null)

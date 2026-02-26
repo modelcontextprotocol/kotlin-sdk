@@ -92,6 +92,11 @@ public fun Route.mcp(block: ServerSSESession.() -> Server) {
     }
 }
 
+/**
+ * Configures the application to use Server-Sent Events (SSE) and sets up routing for the provided server logic.
+ *
+ * @param block A lambda function that defines the server logic within the context of a [ServerSSESession].
+ */
 @KtorDsl
 public fun Application.mcp(block: ServerSSESession.() -> Server) {
     install(SSE)
@@ -101,14 +106,20 @@ public fun Application.mcp(block: ServerSSESession.() -> Server) {
     }
 }
 
+/**
+ * Sets up HTTP endpoints for an application to support MCP streamable interactions
+ * using the Server-Sent Events (SSE) protocol and other HTTP methods.
+ *
+ * @param path The base URL path for the MCP streamable HTTP routes. Defaults to "/mcp".
+ * @param configuration An instance of `StreamableHttpServerTransport.Configuration` used to configure
+ * the behavior of the transport layer.
+ * @param block A lambda with a `RoutingContext` receiver, allowing the user to define server logic
+ * for handling streamable transport.
+ */
 @KtorDsl
-@Suppress("LongParameterList")
 public fun Application.mcpStreamableHttp(
     path: String = "/mcp",
-    enableDnsRebindingProtection: Boolean = false,
-    allowedHosts: List<String>? = null,
-    allowedOrigins: List<String>? = null,
-    eventStore: EventStore? = null,
+    configuration: StreamableHttpServerTransport.Configuration = StreamableHttpServerTransport.Configuration(),
     block: RoutingContext.() -> Server,
 ) {
     install(SSE)
@@ -125,10 +136,7 @@ public fun Application.mcpStreamableHttp(
             post {
                 val transport = streamableTransport(
                     transportManager = transportManager,
-                    enableDnsRebindingProtection = enableDnsRebindingProtection,
-                    allowedHosts = allowedHosts,
-                    allowedOrigins = allowedOrigins,
-                    eventStore = eventStore,
+                    configuration = configuration,
                     block = block,
                 )
                     ?: return@post
@@ -144,14 +152,19 @@ public fun Application.mcpStreamableHttp(
     }
 }
 
+/**
+ * Sets up a stateless and streamable HTTP endpoint within the application using the specified path and configuration.
+ * This method installs the SSE feature and defines specific routing behavior for HTTP methods.
+ *
+ * @param path The URL path where the endpoint will be accessible. Defaults to "/mcp".
+ * @param configuration The configuration object used to customize the behavior of the streamable HTTP server transport.
+ * @param block A lambda function that provides the routing context to define the server behavior.
+ */
 @KtorDsl
 @Suppress("LongParameterList")
 public fun Application.mcpStatelessStreamableHttp(
     path: String = "/mcp",
-    enableDnsRebindingProtection: Boolean = false,
-    allowedHosts: List<String>? = null,
-    allowedOrigins: List<String>? = null,
-    eventStore: EventStore? = null,
+    configuration: StreamableHttpServerTransport.Configuration = StreamableHttpServerTransport.Configuration(),
     block: RoutingContext.() -> Server,
 ) {
     install(SSE)
@@ -160,10 +173,7 @@ public fun Application.mcpStatelessStreamableHttp(
         route(path) {
             post {
                 mcpStatelessStreamableHttpEndpoint(
-                    enableDnsRebindingProtection = enableDnsRebindingProtection,
-                    allowedHosts = allowedHosts,
-                    allowedOrigins = allowedOrigins,
-                    eventStore = eventStore,
+                    configuration = configuration,
                     block = block,
                 )
             }
@@ -218,18 +228,11 @@ private fun ServerSSESession.mcpSseTransport(
 }
 
 private suspend fun RoutingContext.mcpStatelessStreamableHttpEndpoint(
-    enableDnsRebindingProtection: Boolean = false,
-    allowedHosts: List<String>? = null,
-    allowedOrigins: List<String>? = null,
-    eventStore: EventStore? = null,
+    configuration: StreamableHttpServerTransport.Configuration = StreamableHttpServerTransport.Configuration(),
     block: RoutingContext.() -> Server,
 ) {
     val transport = StreamableHttpServerTransport(
-        enableDnsRebindingProtection = enableDnsRebindingProtection,
-        allowedHosts = allowedHosts,
-        allowedOrigins = allowedOrigins,
-        eventStore = eventStore,
-        enableJsonResponse = true,
+        configuration,
     ).also { it.setSessionIdGenerator(null) }
 
     logger.info { "New stateless StreamableHttp connection established without sessionId" }
@@ -292,10 +295,7 @@ private suspend fun existingStreamableTransport(
 
 private suspend fun RoutingContext.streamableTransport(
     transportManager: TransportManager,
-    enableDnsRebindingProtection: Boolean,
-    allowedHosts: List<String>?,
-    allowedOrigins: List<String>?,
-    eventStore: EventStore?,
+    configuration: StreamableHttpServerTransport.Configuration,
     block: RoutingContext.() -> Server,
 ): StreamableHttpServerTransport? {
     val sessionId = call.request.sessionId()
@@ -304,13 +304,7 @@ private suspend fun RoutingContext.streamableTransport(
         return transport ?: existingStreamableTransport(call, transportManager)
     }
 
-    val transport = StreamableHttpServerTransport(
-        enableDnsRebindingProtection = enableDnsRebindingProtection,
-        allowedHosts = allowedHosts,
-        allowedOrigins = allowedOrigins,
-        eventStore = eventStore,
-        enableJsonResponse = true,
-    )
+    val transport = StreamableHttpServerTransport(configuration)
 
     transport.setOnSessionInitialized { initializedSessionId ->
         transportManager.addTransport(initializedSessionId, transport)
