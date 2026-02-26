@@ -74,6 +74,9 @@ private data class SessionContext(val session: ServerSSESession?, val call: Appl
 @Suppress("TooManyFunctions")
 public class StreamableHttpServerTransport(private val configuration: Configuration) : AbstractTransport() {
 
+    @Deprecated("Use default constructor with explicit Configuration()")
+    public constructor() : this(configuration = Configuration())
+
     /**
      * Secondary constructor for `StreamableHttpServerTransport` that simplifies initialization by directly taking the
      * configurable parameters without requiring a `Configuration` instance.
@@ -91,9 +94,12 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
      * @param retryIntervalMillis Retry interval in milliseconds for event handling or reconnection attempts.
      *          Defaults to `null`.
      */
+    @Suppress("MaxLineLength")
     @Deprecated(
         "Use constructor with Configuration: StreamableHttpServerTransport(Configuration(enableJsonResponse = ...))",
-        level = DeprecationLevel.WARNING,
+        replaceWith = ReplaceWith(
+            "StreamableHttpServerTransport(Configuration(enableJsonResponse = enableJsonResponse, enableDnsRebindingProtection = enableDnsRebindingProtection, allowedHosts = allowedHosts, allowedOrigins = allowedOrigins, eventStore = eventStore, retryIntervalMillis = retryIntervalMillis))",
+        ),
     )
     public constructor(
         enableJsonResponse: Boolean = false,
