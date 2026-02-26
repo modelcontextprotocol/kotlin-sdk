@@ -848,6 +848,110 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/CallToolResult$Compa
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class io/modelcontextprotocol/kotlin/sdk/types/CancelTaskRequest : io/modelcontextprotocol/kotlin/sdk/types/ClientRequest, io/modelcontextprotocol/kotlin/sdk/types/ServerRequest {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/CancelTaskRequest$Companion;
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/CancelTaskRequestParams;)V
+	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/types/CancelTaskRequestParams;
+	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/CancelTaskRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/CancelTaskRequest;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/CancelTaskRequest;Lio/modelcontextprotocol/kotlin/sdk/types/CancelTaskRequestParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/CancelTaskRequest;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
+	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
+	public fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/CancelTaskRequestParams;
+	public synthetic fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestParams;
+	public final fun getTaskId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/CancelTaskRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/CancelTaskRequest$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/CancelTaskRequest;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/CancelTaskRequest;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/CancelTaskRequest$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/CancelTaskRequestParams : io/modelcontextprotocol/kotlin/sdk/types/RequestParams {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/CancelTaskRequestParams$Companion;
+	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
+	public final fun copy-D-90kyg (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/CancelTaskRequestParams;
+	public static synthetic fun copy-D-90kyg$default (Lio/modelcontextprotocol/kotlin/sdk/types/CancelTaskRequestParams;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/CancelTaskRequestParams;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
+	public final fun getTaskId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/CancelTaskRequestParams$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/CancelTaskRequestParams$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/CancelTaskRequestParams;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/CancelTaskRequestParams;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/CancelTaskRequestParams$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/CancelTaskResult : io/modelcontextprotocol/kotlin/sdk/types/ClientResult, io/modelcontextprotocol/kotlin/sdk/types/ServerResult, io/modelcontextprotocol/kotlin/sdk/types/TaskFields {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/CancelTaskResult$Companion;
+	public fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lkotlinx/serialization/json/JsonObject;)V
+	public synthetic fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/lang/Double;
+	public final fun component7 ()Ljava/lang/Double;
+	public final fun component8 ()Lkotlinx/serialization/json/JsonObject;
+	public final fun copy (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/CancelTaskResult;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/CancelTaskResult;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/CancelTaskResult;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getCreatedAt ()Ljava/lang/String;
+	public fun getLastUpdatedAt ()Ljava/lang/String;
+	public fun getMeta ()Lkotlinx/serialization/json/JsonObject;
+	public fun getPollInterval ()Ljava/lang/Double;
+	public fun getStatus ()Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;
+	public fun getStatusMessage ()Ljava/lang/String;
+	public fun getTaskId ()Ljava/lang/String;
+	public fun getTtl ()Ljava/lang/Double;
+	public fun get_meta ()Lkotlinx/serialization/json/JsonObject;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/CancelTaskResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/CancelTaskResult$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/CancelTaskResult;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/CancelTaskResult;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/CancelTaskResult$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
 public final class io/modelcontextprotocol/kotlin/sdk/types/CancelledNotification : io/modelcontextprotocol/kotlin/sdk/types/ClientNotification, io/modelcontextprotocol/kotlin/sdk/types/ServerNotification {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/CancelledNotification$Companion;
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/CancelledNotificationParams;)V
@@ -1403,6 +1507,37 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/CreateMessageResult$
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class io/modelcontextprotocol/kotlin/sdk/types/CreateTaskResult : io/modelcontextprotocol/kotlin/sdk/types/ClientResult, io/modelcontextprotocol/kotlin/sdk/types/ServerResult {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/CreateTaskResult$Companion;
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/Task;Lkotlinx/serialization/json/JsonObject;)V
+	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/Task;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/types/Task;
+	public final fun component2 ()Lkotlinx/serialization/json/JsonObject;
+	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/Task;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/CreateTaskResult;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/CreateTaskResult;Lio/modelcontextprotocol/kotlin/sdk/types/Task;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/CreateTaskResult;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getMeta ()Lkotlinx/serialization/json/JsonObject;
+	public final fun getTask ()Lio/modelcontextprotocol/kotlin/sdk/types/Task;
+	public fun get_meta ()Lkotlinx/serialization/json/JsonObject;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/CreateTaskResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/CreateTaskResult$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/CreateTaskResult;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/CreateTaskResult;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/CreateTaskResult$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
 public final class io/modelcontextprotocol/kotlin/sdk/types/CustomNotification : io/modelcontextprotocol/kotlin/sdk/types/ClientNotification, io/modelcontextprotocol/kotlin/sdk/types/ServerNotification {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/CustomNotification$Companion;
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/Method;Lio/modelcontextprotocol/kotlin/sdk/types/BaseNotificationParams;)V
@@ -1795,6 +1930,201 @@ public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/GetPromptR
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/GetPromptResult$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadRequest : io/modelcontextprotocol/kotlin/sdk/types/ClientRequest, io/modelcontextprotocol/kotlin/sdk/types/ServerRequest {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadRequest$Companion;
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadRequestParams;)V
+	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadRequestParams;
+	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadRequest;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadRequest;Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadRequestParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadRequest;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
+	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
+	public fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadRequestParams;
+	public synthetic fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestParams;
+	public final fun getTaskId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadRequest$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadRequest;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadRequest;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadRequest$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadRequestParams : io/modelcontextprotocol/kotlin/sdk/types/RequestParams {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadRequestParams$Companion;
+	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
+	public final fun copy-D-90kyg (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadRequestParams;
+	public static synthetic fun copy-D-90kyg$default (Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadRequestParams;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadRequestParams;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
+	public final fun getTaskId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadRequestParams$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadRequestParams$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadRequestParams;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadRequestParams;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadRequestParams$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadResult : io/modelcontextprotocol/kotlin/sdk/types/ServerResult {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadResult$Companion;
+	public fun <init> ()V
+	public fun <init> (Lkotlinx/serialization/json/JsonObject;)V
+	public synthetic fun <init> (Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lkotlinx/serialization/json/JsonObject;
+	public final fun copy (Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadResult;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadResult;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadResult;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getMeta ()Lkotlinx/serialization/json/JsonObject;
+	public fun get_meta ()Lkotlinx/serialization/json/JsonObject;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadResult$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadResult;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadResult;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/GetTaskPayloadResult$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/GetTaskRequest : io/modelcontextprotocol/kotlin/sdk/types/ClientRequest, io/modelcontextprotocol/kotlin/sdk/types/ServerRequest {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskRequest$Companion;
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskRequestParams;)V
+	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskRequestParams;
+	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskRequest;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskRequest;Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskRequestParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskRequest;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
+	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
+	public fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskRequestParams;
+	public synthetic fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestParams;
+	public final fun getTaskId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/GetTaskRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskRequest$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskRequest;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskRequest;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/GetTaskRequest$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/GetTaskRequestParams : io/modelcontextprotocol/kotlin/sdk/types/RequestParams {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskRequestParams$Companion;
+	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
+	public final fun copy-D-90kyg (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskRequestParams;
+	public static synthetic fun copy-D-90kyg$default (Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskRequestParams;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskRequestParams;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
+	public final fun getTaskId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/GetTaskRequestParams$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskRequestParams$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskRequestParams;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskRequestParams;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/GetTaskRequestParams$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/GetTaskResult : io/modelcontextprotocol/kotlin/sdk/types/ClientResult, io/modelcontextprotocol/kotlin/sdk/types/ServerResult, io/modelcontextprotocol/kotlin/sdk/types/TaskFields {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskResult$Companion;
+	public fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lkotlinx/serialization/json/JsonObject;)V
+	public synthetic fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/lang/Double;
+	public final fun component7 ()Ljava/lang/Double;
+	public final fun component8 ()Lkotlinx/serialization/json/JsonObject;
+	public final fun copy (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskResult;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskResult;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskResult;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getCreatedAt ()Ljava/lang/String;
+	public fun getLastUpdatedAt ()Ljava/lang/String;
+	public fun getMeta ()Lkotlinx/serialization/json/JsonObject;
+	public fun getPollInterval ()Ljava/lang/Double;
+	public fun getStatus ()Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;
+	public fun getStatusMessage ()Ljava/lang/String;
+	public fun getTaskId ()Ljava/lang/String;
+	public fun getTtl ()Ljava/lang/Double;
+	public fun get_meta ()Lkotlinx/serialization/json/JsonObject;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/GetTaskResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskResult$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskResult;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskResult;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/GetTaskResult$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
@@ -2548,6 +2878,72 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ListRootsResult$Comp
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class io/modelcontextprotocol/kotlin/sdk/types/ListTasksRequest : io/modelcontextprotocol/kotlin/sdk/types/ClientRequest, io/modelcontextprotocol/kotlin/sdk/types/PaginatedRequest, io/modelcontextprotocol/kotlin/sdk/types/ServerRequest {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/ListTasksRequest$Companion;
+	public fun <init> ()V
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;)V
+	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;
+	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;)Lio/modelcontextprotocol/kotlin/sdk/types/ListTasksRequest;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ListTasksRequest;Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ListTasksRequest;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getCursor ()Ljava/lang/String;
+	public fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
+	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
+	public fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestParams;
+	public synthetic fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestParams;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/ListTasksRequest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/ListTasksRequest$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/ListTasksRequest;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/ListTasksRequest;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/ListTasksRequest$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/ListTasksResult : io/modelcontextprotocol/kotlin/sdk/types/ClientResult, io/modelcontextprotocol/kotlin/sdk/types/PaginatedResult, io/modelcontextprotocol/kotlin/sdk/types/ServerResult {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/ListTasksResult$Companion;
+	public fun <init> (Ljava/util/List;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;)V
+	public synthetic fun <init> (Ljava/util/List;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Lkotlinx/serialization/json/JsonObject;
+	public final fun copy (Ljava/util/List;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/ListTasksResult;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ListTasksResult;Ljava/util/List;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ListTasksResult;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getMeta ()Lkotlinx/serialization/json/JsonObject;
+	public fun getNextCursor ()Ljava/lang/String;
+	public final fun getTasks ()Ljava/util/List;
+	public fun get_meta ()Lkotlinx/serialization/json/JsonObject;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/ListTasksResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/ListTasksResult$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/ListTasksResult;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/ListTasksResult;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/ListTasksResult$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
 public final class io/modelcontextprotocol/kotlin/sdk/types/ListToolsRequest : io/modelcontextprotocol/kotlin/sdk/types/ClientRequest, io/modelcontextprotocol/kotlin/sdk/types/PaginatedRequest {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/ListToolsRequest$Companion;
 	public fun <init> ()V
@@ -2796,6 +3192,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/Method$Defined : jav
 	public static final field NotificationsResourcesListChanged Lio/modelcontextprotocol/kotlin/sdk/types/Method$Defined;
 	public static final field NotificationsResourcesUpdated Lio/modelcontextprotocol/kotlin/sdk/types/Method$Defined;
 	public static final field NotificationsRootsListChanged Lio/modelcontextprotocol/kotlin/sdk/types/Method$Defined;
+	public static final field NotificationsTasksStatus Lio/modelcontextprotocol/kotlin/sdk/types/Method$Defined;
 	public static final field NotificationsToolsListChanged Lio/modelcontextprotocol/kotlin/sdk/types/Method$Defined;
 	public static final field Ping Lio/modelcontextprotocol/kotlin/sdk/types/Method$Defined;
 	public static final field PromptsGet Lio/modelcontextprotocol/kotlin/sdk/types/Method$Defined;
@@ -2807,6 +3204,10 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/Method$Defined : jav
 	public static final field ResourcesUnsubscribe Lio/modelcontextprotocol/kotlin/sdk/types/Method$Defined;
 	public static final field RootsList Lio/modelcontextprotocol/kotlin/sdk/types/Method$Defined;
 	public static final field SamplingCreateMessage Lio/modelcontextprotocol/kotlin/sdk/types/Method$Defined;
+	public static final field TasksCancel Lio/modelcontextprotocol/kotlin/sdk/types/Method$Defined;
+	public static final field TasksGet Lio/modelcontextprotocol/kotlin/sdk/types/Method$Defined;
+	public static final field TasksList Lio/modelcontextprotocol/kotlin/sdk/types/Method$Defined;
+	public static final field TasksResult Lio/modelcontextprotocol/kotlin/sdk/types/Method$Defined;
 	public static final field ToolsCall Lio/modelcontextprotocol/kotlin/sdk/types/Method$Defined;
 	public static final field ToolsList Lio/modelcontextprotocol/kotlin/sdk/types/Method$Defined;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
@@ -3437,6 +3838,33 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ReferenceType$Compan
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class io/modelcontextprotocol/kotlin/sdk/types/RelatedTaskMetadata {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/RelatedTaskMetadata$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/types/RelatedTaskMetadata;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/RelatedTaskMetadata;Ljava/lang/String;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/RelatedTaskMetadata;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getTaskId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/RelatedTaskMetadata$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/RelatedTaskMetadata$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/RelatedTaskMetadata;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/RelatedTaskMetadata;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/RelatedTaskMetadata$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
 public abstract interface class io/modelcontextprotocol/kotlin/sdk/types/Request {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/Request$Companion;
 	public abstract fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
@@ -3532,6 +3960,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/RequestMeta {
 	public static final fun get-impl (Lkotlinx/serialization/json/JsonObject;Ljava/lang/String;)Lkotlinx/serialization/json/JsonElement;
 	public final fun getJson ()Lkotlinx/serialization/json/JsonObject;
 	public static final fun getProgressToken-impl (Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;
+	public static final fun getRelatedTask-impl (Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/RelatedTaskMetadata;
 	public fun hashCode ()I
 	public static fun hashCode-impl (Lkotlinx/serialization/json/JsonObject;)I
 	public fun toString ()Ljava/lang/String;
@@ -4333,6 +4762,179 @@ public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/SubscribeR
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/SubscribeRequestParams$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/Task : io/modelcontextprotocol/kotlin/sdk/types/TaskFields {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/Task$Companion;
+	public fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;)V
+	public synthetic fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/lang/Double;
+	public final fun component7 ()Ljava/lang/Double;
+	public final fun copy (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;)Lio/modelcontextprotocol/kotlin/sdk/types/Task;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/Task;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/Task;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getCreatedAt ()Ljava/lang/String;
+	public fun getLastUpdatedAt ()Ljava/lang/String;
+	public fun getPollInterval ()Ljava/lang/Double;
+	public fun getStatus ()Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;
+	public fun getStatusMessage ()Ljava/lang/String;
+	public fun getTaskId ()Ljava/lang/String;
+	public fun getTtl ()Ljava/lang/Double;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/Task$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/Task$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/Task;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/Task;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/Task$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public abstract interface class io/modelcontextprotocol/kotlin/sdk/types/TaskFields {
+	public abstract fun getCreatedAt ()Ljava/lang/String;
+	public abstract fun getLastUpdatedAt ()Ljava/lang/String;
+	public abstract fun getPollInterval ()Ljava/lang/Double;
+	public abstract fun getStatus ()Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;
+	public abstract fun getStatusMessage ()Ljava/lang/String;
+	public abstract fun getTaskId ()Ljava/lang/String;
+	public abstract fun getTtl ()Ljava/lang/Double;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/TaskMetadata {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/TaskMetadata$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/Double;)V
+	public synthetic fun <init> (Ljava/lang/Double;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/Double;
+	public final fun copy (Ljava/lang/Double;)Lio/modelcontextprotocol/kotlin/sdk/types/TaskMetadata;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/TaskMetadata;Ljava/lang/Double;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/TaskMetadata;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getTtl ()Ljava/lang/Double;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/TaskMetadata$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/TaskMetadata$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/TaskMetadata;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/TaskMetadata;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/TaskMetadata$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/TaskStatus : java/lang/Enum {
+	public static final field Cancelled Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus$Companion;
+	public static final field Completed Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;
+	public static final field Failed Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;
+	public static final field InputRequired Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;
+	public static final field Working Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;
+	public static fun values ()[Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/TaskStatus$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotification : io/modelcontextprotocol/kotlin/sdk/types/ClientNotification, io/modelcontextprotocol/kotlin/sdk/types/ServerNotification {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotification$Companion;
+	public fun <init> ()V
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotificationParams;)V
+	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotificationParams;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotificationParams;
+	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotificationParams;)Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotification;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotification;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotificationParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotification;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
+	public synthetic fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/NotificationParams;
+	public fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotificationParams;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotification$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotification$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotification;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotification;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotification$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotificationParams : io/modelcontextprotocol/kotlin/sdk/types/NotificationParams, io/modelcontextprotocol/kotlin/sdk/types/TaskFields {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotificationParams$Companion;
+	public fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lkotlinx/serialization/json/JsonObject;)V
+	public synthetic fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/lang/Double;
+	public final fun component7 ()Ljava/lang/Double;
+	public final fun component8 ()Lkotlinx/serialization/json/JsonObject;
+	public final fun copy (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotificationParams;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotificationParams;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotificationParams;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getCreatedAt ()Ljava/lang/String;
+	public fun getLastUpdatedAt ()Ljava/lang/String;
+	public fun getMeta ()Lkotlinx/serialization/json/JsonObject;
+	public fun getPollInterval ()Ljava/lang/Double;
+	public fun getStatus ()Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;
+	public fun getStatusMessage ()Ljava/lang/String;
+	public fun getTaskId ()Ljava/lang/String;
+	public fun getTtl ()Ljava/lang/Double;
+	public fun get_meta ()Lkotlinx/serialization/json/JsonObject;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotificationParams$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotificationParams$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotificationParams;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotificationParams;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotificationParams$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/TasksKt {
+	public static final field RELATED_TASK_META_KEY Ljava/lang/String;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/TextContent : io/modelcontextprotocol/kotlin/sdk/types/MediaContent {
