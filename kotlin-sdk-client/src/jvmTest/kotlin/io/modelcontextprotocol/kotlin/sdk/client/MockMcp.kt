@@ -124,9 +124,9 @@ internal class MockMcp(verbose: Boolean = false) {
             expectedSessionId = expectedSessionId,
             bodyPredicates = bodyPredicates,
         ) respondsWith {
-            val requestId = when (request.body.id) {
-                is RequestId.NumberId -> (request.body.id as RequestId.NumberId).value.toString()
-                is RequestId.StringId -> "\"${(request.body.id as RequestId.StringId).value}\""
+            val requestId = when (val id = request.body().id) {
+                is RequestId.NumberId -> id.value.toString()
+                is RequestId.StringId -> "\"${id.value}\""
             }
             val resultObject = result.invoke()
             // language=json
