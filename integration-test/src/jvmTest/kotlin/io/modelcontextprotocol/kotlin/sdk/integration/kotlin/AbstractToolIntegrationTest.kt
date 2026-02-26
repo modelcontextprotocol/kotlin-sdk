@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.kotlin
 
 import io.kotest.assertions.json.shouldEqualJson
+import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
@@ -9,6 +10,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ImageContent
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
+import io.modelcontextprotocol.kotlin.sdk.types.invoke
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -28,6 +30,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalMcpApi::class)
 abstract class AbstractToolIntegrationTest : KotlinTestBase() {
     private val testToolName = "echo"
     private val testToolDescription = "A simple echo tool that returns the input text"
@@ -84,12 +87,12 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
         ) { request ->
             val text = (request.params.arguments?.get("text") as? JsonPrimitive)?.content ?: "No text provided"
 
-            CallToolResult(
-                content = listOf(TextContent(text = "Echo: $text")),
-                structuredContent = buildJsonObject {
+            CallToolResult {
+                textContent("Echo: $text")
+                structuredContent {
                     put("result", text)
-                },
-            )
+                }
+            }
         }
     }
 
@@ -112,12 +115,12 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
         ) { request ->
             val text = (request.params.arguments?.get("text") as? JsonPrimitive)?.content ?: "No text provided"
 
-            CallToolResult(
-                content = listOf(TextContent(text = "Echo: $text")),
-                structuredContent = buildJsonObject {
+            CallToolResult {
+                textContent("Echo: $text")
+                structuredContent {
                     put("result", text)
-                },
-            )
+                }
+            }
         }
 
         server.addTool(
@@ -164,9 +167,7 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
             val delay = (request.params.arguments?.get("delay") as? JsonPrimitive)?.content?.toIntOrNull() ?: 1000
 
             // simulate slow operation
-            runBlocking {
-                delay(delay.toLong())
-            }
+            delay(delay.toLong())
 
             CallToolResult(
                 content = listOf(TextContent(text = "Completed after ${delay}ms delay")),

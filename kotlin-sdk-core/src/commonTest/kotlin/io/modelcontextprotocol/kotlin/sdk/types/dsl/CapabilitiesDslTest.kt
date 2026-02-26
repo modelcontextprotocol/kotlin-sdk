@@ -4,7 +4,8 @@ import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
-import io.modelcontextprotocol.kotlin.sdk.types.buildInitializeRequest
+import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
+import io.modelcontextprotocol.kotlin.sdk.types.invoke
 import kotlinx.serialization.json.double
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
@@ -20,7 +21,7 @@ import kotlin.test.Test
 class CapabilitiesDslTest {
     @Test
     fun `capabilities should build minimal empty capabilities`() {
-        val request = buildInitializeRequest {
+        val request = InitializeRequest {
             protocolVersion = "2024-11-05"
             capabilities { }
             info("Test", "1.0")
@@ -36,7 +37,7 @@ class CapabilitiesDslTest {
 
     @Test
     fun `capabilities should build full with all fields and nested properties`() {
-        val request = buildInitializeRequest {
+        val request = InitializeRequest {
             protocolVersion = "2024-11-05"
             capabilities {
                 sampling {
@@ -86,7 +87,7 @@ class CapabilitiesDslTest {
     @Test
     fun `capabilities should support roots variants`() {
         // Test listChanged = true
-        val requestTrue = buildInitializeRequest {
+        val requestTrue = InitializeRequest {
             protocolVersion = "2024-11-05"
             capabilities { roots(listChanged = true) }
             info("Test", "1.0")
@@ -94,7 +95,7 @@ class CapabilitiesDslTest {
         requestTrue.params.capabilities.roots?.listChanged shouldBe true
 
         // Test listChanged = false
-        val requestFalse = buildInitializeRequest {
+        val requestFalse = InitializeRequest {
             protocolVersion = "2024-11-05"
             capabilities { roots(listChanged = false) }
             info("Test", "1.0")
@@ -102,7 +103,7 @@ class CapabilitiesDslTest {
         requestFalse.params.capabilities.roots?.listChanged shouldBe false
 
         // Test listChanged = null (not provided)
-        val requestNull = buildInitializeRequest {
+        val requestNull = InitializeRequest {
             protocolVersion = "2024-11-05"
             capabilities { roots() }
             info("Test", "1.0")
@@ -112,7 +113,7 @@ class CapabilitiesDslTest {
 
     @Test
     fun `capabilities should overwrite when same field set multiple times`() {
-        val request = buildInitializeRequest {
+        val request = InitializeRequest {
             protocolVersion = "2024-11-05"
             capabilities {
                 sampling { put("temperature", 0.5) }

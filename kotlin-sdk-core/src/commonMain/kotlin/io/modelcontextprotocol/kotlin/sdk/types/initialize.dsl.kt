@@ -18,6 +18,58 @@ import kotlin.contracts.contract
  *
  * Example:
  * ```kotlin
+ * val request = InitializeRequest {
+ *     protocolVersion = "2024-11-05"
+ *     capabilities {
+ *         sampling(ClientCapabilities.sampling)
+ *         roots(listChanged = true)
+ *     }
+ *     info("MyClient", "1.0.0")
+ * }
+ * ```
+ *
+ * Example with full client info:
+ * ```kotlin
+ * val request = InitializeRequest {
+ *     protocolVersion = "2024-11-05"
+ *     capabilities {
+ *         sampling(ClientCapabilities.sampling)
+ *         experimental {
+ *             put("feature", JsonPrimitive(true))
+ *         }
+ *     }
+ *     info(
+ *         name = "MyAdvancedClient",
+ *         version = "2.0.0",
+ *         title = "Advanced MCP Client",
+ *         websiteUrl = "https://example.com"
+ *     )
+ * }
+ * ```
+ *
+ * @param block Configuration lambda for setting up the initialize request
+ * @return A configured [InitializeRequest] instance
+ * @see InitializeRequestBuilder
+ * @see InitializeRequest
+ */
+@ExperimentalMcpApi
+public inline operator fun InitializeRequest.Companion.invoke(
+    block: InitializeRequestBuilder.() -> Unit,
+): InitializeRequest = InitializeRequestBuilder().apply(block).build()
+
+/**
+ * Creates an [InitializeRequest] using a type-safe DSL builder.
+ *
+ * ## Required
+ * - [protocolVersion][InitializeRequestBuilder.protocolVersion] - MCP protocol version
+ * - [capabilities][InitializeRequestBuilder.capabilities] - Client capabilities
+ * - [info][InitializeRequestBuilder.info] - Client implementation information
+ *
+ * ## Optional
+ * - [meta][InitializeRequestBuilder.meta] - Metadata for the request
+ *
+ * Example:
+ * ```kotlin
  * val request = buildInitializeRequest {
  *     protocolVersion = "2024-11-05"
  *     capabilities {
@@ -54,6 +106,11 @@ import kotlin.contracts.contract
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
+@Deprecated(
+    message = "Use InitializeRequest { } instead",
+    level = DeprecationLevel.WARNING,
+    replaceWith = ReplaceWith("InitializeRequest{apply(block)}"),
+)
 public inline fun buildInitializeRequest(block: InitializeRequestBuilder.() -> Unit): InitializeRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return InitializeRequestBuilder().apply(block).build()
@@ -73,7 +130,6 @@ public inline fun buildInitializeRequest(block: InitializeRequestBuilder.() -> U
  * ## Optional
  * - [meta] - Metadata for the request
  *
- * @see buildInitializeRequest
  * @see InitializeRequest
  */
 @McpDsl
@@ -202,5 +258,85 @@ public class InitializeRequestBuilder @PublishedApi internal constructor() : Req
             meta = meta,
         )
         return InitializeRequest(params = params)
+    }
+}
+
+// ============================================================================
+// Result Builders (Server-side)
+// ============================================================================
+
+/**
+ * Creates an [InitializeResult] using a type-safe DSL builder.
+ *
+ * Example:
+ * ```kotlin
+ * val result = InitializeResult {
+ *     protocolVersion = "2024-11-05"
+ *     capabilities {
+ *         prompts(listChanged = true)
+ *         resources(subscribe = true, listChanged = true)
+ *         tools(listChanged = true)
+ *     }
+ *     info("MyServer", "1.0.0")
+ *     instructions = "Use this server for..."
+ * }
+ * ```
+ */
+@ExperimentalMcpApi
+public inline operator fun InitializeResult.Companion.invoke(
+    block: InitializeResultBuilder.() -> Unit,
+): InitializeResult = InitializeResultBuilder().apply(block).build()
+
+/**
+ * DSL builder for constructing [InitializeResult] instances.
+ */
+@McpDsl
+public class InitializeResultBuilder @PublishedApi internal constructor() : ResultBuilder() {
+    public var protocolVersion: String = LATEST_PROTOCOL_VERSION
+    private var capabilitiesValue: ServerCapabilities? = null
+    private var serverInfoValue: Implementation? = null
+    public var instructions: String? = null
+
+    public fun capabilities(capabilities: ServerCapabilities) {
+        this.capabilitiesValue = capabilities
+    }
+
+    public fun info(
+        name: String,
+        version: String,
+        title: String? = null,
+        websiteUrl: String? = null,
+        icons: List<Icon>? = null,
+    ) {
+        serverInfoValue = Implementation(
+            name = name,
+            version = version,
+            title = title,
+            websiteUrl = websiteUrl,
+            icons = icons,
+        )
+    }
+
+    public fun info(info: Implementation) {
+        this.serverInfoValue = info
+    }
+
+    @PublishedApi
+    override fun build(): InitializeResult {
+        val capabilities = requireNotNull(capabilitiesValue) {
+            "Missing required field 'capabilities'. " +
+                "Use capabilities(ServerCapabilities(...)) to set server capabilities."
+        }
+        val serverInfo = requireNotNull(serverInfoValue) {
+            "Missing required field 'info'. Use info(\"serverName\", \"1.0.0\")"
+        }
+
+        return InitializeResult(
+            protocolVersion = protocolVersion,
+            capabilities = capabilities,
+            serverInfo = serverInfo,
+            instructions = instructions,
+            meta = meta,
+        )
     }
 }
