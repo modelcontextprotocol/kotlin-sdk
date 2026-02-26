@@ -159,6 +159,10 @@ private val clientRequestDeserializers: Map<String, DeserializationStrategy<Clie
         Method.Defined.ResourcesTemplatesList.value to ListResourceTemplatesRequest.serializer(),
         Method.Defined.ToolsCall.value to CallToolRequest.serializer(),
         Method.Defined.ToolsList.value to ListToolsRequest.serializer(),
+        Method.Defined.TasksGet.value to GetTaskRequest.serializer(),
+        Method.Defined.TasksResult.value to GetTaskPayloadRequest.serializer(),
+        Method.Defined.TasksList.value to ListTasksRequest.serializer(),
+        Method.Defined.TasksCancel.value to CancelTaskRequest.serializer(),
     )
 }
 
@@ -175,6 +179,10 @@ private val serverRequestDeserializers: Map<String, DeserializationStrategy<Serv
         Method.Defined.Ping.value to PingRequest.serializer(),
         Method.Defined.RootsList.value to ListRootsRequest.serializer(),
         Method.Defined.SamplingCreateMessage.value to CreateMessageRequest.serializer(),
+        Method.Defined.TasksGet.value to GetTaskRequest.serializer(),
+        Method.Defined.TasksResult.value to GetTaskPayloadRequest.serializer(),
+        Method.Defined.TasksList.value to ListTasksRequest.serializer(),
+        Method.Defined.TasksCancel.value to CancelTaskRequest.serializer(),
     )
 }
 
@@ -301,6 +309,9 @@ private fun selectClientResultDeserializer(element: JsonElement): Deserializatio
         "model" in jsonObject && "role" in jsonObject -> CreateMessageResult.serializer()
         "roots" in jsonObject -> ListRootsResult.serializer()
         "action" in jsonObject -> ElicitResult.serializer()
+        "task" in jsonObject -> CreateTaskResult.serializer()
+        "tasks" in jsonObject -> ListTasksResult.serializer()
+        "taskId" in jsonObject -> GetTaskResult.serializer()
         else -> null
     }
 }
@@ -321,6 +332,9 @@ private fun selectServerResultDeserializer(element: JsonElement): Deserializatio
         "messages" in jsonObject -> GetPromptResult.serializer()
         "contents" in jsonObject -> ReadResourceResult.serializer()
         "content" in jsonObject -> CallToolResult.serializer()
+        "task" in jsonObject -> CreateTaskResult.serializer()
+        "tasks" in jsonObject -> ListTasksResult.serializer()
+        "taskId" in jsonObject -> GetTaskResult.serializer()
         else -> null
     }
 }
