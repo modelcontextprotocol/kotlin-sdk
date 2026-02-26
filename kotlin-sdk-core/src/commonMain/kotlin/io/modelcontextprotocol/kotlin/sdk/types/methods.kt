@@ -39,6 +39,10 @@ public sealed interface Method {
         CompletionComplete("completion/complete"),
         RootsList("roots/list"),
         ElicitationCreate("elicitation/create"),
+        TasksGet("tasks/get"),
+        TasksResult("tasks/result"),
+        TasksList("tasks/list"),
+        TasksCancel("tasks/cancel"),
     }
 
     /**
