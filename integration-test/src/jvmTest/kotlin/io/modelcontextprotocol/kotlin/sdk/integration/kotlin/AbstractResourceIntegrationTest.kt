@@ -19,7 +19,6 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.test.Ignore
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -165,7 +164,6 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
         assertEquals(testResourceContent, content.text, "Resource content should match")
     }
 
-    @Ignore("Blocked by https://github.com/modelcontextprotocol/kotlin-sdk/issues/249")
     @Test
     fun testSubscribeAndUnsubscribe() {
         runBlocking(Dispatchers.IO) {
