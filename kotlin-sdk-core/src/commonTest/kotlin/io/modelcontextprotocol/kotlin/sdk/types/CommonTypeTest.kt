@@ -21,7 +21,7 @@ class CommonTypeTest {
     fun `should have correct supported protocol versions`() {
         SUPPORTED_PROTOCOL_VERSIONS shouldContainExactlyInAnyOrder listOf(
             LATEST_PROTOCOL_VERSION,
-            DEFAULT_NEGOTIATED_PROTOCOL_VERSION,
+            "2025-06-18",
             "2025-03-26",
             "2024-11-05",
         )
