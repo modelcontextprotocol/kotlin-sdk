@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>LargeClass:ToolsTest.kt:ToolsTest</ID>
+    <ID>UnnecessarySafeCall:ToolsTest.kt:ToolsTest$tool.execution?.taskSupport</ID>
+  </CurrentIssues>
+</SmellBaseline>

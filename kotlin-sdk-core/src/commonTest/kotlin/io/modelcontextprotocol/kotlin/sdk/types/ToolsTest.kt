@@ -476,6 +476,102 @@ class ToolsTest {
     }
 
     @Test
+    fun `should serialize ToolExecution with taskSupport`() {
+        val execution = ToolExecution(taskSupport = TaskSupport.Required)
+
+        verifySerialization(
+            execution,
+            McpJson,
+            """
+            {
+              "taskSupport": "required"
+            }
+            """.trimIndent(),
+        )
+    }
+
+    @Test
+    fun `should serialize ToolExecution without taskSupport`() {
+        val execution = ToolExecution()
+
+        verifySerialization(
+            execution,
+            McpJson,
+            "{}",
+        )
+    }
+
+    @Test
+    fun `should deserialize ToolExecution with taskSupport`() {
+        val json = """
+            {
+              "taskSupport": "optional"
+            }
+        """.trimIndent()
+
+        val execution = verifyDeserialization<ToolExecution>(McpJson, json)
+
+        assertEquals(TaskSupport.Optional, execution.taskSupport)
+    }
+
+    @Test
+    fun `should deserialize ToolExecution without taskSupport`() {
+        val json = "{}"
+
+        val execution = verifyDeserialization<ToolExecution>(McpJson, json)
+
+        assertEquals(null, execution.taskSupport)
+    }
+
+    @Test
+    fun `should serialize Tool with execution`() {
+        val tool = Tool(
+            name = "long-running-task",
+            inputSchema = ToolSchema(),
+            description = "A tool that supports task-augmented execution",
+            execution = ToolExecution(taskSupport = TaskSupport.Required),
+        )
+
+        verifySerialization(
+            tool,
+            McpJson,
+            """
+            {
+              "name": "long-running-task",
+              "inputSchema": {
+                "type": "object"
+              },
+              "description": "A tool that supports task-augmented execution",
+              "execution": {
+                "taskSupport": "required"
+              }
+            }
+            """.trimIndent(),
+        )
+    }
+
+    @Test
+    fun `should deserialize Tool with execution`() {
+        val json = """
+            {
+              "name": "long-running-task",
+              "inputSchema": {
+                "type": "object"
+              },
+              "execution": {
+                "taskSupport": "forbidden"
+              }
+            }
+        """.trimIndent()
+
+        val tool = verifyDeserialization<Tool>(McpJson, json)
+
+        assertEquals("long-running-task", tool.name)
+        assertNotNull(tool.execution)
+        assertEquals(TaskSupport.Forbidden, tool.execution.taskSupport)
+    }
+
+    @Test
     fun `should serialize tool schema type even when defaults disabled`() {
         val tool = weatherTool()
 
