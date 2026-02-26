@@ -3,6 +3,7 @@
   <ManuallySuppressedIssues/>
   <CurrentIssues>
     <ID>CyclomaticComplexMethod:jsonUtils.kt:@OptIn(ExperimentalUnsignedTypes::class, ExperimentalSerializationApi::class) private fun convertToJsonElement: JsonElement</ID>
+    <ID>CyclomaticComplexMethod:serializers.kt:private fun selectServerResultDeserializer: DeserializationStrategy&lt;ServerResult>?</ID>
     <ID>InjectDispatcher:utils.jvm.kt:IO</ID>
     <ID>InstanceOfCheckForException:AbstractClientTransport.kt:AbstractClientTransport$e is McpException</ID>
     <ID>LongMethod:Protocol.kt:Protocol$public suspend fun &lt;T : RequestResult> request: T</ID>

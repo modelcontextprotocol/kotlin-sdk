@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.long
 import kotlinx.serialization.json.longOrNull
 import kotlin.jvm.JvmInline
@@ -20,6 +21,17 @@ public value class RequestMeta(public val json: JsonObject) {
                 is JsonPrimitive if (element.longOrNull != null) -> ProgressToken(element.long)
                 else -> null
             }
+        }
+
+    /**
+     * The related task metadata, if this request is associated with a task.
+     *
+     * @see RelatedTaskMetadata
+     * @see RELATED_TASK_META_KEY
+     */
+    public val relatedTask: RelatedTaskMetadata?
+        get() = json[RELATED_TASK_META_KEY]?.let { element ->
+            McpJson.decodeFromJsonElement(element)
         }
 
     /**
