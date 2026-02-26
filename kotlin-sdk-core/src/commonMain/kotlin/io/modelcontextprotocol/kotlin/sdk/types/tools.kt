@@ -55,6 +55,8 @@ public fun CallToolResult.Companion.error(content: String, meta: JsonObject? = n
  * @property icons Optional set of sized icons that clients can display in their user interface.
  * Clients MUST support at least PNG and JPEG formats.
  * Clients SHOULD also support SVG and WebP formats.
+ * @property execution Optional execution-related properties for this tool,
+ * such as task-augmented execution support.
  * @property meta Optional metadata for this tool.
  */
 @Serializable
@@ -66,6 +68,7 @@ public data class Tool(
     val title: String? = null,
     val annotations: ToolAnnotations? = null,
     val icons: List<Icon>? = null,
+    val execution: ToolExecution? = null,
     @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : WithMeta
@@ -90,6 +93,38 @@ public data class ToolSchema(
     @OptIn(ExperimentalSerializationApi::class)
     @EncodeDefault
     val type: String = "object"
+}
+
+/**
+ * Execution-related properties for a tool.
+ *
+ * @property taskSupport Indicates whether this tool supports task-augmented execution.
+ * This allows clients to handle long-running operations through polling the task system.
+ * Defaults to [TaskSupport.Forbidden] when absent.
+ */
+@Serializable
+public data class ToolExecution(val taskSupport: TaskSupport? = null)
+
+/**
+ * Indicates whether a tool supports task-augmented execution.
+ *
+ * - [Forbidden]: Tool does not support task-augmented execution (default when absent).
+ * - [Optional]: Tool may support task-augmented execution.
+ * - [Required]: Tool requires task-augmented execution.
+ */
+@Serializable
+public enum class TaskSupport {
+    /** Tool does not support task-augmented execution. */
+    @SerialName("forbidden")
+    Forbidden,
+
+    /** Tool may support task-augmented execution. */
+    @SerialName("optional")
+    Optional,
+
+    /** Tool requires task-augmented execution. */
+    @SerialName("required")
+    Required,
 }
 
 /**
