@@ -310,4 +310,116 @@ class NotificationTest {
             """.trimIndent(),
         )
     }
+
+    @Test
+    fun `should serialize TaskStatusNotification with all fields`() {
+        val notification = TaskStatusNotification(
+            TaskStatusNotificationParams(
+                taskId = "task-1",
+                status = TaskStatus.Working,
+                statusMessage = "Processing data",
+                createdAt = "2025-01-01T00:00:00Z",
+                lastUpdatedAt = "2025-01-01T00:01:00Z",
+                ttl = 60000.0,
+                pollInterval = 5000.0,
+                meta = buildJsonObject { put("source", "worker-1") },
+            ),
+        )
+
+        verifySerialization(
+            notification,
+            McpJson,
+            """
+            {
+              "method": "notifications/tasks/status",
+              "params": {
+                "taskId": "task-1",
+                "status": "working",
+                "statusMessage": "Processing data",
+                "createdAt": "2025-01-01T00:00:00Z",
+                "lastUpdatedAt": "2025-01-01T00:01:00Z",
+                "ttl": 60000.0,
+                "pollInterval": 5000.0,
+                "_meta": {
+                  "source": "worker-1"
+                }
+              }
+            }
+            """.trimIndent(),
+        )
+    }
+
+    @Test
+    fun `should serialize TaskStatusNotification with minimal fields`() {
+        val notification = TaskStatusNotification(
+            TaskStatusNotificationParams(
+                taskId = "task-2",
+                status = TaskStatus.Completed,
+                createdAt = "2025-01-01T00:00:00Z",
+                lastUpdatedAt = "2025-01-01T00:02:00Z",
+                ttl = null,
+            ),
+        )
+
+        verifySerialization(
+            notification,
+            McpJson,
+            """
+            {
+              "method": "notifications/tasks/status",
+              "params": {
+                "taskId": "task-2",
+                "status": "completed",
+                "createdAt": "2025-01-01T00:00:00Z",
+                "lastUpdatedAt": "2025-01-01T00:02:00Z"
+              }
+            }
+            """.trimIndent(),
+        )
+    }
+
+    @Test
+    fun `should deserialize TaskStatusNotification`() {
+        val json = """
+            {
+              "method": "notifications/tasks/status",
+              "params": {
+                "taskId": "task-3",
+                "status": "failed",
+                "statusMessage": "Connection lost",
+                "createdAt": "2025-01-01T00:00:00Z",
+                "lastUpdatedAt": "2025-01-01T00:03:00Z",
+                "ttl": 30000.0,
+                "pollInterval": 1000.0
+              }
+            }
+        """.trimIndent()
+
+        val notification = verifyDeserialization<TaskStatusNotification>(McpJson, json)
+        val params = notification.params!!
+
+        assertEquals(Method.Defined.NotificationsTasksStatus, notification.method)
+        assertEquals("task-3", params.taskId)
+        assertEquals(TaskStatus.Failed, params.status)
+        assertEquals("Connection lost", params.statusMessage)
+        assertEquals("2025-01-01T00:00:00Z", params.createdAt)
+        assertEquals("2025-01-01T00:03:00Z", params.lastUpdatedAt)
+        assertEquals(30000.0, params.ttl)
+        assertEquals(1000.0, params.pollInterval)
+        assertNull(params.meta)
+    }
+
+    @Test
+    fun `should deserialize TaskStatusNotification without params`() {
+        val json = """
+            {
+              "method": "notifications/tasks/status"
+            }
+        """.trimIndent()
+
+        val notification = verifyDeserialization<TaskStatusNotification>(McpJson, json)
+
+        assertEquals(Method.Defined.NotificationsTasksStatus, notification.method)
+        assertNull(notification.params)
+    }
 }

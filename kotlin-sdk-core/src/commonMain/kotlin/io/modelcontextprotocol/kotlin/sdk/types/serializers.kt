@@ -220,6 +220,7 @@ private val clientNotificationDeserializers: Map<String, DeserializationStrategy
         Method.Defined.NotificationsProgress.value to ProgressNotification.serializer(),
         Method.Defined.NotificationsInitialized.value to InitializedNotification.serializer(),
         Method.Defined.NotificationsRootsListChanged.value to RootsListChangedNotification.serializer(),
+        Method.Defined.NotificationsTasksStatus.value to TaskStatusNotification.serializer(),
     )
 }
 
@@ -239,6 +240,7 @@ private val serverNotificationDeserializers: Map<String, DeserializationStrategy
         Method.Defined.NotificationsResourcesListChanged.value to ResourceListChangedNotification.serializer(),
         Method.Defined.NotificationsToolsListChanged.value to ToolListChangedNotification.serializer(),
         Method.Defined.NotificationsPromptsListChanged.value to PromptListChangedNotification.serializer(),
+        Method.Defined.NotificationsTasksStatus.value to TaskStatusNotification.serializer(),
     )
 }
 
