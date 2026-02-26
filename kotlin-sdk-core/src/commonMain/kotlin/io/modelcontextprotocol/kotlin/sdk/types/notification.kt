@@ -348,3 +348,48 @@ public data class ToolListChangedNotification(override val params: BaseNotificat
     @EncodeDefault
     override val method: Method = Method.Defined.NotificationsToolsListChanged
 }
+
+// ============================================================================
+// Task Status Notification
+// ============================================================================
+
+/**
+ * An optional notification from the receiver to the requestor, informing them that a task’s status has changed.
+ * Receivers are not required to send these notifications.
+ *
+ * This notification can be sent by either side (both [ClientNotification] and [ServerNotification]).
+ *
+ * @property params The task status notification parameters containing the current task state.
+ */
+@Serializable
+public data class TaskStatusNotification(override val params: TaskStatusNotificationParams? = null) :
+    ClientNotification,
+    ServerNotification {
+    @EncodeDefault
+    override val method: Method = Method.Defined.NotificationsTasksStatus
+}
+
+/**
+ * Parameters for a notifications/tasks/status notification.
+ *
+ * @property taskId The task identifier.
+ * @property status Current task state.
+ * @property statusMessage Optional human-readable message describing the current task state.
+ * @property createdAt ISO 8601 timestamp when the task was created.
+ * @property lastUpdatedAt ISO 8601 timestamp when the task was last updated.
+ * @property ttl Actual retention duration from creation in milliseconds, null for unlimited.
+ * @property pollInterval Suggested polling interval in milliseconds.
+ * @property meta Optional metadata for this notification.
+ */
+@Serializable
+public data class TaskStatusNotificationParams(
+    override val taskId: String,
+    override val status: TaskStatus,
+    override val statusMessage: String? = null,
+    override val createdAt: String,
+    override val lastUpdatedAt: String,
+    override val ttl: Double?,
+    override val pollInterval: Double? = null,
+    @SerialName("_meta") override val meta: JsonObject? = null,
+) : NotificationParams,
+    TaskFields
