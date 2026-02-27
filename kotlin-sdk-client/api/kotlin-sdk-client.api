@@ -142,3 +142,201 @@ public final class io/modelcontextprotocol/kotlin/sdk/client/WebSocketMcpKtorCli
 	public static synthetic fun mcpWebSocketTransport$default (Lio/ktor/client/HttpClient;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/client/WebSocketClientTransport;
 }
 
+public final class io/modelcontextprotocol/kotlin/sdk/client/auth/AuthServerMetadata {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/client/auth/AuthServerMetadata$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/client/auth/AuthServerMetadata;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/client/auth/AuthServerMetadata;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/client/auth/AuthServerMetadata;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAuthorizationEndpoint ()Ljava/lang/String;
+	public final fun getIssuer ()Ljava/lang/String;
+	public final fun getJwksUri ()Ljava/lang/String;
+	public final fun getTokenEndpoint ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/client/auth/AuthServerMetadata$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/client/auth/AuthServerMetadata$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/client/auth/AuthServerMetadata;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/client/auth/AuthServerMetadata;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/client/auth/AuthServerMetadata$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/client/auth/DiscoverAndRequestJwtAuthGrantOptions {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getAudience ()Ljava/lang/String;
+	public final fun getClientId ()Ljava/lang/String;
+	public final fun getClientSecret ()Ljava/lang/String;
+	public final fun getIdToken ()Ljava/lang/String;
+	public final fun getIdpTokenEndpoint ()Ljava/lang/String;
+	public final fun getIdpUrl ()Ljava/lang/String;
+	public final fun getResource ()Ljava/lang/String;
+	public final fun getScope ()Ljava/lang/String;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/client/auth/EnterpriseAuth {
+	public static final field GRANT_TYPE_JWT_BEARER Ljava/lang/String;
+	public static final field GRANT_TYPE_TOKEN_EXCHANGE Ljava/lang/String;
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/client/auth/EnterpriseAuth;
+	public static final field TOKEN_TYPE_ID_JAG Ljava/lang/String;
+	public static final field TOKEN_TYPE_ID_TOKEN Ljava/lang/String;
+	public final fun discoverAndRequestJwtAuthorizationGrant (Lio/modelcontextprotocol/kotlin/sdk/client/auth/DiscoverAndRequestJwtAuthGrantOptions;Lio/ktor/client/HttpClient;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun discoverAuthServerMetadata (Ljava/lang/String;Lio/ktor/client/HttpClient;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun exchangeJwtBearerGrant (Lio/modelcontextprotocol/kotlin/sdk/client/auth/ExchangeJwtBearerGrantOptions;Lio/ktor/client/HttpClient;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun requestJwtAuthorizationGrant (Lio/modelcontextprotocol/kotlin/sdk/client/auth/RequestJwtAuthGrantOptions;Lio/ktor/client/HttpClient;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/client/auth/EnterpriseAuthAssertionContext {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun getAuthorizationServerUrl ()Ljava/lang/String;
+	public final fun getResourceUrl ()Ljava/lang/String;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/client/auth/EnterpriseAuthException : java/lang/RuntimeException {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/client/auth/EnterpriseAuthProvider {
+	public static final field Plugin Lio/modelcontextprotocol/kotlin/sdk/client/auth/EnterpriseAuthProvider$Plugin;
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/client/auth/EnterpriseAuthProviderOptions;Lio/ktor/client/HttpClient;)V
+	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/client/auth/EnterpriseAuthProviderOptions;Lio/ktor/client/HttpClient;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun invalidateCache ()V
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/client/auth/EnterpriseAuthProvider$Config {
+	public fun <init> ()V
+	public final fun getAssertionCallback ()Lkotlin/jvm/functions/Function2;
+	public final fun getAuthHttpClient ()Lio/ktor/client/HttpClient;
+	public final fun getClientId ()Ljava/lang/String;
+	public final fun getClientSecret ()Ljava/lang/String;
+	public final fun getScope ()Ljava/lang/String;
+	public final fun setAssertionCallback (Lkotlin/jvm/functions/Function2;)V
+	public final fun setAuthHttpClient (Lio/ktor/client/HttpClient;)V
+	public final fun setClientId (Ljava/lang/String;)V
+	public final fun setClientSecret (Ljava/lang/String;)V
+	public final fun setScope (Ljava/lang/String;)V
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/client/auth/EnterpriseAuthProvider$Plugin : io/ktor/client/plugins/HttpClientPlugin {
+	public fun getKey ()Lio/ktor/util/AttributeKey;
+	public fun install (Lio/modelcontextprotocol/kotlin/sdk/client/auth/EnterpriseAuthProvider;Lio/ktor/client/HttpClient;)V
+	public synthetic fun install (Ljava/lang/Object;Lio/ktor/client/HttpClient;)V
+	public fun prepare (Lkotlin/jvm/functions/Function1;)Lio/modelcontextprotocol/kotlin/sdk/client/auth/EnterpriseAuthProvider;
+	public synthetic fun prepare (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/client/auth/EnterpriseAuthProviderOptions {
+	public fun <init> (Ljava/lang/String;Lkotlin/jvm/functions/Function2;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlin/jvm/functions/Function2;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getAssertionCallback ()Lkotlin/jvm/functions/Function2;
+	public final fun getClientId ()Ljava/lang/String;
+	public final fun getClientSecret ()Ljava/lang/String;
+	public final fun getScope ()Ljava/lang/String;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/client/auth/ExchangeJwtBearerGrantOptions {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getAssertion ()Ljava/lang/String;
+	public final fun getClientId ()Ljava/lang/String;
+	public final fun getClientSecret ()Ljava/lang/String;
+	public final fun getScope ()Ljava/lang/String;
+	public final fun getTokenEndpoint ()Ljava/lang/String;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/client/auth/JagTokenExchangeResponse {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/client/auth/JagTokenExchangeResponse$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/Integer;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;)Lio/modelcontextprotocol/kotlin/sdk/client/auth/JagTokenExchangeResponse;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/client/auth/JagTokenExchangeResponse;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/client/auth/JagTokenExchangeResponse;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAccessToken ()Ljava/lang/String;
+	public final fun getExpiresIn ()Ljava/lang/Integer;
+	public final fun getIssuedTokenType ()Ljava/lang/String;
+	public final fun getScope ()Ljava/lang/String;
+	public final fun getTokenType ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/client/auth/JagTokenExchangeResponse$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/client/auth/JagTokenExchangeResponse$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/client/auth/JagTokenExchangeResponse;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/client/auth/JagTokenExchangeResponse;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/client/auth/JagTokenExchangeResponse$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/client/auth/JwtBearerAccessTokenResponse {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/client/auth/JwtBearerAccessTokenResponse$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getAccessToken ()Ljava/lang/String;
+	public final fun getExpiresAt ()Lkotlin/time/ComparableTimeMark;
+	public final fun getExpiresIn ()Ljava/lang/Integer;
+	public final fun getRefreshToken ()Ljava/lang/String;
+	public final fun getScope ()Ljava/lang/String;
+	public final fun getTokenType ()Ljava/lang/String;
+	public final fun isExpired ()Z
+	public final fun setExpiresAt (Lkotlin/time/ComparableTimeMark;)V
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/client/auth/JwtBearerAccessTokenResponse$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/client/auth/JwtBearerAccessTokenResponse$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/client/auth/JwtBearerAccessTokenResponse;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/client/auth/JwtBearerAccessTokenResponse;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/client/auth/JwtBearerAccessTokenResponse$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/client/auth/RequestJwtAuthGrantOptions {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getAudience ()Ljava/lang/String;
+	public final fun getClientId ()Ljava/lang/String;
+	public final fun getClientSecret ()Ljava/lang/String;
+	public final fun getIdToken ()Ljava/lang/String;
+	public final fun getResource ()Ljava/lang/String;
+	public final fun getScope ()Ljava/lang/String;
+	public final fun getTokenEndpoint ()Ljava/lang/String;
+}
+
