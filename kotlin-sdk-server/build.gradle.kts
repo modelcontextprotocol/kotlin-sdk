@@ -28,6 +28,7 @@ kotlin {
 
         jvmTest {
             dependencies {
+                implementation(libs.junit.jupiter.params)
                 implementation(libs.kotest.assertions.ktor)
                 implementation(libs.ktor.client.content.negotiation)
                 implementation(libs.ktor.client.logging)
