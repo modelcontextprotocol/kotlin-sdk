@@ -1,6 +1,8 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.kotest.assertions.nondeterministic.eventually
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.shared.ReadBuffer
 import io.modelcontextprotocol.kotlin.sdk.shared.serializeMessage
@@ -30,7 +32,6 @@ import java.io.IOException
 import java.io.PipedInputStream
 import java.io.PipedOutputStream
 import java.util.stream.Stream
-import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
@@ -218,13 +219,12 @@ class StdioServerTransportTest {
             val server = StdioServerTransport(bufferedInput, printOutput)
             server.onMessage {}
             server.start()
-            try {
-                assertFailsWith<IllegalStateException> {
+            withClue("Server should not start twice") {
+                shouldThrow<IllegalStateException> {
                     server.start()
                 }
-            } finally {
-                server.close()
             }
+            server.close()
         }
     }
 

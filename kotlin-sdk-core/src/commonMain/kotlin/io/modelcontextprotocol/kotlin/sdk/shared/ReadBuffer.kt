@@ -34,20 +34,21 @@ public class ReadBuffer {
      *         input buffer is exhausted or no valid message is found.
      */
     public fun readMessage(): JSONRPCMessage? {
-        var message: JSONRPCMessage? = null
-        while (message == null) {
+        while (true) {
             val line = readNextLine() ?: return null
             if (line.isBlank()) continue
 
             @Suppress("TooGenericExceptionCaught")
-            try {
-                message = deserializeMessage(line)
+            val message = try {
+                deserializeMessage(line)
             } catch (e: Exception) {
                 logger.error(e) { "Failed to deserialize message from line: $line\nAttempting to recover..." }
-                message = tryRecover(line)
+                tryRecover(line)
+            }
+            if (message != null) {
+                return message
             }
         }
-        return message
     }
 
     private fun readNextLine(): String? {

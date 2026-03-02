@@ -27,6 +27,8 @@ import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.CoroutineContext
 
+private const val READ_BUFFER_SIZE = 8192L
+
 /**
  * A server transport that communicates with a client via standard I/O.
  *
@@ -39,11 +41,7 @@ import kotlin.coroutines.CoroutineContext
 @OptIn(ExperimentalAtomicApi::class)
 public class StdioServerTransport(private val inputStream: Source, outputStream: Sink) : AbstractTransport() {
 
-    private companion object {
-        private val logger = KotlinLogging.logger {}
-        private const val READ_BUFFER_SIZE = 8192L
-    }
-
+    private val logger = KotlinLogging.logger {}
     private val readBuffer = ReadBuffer()
     private val initialized: AtomicBoolean = AtomicBoolean(false)
     private var readingJob: Job? = null
@@ -55,7 +53,6 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
     private val writeChannel = Channel<JSONRPCMessage>(Channel.UNLIMITED)
     private val outputWriter = outputStream.buffered()
 
-    @Suppress("TooGenericExceptionCaught", "ThrowsCount")
     override suspend fun start() {
         if (!initialized.compareAndSet(expectedValue = false, newValue = true)) {
             error("StdioServerTransport already started!")
@@ -71,10 +68,10 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
         sendingJob = launchSendingJob()
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun launchReadingJob(): Job {
         val job = scope.launch {
             val buf = Buffer()
+            @Suppress("TooGenericExceptionCaught")
             try {
                 while (isActive) {
                     val bytesRead = inputStream.readAtMostTo(buf, READ_BUFFER_SIZE)
@@ -103,9 +100,9 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
         return job
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun launchProcessingJob() {
         scope.launch {
+            @Suppress("TooGenericExceptionCaught")
             try {
                 for (chunk in readChannel) {
                     readBuffer.append(chunk)
@@ -119,9 +116,9 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun launchSendingJob(): Job {
         val job = scope.launch {
+            @Suppress("TooGenericExceptionCaught")
             try {
                 for (message in writeChannel) {
                     val json = serializeMessage(message)
@@ -144,13 +141,11 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
         return job
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private suspend fun processReadBuffer() {
+        @Suppress("TooGenericExceptionCaught")
         while (true) {
             val message = try {
                 readBuffer.readMessage()
-            } catch (e: CancellationException) {
-                throw e
             } catch (e: Exception) {
                 _onError.invoke(e)
                 null
