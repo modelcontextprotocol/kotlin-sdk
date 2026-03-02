@@ -1,0 +1,92 @@
+package io.modelcontextprotocol.kotlin.sdk.conformance
+
+import io.modelcontextprotocol.kotlin.sdk.server.Server
+import io.modelcontextprotocol.kotlin.sdk.types.BlobResourceContents
+import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
+import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
+
+fun Server.registerConformanceResources() {
+    // 1. Static text resource
+    addResource(
+        uri = "test://static-text",
+        name = "static-text",
+        description = "A static text resource for testing",
+        mimeType = "text/plain",
+    ) {
+        ReadResourceResult(
+            listOf(
+                TextResourceContents(
+                    text = "This is the content of the static text resource.",
+                    uri = "test://static-text",
+                    mimeType = "text/plain",
+                ),
+            ),
+        )
+    }
+
+    // 2. Static binary resource
+    addResource(
+        uri = "test://static-binary",
+        name = "static-binary",
+        description = "A static binary resource for testing",
+        mimeType = "image/png",
+    ) {
+        ReadResourceResult(
+            listOf(
+                BlobResourceContents(
+                    blob = PNG_BASE64,
+                    uri = "test://static-binary",
+                    mimeType = "image/png",
+                ),
+            ),
+        )
+    }
+
+    // 3. Template resource
+    // Note: The SDK does not currently support addResourceTemplate().
+    // Register as a static resource; template listing is handled separately.
+    addResource(
+        uri = "test://template/{id}/data",
+        name = "template",
+        description = "A template resource for testing",
+        mimeType = "application/json",
+    ) { request ->
+        ReadResourceResult(
+            listOf(
+                TextResourceContents(
+                    text = "content for ${request.uri}",
+                    uri = request.uri,
+                    mimeType = "application/json",
+                ),
+            ),
+        )
+    }
+
+    // 4. Watched resource
+    addResource(
+        uri = "test://watched-resource",
+        name = "watched-resource",
+        description = "A watched resource for testing",
+        mimeType = "text/plain",
+    ) {
+        ReadResourceResult(
+            listOf(
+                TextResourceContents(
+                    text = "Watched resource content.",
+                    uri = "test://watched-resource",
+                    mimeType = "text/plain",
+                ),
+            ),
+        )
+    }
+
+    // 5. Dynamic resource (placeholder)
+    addResource(
+        uri = "test://dynamic-resource",
+        name = "dynamic-resource",
+        description = "A dynamic resource for testing",
+        mimeType = "text/plain",
+    ) {
+        throw NotImplementedError("Dynamic resource not implemented")
+    }
+}

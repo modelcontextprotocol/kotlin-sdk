@@ -1,343 +1,95 @@
 package io.modelcontextprotocol.kotlin.sdk.conformance
 
-import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.serialization.kotlinx.json.json
+import io.ktor.server.application.install
+import io.ktor.server.cio.CIO
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.modelcontextprotocol.kotlin.sdk.server.mcpStreamableHttp
+import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.test.utils.NPX
+import io.modelcontextprotocol.kotlin.test.utils.createProcessOutputReader
 import io.modelcontextprotocol.kotlin.test.utils.findFreePort
-import io.modelcontextprotocol.kotlin.test.utils.startLogging
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.DynamicTest
-import org.junit.jupiter.api.TestFactory
-import org.junit.jupiter.api.TestInstance
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.lang.management.ManagementFactory
-import java.net.HttpURLConnection
-import java.net.URI
+import io.modelcontextprotocol.kotlin.test.utils.waitForPort
+import org.junit.jupiter.api.Timeout
+import java.io.File
 import java.util.concurrent.TimeUnit
-import kotlin.io.path.createTempFile
-import kotlin.properties.Delegates
-import kotlin.test.fail
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
-private val logger = KotlinLogging.logger {}
-
-val processStderrLogger = KotlinLogging.logger(name = "stderr")
-val processStdoutLogger = KotlinLogging.logger(name = "stdout")
-
-private const val CONFORMANCE_VERSION = "0.1.8"
-
-enum class TransportType {
-    SSE,
-    WEBSOCKET,
-}
-
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ConformanceTest {
 
-    private var serverProcess: Process? = null
-    private var serverPort: Int by Delegates.notNull()
-    private val serverErrorOutput = mutableListOf<String>()
-    private val maxErrorLines = 500
-
-    companion object {
-        private val SERVER_SCENARIOS = listOf(
-            "server-initialize",
-            "tools-list",
-            "tools-call-simple-text",
-            "resources-list",
-            "prompts-list",
-            // TODO: Fix
-            // - resources-read-text
-            // - prompts-get-simple
-        )
-
-        private val CLIENT_SCENARIOS = listOf(
-            "initialize",
-            // TODO: Fix
-            // "tools-call",
-        )
-
-        private val SERVER_TRANSPORT_TYPES = listOf(
-            TransportType.SSE,
-            // TODO: Fix
-//            TransportType.WEBSOCKET,
-        )
-
-        private val CLIENT_TRANSPORT_TYPES = listOf(
-            TransportType.SSE,
-            TransportType.WEBSOCKET,
-        )
-
-        private const val DEFAULT_TEST_TIMEOUT_SECONDS = 30L
-        private const val DEFAULT_SERVER_STARTUP_TIMEOUT_SECONDS = 10
-        private const val INITIAL_BACKOFF_MS = 50L
-        private const val MAX_BACKOFF_MS = 500L
-        private const val BACKOFF_MULTIPLIER = 1.5
-        private const val CONNECTION_TIMEOUT_MS = 500
-        private const val GRACEFUL_SHUTDOWN_SECONDS = 5L
-        private const val FORCE_SHUTDOWN_SECONDS = 2L
-
-        private fun getRuntimeClasspath(): String = ManagementFactory.getRuntimeMXBean().classPath
-
-        private fun getTestClasspath(): String = System.getProperty("test.classpath") ?: getRuntimeClasspath()
-
-        private fun waitForServerReady(
-            url: String,
-            timeoutSeconds: Int = DEFAULT_SERVER_STARTUP_TIMEOUT_SECONDS,
-        ): Boolean {
-            val deadline = System.currentTimeMillis() + (timeoutSeconds * 1000)
-            var lastError: Exception? = null
-            var backoffMs = INITIAL_BACKOFF_MS
-
-            while (System.currentTimeMillis() < deadline) {
-                try {
-                    val connection = URI(url).toURL().openConnection() as HttpURLConnection
-                    connection.requestMethod = "GET"
-                    connection.connectTimeout = CONNECTION_TIMEOUT_MS
-                    connection.readTimeout = CONNECTION_TIMEOUT_MS
-                    connection.connect()
-
-                    val responseCode = connection.responseCode
-                    connection.disconnect()
-                    logger.debug { "Server responded with code: $responseCode" }
-                    return true
-                } catch (e: Exception) {
-                    lastError = e
-                    Thread.sleep(backoffMs)
-                    backoffMs = (backoffMs * BACKOFF_MULTIPLIER).toLong().coerceAtMost(MAX_BACKOFF_MS)
-                }
+    @Test
+    @Timeout(300, unit = TimeUnit.SECONDS)
+    fun serverConformance() {
+        val port = findFreePort()
+        val server = embeddedServer(CIO, port = port) {
+            install(ContentNegotiation) {
+                json(McpJson)
             }
-
-            logger.error { "Server did not start within $timeoutSeconds seconds. Last error: ${lastError?.message}" }
-            return false
-        }
-    }
-
-    @BeforeAll
-    fun startServer() {
-        serverPort = findFreePort()
-        val serverUrl = "http://127.0.0.1:$serverPort/mcp"
-
-        logger.info { "Starting conformance test server on port $serverPort" }
-
-        val processBuilder = ProcessBuilder(
-            "java",
-            "-cp",
-            getRuntimeClasspath(),
-            "io.modelcontextprotocol.kotlin.sdk.conformance.ConformanceServerKt",
-            serverPort.toString(),
-        )
-
-        val process = processBuilder.start()
-        serverProcess = process
-
-        // capture stderr in the background
-        Thread {
-            try {
-                BufferedReader(InputStreamReader(process.errorStream)).use { reader ->
-                    reader.lineSequence().forEach { line ->
-                        synchronized(serverErrorOutput) {
-                            if (serverErrorOutput.size >= maxErrorLines) {
-                                serverErrorOutput.removeAt(0)
-                            }
-                            serverErrorOutput.add(line)
-                        }
-                        logger.debug { "Server stderr: $line" }
-                    }
-                }
-            } catch (e: Exception) {
-                logger.trace(e) { "Error reading server stderr" }
+            mcpStreamableHttp {
+                createConformanceServer()
             }
-        }.apply {
-            name = "server-stderr-reader"
-            isDaemon = true
-        }.start()
+        }.start(wait = false)
 
-        logger.info { "Waiting for server to start..." }
-        val serverReady = waitForServerReady(serverUrl)
+        try {
+            val ready = waitForPort("localhost", port, 30)
+            check(ready) { "Server failed to start on port $port within 30 seconds" }
 
-        if (!serverReady) {
-            val errorInfo = synchronized(serverErrorOutput) {
-                if (serverErrorOutput.isNotEmpty()) {
-                    "\n\nServer error output:\n${serverErrorOutput.joinToString("\n")}"
-                } else {
-                    ""
-                }
-            }
-            serverProcess?.destroyForcibly()
-            throw IllegalStateException(
-                "Server failed to start within $DEFAULT_SERVER_STARTUP_TIMEOUT_SECONDS seconds. " +
-                    "Check if port $serverPort is available.$errorInfo",
+            val baselineFile = File("conformance-baseline.yml")
+            val command = mutableListOf(
+                NPX,
+                "@modelcontextprotocol/conformance",
+                "server",
+                "--url",
+                "http://localhost:$port/mcp",
             )
-        }
-
-        logger.info { "Server started successfully at $serverUrl" }
-    }
-
-    @AfterAll
-    fun stopServer() {
-        serverProcess?.also { process ->
-            logger.info { "Stopping conformance test server (PID: ${process.pid()})" }
-
-            try {
-                process.destroy()
-                val terminated = process.waitFor(GRACEFUL_SHUTDOWN_SECONDS, TimeUnit.SECONDS)
-
-                if (!terminated) {
-                    logger.warn { "Server did not terminate gracefully, forcing shutdown..." }
-                    process.destroyForcibly()
-                    process.waitFor(FORCE_SHUTDOWN_SECONDS, TimeUnit.SECONDS)
-                } else {
-                    logger.info { "Server stopped gracefully" }
-                }
-            } catch (e: Exception) {
-                logger.error(e) { "Error stopping server process" }
-            } finally {
-                serverProcess = null
+            if (baselineFile.exists()) {
+                command += listOf("--expected-failures", baselineFile.absolutePath)
             }
-        } ?: logger.debug { "No server process to stop" }
-    }
 
-    @TestFactory
-    fun `MCP Server Conformance Tests`(): List<DynamicTest> = SERVER_TRANSPORT_TYPES.flatMap { transportType ->
-        SERVER_SCENARIOS.map { scenario ->
-            DynamicTest.dynamicTest("Server [$transportType]: $scenario") {
-                runServerConformanceTest(scenario, transportType)
-            }
+            val process = ProcessBuilder(command)
+                .directory(File("."))
+                .redirectErrorStream(true)
+                .start()
+
+            createProcessOutputReader(process, "CONFORMANCE-SERVER").start()
+            val exitCode = process.waitFor()
+            assertEquals(0, exitCode, "Server conformance tests failed (exit code: $exitCode)")
+        } finally {
+            server.stop(1000, 2000)
         }
     }
 
-    @TestFactory
-    fun `MCP Client Conformance Tests`(): List<DynamicTest> = CLIENT_TRANSPORT_TYPES.flatMap { transportType ->
-        CLIENT_SCENARIOS.map { scenario ->
-            DynamicTest.dynamicTest("Client [$transportType]: $scenario") {
-                runClientConformanceTest(scenario, transportType)
-            }
-        }
-    }
-
-    private fun runServerConformanceTest(scenario: String, transportType: TransportType) {
-        val serverUrl = when (transportType) {
-            TransportType.SSE -> {
-                "http://127.0.0.1:$serverPort/mcp"
-            }
-
-            TransportType.WEBSOCKET -> {
-                "ws://127.0.0.1:$serverPort/ws"
-            }
+    @Test
+    @Timeout(300, unit = TimeUnit.SECONDS)
+    fun clientConformance() {
+        val clientScript = File("build/install/conformance-test/bin/conformance-client")
+        check(clientScript.exists()) {
+            "Client script not found at ${clientScript.absolutePath}. Run 'installDist' first."
         }
 
-        val processBuilder = ProcessBuilder(
+        val baselineFile = File("conformance-baseline.yml")
+        val command = mutableListOf(
             NPX,
-            "@modelcontextprotocol/conformance@$CONFORMANCE_VERSION",
-            "server",
-            "--url",
-            serverUrl,
-            "--scenario",
-            scenario,
-        )
-
-        runConformanceTest("server", scenario, processBuilder, transportType)
-    }
-
-    private fun runClientConformanceTest(scenario: String, transportType: TransportType) {
-        val testClasspath = getTestClasspath()
-
-        // Create an argfile to avoid Windows command line length limits
-        val argFile = createTempFile(suffix = ".args").toFile()
-        argFile.deleteOnExit()
-
-        val mainClass = when (transportType) {
-            TransportType.SSE -> {
-                argFile.writeText(
-                    buildString {
-                        appendLine("-cp")
-                        appendLine(testClasspath)
-                        appendLine("io.modelcontextprotocol.kotlin.sdk.conformance.ConformanceClientKt")
-                    },
-                )
-                "http://127.0.0.1:$serverPort/mcp"
-            }
-
-            TransportType.WEBSOCKET -> {
-                argFile.writeText(
-                    buildString {
-                        appendLine("-cp")
-                        appendLine(testClasspath)
-                        appendLine("io.modelcontextprotocol.kotlin.sdk.conformance.WebSocketConformanceClientKt")
-                    },
-                )
-                "ws://127.0.0.1:$serverPort/ws"
-            }
-        }
-
-        val clientCommand = listOf(
-            "java",
-            "@${argFile.absolutePath}",
-            mainClass,
-        )
-
-        val processBuilder = ProcessBuilder(
-            NPX,
-            "@modelcontextprotocol/conformance@$CONFORMANCE_VERSION",
+            "@modelcontextprotocol/conformance",
             "client",
             "--command",
-            clientCommand.joinToString(" "),
-            "--scenario",
-            scenario,
+            clientScript.absolutePath,
+            "--suite",
+            "core",
         )
-
-        runConformanceTest("client", scenario, processBuilder, transportType)
-    }
-
-    private fun runConformanceTest(
-        type: String,
-        scenario: String,
-        processBuilder: ProcessBuilder,
-        transportType: TransportType,
-    ) {
-        val capitalizedType = type.replaceFirstChar { it.uppercase() }
-        logger.info { "Running $type conformance test [$transportType]: $scenario" }
-
-        val timeoutSeconds =
-            System.getenv("CONFORMANCE_TEST_TIMEOUT_SECONDS")?.toLongOrNull() ?: DEFAULT_TEST_TIMEOUT_SECONDS
-
-        val process = processBuilder.start()
-
-        process.errorStream.startLogging(
-            logger = processStderrLogger,
-            name = "test(PID=${process.pid()})",
-        )
-        process.inputStream.startLogging(
-            logger = processStdoutLogger,
-            name = "test(PID=${process.pid()})",
-        )
-
-        val completed = process.waitFor(timeoutSeconds, TimeUnit.SECONDS)
-
-        if (!completed) {
-            logger.error {
-                "$capitalizedType conformance test [$transportType] '$scenario' timed out after $timeoutSeconds seconds"
-            }
-            process.destroyForcibly()
-            throw AssertionError(
-                "❌ $capitalizedType conformance test [$transportType] '$scenario' " +
-                    "timed out after $timeoutSeconds seconds",
-            )
+        if (baselineFile.exists()) {
+            command += listOf("--expected-failures", baselineFile.absolutePath)
         }
 
-        when (val exitCode = process.exitValue()) {
-            0 -> logger.info { "✅ $capitalizedType conformance test [$transportType] '$scenario' passed!" }
+        val process = ProcessBuilder(command)
+            .directory(File("."))
+            .redirectErrorStream(true)
+            .start()
 
-            else -> {
-                logger.error {
-                    "$capitalizedType conformance test [$transportType] '$scenario' failed with exit code: $exitCode"
-                }
-                fail(
-                    "❌ $capitalizedType conformance test [$transportType] '$scenario' " +
-                        "failed (exit code: $exitCode). Check test output above for details.",
-                )
-            }
-        }
+        createProcessOutputReader(process, "CONFORMANCE-CLIENT").start()
+        val exitCode = process.waitFor()
+        assertEquals(0, exitCode, "Client conformance tests failed (exit code: $exitCode)")
     }
 }
