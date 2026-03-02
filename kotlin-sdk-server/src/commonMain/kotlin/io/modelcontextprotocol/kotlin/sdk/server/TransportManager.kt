@@ -10,8 +10,6 @@ import kotlinx.collections.immutable.toPersistentMap
 internal class TransportManager<T : AbstractTransport> {
     private val transports: AtomicRef<PersistentMap<String, T>> = atomic(emptyMap<String, T>().toPersistentMap())
 
-    fun hasTransport(sessionId: String): Boolean = transports.value.containsKey(sessionId)
-
     fun getTransport(sessionId: String): T? = transports.value[sessionId]
 
     fun addTransport(sessionId: String, transport: T) {

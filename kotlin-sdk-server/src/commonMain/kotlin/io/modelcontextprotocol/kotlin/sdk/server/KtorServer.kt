@@ -98,16 +98,6 @@ public fun Application.mcp(block: ServerSSESession.() -> Server) {
     }
 }
 
-/**
- * Configures the Ktor Application to handle Model Context Protocol (MCP)
- * over [Streamable HTTP Transport](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#streamable-http)
- *
- * This method sets up server-sent events (SSE) along with HTTP POST and DELETE endpoints at the specified [path].
- *
- * @param path The base route path for the MCP Streamable HTTP endpoint. Defaults to "/mcp".
- * @param configuration The transport configuration for the streamable HTTP server.
- * @param block A handler block that provides the routing context to initialize the server.
- */
 private fun Application.mcpStreamableHttp(
     path: String = "/mcp",
     configuration: StreamableHttpServerTransport.Configuration,
@@ -182,18 +172,6 @@ public fun Application.mcpStreamableHttp(
     )
 }
 
-/**
- *  Configures the Ktor Application to handle Model Context Protocol (MCP)
- *  over _stateless_ [Streamable HTTP Transport](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#streamable-http)
-
- * This method sets up server-sent events (SSE) along with HTTP POST and DELETE endpoints at the specified [path].
- *
- * @param path The URL path where the MCP streamable HTTP endpoint will be available. Default is "/mcp".
- * @param configuration Configuration for the streamable HTTP server transport, including behavior and settings.
- * @param block A lambda expression that defines the server behavior in the context of the routing configuration.
- *
- * @see [Session Management](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#session-management)
- */
 private fun Application.mcpStatelessStreamableHttp(
     path: String = "/mcp",
     configuration: StreamableHttpServerTransport.Configuration,
