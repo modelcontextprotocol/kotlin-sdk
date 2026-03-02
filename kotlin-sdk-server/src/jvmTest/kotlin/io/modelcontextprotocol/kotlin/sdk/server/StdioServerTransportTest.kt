@@ -338,6 +338,6 @@ class StdioServerTransportTest {
     }
 }
 
-fun PipedOutputStream.write(s: String) {
+private fun PipedOutputStream.write(s: String) {
     write(s.toByteArray())
 }
