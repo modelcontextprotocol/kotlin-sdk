@@ -100,7 +100,7 @@ public data class ToolSchema(
  *
  * @property taskSupport Indicates whether this tool supports task-augmented execution.
  * This allows clients to handle long-running operations through polling the task system.
- * Defaults to [TaskSupport.Forbidden] when absent.
+ * If omitted (`null`), consumers should treat it as [TaskSupport.Forbidden] per the spec.
  */
 @Serializable
 public data class ToolExecution(val taskSupport: TaskSupport? = null)
