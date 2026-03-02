@@ -28,10 +28,16 @@ import kotlinx.coroutines.awaitCancellation
 private val logger = KotlinLogging.logger {}
 
 /**
- * Registers a server-sent events (SSE) route at the specified path.
+ * Registers MCP over [Server-Sent Events (SSE) Transport](https://modelcontextprotocol.io/specification/2024-11-05/basic/transports#http-with-sse)
+ * at the specified [path] on this [Route].
  *
- * @param path the URL path to register the route for SSE.
- * @param block the block of code that defines the server's behavior for the SSE session.
+ * **Precondition:** the [SSE] plugin must be installed on the application before calling this function.
+ * Use [Application.mcp] if you want SSE to be installed automatically.
+ *
+ * @param path the URL path to register the SSE endpoint.
+ * @param block factory block with access to the [ServerSSESession]
+ *      that creates and returns the [Server] to handle the connection.
+ * @throws IllegalStateException if the [SSE] plugin is not installed.
  */
 @KtorDsl
 public fun Route.mcp(path: String, block: ServerSSESession.() -> Server) {
@@ -41,11 +47,14 @@ public fun Route.mcp(path: String, block: ServerSSESession.() -> Server) {
 }
 
 /**
- * Configures the Ktor Application to handle Model Context Protocol (MCP) over Server-Sent Events (SSE).
+ * Registers MCP over [Server-Sent Events (SSE) Transport](https://modelcontextprotocol.io/specification/2024-11-05/basic/transports#http-with-sse)
+ * endpoints on this [Route].
  *
  * **Precondition:** the [SSE] plugin must be installed on the application before calling this function.
  * Use [Application.mcp] if you want SSE to be installed automatically.
  *
+ * @param block factory block with access to the [ServerSSESession]
+ *      that creates and returns the [Server] to handle the connection.
  * @throws IllegalStateException if the [SSE] plugin is not installed.
  */
 @KtorDsl
@@ -73,10 +82,12 @@ public fun Route.mcp(block: ServerSSESession.() -> Server) {
 }
 
 /**
- * Configures the server to use Server-Sent Events (SSE) and sets up routing with the provided configuration block.
+ * Configures the Ktor Application to handle Model Context Protocol (MCP)
+ * over [Server-Sent Events (SSE) Transport](https://modelcontextprotocol.io/specification/2024-11-05/basic/transports#http-with-sse)
+ * and sets up routing with the provided configuration block.
  *
- * @param block A lambda with receiver of type [ServerSSESession] that configures
- * SSE session and returns a [Server] instance.
+ * @param block factory block with access to the [ServerSSESession]
+ *      that creates and returns the [Server] to handle the connection.
  */
 @KtorDsl
 public fun Application.mcp(block: ServerSSESession.() -> Server) {
@@ -88,13 +99,12 @@ public fun Application.mcp(block: ServerSSESession.() -> Server) {
 }
 
 /**
- * Configures the application to handle HTTP-based streamable communications using the MCP protocol.
+ * Configures the Ktor Application to handle Model Context Protocol (MCP)
+ * over [Streamable HTTP Transport](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#streamable-http)
  *
- * This method sets up server-sent events (SSE) along with HTTP POST and DELETE endpoints
- * for managing server-side streaming transports. It provides routes for creating, using,
- * and removing transports using the specified path, configuration, and handler block.
+ * This method sets up server-sent events (SSE) along with HTTP POST and DELETE endpoints at the specified [path].
  *
- * @param path The base route path for the MCP protocol. Defaults to "/mcp".
+ * @param path The base route path for the MCP Streamable HTTP endpoint. Defaults to "/mcp".
  * @param configuration The transport configuration for the streamable HTTP server.
  * @param block A handler block that provides the routing context to initialize the server.
  */
@@ -133,18 +143,21 @@ private fun Application.mcpStreamableHttp(
 }
 
 /**
- * Configures an HTTP endpoint to support a streamable Message Channel Protocol (MCP) interaction.
- * This function is used to set up routing for an incoming streamable connection and optionally
- * configure settings such as DNS rebinding protection, allowed hosts, allowed origins, and event storage.
+ * Configures the Ktor Application to handle Model Context Protocol (MCP)
+ * over [Streamable HTTP Transport](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#streamable-http)
  *
- * @param path The base path for the MCP endpoint. Defaults to "/mcp".
+ * Sets up SSE, HTTP POST, and DELETE endpoints at the specified [path].
+ * Simple request/response pairs are returned as JSON (not SSE streams).
+ *
+ * @param path The base path for the MCP Streamable HTTP endpoint. Defaults to "/mcp".
  * @param enableDnsRebindingProtection Enables DNS rebinding attack protection for the endpoint. Defaults to false.
- * @param allowedHosts A list of hostnames allowed to access the endpoint. If null, no restrictions are applied.
+ * @param allowedHosts A list of hostnames allowed to access the endpoint. If `null`, no restrictions are applied.
  * @param allowedOrigins A list of origins allowed to perform cross-origin requests (CORS).
- *          If null, no restriction is applied.
+ *          If `null`, no restrictions are applied.
  * @param eventStore An optional [EventStore] instance to enable resumable event stream functionality.
  *          Allows storing and replaying events.
- * @param block Lambda to define the routing logic using a [RoutingContext] to configure the behavior of the server.
+ * @param block factory block with access to the [RoutingContext] (for reading request headers)
+ *          that creates and returns the [Server] to handle the connection.
  */
 @KtorDsl
 @Suppress("LongParameterList")
@@ -170,15 +183,16 @@ public fun Application.mcpStreamableHttp(
 }
 
 /**
- * Configures a route to handle stateless, streamable HTTP requests for the MCP (Message Communication Protocol).
- *
- * This method sets up a predefined HTTP path and specifies POST as the allowed HTTP method.
- * Any other methods, such as GET or DELETE, will be rejected with an appropriate error response.
- * The configuration and server behavior are customized using the provided parameters.
+ *  Configures the Ktor Application to handle Model Context Protocol (MCP)
+ *  over _stateless_ [Streamable HTTP Transport](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#streamable-http)
+
+ * This method sets up server-sent events (SSE) along with HTTP POST and DELETE endpoints at the specified [path].
  *
  * @param path The URL path where the MCP streamable HTTP endpoint will be available. Default is "/mcp".
  * @param configuration Configuration for the streamable HTTP server transport, including behavior and settings.
  * @param block A lambda expression that defines the server behavior in the context of the routing configuration.
+ *
+ * @see [Session Management](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#session-management)
  */
 private fun Application.mcpStatelessStreamableHttp(
     path: String = "/mcp",
@@ -214,15 +228,19 @@ private fun Application.mcpStatelessStreamableHttp(
 }
 
 /**
- * Configures an HTTP endpoint for a stateless, streamable JSON-RPC server to handle requests at the specified [path].
- * This method is a convenience wrapper around the `StreamableHttpServerTransport` configuration.
+ * Configures the Ktor Application to handle Model Context Protocol (MCP)
+ * over _stateless_ [Streamable HTTP Transport](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#streamable-http)
+ *
+ * Sets up an HTTP POST endpoint at [path]. GET and DELETE requests return 405 Method Not Allowed.
+ * Simple request/response pairs are returned as JSON (not SSE streams).
  *
  * @param path The URL path where the server listens for incoming JSON-RPC requests. Defaults to "/mcp".
  * @param enableDnsRebindingProtection Determines whether DNS rebinding protection is enabled. Defaults to `false`.
  * @param allowedHosts A list of allowed hostnames. If null, host filtering is disabled.
  * @param allowedOrigins A list of allowed origins for CORS. If null, origin filtering is disabled.
- * @param eventStore An optional `EventStore` implementation to provide resumability and event replay support.
- * @param block A callback function defining the server logic using the provided `RoutingContext`.
+ * @param eventStore An optional [EventStore] implementation to provide resumability and event replay support.
+ * @param block factory block with access to the [RoutingContext] (for reading request headers)
+ *          that creates and returns the [Server] to handle the connection.
  */
 @KtorDsl
 @Suppress("LongParameterList")
