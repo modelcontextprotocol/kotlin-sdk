@@ -887,7 +887,7 @@ allowing for easy testing of MCP functionality without the need for network setu
 
 ## Documentation
 
-- [API Reference](https://modelcontextprotocol.github.io/kotlin-sdk/)
+- [API Reference](https://kotlin.sdk.modelcontextprotocol.io/)
 - [Model Context Protocol documentation](https://modelcontextprotocol.io)
 - [MCP specification](https://modelcontextprotocol.io/specification/latest)
 
