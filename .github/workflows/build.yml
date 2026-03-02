@@ -36,7 +36,7 @@ jobs:
         include:
           - os: ubuntu-latest
             job-name: "Linux Tests"
-            gradle-tasks: "build ktlintCheck koverLog koverHtmlReport publishToMavenLocal -Pversion=1-SNAPSHOT"
+            gradle-tasks: "build ktlintCheck koverLog koverHtmlReport koverXmlReport publishToMavenLocal -Pversion=1-SNAPSHOT"
             max-workers: 3
 
           - os: windows-latest
@@ -106,6 +106,24 @@ jobs:
           include_time_in_summary: true
           report_paths: '**/test-results/**/TEST-*.xml'
           truncate_stack_traces: false
+
+      - name: Upload coverage reports to Codecov
+        if: matrix.os == 'ubuntu-latest'
+        uses: codecov/codecov-action@v5
+        with:
+          directory: ./build/reports/kover
+          files: report.xml
+
+      - name: Upload coverage reports to Codecov
+        if: ${{ !cancelled() && matrix.os == 'ubuntu-latest' }}
+        uses: codecov/codecov-action@v5
+        with:
+          directory: ./build/reports/kover
+          files: report.xml
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() && matrix.os == 'ubuntu-latest' }}
+        uses: codecov/test-results-action@v1
 
       - name: Archive Maven Local Repository
         if: ${{ success() && matrix.os == 'ubuntu-latest' }}
