@@ -190,7 +190,7 @@ jobs:
             ../.konan/**
 
       - name: Download Maven Local Repository
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: local-maven-repository
           path: .
