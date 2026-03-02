@@ -3,6 +3,7 @@ package io.modelcontextprotocol.kotlin.sdk.server
 import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
+import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.shared.ReadBuffer
 import io.modelcontextprotocol.kotlin.sdk.shared.serializeMessage
@@ -10,7 +11,9 @@ import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
@@ -34,6 +37,7 @@ import java.io.PipedOutputStream
 import java.util.stream.Stream
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.test.fail
 import kotlin.time.Duration.Companion.seconds
 
 private val TEST_TIMEOUT = 5.seconds
@@ -228,26 +232,71 @@ class StdioServerTransportTest {
         }
     }
 
-    // endregion
-
-    @Test
-    fun `should invoke onError when message handler throws`() = runBlocking {
+    @ParameterizedTest(name = "[{index}] handler throws {0}")
+    @MethodSource("handlerExceptions")
+    fun `should continue processing messages after handler throws`(exception: Exception) = runBlocking {
         withTimeout(TEST_TIMEOUT) {
             val server = StdioServerTransport(bufferedInput, printOutput)
-            val handlerException = RuntimeException("handler failed")
-            val capturedError = CompletableDeferred<Throwable>()
-            server.onError { capturedError.complete(it) }
-            server.onMessage { throw handlerException }
+            val capturedErrors = mutableListOf<Throwable>()
+            val receivedMessages = mutableListOf<JSONRPCMessage>()
+            val secondMessageProcessed = CompletableDeferred<Unit>()
 
-            inputWriter.write(serializeMessage(PingRequest().toJSON()).toByteArray())
-            inputWriter.flush()
+            val message1 = PingRequest().toJSON()
+            val message2 = InitializedNotification().toJSON()
+
+            server.onError { capturedErrors.add(it) }
+            server.onMessage { message ->
+                if (message == message1) {
+                    throw exception
+                } else {
+                    receivedMessages.add(message)
+                    secondMessageProcessed.complete(Unit)
+                }
+            }
 
             server.start()
 
-            capturedError.await() shouldBe handlerException
+            inputWriter.write(serializeMessage(message1))
+            inputWriter.write(serializeMessage(message2))
+            inputWriter.flush()
+
+            secondMessageProcessed.await()
+
+            capturedErrors shouldContain exception
+            receivedMessages shouldBe listOf(message2)
             server.close()
         }
     }
+
+    @Test
+    fun `should not invoke onError for CancellationException in handler`() = runBlocking {
+        withTimeout(TEST_TIMEOUT) {
+            val server = StdioServerTransport(bufferedInput, printOutput)
+            val capturedError = CompletableDeferred<Throwable>()
+            server.onError { capturedError.complete(it) }
+
+            server.onMessage { throw CancellationException("cancelled") }
+            server.start()
+
+            inputWriter.write(serializeMessage(PingRequest().toJSON()))
+            inputWriter.flush()
+
+            // We expect onError NOT to be called.
+            // We wait a bit to make sure it's not called, then close.
+            try {
+                withTimeout(1.seconds) {
+                    capturedError.await()
+                }
+                fail("Should not have captured an error for CancellationException")
+            } catch (_: TimeoutCancellationException) {
+                // Success - timeout reached without error captured
+            } finally {
+                server.close()
+            }
+        }
+    }
+
+    // endregion
 
     @Test
     fun `should continue receiving valid messages after malformed JSON is skipped`() = runBlocking {
@@ -282,6 +331,12 @@ class StdioServerTransportTest {
         fun outputExceptions(): Stream<Arguments> = Stream.of(
             Arguments.of(IOException("simulated write failure")),
             Arguments.of(RuntimeException("unexpected write error")),
+        )
+
+        @JvmStatic
+        fun handlerExceptions(): Stream<Arguments> = Stream.of(
+            Arguments.of(RuntimeException("handler failure")),
+            Arguments.of(IOException("handler IO failure")),
         )
     }
 
