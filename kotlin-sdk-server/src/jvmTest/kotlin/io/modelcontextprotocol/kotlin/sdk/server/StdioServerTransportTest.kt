@@ -260,6 +260,7 @@ class StdioServerTransportTest {
 
             val validMessage = PingRequest().toJSON()
             inputWriter.write("not-valid-json\n".toByteArray())
+            inputWriter.write(" \t \r \n".toByteArray()) // blank line
             inputWriter.write(serializeMessage(validMessage).toByteArray())
             inputWriter.flush()
 
