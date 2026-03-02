@@ -23,6 +23,7 @@ kotlin {
                 implementation(libs.kotest.assertions.core)
                 implementation(libs.kotest.assertions.json)
                 implementation(libs.kotlinx.coroutines.test)
+                implementation(project(":test-utils"))
             }
         }
 

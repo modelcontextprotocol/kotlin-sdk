@@ -11,11 +11,10 @@ import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
+import io.modelcontextprotocol.kotlin.test.utils.runIntegrationTest
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
 import kotlinx.io.Buffer
 import kotlinx.io.RawSink
@@ -27,21 +26,19 @@ import kotlinx.io.asSource
 import kotlinx.io.buffered
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.PipedInputStream
 import java.io.PipedOutputStream
-import java.util.stream.Stream
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.test.fail
 import kotlin.time.Duration.Companion.seconds
 
-private val TEST_TIMEOUT = 5.seconds
-
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StdioServerTransportTest {
     private lateinit var input: PipedInputStream
     private lateinit var inputWriter: PipedOutputStream
@@ -73,36 +70,32 @@ class StdioServerTransportTest {
     }
 
     @Test
-    fun `should be safe to close before start`() = runTest {
+    fun `should be safe to close before start`() = runIntegrationTest {
         val server = StdioServerTransport(bufferedInput, printOutput)
         server.close() // initialized guard makes this a no-op; must not throw
     }
 
     @Test
-    fun `should start then close cleanly`() {
-        runBlocking {
-            withTimeout(TEST_TIMEOUT) {
-                val server = StdioServerTransport(bufferedInput, printOutput)
-                server.onError { error ->
-                    throw error
-                }
-
-                var didClose = false
-                server.onClose {
-                    didClose = true
-                }
-
-                server.start()
-                assertFalse(didClose, "Should not have closed yet")
-
-                server.close()
-                assertTrue(didClose, "Should have closed after calling close()")
-            }
+    fun `should start then close cleanly`() = runIntegrationTest {
+        val server = StdioServerTransport(bufferedInput, printOutput)
+        server.onError { error ->
+            throw error
         }
+
+        var didClose = false
+        server.onClose {
+            didClose = true
+        }
+
+        server.start()
+        assertFalse(didClose, "Should not have closed yet")
+
+        server.close()
+        assertTrue(didClose, "Should have closed after calling close()")
     }
 
     @Test
-    fun `should not read until started`() = runTest {
+    fun `should not read until started`() = runIntegrationTest {
         val server = StdioServerTransport(bufferedInput, printOutput)
         server.onError { error ->
             throw error
@@ -131,7 +124,7 @@ class StdioServerTransportTest {
     }
 
     @Test
-    fun `should read multiple messages`() = runTest {
+    fun `should read multiple messages`() = runIntegrationTest {
         val server = StdioServerTransport(bufferedInput, printOutput)
         server.onError { error ->
             throw error
@@ -168,177 +161,161 @@ class StdioServerTransportTest {
 
     @ParameterizedTest(name = "[{index}] input throws {0}")
     @MethodSource("inputExceptions")
-    fun `should invoke onError when input stream throws`(exception: Exception): Unit = runBlocking {
-        withTimeout(TEST_TIMEOUT) {
-            val server = StdioServerTransport(FaultyRawSource(exception).buffered(), printOutput)
-            val capturedError = CompletableDeferred<Throwable>()
-            server.onError { capturedError.complete(it) }
-            server.onMessage {}
+    fun `should invoke onError when input stream throws`(exception: Exception): Unit = runIntegrationTest {
+        val server = StdioServerTransport(FaultyRawSource(exception).buffered(), printOutput)
+        val capturedError = CompletableDeferred<Throwable>()
+        server.onError { capturedError.complete(it) }
+        server.onMessage {}
 
-            server.start()
+        server.start()
 
-            capturedError.await() shouldBe exception
-            server.close()
-        }
+        capturedError.await() shouldBe exception
+        server.close()
     }
 
     @ParameterizedTest(name = "[{index}] output throws {0}")
     @MethodSource("outputExceptions")
-    fun `should invoke onError when output sink throws`(exception: Exception): Unit = runBlocking {
-        withTimeout(TEST_TIMEOUT) {
-            val server = StdioServerTransport(bufferedInput, FaultyRawSink(exception).buffered())
-            val capturedError = CompletableDeferred<Throwable>()
-            server.onError { capturedError.complete(it) }
-            server.onMessage {}
+    fun `should invoke onError when output sink throws`(exception: Exception): Unit = runIntegrationTest {
+        val server = StdioServerTransport(bufferedInput, FaultyRawSink(exception).buffered())
+        val capturedError = CompletableDeferred<Throwable>()
+        server.onError { capturedError.complete(it) }
+        server.onMessage {}
 
-            server.start()
-            server.send(PingRequest().toJSON())
+        server.start()
+        server.send(PingRequest().toJSON())
 
-            capturedError.await() shouldBe exception
-            server.close()
+        capturedError.await() shouldBe exception
+        server.close()
+    }
+
+    @Test
+    fun `should call onClose when input EOF is reached`(): Unit = runIntegrationTest {
+        val server = StdioServerTransport(bufferedInput, printOutput)
+        val didClose = CompletableDeferred<Unit>()
+        server.onError { throw it }
+        server.onClose { didClose.complete(Unit) }
+        server.onMessage {}
+
+        server.start()
+        inputWriter.close() // signal EOF to the reading loop
+
+        eventually(2.seconds) {
+            didClose.isCompleted shouldBe true
         }
     }
 
     @Test
-    fun `should call onClose when input EOF is reached`(): Unit = runBlocking {
-        withTimeout(TEST_TIMEOUT) {
-            val server = StdioServerTransport(bufferedInput, printOutput)
-            val didClose = CompletableDeferred<Unit>()
-            server.onError { throw it }
-            server.onClose { didClose.complete(Unit) }
-            server.onMessage {}
-
-            server.start()
-            inputWriter.close() // signal EOF to the reading loop
-
-            eventually(2.seconds) {
-                didClose.isCompleted shouldBe true
+    fun `should throw when starting twice`(): Unit = runIntegrationTest {
+        val server = StdioServerTransport(bufferedInput, printOutput)
+        server.onMessage {}
+        server.start()
+        withClue("Server should not start twice") {
+            shouldThrow<IllegalStateException> {
+                server.start()
             }
         }
-    }
-
-    @Test
-    fun `should throw when starting twice`(): Unit = runBlocking {
-        withTimeout(TEST_TIMEOUT) {
-            val server = StdioServerTransport(bufferedInput, printOutput)
-            server.onMessage {}
-            server.start()
-            withClue("Server should not start twice") {
-                shouldThrow<IllegalStateException> {
-                    server.start()
-                }
-            }
-            server.close()
-        }
+        server.close()
     }
 
     @ParameterizedTest(name = "[{index}] handler throws {0}")
     @MethodSource("handlerExceptions")
-    fun `should continue processing messages after handler throws`(exception: Exception) = runBlocking {
-        withTimeout(TEST_TIMEOUT) {
-            val server = StdioServerTransport(bufferedInput, printOutput)
-            val capturedErrors = mutableListOf<Throwable>()
-            val receivedMessages = mutableListOf<JSONRPCMessage>()
-            val secondMessageProcessed = CompletableDeferred<Unit>()
+    fun `should continue processing messages after handler throws`(exception: Exception) = runIntegrationTest {
+        val server = StdioServerTransport(bufferedInput, printOutput)
+        val capturedErrors = mutableListOf<Throwable>()
+        val receivedMessages = mutableListOf<JSONRPCMessage>()
+        val secondMessageProcessed = CompletableDeferred<Unit>()
 
-            val message1 = PingRequest().toJSON()
-            val message2 = InitializedNotification().toJSON()
+        val message1 = PingRequest().toJSON()
+        val message2 = InitializedNotification().toJSON()
 
-            server.onError { capturedErrors.add(it) }
-            server.onMessage { message ->
-                if (message == message1) {
-                    throw exception
-                } else {
-                    receivedMessages.add(message)
-                    secondMessageProcessed.complete(Unit)
-                }
+        server.onError { capturedErrors.add(it) }
+        server.onMessage { message ->
+            if (message == message1) {
+                throw exception
+            } else {
+                receivedMessages.add(message)
+                secondMessageProcessed.complete(Unit)
             }
-
-            server.start()
-
-            inputWriter.write(serializeMessage(message1))
-            inputWriter.write(serializeMessage(message2))
-            inputWriter.flush()
-
-            secondMessageProcessed.await()
-
-            capturedErrors shouldContain exception
-            receivedMessages shouldBe listOf(message2)
-            server.close()
         }
+
+        server.start()
+
+        inputWriter.write(serializeMessage(message1))
+        inputWriter.write(serializeMessage(message2))
+        inputWriter.flush()
+
+        secondMessageProcessed.await()
+
+        capturedErrors shouldContain exception
+        receivedMessages shouldBe listOf(message2)
+        server.close()
     }
 
     @Test
-    fun `should not invoke onError for CancellationException in handler`() = runBlocking {
-        withTimeout(TEST_TIMEOUT) {
-            val server = StdioServerTransport(bufferedInput, printOutput)
-            val capturedError = CompletableDeferred<Throwable>()
-            server.onError { capturedError.complete(it) }
+    fun `should not invoke onError for CancellationException in handler`() = runIntegrationTest {
+        val server = StdioServerTransport(bufferedInput, printOutput)
+        val capturedError = CompletableDeferred<Throwable>()
+        server.onError { capturedError.complete(it) }
 
-            server.onMessage { throw CancellationException("cancelled") }
-            server.start()
+        server.onMessage { throw CancellationException("cancelled") }
+        server.start()
 
-            inputWriter.write(serializeMessage(PingRequest().toJSON()))
-            inputWriter.flush()
+        inputWriter.write(serializeMessage(PingRequest().toJSON()))
+        inputWriter.flush()
 
-            // We expect onError NOT to be called.
-            // We wait a bit to make sure it's not called, then close.
-            try {
-                withTimeout(1.seconds) {
-                    capturedError.await()
-                }
-                fail("Should not have captured an error for CancellationException")
-            } catch (_: TimeoutCancellationException) {
-                // Success - timeout reached without error captured
-            } finally {
-                server.close()
+        // We expect onError NOT to be called.
+        // We wait a bit to make sure it's not called, then close.
+        try {
+            withTimeout(1.seconds) {
+                capturedError.await()
             }
+            fail("Should not have captured an error for CancellationException")
+        } catch (_: TimeoutCancellationException) {
+            // Success - timeout reached without error captured
+        } finally {
+            server.close()
         }
     }
 
     // endregion
 
     @Test
-    fun `should continue receiving valid messages after malformed JSON is skipped`() = runBlocking {
-        withTimeout(TEST_TIMEOUT) {
-            val server = StdioServerTransport(bufferedInput, printOutput)
-            val received = CompletableDeferred<JSONRPCMessage>()
-            // ReadBuffer silently skips unparseable lines — no onError callback expected
-            server.onError {}
-            server.onMessage { received.complete(it) }
+    fun `should continue receiving valid messages after malformed JSON is skipped`() = runIntegrationTest {
+        val server = StdioServerTransport(bufferedInput, printOutput)
+        val received = CompletableDeferred<JSONRPCMessage>()
+        // ReadBuffer silently skips unparseable lines — no onError callback expected
+        server.onError {}
+        server.onMessage { received.complete(it) }
 
-            val validMessage = PingRequest().toJSON()
-            inputWriter.write("not-valid-json\n".toByteArray())
-            inputWriter.write(" \t \r \n".toByteArray()) // blank line
-            inputWriter.write(serializeMessage(validMessage).toByteArray())
-            inputWriter.flush()
+        val validMessage = PingRequest().toJSON()
+        inputWriter.write("not-valid-json\n".toByteArray())
+        inputWriter.write(" \t \r \n".toByteArray()) // blank line
+        inputWriter.write(serializeMessage(validMessage).toByteArray())
+        inputWriter.flush()
 
-            server.start()
+        server.start()
 
-            received.await() shouldBe validMessage
-            server.close()
-        }
+        received.await() shouldBe validMessage
+        server.close()
     }
 
-    companion object {
-        @JvmStatic
-        fun inputExceptions(): Stream<Arguments> = Stream.of(
-            Arguments.of(IOException("simulated read failure")),
-            Arguments.of(RuntimeException("unexpected read error")),
-        )
+    @Suppress("unused")
+    private fun inputExceptions() = listOf(
+        IOException("simulated read failure"),
+        RuntimeException("unexpected read error"),
+    )
 
-        @JvmStatic
-        fun outputExceptions(): Stream<Arguments> = Stream.of(
-            Arguments.of(IOException("simulated write failure")),
-            Arguments.of(RuntimeException("unexpected write error")),
-        )
+    @Suppress("unused")
+    private fun outputExceptions() = listOf(
+        IOException("simulated write failure"),
+        RuntimeException("unexpected write error"),
+    )
 
-        @JvmStatic
-        fun handlerExceptions(): Stream<Arguments> = Stream.of(
-            Arguments.of(RuntimeException("handler failure")),
-            Arguments.of(IOException("handler IO failure")),
-        )
-    }
+    @Suppress("unused")
+    private fun handlerExceptions() = listOf(
+        RuntimeException("handler failure"),
+        IOException("handler IO failure"),
+    )
 
     /** A [RawSource] that immediately throws [exception] on every read attempt. */
     private class FaultyRawSource(private val exception: Exception) : RawSource {
