@@ -3,6 +3,7 @@ package io.modelcontextprotocol.kotlin.sdk.types
 import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
 import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -425,7 +426,9 @@ class TasksTest {
     @Test
     fun `should serialize GetTaskPayloadResult with meta`() {
         val result = GetTaskPayloadResult(
-            meta = buildJsonObject { put("origin", "task-30") },
+            buildJsonObject {
+                put("_meta", buildJsonObject { put("origin", "task-30") })
+            },
         )
 
         verifySerialization(
@@ -443,13 +446,33 @@ class TasksTest {
 
     @Test
     fun `should serialize GetTaskPayloadResult without meta`() {
-        val result = GetTaskPayloadResult()
+        val result = GetTaskPayloadResult(buildJsonObject { })
 
-        verifySerialization(
-            result,
-            McpJson,
-            "{}",
-        )
+        verifySerialization(result, McpJson, "{}")
+    }
+
+    @Test
+    fun `should preserve arbitrary payload fields in GetTaskPayloadResult`() {
+        val json = """
+            {
+              "_meta": {
+                "origin": "task-42"
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "hello"
+                }
+              ],
+              "isError": false
+            }
+        """.trimIndent()
+
+        val result = verifyDeserialization<GetTaskPayloadResult>(McpJson, json)
+        assertNotNull(result.meta)
+        assertEquals("task-42", result.meta?.get("origin")?.jsonPrimitive?.content)
+        assertNotNull(result["content"])
+        assertNotNull(result["isError"])
     }
 
     // ========================================================================
@@ -741,5 +764,28 @@ class TasksTest {
         )
 
         assertNull(meta.relatedTask)
+    }
+
+    @Test
+    fun `GetTaskResult cast to CancelTaskResult via generic does not throw due to type erasure`() {
+        val result: RequestResult = GetTaskResult(
+            taskId = "task-1",
+            status = TaskStatus.Cancelled,
+            createdAt = "2025-01-01T00:00:00Z",
+            lastUpdatedAt = "2025-01-01T00:01:00Z",
+            ttl = null,
+        )
+
+        // Simulates what Protocol.request<T>() does:
+        // the cast goes through a generic type parameter, so JVM erases T to RequestResult
+        fun <T : RequestResult> uncheckedCast(value: RequestResult): T {
+            @Suppress("UNCHECKED_CAST")
+            return value as T
+        }
+
+        val cancelResult: CancelTaskResult = uncheckedCast(result)
+
+        assertEquals("task-1", cancelResult.taskId)
+        assertEquals(TaskStatus.Cancelled, cancelResult.status)
     }
 }

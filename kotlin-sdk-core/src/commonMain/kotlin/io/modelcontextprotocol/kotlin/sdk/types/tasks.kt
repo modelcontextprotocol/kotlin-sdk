@@ -6,7 +6,9 @@ import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlin.jvm.JvmInline
 
 /**
  * The key used in `_meta` to associate a message with a task.
@@ -228,11 +230,22 @@ public data class GetTaskPayloadRequestParams(
  *
  * @property meta Optional metadata for this response.
  */
+@JvmInline
 @Serializable
-public data class GetTaskPayloadResult(
-    @SerialName("_meta")
-    override val meta: JsonObject? = null,
-) : ServerResult
+public value class GetTaskPayloadResult(public val json: JsonObject) :
+    ClientResult,
+    ServerResult {
+    override val meta: JsonObject?
+        get() = json["_meta"]?.takeIf { it is JsonObject } as? JsonObject
+
+    /**
+     * Retrieves the value associated with the specified key from the result payload.
+     *
+     * @param key the key whose corresponding value is to be returned
+     * @return the [JsonElement] associated with the specified key, or null if the key does not exist
+     */
+    public operator fun get(key: String): JsonElement? = json[key]
+}
 
 // ============================================================================
 // tasks/list
@@ -331,17 +344,4 @@ public data class CancelTaskRequestParams(
  * @property pollInterval Suggested polling interval in milliseconds.
  * @property meta Optional metadata for this response.
  */
-@Serializable
-public data class CancelTaskResult(
-    override val taskId: String,
-    override val status: TaskStatus,
-    override val statusMessage: String? = null,
-    override val createdAt: String,
-    override val lastUpdatedAt: String,
-    override val ttl: Double?,
-    override val pollInterval: Double? = null,
-    @SerialName("_meta")
-    override val meta: JsonObject? = null,
-) : ClientResult,
-    ServerResult,
-    TaskFields
+public typealias CancelTaskResult = GetTaskResult
