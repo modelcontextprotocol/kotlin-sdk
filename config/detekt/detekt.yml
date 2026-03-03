@@ -3,3 +3,18 @@ config:
   warningsAsErrors: false
   checkExhaustiveness: false
 
+complexity:
+  LargeClass:
+    excludes: &testFolders
+      - '**/test/**'
+      - '**/commonTest/**'
+      - '**/jvmTest/**'
+      - '**/jsTest/**'
+      - '**/iosTest/**'
+  LongMethod:
+    excludes: *testFolders
+
+empty-blocks:
+  EmptyFunctionBlock:
+    excludes: *testFolders
+
