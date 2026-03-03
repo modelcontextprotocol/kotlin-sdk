@@ -31,6 +31,8 @@ class ReadBufferTest {
         val messageBytes = json.encodeToString(testMessage).encodeToByteArray()
         readBuffer.append(messageBytes)
         assertNull(readBuffer.readMessage())
+        readBuffer.append("\r".encodeToByteArray())
+        assertNull(readBuffer.readMessage())
 
         // Append a newline and verify message is now available
         readBuffer.append("\n".encodeToByteArray())
@@ -42,6 +44,20 @@ class ReadBufferTest {
     fun `skip empty line`() {
         val readBuffer = ReadBuffer()
         readBuffer.append("\n".toByteArray())
+        assertNull(readBuffer.readMessage())
+    }
+
+    @Test
+    fun `skip blank line`() {
+        val readBuffer = ReadBuffer()
+        readBuffer.append(" \n".toByteArray())
+        assertNull(readBuffer.readMessage())
+    }
+
+    @Test
+    fun `skip invalid json line`() {
+        val readBuffer = ReadBuffer()
+        readBuffer.append(" {ah=oh\n".toByteArray())
         assertNull(readBuffer.readMessage())
     }
 
