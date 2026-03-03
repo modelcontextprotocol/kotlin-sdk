@@ -6,8 +6,6 @@
     <ID>ForbiddenComment:StreamableHttpClientTest.kt:StreamableHttpClientTest$// TODO: how to get notifications via Client API?</ID>
     <ID>InjectDispatcher:StdioClientTransportErrorHandlingTest.kt:StdioClientTransportErrorHandlingTest$IO</ID>
     <ID>InjectDispatcher:StreamableHttpClientTransportTest.kt:StreamableHttpClientTransportTest$Default</ID>
-    <ID>LongMethod:StreamableHttpClientTest.kt:StreamableHttpClientTest$@Test fun `test streamableHttpClient`</ID>
-    <ID>LongMethod:StreamableHttpClientTransportTest.kt:StreamableHttpClientTransportTest$@Ignore @Test fun testNotificationSchemaE2E</ID>
     <ID>LongParameterList:MockMcp.kt:MockMcp$fun handleJSONRPCRequest</ID>
     <ID>LongParameterList:MockMcp.kt:MockMcp$fun handleWithResult</ID>
     <ID>LongParameterList:MockMcp.kt:MockMcp$fun onInitialize</ID>
