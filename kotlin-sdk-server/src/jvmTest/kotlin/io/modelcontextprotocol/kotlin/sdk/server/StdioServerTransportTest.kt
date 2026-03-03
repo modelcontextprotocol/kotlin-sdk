@@ -5,6 +5,8 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
+import io.ktor.client.utils.clientDispatcher
+import io.ktor.utils.io.InternalAPI
 import io.modelcontextprotocol.kotlin.sdk.shared.ReadBuffer
 import io.modelcontextprotocol.kotlin.sdk.shared.serializeMessage
 import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
@@ -14,7 +16,10 @@ import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import io.modelcontextprotocol.kotlin.test.utils.runIntegrationTest
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.withTimeout
 import kotlinx.io.Buffer
 import kotlinx.io.RawSink
@@ -67,6 +72,40 @@ class StdioServerTransportTest {
 
         bufferedInput = input.asSource().buffered()
         printOutput = output.asSink().buffered()
+    }
+
+    @OptIn(InternalAPI::class)
+    @Test
+    fun `should construct with builder`() = runIntegrationTest {
+        val received = CompletableDeferred<JSONRPCMessage>()
+
+        val ioDispatcher = Dispatchers.IO.limitedParallelism(4)
+
+        // Set every configuration parameter explicitly with non-default values,
+        // then verify a message round-trips correctly.
+        val server = StdioServerTransport {
+            source = bufferedInput
+            sink = printOutput
+            readBufferSize = 16L // non-default: smaller read chunk
+            readingJobDispatcher = ioDispatcher // non-default: limited parallelism
+            writingJobDispatcher = ioDispatcher // non-default: limited parallelism
+            processingJobDispatcher = Dispatchers.clientDispatcher(2, "Worker") // non-default
+            readChannelBufferSize = Channel.BUFFERED // non-default: bounded
+            writeChannelBufferSize = Channel.BUFFERED // non-default: bounded
+            coroutineScope = CoroutineScope(Dispatchers.Default) // non-default: parent scope provided
+        }
+        server.onError { throw it }
+        server.onMessage { received.complete(it) }
+
+        server.start()
+
+        val message = PingRequest().toJSON()
+        inputWriter.write(serializeMessage(message))
+        inputWriter.flush()
+
+        received.await() shouldBe message
+
+        server.close()
     }
 
     @Test

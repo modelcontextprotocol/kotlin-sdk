@@ -8,7 +8,9 @@ import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.serializeMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
@@ -23,9 +25,9 @@ import kotlinx.io.Source
 import kotlinx.io.buffered
 import kotlinx.io.readByteArray
 import kotlinx.io.writeString
+import kotlin.concurrent.Volatile
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
-import kotlin.coroutines.CoroutineContext
 
 private const val READ_BUFFER_SIZE = 8192L
 
@@ -34,25 +36,99 @@ private const val READ_BUFFER_SIZE = 8192L
  *
  * Reads from input [Source] and writes to output [Sink].
  *
- * @constructor Creates a new instance of [StdioServerTransport].
- * @param inputStream The input [Source] used to receive data.
- * @param outputStream The output [Sink] used to send data.
+ * Example:
+ * ```kotlin
+ * val transport = StdioServerTransport {
+ *   source = System.`in`.asInput(),
+ *   sink =  System.out.asSink(),
+ * }
+ * ```
+ *
+ * @constructor Initializes the transport using the provided block for [Configuration].
+ * The configuration includes specifying the input and output streams, buffer sizes,
+ * and dispatchers for I/O and processing tasks and coroutine scope.
  */
 @OptIn(ExperimentalAtomicApi::class)
-public class StdioServerTransport(private val inputStream: Source, outputStream: Sink) : AbstractTransport() {
+public class StdioServerTransport(block: Configuration.() -> Unit) : AbstractTransport() {
+
+    /**
+     * Configuration for [StdioServerTransport].
+     *
+     * @property source The input [Source] used to receive data.
+     * @property sink The output [Sink] used to send data.
+     * @property readBufferSize The buffer size for the read channel.
+     * @property readingJobDispatcher The [CoroutineDispatcher] used for reading jobs.
+     *      Defaults to [IODispatcher].
+     * @property writingJobDispatcher The [CoroutineDispatcher] used for writing jobs.
+     *      Defaults to [IODispatcher].
+     * @property processingJobDispatcher The [CoroutineDispatcher] used for processing jobs.
+     *      Defaults to [Dispatchers.Default].
+     * @property readChannelBufferSize The buffer size for the read channel.
+     * @property writeChannelBufferSize The buffer size for the write channel.
+     * @property coroutineScope The [CoroutineScope] used for managing coroutines.
+     */
+    @Suppress("LongParameterList")
+    public class Configuration internal constructor(
+        public var source: Source? = null,
+        public var sink: Sink? = null,
+        public var readBufferSize: Long = READ_BUFFER_SIZE,
+        public var readingJobDispatcher: CoroutineDispatcher = IODispatcher,
+        public var writingJobDispatcher: CoroutineDispatcher = IODispatcher,
+        public var processingJobDispatcher: CoroutineDispatcher = Dispatchers.Default,
+        public var readChannelBufferSize: Int = Channel.UNLIMITED,
+        public var writeChannelBufferSize: Int = Channel.UNLIMITED,
+        public var coroutineScope: CoroutineScope? = null,
+    )
+
+    private val source: Source
+    private val sink: Sink
+    private val processingJobDispatcher: CoroutineDispatcher
+    private val readingJobDispatcher: CoroutineDispatcher
+    private val writingJobDispatcher: CoroutineDispatcher
+    private val scope: CoroutineScope
+    private val readBufferSize: Long
+    private val readChannel: Channel<ByteArray>
+    private val writeChannel: Channel<JSONRPCMessage>
+
+    init {
+        val config = Configuration().apply(block)
+        val input = requireNotNull(config.source) { "source is required" }
+        val output = requireNotNull(config.sink) { "sink is required" }
+        require(config.readBufferSize > 0) { "readBufferSize must be > 0" }
+
+        source = input
+        processingJobDispatcher = config.processingJobDispatcher
+        readingJobDispatcher = config.readingJobDispatcher
+        writingJobDispatcher = config.writingJobDispatcher
+        val parentJob = config.coroutineScope?.coroutineContext?.get(Job)
+        scope = CoroutineScope(SupervisorJob(parentJob))
+        readBufferSize = config.readBufferSize
+        readChannel = Channel(config.readChannelBufferSize)
+        writeChannel = Channel(config.writeChannelBufferSize)
+        sink = output.buffered()
+    }
+
+    /**
+     * Creates a new instance of [StdioServerTransport]
+     * with the given [inputStream] [Source] and [outputStream] [Sink].
+     */
+    public constructor(inputStream: Source, outputStream: Sink) : this({
+        source = inputStream
+        sink = outputStream
+    })
 
     private val logger = KotlinLogging.logger {}
     private val readBuffer = ReadBuffer()
     private val initialized: AtomicBoolean = AtomicBoolean(false)
-    private var readingJob: Job? = null
-    private var sendingJob: Job? = null
-    private var processingJob: Job? = null
 
-    private val coroutineContext: CoroutineContext = IODispatcher + SupervisorJob()
-    private val scope = CoroutineScope(coroutineContext)
-    private val readChannel = Channel<ByteArray>(Channel.UNLIMITED)
-    private val writeChannel = Channel<JSONRPCMessage>(Channel.UNLIMITED)
-    private val outputSink = outputStream.buffered()
+    @Volatile
+    private var readingJob: Job? = null
+
+    @Volatile
+    private var sendingJob: Job? = null
+
+    @Volatile
+    private var processingJob: Job? = null
 
     override suspend fun start() {
         if (!initialized.compareAndSet(expectedValue = false, newValue = true)) {
@@ -69,81 +145,71 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
         sendingJob = launchSendingJob()
     }
 
-    private fun launchReadingJob(): Job {
-        val job = scope.launch {
-            val buf = Buffer()
-            @Suppress("TooGenericExceptionCaught")
-            try {
-                while (isActive) {
-                    val bytesRead = inputStream.readAtMostTo(buf, READ_BUFFER_SIZE)
-                    if (bytesRead == -1L) {
-                        // EOF reached
-                        break
-                    }
-                    if (bytesRead > 0) {
-                        val chunk = buf.readByteArray()
-                        readChannel.send(chunk)
-                    }
+    private fun launchReadingJob(): Job = scope.launch(readingJobDispatcher) {
+        val buf = Buffer()
+        @Suppress("TooGenericExceptionCaught")
+        try {
+            while (isActive) {
+                val bytesRead = source.readAtMostTo(buf, readBufferSize)
+                if (bytesRead == -1L) {
+                    // EOF reached
+                    break
                 }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Throwable) {
-                logger.error(e) { "Error reading from stdin" }
-                _onError.invoke(e)
-            } finally {
-                // Reached EOF or error, close connection
-                close()
+                if (bytesRead > 0) {
+                    val chunk = buf.readByteArray()
+                    readChannel.send(chunk)
+                }
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            logger.error(e) { "Error reading from stdin" }
+            _onError.invoke(e)
+        } finally {
+            // Reached EOF or error, close connection
+            close()
         }
-        job.invokeOnCompletion { cause ->
-            logJobCompletion("Message reading", cause)
-        }
-        return job
+    }.apply {
+        invokeOnCompletion { logJobCompletion("Message reading", it) }
     }
 
-    private fun launchProcessingJob(): Job {
-        val job = scope.launch {
-            @Suppress("TooGenericExceptionCaught")
-            try {
-                for (chunk in readChannel) {
-                    readBuffer.append(chunk)
-                    processReadBuffer()
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Throwable) {
-                _onError.invoke(e)
+    private fun launchProcessingJob(): Job = scope.launch(processingJobDispatcher) {
+        @Suppress("TooGenericExceptionCaught")
+        try {
+            for (chunk in readChannel) {
+                readBuffer.append(chunk)
+                processReadBuffer()
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            _onError.invoke(e)
         }
-        job.invokeOnCompletion { cause ->
-            logJobCompletion("Processing", cause)
-        }
-        return job
+    }.apply {
+        invokeOnCompletion { logJobCompletion("Processing", it) }
     }
 
-    private fun launchSendingJob(): Job {
-        val job = scope.launch {
-            @Suppress("TooGenericExceptionCaught")
-            try {
-                for (message in writeChannel) {
-                    val json = serializeMessage(message)
-                    outputSink.writeString(json)
-                    outputSink.flush()
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Throwable) {
-                logger.error(e) { "Error writing to stdout" }
-                _onError.invoke(e)
+    private fun launchSendingJob(): Job = scope.launch(writingJobDispatcher) {
+        @Suppress("TooGenericExceptionCaught")
+        try {
+            for (message in writeChannel) {
+                val json = serializeMessage(message)
+                sink.writeString(json)
+                sink.flush()
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            logger.error(e) { "Error writing to stdout" }
+            _onError.invoke(e)
         }
-        job.invokeOnCompletion { cause ->
+    }.apply {
+        invokeOnCompletion { cause ->
             logJobCompletion("Message sending", cause)
             if (cause is CancellationException) {
                 readingJob?.cancel(cause)
             }
         }
-        return job
     }
 
     private suspend fun processReadBuffer() {
@@ -192,7 +258,7 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
             sendingJob?.cancelAndJoin()
 
             runCatching {
-                inputStream.close()
+                source.close()
             }.onFailure { logger.warn(it) { "Failed to close stdin" } }
 
             readingJob?.cancel()
@@ -201,10 +267,9 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
             processingJob?.cancelAndJoin()
 
             readBuffer.clear()
-
             runCatching {
-                outputSink.flush()
-                outputSink.close()
+                sink.flush()
+                sink.close()
             }.onFailure { logger.warn(it) { "Failed to close stdout" } }
 
             invokeOnCloseCallback()
