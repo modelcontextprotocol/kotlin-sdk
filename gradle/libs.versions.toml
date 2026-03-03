@@ -10,7 +10,7 @@ ktlint = "14.0.1"
 knit = "0.5.1"
 mavenPublish = "0.36.0"
 netty = "4.2.10.Final"
-openapi-generator = "7.18.0"
+openapi-generator = "7.20.0"
 
 # libraries version
 awaitility = "4.3.0"
