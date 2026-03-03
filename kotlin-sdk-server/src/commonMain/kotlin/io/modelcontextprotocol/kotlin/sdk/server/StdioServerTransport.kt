@@ -87,7 +87,7 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 logger.error(e) { "Error reading from stdin" }
                 _onError.invoke(e)
             } finally {
@@ -111,7 +111,7 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 _onError.invoke(e)
             }
         }
@@ -132,7 +132,7 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 logger.error(e) { "Error writing to stdout" }
                 _onError.invoke(e)
             }
@@ -151,7 +151,7 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
         while (true) {
             val message = try {
                 readBuffer.readMessage()
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 _onError.invoke(e)
                 null
             }
@@ -162,7 +162,8 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
                 _onMessage.invoke(message)
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
+                logger.error(e) { "Error processing message" }
                 _onError.invoke(e)
             }
         }

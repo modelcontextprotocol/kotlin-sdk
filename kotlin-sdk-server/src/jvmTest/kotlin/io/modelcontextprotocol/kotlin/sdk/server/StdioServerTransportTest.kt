@@ -160,23 +160,23 @@ class StdioServerTransportTest {
     // region: Exception handling
 
     @ParameterizedTest(name = "[{index}] input throws {0}")
-    @MethodSource("inputExceptions")
-    fun `should invoke onError when input stream throws`(exception: Exception): Unit = runIntegrationTest {
-        val server = StdioServerTransport(FaultyRawSource(exception).buffered(), printOutput)
+    @MethodSource("inputErrors")
+    fun `should invoke onError when input stream throws`(throwable: Throwable): Unit = runIntegrationTest {
+        val server = StdioServerTransport(FaultyRawSource(throwable).buffered(), printOutput)
         val capturedError = CompletableDeferred<Throwable>()
         server.onError { capturedError.complete(it) }
         server.onMessage {}
 
         server.start()
 
-        capturedError.await() shouldBe exception
+        capturedError.await() shouldBe throwable
         server.close()
     }
 
     @ParameterizedTest(name = "[{index}] output throws {0}")
-    @MethodSource("outputExceptions")
-    fun `should invoke onError when output sink throws`(exception: Exception): Unit = runIntegrationTest {
-        val server = StdioServerTransport(bufferedInput, FaultyRawSink(exception).buffered())
+    @MethodSource("outputErrors")
+    fun `should invoke onError when output sink throws`(throwable: Throwable): Unit = runIntegrationTest {
+        val server = StdioServerTransport(bufferedInput, FaultyRawSink(throwable).buffered())
         val capturedError = CompletableDeferred<Throwable>()
         server.onError { capturedError.complete(it) }
         server.onMessage {}
@@ -184,7 +184,7 @@ class StdioServerTransportTest {
         server.start()
         server.send(PingRequest().toJSON())
 
-        capturedError.await() shouldBe exception
+        capturedError.await() shouldBe throwable
         server.close()
     }
 
@@ -218,8 +218,8 @@ class StdioServerTransportTest {
     }
 
     @ParameterizedTest(name = "[{index}] handler throws {0}")
-    @MethodSource("handlerExceptions")
-    fun `should continue processing messages after handler throws`(exception: Exception) = runIntegrationTest {
+    @MethodSource("handlerErrors")
+    fun `should continue processing messages after handler throws`(throwable: Throwable) = runIntegrationTest {
         val server = StdioServerTransport(bufferedInput, printOutput)
         val capturedErrors = mutableListOf<Throwable>()
         val receivedMessages = mutableListOf<JSONRPCMessage>()
@@ -231,7 +231,7 @@ class StdioServerTransportTest {
         server.onError { capturedErrors.add(it) }
         server.onMessage { message ->
             if (message == message1) {
-                throw exception
+                throw throwable
             } else {
                 receivedMessages.add(message)
                 secondMessageProcessed.complete(Unit)
@@ -246,7 +246,7 @@ class StdioServerTransportTest {
 
         secondMessageProcessed.await()
 
-        capturedErrors shouldContain exception
+        capturedErrors shouldContain throwable
         receivedMessages shouldBe listOf(message2)
         server.close()
     }
@@ -300,34 +300,37 @@ class StdioServerTransportTest {
     }
 
     @Suppress("unused")
-    private fun inputExceptions() = listOf(
+    private fun inputErrors() = listOf(
         IOException("simulated read failure"),
-        RuntimeException("unexpected read error"),
+        RuntimeException("unexpected read exception"),
+        OutOfMemoryError("unexpected read error"),
     )
 
     @Suppress("unused")
-    private fun outputExceptions() = listOf(
+    private fun outputErrors() = listOf(
         IOException("simulated write failure"),
-        RuntimeException("unexpected write error"),
+        RuntimeException("unexpected write exception"),
+        OutOfMemoryError("unexpected write error"),
     )
 
     @Suppress("unused")
-    private fun handlerExceptions() = listOf(
+    private fun handlerErrors() = listOf(
         RuntimeException("handler failure"),
         IOException("handler IO failure"),
+        OutOfMemoryError("handler error"),
     )
 
-    /** A [RawSource] that immediately throws [exception] on every read attempt. */
-    private class FaultyRawSource(private val exception: Exception) : RawSource {
-        override fun readAtMostTo(sink: Buffer, byteCount: Long): Long = throw exception
+    /** A [RawSource] that immediately throws [throwable] on every read attempt. */
+    private class FaultyRawSource(private val throwable: Throwable) : RawSource {
+        override fun readAtMostTo(sink: Buffer, byteCount: Long): Long = throw throwable
         override fun close() {
             // noop
         }
     }
 
-    /** A [RawSink] that throws [exception] on every [write] call. */
-    private class FaultyRawSink(private val exception: Exception) : RawSink {
-        override fun write(source: Buffer, byteCount: Long): Unit = throw exception
+    /** A [RawSink] that throws [throwable] on every [write] call. */
+    private class FaultyRawSink(private val throwable: Throwable) : RawSink {
+        override fun write(source: Buffer, byteCount: Long): Unit = throw throwable
         override fun flush() {
             // noop
         }
