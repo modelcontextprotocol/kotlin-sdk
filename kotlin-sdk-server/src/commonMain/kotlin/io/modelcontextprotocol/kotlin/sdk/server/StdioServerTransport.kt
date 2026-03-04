@@ -14,7 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -25,7 +25,6 @@ import kotlinx.io.Source
 import kotlinx.io.buffered
 import kotlinx.io.readByteArray
 import kotlinx.io.writeString
-import kotlin.concurrent.Volatile
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
@@ -34,101 +33,66 @@ private const val READ_BUFFER_SIZE = 8192L
 /**
  * A server transport that communicates with a client via standard I/O.
  *
- * Reads from input [Source] and writes to output [Sink].
+ * [StdioServerTransport] manages the communication between a JSON-RPC server and its clients
+ * by reading incoming messages from the specified [Source] (input stream) and writing outgoing
+ * messages to the [Sink] (output stream).
  *
  * Example:
  * ```kotlin
- * val transport = StdioServerTransport {
- *   source = System.`in`.asInput(),
- *   sink =  System.out.asSink(),
- * }
+ * val transport = StdioServerTransport(
+ *   source = System.`in`.asInput()
+ *   sink =  System.out.asSink()
+ * )
  * ```
  *
- * @constructor Initializes the transport using the provided block for [Configuration].
- * The configuration includes specifying the input and output streams, buffer sizes,
- * and dispatchers for I/O and processing tasks and coroutine scope.
+ * @constructor Creates an instance of [StdioServerTransport] with the specified parameters.
+ * @property source The source for reading incoming messages (e.g., stdin or other readable stream).
+ * @param sink The sink for writing outgoing messages (e.g., stdout or other writable stream).
+ * @property readBufferSize The maximum size of the read buffer, defaults to a pre-configured constant.
+ * @property readChannel The channel for receiving raw byte arrays from the input stream.
+ * @property writeChannel The channel for sending serialized JSON-RPC messages to the output stream.
+ * @property readingJobDispatcher The dispatcher to use for the message-reading coroutine.
+ * @property writingJobDispatcher The dispatcher to use for the message-writing coroutine.
+ * @property processingJobDispatcher The dispatcher to handle processing of read messages.
+ * @param coroutineScope Optional coroutine scope to use for managing internal jobs. A new scope
+ *              will be created if not provided.
  */
 @OptIn(ExperimentalAtomicApi::class)
-public class StdioServerTransport(block: Configuration.() -> Unit) : AbstractTransport() {
+@Suppress("LongParameterList")
+public class StdioServerTransport(
+    private val source: Source,
+    sink: Sink,
+    private val readBufferSize: Long = READ_BUFFER_SIZE,
+    private val readChannel: Channel<ByteArray> = Channel(Channel.UNLIMITED),
+    private val writeChannel: Channel<JSONRPCMessage> = Channel(Channel.UNLIMITED),
+    private var readingJobDispatcher: CoroutineDispatcher = IODispatcher,
+    private var writingJobDispatcher: CoroutineDispatcher = IODispatcher,
+    private var processingJobDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    coroutineScope: CoroutineScope? = null,
+) : AbstractTransport() {
 
-    /**
-     * Configuration for [StdioServerTransport].
-     *
-     * @property source The input [Source] used to receive data.
-     * @property sink The output [Sink] used to send data.
-     * @property readBufferSize The buffer size for the read channel.
-     * @property readingJobDispatcher The [CoroutineDispatcher] used for reading jobs.
-     *      Defaults to [IODispatcher].
-     * @property writingJobDispatcher The [CoroutineDispatcher] used for writing jobs.
-     *      Defaults to [IODispatcher].
-     * @property processingJobDispatcher The [CoroutineDispatcher] used for processing jobs.
-     *      Defaults to [Dispatchers.Default].
-     * @property readChannelBufferSize The buffer size for the read channel.
-     * @property writeChannelBufferSize The buffer size for the write channel.
-     * @property coroutineScope The [CoroutineScope] used for managing coroutines.
-     */
-    @Suppress("LongParameterList")
-    public class Configuration internal constructor(
-        public var source: Source? = null,
-        public var sink: Sink? = null,
-        public var readBufferSize: Long = READ_BUFFER_SIZE,
-        public var readingJobDispatcher: CoroutineDispatcher = IODispatcher,
-        public var writingJobDispatcher: CoroutineDispatcher = IODispatcher,
-        public var processingJobDispatcher: CoroutineDispatcher = Dispatchers.Default,
-        public var readChannelBufferSize: Int = Channel.UNLIMITED,
-        public var writeChannelBufferSize: Int = Channel.UNLIMITED,
-        public var coroutineScope: CoroutineScope? = null,
-    )
-
-    private val source: Source
-    private val sink: Sink
-    private val processingJobDispatcher: CoroutineDispatcher
-    private val readingJobDispatcher: CoroutineDispatcher
-    private val writingJobDispatcher: CoroutineDispatcher
     private val scope: CoroutineScope
-    private val readBufferSize: Long
-    private val readChannel: Channel<ByteArray>
-    private val writeChannel: Channel<JSONRPCMessage>
+    private val sink: Sink
 
     init {
-        val config = Configuration().apply(block)
-        val input = requireNotNull(config.source) { "source is required" }
-        val output = requireNotNull(config.sink) { "sink is required" }
-        require(config.readBufferSize > 0) { "readBufferSize must be > 0" }
-
-        source = input
-        processingJobDispatcher = config.processingJobDispatcher
-        readingJobDispatcher = config.readingJobDispatcher
-        writingJobDispatcher = config.writingJobDispatcher
-        val parentJob = config.coroutineScope?.coroutineContext?.get(Job)
+        require(readBufferSize > 0) { "readBufferSize must be > 0" }
+        val parentJob = coroutineScope?.coroutineContext?.get(Job)
         scope = CoroutineScope(SupervisorJob(parentJob))
-        readBufferSize = config.readBufferSize
-        readChannel = Channel(config.readChannelBufferSize)
-        writeChannel = Channel(config.writeChannelBufferSize)
-        sink = output.buffered()
+        this.sink = sink.buffered()
     }
 
     /**
      * Creates a new instance of [StdioServerTransport]
      * with the given [inputStream] [Source] and [outputStream] [Sink].
      */
-    public constructor(inputStream: Source, outputStream: Sink) : this({
-        source = inputStream
-        sink = outputStream
-    })
+    public constructor(inputStream: Source, outputStream: Sink) : this(
+        source = inputStream,
+        sink = outputStream,
+    )
 
     private val logger = KotlinLogging.logger {}
     private val readBuffer = ReadBuffer()
     private val initialized: AtomicBoolean = AtomicBoolean(false)
-
-    @Volatile
-    private var readingJob: Job? = null
-
-    @Volatile
-    private var sendingJob: Job? = null
-
-    @Volatile
-    private var processingJob: Job? = null
 
     override suspend fun start() {
         if (!initialized.compareAndSet(expectedValue = false, newValue = true)) {
@@ -136,13 +100,13 @@ public class StdioServerTransport(block: Configuration.() -> Unit) : AbstractTra
         }
 
         // Launch a coroutine to read from stdin
-        readingJob = launchReadingJob()
+        launchReadingJob()
 
         // Launch a coroutine to process messages from readChannel
-        processingJob = launchProcessingJob()
+        launchProcessingJob()
 
         // Launch a coroutine to handle message sending
-        sendingJob = launchSendingJob()
+        launchSendingJob()
     }
 
     private fun launchReadingJob(): Job = scope.launch(readingJobDispatcher) {
@@ -186,7 +150,9 @@ public class StdioServerTransport(block: Configuration.() -> Unit) : AbstractTra
             _onError.invoke(e)
         }
     }.apply {
-        invokeOnCompletion { logJobCompletion("Processing", it) }
+        invokeOnCompletion { cause ->
+            logJobCompletion("Processing", cause)
+        }
     }
 
     private fun launchSendingJob(): Job = scope.launch(writingJobDispatcher) {
@@ -207,7 +173,7 @@ public class StdioServerTransport(block: Configuration.() -> Unit) : AbstractTra
         invokeOnCompletion { cause ->
             logJobCompletion("Message sending", cause)
             if (cause is CancellationException) {
-                readingJob?.cancel(cause)
+                readChannel.cancel(cause)
             }
         }
     }
@@ -255,22 +221,21 @@ public class StdioServerTransport(block: Configuration.() -> Unit) : AbstractTra
 
         withContext(NonCancellable) {
             writeChannel.close()
-            sendingJob?.cancelAndJoin()
 
             runCatching {
                 source.close()
             }.onFailure { logger.warn(it) { "Failed to close stdin" } }
 
-            readingJob?.cancel()
             readChannel.close()
-
-            processingJob?.cancelAndJoin()
 
             readBuffer.clear()
             runCatching {
                 sink.flush()
                 sink.close()
             }.onFailure { logger.warn(it) { "Failed to close stdout" } }
+
+            scope.cancel()
+            scope.coroutineContext[Job]?.join()
 
             invokeOnCloseCallback()
         }

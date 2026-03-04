@@ -5,8 +5,6 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
-import io.ktor.client.utils.clientDispatcher
-import io.ktor.utils.io.InternalAPI
 import io.modelcontextprotocol.kotlin.sdk.shared.ReadBuffer
 import io.modelcontextprotocol.kotlin.sdk.shared.serializeMessage
 import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
@@ -19,6 +17,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.withTimeout
 import kotlinx.io.Buffer
@@ -74,26 +73,23 @@ class StdioServerTransportTest {
         printOutput = output.asSink().buffered()
     }
 
-    @OptIn(InternalAPI::class)
     @Test
     fun `should construct with builder`() = runIntegrationTest {
         val received = CompletableDeferred<JSONRPCMessage>()
 
-        val ioDispatcher = Dispatchers.IO.limitedParallelism(4)
-
         // Set every configuration parameter explicitly with non-default values,
         // then verify a message round-trips correctly.
-        val server = StdioServerTransport {
-            source = bufferedInput
-            sink = printOutput
-            readBufferSize = 16L // non-default: smaller read chunk
-            readingJobDispatcher = ioDispatcher // non-default: limited parallelism
-            writingJobDispatcher = ioDispatcher // non-default: limited parallelism
-            processingJobDispatcher = Dispatchers.clientDispatcher(2, "Worker") // non-default
-            readChannelBufferSize = Channel.BUFFERED // non-default: bounded
-            writeChannelBufferSize = Channel.BUFFERED // non-default: bounded
-            coroutineScope = CoroutineScope(Dispatchers.Default) // non-default: parent scope provided
-        }
+        val server = StdioServerTransport(
+            source = bufferedInput,
+            sink = printOutput,
+            readBufferSize = 16L, // non-default: smaller read chunk
+            readingJobDispatcher = Dispatchers.IO.limitedParallelism(4, "Read"), // non-default: limited parallelism
+            writingJobDispatcher = Dispatchers.IO.limitedParallelism(4, "Write"), // non-default: limited parallelism
+            processingJobDispatcher = Dispatchers.IO.limitedParallelism(2, name = "Worker"), // non-default
+            readChannel = Channel(capacity = 8, onBufferOverflow = BufferOverflow.SUSPEND), // non-default: bounded
+            writeChannel = Channel(capacity = 16, onBufferOverflow = BufferOverflow.SUSPEND), // non-default: bounded
+            coroutineScope = CoroutineScope(Dispatchers.Default), // non-default: parent scope provided
+        )
         server.onError { throw it }
         server.onMessage { received.complete(it) }
 

@@ -186,33 +186,12 @@ public final class io/modelcontextprotocol/kotlin/sdk/server/SseServerTransport 
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/server/StdioServerTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport {
-	public fun <init> (Lkotlin/jvm/functions/Function1;)V
 	public fun <init> (Lkotlinx/io/Source;Lkotlinx/io/Sink;)V
+	public fun <init> (Lkotlinx/io/Source;Lkotlinx/io/Sink;JLkotlinx/coroutines/channels/Channel;Lkotlinx/coroutines/channels/Channel;Lkotlinx/coroutines/CoroutineDispatcher;Lkotlinx/coroutines/CoroutineDispatcher;Lkotlinx/coroutines/CoroutineDispatcher;Lkotlinx/coroutines/CoroutineScope;)V
+	public synthetic fun <init> (Lkotlinx/io/Source;Lkotlinx/io/Sink;JLkotlinx/coroutines/channels/Channel;Lkotlinx/coroutines/channels/Channel;Lkotlinx/coroutines/CoroutineDispatcher;Lkotlinx/coroutines/CoroutineDispatcher;Lkotlinx/coroutines/CoroutineDispatcher;Lkotlinx/coroutines/CoroutineScope;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun send (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-}
-
-public final class io/modelcontextprotocol/kotlin/sdk/server/StdioServerTransport$Configuration {
-	public fun <init> ()V
-	public final fun getCoroutineScope ()Lkotlinx/coroutines/CoroutineScope;
-	public final fun getProcessingJobDispatcher ()Lkotlinx/coroutines/CoroutineDispatcher;
-	public final fun getReadBufferSize ()J
-	public final fun getReadChannelBufferSize ()I
-	public final fun getReadingJobDispatcher ()Lkotlinx/coroutines/CoroutineDispatcher;
-	public final fun getSink ()Lkotlinx/io/Sink;
-	public final fun getSource ()Lkotlinx/io/Source;
-	public final fun getWriteChannelBufferSize ()I
-	public final fun getWritingJobDispatcher ()Lkotlinx/coroutines/CoroutineDispatcher;
-	public final fun setCoroutineScope (Lkotlinx/coroutines/CoroutineScope;)V
-	public final fun setProcessingJobDispatcher (Lkotlinx/coroutines/CoroutineDispatcher;)V
-	public final fun setReadBufferSize (J)V
-	public final fun setReadChannelBufferSize (I)V
-	public final fun setReadingJobDispatcher (Lkotlinx/coroutines/CoroutineDispatcher;)V
-	public final fun setSink (Lkotlinx/io/Sink;)V
-	public final fun setSource (Lkotlinx/io/Source;)V
-	public final fun setWriteChannelBufferSize (I)V
-	public final fun setWritingJobDispatcher (Lkotlinx/coroutines/CoroutineDispatcher;)V
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/server/StreamableHttpServerTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport {
