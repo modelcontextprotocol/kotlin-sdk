@@ -190,6 +190,34 @@ class InitializeTest {
     }
 
     @Test
+    fun `should serialize InitializeResult without meta - meta must be omitted`() {
+        val result = InitializeResult(
+            protocolVersion = "2025-03-26",
+            capabilities = ServerCapabilities(tools = ServerCapabilities.Tools(listChanged = false)),
+            serverInfo = Implementation(name = "test-server", version = "1.0.0"),
+        )
+
+        verifySerialization(
+            result,
+            McpJson,
+            """
+            {
+              "protocolVersion": "2025-03-26",
+              "capabilities": {
+                "tools": {
+                  "listChanged": false
+                }
+              },
+              "serverInfo": {
+                "name": "test-server",
+                "version": "1.0.0"
+              }
+            }
+            """.trimIndent(),
+        )
+    }
+
+    @Test
     fun `should deserialize InitializeResult from JSON`() {
         val json = """
             {
