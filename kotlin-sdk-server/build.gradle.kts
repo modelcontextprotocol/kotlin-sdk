@@ -23,11 +23,13 @@ kotlin {
                 implementation(libs.kotest.assertions.core)
                 implementation(libs.kotest.assertions.json)
                 implementation(libs.kotlinx.coroutines.test)
+                implementation(project(":test-utils"))
             }
         }
 
         jvmTest {
             dependencies {
+                implementation(libs.junit.jupiter.params)
                 implementation(libs.kotest.assertions.ktor)
                 implementation(libs.ktor.client.content.negotiation)
                 implementation(libs.ktor.client.logging)

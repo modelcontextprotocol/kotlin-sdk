@@ -3,6 +3,8 @@ package io.modelcontextprotocol.kotlin.sdk.client
 import dev.mokksy.mokksy.BuildingStep
 import dev.mokksy.mokksy.Mokksy
 import dev.mokksy.mokksy.StubConfiguration
+import dev.mokksy.mokksy.shutdown
+import dev.mokksy.mokksy.start
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
@@ -21,16 +23,23 @@ import kotlinx.serialization.json.putJsonObject
 
 const val MCP_SESSION_ID_HEADER = "MCP-Session-Id"
 
-internal class MockMcp(verbose: Boolean = false) {
+internal class MockMcp(verbose: Boolean = false) : AutoCloseable {
 
-    private val mokksy: Mokksy = Mokksy(verbose = verbose)
+    private val mokksy: Mokksy = Mokksy(verbose = verbose).apply {
+        start()
+    }
 
-    fun checkForUnmatchedRequests() {
-        mokksy.checkForUnmatchedRequests()
+    fun verifyNoUnexpectedRequests() {
+        mokksy.verifyNoUnexpectedRequests()
+    }
+
+    fun verifyNoUnmatchedStubs() {
+        mokksy.verifyNoUnmatchedStubs()
     }
 
     val url = "${mokksy.baseUrl()}/mcp"
 
+    @Suppress("LongParameterList")
     fun onInitialize(
         clientName: String? = null,
         sessionId: String,
@@ -108,6 +117,7 @@ internal class MockMcp(verbose: Boolean = false) {
         }
     }
 
+    @Suppress("LongParameterList")
     fun handleWithResult(
         httpMethod: HttpMethod = HttpMethod.Post,
         jsonRpcMethod: String,
@@ -124,9 +134,9 @@ internal class MockMcp(verbose: Boolean = false) {
             expectedSessionId = expectedSessionId,
             bodyPredicates = bodyPredicates,
         ) respondsWith {
-            val requestId = when (request.body.id) {
-                is RequestId.NumberId -> (request.body.id as RequestId.NumberId).value.toString()
-                is RequestId.StringId -> "\"${(request.body.id as RequestId.StringId).value}\""
+            val requestId = when (val id = request.body().id) {
+                is RequestId.NumberId -> id.value.toString()
+                is RequestId.StringId -> "\"${id.value}\""
             }
             val resultObject = result.invoke()
             // language=json
@@ -143,6 +153,7 @@ internal class MockMcp(verbose: Boolean = false) {
         }
     }
 
+    @Suppress("LongParameterList")
     fun handleWithResult(
         httpMethod: HttpMethod = HttpMethod.Post,
         jsonRpcMethod: String,
@@ -167,6 +178,7 @@ internal class MockMcp(verbose: Boolean = false) {
         )
     }
 
+    @Suppress("LongParameterList")
     fun handleJSONRPCRequest(
         httpMethod: HttpMethod = HttpMethod.Post,
         jsonRpcMethod: String,
@@ -221,5 +233,9 @@ internal class MockMcp(verbose: Boolean = false) {
         } respondsWith {
             body = null
         }
+    }
+
+    override fun close() {
+        mokksy.shutdown()
     }
 }

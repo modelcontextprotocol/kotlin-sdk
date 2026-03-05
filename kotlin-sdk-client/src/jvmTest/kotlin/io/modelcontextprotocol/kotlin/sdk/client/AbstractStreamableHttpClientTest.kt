@@ -5,6 +5,7 @@ import io.ktor.client.engine.apache5.Apache5
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.sse.SSE
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.TestInstance
 
@@ -16,7 +17,13 @@ internal abstract class AbstractStreamableHttpClientTest {
 
     @AfterEach
     fun afterEach() {
-        mockMcp.checkForUnmatchedRequests()
+        mockMcp.verifyNoUnexpectedRequests()
+    }
+
+    @AfterAll
+    fun afterAll() {
+        mockMcp.verifyNoUnmatchedStubs()
+        mockMcp.close()
     }
 
     protected suspend fun connect(client: Client) {

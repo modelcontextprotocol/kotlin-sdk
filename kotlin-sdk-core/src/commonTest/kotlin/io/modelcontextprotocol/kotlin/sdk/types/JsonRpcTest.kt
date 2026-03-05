@@ -266,6 +266,26 @@ class JsonRpcTest {
     }
 
     @Test
+    fun `should serialize JSONRPCResponse with EmptyResult - null meta must be omitted`() {
+        val response = JSONRPCResponse(
+            id = RequestId("call-2"),
+            result = EmptyResult(), // meta = null by default
+        )
+
+        verifySerialization(
+            response,
+            McpJson,
+            """
+            {
+              "id": "call-2",
+              "result": {},
+              "jsonrpc": "2.0"
+            }
+            """.trimIndent(),
+        )
+    }
+
+    @Test
     fun `should deserialize JSONRPCResponse with EmptyResult`() {
         val json = """
             {

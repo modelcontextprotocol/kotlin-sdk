@@ -3,6 +3,8 @@
 [![Maven Central](https://img.shields.io/maven-central/v/io.modelcontextprotocol/kotlin-sdk.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/io.modelcontextprotocol/kotlin-sdk)
 [![Build](https://github.com/modelcontextprotocol/kotlin-sdk/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/modelcontextprotocol/kotlin-sdk/actions/workflows/build.yml)
 [![Conformance Tests](https://github.com/modelcontextprotocol/kotlin-sdk/actions/workflows/conformance.yml/badge.svg)](https://github.com/modelcontextprotocol/kotlin-sdk/actions/workflows/conformance.yml)
+[![codecov](https://codecov.io/github/modelcontextprotocol/kotlin-sdk/graph/badge.svg?token=O2CFHNSFYM)](https://codecov.io/github/modelcontextprotocol/kotlin-sdk)
+
 [![Kotlin](https://img.shields.io/badge/kotlin-2.2+-blueviolet.svg?logo=kotlin)](http://kotlinlang.org)
 [![Kotlin Multiplatform](https://img.shields.io/badge/Platforms-%20JVM%20%7C%20Wasm%2FJS%20%7C%20Native%20-blueviolet?logo=kotlin)](https://kotlinlang.org/docs/multiplatform.html)
 [![JVM](https://img.shields.io/badge/JVM-11+-red.svg?logo=jvm)](http://java.com)
@@ -887,7 +889,7 @@ allowing for easy testing of MCP functionality without the need for network setu
 
 ## Documentation
 
-- [API Reference](https://modelcontextprotocol.github.io/kotlin-sdk/)
+- [API Reference](https://kotlin.sdk.modelcontextprotocol.io/)
 - [Model Context Protocol documentation](https://modelcontextprotocol.io)
 - [MCP specification](https://modelcontextprotocol.io/specification/latest)
 
