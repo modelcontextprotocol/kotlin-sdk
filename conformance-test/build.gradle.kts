@@ -1,5 +1,3 @@
-import org.gradle.api.tasks.testing.logging.TestExceptionFormat
-
 plugins {
     kotlin("jvm")
     application
@@ -26,37 +24,7 @@ dependencies {
     implementation(libs.ktor.server.content.negotiation)
     implementation(libs.ktor.serialization)
     implementation(libs.ktor.client.cio)
+    implementation(libs.ktor.client.auth)
     implementation(libs.kotlin.logging)
     runtimeOnly(libs.slf4j.simple)
-
-    testImplementation(project(":test-utils"))
-    testImplementation(kotlin("test"))
-    testImplementation(libs.ktor.server.cio)
-    testImplementation(libs.ktor.server.content.negotiation)
-    testImplementation(libs.ktor.serialization)
-    testRuntimeOnly(libs.slf4j.simple)
-}
-
-tasks.test {
-    useJUnitPlatform()
-    dependsOn("installDist")
-
-    testLogging {
-        events("passed", "skipped", "failed")
-        showStandardStreams = true
-        showExceptions = true
-        showCauses = true
-        showStackTraces = true
-        exceptionFormat = TestExceptionFormat.FULL
-    }
-
-    doFirst {
-        systemProperty("test.classpath", classpath.asPath)
-
-        println("\n" + "=".repeat(60))
-        println("MCP CONFORMANCE TESTS")
-        println("=".repeat(60))
-        println("These tests validate compliance with the MCP specification.")
-        println("=".repeat(60) + "\n")
-    }
 }

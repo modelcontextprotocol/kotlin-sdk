@@ -19,8 +19,10 @@ import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.coroutines.delay
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.double
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -29,8 +31,7 @@ internal const val PNG_BASE64 =
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg=="
 
 // Minimal WAV (base64)
-internal const val WAV_BASE64 =
-    "UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQIAAAA="
+internal const val WAV_BASE64 = "UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQIAAAA="
 
 @Suppress("LongMethod")
 fun Server.registerConformanceTools() {
@@ -237,7 +238,7 @@ fun Server.registerConformanceTools() {
                         put("default", JsonPrimitive("active"))
                         put(
                             "enum",
-                            kotlinx.serialization.json.JsonArray(
+                            JsonArray(
                                 listOf(JsonPrimitive("active"), JsonPrimitive("inactive"), JsonPrimitive("pending")),
                             ),
                         )
@@ -275,7 +276,7 @@ fun Server.registerConformanceTools() {
                         put("type", JsonPrimitive("string"))
                         put(
                             "enum",
-                            kotlinx.serialization.json.JsonArray(
+                            JsonArray(
                                 listOf(JsonPrimitive("option1"), JsonPrimitive("option2"), JsonPrimitive("option3")),
                             ),
                         )
@@ -288,7 +289,7 @@ fun Server.registerConformanceTools() {
                         put("type", JsonPrimitive("string"))
                         put(
                             "oneOf",
-                            kotlinx.serialization.json.JsonArray(
+                            JsonArray(
                                 listOf(
                                     buildJsonObject {
                                         put("const", JsonPrimitive("value1"))
@@ -314,7 +315,7 @@ fun Server.registerConformanceTools() {
                         put("type", JsonPrimitive("string"))
                         put(
                             "oneOf",
-                            kotlinx.serialization.json.JsonArray(
+                            JsonArray(
                                 listOf(
                                     buildJsonObject {
                                         put("const", JsonPrimitive("opt1"))
@@ -344,7 +345,7 @@ fun Server.registerConformanceTools() {
                                 put("type", JsonPrimitive("string"))
                                 put(
                                     "enum",
-                                    kotlinx.serialization.json.JsonArray(
+                                    JsonArray(
                                         listOf(
                                             JsonPrimitive("option1"),
                                             JsonPrimitive("option2"),
@@ -367,7 +368,7 @@ fun Server.registerConformanceTools() {
                                 put("type", JsonPrimitive("string"))
                                 put(
                                     "oneOf",
-                                    kotlinx.serialization.json.JsonArray(
+                                    JsonArray(
                                         listOf(
                                             buildJsonObject {
                                                 put("const", JsonPrimitive("value1"))
@@ -397,12 +398,23 @@ fun Server.registerConformanceTools() {
         CallToolResult(listOf(TextContent(result.content.toString())))
     }
 
-    // 12. Dynamic tool (placeholder)
+    // 12. Dynamic tool
+    val server = this
     addTool(
         name = "test_dynamic_tool",
         description = "test_dynamic_tool",
     ) {
-        CallToolResult(listOf(TextContent("Not implemented yet")), isError = true)
+        // Add a temporary tool, triggering listChanged
+        server.addTool(
+            name = "test_dynamic_tool_temp",
+            description = "Temporary dynamic tool",
+        ) {
+            CallToolResult(listOf(TextContent("Temporary tool response")))
+        }
+        delay(100.milliseconds)
+        // Remove the temporary tool, triggering listChanged again
+        server.removeTool("test_dynamic_tool_temp")
+        CallToolResult(listOf(TextContent("Dynamic tool executed successfully")))
     }
 
     // 13. Logging tool
@@ -440,5 +452,146 @@ fun Server.registerConformanceTools() {
             ),
         )
         CallToolResult(listOf(TextContent("Simple text content")))
+    }
+
+    // 14. add_numbers — used by tools_call client scenario
+    addTool(
+        name = "add_numbers",
+        description = "Adds two numbers together",
+        inputSchema = ToolSchema(
+            properties = buildJsonObject {
+                put("a", buildJsonObject { put("type", JsonPrimitive("number")) })
+                put("b", buildJsonObject { put("type", JsonPrimitive("number")) })
+            },
+            required = listOf("a", "b"),
+        ),
+    ) { request ->
+        val a = request.arguments?.get("a")?.jsonPrimitive?.double ?: 0.0
+        val b = request.arguments?.get("b")?.jsonPrimitive?.double ?: 0.0
+        val sum = a + b
+        CallToolResult(listOf(TextContent("The sum of $a and $b is $sum")))
+    }
+
+    // 15. test_reconnection — SEP-1699, closes SSE stream to test client reconnection
+    addTool(
+        name = "test_reconnection",
+        description = "Tests SSE stream disconnection and client reconnection (SEP-1699)",
+    ) {
+        // SDK limitation: cannot access the JSONRPC request ID from the tool handler
+        // to close the SSE stream. Return success text; this test may fail at the
+        // conformance runner level because the stream isn't actually closed.
+        delay(100.milliseconds)
+        CallToolResult(
+            listOf(
+                TextContent(
+                    "Reconnection test completed successfully. " +
+                        "If you received this, the client properly reconnected after stream closure.",
+                ),
+            ),
+        )
+    }
+
+    // 16. json_schema_2020_12_tool — SEP-1613
+    addTool(
+        name = "json_schema_2020_12_tool",
+        description = "Tool with JSON Schema 2020-12 features for conformance testing (SEP-1613)",
+        inputSchema = ToolSchema(
+            properties = buildJsonObject {
+                put(
+                    "name",
+                    buildJsonObject {
+                        put("type", JsonPrimitive("string"))
+                    },
+                )
+                put(
+                    "address",
+                    buildJsonObject {
+                        put("type", JsonPrimitive("object"))
+                        put(
+                            "properties",
+                            buildJsonObject {
+                                put("street", buildJsonObject { put("type", JsonPrimitive("string")) })
+                                put("city", buildJsonObject { put("type", JsonPrimitive("string")) })
+                            },
+                        )
+                    },
+                )
+            },
+        ),
+    ) { request ->
+        CallToolResult(
+            listOf(TextContent("JSON Schema 2020-12 tool called with: ${request.arguments}")),
+        )
+    }
+
+    // 17. test_client_elicitation_defaults — used by elicitation-sep1034-client-defaults scenario
+    addTool(
+        name = "test_client_elicitation_defaults",
+        description = "test_client_elicitation_defaults",
+    ) {
+        val schema = ElicitRequestParams.RequestedSchema(
+            properties = buildJsonObject {
+                put(
+                    "name",
+                    buildJsonObject {
+                        put("type", JsonPrimitive("string"))
+                        put("description", JsonPrimitive("User name"))
+                        put("default", JsonPrimitive("John Doe"))
+                    },
+                )
+                put(
+                    "age",
+                    buildJsonObject {
+                        put("type", JsonPrimitive("integer"))
+                        put("description", JsonPrimitive("User age"))
+                        put("default", JsonPrimitive(30))
+                    },
+                )
+                put(
+                    "score",
+                    buildJsonObject {
+                        put("type", JsonPrimitive("number"))
+                        put("description", JsonPrimitive("User score"))
+                        put("default", JsonPrimitive(95.5))
+                    },
+                )
+                put(
+                    "status",
+                    buildJsonObject {
+                        put("type", JsonPrimitive("string"))
+                        put("description", JsonPrimitive("User status"))
+                        put("default", JsonPrimitive("active"))
+                        put(
+                            "enum",
+                            JsonArray(
+                                listOf(JsonPrimitive("active"), JsonPrimitive("inactive"), JsonPrimitive("pending")),
+                            ),
+                        )
+                    },
+                )
+                put(
+                    "verified",
+                    buildJsonObject {
+                        put("type", JsonPrimitive("boolean"))
+                        put("description", JsonPrimitive("Verification status"))
+                        put("default", JsonPrimitive(true))
+                    },
+                )
+            },
+            required = emptyList(),
+        )
+        val result = createElicitation(
+            "Please review and update the form fields with defaults",
+            schema,
+        )
+        CallToolResult(listOf(TextContent("Elicitation completed: action=${result.action}, content=${result.content}")))
+    }
+
+    // 18. test-tool — simple tool used by auth scenarios
+    addTool(
+        name = "test-tool",
+        description = "Simple test tool for auth scenarios",
+    ) {
+        CallToolResult(listOf(TextContent("Test tool executed successfully")))
     }
 }

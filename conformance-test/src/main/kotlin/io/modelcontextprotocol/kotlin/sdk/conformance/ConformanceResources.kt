@@ -4,6 +4,8 @@ import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.types.BlobResourceContents
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
 import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
+import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 fun Server.registerConformanceResources() {
     // 1. Static text resource
@@ -80,13 +82,42 @@ fun Server.registerConformanceResources() {
         )
     }
 
-    // 5. Dynamic resource (placeholder)
+    // 5. Dynamic resource
+    val server = this
     addResource(
         uri = "test://dynamic-resource",
         name = "dynamic-resource",
         description = "A dynamic resource for testing",
         mimeType = "text/plain",
     ) {
-        throw NotImplementedError("Dynamic resource not implemented")
+        // Add a temporary resource, triggering listChanged
+        server.addResource(
+            uri = "test://dynamic-resource-temp",
+            name = "dynamic-resource-temp",
+            description = "Temporary dynamic resource",
+            mimeType = "text/plain",
+        ) {
+            ReadResourceResult(
+                listOf(
+                    TextResourceContents(
+                        text = "Temporary resource content.",
+                        uri = "test://dynamic-resource-temp",
+                        mimeType = "text/plain",
+                    ),
+                ),
+            )
+        }
+        delay(100.milliseconds)
+        // Remove the temporary resource, triggering listChanged again
+        server.removeResource("test://dynamic-resource-temp")
+        ReadResourceResult(
+            listOf(
+                TextResourceContents(
+                    text = "Dynamic resource content.",
+                    uri = "test://dynamic-resource",
+                    mimeType = "text/plain",
+                ),
+            ),
+        )
     }
 }

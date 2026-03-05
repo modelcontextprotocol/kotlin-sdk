@@ -9,6 +9,8 @@ import io.modelcontextprotocol.kotlin.sdk.types.PromptMessage
 import io.modelcontextprotocol.kotlin.sdk.types.Role
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
+import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 fun Server.registerConformancePrompts() {
     // 1. Simple prompt
@@ -83,11 +85,30 @@ fun Server.registerConformancePrompts() {
         )
     }
 
-    // 5. Dynamic prompt (placeholder)
+    // 5. Dynamic prompt
+    val server = this
     addPrompt(
         name = "test_dynamic_prompt",
         description = "test_dynamic_prompt",
     ) {
-        throw NotImplementedError("Dynamic prompt not implemented")
+        // Add a temporary prompt, triggering listChanged
+        server.addPrompt(
+            name = "test_dynamic_prompt_temp",
+            description = "Temporary dynamic prompt",
+        ) {
+            GetPromptResult(
+                messages = listOf(
+                    PromptMessage(Role.User, TextContent("Temporary prompt response")),
+                ),
+            )
+        }
+        delay(100.milliseconds)
+        // Remove the temporary prompt, triggering listChanged again
+        server.removePrompt("test_dynamic_prompt_temp")
+        GetPromptResult(
+            messages = listOf(
+                PromptMessage(Role.User, TextContent("Dynamic prompt executed successfully")),
+            ),
+        )
     }
 }

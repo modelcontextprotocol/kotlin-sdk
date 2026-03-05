@@ -13,12 +13,22 @@ import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 
 fun main() {
-    val port = System.getenv("MCP_PORT")?.toIntOrNull() ?: 4001
+    val port = System.getenv("MCP_PORT")?.toIntOrNull() ?: 3001
     embeddedServer(CIO, port = port) {
         install(ContentNegotiation) {
             json(McpJson)
         }
-        mcpStreamableHttp {
+        mcpStreamableHttp(
+            enableDnsRebindingProtection = true,
+            allowedHosts = listOf("localhost", "127.0.0.1", "localhost:$port", "127.0.0.1:$port"),
+            allowedOrigins = listOf(
+                "http://localhost",
+                "http://127.0.0.1",
+                "http://localhost:$port",
+                "http://127.0.0.1:$port",
+            ),
+            eventStore = InMemoryEventStore(),
+        ) {
             createConformanceServer()
         }
     }.start(wait = true)
@@ -32,10 +42,12 @@ fun createConformanceServer(): Server = Server(
             resources = ServerCapabilities.Resources(subscribe = true, listChanged = true),
             prompts = ServerCapabilities.Prompts(listChanged = true),
             logging = ServerCapabilities.Logging,
+            completions = ServerCapabilities.Completions,
         ),
     ),
 ) {
     registerConformanceTools()
     registerConformanceResources()
     registerConformancePrompts()
+    registerConformanceCompletions()
 }
