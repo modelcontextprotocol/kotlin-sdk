@@ -84,7 +84,7 @@ public data class Tool(
 public data class ToolSchema(
     val properties: JsonObject? = null,
     val required: List<String>? = null,
-    @SerialName("\$defs")
+    @SerialName($$"$defs")
     val defs: JsonObject? = null,
 ) {
     @OptIn(ExperimentalSerializationApi::class)
