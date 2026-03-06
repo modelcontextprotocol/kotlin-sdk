@@ -20,6 +20,7 @@ fun registerAuthScenarios() {
         "auth/token-endpoint-auth-basic",
         "auth/token-endpoint-auth-post",
         "auth/token-endpoint-auth-none",
+        "auth/pre-registration",
     )
     for (name in authScenarios) {
         scenarioHandlers[name] = ::runAuthClient

@@ -61,7 +61,7 @@ internal suspend fun runAuthClient(serverUrl: String) {
             val scope = extractParam(wwwAuth, "scope")
 
             // Discover OAuth metadata
-            val metadata = discoverOAuthMetadata(httpClient, serverUrl, resourceMetadataUrl)
+            val (metadata, resourceUrl) = discoverOAuthMetadata(httpClient, serverUrl, resourceMetadataUrl)
             val authEndpoint = metadata["authorization_endpoint"]?.jsonPrimitive?.content
                 ?: error("No authorization_endpoint in metadata")
             val tokenEndpoint = metadata["token_endpoint"]?.jsonPrimitive?.content
@@ -90,7 +90,16 @@ internal suspend fun runAuthClient(serverUrl: String) {
                 clientId = regResult.first
                 clientSecret = regResult.second
             } else {
-                error("No way to register client: no registration_endpoint and CIMD not supported")
+                // Pre-registration: use credentials from context
+                val contextJson = System.getenv("MCP_CONFORMANCE_CONTEXT")
+                if (contextJson != null) {
+                    val ctx = json.parseToJsonElement(contextJson).jsonObject
+                    clientId = ctx["client_id"]?.jsonPrimitive?.content
+                        ?: error("No client_id in MCP_CONFORMANCE_CONTEXT")
+                    clientSecret = ctx["client_secret"]?.jsonPrimitive?.content
+                } else {
+                    error("No way to register client: no registration_endpoint, CIMD not supported, and no context")
+                }
             }
 
             // PKCE
@@ -104,6 +113,7 @@ internal suspend fun runAuthClient(serverUrl: String) {
                 CALLBACK_URL,
                 codeChallenge,
                 scope,
+                resourceUrl,
             )
 
             // Follow the authorization redirect to get auth code
@@ -119,6 +129,7 @@ internal suspend fun runAuthClient(serverUrl: String) {
                 CALLBACK_URL,
                 codeVerifier,
                 tokenAuthMethod,
+                resourceUrl,
             )
 
             // Retry the original request with the token
@@ -152,7 +163,7 @@ private suspend fun discoverOAuthMetadata(
     httpClient: HttpClient,
     serverUrl: String,
     resourceMetadataUrl: String?,
-): JsonObject {
+): Pair<JsonObject, String?> {
     // First get resource metadata
     val resourceMeta = if (resourceMetadataUrl != null) {
         val resp = httpClient.get(resourceMetadataUrl)
@@ -161,15 +172,17 @@ private suspend fun discoverOAuthMetadata(
         discoverResourceMetadata(httpClient, serverUrl)
     }
 
+    val resourceUrl = resourceMeta["resource"]?.jsonPrimitive?.content
     val authServer = resourceMeta["authorization_servers"]?.jsonArray?.firstOrNull()?.jsonPrimitive?.content
 
-    return if (authServer != null) {
+    val oauthMeta = if (authServer != null) {
         fetchOAuthMetadata(httpClient, authServer)
     } else {
         // Fallback: try well-known on server URL origin
         val origin = URI(serverUrl).let { "${it.scheme}://${it.host}${if (it.port > 0) ":${it.port}" else ""}" }
         fetchOAuthMetadata(httpClient, origin)
     }
+    return oauthMeta to resourceUrl
 }
 
 @OptIn(ExperimentalUuidApi::class)
@@ -211,6 +224,7 @@ private fun buildAuthorizationUrl(
     redirectUri: String,
     codeChallenge: String,
     scope: String?,
+    resource: String?,
 ): String {
     val params = buildString {
         append("response_type=code")
@@ -220,6 +234,9 @@ private fun buildAuthorizationUrl(
         append("&code_challenge_method=S256")
         if (scope != null) {
             append("&scope=${URLEncoder.encode(scope, "UTF-8")}")
+        }
+        if (resource != null) {
+            append("&resource=${URLEncoder.encode(resource, "UTF-8")}")
         }
     }
     return if (authEndpoint.contains("?")) "$authEndpoint&$params" else "$authEndpoint?$params"
@@ -256,6 +273,7 @@ private suspend fun exchangeCodeForTokens(
     redirectUri: String,
     codeVerifier: String,
     tokenAuthMethod: String,
+    resource: String?,
 ): String {
     val response: HttpResponse = when (tokenAuthMethod) {
         "client_secret_basic" -> {
@@ -268,6 +286,9 @@ private suspend fun exchangeCodeForTokens(
                     append("code", code)
                     append("redirect_uri", redirectUri)
                     append("code_verifier", codeVerifier)
+                    if (resource != null) {
+                        append("resource", resource)
+                    }
                 },
             ) {
                 header(HttpHeaders.Authorization, "Basic $basicAuth")
@@ -283,6 +304,9 @@ private suspend fun exchangeCodeForTokens(
                     append("client_id", clientId)
                     append("redirect_uri", redirectUri)
                     append("code_verifier", codeVerifier)
+                    if (resource != null) {
+                        append("resource", resource)
+                    }
                 },
             )
         }
@@ -300,6 +324,9 @@ private suspend fun exchangeCodeForTokens(
                     }
                     append("redirect_uri", redirectUri)
                     append("code_verifier", codeVerifier)
+                    if (resource != null) {
+                        append("resource", resource)
+                    }
                 },
             )
         }

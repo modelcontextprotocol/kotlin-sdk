@@ -42,17 +42,27 @@ internal suspend fun discoverResourceMetadata(httpClient: HttpClient, serverUrl:
 }
 
 internal suspend fun fetchOAuthMetadata(httpClient: HttpClient, authServerUrl: String): JsonObject {
-    // Try /.well-known/oauth-authorization-server
-    val oauthUrl = "$authServerUrl/.well-known/oauth-authorization-server"
+    val uri = URI(authServerUrl)
+    val origin = "${uri.scheme}://${uri.host}${if (uri.port > 0) ":${uri.port}" else ""}"
+    val path = uri.path.ifEmpty { "/" }
+
+    // RFC 8414 §3: /.well-known/oauth-authorization-server/<path>
+    val oauthUrl = "$origin/.well-known/oauth-authorization-server$path"
     val oauthResponse = httpClient.get(oauthUrl)
     if (oauthResponse.status.isSuccess()) {
         return json.parseToJsonElement(oauthResponse.bodyAsText()).jsonObject
     }
 
-    // Fallback: try OpenID Connect discovery
+    // Fallback: OpenID Connect discovery (issuer + /.well-known/openid-configuration)
     val oidcUrl = "$authServerUrl/.well-known/openid-configuration"
     val oidcResponse = httpClient.get(oidcUrl)
-    return json.parseToJsonElement(oidcResponse.bodyAsText()).jsonObject
+    if (oidcResponse.status.isSuccess()) {
+        return json.parseToJsonElement(oidcResponse.bodyAsText()).jsonObject
+    }
+
+    error(
+        "Failed to fetch OAuth metadata from $oauthUrl (${oauthResponse.status}) and $oidcUrl (${oidcResponse.status})",
+    )
 }
 
 internal suspend fun discoverTokenEndpoint(httpClient: HttpClient, serverUrl: String): String {
