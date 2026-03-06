@@ -18,6 +18,45 @@ import kotlin.contracts.contract
  *
  * Example with [PromptReference]:
  * ```kotlin
+ * val request = CompleteRequest {
+ *     argument("query", "user input")
+ *     ref(PromptReference("searchPrompt"))
+ * }
+ * ```
+ *
+ * Example with [ResourceTemplateReference]:
+ * ```kotlin
+ * val request = CompleteRequest {
+ *     argument("path", "/users/123")
+ *     ref(ResourceTemplateReference("file:///{path}"))
+ *     context {
+ *         put("userId", "123")
+ *         put("role", "admin")
+ *     }
+ * }
+ * ```
+ *
+ * @param block Configuration lambda for setting up the completion request
+ * @return A configured [CompleteRequest] instance
+ * @see CompleteRequestBuilder
+ */
+@ExperimentalMcpApi
+public inline operator fun CompleteRequest.Companion.invoke(block: CompleteRequestBuilder.() -> Unit): CompleteRequest =
+    CompleteRequestBuilder().apply(block).build()
+
+/**
+ * Creates a [CompleteRequest] using a type-safe DSL builder.
+ *
+ * ## Required
+ * - [argument][CompleteRequestBuilder.argument] - Sets the argument name and value to complete
+ * - [ref][CompleteRequestBuilder.ref] - Sets the reference to a prompt or resource template
+ *
+ * ## Optional
+ * - [context][CompleteRequestBuilder.context] - Adds additional context for the completion
+ * - [meta][CompleteRequestBuilder.meta] - Adds metadata to the request
+ *
+ * Example with [PromptReference]:
+ * ```kotlin
  * val request = buildCompleteRequest {
  *     argument("query", "user input")
  *     ref(PromptReference("searchPrompt"))
@@ -41,7 +80,11 @@ import kotlin.contracts.contract
  * @see CompleteRequestBuilder
  */
 @OptIn(ExperimentalContracts::class)
-@ExperimentalMcpApi
+@Deprecated(
+    message = "Use CompleteRequest { } instead",
+    level = DeprecationLevel.WARNING,
+    replaceWith = ReplaceWith("CompleteRequest{apply(block)}"),
+)
 public inline fun buildCompleteRequest(block: CompleteRequestBuilder.() -> Unit): CompleteRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return CompleteRequestBuilder().apply(block).build()
@@ -53,7 +96,7 @@ public inline fun buildCompleteRequest(block: CompleteRequestBuilder.() -> Unit)
  * This builder provides methods to configure completion requests for prompts or resource templates.
  * Both [argument] and [ref] are required; [context] is optional.
  *
- * @see buildCompleteRequest
+ * @see CompleteRequest
  */
 @McpDsl
 public class CompleteRequestBuilder @PublishedApi internal constructor() : RequestBuilder() {
@@ -166,5 +209,78 @@ public class CompleteRequestBuilder @PublishedApi internal constructor() : Reque
 
         val params = CompleteRequestParams(argument = argument, ref = reference, context = ctx, meta = meta)
         return CompleteRequest(params)
+    }
+}
+
+// ============================================================================
+// Result Builders (Server-side)
+// ============================================================================
+
+/**
+ * Creates a [CompleteResult] using a type-safe DSL builder.
+ *
+ * Example:
+ * ```kotlin
+ * val result = CompleteResult {
+ *     values("user1", "user2", "user3")
+ *     total = 3
+ * }
+ * ```
+ */
+@ExperimentalMcpApi
+public inline operator fun CompleteResult.Companion.invoke(block: CompleteResultBuilder.() -> Unit): CompleteResult =
+    CompleteResultBuilder().apply(block).build()
+
+private const val MAX_ITEMS = 100
+
+/**
+ * DSL builder for constructing [CompleteResult] instances.
+ */
+@McpDsl
+public class CompleteResultBuilder @PublishedApi internal constructor() : ResultBuilder() {
+    private var completionValues: List<String>? = null
+    private var completionTotal: Int? = null
+    private var completionHasMore: Boolean? = null
+
+    public fun values(vararg values: String) {
+        this.completionValues = values.toList()
+    }
+
+    public fun values(values: List<String>) {
+        this.completionValues = values
+    }
+
+    public var total: Int? = null
+        set(value) {
+            field = value
+            completionTotal = value
+        }
+
+    public var hasMore: Boolean? = null
+        set(value) {
+            field = value
+            completionHasMore = value
+        }
+
+    @PublishedApi
+    override fun build(): CompleteResult {
+        val values = requireNotNull(completionValues) {
+            "Missing required field 'values'. Use values() to set completion values."
+        }
+
+        require(values.size <= MAX_ITEMS) {
+            "Completion values must not exceed $MAX_ITEMS items, got ${values.size}"
+        }
+
+        val completion = CompleteResult.Completion(
+            values = values,
+            total = completionTotal,
+            hasMore = completionHasMore,
+        )
+
+        return CompleteResult(
+            completion = completion,
+            meta = meta,
+        )
     }
 }

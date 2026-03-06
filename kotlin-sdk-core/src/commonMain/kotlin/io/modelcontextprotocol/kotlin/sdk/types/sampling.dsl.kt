@@ -26,6 +26,60 @@ import kotlin.contracts.contract
  *
  * Example:
  * ```kotlin
+ * val request = CreateMessageRequest {
+ *     maxTokens = 1000
+ *     systemPrompt = "You are a helpful assistant"
+ *     messages {
+ *         user { "What is the capital of France?" }
+ *         assistant { "The capital of France is Paris." }
+ *         user { "What about Germany?" }
+ *     }
+ * }
+ * ```
+ *
+ * Example with preferences:
+ * ```kotlin
+ * val request = CreateMessageRequest {
+ *     maxTokens = 500
+ *     temperature = 0.7
+ *     preferences(
+ *         hints = listOf("claude-3-sonnet"),
+ *         intelligence = 0.8
+ *     )
+ *     messages {
+ *         user { "Explain quantum computing" }
+ *     }
+ * }
+ * ```
+ *
+ * @param block Configuration lambda for setting up the create message request
+ * @return A configured [CreateMessageRequest] instance
+ * @see CreateMessageRequestBuilder
+ * @see CreateMessageRequest
+ */
+@ExperimentalMcpApi
+public inline operator fun CreateMessageRequest.Companion.invoke(
+    block: CreateMessageRequestBuilder.() -> Unit,
+): CreateMessageRequest = CreateMessageRequestBuilder().apply(block).build()
+
+/**
+ * Creates a [CreateMessageRequest] using a type-safe DSL builder.
+ *
+ * ## Required
+ * - [maxTokens][CreateMessageRequestBuilder.maxTokens] - Maximum number of tokens to generate
+ * - [messages][CreateMessageRequestBuilder.messages] - List of conversation messages
+ *
+ * ## Optional
+ * - [systemPrompt][CreateMessageRequestBuilder.systemPrompt] - System-level instructions
+ * - [context][CreateMessageRequestBuilder.context] - Context inclusion settings
+ * - [temperature][CreateMessageRequestBuilder.temperature] - Sampling temperature
+ * - [stopSequences][CreateMessageRequestBuilder.stopSequences] - Sequences that stop generation
+ * - [preferences][CreateMessageRequestBuilder.preferences] - Model selection preferences
+ * - [metadata][CreateMessageRequestBuilder.metadata] - Additional metadata
+ * - [meta][CreateMessageRequestBuilder.meta] - Request metadata
+ *
+ * Example:
+ * ```kotlin
  * val request = buildCreateMessageRequest {
  *     maxTokens = 1000
  *     systemPrompt = "You are a helpful assistant"
@@ -59,6 +113,11 @@ import kotlin.contracts.contract
  */
 @OptIn(ExperimentalContracts::class)
 @ExperimentalMcpApi
+@Deprecated(
+    message = "Use CreateMessageRequest { } instead",
+    level = DeprecationLevel.WARNING,
+    replaceWith = ReplaceWith("CreateMessageRequest{apply(block)}"),
+)
 public inline fun buildCreateMessageRequest(block: CreateMessageRequestBuilder.() -> Unit): CreateMessageRequest {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
     return CreateMessageRequestBuilder().apply(block).build()
@@ -82,7 +141,7 @@ public inline fun buildCreateMessageRequest(block: CreateMessageRequestBuilder.(
  * - [metadata] - Additional metadata
  * - [meta] - Request metadata
  *
- * @see buildCreateMessageRequest
+ * @see CreateMessageRequest
  * @see CreateMessageRequest
  */
 @McpDsl
@@ -262,7 +321,7 @@ public class SamplingMessageBuilder @PublishedApi internal constructor() {
     }
 
     @PublishedApi
-    internal fun build(): List<SamplingMessage> = messages
+    internal fun build(): List<SamplingMessage> = messages.toList() // Defensive copy
 }
 
 /**
