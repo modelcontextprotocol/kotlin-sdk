@@ -18,6 +18,10 @@ tasks.named("installDist") {
     dependsOn("conformanceClientScripts")
 }
 
+tasks.named<Delete>("clean") {
+    delete("results")
+}
+
 dependencies {
     implementation(project(":kotlin-sdk"))
     implementation(libs.ktor.server.cio)
