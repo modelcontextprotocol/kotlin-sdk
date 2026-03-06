@@ -23,10 +23,14 @@ internal val json = Json { ignoreUnknownKeys = true }
 internal const val CIMD_CLIENT_METADATA_URL = "https://conformance-test.local/client-metadata.json"
 internal const val CALLBACK_URL = "http://localhost:3000/callback"
 
+internal fun extractOrigin(url: String): String {
+    val uri = URI(url)
+    return "${uri.scheme}://${uri.host}${if (uri.port > 0) ":${uri.port}" else ""}"
+}
+
 internal suspend fun discoverResourceMetadata(httpClient: HttpClient, serverUrl: String): JsonObject {
-    val uri = URI(serverUrl)
-    val origin = "${uri.scheme}://${uri.host}${if (uri.port > 0) ":${uri.port}" else ""}"
-    val path = uri.path.ifEmpty { "/" }
+    val origin = extractOrigin(serverUrl)
+    val path = URI(serverUrl).path.ifEmpty { "/" }
 
     // Try RFC 9728 format first: /.well-known/oauth-protected-resource/<path>
     val wellKnownUrl = "$origin/.well-known/oauth-protected-resource$path"
@@ -42,15 +46,21 @@ internal suspend fun discoverResourceMetadata(httpClient: HttpClient, serverUrl:
 }
 
 internal suspend fun fetchOAuthMetadata(httpClient: HttpClient, authServerUrl: String): JsonObject {
-    val uri = URI(authServerUrl)
-    val origin = "${uri.scheme}://${uri.host}${if (uri.port > 0) ":${uri.port}" else ""}"
-    val path = uri.path.ifEmpty { "/" }
+    val origin = extractOrigin(authServerUrl)
+    val path = URI(authServerUrl).path.ifEmpty { "/" }
 
     // RFC 8414 §3: /.well-known/oauth-authorization-server/<path>
     val oauthUrl = "$origin/.well-known/oauth-authorization-server$path"
     val oauthResponse = httpClient.get(oauthUrl)
     if (oauthResponse.status.isSuccess()) {
         return json.parseToJsonElement(oauthResponse.bodyAsText()).jsonObject
+    }
+
+    // OIDC Discovery with path insertion: /.well-known/openid-configuration/<path>
+    val oidcPathUrl = "$origin/.well-known/openid-configuration$path"
+    val oidcPathResponse = httpClient.get(oidcPathUrl)
+    if (oidcPathResponse.status.isSuccess()) {
+        return json.parseToJsonElement(oidcPathResponse.bodyAsText()).jsonObject
     }
 
     // Fallback: OpenID Connect discovery (issuer + /.well-known/openid-configuration)

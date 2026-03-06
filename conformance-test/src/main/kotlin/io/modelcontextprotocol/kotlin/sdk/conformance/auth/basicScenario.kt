@@ -29,12 +29,12 @@ internal suspend fun runClientCredentialsBasic(serverUrl: String) {
         followRedirects = false
     }
 
-    httpClient.use { httpClient ->
-        val tokenEndpoint = discoverTokenEndpoint(httpClient, serverUrl)
+    httpClient.use { client ->
+        val tokenEndpoint = discoverTokenEndpoint(client, serverUrl)
 
         // Exchange credentials for token using Basic auth
         val basicAuth = Base64.getEncoder().encodeToString("$clientId:$clientSecret".toByteArray())
-        val tokenResponse = httpClient.submitForm(
+        val tokenResponse = client.submitForm(
             url = tokenEndpoint,
             formParameters = Parameters.build {
                 append("grant_type", "client_credentials")

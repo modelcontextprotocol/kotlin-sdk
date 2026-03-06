@@ -10,8 +10,10 @@ import io.modelcontextprotocol.kotlin.sdk.client.ClientOptions
 import io.modelcontextprotocol.kotlin.sdk.client.StreamableHttpClientTransport
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import java.security.KeyFactory
 import java.security.Signature
 import java.security.spec.PKCS8EncodedKeySpec
@@ -33,14 +35,14 @@ internal suspend fun runClientCredentialsJwt(serverUrl: String) {
         followRedirects = false
     }
 
-    httpClient.use { httpClient ->
-        val tokenEndpoint = discoverTokenEndpoint(httpClient, serverUrl)
+    httpClient.use { client ->
+        val tokenEndpoint = discoverTokenEndpoint(client, serverUrl)
 
         // Create JWT client assertion
         val assertion = createJwtAssertion(clientId, tokenEndpoint, privateKeyPem, signingAlgorithm)
 
         // Exchange for token
-        val tokenResponse = httpClient.submitForm(
+        val tokenResponse = client.submitForm(
             url = tokenEndpoint,
             formParameters = Parameters.build {
                 append("grant_type", "client_credentials")
@@ -72,20 +74,20 @@ private fun createJwtAssertion(
     privateKeyPem: String,
     algorithm: String,
 ): String {
-    val header = buildString {
-        val alg = when (algorithm) {
-            "ES256" -> "ES256"
-            "RS256" -> "RS256"
-            else -> algorithm
-        }
-        append("""{"alg":"$alg","typ":"JWT"}""")
-    }
+    val header = buildJsonObject {
+        put("alg", algorithm)
+        put("typ", "JWT")
+    }.toString()
 
     val now = System.currentTimeMillis() / 1000
-    val payload = buildString {
-        append("""{"iss":"$clientId","sub":"$clientId","aud":"$tokenEndpoint",""")
-        append(""""iat":$now,"exp":${now + 300},"jti":"${Uuid.random()}"}""")
-    }
+    val payload = buildJsonObject {
+        put("iss", clientId)
+        put("sub", clientId)
+        put("aud", tokenEndpoint)
+        put("iat", now)
+        put("exp", now + 300)
+        put("jti", Uuid.random().toString())
+    }.toString()
 
     val headerB64 = Base64.getUrlEncoder().withoutPadding().encodeToString(header.toByteArray())
     val payloadB64 = Base64.getUrlEncoder().withoutPadding().encodeToString(payload.toByteArray())
