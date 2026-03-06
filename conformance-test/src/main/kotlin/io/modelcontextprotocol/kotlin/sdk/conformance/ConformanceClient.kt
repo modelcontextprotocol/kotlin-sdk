@@ -74,17 +74,14 @@ fun main(args: Array<String>) {
 
 private suspend fun runBasicClient(serverUrl: String) {
     val httpClient = HttpClient(CIO) { install(SSE) }
-    try {
+    httpClient.use { httpClient ->
         val transport = StreamableHttpClientTransport(httpClient, serverUrl)
         val client = Client(
             clientInfo = Implementation("test-client", "1.0.0"),
             options = ClientOptions(capabilities = ClientCapabilities()),
         )
         client.connect(transport)
-        client.listTools()
         client.close()
-    } finally {
-        httpClient.close()
     }
 }
 
