@@ -38,6 +38,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.SubscribeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
 import io.modelcontextprotocol.kotlin.sdk.types.ToolAnnotations
+import io.modelcontextprotocol.kotlin.sdk.types.ToolExecution
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import io.modelcontextprotocol.kotlin.sdk.types.UnsubscribeRequest
 import kotlinx.coroutines.CancellationException
@@ -313,6 +314,7 @@ public open class Server(
      * @param inputSchema The expected input schema for the tool.
      * @param outputSchema The optional expected output schema for the tool.
      * @param toolAnnotations Optional additional tool information.
+     * @param execution Optional execution-related properties, such as task-augmented execution support.
      * @param meta Optional metadata as a [JsonObject].
      * @param handler A suspend function that handles executing the tool when called by the client.
      * @throws IllegalStateException If the server does not support tools.
@@ -325,6 +327,7 @@ public open class Server(
         title: String? = null,
         outputSchema: ToolSchema? = null,
         toolAnnotations: ToolAnnotations? = null,
+        execution: ToolExecution? = null,
         meta: JsonObject? = null,
         handler: suspend ClientConnection.(CallToolRequest) -> CallToolResult,
     ) {
@@ -335,6 +338,7 @@ public open class Server(
             description = description,
             title = title,
             annotations = toolAnnotations,
+            execution = execution,
             meta = meta,
         )
         addTool(tool, handler)
