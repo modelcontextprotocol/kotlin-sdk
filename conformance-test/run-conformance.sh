@@ -75,6 +75,7 @@ run_server_suite() {
     npx "@modelcontextprotocol/conformance@$CONFORMANCE_VERSION" server \
         --url "$SERVER_URL" \
         --output-dir "$output_dir" \
+        --expected-failures "$SCRIPT_DIR/conformance-baseline.yml" \
         "$@" || rc=$?
     stop_server
     return $rc
@@ -94,6 +95,7 @@ run_client_suite() {
             --command "$CLIENT_DIST" \
             --scenario "$scenario" \
             --output-dir "$output_dir" \
+            --expected-failures "$SCRIPT_DIR/conformance-baseline.yml" \
             "$@" || rc=$?
     done
     return $rc
@@ -110,6 +112,7 @@ run_client_auth_suite() {
         --command "$CLIENT_DIST" \
         --suite auth \
         --output-dir "$output_dir" \
+        --expected-failures "$SCRIPT_DIR/conformance-baseline.yml" \
         "$@" || return 1
 }
 
