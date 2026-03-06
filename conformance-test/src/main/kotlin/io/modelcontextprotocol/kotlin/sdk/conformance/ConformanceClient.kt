@@ -1,5 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.conformance
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.sse.SSE
@@ -18,6 +19,8 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlin.system.exitProcess
 
+private val logger = KotlinLogging.logger {}
+
 typealias ScenarioHandler = suspend (serverUrl: String) -> Unit
 
 val scenarioHandlers = mutableMapOf<String, ScenarioHandler>()
@@ -35,21 +38,21 @@ fun main(args: Array<String>) {
     registerAuthScenarios()
 
     if (scenarioName == null || serverUrl == null) {
-        System.err.println("Usage: MCP_CONFORMANCE_SCENARIO=<scenario> conformance-client <server-url>")
-        System.err.println("\nThe MCP_CONFORMANCE_SCENARIO env var is set automatically by the conformance runner.")
-        System.err.println("\nAvailable scenarios:")
+        logger.error { "Usage: MCP_CONFORMANCE_SCENARIO=<scenario> conformance-client <server-url>" }
+        logger.error { "\nThe MCP_CONFORMANCE_SCENARIO env var is set automatically by the conformance runner." }
+        logger.error { "\nAvailable scenarios:" }
         for (name in scenarioHandlers.keys.sorted()) {
-            System.err.println("  - $name")
+            logger.error { "  - $name" }
         }
         exitProcess(1)
     }
 
     val handler = scenarioHandlers[scenarioName]
     if (handler == null) {
-        System.err.println("Unknown scenario: $scenarioName")
-        System.err.println("\nAvailable scenarios:")
+        logger.error { "Unknown scenario: $scenarioName" }
+        logger.error { "\nAvailable scenarios:" }
         for (name in scenarioHandlers.keys.sorted()) {
-            System.err.println("  - $name")
+            logger.error { "  - $name" }
         }
         exitProcess(1)
     }
@@ -60,8 +63,7 @@ fun main(args: Array<String>) {
         }
         exitProcess(0)
     } catch (e: Exception) {
-        System.err.println("Error: ${e.message}")
-        e.printStackTrace(System.err)
+        logger.error(e) { "Error: ${e.message}" }
         exitProcess(1)
     }
 }
@@ -88,7 +90,7 @@ private suspend fun runBasicClient(serverUrl: String) {
 
 private suspend fun runToolsCallClient(serverUrl: String) {
     val httpClient = HttpClient(CIO) { install(SSE) }
-    try {
+    httpClient.use { httpClient ->
         val transport = StreamableHttpClientTransport(httpClient, serverUrl)
         val client = Client(
             clientInfo = Implementation("test-client", "1.0.0"),
@@ -113,8 +115,6 @@ private suspend fun runToolsCallClient(serverUrl: String) {
         }
 
         client.close()
-    } finally {
-        httpClient.close()
     }
 }
 
