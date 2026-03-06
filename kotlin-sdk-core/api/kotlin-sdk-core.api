@@ -4568,6 +4568,12 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/Tools_dslKt {
 	public static final fun buildListToolsRequest (Lkotlin/jvm/functions/Function1;)Lio/modelcontextprotocol/kotlin/sdk/types/ListToolsRequest;
 }
 
+public final class io/modelcontextprotocol/kotlin/sdk/types/Tools_schemaKt {
+	public static final fun asToolSchema (Lkotlinx/schema/json/FunctionCallingSchema;)Lio/modelcontextprotocol/kotlin/sdk/types/ToolSchema;
+	public static final fun asToolSchema (Lkotlinx/schema/json/JsonSchema;)Lio/modelcontextprotocol/kotlin/sdk/types/ToolSchema;
+	public static final fun asToolSchema (Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/ToolSchema;
+}
+
 public final class io/modelcontextprotocol/kotlin/sdk/types/UnknownResourceContents : io/modelcontextprotocol/kotlin/sdk/types/ResourceContents {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/UnknownResourceContents$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;)V
