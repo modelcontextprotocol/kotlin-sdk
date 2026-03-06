@@ -21,12 +21,6 @@ fun main() {
         mcpStreamableHttp(
             enableDnsRebindingProtection = true,
             allowedHosts = listOf("localhost", "127.0.0.1", "localhost:$port", "127.0.0.1:$port"),
-            allowedOrigins = listOf(
-                "http://localhost",
-                "http://127.0.0.1",
-                "http://localhost:$port",
-                "http://127.0.0.1:$port",
-            ),
             eventStore = InMemoryEventStore(),
         ) {
             createConformanceServer()
