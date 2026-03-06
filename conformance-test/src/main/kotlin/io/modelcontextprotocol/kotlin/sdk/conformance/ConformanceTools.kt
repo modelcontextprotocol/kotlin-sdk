@@ -186,17 +186,24 @@ fun Server.registerConformanceTools() {
         val schema = ElicitRequestParams.RequestedSchema(
             properties = buildJsonObject {
                 put(
-                    "response",
+                    "username",
                     buildJsonObject {
                         put("type", JsonPrimitive("string"))
                         put("description", JsonPrimitive("User's response"))
                     },
                 )
+                put(
+                    "email",
+                    buildJsonObject {
+                        put("type", JsonPrimitive("string"))
+                        put("description", JsonPrimitive("User's email address"))
+                    },
+                )
             },
-            required = listOf("response"),
+            required = listOf("username", "email"),
         )
         val result = createElicitation(message, schema)
-        CallToolResult(listOf(TextContent(result.content.toString())))
+        CallToolResult(listOf(TextContent("User response: <action: ${result.action}, content: ${result.content}>")))
     }
 
     // 10. Elicitation SEP1034 (defaults)
