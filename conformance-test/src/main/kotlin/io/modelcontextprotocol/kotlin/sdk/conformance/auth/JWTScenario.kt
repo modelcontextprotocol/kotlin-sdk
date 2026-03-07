@@ -11,7 +11,6 @@ import io.modelcontextprotocol.kotlin.sdk.client.StreamableHttpClientTransport
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import java.security.KeyFactory
@@ -23,11 +22,9 @@ import kotlin.uuid.Uuid
 
 // Client Credentials JWT scenario
 internal suspend fun runClientCredentialsJwt(serverUrl: String) {
-    val contextJson = System.getenv("MCP_CONFORMANCE_CONTEXT")
-        ?: error("MCP_CONFORMANCE_CONTEXT not set")
-    val ctx = json.parseToJsonElement(contextJson).jsonObject
-    val clientId = ctx["client_id"]?.jsonPrimitive?.content ?: error("Missing client_id")
-    val privateKeyPem = ctx["private_key_pem"]?.jsonPrimitive?.content ?: error("Missing private_key_pem")
+    val ctx = conformanceContext()
+    val clientId = ctx.requiredString("client_id")
+    val privateKeyPem = ctx.requiredString("private_key_pem")
     val signingAlgorithm = ctx["signing_algorithm"]?.jsonPrimitive?.content ?: "ES256"
 
     val httpClient = HttpClient(CIO) {

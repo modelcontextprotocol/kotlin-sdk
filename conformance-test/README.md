@@ -28,7 +28,7 @@ Run **all** suites (server, client core, client auth) from the project root:
 |---------------|-------------------------------------------------------------------------------------|
 | `server`      | Starts the Ktor conformance server, runs the server test suite against it           |
 | `client`      | Runs the client test suite (`initialize`, `tools_call`, `elicitation`, `sse-retry`) |
-| `client-auth` | Runs the client auth test suite (18 OAuth scenarios)                                |
+| `client-auth` | Runs the client auth test suite (20 OAuth scenarios)                                |
 | `all`         | Runs all three suites sequentially                                                  |
 
 Any `[extra-args]` are forwarded to the conformance runner (e.g. `--verbose`).
@@ -62,7 +62,7 @@ conformance-test/
     ├── ConformancePrompts.kt     # 5 prompt registrations (simple, args, image, embedded, dynamic)
     ├── ConformanceCompletions.kt # completion/complete handler
     ├── InMemoryEventStore.kt     # EventStore impl for SSE resumability (SEP-1699)
-    └── auth/                     # OAuth client for 18 auth scenarios
+    └── auth/                     # OAuth client for 20 auth scenarios
         ├── registration.kt       # Scenario handler registration
         ├── utils.kt              # Shared utilities: JSON instance, constants, extractOrigin()
         ├── discovery.kt          # Protected Resource Metadata + AS Metadata discovery
@@ -71,8 +71,9 @@ conformance-test/
         ├── authCodeFlow.kt       # Main Authorization Code flow handler (runAuthClient + interceptor)
         ├── scopeHandling.kt      # Scope selection strategy + step-up 403 handling
         ├── clientRegistration.kt # Client registration logic (pre-reg, CIMD, dynamic)
-        ├── JWTScenario.kt        # Client Credentials JWT scenario
-        └── basicScenario.kt      # Client Credentials Basic scenario
+        ├── JWTScenario.kt              # Client Credentials JWT scenario
+        ├── basicScenario.kt            # Client Credentials Basic scenario
+        └── crossAppAccessScenario.kt   # Cross-App Access (SEP-990) scenario
 ```
 
 ## Test Suites
@@ -101,7 +102,7 @@ Tests the conformance server against all server scenarios:
 
 ### Client Auth Suite
 
-16 OAuth Authorization Code scenarios + 2 Client Credentials scenarios (`jwt`, `basic`) = 18 total.
+17 OAuth Authorization Code scenarios + 2 Client Credentials scenarios (`jwt`, `basic`) + 1 Cross-App Access scenario = 20 total.
 
 > [!NOTE]
 > Auth scenarios are implemented using Ktor's `HttpClient` plugins (`HttpSend` interceptor,

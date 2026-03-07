@@ -20,6 +20,14 @@ import kotlin.text.ifEmpty
 
 internal val json = Json { ignoreUnknownKeys = true }
 
+internal fun conformanceContext(): JsonObject {
+    val contextJson = System.getenv("MCP_CONFORMANCE_CONTEXT")
+        ?: error("MCP_CONFORMANCE_CONTEXT not set")
+    return json.parseToJsonElement(contextJson).jsonObject
+}
+
+internal fun JsonObject.requiredString(key: String): String = this[key]?.jsonPrimitive?.content ?: error("Missing $key")
+
 internal const val CIMD_CLIENT_METADATA_URL = "https://conformance-test.local/client-metadata.json"
 internal const val CALLBACK_URL = "http://localhost:3000/callback"
 

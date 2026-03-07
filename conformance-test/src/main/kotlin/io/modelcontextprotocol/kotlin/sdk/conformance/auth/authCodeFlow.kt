@@ -55,6 +55,19 @@ internal suspend fun runAuthClient(serverUrl: String) {
                 cachedDiscovery = discoverOAuthMetadata(httpClient, serverUrl, resourceMetadataUrl)
             }
             val discovery: DiscoveryResult = cachedDiscovery
+
+            // Validate PRM resource matches server URL (RFC 8707)
+            val discoveredResource = discovery.resourceUrl
+            if (discoveredResource != null) {
+                val normalizedResource = discoveredResource.trimEnd('/')
+                val normalizedServerUrl = serverUrl.trimEnd('/')
+                val matches = normalizedServerUrl == normalizedResource ||
+                    normalizedServerUrl.startsWith("$normalizedResource/")
+                require(matches) {
+                    "PRM resource mismatch: resource='$discoveredResource' does not match server URL='$serverUrl'"
+                }
+            }
+
             val metadata = discovery.asMetadata
 
             val authEndpoint = metadata["authorization_endpoint"]?.jsonPrimitive?.content

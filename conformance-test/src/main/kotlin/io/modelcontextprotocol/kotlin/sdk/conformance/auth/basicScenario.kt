@@ -12,17 +12,13 @@ import io.modelcontextprotocol.kotlin.sdk.client.ClientOptions
 import io.modelcontextprotocol.kotlin.sdk.client.StreamableHttpClientTransport
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import java.util.Base64
 
 // Client Credentials Basic scenario
 internal suspend fun runClientCredentialsBasic(serverUrl: String) {
-    val contextJson = System.getenv("MCP_CONFORMANCE_CONTEXT")
-        ?: error("MCP_CONFORMANCE_CONTEXT not set")
-    val ctx = json.parseToJsonElement(contextJson).jsonObject
-    val clientId = ctx["client_id"]?.jsonPrimitive?.content ?: error("Missing client_id")
-    val clientSecret = ctx["client_secret"]?.jsonPrimitive?.content ?: error("Missing client_secret")
+    val ctx = conformanceContext()
+    val clientId = ctx.requiredString("client_id")
+    val clientSecret = ctx.requiredString("client_secret")
 
     val httpClient = HttpClient(CIO) {
         install(SSE)
