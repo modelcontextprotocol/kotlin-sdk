@@ -13,23 +13,10 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main'  }}
 
 jobs:
-  run-conformance:
-    runs-on: ${{ matrix.os }}
-    name: Run Conformance Tests on ${{ matrix.os }}
+  server:
+    runs-on: ubuntu-latest
+    name: Conformance Server Tests
     timeout-minutes: 20
-    env:
-      JAVA_OPTS: "-Xmx8g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx6g"
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            max-workers: 3
-          - os: windows-latest
-            max-workers: 3
-          - os: macos-latest
-            max-workers: 2
 
     steps:
       - uses: actions/checkout@v6
@@ -40,34 +27,101 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
         with:
-          node-version: '22' # increase only after https://github.com/nodejs/node/issues/56645 will be fixed
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
-      - name: Setup Conformance Tests
-        working-directory: conformance-test
-        run: |-
-          npm install -g @modelcontextprotocol/conformance@0.1.8
+      - name: Build
+        run: ./gradlew :conformance-test:installDist
+
+      - name: Start server
+        run: |
+          MCP_PORT=3001 conformance-test/build/install/conformance-test/bin/conformance-test &
+          for i in $(seq 1 30); do
+            if curl -s -o /dev/null http://localhost:3001/mcp; then
+              echo "Server is ready"
+              break
+            fi
+            sleep 1
+          done
+
+      - name: Run conformance tests
+        uses: modelcontextprotocol/conformance@v0.1.15
+        with:
+          mode: server
+          url: http://localhost:3001/mcp
+          suite: active
+          node-version: '22'
+          expected-failures: ./conformance-test/conformance-baseline.yml
+
+  client:
+    runs-on: ubuntu-latest
+    name: "Conformance Client Tests: ${{ matrix.scenario }}"
+    timeout-minutes: 20
+
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario:
+          - initialize
+          - tools_call
+          - elicitation-sep1034-client-defaults
+          - sse-retry
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
         with:
-          add-job-summary: 'always'
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
-          gradle-home-cache-includes: |
-            caches
-            notifications
-            sdks
-            ../.konan/**
 
-      - name: Run Conformance Tests
-        run: |-
-          ./gradlew :conformance-test:test --no-daemon --max-workers ${{ matrix.max-workers }}
+      - name: Build
+        run: ./gradlew :conformance-test:installDist
 
-      - name: Upload Conformance Results
-        if: always()
-        uses: actions/upload-artifact@v7
+      - name: Run conformance tests
+        uses: modelcontextprotocol/conformance@v0.1.15
         with:
-          name: conformance-results-${{ matrix.os }}
-          path: conformance-test/results/
+          mode: client
+          command: conformance-test/build/install/conformance-test/bin/conformance-client
+          scenario: ${{ matrix.scenario }}
+          node-version: '22'
+          expected-failures: ./conformance-test/conformance-baseline.yml
+
+  auth:
+    runs-on: ubuntu-latest
+    name: Conformance Auth Tests
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Build
+        run: ./gradlew :conformance-test:installDist
+
+      - name: Run conformance tests
+        uses: modelcontextprotocol/conformance@v0.1.15
+        with:
+          mode: client
+          command: conformance-test/build/install/conformance-test/bin/conformance-client
+          suite: auth
+          node-version: '22'
+          expected-failures: ./conformance-test/conformance-baseline.yml
