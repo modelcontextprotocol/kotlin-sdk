@@ -16,6 +16,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
+import java.util.UUID
 
 internal suspend fun runAuthClient(serverUrl: String) {
     val httpClient = HttpClient(CIO) {
@@ -87,6 +88,9 @@ internal suspend fun runAuthClient(serverUrl: String) {
             val codeVerifier = generateCodeVerifier()
             val codeChallenge = generateCodeChallenge(codeVerifier)
 
+            // CSRF state parameter
+            val state = UUID.randomUUID().toString()
+
             // Build authorization URL
             val authUrl = buildAuthorizationUrl(
                 authEndpoint,
@@ -95,10 +99,11 @@ internal suspend fun runAuthClient(serverUrl: String) {
                 codeChallenge,
                 scope,
                 discovery.resourceUrl,
+                state,
             )
 
             // Follow the authorization redirect to get auth code
-            val authCode = followAuthorizationRedirect(httpClient, authUrl)
+            val authCode = followAuthorizationRedirect(httpClient, authUrl, CALLBACK_URL, state)
 
             // Exchange code for tokens
             accessToken = exchangeCodeForTokens(

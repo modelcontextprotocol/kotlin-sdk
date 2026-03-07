@@ -42,6 +42,11 @@ internal suspend fun discoverResourceMetadata(httpClient: HttpClient, serverUrl:
     // Fallback: try root
     val fallbackUrl = "$origin/.well-known/oauth-protected-resource"
     val fallbackResponse = httpClient.get(fallbackUrl)
+    if (!fallbackResponse.status.isSuccess()) {
+        error(
+            "Failed to discover resource metadata at $wellKnownUrl (${response.status}) and $fallbackUrl (${fallbackResponse.status})",
+        )
+    }
     return json.parseToJsonElement(fallbackResponse.bodyAsText()).jsonObject
 }
 
@@ -86,6 +91,9 @@ internal suspend fun discoverTokenEndpoint(httpClient: HttpClient, serverUrl: St
 }
 
 internal suspend fun extractAccessToken(tokenResponse: HttpResponse): String {
+    if (!tokenResponse.status.isSuccess()) {
+        error("Token request failed: ${tokenResponse.status}")
+    }
     val tokenJson = json.parseToJsonElement(tokenResponse.bodyAsText()).jsonObject
     return tokenJson["access_token"]?.jsonPrimitive?.content
         ?: error("No access_token in token response")

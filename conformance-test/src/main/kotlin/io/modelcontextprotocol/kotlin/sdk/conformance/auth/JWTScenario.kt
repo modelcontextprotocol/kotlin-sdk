@@ -138,24 +138,32 @@ private fun signJwt(input: String, privateKeyPem: String, algorithm: String): St
 
 private fun derToRawEcSignature(der: ByteArray): ByteArray {
     // DER format: 0x30 len 0x02 rLen r 0x02 sLen s
+    require(der.size >= 2) { "DER signature too short" }
+
     var offset = 2 // skip SEQUENCE tag and length
     if (der[1].toInt() and 0x80 != 0) {
         offset += (der[1].toInt() and 0x7f)
     }
 
     // Read r
+    require(offset < der.size) { "DER signature truncated before r tag" }
     check(der[offset] == 0x02.toByte()) { "Expected INTEGER tag for r" }
     offset++
+    require(offset < der.size) { "DER signature truncated before r length" }
     val rLen = der[offset].toInt() and 0xff
     offset++
+    require(offset + rLen <= der.size) { "DER signature truncated in r value" }
     val r = der.copyOfRange(offset, offset + rLen)
     offset += rLen
 
     // Read s
+    require(offset < der.size) { "DER signature truncated before s tag" }
     check(der[offset] == 0x02.toByte()) { "Expected INTEGER tag for s" }
     offset++
+    require(offset < der.size) { "DER signature truncated before s length" }
     val sLen = der[offset].toInt() and 0xff
     offset++
+    require(offset + sLen <= der.size) { "DER signature truncated in s value" }
     val s = der.copyOfRange(offset, offset + sLen)
 
     // Each component should be 32 bytes for P-256

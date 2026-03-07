@@ -22,6 +22,7 @@ internal fun buildAuthorizationUrl(
     codeChallenge: String,
     scope: String?,
     resource: String?,
+    state: String,
 ): String {
     val params = buildString {
         append("response_type=code")
@@ -29,6 +30,7 @@ internal fun buildAuthorizationUrl(
         append("&redirect_uri=${URLEncoder.encode(redirectUri, "UTF-8")}")
         append("&code_challenge=${URLEncoder.encode(codeChallenge, "UTF-8")}")
         append("&code_challenge_method=S256")
+        append("&state=${URLEncoder.encode(state, "UTF-8")}")
         if (scope != null) {
             append("&scope=${URLEncoder.encode(scope, "UTF-8")}")
         }
@@ -39,7 +41,12 @@ internal fun buildAuthorizationUrl(
     return if (authEndpoint.contains("?")) "$authEndpoint&$params" else "$authEndpoint?$params"
 }
 
-internal suspend fun followAuthorizationRedirect(httpClient: HttpClient, authUrl: String): String {
+internal suspend fun followAuthorizationRedirect(
+    httpClient: HttpClient,
+    authUrl: String,
+    expectedCallbackUrl: String,
+    expectedState: String,
+): String {
     val response = httpClient.get(authUrl)
 
     if (response.status == HttpStatusCode.Found ||
@@ -49,12 +56,23 @@ internal suspend fun followAuthorizationRedirect(httpClient: HttpClient, authUrl
     ) {
         val location = response.headers[HttpHeaders.Location]
             ?: error("No Location header in redirect response")
+
+        require(location.startsWith(expectedCallbackUrl)) {
+            "Redirect location does not match expected callback URL"
+        }
+
         val uri = URI(location)
-        val queryParams = uri.query?.split("&")?.associate {
-            val (k, v) = it.split("=", limit = 2)
-            k to java.net.URLDecoder.decode(v, "UTF-8")
-        } ?: emptyMap()
-        return queryParams["code"] ?: error("No code in redirect URL: $location")
+        val queryParams = uri.query?.split("&")?.mapNotNull {
+            val parts = it.split("=", limit = 2)
+            if (parts.size == 2) parts[0] to java.net.URLDecoder.decode(parts[1], "UTF-8") else null
+        }?.toMap() ?: emptyMap()
+
+        val returnedState = queryParams["state"]
+        require(returnedState == expectedState) {
+            "State parameter mismatch in authorization redirect"
+        }
+
+        return queryParams["code"] ?: error("No authorization code in redirect response")
     }
 
     error("Expected redirect from auth endpoint, got ${response.status}")
@@ -152,5 +170,5 @@ internal suspend fun exchangeCodeForTokens(
     }
 
     return tokenJson["access_token"]?.jsonPrimitive?.content
-        ?: error("No access_token in token response: ${response.bodyAsText()}")
+        ?: error("No access_token in token response")
 }
