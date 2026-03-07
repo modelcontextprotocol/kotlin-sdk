@@ -54,7 +54,7 @@ internal suspend fun runAuthClient(serverUrl: String) {
                 val resourceMetadataUrl = extractParam(wwwAuth, "resource_metadata")
                 cachedDiscovery = discoverOAuthMetadata(httpClient, serverUrl, resourceMetadataUrl)
             }
-            val discovery = cachedDiscovery!!
+            val discovery = cachedDiscovery
             val metadata = discovery.asMetadata
 
             val authEndpoint = metadata["authorization_endpoint"]?.jsonPrimitive?.content
@@ -74,7 +74,7 @@ internal suspend fun runAuthClient(serverUrl: String) {
             if (cachedCredentials == null) {
                 cachedCredentials = resolveClientCredentials(httpClient, metadata)
             }
-            val creds = cachedCredentials!!
+            val creds = cachedCredentials
 
             // Determine scope
             val scope = if (needsStepUp) {
