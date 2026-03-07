@@ -28,7 +28,7 @@ Run **all** suites (server, client core, client auth) from the project root:
 |---------------|-------------------------------------------------------------------------------------|
 | `server`      | Starts the Ktor conformance server, runs the server test suite against it           |
 | `client`      | Runs the client test suite (`initialize`, `tools_call`, `elicitation`, `sse-retry`) |
-| `client-auth` | Runs the client auth test suite (17 OAuth scenarios)                                |
+| `client-auth` | Runs the client auth test suite (18 OAuth scenarios)                                |
 | `all`         | Runs all three suites sequentially                                                  |
 
 Any `[extra-args]` are forwarded to the conformance runner (e.g. `--verbose`).
@@ -37,7 +37,7 @@ Any `[extra-args]` are forwarded to the conformance runner (e.g. `--verbose`).
 
 1. **Builds** the module via `./gradlew :conformance-test:installDist`
 2. For `server` — starts the conformance server on `localhost:3001`, polls until ready
-3. Invokes `npx @modelcontextprotocol/conformance@0.1.10` with the appropriate arguments
+3. Invokes `npx @modelcontextprotocol/conformance@0.1.15` with the appropriate arguments
 4. Saves results to `conformance-test/results/<command>/`
 5. Cleans up the server process on exit
 6. Exits non-zero if any suite fails
@@ -52,20 +52,27 @@ Any `[extra-args]` are forwarded to the conformance runner (e.g. `--verbose`).
 
 ```
 conformance-test/
-├── build.gradle.kts            # Build config (no test deps — only compilation + installDist)
-├── run-conformance.sh          # Single entry point script
-├── .gitignore                  # Ignores /results/
-├── SPEC.md                     # Design decisions and full specification
-├── README.md                   # This file
+├── run-conformance.sh            # Single entry point script
+├── conformance-baseline.yml      # Expected failures for known SDK limitations
 └── src/main/kotlin/.../conformance/
-    ├── ConformanceServer.kt    # Ktor server entry point (StreamableHTTP, DNS rebinding, EventStore)
-    ├── ConformanceClient.kt    # Scenario-based client entry point (MCP_CONFORMANCE_SCENARIO routing)
-    ├── ConformanceTools.kt     # 18 tool registrations
-    ├── ConformanceResources.kt # 5 resource registrations (static, binary, template, watched, dynamic)
-    ├── ConformancePrompts.kt   # 5 prompt registrations (simple, args, image, embedded, dynamic)
+    ├── ConformanceServer.kt      # Ktor server entry point (StreamableHTTP, DNS rebinding, EventStore)
+    ├── ConformanceClient.kt      # Scenario-based client entry point (MCP_CONFORMANCE_SCENARIO routing)
+    ├── ConformanceTools.kt       # 18 tool registrations
+    ├── ConformanceResources.kt   # 5 resource registrations (static, binary, template, watched, dynamic)
+    ├── ConformancePrompts.kt     # 5 prompt registrations (simple, args, image, embedded, dynamic)
     ├── ConformanceCompletions.kt # completion/complete handler
-    ├── ConformanceAuth.kt      # OAuth client for 17 auth scenarios (authz code + client credentials)
-    └── InMemoryEventStore.kt   # EventStore impl for SSE resumability (SEP-1699)
+    ├── InMemoryEventStore.kt     # EventStore impl for SSE resumability (SEP-1699)
+    └── auth/                     # OAuth client for 18 auth scenarios
+        ├── registration.kt       # Scenario handler registration
+        ├── utils.kt              # Shared utilities: JSON instance, constants, extractOrigin()
+        ├── discovery.kt          # Protected Resource Metadata + AS Metadata discovery
+        ├── pkce.kt               # PKCE code verifier/challenge generation + AS capability check
+        ├── tokenExchange.kt      # Token endpoint interaction (exchange code, error handling)
+        ├── authCodeFlow.kt       # Main Authorization Code flow handler (runAuthClient + interceptor)
+        ├── scopeHandling.kt      # Scope selection strategy + step-up 403 handling
+        ├── clientRegistration.kt # Client registration logic (pre-reg, CIMD, dynamic)
+        ├── JWTScenario.kt        # Client Credentials JWT scenario
+        └── basicScenario.kt      # Client Credentials Basic scenario
 ```
 
 ## Test Suites
@@ -74,13 +81,14 @@ conformance-test/
 
 Tests the conformance server against all server scenarios:
 
-- Lifecycle — initialize, ping
-- Tools — text, image, audio, embedded, multiple, progress, logging, error, sampling, elicitation, dynamic,
-  reconnection, JSON Schema 2020-12
-- Resources — list, read-text, read-binary, templates, subscribe, dynamic
-- Prompts — simple, with-args, with-image, with-embedded-resource, dynamic
-- Completions — complete
-- Security — DNS rebinding protection
+| Category    | Scenarios                                                                                                                           |
+|-------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| Lifecycle   | initialize, ping                                                                                                                    |
+| Tools       | text, image, audio, embedded, multiple, progress, logging, error, sampling, elicitation, dynamic, reconnection, JSON Schema 2020-12 |
+| Resources   | list, read-text, read-binary, templates, subscribe, dynamic                                                                         |
+| Prompts     | simple, with-args, with-image, with-embedded-resource, dynamic                                                                      |
+| Completions | complete                                                                                                                            |
+| Security    | DNS rebinding protection                                                                                                            |
 
 ### Client Core Suite
 
@@ -93,14 +101,31 @@ Tests the conformance server against all server scenarios:
 
 ### Client Auth Suite
 
-15 OAuth Authorization Code scenarios + 2 Client Credentials scenarios (`jwt`, `basic`).
+16 OAuth Authorization Code scenarios + 2 Client Credentials scenarios (`jwt`, `basic`) = 18 total.
+
+> [!NOTE]
+> Auth scenarios are implemented using Ktor's `HttpClient` plugins (`HttpSend` interceptor,
+> `ktor-client-auth`) as a standalone OAuth client. They do not use the SDK's built-in auth support.
 
 ## Known SDK Limitations
 
-Some tests are expected to fail due to current SDK limitations:
+13 scenarios are expected to fail due to current SDK limitations (tracked in [
+`conformance-baseline.yml`](conformance-baseline.yml).
 
-- **`test_reconnection` / `sse-retry`** — cannot access JSONRPC request ID from tool handler to close SSE stream
-- **Resource templates** — SDK may not fully support template URI matching
-- **Tool logging/progress notifications** — StreamableHTTP may not route notifications to the correct SSE stream
+| Scenario                              | Suite  | Root Cause                                                                                                                                             |
+|---------------------------------------|--------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `tools-call-with-logging`             | server | Notifications from tool handlers have no `relatedRequestId`; transport routes them to the standalone SSE stream instead of the request-specific stream |
+| `tools-call-with-progress`            | server | *(same as above)*                                                                                                                                      |
+| `tools-call-sampling`                 | server | *(same as above)*                                                                                                                                      |
+| `tools-call-elicitation`              | server | *(same as above)*                                                                                                                                      |
+| `elicitation-sep1034-defaults`        | server | *(same as above)*                                                                                                                                      |
+| `elicitation-sep1330-enums`           | server | *(same as above)*                                                                                                                                      |
+| `resources-templates-read`            | server | SDK does not implement `addResourceTemplate()` with URI pattern matching; resources are looked up by exact URI                                         |
+| `initialize`                          | client | Conformance server sends a JSON-RPC response without `id`; `JSONRPCResponse.id` is non-nullable so deserialization fails                               |
+| `tools_call`                          | client | SSE GET session crashes on 404; transport only handles 405 as "SSE not supported"                                                                      |
+| `auth/scope-step-up`                  | client | *(same as `tools_call`)*                                                                                                                               |
+| `auth/scope-retry-limit`              | client | *(same as `tools_call`)*                                                                                                                               |
+| `elicitation-sep1034-client-defaults` | client | SDK does not fill in `default` values from the elicitation request schema before sending the response                                                  |
+| `sse-retry`                           | client | Transport does not respect the SSE `retry` field timing or send `Last-Event-ID` on reconnection                                                        |
 
 These failures reveal SDK gaps and are intentionally not fixed in this module.
