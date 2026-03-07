@@ -6,8 +6,8 @@
 
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" || exit 1; pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." || exit 1; pwd)"
 
 CONFORMANCE_VERSION="0.1.15"
 PORT="${MCP_PORT:-3001}"
@@ -18,6 +18,7 @@ CLIENT_DIST="$SCRIPT_DIR/build/install/conformance-test/bin/conformance-client"
 
 SERVER_PID=""
 
+# shellcheck disable=SC2317
 cleanup() {
     if [ -n "$SERVER_PID" ] && kill -0 "$SERVER_PID" 2>/dev/null; then
         echo "Stopping server (PID: $SERVER_PID)..."
@@ -29,9 +30,9 @@ trap cleanup EXIT
 
 build() {
     echo "Building conformance-test distributions..."
-    cd "$PROJECT_ROOT"
+    cd "$PROJECT_ROOT" || return 1
     ./gradlew :conformance-test:installDist --quiet
-    cd "$SCRIPT_DIR"
+    cd "$SCRIPT_DIR" || return 1
     echo "Build complete."
 }
 
