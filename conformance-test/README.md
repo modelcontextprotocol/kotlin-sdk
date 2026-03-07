@@ -110,7 +110,7 @@ Tests the conformance server against all server scenarios:
 
 ## Known SDK Limitations
 
-10 scenarios are expected to fail due to current SDK limitations (tracked in [
+9 scenarios are expected to fail due to current SDK limitations (tracked in [
 `conformance-baseline.yml`](conformance-baseline.yml).
 
 | Scenario                              | Suite  | Root Cause                                                                                                                                             |
@@ -122,7 +122,6 @@ Tests the conformance server against all server scenarios:
 | `elicitation-sep1034-defaults`        | server | *(same as above)*                                                                                                                                      |
 | `elicitation-sep1330-enums`           | server | *(same as above)*                                                                                                                                      |
 | `resources-templates-read`            | server | SDK does not implement `addResourceTemplate()` with URI pattern matching; resources are looked up by exact URI                                         |
-| `initialize`                          | client | Conformance server sends a JSON-RPC response without `id`; `JSONRPCResponse.id` is non-nullable so deserialization fails                               |
 | `elicitation-sep1034-client-defaults` | client | SDK does not fill in `default` values from the elicitation request schema before sending the response                                                  |
 | `sse-retry`                           | client | Transport does not respect the SSE `retry` field timing or send `Last-Event-ID` on reconnection                                                        |
 
