@@ -10,7 +10,6 @@ server:
   - resources-templates-read
 
 client:
-  - initialize
   - tools_call
   - elicitation-sep1034-client-defaults
   - sse-retry
