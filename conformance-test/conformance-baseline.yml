@@ -11,8 +11,5 @@ server:
 
 client:
   - initialize
-  - tools_call
   - elicitation-sep1034-client-defaults
   - sse-retry
-  - auth/scope-step-up
-  - auth/scope-retry-limit

@@ -231,9 +231,9 @@ public class StreamableHttpClientTransport(
             val responseStatus = e.response?.status
             val responseContentType = e.response?.contentType()
 
-            // 405 means server doesn't support SSE at GET endpoint - this is expected and valid
-            if (responseStatus == HttpStatusCode.MethodNotAllowed) {
-                logger.info { "Server returned 405 for GET/SSE, stream disabled." }
+            // 404 or 405 means server doesn't support SSE at GET endpoint - this is expected and valid
+            if (responseStatus == HttpStatusCode.NotFound || responseStatus == HttpStatusCode.MethodNotAllowed) {
+                logger.info { "Server returned ${responseStatus.value} for GET/SSE, stream disabled." }
                 return
             }
 
