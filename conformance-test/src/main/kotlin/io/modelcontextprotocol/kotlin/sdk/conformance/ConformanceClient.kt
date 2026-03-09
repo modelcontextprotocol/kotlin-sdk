@@ -3,6 +3,7 @@ package io.modelcontextprotocol.kotlin.sdk.conformance
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.sse.SSE
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.ClientOptions
@@ -18,6 +19,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlin.system.exitProcess
+import kotlin.time.Duration.Companion.seconds
 
 private val logger = KotlinLogging.logger {}
 
@@ -73,7 +75,12 @@ fun main(args: Array<String>) {
 // ============================================================================
 
 private suspend fun runBasicClient(serverUrl: String) {
-    val httpClient = HttpClient(CIO) { install(SSE) }
+    val httpClient = HttpClient(CIO) {
+        install(SSE)
+        install(HttpTimeout) {
+            requestTimeoutMillis = 30.seconds.inWholeMilliseconds
+        }
+    }
     httpClient.use { httpClient ->
         val transport = StreamableHttpClientTransport(httpClient, serverUrl)
         val client = Client(
@@ -158,7 +165,12 @@ private suspend fun runElicitationDefaultsClient(serverUrl: String) {
 // ============================================================================
 
 private suspend fun runSSERetryClient(serverUrl: String) {
-    HttpClient(CIO) { install(SSE) }.use { httpClient ->
+    HttpClient(CIO) {
+        install(SSE)
+        install(HttpTimeout) {
+            requestTimeoutMillis = 30.seconds.inWholeMilliseconds
+        }
+    }.use { httpClient ->
         val transport = StreamableHttpClientTransport(httpClient, serverUrl)
         val client = Client(
             clientInfo = Implementation("sse-retry-test-client", "1.0.0"),
