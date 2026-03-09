@@ -21,34 +21,34 @@ standardized protocol interface.
 
 * [Overview](#overview)
 * [Installation](#installation)
-  * [Artifacts](#artifacts)
-  * [Gradle setup (JVM)](#gradle-setup-jvm)
-  * [Multiplatform](#multiplatform)
-  * [Ktor dependencies](#ktor-dependencies)
+    * [Artifacts](#artifacts)
+    * [Gradle setup (JVM)](#gradle-setup-jvm)
+    * [Multiplatform](#multiplatform)
+    * [Ktor dependencies](#ktor-dependencies)
 * [Quickstart](#quickstart)
-  * [Creating a Client](#creating-a-client)
-  * [Creating a Server](#creating-a-server)
+    * [Creating a Client](#creating-a-client)
+    * [Creating a Server](#creating-a-server)
 * [Core Concepts](#core-concepts)
-  * [MCP Primitives](#mcp-primitives)
-  * [Capabilities](#capabilities)
-    * [Server Capabilities](#server-capabilities)
-    * [Client Capabilities](#client-capabilities)
-  * [Server Features](#server-features)
-    * [Prompts](#prompts)
-    * [Resources](#resources)
-    * [Tools](#tools)
-    * [Completion](#completion)
-    * [Logging](#logging)
-    * [Pagination](#pagination)
-  * [Client Features](#client-features)
-    * [Roots](#roots)
-    * [Sampling](#sampling)
+    * [MCP Primitives](#mcp-primitives)
+    * [Capabilities](#capabilities)
+        * [Server Capabilities](#server-capabilities)
+        * [Client Capabilities](#client-capabilities)
+    * [Server Features](#server-features)
+        * [Prompts](#prompts)
+        * [Resources](#resources)
+        * [Tools](#tools)
+        * [Completion](#completion)
+        * [Logging](#logging)
+        * [Pagination](#pagination)
+    * [Client Features](#client-features)
+        * [Roots](#roots)
+        * [Sampling](#sampling)
 * [Transports](#transports)
-  * [STDIO Transport](#stdio-transport)
-  * [Streamable HTTP Transport](#streamable-http-transport)
-  * [SSE Transport](#sse-transport)
-  * [WebSocket Transport](#websocket-transport)
-  * [ChannelTransport (testing)](#channeltransport-testing)
+    * [STDIO Transport](#stdio-transport)
+    * [Streamable HTTP Transport](#streamable-http-transport)
+    * [SSE Transport](#sse-transport)
+    * [WebSocket Transport](#websocket-transport)
+    * [ChannelTransport (testing)](#channeltransport-testing)
 * [Connecting your server](#connecting-your-server)
 * [Examples](#examples)
 * [Documentation](#documentation)
@@ -183,17 +183,22 @@ fun main(args: Array<String>) = runBlocking {
 
 ### Creating a Server
 
-Create an MCP server that exposes a simple tool and runs on an embedded Ktor server with SSE transport:
+Create an MCP server that exposes a simple tool and runs on an embedded Ktor server with Streamable HTTP transport:
 
 <!--- CLEAR -->
+
 ```kotlin
+import io.ktor.serialization.kotlinx.json.json
+import io.ktor.server.application.install
 import io.ktor.server.cio.CIO
 import io.ktor.server.engine.embeddedServer
+import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
-import io.modelcontextprotocol.kotlin.sdk.server.mcp
+import io.modelcontextprotocol.kotlin.sdk.server.mcpStreamableHttp
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
@@ -228,7 +233,10 @@ fun main(args: Array<String>) {
     }
 
     embeddedServer(CIO, host = "127.0.0.1", port = port) {
-        mcp {
+        install(ContentNegotiation) {
+            json(McpJson)
+        }
+        mcpStreamableHttp {
             mcpServer
         }
     }.start(wait = true)
@@ -243,7 +251,7 @@ You can run the server and then connect to it using the client or test with the 
 npx -y @modelcontextprotocol/inspector
 ```
 
-In the inspector UI, connect to `http://localhost:3000`.
+In the inspector UI, connect to `http://localhost:3000/mcp`.
 
 ## Core Concepts
 
@@ -787,6 +795,7 @@ private class MyServer :
 
 fun main() {
 -->
+
 ```kotlin
 embeddedServer(CIO, port = 3000) {
     mcpStreamableHttp(path = "/api/mcp") {
@@ -794,6 +803,7 @@ embeddedServer(CIO, port = 3000) {
     }
 }.start(wait = true)
 ```
+
 <!--- SUFFIX 
 }
 -->
@@ -831,6 +841,7 @@ private class MyServer :
 
 fun main() {
 -->
+
 ```kotlin
 embeddedServer(CIO, port = 3000) {
     install(SSE)
@@ -841,6 +852,7 @@ embeddedServer(CIO, port = 3000) {
     }
 }.start(wait = true)
 ```
+
 <!--- SUFFIX 
 }
 -->
@@ -880,12 +892,13 @@ allowing for easy testing of MCP functionality without the need for network setu
 
 ## Examples
 
-| Scenario                 | Description                                                     | Example                                                                  |
-|--------------------------|-----------------------------------------------------------------|--------------------------------------------------------------------------|
-| Streamable HTTP server   | Full MCP server with prompts, resources, tools, completions     | [samples/kotlin-mcp-server](./samples/kotlin-mcp-server)                 |
-| STDIO weather server     | Minimal STDIO transport server exposing weather info and alerts | [samples/weather-stdio-server](./samples/weather-stdio-server)           |
-| Interactive STDIO client | MCP client that connects over STDIO and pipes requests to LLMs  | [samples/kotlin-mcp-client](./samples/kotlin-mcp-client)                 |
-| Streamable HTTP client   | MCP client demo in a runnable notebook                          | [samples/notebooks/McpClient.ipynb](./samples/notebooks/McpClient.ipynb) |
+| Scenario                      | Description                                                     | Example                                                                  |
+|-------------------------------|-----------------------------------------------------------------|--------------------------------------------------------------------------|
+| Streamable HTTP server        | Full MCP server with prompts, resources, tools, completions     | [samples/kotlin-mcp-server](./samples/kotlin-mcp-server)                 |
+| STDIO weather server          | Minimal STDIO transport server exposing weather info and alerts | [samples/weather-stdio-server](./samples/weather-stdio-server)           |
+| Interactive STDIO client      | MCP client that connects over STDIO and pipes requests to LLMs  | [samples/kotlin-mcp-client](./samples/kotlin-mcp-client)                 |
+| Simple Streamable HTTP server | Streamable HTTP server with optional auth                       | [samples/simple-streamable-server](./samples/simple-streamable-server)   |
+| Streamable HTTP client        | MCP client demo in a runnable notebook                          | [samples/notebooks/McpClient.ipynb](./samples/notebooks/McpClient.ipynb) |
 
 ## Documentation
 
@@ -899,4 +912,5 @@ Please see the [contribution guide](CONTRIBUTING.md) and the [Code of conduct](C
 
 ## License
 
-This project is licensed under Apache 2.0 for new contributions, with existing code under MIT—see the [LICENSE](LICENSE) file for details.
+This project is licensed under Apache 2.0 for new contributions, with existing code under MIT—see the [LICENSE](LICENSE)
+file for details.
