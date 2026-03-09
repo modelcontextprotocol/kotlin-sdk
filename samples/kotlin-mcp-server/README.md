@@ -4,7 +4,7 @@ A sample MCP server demonstrating multiple transport modes: STDIO, SSE (plain), 
 plugin).
 
 > **Note:** The SSE transport modes are provided for backward compatibility. For new projects,
-> consider using the [simple-streamable-server](../simple-streamable-server/) sample, which uses the
+> consider using the [simple-streamable-server](../simple-streamable-server) sample, which uses the
 > recommended Streamable HTTP transport.
 
 ## Overview
