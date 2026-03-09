@@ -892,13 +892,9 @@ allowing for easy testing of MCP functionality without the need for network setu
 
 ## Examples
 
-| Scenario                      | Description                                                     | Example                                                                  |
-|-------------------------------|-----------------------------------------------------------------|--------------------------------------------------------------------------|
-| Streamable HTTP server        | Full MCP server with prompts, resources, tools, completions     | [samples/kotlin-mcp-server](./samples/kotlin-mcp-server)                 |
-| STDIO weather server          | Minimal STDIO transport server exposing weather info and alerts | [samples/weather-stdio-server](./samples/weather-stdio-server)           |
-| Interactive STDIO client      | MCP client that connects over STDIO and pipes requests to LLMs  | [samples/kotlin-mcp-client](./samples/kotlin-mcp-client)                 |
-| Simple Streamable HTTP server | Streamable HTTP server with optional auth                       | [samples/simple-streamable-server](./samples/simple-streamable-server)   |
-| Streamable HTTP client        | MCP client demo in a runnable notebook                          | [samples/notebooks/McpClient.ipynb](./samples/notebooks/McpClient.ipynb) |
+The [samples](./samples) directory contains runnable projects demonstrating
+MCP server and client implementations with various transports.
+See the [samples overview](./samples/README.md) for a comparison table and detailed descriptions.
 
 ## Documentation
 
