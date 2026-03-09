@@ -25,7 +25,7 @@ private val logger = KotlinLogging.logger {}
 
 typealias ScenarioHandler = suspend (serverUrl: String) -> Unit
 
-val scenarioHandlers = mutableMapOf<String, ScenarioHandler>()
+internal val scenarioHandlers = mutableMapOf<String, ScenarioHandler>()
 
 // ============================================================================
 // Main entry point
@@ -71,17 +71,22 @@ fun main(args: Array<String>) {
 }
 
 // ============================================================================
+// Shared HTTP client factory
+// ============================================================================
+
+private fun createHttpClient(): HttpClient = HttpClient(CIO) {
+    install(SSE)
+    install(HttpTimeout) {
+        requestTimeoutMillis = 30.seconds.inWholeMilliseconds
+    }
+}
+
+// ============================================================================
 // Basic scenarios (initialize, tools_call)
 // ============================================================================
 
 private suspend fun runBasicClient(serverUrl: String) {
-    val httpClient = HttpClient(CIO) {
-        install(SSE)
-        install(HttpTimeout) {
-            requestTimeoutMillis = 30.seconds.inWholeMilliseconds
-        }
-    }
-    httpClient.use { httpClient ->
+    createHttpClient().use { httpClient ->
         val transport = StreamableHttpClientTransport(httpClient, serverUrl)
         val client = Client(
             clientInfo = Implementation("test-client", "1.0.0"),
@@ -93,8 +98,7 @@ private suspend fun runBasicClient(serverUrl: String) {
 }
 
 private suspend fun runToolsCallClient(serverUrl: String) {
-    val httpClient = HttpClient(CIO) { install(SSE) }
-    httpClient.use { httpClient ->
+    createHttpClient().use { httpClient ->
         val transport = StreamableHttpClientTransport(httpClient, serverUrl)
         val client = Client(
             clientInfo = Implementation("test-client", "1.0.0"),
@@ -127,7 +131,7 @@ private suspend fun runToolsCallClient(serverUrl: String) {
 // ============================================================================
 
 private suspend fun runElicitationDefaultsClient(serverUrl: String) {
-    HttpClient(CIO) { install(SSE) }.use { httpClient ->
+    createHttpClient().use { httpClient ->
         val transport = StreamableHttpClientTransport(httpClient, serverUrl)
         val client = Client(
             clientInfo = Implementation("elicitation-defaults-test-client", "1.0.0"),
@@ -165,12 +169,7 @@ private suspend fun runElicitationDefaultsClient(serverUrl: String) {
 // ============================================================================
 
 private suspend fun runSSERetryClient(serverUrl: String) {
-    HttpClient(CIO) {
-        install(SSE)
-        install(HttpTimeout) {
-            requestTimeoutMillis = 30.seconds.inWholeMilliseconds
-        }
-    }.use { httpClient ->
+    createHttpClient().use { httpClient ->
         val transport = StreamableHttpClientTransport(httpClient, serverUrl)
         val client = Client(
             clientInfo = Implementation("sse-retry-test-client", "1.0.0"),
