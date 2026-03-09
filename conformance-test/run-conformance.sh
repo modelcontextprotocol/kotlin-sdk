@@ -109,12 +109,24 @@ run_client_auth_suite() {
     echo "=========================================="
     echo "  Running CLIENT (auth) conformance tests"
     echo "=========================================="
+    local rc=0
     npx "@modelcontextprotocol/conformance@$CONFORMANCE_VERSION" client \
         --command "$CLIENT_DIST" \
         --suite auth \
         --output-dir "$output_dir" \
         --expected-failures "$SCRIPT_DIR/conformance-baseline.yml" \
-        "$@" || return 1
+        "$@" || rc=$?
+
+    local extra_scenarios=("auth/client-credentials-jwt" "auth/client-credentials-basic" "auth/cross-app-access-complete-flow")
+    for scenario in "${extra_scenarios[@]}"; do
+        npx "@modelcontextprotocol/conformance@$CONFORMANCE_VERSION" client \
+            --command "$CLIENT_DIST" \
+            --scenario "$scenario" \
+            --output-dir "$output_dir" \
+            --expected-failures "$SCRIPT_DIR/conformance-baseline.yml" \
+            "$@" || rc=$?
+    done
+    return $rc
 }
 
 # ============================================================================

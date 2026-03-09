@@ -11,6 +11,7 @@ import io.modelcontextprotocol.kotlin.sdk.client.StreamableHttpClientTransport
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import java.security.KeyFactory
@@ -33,10 +34,17 @@ internal suspend fun runClientCredentialsJwt(serverUrl: String) {
     }
 
     httpClient.use { client ->
-        val tokenEndpoint = discoverTokenEndpoint(client, serverUrl)
+        val resourceMetadata = discoverResourceMetadata(client, serverUrl)
+        val authServer = resourceMetadata["authorization_servers"]?.jsonArray?.firstOrNull()?.jsonPrimitive?.content
+            ?: error("No authorization_servers in resource metadata")
+        val oauthMetadata = fetchOAuthMetadata(client, authServer)
+        val tokenEndpoint = oauthMetadata["token_endpoint"]?.jsonPrimitive?.content
+            ?: error("No token_endpoint in AS metadata")
+        val issuer = oauthMetadata["issuer"]?.jsonPrimitive?.content
+            ?: error("No issuer in AS metadata")
 
         // Create JWT client assertion
-        val assertion = createJwtAssertion(clientId, tokenEndpoint, privateKeyPem, signingAlgorithm)
+        val assertion = createJwtAssertion(clientId, issuer, privateKeyPem, signingAlgorithm)
 
         // Exchange for token
         val tokenResponse = client.submitForm(
@@ -67,7 +75,7 @@ internal suspend fun runClientCredentialsJwt(serverUrl: String) {
 @OptIn(ExperimentalUuidApi::class)
 private fun createJwtAssertion(
     clientId: String,
-    tokenEndpoint: String,
+    audience: String,
     privateKeyPem: String,
     algorithm: String,
 ): String {
@@ -80,7 +88,7 @@ private fun createJwtAssertion(
     val payload = buildJsonObject {
         put("iss", clientId)
         put("sub", clientId)
-        put("aud", tokenEndpoint)
+        put("aud", audience)
         put("iat", now)
         put("exp", now + 300)
         put("jti", Uuid.random().toString())
