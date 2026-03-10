@@ -77,6 +77,8 @@ public class StreamableHttpClientTransport(
         replaceWith = ReplaceWith(
             "StreamableHttpClientTransport(client, url, " +
                 "ReconnectionOptions(initialReconnectionDelay = reconnectionTime ?: 1.seconds), requestBuilder)",
+            "kotlin.time.Duration.Companion.seconds",
+            "io.modelcontextprotocol.kotlin.sdk.client.ReconnectionOptions",
         ),
     )
     public constructor(
@@ -94,6 +96,7 @@ public class StreamableHttpClientTransport(
 
     private var sseSession: ClientSSESession? = null
     private var sseJob: Job? = null
+    private var reconnectJob: Job? = null
 
     private val scope by lazy { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
 
@@ -168,7 +171,7 @@ public class StreamableHttpClientTransport(
                     replayMessageId = if (message is JSONRPCRequest) message.id else null,
                 )
                 if (result.hasPrimingEvent && !result.receivedResponse) {
-                    scope.launch {
+                    reconnectJob = scope.launch {
                         try {
                             serverRetryDelay?.let { delay(it) }
                             startSseSession(
@@ -176,6 +179,8 @@ public class StreamableHttpClientTransport(
                                 replayMessageId = if (message is JSONRPCRequest) message.id else null,
                                 onResumptionToken = options?.onResumptionToken,
                             )
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             logger.debug { "POST-to-GET SSE reconnection failed: ${e.message}" }
                         }
@@ -219,6 +224,7 @@ public class StreamableHttpClientTransport(
 
         sseSession?.cancel()
         sseJob?.cancelAndJoin()
+        reconnectJob?.cancelAndJoin()
         scope.cancel()
     }
 
@@ -305,8 +311,12 @@ public class StreamableHttpClientTransport(
                     requestBuilder()
                 }
                 return true
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: SSEClientException) {
                 if (isNonRetryableSseError(e)) return false
+            } catch (e: Exception) {
+                logger.debug { "SSE reconnection attempt $attempt failed: ${e.message}" }
             }
         }
         return false
@@ -315,7 +325,7 @@ public class StreamableHttpClientTransport(
     private fun getNextReconnectionDelay(attempt: Int): Duration {
         serverRetryDelay?.let { return it }
         val delay = reconnectionOptions.initialReconnectionDelay *
-            reconnectionOptions.reconnectionDelayGrowFactor.pow(attempt)
+            reconnectionOptions.reconnectionDelayMultiplier.pow(attempt)
         return delay.coerceAtMost(reconnectionOptions.maxReconnectionDelay)
     }
 

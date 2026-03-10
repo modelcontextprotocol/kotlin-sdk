@@ -8,13 +8,13 @@ import kotlin.time.Duration.Companion.seconds
  *
  * @property initialReconnectionDelay The initial delay before the first reconnection attempt.
  * @property maxReconnectionDelay The maximum delay between reconnection attempts.
- * @property reconnectionDelayGrowFactor The factor by which the delay grows on each attempt.
+ * @property reconnectionDelayMultiplier The factor by which the delay grows on each attempt.
  * @property maxRetries The maximum number of reconnection attempts per disconnect.
  */
 public class ReconnectionOptions(
     public val initialReconnectionDelay: Duration = 1.seconds,
     public val maxReconnectionDelay: Duration = 30.seconds,
-    public val reconnectionDelayGrowFactor: Double = 1.5,
+    public val reconnectionDelayMultiplier: Double = 1.5,
     public val maxRetries: Int = 2,
 ) {
     override fun equals(other: Any?): Boolean {
@@ -23,7 +23,7 @@ public class ReconnectionOptions(
 
         other as ReconnectionOptions
 
-        if (reconnectionDelayGrowFactor != other.reconnectionDelayGrowFactor) return false
+        if (reconnectionDelayMultiplier != other.reconnectionDelayMultiplier) return false
         if (maxRetries != other.maxRetries) return false
         if (initialReconnectionDelay != other.initialReconnectionDelay) return false
         if (maxReconnectionDelay != other.maxReconnectionDelay) return false
@@ -32,7 +32,7 @@ public class ReconnectionOptions(
     }
 
     override fun hashCode(): Int {
-        var result = reconnectionDelayGrowFactor.hashCode()
+        var result = reconnectionDelayMultiplier.hashCode()
         result = 31 * result + maxRetries
         result = 31 * result + initialReconnectionDelay.hashCode()
         result = 31 * result + maxReconnectionDelay.hashCode()
@@ -40,5 +40,5 @@ public class ReconnectionOptions(
     }
 
     override fun toString(): String =
-        "ReconnectionOptions(initialReconnectionDelay=$initialReconnectionDelay, maxReconnectionDelay=$maxReconnectionDelay, reconnectionDelayGrowFactor=$reconnectionDelayGrowFactor, maxRetries=$maxRetries)"
+        "ReconnectionOptions(initialReconnectionDelay=$initialReconnectionDelay, maxReconnectionDelay=$maxReconnectionDelay, reconnectionDelayMultiplier=$reconnectionDelayMultiplier, maxRetries=$maxRetries)"
 }
