@@ -295,7 +295,7 @@ public class StreamableHttpClientTransport(
         }
     }
 
-    @Suppress("ReturnCount")
+    @Suppress("ReturnCount", "TooGenericExceptionCaught")
     private suspend fun reconnectSseSession(): Boolean {
         for (attempt in 0 until reconnectionOptions.maxRetries) {
             delay(getNextReconnectionDelay(attempt))
