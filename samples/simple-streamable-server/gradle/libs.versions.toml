@@ -1,0 +1,22 @@
+[versions]
+kotlin = "2.2.21"
+ktor = "3.2.3"
+mcp-kotlin = "0.9.0"
+slf4j = "2.0.17"
+shadow = "9.2.2"
+
+[libraries]
+ktor-bom = { group = "io.ktor", name = "ktor-bom", version.ref = "ktor" }
+ktor-server-netty = { group = "io.ktor", name = "ktor-server-netty" }
+ktor-server-cors = { group = "io.ktor", name = "ktor-server-cors" }
+ktor-server-content-negotiation = { group = "io.ktor", name = "ktor-server-content-negotiation" }
+ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json" }
+ktor-server-auth = { group = "io.ktor", name = "ktor-server-auth" }
+ktor-server-sse = { group = "io.ktor", name = "ktor-server-sse" }
+mcp-kotlin-server = { group = "io.modelcontextprotocol", name = "kotlin-sdk-server", version.ref = "mcp-kotlin" }
+slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
