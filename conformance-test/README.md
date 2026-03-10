@@ -110,7 +110,7 @@ Tests the conformance server against all server scenarios:
 
 ## Known SDK Limitations
 
-9 scenarios are expected to fail due to current SDK limitations (tracked in [
+8 scenarios are expected to fail due to current SDK limitations (tracked in [
 `conformance-baseline.yml`](conformance-baseline.yml).
 
 | Scenario                              | Suite  | Root Cause                                                                                                                                             |
@@ -123,6 +123,5 @@ Tests the conformance server against all server scenarios:
 | `elicitation-sep1330-enums`           | server | *(same as above)*                                                                                                                                      |
 | `resources-templates-read`            | server | SDK does not implement `addResourceTemplate()` with URI pattern matching; resources are looked up by exact URI                                         |
 | `elicitation-sep1034-client-defaults` | client | SDK does not fill in `default` values from the elicitation request schema before sending the response                                                  |
-| `sse-retry`                           | client | Transport does not respect the SSE `retry` field timing or send `Last-Event-ID` on reconnection                                                        |
 
 These failures reveal SDK gaps and are intentionally not fixed in this module.
