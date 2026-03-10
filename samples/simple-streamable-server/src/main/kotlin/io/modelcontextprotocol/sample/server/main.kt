@@ -1,7 +1,7 @@
 package io.modelcontextprotocol.sample.server
 
-import io.ktor.server.cio.CIO
 import io.ktor.server.engine.embeddedServer
+import io.ktor.server.netty.Netty
 
 fun main(vararg args: String) {
     val authEnabled = args.any { it == "--auth" }
@@ -22,7 +22,7 @@ fun main(vararg args: String) {
         println("Bearer auth enabled (token sourced from MCP_AUTH_TOKEN)")
     }
 
-    embeddedServer(CIO, host = "127.0.0.1", port = port) {
+    embeddedServer(Netty, host = "127.0.0.1", port = port) {
         configureServer(authToken)
     }.start(wait = true)
 }

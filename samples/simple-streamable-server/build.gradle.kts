@@ -15,7 +15,7 @@ application {
 dependencies {
     implementation(dependencies.platform(libs.ktor.bom))
     implementation(libs.mcp.kotlin.server)
-    implementation(libs.ktor.server.cio)
+    implementation(libs.ktor.server.netty)
     implementation(libs.ktor.server.auth)
     implementation(libs.ktor.server.cors)
     implementation(libs.ktor.server.content.negotiation)
