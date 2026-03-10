@@ -23,13 +23,13 @@ serve MCP over HTTP using either a manual Ktor routing setup or the built-in `mc
 ### STDIO mode (default)
 
 ```shell
-./gradlew :samples:kotlin-mcp-server:run
+./gradlew run
 ```
 
 Or explicitly:
 
 ```shell
-./gradlew :samples:kotlin-mcp-server:run --args="--stdio"
+./gradlew run --args="--stdio"
 ```
 
 Connect with the MCP Inspector:
@@ -41,7 +41,7 @@ npx @modelcontextprotocol/inspector --config samples/kotlin-mcp-server/mcp-inspe
 ### SSE with Ktor plugin
 
 ```shell
-./gradlew :samples:kotlin-mcp-server:run --args="--sse-server-ktor 3002"
+./gradlew run --args="--sse-server-ktor 3002"
 ```
 
 Connect with the MCP Inspector:
@@ -55,7 +55,7 @@ npx @modelcontextprotocol/inspector --config samples/kotlin-mcp-server/mcp-inspe
 > **Known issue:** This mode may not work correctly at this time.
 
 ```shell
-./gradlew :samples:kotlin-mcp-server:run --args="--sse-server 3001"
+./gradlew run --args="--sse-server 3001"
 ```
 
 Connect with the MCP Inspector:

@@ -21,13 +21,13 @@ Run the client, passing the path to an MCP server:
 
 ```shell
 # Connect to a JVM server
-./gradlew :samples:kotlin-mcp-client:run --args="path/to/server.jar"
+./gradlew run --args="path/to/server.jar"
 
 # Connect to a Python server
-./gradlew :samples:kotlin-mcp-client:run --args="path/to/server.py"
+./gradlew run --args="path/to/server.py"
 
 # Connect to a Node.js server
-./gradlew :samples:kotlin-mcp-client:run --args="path/to/build/index.js"
+./gradlew run --args="path/to/build/index.js"
 ```
 
 > [!NOTE]

@@ -163,6 +163,8 @@ private fun Application.installCors(authEnabled: Boolean = false) {
         allowMethod(HttpMethod.Post)
         allowMethod(HttpMethod.Delete)
         allowNonSimpleContentTypes = true
+        allowHeader("Mcp-Session-Id")
+        allowHeader("Mcp-Protocol-Version")
         exposeHeader("Mcp-Session-Id")
         exposeHeader("Mcp-Protocol-Version")
         if (authEnabled) {

@@ -17,7 +17,7 @@ template, and a resource over HTTP, and optionally supports Bearer token authent
 ### Without authentication
 
 ```shell
-./gradlew :samples:simple-streamable-server:run
+./gradlew run
 ```
 
 The server starts on `http://localhost:3001/mcp` by default.
@@ -33,25 +33,24 @@ In the Inspector UI, select **Streamable HTTP** transport and enter `http://loca
 Pass a port number as an argument to change it:
 
 ```shell
-./gradlew :samples:simple-streamable-server:run --args="8080"
+./gradlew run --args="8080"
 ```
 
 ### With authentication
 
 ```shell
-MCP_AUTH_TOKEN=my-secret ./gradlew :samples:simple-streamable-server:run --args="--auth"
+MCP_AUTH_TOKEN=my-secret ./gradlew run --args="--auth"
 ```
 
 When `--auth` is passed, clients must include an `Authorization: Bearer <token>` header.
-The token is read from the `MCP_AUTH_TOKEN` environment variable (falls back to a hardcoded
-`demo-token-12345` if unset).
+The token is read from the `MCP_AUTH_TOKEN` environment variable (required when `--auth` is used).
 
 ### Authentication caveats
 
 This sample is intended **for demonstration only**. In production you should:
 
-- Use a proper identity provider instead of a hardcoded fallback token.
-- Restrict CORS origins — the sample uses `anyHost()`.
+- Use a proper identity provider instead of a static token.
+- Restrict CORS origins to your deployment domain — the sample allows all origins.
 - Serve the endpoint over HTTPS.
 
 ## MCP Capabilities

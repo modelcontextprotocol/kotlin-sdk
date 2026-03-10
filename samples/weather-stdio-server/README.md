@@ -20,7 +20,7 @@ launched as a subprocess by an MCP client or a desktop application like Claude D
 Run the server (it communicates via stdin/stdout):
 
 ```shell
-./gradlew :samples:weather-stdio-server:run
+./gradlew run
 ```
 
 ### MCP Inspector
@@ -29,7 +29,7 @@ Build the fat JAR first, then connect with the
 [MCP Inspector](https://modelcontextprotocol.io/docs/tools/inspector):
 
 ```shell
-./gradlew :samples:weather-stdio-server:build
+./gradlew build
 npx @modelcontextprotocol/inspector -- java -jar samples/weather-stdio-server/build/libs/weather-stdio-server-0.1.0-all.jar
 ```
 
