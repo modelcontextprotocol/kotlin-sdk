@@ -183,7 +183,9 @@ fun main(args: Array<String>) = runBlocking {
 
 ### Creating a Server
 
-Create an MCP server that exposes a simple tool and runs on an embedded Ktor server with Streamable HTTP transport:
+Create an MCP server that exposes a simple tool and runs on an embedded Ktor server with Streamable HTTP transport.
+For a full working project with all required dependencies, see
+the [simple-streamable-server](samples/simple-streamable-server) sample.
 
 <!--- CLEAR -->
 

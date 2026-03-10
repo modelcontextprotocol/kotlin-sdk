@@ -268,7 +268,7 @@ private fun createMcpServer(): Server {
             ),
         ),
     ) { request ->
-        val name = request.arguments?.get("name")
+        val name = request.arguments?.get("name") ?: "World"
         GetPromptResult(
             messages = listOf(
                 PromptMessage(
