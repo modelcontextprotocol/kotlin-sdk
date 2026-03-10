@@ -24,7 +24,7 @@ subprojects {
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
     apply(plugin = "org.jetbrains.kotlinx.kover")
 
-    if (name != "conformance-test") {
+    if (name != "conformance-test" && name != "docs") {
         apply(plugin = "dev.detekt")
 
         detekt {

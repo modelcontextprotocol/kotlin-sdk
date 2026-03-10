@@ -34,7 +34,8 @@ public fun HttpClient.mcpStreamableHttpTransport(
 @Deprecated(
     "Use overload with ReconnectionOptions",
     replaceWith = ReplaceWith(
-        "mcpStreamableHttpTransport(url, ReconnectionOptions(initialReconnectionDelay = reconnectionTime ?: 1.seconds), requestBuilder)",
+        "mcpStreamableHttpTransport(url, " +
+            "ReconnectionOptions(initialReconnectionDelay = reconnectionTime ?: 1.seconds), requestBuilder)",
     ),
 )
 public fun HttpClient.mcpStreamableHttpTransport(
@@ -78,7 +79,8 @@ public suspend fun HttpClient.mcpStreamableHttp(
 @Deprecated(
     "Use overload with ReconnectionOptions",
     replaceWith = ReplaceWith(
-        "mcpStreamableHttp(url, ReconnectionOptions(initialReconnectionDelay = reconnectionTime ?: 1.seconds), requestBuilder)",
+        "mcpStreamableHttp(url, " +
+            "ReconnectionOptions(initialReconnectionDelay = reconnectionTime ?: 1.seconds), requestBuilder)",
     ),
 )
 public suspend fun HttpClient.mcpStreamableHttp(
@@ -86,8 +88,11 @@ public suspend fun HttpClient.mcpStreamableHttp(
     reconnectionTime: Duration?,
     requestBuilder: HttpRequestBuilder.() -> Unit = {},
 ): Client {
-    @Suppress("DEPRECATION")
-    val transport = mcpStreamableHttpTransport(url, reconnectionTime, requestBuilder)
+    val transport = mcpStreamableHttpTransport(
+        url,
+        ReconnectionOptions(initialReconnectionDelay = reconnectionTime ?: 1.seconds),
+        requestBuilder,
+    )
     val client = Client(Implementation(name = IMPLEMENTATION_NAME, version = LIB_VERSION))
     client.connect(transport)
     return client

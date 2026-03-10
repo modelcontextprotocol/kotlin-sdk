@@ -45,6 +45,7 @@ internal const val MCP_SESSION_ID_HEADER = "mcp-session-id"
 private const val MCP_PROTOCOL_VERSION_HEADER = "mcp-protocol-version"
 private const val MCP_RESUMPTION_TOKEN_HEADER = "Last-Event-ID"
 private const val MAXIMUM_MESSAGE_SIZE = 4 * 1024 * 1024 // 4 MB
+private const val MIN_PRIMING_EVENT_PROTOCOL_VERSION = "2025-11-25"
 
 /**
  * A holder for an active request call.
@@ -707,12 +708,15 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         session: ServerSSESession?,
         clientProtocolVersion: String? = null,
     ) {
-        val store = configuration.eventStore ?: return
-        val sseSession = session ?: return
-        if (clientProtocolVersion != null && clientProtocolVersion < "2025-11-25") return
+        val store = configuration.eventStore
+        if (store == null || session == null) return
+        // Priming events have empty data which older clients cannot handle.
+        // Only send priming events to clients with protocol version >= 2025-11-25
+        // which includes the fix for handling empty SSE data.
+        if (clientProtocolVersion != null && clientProtocolVersion < MIN_PRIMING_EVENT_PROTOCOL_VERSION) return
         try {
             val primingEventId = store.storeEvent(streamId, JSONRPCEmptyMessage)
-            sseSession.send(
+            session.send(
                 id = primingEventId,
                 retry = configuration.retryInterval?.inWholeMilliseconds,
                 data = "",

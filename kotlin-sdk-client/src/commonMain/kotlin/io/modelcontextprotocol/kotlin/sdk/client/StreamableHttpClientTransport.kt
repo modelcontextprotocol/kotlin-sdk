@@ -41,8 +41,8 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlin.concurrent.Volatile
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
-import kotlin.math.min
 import kotlin.math.pow
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -64,6 +64,7 @@ public class StreamableHttpError(public val code: Int? = null, message: String? 
  * for receiving messages.
  */
 @OptIn(ExperimentalAtomicApi::class)
+@Suppress("TooManyFunctions")
 public class StreamableHttpClientTransport(
     private val client: HttpClient,
     private val url: String,
@@ -74,7 +75,8 @@ public class StreamableHttpClientTransport(
     @Deprecated(
         "Use constructor with ReconnectionOptions",
         replaceWith = ReplaceWith(
-            "StreamableHttpClientTransport(client, url, ReconnectionOptions(initialReconnectionDelay = reconnectionTime ?: 1.seconds), requestBuilder)",
+            "StreamableHttpClientTransport(client, url, " +
+                "ReconnectionOptions(initialReconnectionDelay = reconnectionTime ?: 1.seconds), requestBuilder)",
         ),
     )
     public constructor(
@@ -95,38 +97,14 @@ public class StreamableHttpClientTransport(
 
     private val scope by lazy { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
 
+    @Volatile
     private var lastEventId: String? = null
+
+    @Volatile
     private var serverRetryDelay: Duration? = null
 
+    /** Result of SSE stream collection. Reconnect when [hasPrimingEvent] is true and [receivedResponse] is false. */
     private data class SseStreamResult(val hasPrimingEvent: Boolean, val receivedResponse: Boolean)
-
-    private fun getNextReconnectionDelay(attempt: Int): Duration {
-        serverRetryDelay?.let { return it }
-        val delayMs = reconnectionOptions.initialReconnectionDelay.inWholeMilliseconds *
-            reconnectionOptions.reconnectionDelayGrowFactor.pow(attempt)
-        return min(delayMs, reconnectionOptions.maxReconnectionDelay.inWholeMilliseconds.toDouble())
-            .toLong().milliseconds
-    }
-
-    /**
-     * Checks if an SSE session error is non-retryable (404, 405, JSON-only).
-     * Returns `true` if non-retryable (should stop trying), `false` otherwise.
-     */
-    private fun isNonRetryableSseError(e: SSEClientException): Boolean {
-        val responseStatus = e.response?.status
-        val responseContentType = e.response?.contentType()
-
-        if (responseStatus == HttpStatusCode.NotFound || responseStatus == HttpStatusCode.MethodNotAllowed) {
-            logger.info { "Server returned ${responseStatus.value} for GET/SSE, stream disabled." }
-            return true
-        }
-        if (responseContentType?.match(ContentType.Application.Json) == true) {
-            logger.info { "Server returned application/json for GET/SSE, using JSON-only mode." }
-            return true
-        }
-
-        return false
-    }
 
     override suspend fun initialize() {
         logger.debug { "Client transport is starting..." }
@@ -135,7 +113,7 @@ public class StreamableHttpClientTransport(
     /**
      * Sends a single message with optional resumption support
      */
-    @Suppress("ReturnCount", "CyclomaticComplexMethod")
+    @Suppress("ReturnCount", "CyclomaticComplexMethod", "LongMethod", "TooGenericExceptionCaught", "ThrowsCount")
     override suspend fun performSend(message: JSONRPCMessage, options: TransportSendOptions?) {
         logger.debug { "Client sending message via POST to $url: ${McpJson.encodeToString(message)}" }
 
@@ -210,7 +188,7 @@ public class StreamableHttpClientTransport(
                 if (response.contentType() == null && body.isBlank()) return
 
                 val ct = response.contentType()?.toString() ?: "<none>"
-                val error = StreamableHttpError(-1, "Unexpected content type: $$ct")
+                val error = StreamableHttpError(-1, "Unexpected content type: $ct")
                 _onError(error)
                 throw error
             }
@@ -271,7 +249,6 @@ public class StreamableHttpClientTransport(
         logger.debug { "Session terminated successfully" }
     }
 
-    @Suppress("CyclomaticComplexMethod", "NestedBlockDepth", "LongMethod")
     private suspend fun startSseSession(
         resumptionToken: String? = null,
         replayMessageId: RequestId? = null,
@@ -300,38 +277,68 @@ public class StreamableHttpClientTransport(
         }
 
         sseJob = scope.launch(CoroutineName("StreamableHttpTransport.collect#${hashCode()}")) {
+            @Suppress("LoopWithTooManyJumpStatements")
             while (isActive) {
                 val result = sseSession?.let { collectSse(it, replayMessageId, onResumptionToken) } ?: break
                 if (result.receivedResponse) break
-
-                var attempts = 0
-                var reconnected = false
-                while (isActive && attempts < reconnectionOptions.maxRetries) {
-                    delay(getNextReconnectionDelay(attempts))
-                    attempts++
-                    try {
-                        sseSession = client.sseSession(
-                            urlString = url,
-                            showRetryEvents = true,
-                        ) {
-                            method = HttpMethod.Get
-                            applyCommonHeaders(this)
-                            accept(ContentType.Application.Json)
-                            lastEventId?.let { headers.append(MCP_RESUMPTION_TOKEN_HEADER, it) }
-                            requestBuilder()
-                        }
-                        reconnected = true
-                        break
-                    } catch (e: SSEClientException) {
-                        if (isNonRetryableSseError(e)) return@launch
-                    }
-                }
-
-                if (!reconnected) {
+                if (!reconnectSseSession()) {
                     _onError(StreamableHttpError(null, "Maximum reconnection attempts exceeded"))
                     break
                 }
             }
+        }
+    }
+
+    @Suppress("ReturnCount")
+    private suspend fun reconnectSseSession(): Boolean {
+        for (attempt in 0 until reconnectionOptions.maxRetries) {
+            delay(getNextReconnectionDelay(attempt))
+            try {
+                sseSession = client.sseSession(
+                    urlString = url,
+                    showRetryEvents = true,
+                ) {
+                    method = HttpMethod.Get
+                    applyCommonHeaders(this)
+                    accept(ContentType.Application.Json)
+                    lastEventId?.let { headers.append(MCP_RESUMPTION_TOKEN_HEADER, it) }
+                    requestBuilder()
+                }
+                return true
+            } catch (e: SSEClientException) {
+                if (isNonRetryableSseError(e)) return false
+            }
+        }
+        return false
+    }
+
+    private fun getNextReconnectionDelay(attempt: Int): Duration {
+        serverRetryDelay?.let { return it }
+        val delay = reconnectionOptions.initialReconnectionDelay *
+            reconnectionOptions.reconnectionDelayGrowFactor.pow(attempt)
+        return delay.coerceAtMost(reconnectionOptions.maxReconnectionDelay)
+    }
+
+    /**
+     * Checks if an SSE session error is non-retryable (404, 405, JSON-only).
+     * Returns `true` if non-retryable (should stop trying), `false` otherwise.
+     */
+    private fun isNonRetryableSseError(e: SSEClientException): Boolean {
+        val responseStatus = e.response?.status
+        val responseContentType = e.response?.contentType()
+
+        return when {
+            responseStatus == HttpStatusCode.NotFound || responseStatus == HttpStatusCode.MethodNotAllowed -> {
+                logger.info { "Server returned ${responseStatus.value} for GET/SSE, stream disabled." }
+                true
+            }
+
+            responseContentType?.match(ContentType.Application.Json) == true -> {
+                logger.info { "Server returned application/json for GET/SSE, using JSON-only mode." }
+                true
+            }
+
+            else -> false
         }
     }
 

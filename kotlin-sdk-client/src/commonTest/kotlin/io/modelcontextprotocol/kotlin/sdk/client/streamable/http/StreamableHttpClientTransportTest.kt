@@ -724,7 +724,8 @@ class StreamableHttpClientTransportTest {
                     appendLine("id: priming-1")
                     appendLine("event: message")
                     appendLine(
-                        """data: {"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"t1","progress":50}}""",
+                        """data: {"jsonrpc":"2.0","method":"notifications/progress",""" +
+                            """"params":{"progressToken":"t1","progress":50}}""",
                     )
                     appendLine()
                     // Notification without id
