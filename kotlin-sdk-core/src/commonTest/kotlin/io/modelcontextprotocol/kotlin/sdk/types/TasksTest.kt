@@ -49,8 +49,8 @@ class TasksTest {
             statusMessage = "Processing complete",
             createdAt = "2025-01-01T00:00:00Z",
             lastUpdatedAt = "2025-01-01T00:01:00Z",
-            ttl = 60000.0,
-            pollInterval = 5000.0,
+            ttl = 60000,
+            pollInterval = 5000,
         )
 
         verifySerialization(
@@ -63,8 +63,8 @@ class TasksTest {
               "statusMessage": "Processing complete",
               "createdAt": "2025-01-01T00:00:00Z",
               "lastUpdatedAt": "2025-01-01T00:01:00Z",
-              "ttl": 60000.0,
-              "pollInterval": 5000.0
+              "ttl": 60000,
+              "pollInterval": 5000
             }
             """.trimIndent(),
         )
@@ -79,8 +79,8 @@ class TasksTest {
               "statusMessage": "Connection lost",
               "createdAt": "2025-01-01T00:00:00Z",
               "lastUpdatedAt": "2025-01-01T00:02:00Z",
-              "ttl": 30000.0,
-              "pollInterval": 1000.0
+              "ttl": 30000,
+              "pollInterval": 1000
             }
         """.trimIndent()
 
@@ -91,8 +91,8 @@ class TasksTest {
         task.statusMessage shouldBe "Connection lost"
         task.createdAt shouldBe "2025-01-01T00:00:00Z"
         task.lastUpdatedAt shouldBe "2025-01-01T00:02:00Z"
-        task.ttl shouldBe 30000.0
-        task.pollInterval shouldBe 1000.0
+        task.ttl shouldBe 30000L
+        task.pollInterval shouldBe 1000L
     }
 
     // ========================================================================
@@ -114,14 +114,14 @@ class TasksTest {
 
     @Test
     fun `should serialize TaskMetadata with ttl`() {
-        val metadata = TaskMetadata(ttl = 120000.0)
+        val metadata = TaskMetadata(ttl = 120000)
 
         verifySerialization(
             metadata,
             McpJson,
             """
             {
-              "ttl": 120000.0
+              "ttl": 120000
             }
             """.trimIndent(),
         )
@@ -213,7 +213,7 @@ class TasksTest {
                 status = TaskStatus.Working,
                 createdAt = "2025-01-01T00:00:00Z",
                 lastUpdatedAt = "2025-01-01T00:00:00Z",
-                ttl = 60000.0,
+                ttl = 60000,
             ),
             meta = buildJsonObject { put("trace", "abc") },
         )
@@ -228,7 +228,7 @@ class TasksTest {
                 "status": "working",
                 "createdAt": "2025-01-01T00:00:00Z",
                 "lastUpdatedAt": "2025-01-01T00:00:00Z",
-                "ttl": 60000.0
+                "ttl": 60000
               },
               "_meta": {
                 "trace": "abc"
@@ -248,7 +248,7 @@ class TasksTest {
                 "statusMessage": "Need more data",
                 "createdAt": "2025-01-01T00:00:00Z",
                 "lastUpdatedAt": "2025-01-01T00:01:00Z",
-                "pollInterval": 2000.0
+                "pollInterval": 2000
               }
             }
         """.trimIndent()
@@ -257,7 +257,7 @@ class TasksTest {
         result.task.taskId shouldBe "task-5"
         result.task.status shouldBe TaskStatus.InputRequired
         result.task.statusMessage shouldBe "Need more data"
-        result.task.pollInterval shouldBe 2000.0
+        result.task.pollInterval shouldBe 2000L
         result.task.ttl.shouldBeNull()
         result.meta.shouldBeNull()
     }
@@ -343,8 +343,8 @@ class TasksTest {
             statusMessage = "Done",
             createdAt = "2025-01-01T00:00:00Z",
             lastUpdatedAt = "2025-01-01T00:05:00Z",
-            ttl = 300000.0,
-            pollInterval = 10000.0,
+            ttl = 300000,
+            pollInterval = 10000,
             meta = buildJsonObject { put("server", "main") },
         )
 
@@ -358,8 +358,8 @@ class TasksTest {
               "statusMessage": "Done",
               "createdAt": "2025-01-01T00:00:00Z",
               "lastUpdatedAt": "2025-01-01T00:05:00Z",
-              "ttl": 300000.0,
-              "pollInterval": 10000.0,
+              "ttl": 300000,
+              "pollInterval": 10000,
               "_meta": {
                 "server": "main"
               }
@@ -576,7 +576,7 @@ class TasksTest {
                     status = TaskStatus.Completed,
                     createdAt = "2025-01-01T00:00:00Z",
                     lastUpdatedAt = "2025-01-01T00:01:00Z",
-                    ttl = 60000.0,
+                    ttl = 60000,
                 ),
             ),
             nextCursor = "cursor-abc",
@@ -599,7 +599,7 @@ class TasksTest {
                   "status": "completed",
                   "createdAt": "2025-01-01T00:00:00Z",
                   "lastUpdatedAt": "2025-01-01T00:01:00Z",
-                  "ttl": 60000.0
+                  "ttl": 60000
                 }
               ],
               "nextCursor": "cursor-abc"
@@ -712,8 +712,8 @@ class TasksTest {
               "status": "cancelled",
               "createdAt": "2025-01-01T00:00:00Z",
               "lastUpdatedAt": "2025-01-01T00:04:00Z",
-              "ttl": 120000.0,
-              "pollInterval": 3000.0
+              "ttl": 120000,
+              "pollInterval": 3000
             }
         """.trimIndent()
 
@@ -722,8 +722,8 @@ class TasksTest {
         result.taskId shouldBe "task-42"
         result.status shouldBe TaskStatus.Cancelled
         result.statusMessage.shouldBeNull()
-        result.ttl shouldBe 120000.0
-        result.pollInterval shouldBe 3000.0
+        result.ttl shouldBe 120000L
+        result.pollInterval shouldBe 3000L
     }
 
     // ========================================================================

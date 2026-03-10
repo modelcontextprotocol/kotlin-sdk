@@ -24,8 +24,8 @@ public sealed interface TaskFields {
     public val statusMessage: String?
     public val createdAt: String
     public val lastUpdatedAt: String
-    public val ttl: Double?
-    public val pollInterval: Double?
+    public val ttl: Long?
+    public val pollInterval: Long?
 }
 
 /**
@@ -48,8 +48,8 @@ public data class Task(
     override val statusMessage: String? = null,
     override val createdAt: String,
     override val lastUpdatedAt: String,
-    override val ttl: Double?,
-    override val pollInterval: Double? = null,
+    override val ttl: Long?,
+    override val pollInterval: Long? = null,
 ) : TaskFields
 
 /**
@@ -59,7 +59,7 @@ public data class Task(
  * @property ttl Requested duration in milliseconds to retain task from creation.
  */
 @Serializable
-public data class TaskMetadata(val ttl: Double? = null)
+public data class TaskMetadata(val ttl: Long? = null)
 
 /**
  * The status of a task.
@@ -170,8 +170,8 @@ public data class GetTaskResult(
     override val statusMessage: String? = null,
     override val createdAt: String,
     override val lastUpdatedAt: String,
-    override val ttl: Double?,
-    override val pollInterval: Double? = null,
+    override val ttl: Long?,
+    override val pollInterval: Long? = null,
     @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : ClientResult,

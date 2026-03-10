@@ -2049,27 +2049,27 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/GetTaskRequestParams
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/GetTaskResult : io/modelcontextprotocol/kotlin/sdk/types/ClientResult, io/modelcontextprotocol/kotlin/sdk/types/ServerResult, io/modelcontextprotocol/kotlin/sdk/types/TaskFields {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskResult$Companion;
-	public fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lkotlinx/serialization/json/JsonObject;)V
-	public synthetic fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;Lkotlinx/serialization/json/JsonObject;)V
+	public synthetic fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/lang/String;
 	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Ljava/lang/Double;
-	public final fun component7 ()Ljava/lang/Double;
+	public final fun component6 ()Ljava/lang/Long;
+	public final fun component7 ()Ljava/lang/Long;
 	public final fun component8 ()Lkotlinx/serialization/json/JsonObject;
-	public final fun copy (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskResult;
-	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskResult;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskResult;
+	public final fun copy (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskResult;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskResult;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/GetTaskResult;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getCreatedAt ()Ljava/lang/String;
 	public fun getLastUpdatedAt ()Ljava/lang/String;
 	public fun getMeta ()Lkotlinx/serialization/json/JsonObject;
-	public fun getPollInterval ()Ljava/lang/Double;
+	public fun getPollInterval ()Ljava/lang/Long;
 	public fun getStatus ()Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;
 	public fun getStatusMessage ()Ljava/lang/String;
 	public fun getTaskId ()Ljava/lang/String;
-	public fun getTtl ()Ljava/lang/Double;
+	public fun getTtl ()Ljava/lang/Long;
 	public fun get_meta ()Lkotlinx/serialization/json/JsonObject;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -4728,25 +4728,25 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/SubscribeRequestPara
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/Task : io/modelcontextprotocol/kotlin/sdk/types/TaskFields {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/Task$Companion;
-	public fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;)V
-	public synthetic fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;)V
+	public synthetic fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/lang/String;
 	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Ljava/lang/Double;
-	public final fun component7 ()Ljava/lang/Double;
-	public final fun copy (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;)Lio/modelcontextprotocol/kotlin/sdk/types/Task;
-	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/Task;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/Task;
+	public final fun component6 ()Ljava/lang/Long;
+	public final fun component7 ()Ljava/lang/Long;
+	public final fun copy (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;)Lio/modelcontextprotocol/kotlin/sdk/types/Task;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/Task;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/Task;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getCreatedAt ()Ljava/lang/String;
 	public fun getLastUpdatedAt ()Ljava/lang/String;
-	public fun getPollInterval ()Ljava/lang/Double;
+	public fun getPollInterval ()Ljava/lang/Long;
 	public fun getStatus ()Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;
 	public fun getStatusMessage ()Ljava/lang/String;
 	public fun getTaskId ()Ljava/lang/String;
-	public fun getTtl ()Ljava/lang/Double;
+	public fun getTtl ()Ljava/lang/Long;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -4769,23 +4769,23 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/Task$Companion {
 public abstract interface class io/modelcontextprotocol/kotlin/sdk/types/TaskFields {
 	public abstract fun getCreatedAt ()Ljava/lang/String;
 	public abstract fun getLastUpdatedAt ()Ljava/lang/String;
-	public abstract fun getPollInterval ()Ljava/lang/Double;
+	public abstract fun getPollInterval ()Ljava/lang/Long;
 	public abstract fun getStatus ()Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;
 	public abstract fun getStatusMessage ()Ljava/lang/String;
 	public abstract fun getTaskId ()Ljava/lang/String;
-	public abstract fun getTtl ()Ljava/lang/Double;
+	public abstract fun getTtl ()Ljava/lang/Long;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/TaskMetadata {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/TaskMetadata$Companion;
 	public fun <init> ()V
-	public fun <init> (Ljava/lang/Double;)V
-	public synthetic fun <init> (Ljava/lang/Double;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/Double;
-	public final fun copy (Ljava/lang/Double;)Lio/modelcontextprotocol/kotlin/sdk/types/TaskMetadata;
-	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/TaskMetadata;Ljava/lang/Double;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/TaskMetadata;
+	public fun <init> (Ljava/lang/Long;)V
+	public synthetic fun <init> (Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/Long;
+	public final fun copy (Ljava/lang/Long;)Lio/modelcontextprotocol/kotlin/sdk/types/TaskMetadata;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/TaskMetadata;Ljava/lang/Long;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/TaskMetadata;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getTtl ()Ljava/lang/Double;
+	public final fun getTtl ()Ljava/lang/Long;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -4854,27 +4854,27 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotificati
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotificationParams : io/modelcontextprotocol/kotlin/sdk/types/NotificationParams, io/modelcontextprotocol/kotlin/sdk/types/TaskFields {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotificationParams$Companion;
-	public fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lkotlinx/serialization/json/JsonObject;)V
-	public synthetic fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;Lkotlinx/serialization/json/JsonObject;)V
+	public synthetic fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/lang/String;
 	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Ljava/lang/Double;
-	public final fun component7 ()Ljava/lang/Double;
+	public final fun component6 ()Ljava/lang/Long;
+	public final fun component7 ()Ljava/lang/Long;
 	public final fun component8 ()Lkotlinx/serialization/json/JsonObject;
-	public final fun copy (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotificationParams;
-	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotificationParams;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotificationParams;
+	public final fun copy (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotificationParams;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotificationParams;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotificationParams;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getCreatedAt ()Ljava/lang/String;
 	public fun getLastUpdatedAt ()Ljava/lang/String;
 	public fun getMeta ()Lkotlinx/serialization/json/JsonObject;
-	public fun getPollInterval ()Ljava/lang/Double;
+	public fun getPollInterval ()Ljava/lang/Long;
 	public fun getStatus ()Lio/modelcontextprotocol/kotlin/sdk/types/TaskStatus;
 	public fun getStatusMessage ()Ljava/lang/String;
 	public fun getTaskId ()Ljava/lang/String;
-	public fun getTtl ()Ljava/lang/Double;
+	public fun getTtl ()Ljava/lang/Long;
 	public fun get_meta ()Lkotlinx/serialization/json/JsonObject;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -4895,10 +4895,6 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/TaskStatusNotificati
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/types/TasksKt {
-	public static final field RELATED_TASK_META_KEY Ljava/lang/String;
-}
-
 public final class io/modelcontextprotocol/kotlin/sdk/types/TaskSupport : java/lang/Enum {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/TaskSupport$Companion;
 	public static final field Forbidden Lio/modelcontextprotocol/kotlin/sdk/types/TaskSupport;
@@ -4911,6 +4907,10 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/TaskSupport : java/l
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/TaskSupport$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/TasksKt {
+	public static final field RELATED_TASK_META_KEY Ljava/lang/String;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/TextContent : io/modelcontextprotocol/kotlin/sdk/types/MediaContent {

@@ -388,8 +388,8 @@ public data class TaskStatusNotificationParams(
     override val statusMessage: String? = null,
     override val createdAt: String,
     override val lastUpdatedAt: String,
-    override val ttl: Double?,
-    override val pollInterval: Double? = null,
+    override val ttl: Long?,
+    override val pollInterval: Long? = null,
     @SerialName("_meta") override val meta: JsonObject? = null,
 ) : NotificationParams,
     TaskFields

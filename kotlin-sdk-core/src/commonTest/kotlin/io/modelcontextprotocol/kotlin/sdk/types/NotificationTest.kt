@@ -320,8 +320,8 @@ class NotificationTest {
                 statusMessage = "Processing data",
                 createdAt = "2025-01-01T00:00:00Z",
                 lastUpdatedAt = "2025-01-01T00:01:00Z",
-                ttl = 60000.0,
-                pollInterval = 5000.0,
+                ttl = 60000,
+                pollInterval = 5000,
                 meta = buildJsonObject { put("source", "worker-1") },
             ),
         )
@@ -338,8 +338,8 @@ class NotificationTest {
                 "statusMessage": "Processing data",
                 "createdAt": "2025-01-01T00:00:00Z",
                 "lastUpdatedAt": "2025-01-01T00:01:00Z",
-                "ttl": 60000.0,
-                "pollInterval": 5000.0,
+                "ttl": 60000,
+                "pollInterval": 5000,
                 "_meta": {
                   "source": "worker-1"
                 }
@@ -389,8 +389,8 @@ class NotificationTest {
                 "statusMessage": "Connection lost",
                 "createdAt": "2025-01-01T00:00:00Z",
                 "lastUpdatedAt": "2025-01-01T00:03:00Z",
-                "ttl": 30000.0,
-                "pollInterval": 1000.0
+                "ttl": 30000,
+                "pollInterval": 1000
               }
             }
         """.trimIndent()
@@ -404,8 +404,8 @@ class NotificationTest {
         assertEquals("Connection lost", params.statusMessage)
         assertEquals("2025-01-01T00:00:00Z", params.createdAt)
         assertEquals("2025-01-01T00:03:00Z", params.lastUpdatedAt)
-        assertEquals(30000.0, params.ttl)
-        assertEquals(1000.0, params.pollInterval)
+        assertEquals(30000L, params.ttl)
+        assertEquals(1000L, params.pollInterval)
         assertNull(params.meta)
     }
 
