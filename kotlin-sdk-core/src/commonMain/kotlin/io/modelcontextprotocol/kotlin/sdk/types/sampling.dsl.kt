@@ -262,7 +262,7 @@ public class SamplingMessageBuilder @PublishedApi internal constructor() {
     }
 
     @PublishedApi
-    internal fun build(): List<SamplingMessage> = messages
+    internal fun build(): List<SamplingMessage> = messages.toList() // Defensive copy
 }
 
 /**

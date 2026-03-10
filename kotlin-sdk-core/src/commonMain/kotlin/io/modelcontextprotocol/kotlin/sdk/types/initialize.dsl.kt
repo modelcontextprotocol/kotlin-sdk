@@ -204,3 +204,85 @@ public class InitializeRequestBuilder @PublishedApi internal constructor() : Req
         return InitializeRequest(params = params)
     }
 }
+
+// ============================================================================
+// Result Builders (Server-side)
+// ============================================================================
+
+/**
+ * Creates an [InitializeResult] using a type-safe DSL builder.
+ *
+ * Example:
+ * ```kotlin
+ * val result = buildInitializeResult {
+ *     protocolVersion = "2024-11-05"
+ *     capabilities {
+ *         prompts(listChanged = true)
+ *         resources(subscribe = true, listChanged = true)
+ *         tools(listChanged = true)
+ *     }
+ *     info("MyServer", "1.0.0")
+ *     instructions = "Use this server for..."
+ * }
+ * ```
+ */
+@OptIn(ExperimentalContracts::class)
+@ExperimentalMcpApi
+public inline fun buildInitializeResult(block: InitializeResultBuilder.() -> Unit): InitializeResult {
+    contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
+    return InitializeResultBuilder().apply(block).build()
+}
+
+/**
+ * DSL builder for constructing [InitializeResult] instances.
+ */
+@McpDsl
+public class InitializeResultBuilder @PublishedApi internal constructor() : ResultBuilder() {
+    public var protocolVersion: String = LATEST_PROTOCOL_VERSION
+    private var capabilitiesValue: ServerCapabilities? = null
+    private var serverInfoValue: Implementation? = null
+    public var instructions: String? = null
+
+    public fun capabilities(capabilities: ServerCapabilities) {
+        this.capabilitiesValue = capabilities
+    }
+
+    public fun info(
+        name: String,
+        version: String,
+        title: String? = null,
+        websiteUrl: String? = null,
+        icons: List<Icon>? = null,
+    ) {
+        serverInfoValue = Implementation(
+            name = name,
+            version = version,
+            title = title,
+            websiteUrl = websiteUrl,
+            icons = icons,
+        )
+    }
+
+    public fun info(info: Implementation) {
+        this.serverInfoValue = info
+    }
+
+    @PublishedApi
+    override fun build(): InitializeResult {
+        val capabilities = requireNotNull(capabilitiesValue) {
+            "Missing required field 'capabilities'. " +
+                "Use capabilities(ServerCapabilities(...)) to set server capabilities."
+        }
+        val serverInfo = requireNotNull(serverInfoValue) {
+            "Missing required field 'info'. Use info(\"serverName\", \"1.0.0\")"
+        }
+
+        return InitializeResult(
+            protocolVersion = protocolVersion,
+            capabilities = capabilities,
+            serverInfo = serverInfo,
+            instructions = instructions,
+            meta = meta,
+        )
+    }
+}
