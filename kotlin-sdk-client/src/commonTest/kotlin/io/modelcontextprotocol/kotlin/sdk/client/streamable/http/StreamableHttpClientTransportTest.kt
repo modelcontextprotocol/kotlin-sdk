@@ -23,9 +23,11 @@ import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
+import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -655,6 +657,202 @@ class StreamableHttpClientTransportTest {
             message.method shouldBe "notifications/progress"
         }
         receivedErrors shouldHaveSize 0
+    }
+
+    @Test
+    fun testInlineSseRetryParsing() = runTest {
+        val transport = createTransport { request ->
+            if (request.method == HttpMethod.Post) {
+                val sseContent = buildString {
+                    appendLine("retry: 5000")
+                    appendLine("id: ev-1")
+                    appendLine("event: message")
+                    appendLine("""data: {"jsonrpc":"2.0","id":"req-1","result":{"tools":[]}}""")
+                    appendLine()
+                }
+
+                respond(
+                    content = ByteReadChannel(sseContent),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(
+                        HttpHeaders.ContentType,
+                        ContentType.Text.EventStream.toString(),
+                    ),
+                )
+            } else {
+                respond("", HttpStatusCode.OK)
+            }
+        }
+
+        val receivedMessages = mutableListOf<JSONRPCMessage>()
+        val responseReceived = CompletableDeferred<Unit>()
+
+        transport.onMessage { message ->
+            receivedMessages.add(message)
+            if (message is JSONRPCResponse && !responseReceived.isCompleted) {
+                responseReceived.complete(Unit)
+            }
+        }
+
+        transport.start()
+
+        transport.send(
+            JSONRPCRequest(
+                id = "req-1",
+                method = "test",
+                params = buildJsonObject { },
+            ),
+        )
+
+        eventually {
+            responseReceived.await()
+        }
+
+        receivedMessages shouldHaveSize 1
+        val response = receivedMessages[0] as JSONRPCResponse
+        response.id shouldBe RequestId.StringId("req-1")
+
+        transport.close()
+    }
+
+    @Test
+    fun testInlineSseHasPrimingEventTracking() = runTest {
+        val transport = createTransport { request ->
+            if (request.method == HttpMethod.Post) {
+                val sseContent = buildString {
+                    // Event with id = priming event
+                    appendLine("id: priming-1")
+                    appendLine("event: message")
+                    appendLine(
+                        """data: {"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"t1","progress":50}}""",
+                    )
+                    appendLine()
+                    // Notification without id
+                    appendLine("event: message")
+                    appendLine("""data: {"jsonrpc":"2.0","method":"notifications/tools/list_changed"}""")
+                    appendLine()
+                }
+
+                respond(
+                    content = ByteReadChannel(sseContent),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(
+                        HttpHeaders.ContentType,
+                        ContentType.Text.EventStream.toString(),
+                    ),
+                )
+            } else {
+                respond("", HttpStatusCode.OK)
+            }
+        }
+
+        val receivedMessages = mutableListOf<JSONRPCMessage>()
+        val twoMessagesReceived = CompletableDeferred<Unit>()
+
+        transport.onMessage { message ->
+            receivedMessages.add(message)
+            if (receivedMessages.size >= 2 && !twoMessagesReceived.isCompleted) {
+                twoMessagesReceived.complete(Unit)
+            }
+        }
+
+        transport.start()
+
+        transport.send(
+            JSONRPCRequest(
+                id = "test-1",
+                method = "test",
+                params = buildJsonObject { },
+            ),
+        )
+
+        eventually {
+            twoMessagesReceived.await()
+        }
+
+        receivedMessages shouldHaveSize 2
+        // Both should be notifications (no JSONRPCResponse → POST-to-GET reconnect would be triggered)
+        receivedMessages[0].shouldBeInstanceOf<JSONRPCNotification>()
+        receivedMessages[1].shouldBeInstanceOf<JSONRPCNotification>()
+
+        transport.close()
+    }
+
+    @Test
+    fun testInlineSseResponseStopsReconnection() = runTest {
+        val transport = createTransport { request ->
+            if (request.method == HttpMethod.Post) {
+                val sseContent = buildString {
+                    appendLine("id: ev-1")
+                    appendLine("event: message")
+                    appendLine("""data: {"jsonrpc":"2.0","id":"req-1","result":{"tools":[]}}""")
+                    appendLine()
+                }
+
+                respond(
+                    content = ByteReadChannel(sseContent),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(
+                        HttpHeaders.ContentType,
+                        ContentType.Text.EventStream.toString(),
+                    ),
+                )
+            } else {
+                respond("", HttpStatusCode.OK)
+            }
+        }
+
+        val receivedMessages = mutableListOf<JSONRPCMessage>()
+        val responseReceived = CompletableDeferred<Unit>()
+
+        transport.onMessage { message ->
+            receivedMessages.add(message)
+            if (message is JSONRPCResponse && !responseReceived.isCompleted) {
+                responseReceived.complete(Unit)
+            }
+        }
+
+        transport.start()
+
+        transport.send(
+            JSONRPCRequest(
+                id = "req-1",
+                method = "tools/list",
+                params = buildJsonObject { },
+            ),
+        )
+
+        eventually {
+            responseReceived.await()
+        }
+
+        receivedMessages shouldHaveSize 1
+        // Response received → no reconnection triggered (hasPrimingEvent=true, receivedResponse=true)
+        val response = receivedMessages[0] as JSONRPCResponse
+        response.id shouldBe RequestId.StringId("req-1")
+
+        transport.close()
+    }
+
+    @Suppress("DEPRECATION")
+    @Test
+    fun testDeprecatedConstructorStillWorks() = runTest {
+        val mockEngine = MockEngine { _ ->
+            respond(
+                content = "",
+                status = HttpStatusCode.Accepted,
+            )
+        }
+        val httpClient = HttpClient(mockEngine) {
+            install(SSE)
+        }
+
+        val transport =
+            StreamableHttpClientTransport(httpClient, url = "http://localhost:8080/mcp", reconnectionTime = 2.seconds)
+
+        transport.start()
+        transport.send(JSONRPCNotification(method = "test"))
+        transport.close()
     }
 
     private suspend fun setupTransportAndCollectMessages(

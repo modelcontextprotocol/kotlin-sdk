@@ -388,7 +388,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             if (!configuration.enableJsonResponse) {
                 call.appendSseHeaders()
                 flushSse(session) // flush headers immediately
-                maybeSendPrimingEvent(streamId, session)
+                maybeSendPrimingEvent(streamId, session, call.request.header(MCP_PROTOCOL_VERSION_HEADER))
             }
 
             streamMutex.withLock {
@@ -451,7 +451,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         call.appendSseHeaders()
         flushSse(sseSession) // flush headers immediately
         streamsMapping[STANDALONE_SSE_STREAM_ID] = SessionContext(sseSession, call)
-        maybeSendPrimingEvent(STANDALONE_SSE_STREAM_ID, sseSession)
+        maybeSendPrimingEvent(STANDALONE_SSE_STREAM_ID, sseSession, call.request.header(MCP_PROTOCOL_VERSION_HEADER))
         sseSession.coroutineContext.job.invokeOnCompletion {
             streamsMapping.remove(STANDALONE_SSE_STREAM_ID)
         }
@@ -702,9 +702,14 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private suspend fun maybeSendPrimingEvent(streamId: String, session: ServerSSESession?) {
+    private suspend fun maybeSendPrimingEvent(
+        streamId: String,
+        session: ServerSSESession?,
+        clientProtocolVersion: String? = null,
+    ) {
         val store = configuration.eventStore ?: return
         val sseSession = session ?: return
+        if (clientProtocolVersion != null && clientProtocolVersion < "2025-11-25") return
         try {
             val primingEventId = store.storeEvent(streamId, JSONRPCEmptyMessage)
             sseSession.send(
