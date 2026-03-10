@@ -322,6 +322,7 @@ private fun selectClientResultDeserializer(element: JsonElement): Deserializatio
  * Selects the appropriate deserializer for server results based on JSON content.
  * Returns null if the structure doesn't match any known server result type.
  */
+@Suppress("CyclomaticComplexMethod")
 private fun selectServerResultDeserializer(element: JsonElement): DeserializationStrategy<ServerResult>? {
     val jsonObject = element.jsonObject
     return when {

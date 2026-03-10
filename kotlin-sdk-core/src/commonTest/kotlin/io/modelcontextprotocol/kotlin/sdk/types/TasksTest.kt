@@ -1,15 +1,15 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
+import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
 import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertIs
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 
 class TasksTest {
 
@@ -85,14 +85,14 @@ class TasksTest {
         """.trimIndent()
 
         val task = verifyDeserialization<Task>(McpJson, json)
-        assertIs<TaskFields>(task)
-        assertEquals("task-3", task.taskId)
-        assertEquals(TaskStatus.Failed, task.status)
-        assertEquals("Connection lost", task.statusMessage)
-        assertEquals("2025-01-01T00:00:00Z", task.createdAt)
-        assertEquals("2025-01-01T00:02:00Z", task.lastUpdatedAt)
-        assertEquals(30000.0, task.ttl)
-        assertEquals(1000.0, task.pollInterval)
+        task.shouldBeInstanceOf<TaskFields>()
+        task.taskId shouldBe "task-3"
+        task.status shouldBe TaskStatus.Failed
+        task.statusMessage shouldBe "Connection lost"
+        task.createdAt shouldBe "2025-01-01T00:00:00Z"
+        task.lastUpdatedAt shouldBe "2025-01-01T00:02:00Z"
+        task.ttl shouldBe 30000.0
+        task.pollInterval shouldBe 1000.0
     }
 
     // ========================================================================
@@ -158,8 +158,19 @@ class TasksTest {
     }
 
     @Test
-    fun `RELATED_TASK_META_KEY should have correct value`() {
-        assertEquals("io.modelcontextprotocol/related-task", RELATED_TASK_META_KEY)
+    fun `should deserialize RequestMeta with RelatedTaskMetadata`() {
+        val json = """
+            {
+              "io.modelcontextprotocol/related-task": {
+                "taskId": "786512e2-9e0d-44bd-8f29-789f320fe840"
+              }
+            }
+        """.trimIndent()
+
+        val meta = McpJson.decodeFromString<RequestMeta>(json)
+        val related = meta.relatedTask
+        related.shouldNotBeNull()
+        related.taskId shouldBe "786512e2-9e0d-44bd-8f29-789f320fe840"
     }
 
     // ========================================================================
@@ -243,12 +254,12 @@ class TasksTest {
         """.trimIndent()
 
         val result = verifyDeserialization<CreateTaskResult>(McpJson, json)
-        assertEquals("task-5", result.task.taskId)
-        assertEquals(TaskStatus.InputRequired, result.task.status)
-        assertEquals("Need more data", result.task.statusMessage)
-        assertEquals(2000.0, result.task.pollInterval)
-        assertNull(result.task.ttl)
-        assertNull(result.meta)
+        result.task.taskId shouldBe "task-5"
+        result.task.status shouldBe TaskStatus.InputRequired
+        result.task.statusMessage shouldBe "Need more data"
+        result.task.pollInterval shouldBe 2000.0
+        result.task.ttl.shouldBeNull()
+        result.meta.shouldBeNull()
     }
 
     // ========================================================================
@@ -315,9 +326,9 @@ class TasksTest {
         """.trimIndent()
 
         val request = verifyDeserialization<GetTaskRequest>(McpJson, json)
-        assertEquals(Method.Defined.TasksGet, request.method)
-        assertEquals("task-11", request.taskId)
-        assertNull(request.meta)
+        request.method shouldBe Method.Defined.TasksGet
+        request.taskId shouldBe "task-11"
+        request.meta.shouldBeNull()
     }
 
     // ========================================================================
@@ -369,13 +380,13 @@ class TasksTest {
         """.trimIndent()
 
         val result = verifyDeserialization<GetTaskResult>(McpJson, json)
-        assertIs<TaskFields>(result)
-        assertEquals("task-21", result.taskId)
-        assertEquals(TaskStatus.Working, result.status)
-        assertNull(result.statusMessage)
-        assertNull(result.ttl)
-        assertNull(result.pollInterval)
-        assertNull(result.meta)
+        result.shouldBeInstanceOf<TaskFields>()
+        result.taskId shouldBe "task-21"
+        result.status shouldBe TaskStatus.Working
+        result.statusMessage.shouldBeNull()
+        result.ttl.shouldBeNull()
+        result.pollInterval.shouldBeNull()
+        result.meta.shouldBeNull()
     }
 
     // ========================================================================
@@ -414,9 +425,9 @@ class TasksTest {
         """.trimIndent()
 
         val request = verifyDeserialization<GetTaskPayloadRequest>(McpJson, json)
-        assertEquals(Method.Defined.TasksResult, request.method)
-        assertEquals("task-31", request.taskId)
-        assertNull(request.meta)
+        request.method shouldBe Method.Defined.TasksResult
+        request.taskId shouldBe "task-31"
+        request.meta.shouldBeNull()
     }
 
     // ========================================================================
@@ -469,10 +480,10 @@ class TasksTest {
         """.trimIndent()
 
         val result = verifyDeserialization<GetTaskPayloadResult>(McpJson, json)
-        assertNotNull(result.meta)
-        assertEquals("task-42", result.meta?.get("origin")?.jsonPrimitive?.content)
-        assertNotNull(result["content"])
-        assertNotNull(result["isError"])
+        result.meta.shouldNotBeNull()
+        result.meta?.get("origin")?.jsonPrimitive?.content shouldBe "task-42"
+        result["content"].shouldNotBeNull()
+        result["isError"].shouldNotBeNull()
     }
 
     // ========================================================================
@@ -526,8 +537,8 @@ class TasksTest {
         """.trimIndent()
 
         val request = verifyDeserialization<ListTasksRequest>(McpJson, json)
-        assertEquals(Method.Defined.TasksList, request.method)
-        assertEquals("next-page", request.cursor)
+        request.method shouldBe Method.Defined.TasksList
+        request.cursor shouldBe "next-page"
     }
 
     // ========================================================================
@@ -614,12 +625,12 @@ class TasksTest {
         """.trimIndent()
 
         val result = verifyDeserialization<ListTasksResult>(McpJson, json)
-        assertEquals(1, result.tasks.size)
-        assertEquals("task-99", result.tasks[0].taskId)
-        assertEquals(TaskStatus.Cancelled, result.tasks[0].status)
-        assertEquals("User cancelled", result.tasks[0].statusMessage)
-        assertNull(result.tasks[0].ttl)
-        assertNull(result.nextCursor)
+        result.tasks.size shouldBe 1
+        result.tasks[0].taskId shouldBe "task-99"
+        result.tasks[0].status shouldBe TaskStatus.Cancelled
+        result.tasks[0].statusMessage shouldBe "User cancelled"
+        result.tasks[0].ttl.shouldBeNull()
+        result.nextCursor.shouldBeNull()
     }
 
     // ========================================================================
@@ -658,9 +669,9 @@ class TasksTest {
         """.trimIndent()
 
         val request = verifyDeserialization<CancelTaskRequest>(McpJson, json)
-        assertEquals(Method.Defined.TasksCancel, request.method)
-        assertEquals("task-41", request.taskId)
-        assertNull(request.meta)
+        request.method shouldBe Method.Defined.TasksCancel
+        request.taskId shouldBe "task-41"
+        request.meta.shouldBeNull()
     }
 
     // ========================================================================
@@ -707,12 +718,12 @@ class TasksTest {
         """.trimIndent()
 
         val result = verifyDeserialization<CancelTaskResult>(McpJson, json)
-        assertIs<TaskFields>(result)
-        assertEquals("task-42", result.taskId)
-        assertEquals(TaskStatus.Cancelled, result.status)
-        assertNull(result.statusMessage)
-        assertEquals(120000.0, result.ttl)
-        assertEquals(3000.0, result.pollInterval)
+        result.shouldBeInstanceOf<TaskFields>()
+        result.taskId shouldBe "task-42"
+        result.status shouldBe TaskStatus.Cancelled
+        result.statusMessage.shouldBeNull()
+        result.ttl shouldBe 120000.0
+        result.pollInterval shouldBe 3000.0
     }
 
     // ========================================================================
@@ -732,9 +743,9 @@ class TasksTest {
         """.trimIndent()
 
         val task = McpJson.decodeFromString<Task>(json)
-        assertEquals("task-100", task.taskId)
-        assertEquals(TaskStatus.Working, task.status)
-        assertNull(task.ttl)
+        task.taskId shouldBe "task-100"
+        task.status shouldBe TaskStatus.Working
+        task.ttl.shouldBeNull()
     }
 
     // ========================================================================
@@ -753,8 +764,8 @@ class TasksTest {
         )
 
         val related = meta.relatedTask
-        assertNotNull(related)
-        assertEquals("task-50", related.taskId)
+        related.shouldNotBeNull()
+        related.taskId shouldBe "task-50"
     }
 
     @Test
@@ -763,7 +774,7 @@ class TasksTest {
             buildJsonObject { put("progressToken", "pt-1") },
         )
 
-        assertNull(meta.relatedTask)
+        meta.relatedTask.shouldBeNull()
     }
 
     @Test
@@ -785,7 +796,7 @@ class TasksTest {
 
         val cancelResult: CancelTaskResult = uncheckedCast(result)
 
-        assertEquals("task-1", cancelResult.taskId)
-        assertEquals(TaskStatus.Cancelled, cancelResult.status)
+        cancelResult.taskId shouldBe "task-1"
+        cancelResult.status shouldBe TaskStatus.Cancelled
     }
 }
