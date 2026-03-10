@@ -29,6 +29,7 @@ jobs:
         sample:
           - kotlin-mcp-client
           - kotlin-mcp-server
+          - simple-streamable-server
           - weather-stdio-server
 
     name: Build Sample (${{ matrix.sample }})
