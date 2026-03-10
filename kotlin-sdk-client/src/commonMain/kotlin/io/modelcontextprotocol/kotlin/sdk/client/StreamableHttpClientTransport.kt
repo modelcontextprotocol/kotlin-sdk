@@ -41,8 +41,6 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlin.concurrent.Volatile
-import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.math.pow
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -58,12 +56,17 @@ private const val MCP_RESUMPTION_TOKEN_HEADER = "Last-Event-ID"
 public class StreamableHttpError(public val code: Int? = null, message: String? = null) :
     Exception("Streamable HTTP error: $message")
 
+private sealed interface ConnectResult {
+    data class Success(val session: ClientSSESession) : ConnectResult
+    data object NonRetryable : ConnectResult
+    data object Failed : ConnectResult
+}
+
 /**
  * Client transport for Streamable HTTP: this implements the MCP Streamable HTTP transport specification.
  * It will connect to a server using HTTP POST for sending messages and HTTP GET with Server-Sent Events
  * for receiving messages.
  */
-@OptIn(ExperimentalAtomicApi::class)
 @Suppress("TooManyFunctions")
 public class StreamableHttpClientTransport(
     private val client: HttpClient,
@@ -94,20 +97,17 @@ public class StreamableHttpClientTransport(
         private set
     public var protocolVersion: String? = null
 
-    private var sseSession: ClientSSESession? = null
     private var sseJob: Job? = null
-    private var reconnectJob: Job? = null
 
     private val scope by lazy { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
 
-    @Volatile
-    private var lastEventId: String? = null
-
-    @Volatile
-    private var serverRetryDelay: Duration? = null
-
-    /** Result of SSE stream collection. Reconnect when [hasPrimingEvent] is true and [receivedResponse] is false. */
-    private data class SseStreamResult(val hasPrimingEvent: Boolean, val receivedResponse: Boolean)
+    /** Result of an SSE stream collection. Reconnect when [hasPrimingEvent] is true and [receivedResponse] is false. */
+    private data class SseStreamResult(
+        val hasPrimingEvent: Boolean,
+        val receivedResponse: Boolean,
+        val lastEventId: String? = null,
+        val serverRetryDelay: Duration? = null,
+    )
 
     override suspend fun initialize() {
         logger.debug { "Client transport is starting..." }
@@ -165,26 +165,15 @@ public class StreamableHttpClientTransport(
             }
 
             ContentType.Text.EventStream -> {
-                val result = handleInlineSse(
-                    response,
-                    onResumptionToken = options?.onResumptionToken,
-                    replayMessageId = if (message is JSONRPCRequest) message.id else null,
-                )
+                val replayMessageId = if (message is JSONRPCRequest) message.id else null
+                val result = handleInlineSse(response, replayMessageId, options?.onResumptionToken)
                 if (result.hasPrimingEvent && !result.receivedResponse) {
-                    reconnectJob = scope.launch {
-                        try {
-                            serverRetryDelay?.let { delay(it) }
-                            startSseSession(
-                                resumptionToken = lastEventId,
-                                replayMessageId = if (message is JSONRPCRequest) message.id else null,
-                                onResumptionToken = options?.onResumptionToken,
-                            )
-                        } catch (e: CancellationException) {
-                            throw e
-                        } catch (e: Exception) {
-                            logger.debug { "POST-to-GET SSE reconnection failed: ${e.message}" }
-                        }
-                    }
+                    startSseSession(
+                        resumptionToken = result.lastEventId,
+                        replayMessageId = replayMessageId,
+                        onResumptionToken = options?.onResumptionToken,
+                        initialServerRetryDelay = result.serverRetryDelay,
+                    )
                 }
             }
 
@@ -218,13 +207,7 @@ public class StreamableHttpClientTransport(
 
     override suspend fun closeResources() {
         logger.debug { "Client transport closing." }
-
-        // Try to terminate session if we have one
-        terminateSession()
-
-        sseSession?.cancel()
         sseJob?.cancelAndJoin()
-        reconnectJob?.cancelAndJoin()
         scope.cancel()
     }
 
@@ -251,78 +234,94 @@ public class StreamableHttpClientTransport(
         }
 
         sessionId = null
-        lastEventId = null
         logger.debug { "Session terminated successfully" }
     }
 
-    private suspend fun startSseSession(
+    private fun startSseSession(
         resumptionToken: String? = null,
         replayMessageId: RequestId? = null,
         onResumptionToken: ((String) -> Unit)? = null,
+        initialServerRetryDelay: Duration? = null,
     ) {
-        sseSession?.cancel()
-        sseJob?.cancelAndJoin()
+        // Cancel-and-replace: cancel() signals the previous job, join() inside
+        // the new coroutine ensures it completes before we start collecting.
+        // This is intentionally non-suspend to avoid blocking performSend.
+        val previousJob = sseJob
+        previousJob?.cancel()
+        sseJob = scope.launch(CoroutineName("StreamableHttpTransport.collect#${hashCode()}")) {
+            previousJob?.join()
+            var lastEventId = resumptionToken
+            var serverRetryDelay = initialServerRetryDelay
+            var attempt = 0
+            var needsDelay = initialServerRetryDelay != null
 
+            @Suppress("LoopWithTooManyJumpStatements")
+            while (isActive) {
+                // Delay before (re)connection: skip only for first fresh SSE connection
+                if (needsDelay) {
+                    delay(getNextReconnectionDelay(attempt, serverRetryDelay))
+                }
+                needsDelay = true
+
+                // Connect
+                val session = when (val cr = connectSse(lastEventId)) {
+                    is ConnectResult.Success -> {
+                        attempt = 0
+                        cr.session
+                    }
+
+                    ConnectResult.NonRetryable -> return@launch
+
+                    ConnectResult.Failed -> {
+                        // Give up after maxRetries consecutive failed connection attempts
+                        if (++attempt >= reconnectionOptions.maxRetries) {
+                            _onError(StreamableHttpError(null, "Maximum reconnection attempts exceeded"))
+                            return@launch
+                        }
+                        continue
+                    }
+                }
+
+                // Collect
+                val result = collectSse(session, replayMessageId, onResumptionToken)
+                lastEventId = result.lastEventId ?: lastEventId
+                serverRetryDelay = result.serverRetryDelay ?: serverRetryDelay
+                if (result.receivedResponse) break
+            }
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun connectSse(lastEventId: String?): ConnectResult {
         logger.debug { "Client attempting to start SSE session at url: $url" }
-        try {
-            sseSession = client.sseSession(
-                urlString = url,
-                showRetryEvents = true,
-            ) {
+        return try {
+            val session = client.sseSession(urlString = url, showRetryEvents = true) {
                 method = HttpMethod.Get
                 applyCommonHeaders(this)
-                // sseSession will add ContentType.Text.EventStream automatically
                 accept(ContentType.Application.Json)
-                (resumptionToken ?: lastEventId)?.let { headers.append(MCP_RESUMPTION_TOKEN_HEADER, it) }
+                lastEventId?.let { headers.append(MCP_RESUMPTION_TOKEN_HEADER, it) }
                 requestBuilder()
             }
             logger.debug { "Client SSE session started successfully." }
-        } catch (e: SSEClientException) {
-            if (isNonRetryableSseError(e)) return
+            ConnectResult.Success(session)
+        } catch (e: CancellationException) {
             throw e
-        }
-
-        sseJob = scope.launch(CoroutineName("StreamableHttpTransport.collect#${hashCode()}")) {
-            @Suppress("LoopWithTooManyJumpStatements")
-            while (isActive) {
-                val result = sseSession?.let { collectSse(it, replayMessageId, onResumptionToken) } ?: break
-                if (result.receivedResponse) break
-                if (!reconnectSseSession()) {
-                    _onError(StreamableHttpError(null, "Maximum reconnection attempts exceeded"))
-                    break
-                }
+        } catch (e: SSEClientException) {
+            if (isNonRetryableSseError(e)) {
+                ConnectResult.NonRetryable
+            } else {
+                logger.debug { "SSE connection failed: ${e.message}" }
+                ConnectResult.Failed
             }
+        } catch (e: Exception) {
+            logger.debug { "SSE connection failed: ${e.message}" }
+            ConnectResult.Failed
         }
     }
 
-    @Suppress("ReturnCount", "TooGenericExceptionCaught")
-    private suspend fun reconnectSseSession(): Boolean {
-        for (attempt in 0 until reconnectionOptions.maxRetries) {
-            delay(getNextReconnectionDelay(attempt))
-            try {
-                sseSession = client.sseSession(
-                    urlString = url,
-                    showRetryEvents = true,
-                ) {
-                    method = HttpMethod.Get
-                    applyCommonHeaders(this)
-                    accept(ContentType.Application.Json)
-                    lastEventId?.let { headers.append(MCP_RESUMPTION_TOKEN_HEADER, it) }
-                    requestBuilder()
-                }
-                return true
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: SSEClientException) {
-                if (isNonRetryableSseError(e)) return false
-            } catch (e: Exception) {
-                logger.debug { "SSE reconnection attempt $attempt failed: ${e.message}" }
-            }
-        }
-        return false
-    }
-
-    private fun getNextReconnectionDelay(attempt: Int): Duration {
+    private fun getNextReconnectionDelay(attempt: Int, serverRetryDelay: Duration?): Duration {
+        // Per SSE specification, the server-sent `retry` field sets the reconnection time
+        // for all subsequent attempts, taking priority over exponential backoff.
         serverRetryDelay?.let { return it }
         val delay = reconnectionOptions.initialReconnectionDelay *
             reconnectionOptions.reconnectionDelayMultiplier.pow(attempt)
@@ -367,11 +366,13 @@ public class StreamableHttpClientTransport(
     ): SseStreamResult {
         var hasPrimingEvent = false
         var receivedResponse = false
+        var localLastEventId: String? = null
+        var localServerRetryDelay: Duration? = null
         try {
             session.incoming.collect { event ->
-                event.retry?.let { serverRetryDelay = it.milliseconds }
+                event.retry?.let { localServerRetryDelay = it.milliseconds }
                 event.id?.let {
-                    lastEventId = it
+                    localLastEventId = it
                     hasPrimingEvent = true
                     onResumptionToken?.invoke(it)
                 }
@@ -399,7 +400,7 @@ public class StreamableHttpClientTransport(
         } catch (t: Throwable) {
             _onError(t)
         }
-        return SseStreamResult(hasPrimingEvent, receivedResponse)
+        return SseStreamResult(hasPrimingEvent, receivedResponse, localLastEventId, localServerRetryDelay)
     }
 
     @Suppress("CyclomaticComplexMethod")
@@ -413,13 +414,15 @@ public class StreamableHttpClientTransport(
 
         var hasPrimingEvent = false
         var receivedResponse = false
+        var localLastEventId: String? = null
+        var localServerRetryDelay: Duration? = null
         val sb = StringBuilder()
         var id: String? = null
         var eventName: String? = null
 
         suspend fun dispatch(id: String?, eventName: String?, data: String) {
             id?.let {
-                lastEventId = it
+                localLastEventId = it
                 hasPrimingEvent = true
                 onResumptionToken?.invoke(it)
             }
@@ -466,10 +469,10 @@ public class StreamableHttpClientTransport(
                 line.startsWith("data:") -> sb.append(line.substringAfter("data:").trim())
 
                 line.startsWith("retry:") -> line.substringAfter("retry:").trim().toLongOrNull()?.let {
-                    serverRetryDelay = it.milliseconds
+                    localServerRetryDelay = it.milliseconds
                 }
             }
         }
-        return SseStreamResult(hasPrimingEvent, receivedResponse)
+        return SseStreamResult(hasPrimingEvent, receivedResponse, localLastEventId, localServerRetryDelay)
     }
 }
