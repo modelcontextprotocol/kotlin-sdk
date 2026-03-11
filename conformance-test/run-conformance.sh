@@ -64,6 +64,21 @@ stop_server() {
     fi
 }
 
+run_list_scenarios() {
+    local output_dir="$RESULTS_DIR/list"
+    mkdir -p "$output_dir"
+    echo ""
+    echo "=========================================="
+    echo "  List Available Scenarios"
+    echo "=========================================="
+    local rc=0
+    npx "@modelcontextprotocol/conformance@$CONFORMANCE_VERSION" list \
+        "$@" > "$output_dir/scenarios.txt" || rc=$?
+
+    cat "$output_dir/scenarios.txt"
+    return $rc
+}
+
 run_server_suite() {
     local output_dir="$RESULTS_DIR/server"
     mkdir -p "$output_dir"
@@ -138,7 +153,7 @@ shift 2>/dev/null || true
 
 if [ -z "$COMMAND" ]; then
     echo "Usage: $0 <command> [extra-args...]"
-    echo "Commands: server | client | client-auth | all"
+    echo "Commands: list | server | client | client-auth | all"
     exit 1
 fi
 
@@ -147,6 +162,9 @@ build
 EXIT_CODE=0
 
 case "$COMMAND" in
+    list)
+        run_list_scenarios "$@" || EXIT_CODE=1
+        ;;
     server)
         run_server_suite "$@" || EXIT_CODE=1
         ;;
@@ -163,7 +181,7 @@ case "$COMMAND" in
         ;;
     *)
         echo "Unknown command: $COMMAND"
-        echo "Commands: server | client | client-auth | all"
+        echo "Commands: list | server | client | client-auth | all"
         exit 1
         ;;
 esac

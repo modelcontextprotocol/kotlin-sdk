@@ -24,12 +24,13 @@ Run **all** suites (server, client core, client auth) from the project root:
 ./conformance-test/run-conformance.sh <command> [extra-args...]
 ```
 
-| Command       | What it does                                                                        |
-|---------------|-------------------------------------------------------------------------------------|
-| `server`      | Starts the Ktor conformance server, runs the server test suite against it           |
-| `client`      | Runs the client test suite (`initialize`, `tools_call`, `elicitation`, `sse-retry`) |
-| `client-auth` | Runs the client auth test suite (20 OAuth scenarios)                                |
-| `all`         | Runs all three suites sequentially                                                  |
+| Command       | What it does                                                                         |
+|---------------|--------------------------------------------------------------------------------------|
+| `list`        | [List scenarios available in MCP Conformance Test Framework][list-scenarios-command] |
+| `server`      | Starts the Ktor conformance server, runs the server test suite against it            |
+| `client`      | Runs the client test suite (`initialize`, `tools_call`, `elicitation`, `sse-retry`)  |
+| `client-auth` | Runs the client auth test suite (20 OAuth scenarios)                                 |
+| `all`         | Runs all three suites sequentially                                                   |
 
 Any `[extra-args]` are forwarded to the conformance runner (e.g. `--verbose`).
 
@@ -126,3 +127,5 @@ Tests the conformance server against all server scenarios:
 | `sse-retry`                           | client | Transport does not respect the SSE `retry` field timing or send `Last-Event-ID` on reconnection                                                        |
 
 These failures reveal SDK gaps and are intentionally not fixed in this module.
+
+[list-scenarios-command]: https://github.com/modelcontextprotocol/conformance/tree/main?tab=readme-ov-file#list-available-scenarios
