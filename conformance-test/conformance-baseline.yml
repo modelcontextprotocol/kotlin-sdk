@@ -11,4 +11,3 @@ server:
 
 client:
   - elicitation-sep1034-client-defaults
-  - sse-retry
