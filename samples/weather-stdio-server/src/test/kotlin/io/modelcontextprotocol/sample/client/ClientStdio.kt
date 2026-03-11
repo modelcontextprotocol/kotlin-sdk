@@ -44,7 +44,7 @@ fun main(): Unit = runBlocking {
 
     val alertResult =
         client.callTool(
-            name = "get_alert",
+            name = "get_alerts",
             arguments = mapOf("state" to "TX"),
         ).content.map { if (it is TextContent) it.text else it.toString() }
 

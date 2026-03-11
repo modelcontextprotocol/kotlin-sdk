@@ -57,8 +57,8 @@ Add the following to your Claude Desktop configuration:
 
 | Name           | Description                                                                              |
 |----------------|------------------------------------------------------------------------------------------|
-| `get_forecast` | Returns weather forecast for a given `latitude` / `longitude` using the weather.gov API. |
 | `get_alerts`   | Returns active weather alerts for a two-letter US `state` code (e.g. `CA`, `NY`).        |
+| `get_forecast` | Returns weather forecast for a given `latitude` / `longitude` using the weather.gov API. |
 
 ## Additional Resources
 

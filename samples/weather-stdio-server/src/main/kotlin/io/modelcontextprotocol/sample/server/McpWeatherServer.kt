@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.sample.server
 
 import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.http.ContentType
@@ -15,6 +16,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
+import io.modelcontextprotocol.kotlin.sdk.types.ToolAnnotations
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.runBlocking
@@ -32,47 +34,59 @@ import kotlinx.serialization.json.putJsonObject
  * weather alerts by state and weather forecasts by latitude/longitude.
  */
 fun runMcpServer() {
-    // Base URL for the Weather API
-    val baseUrl = "https://api.weather.gov"
+    createHttpClient().use { httpClient ->
+        val server = Server(
+            Implementation(
+                name = "weather",
+                version = "1.0.0",
+            ),
+            ServerOptions(
+                capabilities = ServerCapabilities(tools = ServerCapabilities.Tools(listChanged = true)),
+            ),
+        )
 
-    // Create an HTTP client with a default request configuration and JSON content negotiation
-    val httpClient = HttpClient {
-        defaultRequest {
-            url(baseUrl)
-            headers {
-                append("Accept", "application/geo+json")
-                append("User-Agent", "WeatherApiClient/1.0")
+        server.registerTools(httpClient)
+
+        val transport = StdioServerTransport(
+            System.`in`.asInput(),
+            System.out.asSink().buffered(),
+        )
+
+        runBlocking {
+            val session = server.createSession(transport)
+            val done = Job()
+            session.onClose {
+                done.complete()
             }
-            contentType(ContentType.Application.Json)
-        }
-        // Install content negotiation plugin for JSON serialization/deserialization
-        install(ContentNegotiation) {
-            json(
-                Json {
-                    ignoreUnknownKeys = true
-                    prettyPrint = true
-                },
-            )
+            done.join()
         }
     }
+}
 
-    // Create the MCP Server instance with a basic implementation
-    val server = Server(
-        Implementation(
-            name = "weather", // Tool name is "weather"
-            version = "1.0.0", // Version of the implementation
-        ),
-        ServerOptions(
-            capabilities = ServerCapabilities(tools = ServerCapabilities.Tools(listChanged = true)),
-        ),
-    )
+private fun createHttpClient(): HttpClient = HttpClient(CIO) {
+    defaultRequest {
+        url("https://api.weather.gov")
+        headers {
+            append("Accept", "application/geo+json")
+            append("User-Agent", "WeatherApiClient/1.0")
+        }
+        contentType(ContentType.Application.Json)
+    }
+    install(ContentNegotiation) {
+        json(
+            Json {
+                ignoreUnknownKeys = true
+                prettyPrint = true
+            },
+        )
+    }
+}
 
+private fun Server.registerTools(httpClient: HttpClient) {
     // Register a tool to fetch weather alerts by state
-    server.addTool(
+    addTool(
         name = "get_alerts",
-        description = """
-            Get weather alerts for a US state. Input is Two-letter US state code (e.g. CA, NY)
-        """.trimIndent(),
+        description = "Get weather alerts for a US state. Input is a two-letter US state code (e.g. CA, NY)",
         inputSchema = ToolSchema(
             properties = buildJsonObject {
                 putJsonObject("state") {
@@ -82,33 +96,62 @@ fun runMcpServer() {
             },
             required = listOf("state"),
         ),
+        toolAnnotations = ToolAnnotations(readOnlyHint = true, openWorldHint = true),
     ) { request ->
-        val state = request.arguments?.get("state")?.jsonPrimitive?.content ?: return@addTool CallToolResult(
-            content = listOf(TextContent("The 'state' parameter is required.")),
+        val state = request.arguments?.get("state")?.jsonPrimitive?.content
+            ?: return@addTool CallToolResult(
+                content = listOf(TextContent("The 'state' parameter is required.")),
+            )
+
+        if (state.length != 2) {
+            return@addTool CallToolResult(
+                content = listOf(TextContent("Invalid state code: '$state'. Must be a two-letter US state code.")),
+                isError = true,
+            )
+        }
+
+        val stateCode = state.uppercase()
+
+        httpClient.getAlerts(stateCode).fold(
+            onSuccess = { alerts ->
+                if (alerts.isEmpty()) {
+                    CallToolResult(content = listOf(TextContent("No active alerts for $stateCode")))
+                } else {
+                    val alertsText = "Active alerts for $stateCode:\n\n${alerts.joinToString("\n---\n")}"
+                    CallToolResult(content = listOf(TextContent(alertsText)))
+                }
+            },
+            onFailure = { e ->
+                CallToolResult(
+                    content = listOf(TextContent("Failed to retrieve alerts data: ${e.message}")),
+                    isError = true,
+                )
+            },
         )
-
-        val alerts = httpClient.getAlerts(state)
-
-        CallToolResult(content = alerts.map { TextContent(it) })
     }
 
     // Register a tool to fetch weather forecast by latitude and longitude
-    server.addTool(
+    addTool(
         name = "get_forecast",
-        description = """
-            Get weather forecast for a specific latitude/longitude
-        """.trimIndent(),
+        description = "Get weather forecast for a location. Note: only US locations are supported by the NWS API.",
         inputSchema = ToolSchema(
             properties = buildJsonObject {
                 putJsonObject("latitude") {
                     put("type", "number")
+                    put("description", "Latitude of the location")
+                    put("minimum", -90)
+                    put("maximum", 90)
                 }
                 putJsonObject("longitude") {
                     put("type", "number")
+                    put("description", "Longitude of the location")
+                    put("minimum", -180)
+                    put("maximum", 180)
                 }
             },
             required = listOf("latitude", "longitude"),
         ),
+        toolAnnotations = ToolAnnotations(readOnlyHint = true, openWorldHint = true),
     ) { request ->
         val latitude = request.arguments?.get("latitude")?.jsonPrimitive?.doubleOrNull
         val longitude = request.arguments?.get("longitude")?.jsonPrimitive?.doubleOrNull
@@ -118,23 +161,26 @@ fun runMcpServer() {
             )
         }
 
-        val forecast = httpClient.getForecast(latitude, longitude)
-
-        CallToolResult(content = forecast.map { TextContent(it) })
-    }
-
-    // Create a transport using standard IO for server communication
-    val transport = StdioServerTransport(
-        System.`in`.asInput(),
-        System.out.asSink().buffered(),
-    )
-
-    runBlocking {
-        val session = server.createSession(transport)
-        val done = Job()
-        session.onClose {
-            done.complete()
-        }
-        done.join()
+        httpClient.getForecast(latitude, longitude).fold(
+            onSuccess = { periods ->
+                if (periods.isEmpty()) {
+                    CallToolResult(content = listOf(TextContent("No forecast periods available")))
+                } else {
+                    val forecastText = periods.joinToString("\n---\n")
+                    CallToolResult(content = listOf(TextContent(forecastText)))
+                }
+            },
+            onFailure = { _ ->
+                CallToolResult(
+                    content = listOf(
+                        TextContent(
+                            "Failed to retrieve grid point data for coordinates: $latitude, $longitude. " +
+                                "This location may not be supported by the NWS API (only US locations are supported).",
+                        ),
+                    ),
+                    isError = true,
+                )
+            },
+        )
     }
 }
