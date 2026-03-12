@@ -1,0 +1,13 @@
+# Conformance test baseline - expected failures
+# Add entries here as tests are identified as known SDK limitations
+server:
+  - tools-call-with-logging
+  - tools-call-with-progress
+  - tools-call-sampling
+  - tools-call-elicitation
+  - elicitation-sep1034-defaults
+  - elicitation-sep1330-enums
+  - resources-templates-read
+
+client:
+  - elicitation-sep1034-client-defaults
