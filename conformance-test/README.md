@@ -114,16 +114,11 @@ Tests the conformance server against all server scenarios:
 8 scenarios are expected to fail due to current SDK limitations (tracked in [
 `conformance-baseline.yml`](conformance-baseline.yml).
 
-| Scenario                              | Suite  | Root Cause                                                                                                                                             |
-|---------------------------------------|--------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `tools-call-with-logging`             | server | Notifications from tool handlers have no `relatedRequestId`; transport routes them to the standalone SSE stream instead of the request-specific stream |
-| `tools-call-with-progress`            | server | *(same as above)*                                                                                                                                      |
-| `tools-call-sampling`                 | server | *(same as above)*                                                                                                                                      |
-| `tools-call-elicitation`              | server | *(same as above)*                                                                                                                                      |
-| `elicitation-sep1034-defaults`        | server | *(same as above)*                                                                                                                                      |
-| `elicitation-sep1330-enums`           | server | *(same as above)*                                                                                                                                      |
-| `resources-templates-read`            | server | SDK does not implement `addResourceTemplate()` with URI pattern matching; resources are looked up by exact URI                                         |
-| `elicitation-sep1034-client-defaults` | client | SDK does not fill in `default` values from the elicitation request schema before sending the response                                                  |
+| Scenario                              | Suite  | Root Cause                                                                                                     |
+|---------------------------------------|--------|----------------------------------------------------------------------------------------------------------------|
+| `elicitation-sep1330-enums`           | server | *(same as above)*                                                                                              |
+| `resources-templates-read`            | server | SDK does not implement `addResourceTemplate()` with URI pattern matching; resources are looked up by exact URI |
+| `elicitation-sep1034-client-defaults` | client | SDK does not fill in `default` values from the elicitation request schema before sending the response          |
 
 These failures reveal SDK gaps and are intentionally not fixed in this module.
 
