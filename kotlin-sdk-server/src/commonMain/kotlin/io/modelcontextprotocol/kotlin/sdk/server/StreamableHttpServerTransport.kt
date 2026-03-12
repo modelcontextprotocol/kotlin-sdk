@@ -28,6 +28,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.REQUEST_TIMEOUT
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.job
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -459,6 +460,9 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         sseSession.coroutineContext.job.invokeOnCompletion {
             streamsMapping.remove(STANDALONE_SSE_STREAM_ID)
         }
+        // Keep the SSE connection open until the client disconnects or the transport is closed.
+        // Without this, the Ktor sse{} handler returns immediately, closing the stream.
+        awaitCancellation()
     }
 
     public suspend fun handleDeleteRequest(call: ApplicationCall) {
