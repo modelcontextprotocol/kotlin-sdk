@@ -318,27 +318,22 @@ fun Server.registerConformanceTools() {
                         )
                     },
                 )
-                // Legacy titled (deprecated)
+                // Legacy titled (deprecated) - uses enum + enumNames arrays
                 put(
                     "legacyEnum",
                     buildJsonObject {
                         put("type", JsonPrimitive("string"))
                         put(
-                            "oneOf",
+                            "enum",
+                            JsonArray(listOf(JsonPrimitive("opt1"), JsonPrimitive("opt2"), JsonPrimitive("opt3"))),
+                        )
+                        put(
+                            "enumNames",
                             JsonArray(
                                 listOf(
-                                    buildJsonObject {
-                                        put("const", JsonPrimitive("opt1"))
-                                        put("title", JsonPrimitive("Option One"))
-                                    },
-                                    buildJsonObject {
-                                        put("const", JsonPrimitive("opt2"))
-                                        put("title", JsonPrimitive("Option Two"))
-                                    },
-                                    buildJsonObject {
-                                        put("const", JsonPrimitive("opt3"))
-                                        put("title", JsonPrimitive("Option Three"))
-                                    },
+                                    JsonPrimitive("Option One"),
+                                    JsonPrimitive("Option Two"),
+                                    JsonPrimitive("Option Three"),
                                 ),
                             ),
                         )
@@ -367,7 +362,7 @@ fun Server.registerConformanceTools() {
                         )
                     },
                 )
-                // Titled multi-select
+                // Titled multi-select - uses items.anyOf with const/title pairs
                 put(
                     "titledMulti",
                     buildJsonObject {
@@ -375,9 +370,8 @@ fun Server.registerConformanceTools() {
                         put(
                             "items",
                             buildJsonObject {
-                                put("type", JsonPrimitive("string"))
                                 put(
-                                    "oneOf",
+                                    "anyOf",
                                     JsonArray(
                                         listOf(
                                             buildJsonObject {
@@ -405,7 +399,7 @@ fun Server.registerConformanceTools() {
             "Please review and update the form fields with defaults",
             schema,
         )
-        CallToolResult(listOf(TextContent(result.content.toString())))
+        CallToolResult(listOf(TextContent("Elicitation completed: action=${result.action}, content=${result.content}")))
     }
 
     // 12. Dynamic tool
