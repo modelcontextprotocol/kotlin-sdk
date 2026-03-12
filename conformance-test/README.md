@@ -92,20 +92,6 @@ Tests the conformance server against all server scenarios:
 | Completions | complete                                                                                                                            |
 | Security    | DNS rebinding protection                                                                                                            |
 
-To capture the traffic between the client and server for troubleshooting,
-you can use tools like [Wireshark](https://www.wireshark.org/), 
-[ngrep](https://github.com/jpr5/ngrep), or [tcpdump](https://www.tcpdump.org/):
-
-```bash
-## brew install ngrep # Install ngrep if not already installed
-
-sudo ngrep -d lo0 -W byline -s 0 port 3001  # Capture request + response bodies (SSE streams)   
-sudo ngrep -d lo0 -O capture.pcap port 3001 # Write to pcap file for later analysis   
-
-## Alternative with tcpdump if ngrep isn't installed:                                                                                                            
-sudo tcpdump -i lo0 -A -s 0 'tcp port 3001'
-```
-
 ### Client Core Suite
 
 | Scenario                              | Description                                   |
