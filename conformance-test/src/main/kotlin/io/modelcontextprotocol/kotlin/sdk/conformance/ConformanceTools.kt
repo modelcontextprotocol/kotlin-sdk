@@ -1,5 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.conformance
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.types.AudioContent
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
@@ -32,6 +33,8 @@ internal const val PNG_BASE64 =
 
 // Minimal WAV (base64)
 internal const val WAV_BASE64 = "UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQIAAAA="
+
+private val logger = KotlinLogging.logger {}
 
 @Suppress("LongMethod")
 fun Server.registerConformanceTools() {
@@ -429,6 +432,7 @@ fun Server.registerConformanceTools() {
         name = "test_tool_with_logging",
         description = "test_tool_with_logging",
     ) {
+        logger.debug { "[test_tool_with_logging] Sending message 1" }
         sendLoggingMessage(
             LoggingMessageNotification(
                 LoggingMessageNotificationParams(
@@ -439,6 +443,7 @@ fun Server.registerConformanceTools() {
             ),
         )
         delay(50.milliseconds)
+        logger.debug { "[test_tool_with_logging] Sending message #2" }
         sendLoggingMessage(
             LoggingMessageNotification(
                 LoggingMessageNotificationParams(
@@ -449,6 +454,7 @@ fun Server.registerConformanceTools() {
             ),
         )
         delay(50.milliseconds)
+        logger.debug { "[test_tool_with_logging] Sending message 3" }
         sendLoggingMessage(
             LoggingMessageNotification(
                 LoggingMessageNotificationParams(
@@ -458,6 +464,7 @@ fun Server.registerConformanceTools() {
                 ),
             ),
         )
+
         CallToolResult(listOf(TextContent("Simple text content")))
     }
 
