@@ -371,21 +371,23 @@ internal object ServerResultPolymorphicSerializer :
  * Polymorphic serializer for [JSONRPCMessage] types.
  * Determines the message type based on the presence of specific fields:
  * - "error" -> JSONRPCError
- * - "result" -> JSONRPCResponse
+ * - "result" + "id" -> JSONRPCResponse
+ * - "result" -> JSONRPCEmptyMessage
  * - "method" + "id" -> JSONRPCRequest
  * - "method" -> JSONRPCNotification
  */
 internal object JSONRPCMessagePolymorphicSerializer :
     JsonContentPolymorphicSerializer<JSONRPCMessage>(JSONRPCMessage::class) {
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<JSONRPCMessage> {
-        val jsonObject = element.jsonObject
+        val jsonObj = element.jsonObject
         return when {
-            "error" in jsonObject -> JSONRPCError.serializer()
-            "result" in jsonObject -> JSONRPCResponse.serializer()
-            "method" in jsonObject && "id" in jsonObject -> JSONRPCRequest.serializer()
-            "method" in jsonObject -> JSONRPCNotification.serializer()
-            jsonObject.isEmpty() || jsonObject.keys == setOf("jsonrpc") -> JSONRPCEmptyMessage.serializer()
-            else -> throw SerializationException("Invalid JSONRPCMessage type: ${jsonObject.keys}")
+            "error" in jsonObj -> JSONRPCError.serializer()
+            "result" in jsonObj && "id" in jsonObj -> JSONRPCResponse.serializer()
+            "result" in jsonObj && jsonObj["result"]?.jsonObject?.isEmpty() == true -> JSONRPCEmptyMessage.serializer()
+            "method" in jsonObj && "id" in jsonObj -> JSONRPCRequest.serializer()
+            "method" in jsonObj -> JSONRPCNotification.serializer()
+            jsonObj.isEmpty() || jsonObj.keys == setOf("jsonrpc") -> JSONRPCEmptyMessage.serializer()
+            else -> throw SerializationException("Invalid JSONRPCMessage type: ${jsonObj.keys}")
         }
     }
 }

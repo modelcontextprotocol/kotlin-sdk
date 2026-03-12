@@ -92,6 +92,10 @@ Follow these rules to keep changes safe, comprehensible, and easy to maintain.
 - **mockk**: Mocking library
 - **Ktor MockEngine**: For HTTP client mocking (`io.ktor:ktor-client-mock`)
 - **Java tests**: Use JUnit5, Mockito, AssertJ core
+- **Serialization test utilities** (`io.modelcontextprotocol.kotlin.test.utils`):
+    - `verifySerialization(value, json, expectedJson)` — serializes, asserts match, round-trips back; use for most serialization tests
+    - `verifyDeserialization(json, payload)` — deserializes from JSON, re-serializes, asserts match; returns the object for further assertions
+    - Always test both empty/null/omitted and non-null cases for nullable fields; `McpJson` has `explicitNulls = false` so null properties must be absent from JSON, not `null`
 
 ### Kotest Patterns
 
