@@ -6,6 +6,8 @@ plugins {
 dependencies {
     implementation(project(":kotlin-sdk"))
     implementation(libs.ktor.server.cio)
+    implementation(libs.ktor.serialization)
+    implementation(libs.ktor.server.content.negotiation)
 }
 
 tasks.matching {

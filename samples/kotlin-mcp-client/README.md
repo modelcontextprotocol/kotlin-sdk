@@ -1,69 +1,50 @@
 # Kotlin MCP Client
 
-This project demonstrates how to build a Model Context Protocol (MCP) client in Kotlin that interacts with an MCP server
-via a STDIO transport layer while leveraging Anthropic's API for natural language processing. The client uses the MCP
-Kotlin SDK to communicate with an MCP server that exposes various tools, and it uses Anthropic's API to process user
-queries and integrate tool responses into the conversation.
-
-For more information about the MCP SDK and protocol, please refer to
-the [MCP documentation](https://modelcontextprotocol.io/introduction).
-
-## Prerequisites
-
-- **Java 17 or later**
-- **Gradle** (or the Gradle wrapper provided with the project)
-- An Anthropic API key set in your environment variable `ANTHROPIC_API_KEY`
-- Basic understanding of MCP concepts and Kotlin programming
+An interactive CLI client that connects to any MCP server over STDIO and pipes queries through
+Anthropic's Claude API.
 
 ## Overview
 
-The client application performs the following tasks:
+This sample demonstrates a complete MCP client workflow: launching an MCP server as a subprocess,
+discovering its tools, converting them to Anthropic's tool format, and running an interactive chat
+loop where Claude can call server tools on behalf of the user.
 
-- **Connecting to an MCP server** —
-  launches an MCP server process (implemented in JavaScript, Python, or Java) using STDIO transport.
-  It connects to the server, retrieves available tools, and converts them to Anthropic’s tool format.
-- **Processing queries** — 
-  accepts user queries, sends them to Anthropic’s API along with the registered tools, and handles responses.
-  If the response indicates a tool should be called, it invokes the corresponding MCP tool and continues the
-  conversation based on the tool’s result.
-- **Interactive chat loop** —
-  runs an interactive command-line loop, allowing users to continuously submit queries and receive responses.
+## Prerequisites
 
-## Building and Running
+- JDK 17+
+- An `ANTHROPIC_API_KEY` environment variable set with a valid Anthropic API key
+- An MCP server script to connect to (`.js`, `.py`, or `.jar`)
 
-Use the Gradle wrapper to build the application. In a terminal, run:
+## Build & Run
+
+Run the client, passing the path to an MCP server:
 
 ```shell
-./gradlew clean build
-```
+# Connect to a JVM server
+./gradlew run --args="path/to/server.jar"
 
-To run the client, execute the jar file and provide the path to your MCP server script.
+# Connect to a Python server
+./gradlew run --args="path/to/server.py"
 
-To run the client with any MCP server:
-
-```shell
-java -jar build/libs/<your-jar-name>.jar path/to/server.jar # jvm server
-java -jar build/libs/<your-jar-name>.jar path/to/server.py # python server
-java -jar build/libs/<your-jar-name>.jar path/to/build/index.js # node server
+# Connect to a Node.js server
+./gradlew run --args="path/to/build/index.js"
 ```
 
 > [!NOTE]
-> The client uses STDIO transport, so it launches the MCP server as a separate process.
+> The client uses STDIO transport, so it launches the MCP server as a subprocess.
 > Ensure the server script is executable and is a valid `.js`, `.py`, or `.jar` file.
 
-## Configuration for Anthropic
+## MCP Capabilities
 
-Ensure your Anthropic API key is available in your environment:
+From the **client** perspective, this sample demonstrates:
 
-```shell
-export ANTHROPIC_API_KEY=your_anthropic_api_key_here
-```
-
-The client uses `AnthropicOkHttpClient.fromEnv()` to automatically load the API key from `ANTHROPIC_API_KEY` and
-`ANTHROPIC_AUTH_TOKEN` environment variables.
+- **Tool discovery** — lists tools from the connected server and converts them to Anthropic's tool
+  format.
+- **Tool invocation** — when Claude's response requests a tool call, the client invokes the
+  corresponding MCP tool and feeds the result back into the conversation.
 
 ## Additional Resources
 
-- [MCP Specification](https://spec.modelcontextprotocol.io/)
+- [MCP Specification](https://modelcontextprotocol.io/specification/latest)
 - [Kotlin MCP SDK](https://github.com/modelcontextprotocol/kotlin-sdk)
-- [Anthropic Java SDK](https://github.com/anthropics/anthropic-sdk-java/tree/main)
+- [Anthropic Java SDK](https://github.com/anthropics/anthropic-sdk-java)
