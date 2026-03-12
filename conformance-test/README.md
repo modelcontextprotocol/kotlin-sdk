@@ -92,20 +92,6 @@ Tests the conformance server against all server scenarios:
 | Completions | complete                                                                                                                            |
 | Security    | DNS rebinding protection                                                                                                            |
 
-To capture the traffic between the client and server for troubleshooting,
-you can use tools like [Wireshark](https://www.wireshark.org/), 
-[ngrep](https://github.com/jpr5/ngrep), or [tcpdump](https://www.tcpdump.org/):
-
-```bash
-## brew install ngrep # Install ngrep if not already installed
-
-sudo ngrep -d lo0 -W byline -s 0 port 3001  # Capture request + response bodies (SSE streams)   
-sudo ngrep -d lo0 -O capture.pcap port 3001 # Write to pcap file for later analysis   
-
-## Alternative with tcpdump if ngrep isn't installed:                                                                                                            
-sudo tcpdump -i lo0 -A -s 0 'tcp port 3001'
-```
-
 ### Client Core Suite
 
 | Scenario                              | Description                                   |
@@ -125,15 +111,8 @@ sudo tcpdump -i lo0 -A -s 0 'tcp port 3001'
 
 ## Known SDK Limitations
 
-8 scenarios are expected to fail due to current SDK limitations (tracked in [
-`conformance-baseline.yml`](conformance-baseline.yml).
-
-| Scenario                              | Suite  | Root Cause                                                                                                     |
-|---------------------------------------|--------|----------------------------------------------------------------------------------------------------------------|
-| `elicitation-sep1330-enums`           | server | *(same as above)*                                                                                              |
-| `resources-templates-read`            | server | SDK does not implement `addResourceTemplate()` with URI pattern matching; resources are looked up by exact URI |
-| `elicitation-sep1034-client-defaults` | client | SDK does not fill in `default` values from the elicitation request schema before sending the response          |
-
+Scenarios, expected to fail due to current SDK limitations, are tracked in 
+[`conformance-baseline.yml`](conformance-baseline.yml).
 These failures reveal SDK gaps and are intentionally not fixed in this module.
 
 [list-scenarios-command]: https://github.com/modelcontextprotocol/conformance/tree/main?tab=readme-ov-file#list-available-scenarios
