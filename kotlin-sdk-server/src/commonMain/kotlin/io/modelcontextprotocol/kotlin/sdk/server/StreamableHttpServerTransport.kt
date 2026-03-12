@@ -28,6 +28,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.REQUEST_TIMEOUT
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.job
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -242,7 +243,15 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         }
 
         val isTerminated = message is JSONRPCResponse || message is JSONRPCError
-        if (!isTerminated) return
+        if (!isTerminated) {
+            if (configuration.enableJsonResponse) {
+                // In JSON response mode there is no per-request SSE stream, so route notifications
+                // that are logically associated with a request to the standalone GET SSE stream.
+                val standaloneStream = streamsMapping[STANDALONE_SSE_STREAM_ID]
+                standaloneStream?.let { emitOnStream(STANDALONE_SSE_STREAM_ID, it.session, message) }
+            }
+            return
+        }
 
         requestToResponseMapping[responseRequestId!!] = message
         val relatedIds = requestToStreamMapping.filterValues { it == streamId }.keys
@@ -411,14 +420,9 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
 
     @Suppress("ReturnCount")
     public suspend fun handleGetRequest(session: ServerSSESession?, call: ApplicationCall) {
-        if (configuration.enableJsonResponse) {
-            call.reject(
-                HttpStatusCode.MethodNotAllowed,
-                RPCError.ErrorCode.CONNECTION_CLOSED,
-                "Method not allowed.",
-            )
-            return
-        }
+        // NOTE: enableJsonResponse only controls how POST responses are delivered (JSON vs. SSE).
+        // The standalone GET SSE stream is always supported — it is the only channel available
+        // for server-to-client notifications when enableJsonResponse = true.
         val sseSession = session ?: error("Server session can't be null for streaming GET requests")
 
         val acceptHeader = call.request.header(HttpHeaders.Accept)
@@ -456,6 +460,9 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         sseSession.coroutineContext.job.invokeOnCompletion {
             streamsMapping.remove(STANDALONE_SSE_STREAM_ID)
         }
+        // Keep the SSE connection open until the client disconnects or the transport is closed.
+        // Without this, the Ktor sse{} handler returns immediately, closing the stream.
+        awaitCancellation()
     }
 
     public suspend fun handleDeleteRequest(call: ApplicationCall) {
