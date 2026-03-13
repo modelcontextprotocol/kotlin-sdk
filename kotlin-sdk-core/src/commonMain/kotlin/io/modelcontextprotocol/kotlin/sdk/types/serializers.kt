@@ -159,6 +159,10 @@ private val clientRequestDeserializers: Map<String, DeserializationStrategy<Clie
         Method.Defined.ResourcesTemplatesList.value to ListResourceTemplatesRequest.serializer(),
         Method.Defined.ToolsCall.value to CallToolRequest.serializer(),
         Method.Defined.ToolsList.value to ListToolsRequest.serializer(),
+        Method.Defined.TasksGet.value to GetTaskRequest.serializer(),
+        Method.Defined.TasksResult.value to GetTaskPayloadRequest.serializer(),
+        Method.Defined.TasksList.value to ListTasksRequest.serializer(),
+        Method.Defined.TasksCancel.value to CancelTaskRequest.serializer(),
     )
 }
 
@@ -175,6 +179,10 @@ private val serverRequestDeserializers: Map<String, DeserializationStrategy<Serv
         Method.Defined.Ping.value to PingRequest.serializer(),
         Method.Defined.RootsList.value to ListRootsRequest.serializer(),
         Method.Defined.SamplingCreateMessage.value to CreateMessageRequest.serializer(),
+        Method.Defined.TasksGet.value to GetTaskRequest.serializer(),
+        Method.Defined.TasksResult.value to GetTaskPayloadRequest.serializer(),
+        Method.Defined.TasksList.value to ListTasksRequest.serializer(),
+        Method.Defined.TasksCancel.value to CancelTaskRequest.serializer(),
     )
 }
 
@@ -212,6 +220,7 @@ private val clientNotificationDeserializers: Map<String, DeserializationStrategy
         Method.Defined.NotificationsProgress.value to ProgressNotification.serializer(),
         Method.Defined.NotificationsInitialized.value to InitializedNotification.serializer(),
         Method.Defined.NotificationsRootsListChanged.value to RootsListChangedNotification.serializer(),
+        Method.Defined.NotificationsTasksStatus.value to TaskStatusNotification.serializer(),
     )
 }
 
@@ -231,6 +240,7 @@ private val serverNotificationDeserializers: Map<String, DeserializationStrategy
         Method.Defined.NotificationsResourcesListChanged.value to ResourceListChangedNotification.serializer(),
         Method.Defined.NotificationsToolsListChanged.value to ToolListChangedNotification.serializer(),
         Method.Defined.NotificationsPromptsListChanged.value to PromptListChangedNotification.serializer(),
+        Method.Defined.NotificationsTasksStatus.value to TaskStatusNotification.serializer(),
     )
 }
 
@@ -301,6 +311,9 @@ private fun selectClientResultDeserializer(element: JsonElement): Deserializatio
         "model" in jsonObject && "role" in jsonObject -> CreateMessageResult.serializer()
         "roots" in jsonObject -> ListRootsResult.serializer()
         "action" in jsonObject -> ElicitResult.serializer()
+        "task" in jsonObject -> CreateTaskResult.serializer()
+        "tasks" in jsonObject -> ListTasksResult.serializer()
+        "taskId" in jsonObject -> GetTaskResult.serializer()
         else -> null
     }
 }
@@ -309,6 +322,7 @@ private fun selectClientResultDeserializer(element: JsonElement): Deserializatio
  * Selects the appropriate deserializer for server results based on JSON content.
  * Returns null if the structure doesn't match any known server result type.
  */
+@Suppress("CyclomaticComplexMethod")
 private fun selectServerResultDeserializer(element: JsonElement): DeserializationStrategy<ServerResult>? {
     val jsonObject = element.jsonObject
     return when {
@@ -321,6 +335,9 @@ private fun selectServerResultDeserializer(element: JsonElement): Deserializatio
         "messages" in jsonObject -> GetPromptResult.serializer()
         "contents" in jsonObject -> ReadResourceResult.serializer()
         "content" in jsonObject -> CallToolResult.serializer()
+        "task" in jsonObject -> CreateTaskResult.serializer()
+        "tasks" in jsonObject -> ListTasksResult.serializer()
+        "taskId" in jsonObject -> GetTaskResult.serializer()
         else -> null
     }
 }
