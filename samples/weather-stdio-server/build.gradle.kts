@@ -14,14 +14,12 @@ version = "0.1.0"
 
 dependencies {
     implementation(dependencies.platform(libs.ktor.bom))
+    implementation(libs.mcp.kotlin.server)
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
-    implementation(libs.mcp.kotlin.server)
-    implementation(libs.ktor.server.cio)
     implementation(libs.ktor.client.cio)
     implementation(libs.slf4j.simple)
     runtimeOnly(libs.kotlin.logging)
-    runtimeOnly(libs.kotlinx.collections.immutable)
 
     testImplementation(kotlin("test"))
 
