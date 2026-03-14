@@ -8,17 +8,6 @@
     <ID>AbstractClassCanBeConcreteClass:BaseTransportTest.kt:BaseTransportTest$BaseTransportTest</ID>
     <ID>CyclomaticComplexMethod:AbstractToolIntegrationTest.kt:AbstractToolIntegrationTest$private fun setupCalculatorTool</ID>
     <ID>ForbiddenComment:StdioClientTransportTest.kt:StdioClientTransportTest$// TODO: fix running on windows</ID>
-    <ID>InjectDispatcher:AbstractKotlinClientTsServerTest.kt:AbstractKotlinClientTsServerTest$IO</ID>
-    <ID>InjectDispatcher:AbstractPromptIntegrationTest.kt:AbstractPromptIntegrationTest$IO</ID>
-    <ID>InjectDispatcher:AbstractResourceIntegrationTest.kt:AbstractResourceIntegrationTest$IO</ID>
-    <ID>InjectDispatcher:AbstractToolIntegrationTest.kt:AbstractToolIntegrationTest$IO</ID>
-    <ID>InjectDispatcher:KotlinClientTsServerEdgeCasesTestSse.kt:KotlinClientTsServerEdgeCasesTestSse$IO</ID>
-    <ID>InjectDispatcher:KotlinClientTsServerEdgeCasesTestStdio.kt:KotlinClientTsServerEdgeCasesTestStdio$IO</ID>
-    <ID>InjectDispatcher:SseIntegrationTest.kt:SseIntegrationTest$IO</ID>
-    <ID>InjectDispatcher:StdioClientTransportTest.kt:StdioClientTransportTest$IO</ID>
-    <ID>InjectDispatcher:StreamableHttpIntegrationTest.kt:StreamableHttpIntegrationTest$IO</ID>
-    <ID>InjectDispatcher:TsEdgeCasesTestSse.kt:TsEdgeCasesTestSse$IO</ID>
-    <ID>InjectDispatcher:WebSocketIntegrationTest.kt:WebSocketIntegrationTest$IO</ID>
     <ID>MatchingDeclarationName:PromptIntegrationTestSse.kt:SchemaPromptIntegrationTestSse : AbstractPromptIntegrationTest</ID>
     <ID>SleepInsteadOfDelay:KotlinServerForTsClientSse.kt:KotlinServerForTsClient$sleep(500)</ID>
     <ID>ThrowsCount:AbstractPromptIntegrationTest.kt:AbstractPromptIntegrationTest$override fun configureServer</ID>
