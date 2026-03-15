@@ -571,7 +571,7 @@ public open class Server(
         mimeType: String = "text/html",
         readHandler: suspend (ReadResourceRequest, TemplateValues) -> ReadResourceResult,
     ) {
-        check(options.capabilities.resources != null) {
+        checkNotNull(options.capabilities.resources) {
             logger.error { "Failed to add resource template '$name': Server does not support resources capability" }
             "Server does not support resource templates capability."
         }
@@ -587,7 +587,7 @@ public open class Server(
      * @throws IllegalStateException If the server does not support resources.
      */
     public fun addResourceTemplates(resourceTemplatesToAdd: List<RegisteredResourceTemplate>) {
-        check(options.capabilities.resources != null) {
+        checkNotNull(options.capabilities.resources) {
             logger.error { "Failed to add resource templates: Server does not support resources capability" }
             "Server does not support resource templates capability."
         }
@@ -602,7 +602,7 @@ public open class Server(
      * @throws IllegalStateException If the server does not support resources.
      */
     public fun removeResourceTemplate(uri: String): Boolean {
-        check(options.capabilities.resources != null) {
+        checkNotNull(options.capabilities.resources) {
             logger.error { "Failed to remove resource template '$uri': Server does not support resources capability" }
             "Server does not support resource templates capability."
         }
@@ -617,7 +617,7 @@ public open class Server(
      * @throws IllegalStateException If the server does not support resources.
      */
     public fun removeResourceTemplates(uris: List<String>): Int {
-        check(options.capabilities.resources != null) {
+        checkNotNull(options.capabilities.resources) {
             logger.error { "Failed to remove resource templates: Server does not support resources capability" }
             "Server does not support resource templates capability."
         }
