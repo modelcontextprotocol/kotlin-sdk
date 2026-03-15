@@ -224,14 +224,6 @@ public final class io/modelcontextprotocol/kotlin/sdk/server/StringFeatureKey : 
 	public fun getValue ()Ljava/lang/String;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/server/UriTemplate : io/modelcontextprotocol/kotlin/sdk/server/FeatureKey {
-	public fun <init> (Ljava/lang/String;)V
-	public fun getKey ()Ljava/lang/String;
-	public synthetic fun getValue ()Ljava/lang/Object;
-	public fun getValue ()Lkotlin/text/Regex;
-	public fun matches (Ljava/lang/String;)Z
-}
-
 public abstract interface class io/modelcontextprotocol/kotlin/sdk/server/UriTemplateArgumentExtractor {
 	public abstract fun extractArguments (Ljava/lang/String;)Ljava/util/Map;
 }
