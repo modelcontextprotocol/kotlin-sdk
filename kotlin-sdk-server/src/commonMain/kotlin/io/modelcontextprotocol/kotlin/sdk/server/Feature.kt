@@ -48,7 +48,8 @@ public abstract class FeatureKey<out T> {
 }
 
 /**
- * A [FeatureKey] implementation for string-based keys. The [value] is the same as the [key] and inputs are matched by equality with the [key].
+ * A [FeatureKey] implementation for string-based keys. The [value] is the same as the [key] and inputs are matched by
+ * equality with the [key].
  *
  * @property key The unique string key identifying the feature.
  */
@@ -68,7 +69,8 @@ public class UriTemplateFeatureKey(override val key: String) :
     override val value: Regex
 
     /**
-     * A list of variable names defined in the URI template. This is populated during initialization when the URI template is converted to a regex.
+     * A list of variable names defined in the URI template. This is populated during initialization when the URI
+     * template is converted to a regex.
      */
     private val groups: MutableList<String> = mutableListOf()
 
@@ -117,7 +119,8 @@ public class UriTemplateFeatureKey(override val key: String) :
 }
 
 /**
- * A map of template variable names to their corresponding values extracted from an input string based on a URI template.
+ * A map of template variable names to their corresponding values extracted from an input string based on a URI
+ * template.
  */
 public typealias TemplateValues = Map<String, String>
 
