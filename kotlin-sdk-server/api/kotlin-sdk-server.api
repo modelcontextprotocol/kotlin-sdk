@@ -116,7 +116,7 @@ public class io/modelcontextprotocol/kotlin/sdk/server/Server {
 	protected final fun getInstructionsProvider ()Lkotlin/jvm/functions/Function0;
 	protected final fun getOptions ()Lio/modelcontextprotocol/kotlin/sdk/server/ServerOptions;
 	public final fun getPrompts ()Ljava/util/Map;
-	public final fun getResourceTemplates ()Ljava/util/Map;
+	public final fun getResourceTemplates ()Ljava/util/List;
 	public final fun getResources ()Ljava/util/Map;
 	protected final fun getServerInfo ()Lio/modelcontextprotocol/kotlin/sdk/types/Implementation;
 	public final fun getSessions ()Ljava/util/Map;
