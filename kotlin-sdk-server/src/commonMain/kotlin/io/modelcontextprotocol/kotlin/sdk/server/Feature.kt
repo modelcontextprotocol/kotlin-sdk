@@ -10,8 +10,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
 import io.modelcontextprotocol.kotlin.sdk.types.Resource
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceTemplate
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
-import io.modelcontextprotocol.kotlin.sdk.utils.UriTemplate
-import io.modelcontextprotocol.kotlin.sdk.utils.UriTemplateMatcher
+import io.modelcontextprotocol.kotlin.sdk.utils.ResourceTemplateMatcher
 
 internal typealias FeatureKey = String
 
@@ -68,12 +67,10 @@ public data class RegisteredResource(
  * @property readHandler A suspend function invoked when a client reads a URI that matches
  *   this template. The second parameter contains the URI variables extracted from the match.
  */
-internal data class RegisteredResourceTemplate(
+internal class RegisteredResourceTemplate(
     val resourceTemplate: ResourceTemplate,
+    val matcher: ResourceTemplateMatcher,
     val readHandler: suspend ClientConnection.(ReadResourceRequest, Map<String, String>) -> ReadResourceResult,
 ) : Feature {
     override val key: String = resourceTemplate.uriTemplate
-
-    // Excluded from data class equals/hashCode/copy — derived from resourceTemplate.uriTemplate.
-    val matcher: UriTemplateMatcher = UriTemplate(resourceTemplate.uriTemplate).matcher()
 }

@@ -4732,3 +4732,36 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/WithMeta$DefaultImpl
 	public static fun get_meta (Lio/modelcontextprotocol/kotlin/sdk/types/WithMeta;)Lkotlinx/serialization/json/JsonObject;
 }
 
+public final class io/modelcontextprotocol/kotlin/sdk/utils/MatchResult {
+	public fun <init> (Ljava/util/Map;I)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getScore ()I
+	public final fun getVariables ()Ljava/util/Map;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/utils/PathSegmentTemplateMatcher : io/modelcontextprotocol/kotlin/sdk/utils/ResourceTemplateMatcher {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/utils/PathSegmentTemplateMatcher$Companion;
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/ResourceTemplate;)V
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/ResourceTemplate;I)V
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/ResourceTemplate;II)V
+	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/ResourceTemplate;IIILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public static final fun getFactory ()Lio/modelcontextprotocol/kotlin/sdk/utils/ResourceTemplateMatcherFactory;
+	public fun getResourceTemplate ()Lio/modelcontextprotocol/kotlin/sdk/types/ResourceTemplate;
+	public fun match (Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/utils/MatchResult;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/utils/PathSegmentTemplateMatcher$Companion {
+	public final fun getFactory ()Lio/modelcontextprotocol/kotlin/sdk/utils/ResourceTemplateMatcherFactory;
+}
+
+public abstract interface class io/modelcontextprotocol/kotlin/sdk/utils/ResourceTemplateMatcher {
+	public abstract fun getResourceTemplate ()Lio/modelcontextprotocol/kotlin/sdk/types/ResourceTemplate;
+	public abstract fun match (Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/utils/MatchResult;
+}
+
+public abstract interface class io/modelcontextprotocol/kotlin/sdk/utils/ResourceTemplateMatcherFactory {
+	public abstract fun create (Lio/modelcontextprotocol/kotlin/sdk/types/ResourceTemplate;)Lio/modelcontextprotocol/kotlin/sdk/utils/ResourceTemplateMatcher;
+}
+

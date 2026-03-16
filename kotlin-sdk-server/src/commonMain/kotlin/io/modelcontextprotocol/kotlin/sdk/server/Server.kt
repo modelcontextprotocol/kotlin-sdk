@@ -44,11 +44,16 @@ import io.modelcontextprotocol.kotlin.sdk.types.ToolAnnotations
 import io.modelcontextprotocol.kotlin.sdk.types.ToolExecution
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import io.modelcontextprotocol.kotlin.sdk.types.UnsubscribeRequest
+import io.modelcontextprotocol.kotlin.sdk.utils.MatchResult
+import io.modelcontextprotocol.kotlin.sdk.utils.PathSegmentTemplateMatcher
+import io.modelcontextprotocol.kotlin.sdk.utils.ResourceTemplateMatcher
+import io.modelcontextprotocol.kotlin.sdk.utils.ResourceTemplateMatcherFactory
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Deferred
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlin.jvm.JvmOverloads
 import kotlin.time.ExperimentalTime
 
 private val logger = KotlinLogging.logger {}
@@ -58,9 +63,15 @@ private val logger = KotlinLogging.logger {}
  *
  * @property capabilities The capabilities this server supports.
  * @property enforceStrictCapabilities Whether to strictly enforce capabilities when interacting with clients.
+ * @property resourceTemplateMatcherFactory The factory used to create [ResourceTemplateMatcher] instances
+ *   for matching resource URIs against registered templates. Defaults to [PathSegmentTemplateMatcher.factory].
  */
-public class ServerOptions(public val capabilities: ServerCapabilities, enforceStrictCapabilities: Boolean = true) :
-    ProtocolOptions(enforceStrictCapabilities = enforceStrictCapabilities)
+public class ServerOptions @JvmOverloads public constructor(
+    public val capabilities: ServerCapabilities,
+    enforceStrictCapabilities: Boolean = true,
+    public val resourceTemplateMatcherFactory: ResourceTemplateMatcherFactory =
+        PathSegmentTemplateMatcher.factory,
+) : ProtocolOptions(enforceStrictCapabilities = enforceStrictCapabilities)
 
 /**
  * An MCP server is responsible for storing features and handling new connections.
@@ -574,7 +585,14 @@ public open class Server(
         checkNotNull(options.capabilities.resources) {
             "Server does not support resources capability."
         }
-        resourceTemplateRegistry.add(RegisteredResourceTemplate(template, readHandler))
+        val matcher = options.resourceTemplateMatcherFactory.create(template)
+        resourceTemplateRegistry.add(
+            RegisteredResourceTemplate(
+                template,
+                matcher,
+                readHandler = readHandler,
+            ),
+        )
     }
 
     /**
@@ -699,10 +717,14 @@ public open class Server(
             return resource.run { session.clientConnection.readHandler(request) }
         }
 
-        // Priority 2 & 3: most-specific matching template (highest score wins)
+        // Priority 2: most-specific matching template.
+        // Selection: highest score wins; on tie, fewest variables wins; on tie, registration order wins.
         val (template, matchResult) = resourceTemplateRegistry.values.values
             .mapNotNull { tmpl -> tmpl.matcher.match(uri)?.let { tmpl to it } }
-            .maxByOrNull { (_, result) -> result.score }
+            .maxWithOrNull(
+                compareBy<Pair<RegisteredResourceTemplate, MatchResult>> { (_, result) -> result.score }
+                    .thenByDescending { (_, result) -> result.variables.size },
+            )
             ?: run {
                 logger.error { "Resource not found: $uri" }
                 throw McpException(

@@ -146,9 +146,12 @@ public class io/modelcontextprotocol/kotlin/sdk/server/Server {
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/server/ServerOptions : io/modelcontextprotocol/kotlin/sdk/shared/ProtocolOptions {
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/ServerCapabilities;)V
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/ServerCapabilities;Z)V
-	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/ServerCapabilities;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/ServerCapabilities;ZLio/modelcontextprotocol/kotlin/sdk/utils/ResourceTemplateMatcherFactory;)V
+	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/ServerCapabilities;ZLio/modelcontextprotocol/kotlin/sdk/utils/ResourceTemplateMatcherFactory;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getCapabilities ()Lio/modelcontextprotocol/kotlin/sdk/types/ServerCapabilities;
+	public final fun getResourceTemplateMatcherFactory ()Lio/modelcontextprotocol/kotlin/sdk/utils/ResourceTemplateMatcherFactory;
 }
 
 public class io/modelcontextprotocol/kotlin/sdk/server/ServerSession : io/modelcontextprotocol/kotlin/sdk/shared/Protocol {
