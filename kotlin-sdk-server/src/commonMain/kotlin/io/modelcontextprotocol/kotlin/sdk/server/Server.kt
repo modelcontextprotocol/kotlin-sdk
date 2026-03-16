@@ -314,7 +314,7 @@ public open class Server(
      * @throws IllegalStateException If the server does not support tools.
      */
     public fun addTool(tool: Tool, handler: suspend ClientConnection.(CallToolRequest) -> CallToolResult) {
-        check(options.capabilities.tools != null) {
+        checkNotNull(options.capabilities.tools) {
             logger.error { "Failed to add tool '${tool.name}': Server does not support tools capability" }
             "Server does not support tools capability. Enable it in ServerOptions."
         }
@@ -368,7 +368,7 @@ public open class Server(
      * @throws IllegalStateException If the server does not support tools.
      */
     public fun addTools(toolsToAdd: List<RegisteredTool>) {
-        check(options.capabilities.tools != null) {
+        checkNotNull(options.capabilities.tools) {
             logger.error { "Failed to add tools: Server does not support tools capability" }
             "Server does not support tools capability."
         }
@@ -383,7 +383,7 @@ public open class Server(
      * @throws IllegalStateException If the server does not support tools.
      */
     public fun removeTool(name: String): Boolean {
-        check(options.capabilities.tools != null) {
+        checkNotNull(options.capabilities.tools) {
             logger.error { "Failed to remove tool '$name': Server does not support tools capability" }
             "Server does not support tools capability."
         }
@@ -398,7 +398,7 @@ public open class Server(
      * @throws IllegalStateException If the server does not support tools.
      */
     public fun removeTools(toolNames: List<String>): Int {
-        check(options.capabilities.tools != null) {
+        checkNotNull(options.capabilities.tools) {
             logger.error { "Failed to remove tools: Server does not support tools capability" }
             "Server does not support tools capability."
         }
@@ -418,7 +418,7 @@ public open class Server(
         prompt: Prompt,
         promptProvider: suspend ClientConnection.(GetPromptRequest) -> GetPromptResult,
     ) {
-        check(options.capabilities.prompts != null) {
+        checkNotNull(options.capabilities.prompts) {
             logger.error { "Failed to add prompt '${prompt.name}': Server does not support prompts capability" }
             "Server does not support prompts capability."
         }
@@ -451,7 +451,7 @@ public open class Server(
      * @throws IllegalStateException If the server does not support prompts.
      */
     public fun addPrompts(promptsToAdd: List<RegisteredPrompt>) {
-        check(options.capabilities.prompts != null) {
+        checkNotNull(options.capabilities.prompts) {
             logger.error { "Failed to add prompts: Server does not support prompts capability" }
             "Server does not support prompts capability."
         }
@@ -466,7 +466,7 @@ public open class Server(
      * @throws IllegalStateException If the server does not support prompts.
      */
     public fun removePrompt(name: String): Boolean {
-        check(options.capabilities.prompts != null) {
+        checkNotNull(options.capabilities.prompts) {
             logger.error { "Failed to remove prompt '$name': Server does not support prompts capability" }
             "Server does not support prompts capability."
         }
@@ -482,7 +482,7 @@ public open class Server(
      * @throws IllegalStateException If the server does not support prompts.
      */
     public fun removePrompts(promptNames: List<String>): Int {
-        check(options.capabilities.prompts != null) {
+        checkNotNull(options.capabilities.prompts) {
             logger.error { "Failed to remove prompts: Server does not support prompts capability" }
             "Server does not support prompts capability."
         }
@@ -507,7 +507,7 @@ public open class Server(
         mimeType: String = "text/html",
         readHandler: suspend ClientConnection.(ReadResourceRequest) -> ReadResourceResult,
     ) {
-        check(options.capabilities.resources != null) {
+        checkNotNull(options.capabilities.resources) {
             logger.error { "Failed to add resource '$name': Server does not support resources capability" }
             "Server does not support resources capability."
         }
@@ -522,7 +522,7 @@ public open class Server(
      * @throws IllegalStateException If the server does not support resources.
      */
     public fun addResources(resourcesToAdd: List<RegisteredResource>) {
-        check(options.capabilities.resources != null) {
+        checkNotNull(options.capabilities.resources) {
             logger.error { "Failed to add resources: Server does not support resources capability" }
             "Server does not support resources capability."
         }
@@ -537,7 +537,7 @@ public open class Server(
      * @throws IllegalStateException If the server does not support resources.
      */
     public fun removeResource(uri: String): Boolean {
-        check(options.capabilities.resources != null) {
+        checkNotNull(options.capabilities.resources) {
             logger.error { "Failed to remove resource '$uri': Server does not support resources capability" }
             "Server does not support resources capability."
         }
@@ -552,7 +552,7 @@ public open class Server(
      * @throws IllegalStateException If the server does not support resources.
      */
     public fun removeResources(uris: List<String>): Int {
-        check(options.capabilities.resources != null) {
+        checkNotNull(options.capabilities.resources) {
             logger.error { "Failed to remove resources: Server does not support resources capability" }
             "Server does not support resources capability."
         }
