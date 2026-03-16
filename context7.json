@@ -1,0 +1,30 @@
+{
+  "$schema": "https://context7.com/schema/context7.json",
+  "projectTitle": "Model Context Protocol Kotlin SDK",
+  "description": "Kotlin Multiplatform SDK for MCP — client and server implementations",
+  "excludeFolders": [
+    ".github",
+    "buildSrc",
+    "config",
+    "gradle/wrapper"
+  ],
+  "excludeFiles": [
+    "CONTRIBUTING.md",
+    "LICENSE",
+    "SECURITY.md",
+    "codecov.yml",
+    "gradlew",
+    "gradlew.bat",
+    ".editorconfig",
+    "knit.properties",
+    "gradle.properties",
+    "settings.gradle.kts",
+    "conformance-baseline.yml",
+    "run-conformance.sh",
+    "detekt-baseline.xml",
+    "detekt-baseline-test.xml",
+    "detekt-baseline-main.xml",
+    "detekt-baseline-commonMainSourceSet.xml",
+    "detekt-baseline-commonTestSourceSet.xml"
+  ]
+}
