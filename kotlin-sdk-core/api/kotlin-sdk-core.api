@@ -2719,6 +2719,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/McpException : java/
 	public synthetic fun <init> (ILjava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getCode ()I
 	public final fun getData ()Lkotlinx/serialization/json/JsonElement;
+	public final fun getErrorMessage ()Ljava/lang/String;
 }
 
 public abstract interface class io/modelcontextprotocol/kotlin/sdk/types/MediaContent : io/modelcontextprotocol/kotlin/sdk/types/ContentBlock {
@@ -3310,6 +3311,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/RPCError$ErrorCode {
 	public static final field METHOD_NOT_FOUND I
 	public static final field PARSE_ERROR I
 	public static final field REQUEST_TIMEOUT I
+	public static final field RESOURCE_NOT_FOUND I
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/ReadResourceRequest : io/modelcontextprotocol/kotlin/sdk/types/ClientRequest {
