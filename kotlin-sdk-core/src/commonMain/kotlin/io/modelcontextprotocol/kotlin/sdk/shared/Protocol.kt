@@ -324,6 +324,8 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                     result = result ?: EmptyResult(),
                 ),
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (cause: Throwable) {
             logger.error(cause) { "Error handling request: ${request.method} (id: ${request.id})" }
 
