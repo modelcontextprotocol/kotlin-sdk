@@ -163,10 +163,9 @@ public open class Server(
 
     /**
      * Provides a snapshot of all resource templates currently registered in the server.
-     * Keys are URI template strings; values are the [ResourceTemplate] MCP type.
      */
-    public val resourceTemplates: Map<String, ResourceTemplate>
-        get() = resourceTemplateRegistry.values.mapValues { it.value.resourceTemplate }
+    public val resourceTemplates: List<ResourceTemplate>
+        get() = resourceTemplateRegistry.values.values.map { it.resourceTemplate }
 
     init {
         block(this)

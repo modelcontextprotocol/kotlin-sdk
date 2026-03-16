@@ -13,10 +13,7 @@ import kotlin.jvm.JvmOverloads
  */
 public class McpException @JvmOverloads public constructor(
     public val code: Int,
-    message: String,
+    message: String?,
     public val data: JsonElement? = null,
     cause: Throwable? = null,
-) : Exception("MCP error $code: $message", cause) {
-    /** The raw MCP error message (without the "MCP error $code:" prefix). */
-    public val errorMessage: String = message
-}
+) : Exception("MCP error $code: $message", cause)

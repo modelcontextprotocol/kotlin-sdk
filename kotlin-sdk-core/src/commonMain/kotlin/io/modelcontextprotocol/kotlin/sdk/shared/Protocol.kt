@@ -39,6 +39,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -328,7 +329,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
 
             try {
                 val rpcError = if (cause is McpException) {
-                    RPCError(code = cause.code, message = cause.errorMessage, data = cause.data)
+                    RPCError(code = cause.code, message = cause.message.orEmpty(), data = cause.data)
                 } else {
                     RPCError(code = RPCError.ErrorCode.INTERNAL_ERROR, message = cause.message ?: "Internal error")
                 }
