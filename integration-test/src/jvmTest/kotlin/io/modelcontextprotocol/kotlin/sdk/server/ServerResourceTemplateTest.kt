@@ -137,9 +137,10 @@ class ServerResourceTemplateTest : AbstractServerFeaturesTest() {
 
         val templates = server.resourceTemplates
 
-        templates.size shouldBe 2
-        templates shouldContainKey "test://a/{x}"
-        templates shouldContainKey "test://b/{y}"
+        templates shouldBe listOf(
+            ResourceTemplate("test://a/{x}", "A"),
+            ResourceTemplate("test://b/{y}", "B"),
+        )
     }
 
     @Test
