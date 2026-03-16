@@ -25,13 +25,16 @@ import io.modelcontextprotocol.kotlin.sdk.types.ListRootsResult
 import io.modelcontextprotocol.kotlin.sdk.types.ListToolsRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification
+import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.Notification
 import io.modelcontextprotocol.kotlin.sdk.types.Prompt
 import io.modelcontextprotocol.kotlin.sdk.types.PromptArgument
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
 import io.modelcontextprotocol.kotlin.sdk.types.Resource
+import io.modelcontextprotocol.kotlin.sdk.types.ResourceTemplate
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.SubscribeRequest
@@ -44,6 +47,8 @@ import io.modelcontextprotocol.kotlin.sdk.types.UnsubscribeRequest
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Deferred
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlin.time.ExperimentalTime
 
 private val logger = KotlinLogging.logger {}
@@ -126,6 +131,11 @@ public open class Server(
             addListener(notificationService.resourceUpdatedListener)
         }
     }
+    private val resourceTemplateRegistry = FeatureRegistry<RegisteredResourceTemplate>("ResourceTemplate").apply {
+        if (options.capabilities.resources?.listChanged == true) {
+            addListener(notificationService.resourceListChangedListener)
+        }
+    }
 
     /**
      * Provides a snapshot of all sessions currently registered in the server
@@ -150,6 +160,13 @@ public open class Server(
      */
     public val resources: Map<String, RegisteredResource>
         get() = resourceRegistry.values
+
+    /**
+     * Provides a snapshot of all resource templates currently registered in the server.
+     * Keys are URI template strings; values are the [ResourceTemplate] MCP type.
+     */
+    public val resourceTemplates: Map<String, ResourceTemplate>
+        get() = resourceTemplateRegistry.values.mapValues { it.value.resourceTemplate }
 
     init {
         block(this)
@@ -542,6 +559,60 @@ public open class Server(
         return resourceRegistry.removeAll(uris)
     }
 
+    /**
+     * Registers a resource template. Clients can discover it via `resources/templates/list`
+     * and read matching URIs via `resources/read`.
+     *
+     * @param template The [ResourceTemplate] describing the URI template pattern.
+     * @param readHandler A suspend function invoked when a client reads a URI that matches
+     *   the template. The second parameter contains the URI variables extracted from the match.
+     * @throws IllegalStateException If the server does not support resources.
+     */
+    public fun addResourceTemplate(
+        template: ResourceTemplate,
+        readHandler: suspend ClientConnection.(ReadResourceRequest, Map<String, String>) -> ReadResourceResult,
+    ) {
+        checkNotNull(options.capabilities.resources) {
+            "Server does not support resources capability."
+        }
+        resourceTemplateRegistry.add(RegisteredResourceTemplate(template, readHandler))
+    }
+
+    /**
+     * Registers a resource template by constructing a [ResourceTemplate] from given parameters.
+     *
+     * @param uriTemplate The RFC 6570 URI template string (e.g. `"file:///{path}"`).
+     * @param name A human-readable name for the template.
+     * @param description A human-readable description of the resource template.
+     * @param mimeType The MIME type of resource content served by this template.
+     * @param readHandler A suspend function invoked when a client reads a URI that matches
+     *   the template. The second parameter contains the URI variables extracted from the match.
+     * @throws IllegalStateException If the server does not support resources.
+     */
+    public fun addResourceTemplate(
+        uriTemplate: String,
+        name: String,
+        description: String? = null,
+        mimeType: String? = null,
+        readHandler: suspend ClientConnection.(ReadResourceRequest, Map<String, String>) -> ReadResourceResult,
+    ) {
+        addResourceTemplate(ResourceTemplate(uriTemplate, name, description, mimeType), readHandler)
+    }
+
+    /**
+     * Removes a resource template by its URI template string.
+     *
+     * @param uriTemplate The URI template string identifying the template to remove.
+     * @return True if the template was removed, false if it was not found.
+     * @throws IllegalStateException If the server does not support resources.
+     */
+    public fun removeResourceTemplate(uriTemplate: String): Boolean {
+        checkNotNull(options.capabilities.resources) {
+            "Server does not support resources capability."
+        }
+        return resourceTemplateRegistry.remove(uriTemplate)
+    }
+
     // --- Internal Handlers ---
     private fun handleSubscribeResources(session: ServerSession, request: SubscribeRequest) {
         if (options.capabilities.resources?.subscribe ?: false) {
@@ -621,21 +692,34 @@ public open class Server(
     }
 
     private suspend fun handleReadResource(session: ServerSession, request: ReadResourceRequest): ReadResourceResult {
-        val requestParams = request.params
-        logger.debug { "Handling read resource request for: ${requestParams.uri}" }
-        val resource = resourceRegistry.get(requestParams.uri)
-            ?: run {
-                logger.error { "Resource not found: ${requestParams.uri}" }
-                throw IllegalArgumentException("Resource not found: ${requestParams.uri}")
-            }
-        return resource.run {
-            session.clientConnection.readHandler(request)
+        val uri = request.params.uri
+        logger.debug { "Handling read resource request for: $uri" }
+
+        // Priority 1: exact URI match
+        resourceRegistry.get(uri)?.let { resource ->
+            return resource.run { session.clientConnection.readHandler(request) }
         }
+
+        // Priority 2 & 3: most-specific matching template (highest score wins)
+        val (template, matchResult) = resourceTemplateRegistry.values.values
+            .mapNotNull { tmpl -> tmpl.matcher.match(uri)?.let { tmpl to it } }
+            .maxByOrNull { (_, result) -> result.score }
+            ?: run {
+                logger.error { "Resource not found: $uri" }
+                throw McpException(
+                    code = RPCError.ErrorCode.RESOURCE_NOT_FOUND,
+                    message = "Resource not found",
+                    data = buildJsonObject { put("uri", uri) },
+                )
+            }
+
+        logger.debug { "Matched resource template '${template.key}' for URI: $uri" }
+        return template.run { session.clientConnection.readHandler(request, matchResult.variables) }
     }
 
     private fun handleListResourceTemplates(): ListResourceTemplatesResult {
-        // If you have resource templates, return them here. For now, return empty.
-        return ListResourceTemplatesResult(listOf())
+        logger.debug { "Handling list resource templates request" }
+        return ListResourceTemplatesResult(resourceTemplateRegistry.values.values.map { it.resourceTemplate })
     }
 
     // Start the ServerSession / ClientConnection redirection section

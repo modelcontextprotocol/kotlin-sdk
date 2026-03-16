@@ -312,6 +312,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             return
         }
 
+        @Suppress("TooGenericExceptionCaught", "InstanceOfCheckForException")
         try {
             val result = handler(request, RequestHandlerExtra())
             logger.trace { "Request handled successfully: ${request.method} (id: ${request.id})" }
@@ -326,15 +327,12 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             logger.error(cause) { "Error handling request: ${request.method} (id: ${request.id})" }
 
             try {
-                transport?.send(
-                    JSONRPCError(
-                        id = request.id,
-                        error = RPCError(
-                            code = RPCError.ErrorCode.INTERNAL_ERROR,
-                            message = cause.message ?: "Internal error",
-                        ),
-                    ),
-                )
+                val rpcError = if (cause is McpException) {
+                    RPCError(code = cause.code, message = cause.errorMessage, data = cause.data)
+                } else {
+                    RPCError(code = RPCError.ErrorCode.INTERNAL_ERROR, message = cause.message ?: "Internal error")
+                }
+                transport?.send(JSONRPCError(id = request.id, error = rpcError))
             } catch (sendError: Throwable) {
                 logger.error(sendError) {
                     "Failed to send error response for request: ${request.method} (id: ${request.id})"

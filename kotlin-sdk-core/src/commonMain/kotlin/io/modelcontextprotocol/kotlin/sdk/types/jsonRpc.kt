@@ -251,6 +251,9 @@ public data class RPCError(val code: Int, val message: String, val data: JsonEle
         /** Request timed out */
         public const val REQUEST_TIMEOUT: Int = -32001
 
+        /** Resource not found */
+        public const val RESOURCE_NOT_FOUND: Int = -32002
+
         // Standard JSON-RPC 2.0 error codes
 
         /** Invalid JSON was received */

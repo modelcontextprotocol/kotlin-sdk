@@ -97,6 +97,9 @@ public class io/modelcontextprotocol/kotlin/sdk/server/Server {
 	public final fun addPrompts (Ljava/util/List;)V
 	public final fun addResource (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function3;)V
 	public static synthetic fun addResource$default (Lio/modelcontextprotocol/kotlin/sdk/server/Server;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function3;ILjava/lang/Object;)V
+	public final fun addResourceTemplate (Lio/modelcontextprotocol/kotlin/sdk/types/ResourceTemplate;Lkotlin/jvm/functions/Function4;)V
+	public final fun addResourceTemplate (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function4;)V
+	public static synthetic fun addResourceTemplate$default (Lio/modelcontextprotocol/kotlin/sdk/server/Server;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function4;ILjava/lang/Object;)V
 	public final fun addResources (Ljava/util/List;)V
 	public final fun addTool (Lio/modelcontextprotocol/kotlin/sdk/types/Tool;Lkotlin/jvm/functions/Function3;)V
 	public final fun addTool (Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/ToolSchema;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/ToolSchema;Lio/modelcontextprotocol/kotlin/sdk/types/ToolAnnotations;Lio/modelcontextprotocol/kotlin/sdk/types/ToolExecution;Lkotlinx/serialization/json/JsonObject;Lkotlin/jvm/functions/Function3;)V
@@ -113,6 +116,7 @@ public class io/modelcontextprotocol/kotlin/sdk/server/Server {
 	protected final fun getInstructionsProvider ()Lkotlin/jvm/functions/Function0;
 	protected final fun getOptions ()Lio/modelcontextprotocol/kotlin/sdk/server/ServerOptions;
 	public final fun getPrompts ()Ljava/util/Map;
+	public final fun getResourceTemplates ()Ljava/util/Map;
 	public final fun getResources ()Ljava/util/Map;
 	protected final fun getServerInfo ()Lio/modelcontextprotocol/kotlin/sdk/types/Implementation;
 	public final fun getSessions ()Ljava/util/Map;
@@ -128,6 +132,7 @@ public class io/modelcontextprotocol/kotlin/sdk/server/Server {
 	public final fun removePrompt (Ljava/lang/String;)Z
 	public final fun removePrompts (Ljava/util/List;)I
 	public final fun removeResource (Ljava/lang/String;)Z
+	public final fun removeResourceTemplate (Ljava/lang/String;)Z
 	public final fun removeResources (Ljava/util/List;)I
 	public final fun removeTool (Ljava/lang/String;)Z
 	public final fun removeTools (Ljava/util/List;)I
