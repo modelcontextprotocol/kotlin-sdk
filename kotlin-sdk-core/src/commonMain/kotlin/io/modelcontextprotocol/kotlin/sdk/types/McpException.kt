@@ -8,12 +8,13 @@ import kotlin.jvm.JvmOverloads
  *
  * @property code The MCP/JSON‑RPC error code.
  * @property data Optional additional error payload as a JSON element; `null` when not provided.
- * @param message The error message.
+ * @param message The error message. Used verbatim as [Exception.message] — no error code prefix is prepended.
+ *   Defaults to `"MCP error $code"` when not provided.
  * @param cause The original cause.
  */
 public class McpException @JvmOverloads public constructor(
     public val code: Int,
-    message: String?,
+    message: String = "MCP error $code",
     public val data: JsonElement? = null,
     cause: Throwable? = null,
-) : Exception("MCP error $code: $message", cause)
+) : Exception(message, cause)

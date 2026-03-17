@@ -2713,6 +2713,7 @@ public abstract interface annotation class io/modelcontextprotocol/kotlin/sdk/ty
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/McpException : java/lang/Exception {
+	public fun <init> (I)V
 	public fun <init> (ILjava/lang/String;)V
 	public fun <init> (ILjava/lang/String;Lkotlinx/serialization/json/JsonElement;)V
 	public fun <init> (ILjava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/Throwable;)V

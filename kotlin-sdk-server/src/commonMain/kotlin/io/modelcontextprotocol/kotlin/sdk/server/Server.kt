@@ -66,12 +66,17 @@ private val logger = KotlinLogging.logger {}
  * @property resourceTemplateMatcherFactory The factory used to create [ResourceTemplateMatcher] instances
  *   for matching resource URIs against registered templates. Defaults to [PathSegmentTemplateMatcher.factory].
  */
-public class ServerOptions @JvmOverloads public constructor(
+public class ServerOptions(
     public val capabilities: ServerCapabilities,
     enforceStrictCapabilities: Boolean = true,
-    public val resourceTemplateMatcherFactory: ResourceTemplateMatcherFactory =
-        PathSegmentTemplateMatcher.factory,
-) : ProtocolOptions(enforceStrictCapabilities = enforceStrictCapabilities)
+    public val resourceTemplateMatcherFactory: ResourceTemplateMatcherFactory = PathSegmentTemplateMatcher.factory,
+) : ProtocolOptions(enforceStrictCapabilities = enforceStrictCapabilities) {
+    @JvmOverloads
+    public constructor(
+        capabilities: ServerCapabilities,
+        enforceStrictCapabilities: Boolean = true,
+    ) : this(capabilities, enforceStrictCapabilities, PathSegmentTemplateMatcher.factory)
+}
 
 /**
  * An MCP server is responsible for storing features and handling new connections.

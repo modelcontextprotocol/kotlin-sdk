@@ -336,6 +336,8 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                     RPCError(code = RPCError.ErrorCode.INTERNAL_ERROR, message = cause.message ?: "Internal error")
                 }
                 transport?.send(JSONRPCError(id = request.id, error = rpcError))
+            } catch (e: CancellationException) {
+                throw e
             } catch (sendError: Throwable) {
                 logger.error(sendError) {
                     "Failed to send error response for request: ${request.method} (id: ${request.id})"
