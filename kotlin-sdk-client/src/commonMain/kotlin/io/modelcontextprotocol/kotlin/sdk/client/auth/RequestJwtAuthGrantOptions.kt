@@ -17,7 +17,7 @@ package io.modelcontextprotocol.kotlin.sdk.client.auth
  *
  * @see <a href="https://datatracker.ietf.org/doc/html/rfc8693">RFC 8693</a>
  */
-public class RequestJwtAuthGrantOptions(
+public data class RequestJwtAuthGrantOptions(
     public val tokenEndpoint: String,
     public val idToken: String,
     public val clientId: String,

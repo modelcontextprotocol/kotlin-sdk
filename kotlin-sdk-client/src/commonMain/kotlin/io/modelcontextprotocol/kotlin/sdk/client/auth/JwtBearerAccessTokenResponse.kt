@@ -33,6 +33,7 @@ public class JwtBearerAccessTokenResponse(
      * Set by [EnterpriseAuth.exchangeJwtBearerGrant] using [kotlin.time.TimeSource.Monotonic].
      */
     public var expiresAt: ComparableTimeMark? = null
+        internal set
 
     /**
      * Returns `true` if this token has passed its [expiresAt] mark, or `false` if

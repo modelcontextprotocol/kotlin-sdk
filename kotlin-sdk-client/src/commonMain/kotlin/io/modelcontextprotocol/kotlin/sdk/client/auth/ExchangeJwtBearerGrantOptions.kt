@@ -20,7 +20,7 @@ package io.modelcontextprotocol.kotlin.sdk.client.auth
  *
  * @see <a href="https://datatracker.ietf.org/doc/html/rfc7523">RFC 7523</a>
  */
-public class ExchangeJwtBearerGrantOptions(
+public data class ExchangeJwtBearerGrantOptions(
     public val tokenEndpoint: String,
     public val assertion: String,
     public val clientId: String,

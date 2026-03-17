@@ -192,6 +192,8 @@ public object EnterpriseAuth {
             tokenResponse.accessToken!!
         } catch (e: EnterpriseAuthException) {
             throw e
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             throw EnterpriseAuthException("Failed to parse JAG token exchange response", e)
         }
@@ -326,6 +328,8 @@ public object EnterpriseAuth {
             logger.debug { "JWT bearer grant exchange successful; expires_in=${tokenResponse.expiresIn}" }
             tokenResponse
         } catch (e: EnterpriseAuthException) {
+            throw e
+        } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             throw EnterpriseAuthException("Failed to parse JWT bearer grant exchange response", e)

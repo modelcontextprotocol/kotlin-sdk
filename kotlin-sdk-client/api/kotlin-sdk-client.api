@@ -180,6 +180,17 @@ public final class io/modelcontextprotocol/kotlin/sdk/client/auth/AuthServerMeta
 public final class io/modelcontextprotocol/kotlin/sdk/client/auth/DiscoverAndRequestJwtAuthGrantOptions {
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun component7 ()Ljava/lang/String;
+	public final fun component8 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/client/auth/DiscoverAndRequestJwtAuthGrantOptions;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/client/auth/DiscoverAndRequestJwtAuthGrantOptions;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/client/auth/DiscoverAndRequestJwtAuthGrantOptions;
+	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAudience ()Ljava/lang/String;
 	public final fun getClientId ()Ljava/lang/String;
 	public final fun getClientSecret ()Ljava/lang/String;
@@ -188,6 +199,8 @@ public final class io/modelcontextprotocol/kotlin/sdk/client/auth/DiscoverAndReq
 	public final fun getIdpUrl ()Ljava/lang/String;
 	public final fun getResource ()Ljava/lang/String;
 	public final fun getScope ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/client/auth/EnterpriseAuth {
@@ -257,11 +270,21 @@ public final class io/modelcontextprotocol/kotlin/sdk/client/auth/EnterpriseAuth
 public final class io/modelcontextprotocol/kotlin/sdk/client/auth/ExchangeJwtBearerGrantOptions {
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/client/auth/ExchangeJwtBearerGrantOptions;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/client/auth/ExchangeJwtBearerGrantOptions;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/client/auth/ExchangeJwtBearerGrantOptions;
+	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAssertion ()Ljava/lang/String;
 	public final fun getClientId ()Ljava/lang/String;
 	public final fun getClientSecret ()Ljava/lang/String;
 	public final fun getScope ()Ljava/lang/String;
 	public final fun getTokenEndpoint ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/client/auth/JagTokenExchangeResponse {
@@ -313,7 +336,6 @@ public final class io/modelcontextprotocol/kotlin/sdk/client/auth/JwtBearerAcces
 	public final fun getScope ()Ljava/lang/String;
 	public final fun getTokenType ()Ljava/lang/String;
 	public final fun isExpired ()Z
-	public final fun setExpiresAt (Lkotlin/time/ComparableTimeMark;)V
 }
 
 public final synthetic class io/modelcontextprotocol/kotlin/sdk/client/auth/JwtBearerAccessTokenResponse$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
@@ -334,6 +356,16 @@ public final class io/modelcontextprotocol/kotlin/sdk/client/auth/JwtBearerAcces
 public final class io/modelcontextprotocol/kotlin/sdk/client/auth/RequestJwtAuthGrantOptions {
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun component7 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/client/auth/RequestJwtAuthGrantOptions;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/client/auth/RequestJwtAuthGrantOptions;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/client/auth/RequestJwtAuthGrantOptions;
+	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAudience ()Ljava/lang/String;
 	public final fun getClientId ()Ljava/lang/String;
 	public final fun getClientSecret ()Ljava/lang/String;
@@ -341,5 +373,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/client/auth/RequestJwtAuth
 	public final fun getResource ()Ljava/lang/String;
 	public final fun getScope ()Ljava/lang/String;
 	public final fun getTokenEndpoint ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 

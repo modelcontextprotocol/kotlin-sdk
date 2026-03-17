@@ -20,7 +20,7 @@ package io.modelcontextprotocol.kotlin.sdk.client.auth
  * @param resource Optional `resource` parameter for the token exchange request.
  * @param scope Optional `scope` parameter for the token exchange request.
  */
-public class DiscoverAndRequestJwtAuthGrantOptions(
+public data class DiscoverAndRequestJwtAuthGrantOptions(
     public val idpUrl: String,
     public val idToken: String,
     public val clientId: String,
