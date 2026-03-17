@@ -5,13 +5,13 @@ import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpClientPlugin
 import io.ktor.client.plugins.HttpSend
 import io.ktor.client.plugins.plugin
-import io.ktor.http.DEFAULT_PORT
 import io.ktor.http.HttpHeaders
 import io.ktor.http.Url
 import io.ktor.util.AttributeKey
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 private val logger = KotlinLogging.logger {}
@@ -45,6 +45,7 @@ private val logger = KotlinLogging.logger {}
  *                     tokenEndpoint = "https://idp.example.com/token",
  *                     idToken = myIdTokenSupplier(),
  *                     clientId = "my-idp-client",
+ *                     clientSecret = "idp-client-secret",
  *                     audience = ctx.authorizationServerUrl,
  *                     resource = ctx.resourceUrl,
  *                 ),
@@ -126,7 +127,7 @@ public class EnterpriseAuthProvider(
 
     private fun isExpiredOrNearlyExpired(token: JwtBearerAccessTokenResponse): Boolean {
         val expiresAt = token.expiresAt ?: return false
-        return (expiresAt - EXPIRY_BUFFER).hasPassedNow()
+        return (expiresAt - options.expiryBuffer).hasPassedNow()
     }
 
     private suspend fun fetchNewToken(requestUrl: Url): JwtBearerAccessTokenResponse {
@@ -152,6 +153,7 @@ public class EnterpriseAuthProvider(
         }
 
         val assertion = options.assertionCallback(assertionContext)
+        require(assertion.isNotBlank()) { "assertionCallback returned a blank string" }
 
         return EnterpriseAuth.exchangeJwtBearerGrant(
             ExchangeJwtBearerGrantOptions(
@@ -171,9 +173,6 @@ public class EnterpriseAuthProvider(
      */
     public companion object Plugin : HttpClientPlugin<Config, EnterpriseAuthProvider> {
 
-        /** Proactive refresh buffer: re-fetch token this far before actual expiry. */
-        private val EXPIRY_BUFFER = 30.seconds
-
         override val key: AttributeKey<EnterpriseAuthProvider> =
             AttributeKey("EnterpriseAuthProvider")
 
@@ -186,6 +185,7 @@ public class EnterpriseAuthProvider(
                 },
                 clientSecret = config.clientSecret,
                 scope = config.scope,
+                expiryBuffer = config.expiryBuffer,
             )
             return EnterpriseAuthProvider(
                 options = options,
@@ -214,6 +214,12 @@ public class EnterpriseAuthProvider(
 
         /** The `scope` parameter for the JWT bearer grant exchange. Optional. */
         public var scope: String? = null
+
+        /**
+         * How far before the token's actual expiry to proactively refresh it.
+         * Defaults to 30 seconds to account for clock skew and network latency.
+         */
+        public var expiryBuffer: Duration = 30.seconds
 
         /**
          * Callback that obtains a JWT Authorization Grant (ID-JAG) for the given context.

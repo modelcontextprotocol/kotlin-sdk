@@ -12,6 +12,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.http.encodeURLParameter
+import io.ktor.util.encodeBase64
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.seconds
@@ -71,6 +72,10 @@ public object EnterpriseAuth {
 
     private const val WELL_KNOWN_OAUTH: String = "/.well-known/oauth-authorization-server"
     private const val WELL_KNOWN_OPENID: String = "/.well-known/openid-configuration"
+
+    /** URL-encodes [key] and [value] and joins them with `=`, using `+` for spaces. */
+    private fun encodeParam(key: String, value: String): String =
+        key.encodeURLParameter().replace("%20", "+") + "=" + value.encodeURLParameter().replace("%20", "+")
 
     // -----------------------------------------------------------------------
     // Authorization server discovery (RFC 8414)
@@ -139,8 +144,7 @@ public object EnterpriseAuth {
      * Exchanges the enterprise OIDC ID Token for an ID-JAG that can subsequently be
      * presented to the MCP authorization server via [exchangeJwtBearerGrant].
      *
-     * Validates that the response `issued_token_type` equals [TOKEN_TYPE_ID_JAG] and
-     * that `token_type` is `N_A` (case-insensitive) per RFC 8693 §2.2.1.
+     * Validates that the response `issued_token_type` equals [TOKEN_TYPE_ID_JAG].
      *
      * @param options Request parameters including the IdP token endpoint, ID Token, and
      *   client credentials.
@@ -163,9 +167,7 @@ public object EnterpriseAuth {
             options.resource?.let { add("resource" to it) }
             options.scope?.let { add("scope" to it) }
         }
-        val body = params.joinToString("&") { (k, v) ->
-            k.encodeURLParameter().replace("%20", "+") + "=" + v.encodeURLParameter().replace("%20", "+")
-        }
+        val body = params.joinToString("&") { (k, v) -> encodeParam(k, v) }
 
         logger.debug { "Requesting JAG token exchange at ${options.tokenEndpoint}" }
 
@@ -184,29 +186,28 @@ public object EnterpriseAuth {
         return try {
             val tokenResponse = McpJson.decodeFromString<JagTokenExchangeResponse>(response.bodyAsText())
 
-            // Validate per RFC 8693 §2.2.1
-            if (!TOKEN_TYPE_ID_JAG.equals(tokenResponse.issuedTokenType, ignoreCase = true)) {
-                throw EnterpriseAuthException(
-                    "Unexpected issued_token_type in JAG response: " +
-                        "${tokenResponse.issuedTokenType} (expected $TOKEN_TYPE_ID_JAG)",
-                )
-            }
-            if (!"N_A".equals(tokenResponse.tokenType, ignoreCase = true)) {
-                throw EnterpriseAuthException(
-                    "Unexpected token_type in JAG response: " +
-                        "${tokenResponse.tokenType} (expected N_A per RFC 8693 §2.2.1)",
-                )
-            }
-            if (tokenResponse.accessToken.isNullOrBlank()) {
-                throw EnterpriseAuthException("JAG token exchange response is missing access_token")
-            }
+            validateJAGTokenExchangeResponse(tokenResponse)
 
             logger.debug { "JAG token exchange successful" }
-            tokenResponse.accessToken
+            tokenResponse.accessToken!!
         } catch (e: EnterpriseAuthException) {
             throw e
         } catch (e: Exception) {
             throw EnterpriseAuthException("Failed to parse JAG token exchange response", e)
+        }
+    }
+
+    private fun validateJAGTokenExchangeResponse(tokenResponse: JagTokenExchangeResponse) {
+        if (!TOKEN_TYPE_ID_JAG.equals(tokenResponse.issuedTokenType, ignoreCase = true)) {
+            throw EnterpriseAuthException(
+                "Unexpected issued_token_type in JAG response: " +
+                    "${tokenResponse.issuedTokenType} (expected $TOKEN_TYPE_ID_JAG)",
+            )
+        }
+        // token_type is informational per RFC 8693 §2.2.1; not strictly validated
+        // because some conformant IdPs omit or vary the field.
+        if (tokenResponse.accessToken.isNullOrBlank()) {
+            throw EnterpriseAuthException("JAG token exchange response is missing access_token")
         }
     }
 
@@ -228,6 +229,8 @@ public object EnterpriseAuth {
         httpClient: HttpClient,
     ): String {
         val tokenEndpoint = if (options.idpTokenEndpoint != null) {
+            // Caller has already performed RFC 8414 discovery (or knows the endpoint ahead of time);
+            // skip the discovery round-trip.
             options.idpTokenEndpoint
         } else {
             val metadata = discoverAuthServerMetadata(options.idpUrl, httpClient)
@@ -277,19 +280,23 @@ public object EnterpriseAuth {
         val params = buildList {
             add("grant_type" to GRANT_TYPE_JWT_BEARER)
             add("assertion" to options.assertion)
-            add("client_id" to options.clientId)
-            options.clientSecret?.let { add("client_secret" to it) }
             options.scope?.let { add("scope" to it) }
         }
-        val body = params.joinToString("&") { (k, v) ->
-            k.encodeURLParameter().replace("%20", "+") + "=" + v.encodeURLParameter().replace("%20", "+")
-        }
+        val body = params.joinToString("&") { (k, v) -> encodeParam(k, v) }
+
+        // Client credentials are sent using client_secret_basic (RFC 6749 §2.3.1):
+        // clientId and clientSecret are Base64-encoded and sent in the Authorization: Basic header.
+        val credentials = "${options.clientId}:${options.clientSecret ?: ""}"
+        val basicAuth = credentials.encodeToByteArray().encodeBase64()
 
         logger.debug { "Exchanging JWT bearer grant at ${options.tokenEndpoint}" }
 
         val response = httpClient.post(options.tokenEndpoint) {
             contentType(ContentType.Application.FormUrlEncoded)
-            headers { append(HttpHeaders.Accept, "application/json") }
+            headers {
+                append(HttpHeaders.Accept, "application/json")
+                append(HttpHeaders.Authorization, "Basic $basicAuth")
+            }
             setBody(body)
         }
 
@@ -305,6 +312,11 @@ public object EnterpriseAuth {
             if (tokenResponse.accessToken.isNullOrBlank()) {
                 throw EnterpriseAuthException("JWT bearer grant exchange response is missing access_token")
             }
+
+            // RFC 7523 is a stateless grant — no refresh token is expected or used.
+            // If the AS returns one, we intentionally ignore it: using it would bypass
+            // re-validation of the user's identity with the IdP and undermine
+            // session / revocation policies.
 
             // Compute absolute expiry from relative expires_in using a monotonic clock
             tokenResponse.expiresIn?.let { expiresIn ->

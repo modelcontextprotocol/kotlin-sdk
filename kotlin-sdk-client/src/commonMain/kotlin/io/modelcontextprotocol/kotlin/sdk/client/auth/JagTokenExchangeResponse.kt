@@ -9,10 +9,12 @@ import kotlinx.serialization.Serializable
  * Returned by the enterprise IdP when exchanging an ID Token for a JWT Authorization
  * Grant (ID-JAG) during Enterprise Managed Authorization (SEP-990).
  *
- * The three key fields validated by [EnterpriseAuth.requestJwtAuthorizationGrant] are:
+ * The key fields are:
  * - [accessToken] — the issued JAG (despite the name, this is an ID-JAG, not an OAuth access token)
  * - [issuedTokenType] — must be `urn:ietf:params:oauth:token-type:id-jag`
- * - [tokenType] — must be `N_A` (case-insensitive) per RFC 8693 §2.2.1
+ * - [tokenType] — informational; per RFC 8693 §2.2.1 it SHOULD be `N_A` when the issued
+ *   token is not an access token, but this is not strictly enforced as some conformant
+ *   IdPs may omit or vary the field
  *
  * @see <a href="https://datatracker.ietf.org/doc/html/rfc8693">RFC 8693</a>
  */

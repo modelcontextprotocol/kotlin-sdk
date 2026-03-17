@@ -8,6 +8,10 @@ package io.modelcontextprotocol.kotlin.sdk.client.auth
  * endpoint, exchanging the JAG (JWT Authorization Grant / ID-JAG) for a standard OAuth
  * 2.0 access token that can be used to call the MCP server.
  *
+ * Client credentials are sent using `client_secret_basic` (RFC 6749 §2.3.1): the
+ * [clientId] and [clientSecret] are Base64-encoded and sent in an `Authorization: Basic`
+ * header. This matches SEP-990 conformance requirements.
+ *
  * @param tokenEndpoint The full URL of the MCP authorization server's token endpoint.
  * @param assertion The JWT Authorization Grant (ID-JAG) obtained from Step 1.
  * @param clientId The OAuth 2.0 client ID registered at the MCP authorization server.

@@ -226,11 +226,13 @@ public final class io/modelcontextprotocol/kotlin/sdk/client/auth/EnterpriseAuth
 	public final fun getAuthHttpClient ()Lio/ktor/client/HttpClient;
 	public final fun getClientId ()Ljava/lang/String;
 	public final fun getClientSecret ()Ljava/lang/String;
+	public final fun getExpiryBuffer-UwyO8pc ()J
 	public final fun getScope ()Ljava/lang/String;
 	public final fun setAssertionCallback (Lkotlin/jvm/functions/Function2;)V
 	public final fun setAuthHttpClient (Lio/ktor/client/HttpClient;)V
 	public final fun setClientId (Ljava/lang/String;)V
 	public final fun setClientSecret (Ljava/lang/String;)V
+	public final fun setExpiryBuffer-LRDsOJo (J)V
 	public final fun setScope (Ljava/lang/String;)V
 }
 
@@ -243,11 +245,12 @@ public final class io/modelcontextprotocol/kotlin/sdk/client/auth/EnterpriseAuth
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/client/auth/EnterpriseAuthProviderOptions {
-	public fun <init> (Ljava/lang/String;Lkotlin/jvm/functions/Function2;Ljava/lang/String;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Lkotlin/jvm/functions/Function2;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlin/jvm/functions/Function2;Ljava/lang/String;Ljava/lang/String;JILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlin/jvm/functions/Function2;Ljava/lang/String;Ljava/lang/String;JLkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getAssertionCallback ()Lkotlin/jvm/functions/Function2;
 	public final fun getClientId ()Ljava/lang/String;
 	public final fun getClientSecret ()Ljava/lang/String;
+	public final fun getExpiryBuffer-UwyO8pc ()J
 	public final fun getScope ()Ljava/lang/String;
 }
 
