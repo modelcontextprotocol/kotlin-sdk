@@ -19,12 +19,12 @@ Kotlin Multiplatform SDK for the [Model Context Protocol (MCP)](https://modelcon
 
 Run a single test class:
 ```bash
-./gradlew :kotlin-sdk-server:jvmTest --tests "io.modelcontextprotocol.kotlin.sdk.server.ServerTest"
+./gradlew :kotlin-sdk-server:jvmTest --tests "io.modelcontextprotocol.kotlin.sdk.server.StdioServerTransportTest"
 ```
 
 Run a single test method:
 ```bash
-./gradlew :kotlin-sdk-core:jvmTest --tests "*.ProtocolTest.should handle request timeout"
+./gradlew :kotlin-sdk-core:jvmTest --tests "*.ProtocolTest.should preserve existing meta when adding progress token"
 ```
 
 Conformance tests (requires Node.js + npx):
