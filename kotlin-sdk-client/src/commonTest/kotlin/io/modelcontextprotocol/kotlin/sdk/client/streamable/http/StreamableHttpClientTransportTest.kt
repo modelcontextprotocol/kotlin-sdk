@@ -31,6 +31,8 @@ import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -243,6 +245,7 @@ class StreamableHttpClientTransportTest {
     @Test
     fun testNotificationSchemaE2E() = runTest {
         val receivedMessages = mutableListOf<JSONRPCMessage>()
+        val mutex = Mutex()
         var sseStarted = false
 
         val transport = createTransport { request ->
@@ -300,7 +303,7 @@ class StreamableHttpClientTransportTest {
         }
 
         transport.onMessage { message ->
-            receivedMessages.add(message)
+            mutex.withLock { receivedMessages.add(message) }
         }
 
         transport.start()
@@ -514,12 +517,15 @@ class StreamableHttpClientTransportTest {
         }
 
         val receivedMessages = mutableListOf<JSONRPCMessage>()
+        val mutex = Mutex()
         val twoMessagesReceived = CompletableDeferred<Unit>()
 
         transport.onMessage { message ->
-            receivedMessages.add(message)
-            if (receivedMessages.size >= 2 && !twoMessagesReceived.isCompleted) {
-                twoMessagesReceived.complete(Unit)
+            mutex.withLock {
+                receivedMessages.add(message)
+                if (receivedMessages.size >= 2 && !twoMessagesReceived.isCompleted) {
+                    twoMessagesReceived.complete(Unit)
+                }
             }
         }
 
@@ -685,12 +691,15 @@ class StreamableHttpClientTransportTest {
         }
 
         val receivedMessages = mutableListOf<JSONRPCMessage>()
+        val mutex = Mutex()
         val responseReceived = CompletableDeferred<Unit>()
 
         transport.onMessage { message ->
-            receivedMessages.add(message)
-            if (message is JSONRPCResponse && !responseReceived.isCompleted) {
-                responseReceived.complete(Unit)
+            mutex.withLock {
+                receivedMessages.add(message)
+                if (message is JSONRPCResponse && !responseReceived.isCompleted) {
+                    responseReceived.complete(Unit)
+                }
             }
         }
 
@@ -748,12 +757,15 @@ class StreamableHttpClientTransportTest {
         }
 
         val receivedMessages = mutableListOf<JSONRPCMessage>()
+        val mutex = Mutex()
         val twoMessagesReceived = CompletableDeferred<Unit>()
 
         transport.onMessage { message ->
-            receivedMessages.add(message)
-            if (receivedMessages.size >= 2 && !twoMessagesReceived.isCompleted) {
-                twoMessagesReceived.complete(Unit)
+            mutex.withLock {
+                receivedMessages.add(message)
+                if (receivedMessages.size >= 2 && !twoMessagesReceived.isCompleted) {
+                    twoMessagesReceived.complete(Unit)
+                }
             }
         }
 
@@ -804,12 +816,15 @@ class StreamableHttpClientTransportTest {
         }
 
         val receivedMessages = mutableListOf<JSONRPCMessage>()
+        val mutex = Mutex()
         val responseReceived = CompletableDeferred<Unit>()
 
         transport.onMessage { message ->
-            receivedMessages.add(message)
-            if (message is JSONRPCResponse && !responseReceived.isCompleted) {
-                responseReceived.complete(Unit)
+            mutex.withLock {
+                receivedMessages.add(message)
+                if (message is JSONRPCResponse && !responseReceived.isCompleted) {
+                    responseReceived.complete(Unit)
+                }
             }
         }
 
@@ -860,10 +875,11 @@ class StreamableHttpClientTransportTest {
         transport: StreamableHttpClientTransport,
     ): Pair<MutableList<JSONRPCMessage>, MutableList<Throwable>> {
         val receivedMessages = mutableListOf<JSONRPCMessage>()
+        val mutex = Mutex()
         val receivedErrors = mutableListOf<Throwable>()
 
         transport.onMessage { message ->
-            receivedMessages.add(message)
+            mutex.withLock { receivedMessages.add(message) }
         }
 
         transport.onError { error ->

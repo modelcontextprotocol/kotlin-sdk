@@ -10,17 +10,14 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineName
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
+import kotlin.coroutines.CoroutineContext
 
 /**
  *  A transport implementation that uses Kotlin Coroutines Channels for asynchronous
@@ -37,11 +34,10 @@ public class ChannelTransport(
     private val sendChannel: SendChannel<JSONRPCMessage>,
     private val receiveChannel: ReceiveChannel<JSONRPCMessage>,
     dispatcher: CoroutineDispatcher = Dispatchers.Default,
-) : AbstractClientTransport() {
+    handlerContext: CoroutineContext = dispatcher,
+) : AbstractClientTransport(dispatcher, handlerContext) {
 
     override val logger: KLogger = KotlinLogging.logger {}
-
-    private val scope = CoroutineScope(SupervisorJob() + dispatcher)
 
     /**
      * Creates a `ChannelTransport` instance using a single channel for both sending and receiving messages.
@@ -57,7 +53,8 @@ public class ChannelTransport(
     public constructor(
         channel: Channel<JSONRPCMessage> = Channel(UNLIMITED),
         dispatcher: CoroutineDispatcher = Dispatchers.Default,
-    ) : this(channel, channel, dispatcher)
+        handlerContext: CoroutineContext = dispatcher,
+    ) : this(channel, channel, dispatcher, handlerContext)
 
     /**
      * Represents a pair of interconnected [ChannelTransport]s for bidirectional communication.
@@ -68,7 +65,12 @@ public class ChannelTransport(
      * @property clientTransport The transport intended for use on the client-side.
      * @property serverTransport The transport intended for use on the server-side.
      */
-    public data class LinkedTransports(val clientTransport: ChannelTransport, val serverTransport: ChannelTransport)
+    public data class LinkedTransports(val clientTransport: ChannelTransport, val serverTransport: ChannelTransport) {
+        public suspend fun close() {
+            clientTransport.close()
+            serverTransport.close()
+        }
+    }
 
     public companion object {
 
@@ -85,11 +87,12 @@ public class ChannelTransport(
         public fun createLinkedPair(
             capacity: Int = 256,
             dispatcher: CoroutineDispatcher = Dispatchers.Default,
+            handlerContext: CoroutineContext = dispatcher,
         ): LinkedTransports {
             val sendChannel = Channel<JSONRPCMessage>(capacity)
             val receiveChannel = Channel<JSONRPCMessage>(capacity)
-            val clientTransport = ChannelTransport(sendChannel, receiveChannel, dispatcher)
-            val serverTransport = ChannelTransport(receiveChannel, sendChannel, dispatcher)
+            val clientTransport = ChannelTransport(sendChannel, receiveChannel, dispatcher, handlerContext)
+            val serverTransport = ChannelTransport(receiveChannel, sendChannel, dispatcher, handlerContext)
             return LinkedTransports(clientTransport = clientTransport, serverTransport = serverTransport)
         }
     }
@@ -115,20 +118,24 @@ public class ChannelTransport(
 
                 for (message in receiveChannel) {
                     logger.debug { "Received message: ${message::class.simpleName}" }
+                    @Suppress("InjectDispatcher")
+                    handleMessage(message)
+                        .invokeOnCompletion {
+                            when (it) {
+                                null -> logger.trace { "Message processed successfully: ${message::class.simpleName}" }
 
-                    try {
-                        _onMessage.invoke(message)
-                        logger.trace { "Message processed successfully: ${message::class.simpleName}" }
-                    } catch (e: CancellationException) {
-                        // Let cancellation propagate immediately
-                        logger.debug { "Cancellation requested during message processing" }
-                        throw e
-                    } catch (e: Exception) {
-                        // Report other errors but continue processing
-                        logger.warn(e) { "Error processing message: ${message::class.simpleName}" }
-                        _onError.invoke(e)
-                    }
+                                is CancellationException -> logger.debug {
+                                    "Cancellation requested during message processing"
+                                }
+
+                                else -> logger.warn(it) {
+                                    "Error processing message: ${message::class.simpleName}"
+                                }
+                            }
+                        }
                 }
+                logger.info { "ChannelTransport stopping: receive channel closed" }
+                joinInProgressHandlers()
                 logger.info { "ChannelTransport stopped: receive channel closed" }
             } catch (e: Exception) {
                 // Only complete exceptionally if not already completed
@@ -169,8 +176,7 @@ public class ChannelTransport(
             logger.debug { "Cancelling separate receive channel" }
             receiveChannel.cancel()
         }
-        scope.cancel()
-        scope.coroutineContext[Job]?.join() // Wait for cleanup
+        shutdownHandlers()
         logger.info { "ChannelTransport closed" }
     }
 }

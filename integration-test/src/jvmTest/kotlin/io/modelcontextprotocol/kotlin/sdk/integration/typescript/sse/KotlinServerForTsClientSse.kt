@@ -42,6 +42,8 @@ import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
@@ -309,7 +311,9 @@ class KotlinServerForTsClient {
     }
 }
 
-class HttpServerTransport(private val sessionId: String) : AbstractTransport() {
+@Suppress("InjectDispatcher")
+class HttpServerTransport(private val sessionId: String) :
+    AbstractTransport(Dispatchers.Default + SupervisorJob()) {
     private val logger = KotlinLogging.logger {}
     private val pendingResponses = ConcurrentHashMap<String, CompletableDeferred<JSONRPCMessage>>()
     private val messageQueue = Channel<JSONRPCMessage>(Channel.UNLIMITED)
@@ -352,7 +356,7 @@ class HttpServerTransport(private val sessionId: String) : AbstractTransport() {
                 logger.info { "Created deferred response for ID: $id" }
 
                 logger.info { "Invoking onMessage handler" }
-                _onMessage.invoke(message)
+                handleMessage(message)
                 logger.info { "onMessage handler completed" }
 
                 try {

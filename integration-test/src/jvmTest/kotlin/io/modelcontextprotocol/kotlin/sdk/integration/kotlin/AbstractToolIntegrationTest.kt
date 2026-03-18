@@ -9,11 +9,14 @@ import io.modelcontextprotocol.kotlin.sdk.types.ImageContent
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
@@ -21,6 +24,8 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.Locale
@@ -158,14 +163,29 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
                             put("description", "Delay in milliseconds")
                         },
                     )
+                    put(
+                        "blocking",
+                        buildJsonObject {
+                            put("type", "boolean")
+                            put("description", "Whether to block the thread while waiting")
+                        },
+                    )
                 },
             ),
         ) { request ->
             val delay = (request.params.arguments?.get("delay") as? JsonPrimitive)?.content?.toIntOrNull() ?: 1000
+            val blocking = (request.params.arguments?.get("blocking") as? JsonPrimitive)?.content?.toBoolean() ?: false
 
             // simulate slow operation
-            runBlocking {
-                delay(delay.toLong())
+
+            if (blocking) {
+                @Suppress("RunBlockingInSuspendFunction")
+                runBlocking { delay(delay.toLong()) }
+            } else {
+                @Suppress("InjectDispatcher")
+                withContext(Dispatchers.Default) {
+                    delay(delay.toLong())
+                }
             }
 
             CallToolResult(
@@ -689,6 +709,45 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
         """.trimIndent()
 
         actualContent shouldEqualJson expectedContent
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    @Suppress("InjectDispatcher")
+    fun testToolConcurrentProcessing(blocking: Boolean): Unit = runBlocking(Dispatchers.Default) {
+        val delayMs = 1000
+        val arguments = mapOf("delay" to delayMs, "blocking" to blocking)
+
+        val startTime = System.currentTimeMillis()
+
+        // Start a slow tool call
+        val deferredSlow = async {
+            client.callTool(slowToolName, arguments)
+        }
+
+        // Give it a tiny bit of time to reach the server and start processing
+        delay(50)
+
+        // Start a fast tool call
+        val deferredFast = async(start = CoroutineStart.UNDISPATCHED) {
+            client.callTool(testToolName, mapOf("text" to "fast"))
+        }
+
+        val fastResult = deferredFast.await()
+        val fastEndTime = System.currentTimeMillis()
+
+        // The fast tool should finish MUCH sooner than the slow tool's delay if processed concurrently
+        assertTrue(
+            fastEndTime - startTime < delayMs,
+            "Fast tool should finish before the slow tool's delay (took ${fastEndTime - startTime}ms)",
+        )
+
+        deferredSlow.await()
+        val slowEndTime = System.currentTimeMillis()
+
+        assertTrue(slowEndTime - startTime >= delayMs, "Slow tool should take at least the specified delay")
+
+        assertEquals("Echo: fast", (fastResult.content.first() as TextContent).text)
     }
 
     @Test

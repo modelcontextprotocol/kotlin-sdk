@@ -8,10 +8,8 @@ import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.serializeMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.isActive
@@ -25,7 +23,6 @@ import kotlinx.io.readByteArray
 import kotlinx.io.writeString
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
-import kotlin.coroutines.CoroutineContext
 
 private const val READ_BUFFER_SIZE = 8192L
 
@@ -48,8 +45,6 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
     private var sendingJob: Job? = null
     private var processingJob: Job? = null
 
-    private val coroutineContext: CoroutineContext = IODispatcher + SupervisorJob()
-    private val scope = CoroutineScope(coroutineContext)
     private val readChannel = Channel<ByteArray>(Channel.UNLIMITED)
     private val writeChannel = Channel<JSONRPCMessage>(Channel.UNLIMITED)
     private val outputSink = outputStream.buffered()
@@ -70,7 +65,7 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
     }
 
     private fun launchReadingJob(): Job {
-        val job = scope.launch {
+        val job = scope.launch(IODispatcher) {
             val buf = Buffer()
             @Suppress("TooGenericExceptionCaught")
             try {
@@ -89,7 +84,7 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
                 throw e
             } catch (e: Throwable) {
                 logger.error(e) { "Error reading from stdin" }
-                _onError.invoke(e)
+                handleError(e)
             } finally {
                 // Reached EOF or error, close connection
                 close()
@@ -112,7 +107,7 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
-                _onError.invoke(e)
+                handleError(e)
             }
         }
         job.invokeOnCompletion { cause ->
@@ -122,7 +117,7 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
     }
 
     private fun launchSendingJob(): Job {
-        val job = scope.launch {
+        val job = scope.launch(IODispatcher) {
             @Suppress("TooGenericExceptionCaught")
             try {
                 for (message in writeChannel) {
@@ -134,7 +129,7 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
                 throw e
             } catch (e: Throwable) {
                 logger.error(e) { "Error writing to stdout" }
-                _onError.invoke(e)
+                handleError(e)
             }
         }
         job.invokeOnCompletion { cause ->
@@ -146,25 +141,24 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
         return job
     }
 
-    private suspend fun processReadBuffer() {
+    private fun processReadBuffer() {
         @Suppress("TooGenericExceptionCaught")
         while (true) {
             val message = try {
                 readBuffer.readMessage()
             } catch (e: Throwable) {
-                _onError.invoke(e)
+                handleError(e)
                 null
             }
 
             if (message == null) break
-            // Async invocation broke delivery order
             try {
-                _onMessage.invoke(message)
+                handleMessage(message)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
                 logger.error(e) { "Error processing message" }
-                _onError.invoke(e)
+                handleError(e)
             }
         }
     }
@@ -188,6 +182,7 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
         if (!initialized.compareAndSet(expectedValue = true, newValue = false)) return
 
         withContext(NonCancellable) {
+            shutdownHandlers()
             writeChannel.close()
             sendingJob?.cancelAndJoin()
 

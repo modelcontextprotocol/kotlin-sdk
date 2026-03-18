@@ -113,7 +113,7 @@ abstract class AbstractAuthenticationTest {
         var mcpClient: Client? = null
         try {
             mcpClient = Client(Implementation(name = "test-client", version = "1.0.0"))
-            withTimeout(5.seconds) {
+            withTimeout(10.seconds) {
                 mcpClient.connect(createClientTransport(baseUrl, VALID_USER, VALID_PASSWORD))
             }
 

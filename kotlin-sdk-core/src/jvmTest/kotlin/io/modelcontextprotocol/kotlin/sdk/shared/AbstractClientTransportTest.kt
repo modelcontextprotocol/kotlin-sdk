@@ -448,6 +448,7 @@ class AbstractClientTransportTest {
     @OptIn(InternalMcpApi::class)
     private class TestClientTransport : AbstractClientTransport() {
         override val logger: KLogger = KotlinLogging.logger {}
+
         val sentMessages = mutableListOf<JSONRPCMessage>()
         var lastSendOptions: TransportSendOptions? = null
         var initializeCalled = false

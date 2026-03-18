@@ -10,6 +10,8 @@ import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotificationParams
 import io.modelcontextprotocol.kotlin.sdk.types.ToolListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -44,15 +46,16 @@ class InMemoryTransportTest {
 
     @Test
     fun `should send message from client to server`() = runTest {
+        val (client, server) = InMemoryTransport.createLinkedPair(backgroundScope.coroutineContext)
         val message = InitializedNotification()
 
         var receivedMessage: JSONRPCMessage? = null
-        serverTransport.onMessage { msg ->
+        server.onMessage { msg ->
             receivedMessage = msg
         }
 
         val rpcNotification = message.toJSON()
-        clientTransport.send(rpcNotification)
+        client.send(rpcNotification)
         assertEquals(rpcNotification, receivedMessage)
     }
 
@@ -190,8 +193,11 @@ class InMemoryTransportTest {
         )
 
         val receivedMessages = mutableListOf<JSONRPCMessage>()
+        val mutex = Mutex()
         clientTransport.onMessage { msg ->
-            receivedMessages.add(msg)
+            mutex.withLock {
+                receivedMessages.add(msg)
+            }
         }
 
         notifications.forEach { notification ->

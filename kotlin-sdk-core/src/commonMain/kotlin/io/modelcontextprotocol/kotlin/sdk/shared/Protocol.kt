@@ -355,11 +355,13 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
 
         val handler = _progressHandlers.value[progressToken]
         if (handler == null) {
-            val error = Error(
-                "Received a progress notification for an unknown token: ${McpJson.encodeToString(notification)}",
-            )
-            logger.error { error.message }
-            onError(error)
+            logger.warn {
+                "Received a progress notification for an unknown or missing token: ${
+                    McpJson.encodeToString(
+                        notification,
+                    )
+                }. It may have arrived after the response was processed."
+            }
             return
         }
 

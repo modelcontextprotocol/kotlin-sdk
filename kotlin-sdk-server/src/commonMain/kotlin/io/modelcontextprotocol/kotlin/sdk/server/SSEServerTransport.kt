@@ -29,7 +29,7 @@ internal const val SESSION_ID_PARAM = "sessionId"
  */
 @OptIn(ExperimentalAtomicApi::class)
 public class SseServerTransport(private val endpoint: String, private val session: ServerSSESession) :
-    AbstractTransport() {
+    AbstractTransport(session.call.coroutineContext) {
     private val initialized: AtomicBoolean = AtomicBoolean(false)
 
     @OptIn(ExperimentalUuidApi::class)
@@ -56,7 +56,7 @@ public class SseServerTransport(private val endpoint: String, private val sessio
         @OptIn(InternalCoroutinesApi::class)
         session.coroutineContext.job.invokeOnCompletion {
             if (it != null && it !is CancellationException) {
-                _onError.invoke(it)
+                handleError(it)
             } else {
                 invokeOnCloseCallback()
             }
@@ -72,7 +72,7 @@ public class SseServerTransport(private val endpoint: String, private val sessio
         if (!initialized.load()) {
             val message = "SSE connection not established"
             call.respondText(message, status = HttpStatusCode.InternalServerError)
-            _onError.invoke(IllegalStateException(message))
+            handleError(IllegalStateException(message))
         }
 
         val body = try {
@@ -84,7 +84,7 @@ public class SseServerTransport(private val endpoint: String, private val sessio
             call.receiveText()
         } catch (e: Exception) {
             call.respondText("Invalid message: ${e.message}", status = HttpStatusCode.BadRequest)
-            _onError.invoke(e)
+            handleError(e)
             return
         }
 
@@ -103,16 +103,17 @@ public class SseServerTransport(private val endpoint: String, private val sessio
      * This can be used to inform the server of messages that arrive via a means different from HTTP POST.
      */
     public suspend fun handleMessage(message: String) {
-        try {
-            val parsedMessage = McpJson.decodeFromString<JSONRPCMessage>(message)
-            _onMessage.invoke(parsedMessage)
+        val parsedMessage = try {
+            McpJson.decodeFromString<JSONRPCMessage>(message)
         } catch (e: Exception) {
-            _onError.invoke(e)
+            handleError(e)
             throw e
         }
+        handleMessageInline(parsedMessage)
     }
 
     override suspend fun close() {
+        shutdownHandlers()
         session.close()
         invokeOnCloseCallback()
     }

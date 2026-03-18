@@ -19,9 +19,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.INTERNAL_ERRO
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
@@ -112,7 +110,6 @@ public class StdioClientTransport @JvmOverloads public constructor(
     public enum class StderrSeverity { FATAL, WARNING, INFO, DEBUG, IGNORE }
 
     private val ioCoroutineContext: CoroutineContext = IODispatcher
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override suspend fun initialize() {
         logger.debug { "Starting StdioClientTransport..." }
@@ -170,7 +167,7 @@ public class StdioClientTransport @JvmOverloads public constructor(
                     .collect { event ->
                         when (event) {
                             is Event.JsonRpc -> {
-                                handleJSONRPCMessage(event.message)
+                                handleMessage(event.message)
                             }
 
                             is Event.StderrEvent -> {
@@ -178,11 +175,11 @@ public class StdioClientTransport @JvmOverloads public constructor(
                                 when (errorSeverity) {
                                     FATAL -> {
                                         runCatching {
-                                            _onError(
+                                            handleError(
                                                 McpException(INTERNAL_ERROR, "Message in StdErr: ${event.message}"),
                                             )
                                         }
-                                        stopProcessing("Fatal STDERR message received")
+                                        cancelProcessing("Fatal STDERR message received")
                                     }
 
                                     WARNING -> {
@@ -205,13 +202,13 @@ public class StdioClientTransport @JvmOverloads public constructor(
 
                             is Event.EOFEvent -> {
                                 if (event.stream == ProcessStream.Stdin) {
-                                    stopProcessing("EOF in ${event.stream}")
+                                    cancelProcessing("EOF in ${event.stream}")
                                 }
                             }
 
                             is Event.IOErrorEvent -> {
-                                runCatching { _onError(event.cause) }
-                                stopProcessing("IO Error", event.cause)
+                                handleError(event.cause)
+                                cancelProcessing("IO Error", event.cause)
                             }
                         }
                     }
@@ -241,8 +238,7 @@ public class StdioClientTransport @JvmOverloads public constructor(
     }
 
     override suspend fun closeResources() {
-        scope.stopProcessing("Closed")
-        scope.coroutineContext[Job]?.join() // Wait for all coroutines to complete
+        finishProcessing()
     }
 
     private fun sendOutboundMessage(message: JSONRPCMessage, sink: Sink, mainScope: CoroutineScope) {
@@ -252,26 +248,24 @@ public class StdioClientTransport @JvmOverloads public constructor(
             sink.flush()
         } catch (e: SerializationException) {
             logger.warn(e) { "Can't serialize message" }
-            runCatching { _onError(McpException(INTERNAL_ERROR, "Serialization error")) }
-            mainScope.stopProcessing("Can't serialize message", e)
+            handleError(McpException(INTERNAL_ERROR, "Serialization error"))
+            mainScope.cancelProcessing("Can't serialize message", e)
         } catch (e: IOException) {
             logger.warn(e) { "Can't send message" }
-            runCatching { _onError(McpException(CONNECTION_CLOSED, "Can't send message. Connection closed")) }
-            mainScope.stopProcessing("Write I/O failed", e)
+            handleError(McpException(CONNECTION_CLOSED, "Can't send message. Connection closed"))
+            mainScope.cancelProcessing("Write I/O failed", e)
         }
     }
 
-    private suspend fun handleJSONRPCMessage(msg: JSONRPCMessage) {
-        try {
-            _onMessage.invoke(msg)
-        } catch (e: Throwable) {
-            logger.error(e) { "Error processing message." }
-            runCatching { _onError.invoke(e) }
-        }
-    }
-
-    private fun CoroutineScope.stopProcessing(reason: String, cause: Throwable? = null) {
+    private suspend fun finishProcessing() {
         sendChannel.close() // Stop accepting new messages
+        shutdownHandlers()
+        invokeOnCloseCallback()
+    }
+
+    private fun CoroutineScope.cancelProcessing(reason: String, cause: Throwable? = null) {
+        sendChannel.close() // Stop accepting new messages
+        cancelInProgressHandlers(reason, cause)
         invokeOnCloseCallback()
         cancel(reason, cause) // cancel current coroutine context
     }

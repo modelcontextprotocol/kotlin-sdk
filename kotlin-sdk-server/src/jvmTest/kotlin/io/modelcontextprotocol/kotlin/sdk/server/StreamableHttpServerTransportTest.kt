@@ -39,6 +39,8 @@ import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -214,11 +216,14 @@ class StreamableHttpServerTransportTest {
 
         val transport = StreamableHttpServerTransport(enableJsonResponse = true)
         val receivedMessages = mutableListOf<JSONRPCMessage>()
+        val mutex = Mutex()
         transport.onMessage { message ->
-            if (message is JSONRPCRequest) {
-                transport.send(JSONRPCResponse(message.id, EmptyResult()))
+            mutex.withLock {
+                if (message is JSONRPCRequest) {
+                    transport.send(JSONRPCResponse(message.id, EmptyResult()))
+                }
+                receivedMessages.add(message)
             }
-            receivedMessages.add(message)
         }
 
         configureTransportEndpoint(transport)

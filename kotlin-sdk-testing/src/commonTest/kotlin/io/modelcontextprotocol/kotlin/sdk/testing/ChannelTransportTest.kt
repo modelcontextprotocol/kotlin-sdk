@@ -1,7 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.testing
 
 import io.kotest.assertions.nondeterministic.eventually
-import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
@@ -12,7 +12,10 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
@@ -40,10 +43,13 @@ class ChannelTransportTest {
 
         val messagesProcessed = CompletableDeferred<Unit>()
         val received = mutableListOf<JSONRPCMessage>()
+        val mutex = Mutex()
         transport.onMessage { msg ->
-            received.add(msg)
-            if (received.size == 2) {
-                messagesProcessed.complete(Unit)
+            mutex.withLock {
+                received.add(msg)
+                if (received.size == 2) {
+                    messagesProcessed.complete(Unit)
+                }
             }
         }
 
@@ -57,7 +63,7 @@ class ChannelTransportTest {
         // Wait for messages to be processed
         messagesProcessed.await()
 
-        received.shouldContainExactly(msg1, msg2)
+        received.shouldContainExactlyInAnyOrder(msg1, msg2)
     }
 
     @Test
@@ -67,9 +73,12 @@ class ChannelTransportTest {
 
         val messageProcessed = CompletableDeferred<Unit>()
         val received = mutableListOf<JSONRPCMessage>()
+        val mutex = Mutex()
         transport.onMessage {
-            received.add(it)
-            messageProcessed.complete(Unit)
+            mutex.withLock {
+                received.add(it)
+                messageProcessed.complete(Unit)
+            }
         }
 
         transport.start()
@@ -81,7 +90,7 @@ class ChannelTransportTest {
         // Wait for a message to be processed
         messageProcessed.await()
 
-        received.shouldContainExactly(msg)
+        received.shouldContainExactlyInAnyOrder(msg)
     }
 
     @Test
@@ -106,12 +115,17 @@ class ChannelTransportTest {
 
         val messageProcessed = CompletableDeferred<Unit>()
         val calls = mutableListOf<String>()
+        val mutex = Mutex()
         transport.onMessage {
-            calls.add("first")
+            mutex.withLock {
+                calls.add("first")
+            }
         }
         transport.onMessage {
-            calls.add("second")
-            messageProcessed.complete(Unit)
+            mutex.withLock {
+                calls.add("second")
+                messageProcessed.complete(Unit)
+            }
         }
 
         val startJob = backgroundScope.launch { transport.start() }
@@ -119,7 +133,7 @@ class ChannelTransportTest {
         receiveChannel.send(JSONRPCRequest(RequestId.NumberId(1), "test"))
         messageProcessed.await()
 
-        calls.shouldContainExactly("first", "second")
+        calls.shouldContainExactlyInAnyOrder("first", "second")
         startJob.cancelAndJoin()
     }
 
@@ -130,9 +144,12 @@ class ChannelTransportTest {
 
         val messageProcessed = CompletableDeferred<Unit>()
         val received = mutableListOf<JSONRPCMessage>()
+        val mutex = Mutex()
         transport.onMessage { msg ->
-            received.add(msg)
-            messageProcessed.complete(Unit)
+            mutex.withLock {
+                received.add(msg)
+                messageProcessed.complete(Unit)
+            }
         }
 
         transport.start()
@@ -142,7 +159,7 @@ class ChannelTransportTest {
         messageProcessed.await()
 
         eventually(2.seconds) {
-            received.shouldContainExactly(message)
+            received.shouldContainExactlyInAnyOrder(message)
         }
     }
 
@@ -179,18 +196,23 @@ class ChannelTransportTest {
 
         val allProcessed = CompletableDeferred<Unit>()
         val received = mutableListOf<Int>()
-        val errors = mutableListOf<Throwable>()
+        val errors = Channel<Throwable>(Channel.UNLIMITED)
+        val mutex = Mutex()
 
-        transport.onError { errors.add(it) }
+        transport.onError { error ->
+            errors.trySend(error)
+        }
         transport.onMessage { msg ->
             val id = ((msg as JSONRPCRequest).id as RequestId.NumberId).value.toInt()
-            received.add(id)
-            if (id == 2) {
-                @Suppress("TooGenericExceptionThrown")
-                throw RuntimeException("Error processing message 2")
-            }
-            if (received.size == 4) {
-                allProcessed.complete(Unit)
+            mutex.withLock {
+                received.add(id)
+                if (id == 2) {
+                    @Suppress("TooGenericExceptionThrown")
+                    throw RuntimeException("Error processing message 2")
+                }
+                if (received.size == 4) {
+                    allProcessed.complete(Unit)
+                }
             }
         }
 
@@ -199,14 +221,23 @@ class ChannelTransportTest {
         // Send 4 messages, second one will throw
         receiveChannel.send(JSONRPCRequest(RequestId.NumberId(1), "m1"))
         receiveChannel.send(JSONRPCRequest(RequestId.NumberId(2), "m2"))
+        delay(100)
         receiveChannel.send(JSONRPCRequest(RequestId.NumberId(3), "m3"))
         receiveChannel.send(JSONRPCRequest(RequestId.NumberId(4), "m4"))
 
         allProcessed.await()
+        transport.close()
 
         // All messages should be processed despite error in message 2
-        received.shouldContainExactly(1, 2, 3, 4)
-        errors.size shouldBe 1
-        errors[0].message shouldBe "Error processing message 2"
+        received.shouldContainExactlyInAnyOrder(1, 2, 3, 4)
+        val capturedErrors = mutableListOf<Throwable>()
+        eventually(2.seconds) {
+            while (true) {
+                val error = errors.tryReceive().getOrNull() ?: break
+                capturedErrors.add(error)
+            }
+            capturedErrors.size shouldBe 1
+            capturedErrors[0].message shouldBe "Error processing message 2"
+        }
     }
 }

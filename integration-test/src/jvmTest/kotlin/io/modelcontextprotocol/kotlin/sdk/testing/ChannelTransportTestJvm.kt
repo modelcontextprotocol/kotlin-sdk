@@ -23,7 +23,7 @@ import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 
 @OptIn(ExperimentalMcpApi::class)
-class ChannelTransportTest {
+class ChannelTransportTestJvm {
 
     @Test
     fun `should connect and list resources`(): Unit = runBlocking {

@@ -61,32 +61,33 @@ class ClientTest {
     @Test
     fun `should initialize with matching protocol version`() = runTest {
         var initialised = false
-        val clientTransport = object : AbstractTransport() {
-            override suspend fun start() {}
+        val clientTransport =
+            object : AbstractTransport(backgroundScope.coroutineContext, backgroundScope.coroutineContext) {
+                override suspend fun start() {}
 
-            override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
-                if (message !is JSONRPCRequest) return
-                initialised = true
-                val result = InitializeResult(
-                    protocolVersion = LATEST_PROTOCOL_VERSION,
-                    capabilities = ServerCapabilities(),
-                    serverInfo = Implementation(
-                        name = "test",
-                        version = "1.0",
-                    ),
-                )
+                override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
+                    if (message !is JSONRPCRequest) return
+                    initialised = true
+                    val result = InitializeResult(
+                        protocolVersion = LATEST_PROTOCOL_VERSION,
+                        capabilities = ServerCapabilities(),
+                        serverInfo = Implementation(
+                            name = "test",
+                            version = "1.0",
+                        ),
+                    )
 
-                val response = JSONRPCResponse(
-                    id = message.id,
-                    result = result,
-                )
+                    val response = JSONRPCResponse(
+                        id = message.id,
+                        result = result,
+                    )
 
-                _onMessage.invoke(response)
+                    handleMessage(response)
+                }
+
+                override suspend fun close() {
+                }
             }
-
-            override suspend fun close() {
-            }
-        }
 
         val client = Client(
             clientInfo = Implementation(
@@ -107,32 +108,33 @@ class ClientTest {
     @Test
     fun `should initialize with supported older protocol version`() = runTest {
         val oldVersion = SUPPORTED_PROTOCOL_VERSIONS[1]
-        val clientTransport = object : AbstractTransport() {
-            override suspend fun start() {}
+        val clientTransport =
+            object : AbstractTransport(backgroundScope.coroutineContext, backgroundScope.coroutineContext) {
+                override suspend fun start() {}
 
-            override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
-                if (message !is JSONRPCRequest) return
-                check(message.method == Method.Defined.Initialize.value)
+                override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
+                    if (message !is JSONRPCRequest) return
+                    check(message.method == Method.Defined.Initialize.value)
 
-                val result = InitializeResult(
-                    protocolVersion = oldVersion,
-                    capabilities = ServerCapabilities(),
-                    serverInfo = Implementation(
-                        name = "test",
-                        version = "1.0",
-                    ),
-                )
+                    val result = InitializeResult(
+                        protocolVersion = oldVersion,
+                        capabilities = ServerCapabilities(),
+                        serverInfo = Implementation(
+                            name = "test",
+                            version = "1.0",
+                        ),
+                    )
 
-                val response = JSONRPCResponse(
-                    id = message.id,
-                    result = result,
-                )
-                _onMessage.invoke(response)
+                    val response = JSONRPCResponse(
+                        id = message.id,
+                        result = result,
+                    )
+                    handleMessage(response)
+                }
+
+                override suspend fun close() {
+                }
             }
-
-            override suspend fun close() {
-            }
-        }
 
         val client = Client(
             clientInfo = Implementation(
@@ -156,34 +158,35 @@ class ClientTest {
     @Test
     fun `should reject unsupported protocol version`() = runTest {
         var closed = false
-        val clientTransport = object : AbstractTransport() {
-            override suspend fun start() {}
+        val clientTransport =
+            object : AbstractTransport(backgroundScope.coroutineContext, backgroundScope.coroutineContext) {
+                override suspend fun start() {}
 
-            override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
-                if (message !is JSONRPCRequest) return
-                check(message.method == Method.Defined.Initialize.value)
+                override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
+                    if (message !is JSONRPCRequest) return
+                    check(message.method == Method.Defined.Initialize.value)
 
-                val result = InitializeResult(
-                    protocolVersion = "invalid-version",
-                    capabilities = ServerCapabilities(),
-                    serverInfo = Implementation(
-                        name = "test",
-                        version = "1.0",
-                    ),
-                )
+                    val result = InitializeResult(
+                        protocolVersion = "invalid-version",
+                        capabilities = ServerCapabilities(),
+                        serverInfo = Implementation(
+                            name = "test",
+                            version = "1.0",
+                        ),
+                    )
 
-                val response = JSONRPCResponse(
-                    id = message.id,
-                    result = result,
-                )
+                    val response = JSONRPCResponse(
+                        id = message.id,
+                        result = result,
+                    )
 
-                _onMessage.invoke(response)
+                    handleMessage(response)
+                }
+
+                override suspend fun close() {
+                    closed = true
+                }
             }
-
-            override suspend fun close() {
-                closed = true
-            }
-        }
 
         val client = Client(
             clientInfo = Implementation(
@@ -203,19 +206,20 @@ class ClientTest {
     @Test
     fun `should reject due to non cancellation exception`() = runTest {
         var closed = false
-        val failingTransport = object : AbstractTransport() {
-            override suspend fun start() {}
+        val failingTransport =
+            object : AbstractTransport(backgroundScope.coroutineContext, backgroundScope.coroutineContext) {
+                override suspend fun start() {}
 
-            override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
-                if (message !is JSONRPCRequest) return
-                check(message.method == Method.Defined.Initialize.value)
-                throw IllegalStateException("Test error")
-            }
+                override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
+                    if (message !is JSONRPCRequest) return
+                    check(message.method == Method.Defined.Initialize.value)
+                    throw IllegalStateException("Test error")
+                }
 
-            override suspend fun close() {
-                closed = true
+                override suspend fun close() {
+                    closed = true
+                }
             }
-        }
 
         val client = Client(
             clientInfo = Implementation(
@@ -237,22 +241,23 @@ class ClientTest {
     @Test
     fun `should rethrow McpException as is`() = runTest {
         var closed = false
-        val failingTransport = object : AbstractTransport() {
-            override suspend fun start() {}
+        val failingTransport =
+            object : AbstractTransport(backgroundScope.coroutineContext, backgroundScope.coroutineContext) {
+                override suspend fun start() {}
 
-            override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
-                if (message !is JSONRPCRequest) return
-                check(message.method == Method.Defined.Initialize.value)
-                throw McpException(
-                    code = -32600,
-                    message = "Invalid Request",
-                )
-            }
+                override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
+                    if (message !is JSONRPCRequest) return
+                    check(message.method == Method.Defined.Initialize.value)
+                    throw McpException(
+                        code = -32600,
+                        message = "Invalid Request",
+                    )
+                }
 
-            override suspend fun close() {
-                closed = true
+                override suspend fun close() {
+                    closed = true
+                }
             }
-        }
 
         val client = Client(
             clientInfo = Implementation(
@@ -275,22 +280,23 @@ class ClientTest {
     @Test
     fun `should rethrow StreamableHttpError as is`() = runTest {
         var closed = false
-        val failingTransport = object : AbstractTransport() {
-            override suspend fun start() {}
+        val failingTransport =
+            object : AbstractTransport(backgroundScope.coroutineContext, backgroundScope.coroutineContext) {
+                override suspend fun start() {}
 
-            override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
-                if (message !is JSONRPCRequest) return
-                check(message.method == Method.Defined.Initialize.value)
-                throw StreamableHttpError(
-                    code = 500,
-                    message = "Internal Server Error",
-                )
-            }
+                override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
+                    if (message !is JSONRPCRequest) return
+                    check(message.method == Method.Defined.Initialize.value)
+                    throw StreamableHttpError(
+                        code = 500,
+                        message = "Internal Server Error",
+                    )
+                }
 
-            override suspend fun close() {
-                closed = true
+                override suspend fun close() {
+                    closed = true
+                }
             }
-        }
 
         val client = Client(
             clientInfo = Implementation(
