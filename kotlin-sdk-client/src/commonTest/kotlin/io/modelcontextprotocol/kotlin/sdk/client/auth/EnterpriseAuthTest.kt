@@ -379,6 +379,64 @@ class EnterpriseAuthTest {
     }
 
     // -----------------------------------------------------------------------
+    // Serialization coverage — all fields of the response models
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `JagTokenExchangeResponse deserializes scope and expiresIn`() = runTest {
+        val httpClient = mockHttpClient(
+            "/token" to {
+                jsonOk(
+                    """{"access_token":"jag","issued_token_type":"urn:ietf:params:oauth:token-type:id-jag","token_type":"N_A","scope":"read write","expires_in":600}""",
+                )
+            },
+        )
+        // Run through requestJwtAuthorizationGrant so the response model is exercised
+        EnterpriseAuth.requestJwtAuthorizationGrant(
+            RequestJwtAuthGrantOptions(
+                tokenEndpoint = "https://idp.example.com/token",
+                idToken = "id",
+                clientId = "client",
+            ),
+            httpClient,
+        ) shouldBe "jag"
+    }
+
+    @Test
+    fun `AuthServerMetadata deserializes jwksUri`() = runTest {
+        val httpClient = mockHttpClient(
+            "/.well-known/oauth-authorization-server" to {
+                jsonOk(
+                    """{"issuer":"https://auth.example.com","token_endpoint":"https://auth.example.com/token","authorization_endpoint":"https://auth.example.com/authorize","jwks_uri":"https://auth.example.com/jwks"}""",
+                )
+            },
+        )
+        val metadata = EnterpriseAuth.discoverAuthServerMetadata("https://auth.example.com", httpClient)
+        metadata.jwksUri shouldBe "https://auth.example.com/jwks"
+    }
+
+    @Test
+    fun `JwtBearerAccessTokenResponse deserializes scope and refreshToken`() = runTest {
+        val httpClient = mockHttpClient(
+            "/token" to {
+                jsonOk(
+                    """{"access_token":"at","token_type":"Bearer","expires_in":3600,"scope":"mcp:read","refresh_token":"rt-ignored"}""",
+                )
+            },
+        )
+        val response = EnterpriseAuth.exchangeJwtBearerGrant(
+            ExchangeJwtBearerGrantOptions(
+                tokenEndpoint = "https://auth.example.com/token",
+                assertion = "jag",
+                clientId = "client",
+            ),
+            httpClient,
+        )
+        response.scope shouldBe "mcp:read"
+        response.refreshToken shouldBe "rt-ignored"
+    }
+
+    // -----------------------------------------------------------------------
     // JwtBearerAccessTokenResponse.isExpired
     // -----------------------------------------------------------------------
 

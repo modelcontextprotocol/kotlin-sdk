@@ -296,6 +296,94 @@ class EnterpriseAuthProviderTest {
     }
 
     @Test
+    fun `provider throws when discovery returns no token endpoint`() = runTest {
+        // Both well-known endpoints return metadata without a token_endpoint.
+        val authEngine = MockEngine { request ->
+            when (request.url.encodedPath) {
+                "/.well-known/oauth-authorization-server" ->
+                    jsonOk("""{}""")
+                "/.well-known/openid-configuration" ->
+                    jsonOk("""{"issuer":"https://auth.example.com"}""")
+                else -> error("Unexpected: ${request.url}")
+            }
+        }
+        val mcpClient = HttpClient(MockEngine { respond("OK", HttpStatusCode.OK) }) {
+            install(EnterpriseAuthProvider) {
+                clientId = "client"
+                assertionCallback = { _ -> "jag" }
+                authHttpClient = HttpClient(authEngine)
+            }
+        }
+        val ex = shouldThrow<EnterpriseAuthException> {
+            mcpClient.get("http://mcp.example.com/messages")
+        }
+        ex.message shouldContain "token_endpoint"
+    }
+
+    @Test
+    fun `provider uses resource base URL as authorizationServerUrl when issuer is absent`() = runTest {
+        var capturedContext: EnterpriseAuthAssertionContext? = null
+        val authEngine = MockEngine { request ->
+            when (request.url.encodedPath) {
+                // Metadata without issuer — provider should fall back to resourceBaseUrl
+                "/.well-known/oauth-authorization-server" ->
+                    jsonOk("""{"token_endpoint":"https://auth.example.com/token"}""")
+                "/token" ->
+                    jsonOk("""{"access_token":"tok","token_type":"Bearer","expires_in":3600}""")
+                else -> error("Unexpected: ${request.url}")
+            }
+        }
+        val mcpClient = HttpClient(MockEngine { respond("OK", HttpStatusCode.OK) }) {
+            install(EnterpriseAuthProvider) {
+                clientId = "client"
+                assertionCallback = { ctx ->
+                    capturedContext = ctx
+                    "jag"
+                }
+                authHttpClient = HttpClient(authEngine)
+            }
+        }
+
+        mcpClient.get("http://mcp.example.com/messages")
+
+        capturedContext shouldNotBe null
+        // No issuer in metadata → authorizationServerUrl falls back to resource base URL
+        capturedContext!!.authorizationServerUrl shouldBe "http://mcp.example.com"
+    }
+
+    @Test
+    fun `provider refreshes token when it is near expiry`() = runTest {
+        val tokenEndpointCalls = mutableListOf<Int>()
+        val authEngine = MockEngine { request ->
+            when (request.url.encodedPath) {
+                "/.well-known/oauth-authorization-server" ->
+                    jsonOk("""{"token_endpoint":"https://auth.example.com/token"}""")
+                "/token" -> {
+                    tokenEndpointCalls.add(tokenEndpointCalls.size + 1)
+                    // expires_in=1s — token is near-expiry relative to a 90s buffer
+                    jsonOk("""{"access_token":"tok","token_type":"Bearer","expires_in":1}""")
+                }
+                else -> error("Unexpected: ${request.url}")
+            }
+        }
+        val mcpClient = HttpClient(MockEngine { respond("OK", HttpStatusCode.OK) }) {
+            install(EnterpriseAuthProvider) {
+                clientId = "client"
+                assertionCallback = { _ -> "jag" }
+                authHttpClient = HttpClient(authEngine)
+                // 90s buffer >> 1s expires_in → every request sees the cached token as near-expiry
+                expiryBuffer = 90.seconds
+            }
+        }
+
+        mcpClient.get("http://mcp.example.com/messages")
+        mcpClient.get("http://mcp.example.com/messages")
+
+        // Each request should have fetched a fresh token since cached one is always near-expiry
+        tokenEndpointCalls.size shouldBe 2
+    }
+
+    @Test
     fun `provider respects custom expiryBuffer`() = runTest {
         val tokenEndpointCalls = mutableListOf<Int>()
         val authEngine = MockEngine { request ->
