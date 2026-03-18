@@ -34,13 +34,11 @@ internal suspend fun runCrossAppAccessViaEnterpriseAuthProvider(serverUrl: Strin
     val idpIdToken = ctx.requiredString("idp_id_token")
     val idpTokenEndpoint = ctx.requiredString("idp_token_endpoint")
 
-    // Dedicated HTTP client used only for auth requests (discovery + token exchanges).
-    // Kept separate from the MCP HTTP client so its lifecycle is explicit.
     val authHttpClient = HttpClient(CIO) {
         install(SSE)
+        followRedirects = false
     }
 
-    // Main MCP HTTP client — EnterpriseAuthProvider transparently injects Bearer tokens.
     val mcpHttpClient = HttpClient(CIO) {
         install(SSE)
         followRedirects = false
@@ -68,17 +66,15 @@ internal suspend fun runCrossAppAccessViaEnterpriseAuthProvider(serverUrl: Strin
         }
     }
 
-    authHttpClient.use {
-        mcpHttpClient.use { client ->
-            val transport = StreamableHttpClientTransport(client, serverUrl)
-            val mcpClient = Client(
-                clientInfo = Implementation("conformance-enterprise-auth-provider", "1.0.0"),
-                options = ClientOptions(capabilities = ClientCapabilities()),
-            )
-            mcpClient.connect(transport)
-            mcpClient.listTools()
-            mcpClient.close()
-        }
+    mcpHttpClient.use { client ->
+        val transport = StreamableHttpClientTransport(client, serverUrl)
+        val mcpClient = Client(
+            clientInfo = Implementation("conformance-enterprise-auth-provider", "1.0.0"),
+            options = ClientOptions(capabilities = ClientCapabilities()),
+        )
+        mcpClient.connect(transport)
+        mcpClient.listTools()
+        mcpClient.close()
     }
 }
 
@@ -103,6 +99,7 @@ internal suspend fun runCrossAppAccessViaDiscoverAndRequest(serverUrl: String) {
 
     val authHttpClient = HttpClient(CIO) {
         install(SSE)
+        followRedirects = false
     }
 
     val mcpHttpClient = HttpClient(CIO) {
@@ -132,16 +129,14 @@ internal suspend fun runCrossAppAccessViaDiscoverAndRequest(serverUrl: String) {
         }
     }
 
-    authHttpClient.use {
-        mcpHttpClient.use { client ->
-            val transport = StreamableHttpClientTransport(client, serverUrl)
-            val mcpClient = Client(
-                clientInfo = Implementation("conformance-discover-and-request", "1.0.0"),
-                options = ClientOptions(capabilities = ClientCapabilities()),
-            )
-            mcpClient.connect(transport)
-            mcpClient.listTools()
-            mcpClient.close()
-        }
+    mcpHttpClient.use { client ->
+        val transport = StreamableHttpClientTransport(client, serverUrl)
+        val mcpClient = Client(
+            clientInfo = Implementation("conformance-discover-and-request", "1.0.0"),
+            options = ClientOptions(capabilities = ClientCapabilities()),
+        )
+        mcpClient.connect(transport)
+        mcpClient.listTools()
+        mcpClient.close()
     }
 }
