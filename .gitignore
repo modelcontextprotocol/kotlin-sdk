@@ -56,7 +56,7 @@ node_modules
 dist
 
 ### SWE agents ###
-.claude/
+.claude/settings.local.json
 .junie/
 
 ### Conformance test results ###
