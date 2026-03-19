@@ -1,5 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
+import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.ServerSession
@@ -266,8 +267,8 @@ class ClientTest {
             client.connect(failingTransport)
         }
 
-        assertEquals(-32600, exception.code)
-        assertEquals("MCP error -32600: Invalid Request", exception.message)
+        exception.code shouldBe -32600
+        exception.message shouldBe "Invalid Request"
 
         assertTrue(closed)
     }
