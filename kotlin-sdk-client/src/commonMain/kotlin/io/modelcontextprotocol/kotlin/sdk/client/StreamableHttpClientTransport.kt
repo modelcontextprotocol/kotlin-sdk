@@ -32,11 +32,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineName
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -99,8 +95,6 @@ public class StreamableHttpClientTransport(
 
     private var sseJob: Job? = null
 
-    private val scope by lazy { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
-
     /** Result of an SSE stream collection. Reconnect when [hasPrimingEvent] is true and [receivedResponse] is false. */
     private data class SseStreamResult(
         val hasPrimingEvent: Boolean,
@@ -150,16 +144,18 @@ public class StreamableHttpClientTransport(
 
         if (!response.status.isSuccess()) {
             val error = StreamableHttpError(response.status.value, response.bodyAsText())
-            _onError(error)
+            handleError(error)
             throw error
         }
 
         when (response.contentType()?.withoutParameters()) {
             ContentType.Application.Json -> response.bodyAsText().takeIf { it.isNotEmpty() }?.let { json ->
                 runCatching { McpJson.decodeFromString<JSONRPCMessage>(json) }
-                    .onSuccess { _onMessage(it) }
+                    .onSuccess {
+                        handleMessage(it)
+                    }
                     .onFailure {
-                        _onError(it)
+                        handleError(it)
                         throw it
                     }
             }
@@ -183,7 +179,7 @@ public class StreamableHttpClientTransport(
 
                 val ct = response.contentType()?.toString() ?: "<none>"
                 val error = StreamableHttpError(-1, "Unexpected content type: $ct")
-                _onError(error)
+                handleError(error)
                 throw error
             }
         }
@@ -207,8 +203,8 @@ public class StreamableHttpClientTransport(
 
     override suspend fun closeResources() {
         logger.debug { "Client transport closing." }
+        shutdownHandlers()
         sseJob?.cancelAndJoin()
-        scope.cancel()
     }
 
     /**
@@ -229,7 +225,7 @@ public class StreamableHttpClientTransport(
                 "Failed to terminate session: ${response.status.description}",
             )
             logger.error(error) { "Failed to terminate session" }
-            _onError(error)
+            handleError(error)
             throw error
         }
 
@@ -275,7 +271,7 @@ public class StreamableHttpClientTransport(
                     ConnectResult.Failed -> {
                         // Give up after maxRetries consecutive failed connection attempts
                         if (++attempt >= reconnectionOptions.maxRetries) {
-                            _onError(StreamableHttpError(null, "Maximum reconnection attempts exceeded"))
+                            handleError(StreamableHttpError(null, "Maximum reconnection attempts exceeded"))
                             return@launch
                         }
                         continue
@@ -384,21 +380,21 @@ public class StreamableHttpClientTransport(
                                 .onSuccess { msg ->
                                     if (msg is JSONRPCResponse) receivedResponse = true
                                     if (replayMessageId != null && msg is JSONRPCResponse) {
-                                        _onMessage(msg.copy(id = replayMessageId))
+                                        handleMessage(msg.copy(id = replayMessageId))
                                     } else {
-                                        _onMessage(msg)
+                                        handleMessage(msg)
                                     }
                                 }
-                                .onFailure(_onError)
+                                .onFailure(::handleError)
                         }
 
-                    "error" -> _onError(StreamableHttpError(null, event.data))
+                    "error" -> handleError(StreamableHttpError(null, event.data))
                 }
             }
         } catch (_: CancellationException) {
             // ignore
         } catch (t: Throwable) {
-            _onError(t)
+            handleError(t)
         }
         return SseStreamResult(hasPrimingEvent, receivedResponse, localLastEventId, localServerRetryDelay)
     }
@@ -420,7 +416,7 @@ public class StreamableHttpClientTransport(
         var id: String? = null
         var eventName: String? = null
 
-        suspend fun dispatch(id: String?, eventName: String?, data: String) {
+        fun dispatch(id: String?, eventName: String?, data: String) {
             id?.let {
                 localLastEventId = it
                 hasPrimingEvent = true
@@ -434,18 +430,18 @@ public class StreamableHttpClientTransport(
                     .onSuccess { msg ->
                         if (msg is JSONRPCResponse) receivedResponse = true
                         if (replayMessageId != null && msg is JSONRPCResponse) {
-                            _onMessage(msg.copy(id = replayMessageId))
+                            handleMessage(msg.copy(id = replayMessageId))
                         } else {
-                            _onMessage(msg)
+                            handleMessage(msg)
                         }
                     }
                     .onFailure {
-                        _onError(it)
+                        handleError(it)
                         throw it
                     }
             }
             if (eventName == "error") {
-                _onError(StreamableHttpError(null, data))
+                handleError(StreamableHttpError(null, data))
                 return
             }
         }
@@ -466,13 +462,17 @@ public class StreamableHttpClientTransport(
 
                 line.startsWith("event:") -> eventName = line.substringAfter("event:").trim()
 
-                line.startsWith("data:") -> sb.append(line.substringAfter("data:").trim())
+                line.startsWith("data:") -> {
+                    if (sb.isNotEmpty()) sb.append("\n")
+                    sb.append(line.substringAfter("data:").removePrefix(" "))
+                }
 
                 line.startsWith("retry:") -> line.substringAfter("retry:").trim().toLongOrNull()?.let {
                     localServerRetryDelay = it.milliseconds
                 }
             }
         }
+        dispatch(id = id, eventName = eventName, data = sb.toString())
         return SseStreamResult(hasPrimingEvent, receivedResponse, localLastEventId, localServerRetryDelay)
     }
 }

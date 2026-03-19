@@ -77,6 +77,9 @@ Follow these rules to keep changes safe, comprehensible, and easy to maintain.
 - **Prioritize test readability**
 - Avoid creating too many test methods; use parametrized tests when testing multiple similar scenarios
 - When running tests on Kotlin Multiplatform projects, run JVM tests only unless asked for other platforms
+- **Concurrency in Tests**: Always use thread-safe collections (e.g., `Mutex`-protected lists or `Channel`) when
+  collecting messages from transports that process messages concurrently in the background (like those inheriting from
+  `AbstractTransport`). Using non-thread-safe `MutableList` will lead to flaky tests or missing messages.
 
 ### Test Framework Stack
 
@@ -93,9 +96,12 @@ Follow these rules to keep changes safe, comprehensible, and easy to maintain.
 - **Ktor MockEngine**: For HTTP client mocking (`io.ktor:ktor-client-mock`)
 - **Java tests**: Use JUnit5, Mockito, AssertJ core
 - **Serialization test utilities** (`io.modelcontextprotocol.kotlin.test.utils`):
-    - `verifySerialization(value, json, expectedJson)` — serializes, asserts match, round-trips back; use for most serialization tests
-    - `verifyDeserialization(json, payload)` — deserializes from JSON, re-serializes, asserts match; returns the object for further assertions
-    - Always test both empty/null/omitted and non-null cases for nullable fields; `McpJson` has `explicitNulls = false` so null properties must be absent from JSON, not `null`
+    - `verifySerialization(value, json, expectedJson)` — serializes, asserts match, round-trips back; use for most
+      serialization tests
+    - `verifyDeserialization(json, payload)` — deserializes from JSON, re-serializes, asserts match; returns the object
+      for further assertions
+    - Always test both empty/null/omitted and non-null cases for nullable fields; `McpJson` has `explicitNulls = false`
+      so null properties must be absent from JSON, not `null`
 
 ### Kotest Patterns
 
@@ -169,6 +175,8 @@ prop.shouldNotBeNull {
 - Use Kotlinx Serialization with explicit `@Serializable` annotations
 - JSON config is defined in `jsonUtils.kt` as `McpJson` — use it consistently
 - Register custom serializers in companion objects
+- **SSE Data Concatenation**: When parsing Server-Sent Events (SSE) data, always ensure that multiple `data:` lines are
+  concatenated with a newline (`\n`) separator, as per the SSE specification.
 
 ### Error Handling
 

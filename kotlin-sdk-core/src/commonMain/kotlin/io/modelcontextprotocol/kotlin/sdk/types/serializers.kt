@@ -11,6 +11,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonContentPolymorphicSerializer
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -379,6 +380,9 @@ internal object ServerResultPolymorphicSerializer :
 internal object JSONRPCMessagePolymorphicSerializer :
     JsonContentPolymorphicSerializer<JSONRPCMessage>(JSONRPCMessage::class) {
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<JSONRPCMessage> {
+        if (element !is JsonObject) {
+            throw SerializationException("JSONRPCMessage must be a JSON object, but was ${element::class.simpleName}")
+        }
         val jsonObj = element.jsonObject
         return when {
             "error" in jsonObj -> JSONRPCError.serializer()

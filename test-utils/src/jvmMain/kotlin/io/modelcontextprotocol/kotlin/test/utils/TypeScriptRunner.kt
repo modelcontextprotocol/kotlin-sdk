@@ -28,7 +28,11 @@ public object TypeScriptRunner {
         logPrefix: String = "TS-RUNNER",
         log: Boolean = true,
     ): Process {
-        val command = mutableListOf("npx", "tsx", scriptPath)
+        val command = if (isWindows) {
+            mutableListOf("cmd.exe", "/c", NPX, "tsx", scriptPath)
+        } else {
+            mutableListOf(NPX, "tsx", scriptPath)
+        }
         command.addAll(arguments)
         val pb = ProcessBuilder(command)
         pb.directory(typescriptDir)

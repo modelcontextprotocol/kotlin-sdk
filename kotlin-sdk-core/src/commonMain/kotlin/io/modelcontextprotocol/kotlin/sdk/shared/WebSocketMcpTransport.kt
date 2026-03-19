@@ -8,14 +8,14 @@ import io.ktor.websocket.readText
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import kotlinx.coroutines.CoroutineName
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.InternalCoroutinesApi
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 
 public const val MCP_SUBPROTOCOL: String = "mcp"
 
@@ -26,10 +26,8 @@ private val logger = KotlinLogging.logger {}
  * Handles communication over a WebSocket session.
  */
 @OptIn(ExperimentalAtomicApi::class)
-public abstract class WebSocketMcpTransport : AbstractTransport() {
-    private val scope by lazy {
-        CoroutineScope(session.coroutineContext + SupervisorJob())
-    }
+public abstract class WebSocketMcpTransport(context: CoroutineContext = EmptyCoroutineContext) :
+    AbstractTransport(context) {
 
     private val initialized: AtomicBoolean = AtomicBoolean(false)
 
@@ -66,15 +64,15 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
 
                 if (message !is Frame.Text) {
                     val e = IllegalArgumentException("Expected text frame, got ${message::class.simpleName}: $message")
-                    _onError.invoke(e)
+                    handleError(e)
                     throw e
                 }
 
                 try {
                     val message = McpJson.decodeFromString<JSONRPCMessage>(message.readText())
-                    _onMessage.invoke(message)
+                    handleMessage(message)
                 } catch (e: Exception) {
-                    _onError.invoke(e)
+                    handleError(e)
                     throw e
                 }
             }
@@ -83,7 +81,7 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
         @OptIn(InternalCoroutinesApi::class)
         session.coroutineContext.job.invokeOnCompletion {
             if (it != null) {
-                _onError.invoke(it)
+                handleError(it)
             } else {
                 invokeOnCloseCallback()
             }
@@ -105,7 +103,9 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
         }
 
         logger.debug { "Closing websocket session" }
+        shutdownHandlers()
         session.close()
         session.coroutineContext.job.join()
+        invokeOnCloseCallback()
     }
 }

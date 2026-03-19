@@ -413,6 +413,8 @@ public final class io/modelcontextprotocol/kotlin/sdk/internal/Utils_jvmKt {
 
 public abstract class io/modelcontextprotocol/kotlin/sdk/shared/AbstractClientTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport {
 	public fun <init> ()V
+	public fun <init> (Lkotlin/coroutines/CoroutineContext;)V
+	public synthetic fun <init> (Lkotlin/coroutines/CoroutineContext;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	protected final fun checkState (Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;Lkotlin/jvm/functions/Function1;)V
 	public static synthetic fun checkState$default (Lio/modelcontextprotocol/kotlin/sdk/shared/AbstractClientTransport;Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
 	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -430,12 +432,19 @@ public abstract class io/modelcontextprotocol/kotlin/sdk/shared/AbstractClientTr
 
 public abstract class io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport : io/modelcontextprotocol/kotlin/sdk/shared/Transport {
 	public fun <init> ()V
-	protected final fun get_onError ()Lkotlin/jvm/functions/Function1;
-	protected final fun get_onMessage ()Lkotlin/jvm/functions/Function2;
+	public fun <init> (Lkotlin/coroutines/CoroutineContext;)V
+	public synthetic fun <init> (Lkotlin/coroutines/CoroutineContext;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	protected final fun cancelInProgressHandlers (Ljava/lang/String;Ljava/lang/Throwable;)V
+	protected final fun getScope ()Lkotlinx/coroutines/CoroutineScope;
+	protected final fun handleError (Ljava/lang/Throwable;)V
+	protected final fun handleMessage (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;)Lkotlinx/coroutines/Job;
+	protected final fun handleMessageInline (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	protected final fun invokeOnCloseCallback ()V
+	protected final fun joinInProgressHandlers (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun onClose (Lkotlin/jvm/functions/Function0;)V
 	public fun onError (Lkotlin/jvm/functions/Function1;)V
 	public fun onMessage (Lkotlin/jvm/functions/Function2;)V
+	protected final fun shutdownHandlers (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState : java/lang/Enum {
@@ -557,6 +566,8 @@ public class io/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions {
 
 public abstract class io/modelcontextprotocol/kotlin/sdk/shared/WebSocketMcpTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport {
 	public fun <init> ()V
+	public fun <init> (Lkotlin/coroutines/CoroutineContext;)V
+	public synthetic fun <init> (Lkotlin/coroutines/CoroutineContext;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	protected abstract fun getSession ()Lio/ktor/websocket/WebSocketSession;
 	protected abstract fun initializeSession (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -2245,6 +2256,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/JsonRpcKt {
 	public static final field JSONRPC_VERSION Ljava/lang/String;
 	public static final fun RequestId (J)Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;
 	public static final fun RequestId (Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;
+	public static final fun asString (Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;)Ljava/lang/String;
 	public static final fun fromJSON (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCRequest;)Lio/modelcontextprotocol/kotlin/sdk/types/Request;
 	public static final fun toJSON (Lio/modelcontextprotocol/kotlin/sdk/types/Notification;)Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCNotification;
 	public static final fun toJSON (Lio/modelcontextprotocol/kotlin/sdk/types/Request;)Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCRequest;

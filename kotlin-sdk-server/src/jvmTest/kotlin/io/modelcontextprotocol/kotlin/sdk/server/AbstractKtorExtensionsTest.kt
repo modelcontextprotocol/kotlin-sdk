@@ -13,6 +13,8 @@ import io.ktor.http.contentType
 import io.ktor.utils.io.readUTF8Line
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import kotlinx.coroutines.withTimeout
+import kotlin.time.Duration.Companion.seconds
 
 @Suppress("AbstractClassCanBeConcreteClass")
 abstract class AbstractKtorExtensionsTest {
@@ -31,35 +33,37 @@ abstract class AbstractKtorExtensionsTest {
      * - POST without a sessionId returns 400 Bad Request
      */
     protected suspend fun HttpClient.assertMcpEndpointsAt(path: String) {
-        prepareGet(path).execute { response ->
-            response.shouldHaveStatus(HttpStatusCode.OK)
-            response.shouldHaveContentType(sseContentType)
+        withTimeout(30.seconds) {
+            prepareGet(path).execute { response ->
+                response.shouldHaveStatus(HttpStatusCode.OK)
+                response.shouldHaveContentType(sseContentType)
 
-            // Extract sessionId from the SSE "endpoint" event
-            val channel = response.bodyAsChannel()
-            var eventName: String? = null
-            var sessionId: String? = null
+                // Extract sessionId from the SSE "endpoint" event
+                val channel = response.bodyAsChannel()
+                var eventName: String? = null
+                var sessionId: String? = null
 
-            while (sessionId == null && !channel.isClosedForRead) {
-                val line = channel.readUTF8Line() ?: break
-                when {
-                    line.startsWith("event:") -> eventName = line.substringAfter("event:").trim()
+                while (sessionId == null && !channel.isClosedForRead) {
+                    val line = channel.readUTF8Line() ?: break
+                    when {
+                        line.startsWith("event:") -> eventName = line.substringAfter("event:").trim()
 
-                    line.startsWith("data:") && eventName == "endpoint" -> {
-                        val data = line.substringAfter("data:").trim()
-                        sessionId = data.substringAfter("sessionId=").ifEmpty { null }
+                        line.startsWith("data:") && eventName == "endpoint" -> {
+                            val data = line.substringAfter("data:").trim()
+                            sessionId = data.substringAfter("sessionId=").ifEmpty { null }
+                        }
                     }
                 }
-            }
 
-            requireNotNull(sessionId) { "sessionId not found in SSE endpoint event" }
+                requireNotNull(sessionId) { "sessionId not found in SSE endpoint event" }
 
-            // POST a valid JSON-RPC ping while the SSE connection is alive
-            val postResponse = post("$path?sessionId=$sessionId") {
-                contentType(ContentType.Application.Json)
-                setBody("""{"jsonrpc":"2.0","id":1,"method":"ping"}""")
+                // POST a valid JSON-RPC ping while the SSE connection is alive
+                val postResponse = post("$path?sessionId=$sessionId") {
+                    contentType(ContentType.Application.Json)
+                    setBody("""{"jsonrpc":"2.0","id":1,"method":"ping"}""")
+                }
+                postResponse.shouldHaveStatus(HttpStatusCode.Accepted)
             }
-            postResponse.shouldHaveStatus(HttpStatusCode.Accepted)
         }
 
         // POST without sessionId returns 400 Bad Request

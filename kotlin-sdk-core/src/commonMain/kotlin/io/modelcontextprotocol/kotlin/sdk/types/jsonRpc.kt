@@ -2,10 +2,13 @@
 
 package io.modelcontextprotocol.kotlin.sdk.types
 
+import kotlinx.coroutines.CoroutineName
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -15,6 +18,21 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 public const val JSONRPC_VERSION: String = "2.0"
+
+private val COROUTINE_NAME_CACHE: Map<String, CoroutineName> =
+    Method.Defined.entries.associate { it.value to CoroutineName("mcp-${it.value}") }
+
+/**
+ * Returns a [CoroutineName] for this message.
+ */
+internal val JSONRPCMessage.coroutineName: CoroutineName
+    get() = when (this) {
+        is JSONRPCError -> CoroutineName("mcp-error-${id?.asString() ?: "unknown"}")
+        is JSONRPCNotification -> COROUTINE_NAME_CACHE[method] ?: CoroutineName("mcp-notification-$method")
+        is JSONRPCRequest -> CoroutineName("mcp-request-${id.asString()}")
+        is JSONRPCResponse -> CoroutineName("mcp-response-${id.asString()}")
+        JSONRPCEmptyMessage -> CoroutineName("mcp-empty")
+    }
 
 /**
  * Creates a `RequestId` instance using the provided string value.
@@ -49,6 +67,11 @@ public sealed interface RequestId {
     public value class NumberId(public val value: Long) : RequestId
 }
 
+public fun RequestId.asString(): String = when (this) {
+    is RequestId.StringId -> value
+    is RequestId.NumberId -> value.toString()
+}
+
 /**
  * Converts the request to a JSON-RPC request.
  *
@@ -66,8 +89,15 @@ public fun Request.toJSON(): JSONRPCRequest = JSONRPCRequest(
  *
  * @return The decoded [Request]
  */
-public fun JSONRPCRequest.fromJSON(): Request =
-    McpJson.decodeFromJsonElement<Request>(McpJson.encodeToJsonElement(this))
+public fun JSONRPCRequest.fromJSON(): Request {
+    val map = buildMap(2) {
+        put("method", JsonPrimitive(method))
+        if (params != null) {
+            put("params", params)
+        }
+    }
+    return McpJson.decodeFromJsonElement<Request>(JsonObject(map))
+}
 
 /**
  * Converts the notification to a JSON-RPC notification.
@@ -86,8 +116,15 @@ public fun Notification.toJSON(): JSONRPCNotification = JSONRPCNotification(
  *
  * @return The decoded [Notification].
  */
-internal fun JSONRPCNotification.fromJSON(): Notification =
-    McpJson.decodeFromJsonElement<Notification>(McpJson.encodeToJsonElement(this))
+internal fun JSONRPCNotification.fromJSON(): Notification {
+    val map = buildMap(2) {
+        put("method", JsonPrimitive(method))
+        if (params != null) {
+            put("params", params)
+        }
+    }
+    return McpJson.decodeFromJsonElement<Notification>(JsonObject(map))
+}
 
 /**
  * Base interface for all JSON-RPC 2.0 messages.

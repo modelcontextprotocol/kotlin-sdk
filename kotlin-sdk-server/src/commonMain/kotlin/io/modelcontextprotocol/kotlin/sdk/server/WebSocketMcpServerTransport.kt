@@ -13,7 +13,8 @@ private val logger = KotlinLogging.logger {}
  *
  * @property session The WebSocket server session used for communication.
  */
-public class WebSocketMcpServerTransport(override val session: WebSocketServerSession) : WebSocketMcpTransport() {
+public class WebSocketMcpServerTransport(override val session: WebSocketServerSession) :
+    WebSocketMcpTransport(session.coroutineContext) {
     override suspend fun initializeSession() {
         logger.debug { "Checking session headers" }
         val subprotocol = session.call.request.headers[HttpHeaders.SecWebSocketProtocol]

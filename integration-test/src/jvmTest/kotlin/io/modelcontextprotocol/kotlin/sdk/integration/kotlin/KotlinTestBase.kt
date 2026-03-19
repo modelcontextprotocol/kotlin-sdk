@@ -9,6 +9,7 @@ import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.routing.routing
+import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.SseClientTransport
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
@@ -17,8 +18,10 @@ import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.StdioServerTransport
 import io.modelcontextprotocol.kotlin.sdk.server.StreamableHttpServerTransport
+import io.modelcontextprotocol.kotlin.sdk.server.StreamableHttpServerTransport.Configuration
 import io.modelcontextprotocol.kotlin.sdk.server.mcp
 import io.modelcontextprotocol.kotlin.sdk.server.mcpStreamableHttp
+import io.modelcontextprotocol.kotlin.sdk.testing.ChannelTransport
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
@@ -40,6 +43,7 @@ import io.ktor.server.cio.CIO as ServerCIO
 import io.ktor.server.sse.SSE as ServerSSE
 
 @Retry(times = 3)
+@OptIn(ExperimentalMcpApi::class)
 abstract class KotlinTestBase {
 
     protected val host = "localhost"
@@ -48,9 +52,10 @@ abstract class KotlinTestBase {
     protected lateinit var server: Server
     protected lateinit var client: Client
     protected lateinit var serverEngine: EmbeddedServer<*, *>
+    protected val channelTransports = lazy { ChannelTransport.createLinkedPair() }
 
     // Transport selection
-    protected enum class TransportKind { SSE, STDIO, STREAMABLE_HTTP }
+    protected enum class TransportKind { SSE, STDIO, STREAMABLE_HTTP, CHANNEL }
 
     protected open val transportKind: TransportKind = TransportKind.STDIO
 
@@ -121,6 +126,13 @@ abstract class KotlinTestBase {
                 )
                 client.connect(transport)
             }
+
+            TransportKind.CHANNEL -> {
+                client = Client(
+                    Implementation("test", "1.0"),
+                )
+                client.connect(channelTransports.value.clientTransport)
+            }
         }
     }
 
@@ -148,7 +160,7 @@ abstract class KotlinTestBase {
                 // Create StreamableHTTP server transport
                 // Using JSON response mode for simpler testing (no SSE session required)
                 val transport = StreamableHttpServerTransport(
-                    StreamableHttpServerTransport.Configuration(
+                    Configuration(
                         enableJsonResponse = true, // Use JSON response mode for testing
                     ),
                 )
@@ -195,6 +207,10 @@ abstract class KotlinTestBase {
                 runBlocking {
                     server.createSession(serverTransport)
                 }
+            }
+
+            TransportKind.CHANNEL -> {
+                runBlocking { server.createSession(channelTransports.value.serverTransport) }
             }
         }
     }
@@ -248,6 +264,12 @@ abstract class KotlinTestBase {
                         stdioClientInput = null
                         stdioClientOutput = null
                     }
+                }
+            }
+
+            TransportKind.CHANNEL -> {
+                if (channelTransports.isInitialized()) {
+                    runBlocking { channelTransports.value.close() }
                 }
             }
         }

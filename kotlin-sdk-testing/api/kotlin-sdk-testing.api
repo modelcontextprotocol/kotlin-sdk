@@ -13,6 +13,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport$C
 
 public final class io/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport$LinkedTransports {
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport;Lio/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport;)V
+	public final fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport;
 	public final fun component2 ()Lio/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport;
 	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport;Lio/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport;)Lio/modelcontextprotocol/kotlin/sdk/testing/ChannelTransport$LinkedTransports;

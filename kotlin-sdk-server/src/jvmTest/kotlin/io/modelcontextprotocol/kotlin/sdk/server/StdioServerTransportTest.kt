@@ -4,17 +4,24 @@ import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldContain
+import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.shared.ReadBuffer
 import io.modelcontextprotocol.kotlin.sdk.shared.serializeMessage
 import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
+import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import io.modelcontextprotocol.kotlin.test.utils.runIntegrationTest
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
 import kotlinx.io.Buffer
 import kotlinx.io.RawSink
@@ -136,12 +143,15 @@ class StdioServerTransportTest {
         )
 
         val readMessages = mutableListOf<JSONRPCMessage>()
+        val mutex = Mutex()
         val finished = CompletableDeferred<Unit>()
 
         server.onMessage { message ->
-            readMessages.add(message)
-            if (message == messages[1]) {
-                finished.complete(Unit)
+            mutex.withLock {
+                readMessages.add(message)
+                if (readMessages.size == messages.size) {
+                    finished.complete(Unit)
+                }
             }
         }
 
@@ -154,7 +164,7 @@ class StdioServerTransportTest {
         server.start()
         finished.await()
 
-        readMessages shouldBe messages
+        readMessages.shouldContainExactlyInAnyOrder(messages)
     }
 
     // region: Exception handling
@@ -221,20 +231,25 @@ class StdioServerTransportTest {
     @MethodSource("handlerErrors")
     fun `should continue processing messages after handler throws`(throwable: Throwable) = runIntegrationTest {
         val server = StdioServerTransport(bufferedInput, printOutput)
-        val capturedErrors = mutableListOf<Throwable>()
+        val capturedErrors = Channel<Throwable>(Channel.UNLIMITED)
         val receivedMessages = mutableListOf<JSONRPCMessage>()
+        val mutex = Mutex()
         val secondMessageProcessed = CompletableDeferred<Unit>()
 
         val message1 = PingRequest().toJSON()
         val message2 = InitializedNotification().toJSON()
 
-        server.onError { capturedErrors.add(it) }
+        server.onError { error ->
+            capturedErrors.trySend(error)
+        }
         server.onMessage { message ->
-            if (message == message1) {
-                throw throwable
-            } else {
-                receivedMessages.add(message)
-                secondMessageProcessed.complete(Unit)
+            mutex.withLock {
+                if (message == message1) {
+                    throw throwable
+                } else {
+                    receivedMessages.add(message)
+                    secondMessageProcessed.complete(Unit)
+                }
             }
         }
 
@@ -246,9 +261,17 @@ class StdioServerTransportTest {
 
         secondMessageProcessed.await()
 
-        capturedErrors shouldContain throwable
-        receivedMessages shouldBe listOf(message2)
+        val errors = mutableListOf<Throwable>()
+        eventually(2.seconds) {
+            while (true) {
+                val error = capturedErrors.tryReceive().getOrNull() ?: break
+                errors.add(error)
+            }
+            errors shouldContain throwable
+        }
+
         server.close()
+        receivedMessages shouldBe listOf(message2)
     }
 
     @Test
@@ -296,6 +319,43 @@ class StdioServerTransportTest {
         server.start()
 
         received.await() shouldBe validMessage
+        server.close()
+    }
+
+    @Test
+    fun `should process messages concurrently with async handler`() = runIntegrationTest {
+        val server = StdioServerTransport(bufferedInput, printOutput)
+        val firstMessageReceived = CompletableDeferred<Unit>()
+        val firstMessageProceed = CompletableDeferred<Unit>()
+        val secondMessageHandled = CompletableDeferred<Unit>()
+
+        server.onMessage { message ->
+            // Simulate Protocol's new behavior: launch a coroutine for each message
+            launch {
+                if ((message as? JSONRPCRequest)?.method == "slow") {
+                    firstMessageReceived.complete(Unit)
+                    firstMessageProceed.await()
+                } else {
+                    secondMessageHandled.complete(Unit)
+                }
+            }
+        }
+        server.start()
+
+        val message1 = JSONRPCRequest(id = RequestId(1), method = "slow")
+        val message2 = JSONRPCRequest(id = RequestId(2), method = "fast")
+
+        inputWriter.write(serializeMessage(message1))
+        inputWriter.write(serializeMessage(message2))
+        inputWriter.flush()
+
+        firstMessageReceived.await()
+        // Wait for the second message to be processed while the first is still "working"
+        withTimeout(2.seconds) {
+            secondMessageHandled.await()
+        }
+
+        firstMessageProceed.complete(Unit)
         server.close()
     }
 

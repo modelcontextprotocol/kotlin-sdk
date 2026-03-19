@@ -6,8 +6,11 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.CONNECTION_CLOSED
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.INTERNAL_ERROR
+import kotlinx.coroutines.Dispatchers
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
 
 /**
@@ -22,7 +25,10 @@ import kotlin.coroutines.cancellation.CancellationException
  * async workflows, ensuring proper resource cleanup in the case of failure or cancellation.
  */
 @OptIn(ExperimentalAtomicApi::class, InternalMcpApi::class)
-public abstract class AbstractClientTransport : AbstractTransport() {
+public abstract class AbstractClientTransport(
+    context: CoroutineContext = EmptyCoroutineContext,
+    handlerContext: CoroutineContext = Dispatchers.Default,
+) : AbstractTransport(context, handlerContext) {
 
     protected abstract val logger: KLogger
 
@@ -176,7 +182,7 @@ public abstract class AbstractClientTransport : AbstractTransport() {
         } catch (e: CancellationException) {
             throw e // Always propagate cancellation
         } catch (e: Exception) {
-            _onError(e)
+            handleError(e)
             if (e is McpException) {
                 throw e
             } else {

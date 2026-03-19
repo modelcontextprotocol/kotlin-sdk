@@ -1,12 +1,15 @@
 package io.modelcontextprotocol.kotlin.sdk.shared
 
 import io.kotest.assertions.nondeterministic.eventually
+import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.test.fail
 import kotlin.time.Duration.Companion.seconds
 
@@ -47,12 +50,15 @@ abstract class BaseTransportTest {
         )
 
         val readMessages = mutableListOf<JSONRPCMessage>()
+        val mutex = Mutex()
         val finished = CompletableDeferred<Unit>()
 
         transport.onMessage { message ->
-            readMessages.add(message)
-            if (message == messages.last()) {
-                finished.complete(Unit)
+            mutex.withLock {
+                readMessages.add(message)
+                if (readMessages.size == messages.size) {
+                    finished.complete(Unit)
+                }
             }
         }
 
@@ -64,7 +70,7 @@ abstract class BaseTransportTest {
 
         finished.await()
 
-        messages shouldBe readMessages
+        readMessages.shouldContainExactlyInAnyOrder(messages)
 
         transport.close()
     }

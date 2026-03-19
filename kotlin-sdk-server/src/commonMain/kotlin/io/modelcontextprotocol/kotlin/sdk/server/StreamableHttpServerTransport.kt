@@ -30,6 +30,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.job
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.JsonArray
@@ -291,6 +292,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 } catch (_: Exception) {
                 }
             }
+            shutdownHandlers()
             streamsMapping.clear()
             requestToStreamMapping.clear()
             requestToResponseMapping.clear()
@@ -304,7 +306,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
     public suspend fun handleRequest(session: ServerSSESession?, call: ApplicationCall) {
         validateHeaders(call)?.let { reason ->
             call.reject(HttpStatusCode.Forbidden, RPCError.ErrorCode.CONNECTION_CLOSED, reason)
-            _onError(Error(reason))
+            handleError(Error(reason))
             return
         }
 
@@ -390,7 +392,9 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             val hasRequest = messages.any { it is JSONRPCRequest }
             if (!hasRequest) {
                 call.respondNullable(status = HttpStatusCode.Accepted, message = null)
-                messages.forEach { message -> _onMessage(message) }
+                messages.map { message ->
+                    handleMessage(message)
+                }.joinAll()
                 return
             }
 
@@ -407,14 +411,16 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             }
             call.coroutineContext.job.invokeOnCompletion { streamsMapping.remove(streamId) }
 
-            messages.forEach { message -> _onMessage(message) }
+            messages.map { message ->
+                handleMessage(message)
+            }.joinAll()
         } catch (e: Exception) {
             call.reject(
                 HttpStatusCode.BadRequest,
                 RPCError.ErrorCode.PARSE_ERROR,
                 "Parse error: ${e.message}",
             )
-            _onError(e)
+            handleError(e)
         }
     }
 
@@ -485,7 +491,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         try {
             sessionContext.session?.close()
         } catch (e: Exception) {
-            _onError(e)
+            handleError(e)
         } finally {
             streamsMapping.remove(streamId)
         }
@@ -539,7 +545,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                         data = McpJson.encodeToString(message),
                     )
                 } catch (e: Exception) {
-                    _onError(IllegalStateException("Failed to replay event: ${e.message}", e))
+                    handleError(IllegalStateException("Failed to replay event: ${e.message}", e))
                 }
             }
 
@@ -547,10 +553,10 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
 
             session.coroutineContext.job.invokeOnCompletion { throwable ->
                 streamsMapping.remove(streamId)
-                throwable?.let { _onError(it) }
+                throwable?.let { handleError(it) }
             }
         } catch (e: Exception) {
-            _onError(e)
+            handleError(e)
         }
     }
 
@@ -655,7 +661,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         try {
             session?.send(data = "")
         } catch (e: Exception) {
-            _onError(e)
+            handleError(e)
         }
     }
 
@@ -729,7 +735,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 data = "",
             )
         } catch (e: Exception) {
-            _onError(e)
+            handleError(e)
         }
     }
 

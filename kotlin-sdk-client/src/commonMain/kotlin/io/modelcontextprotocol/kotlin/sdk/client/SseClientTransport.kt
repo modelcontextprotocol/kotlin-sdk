@@ -24,9 +24,7 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.SerializationException
@@ -50,7 +48,6 @@ public class SseClientTransport(
     private val endpoint = CompletableDeferred<String>()
 
     private lateinit var session: ClientSSESession
-    private lateinit var scope: CoroutineScope
     private var job: Job? = null
 
     private val origin: String by lazy {
@@ -79,7 +76,6 @@ public class SseClientTransport(
             reconnectionTime = reconnectionTime,
             block = requestBuilder,
         )
-        scope = CoroutineScope(session.coroutineContext + SupervisorJob())
 
         job = scope.launch(CoroutineName("SseMcpClientTransport.connect#${hashCode()}")) {
             collectMessages()
@@ -115,7 +111,7 @@ public class SseClientTransport(
                 when (event.event) {
                     "error" -> {
                         val error = IllegalStateException("SSE error: ${event.data}")
-                        _onError(error)
+                        handleError(error)
                         throw error
                     }
 
@@ -131,10 +127,10 @@ public class SseClientTransport(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
-            _onError(e)
+            handleError(e)
             throw e
         } finally {
-            closeResources()
+            close()
         }
     }
 
@@ -155,29 +151,28 @@ public class SseClientTransport(
             endpoint.complete(endpointUrl)
             logger.debug { "Client connected to endpoint: $endpointUrl" }
         } catch (e: Throwable) {
-            _onError(e)
+            handleError(e)
             endpoint.completeExceptionally(e)
             throw e
         }
     }
 
-    private suspend fun handleMessage(data: String) {
+    private fun handleMessage(data: String) {
         try {
             val message = McpJson.decodeFromString<JSONRPCMessage>(data)
-            _onMessage(message)
+            handleMessage(message)
         } catch (e: SerializationException) {
-            _onError(e)
+            handleError(e)
         }
     }
 
     override suspend fun closeResources() {
-        job?.cancelAndJoin()
         try {
+            shutdownHandlers()
             if (::session.isInitialized) session.cancel()
-            if (::scope.isInitialized) scope.cancel()
             endpoint.cancel()
         } catch (e: Throwable) {
-            _onError(e)
+            handleError(e)
         }
     }
 }
