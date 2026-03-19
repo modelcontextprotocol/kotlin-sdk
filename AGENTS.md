@@ -10,11 +10,12 @@ Kotlin Multiplatform SDK for the [Model Context Protocol (MCP)](https://modelcon
 
 ```bash
 ./gradlew ktlintCheck                # Lint check
+./gradlew detekt                     # Static analysis
 ./gradlew ktlintFormat               # Auto-fix lint issues
 ./gradlew apiCheck                   # Check public API compatibility (run before committing)
 ./gradlew apiDump                    # Update API dump after intentional API changes
 ./gradlew koverLog                   # Print coverage summary
-./gradlew koverHtmlReport            # Generate HTML coverage report
+./gradlew koverXmlReport            # Generate XML coverage report
 ```
 
 Run a single test class:
@@ -67,6 +68,7 @@ Application (tools, prompts, resources)
 - **Multi-dollar interpolation**: use `$$"""..."""` for strings containing literal `$` (e.g., JSON with `$ref`, `$defs`)
 - **`McpJson` has `explicitNulls = false`**: null properties must be absent from JSON, not `"field": null`
 - **Logging**: use `io.github.oshai.kotlinlogging.KotlinLogging`
+- **Structured concurrency**: every coroutine must have a bounded scope and lifetime; always re-throw `CancellationException`; never hold `Mutex` across suspension points
 
 ## Testing
 
