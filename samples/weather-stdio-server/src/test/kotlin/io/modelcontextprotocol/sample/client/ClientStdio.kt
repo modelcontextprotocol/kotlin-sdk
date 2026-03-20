@@ -13,8 +13,8 @@ fun main(): Unit = runBlocking {
     val process = ProcessBuilder(
         "java",
         "-jar",
-        "${System.getProperty("user.dir")}/build/libs/weather-stdio-server-0.1.0-all.jar",
-    ).redirectErrorStream(true)
+        "${System.getProperty("user.dir")}/samples/weather-stdio-server/build/libs/weather-stdio-server-0.1.0-all.jar",
+    ).redirectError(ProcessBuilder.Redirect.INHERIT)
         .start()
 
     val transport = StdioClientTransport(
@@ -44,7 +44,7 @@ fun main(): Unit = runBlocking {
 
     val alertResult =
         client.callTool(
-            name = "get_alert",
+            name = "get_alerts",
             arguments = mapOf("state" to "TX"),
         ).content.map { if (it is TextContent) it.text else it.toString() }
 

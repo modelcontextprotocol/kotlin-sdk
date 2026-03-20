@@ -2,10 +2,11 @@ package io.modelcontextprotocol.sample.client
 
 import com.anthropic.client.okhttp.AnthropicOkHttpClient
 import com.anthropic.core.JsonValue
+import com.anthropic.models.messages.ContentBlockParam
 import com.anthropic.models.messages.MessageCreateParams
 import com.anthropic.models.messages.MessageParam
-import com.anthropic.models.messages.Model
 import com.anthropic.models.messages.Tool
+import com.anthropic.models.messages.ToolResultBlockParam
 import com.anthropic.models.messages.ToolUnion
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -14,24 +15,28 @@ import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.yield
+import kotlinx.coroutines.withContext
 import kotlinx.io.asSink
 import kotlinx.io.asSource
 import kotlinx.io.buffered
 import kotlinx.serialization.json.JsonObject
-import kotlin.jvm.optionals.getOrNull
+import java.util.concurrent.TimeUnit
 
-class MCPClient : AutoCloseable {
-    // Configures using the `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN` environment variables
-    private val anthropic = AnthropicOkHttpClient.fromEnv()
+private const val MODEL = "claude-sonnet-4-20250514"
+private const val MAX_TOKENS = 1024L
+
+class MCPClient(apiKey: String) : AutoCloseable {
+    private val anthropic = AnthropicOkHttpClient.builder()
+        .apiKey(apiKey)
+        .build()
 
     // Initialize MCP client
     private val mcp: Client = Client(clientInfo = Implementation(name = "mcp-client-cli", version = "1.0.0"))
 
-    private val messageParamsBuilder: MessageCreateParams.Builder = MessageCreateParams.builder()
-        .model(Model.CLAUDE_4_SONNET_20250514)
-        .maxTokens(1024)
+    // Server process reference for cleanup
+    private var serverProcess: Process? = null
 
     // List of tools offered by the server
     private lateinit var tools: List<ToolUnion>
@@ -44,52 +49,52 @@ class MCPClient : AutoCloseable {
 
     // Connect to the server using the path to the server
     suspend fun connectToServer(serverScriptPath: String) {
-        try {
-            // Build the command based on the file extension of the server script
-            val command = buildList {
-                when (serverScriptPath.substringAfterLast(".")) {
-                    "js" -> add("node")
-                    "py" -> add(if (System.getProperty("os.name").lowercase().contains("win")) "python" else "python3")
-                    "jar" -> addAll(listOf("java", "-jar"))
-                    else -> throw IllegalArgumentException("Server script must be a .js, .py or .jar file")
-                }
-                add(serverScriptPath)
+        // Build the command based on the file extension of the server script
+        val command = buildList {
+            when (serverScriptPath.substringAfterLast(".")) {
+                "js" -> add("node")
+                "py" -> add(if (System.getProperty("os.name").lowercase().contains("win")) "python" else "python3")
+                "jar" -> addAll(listOf("java", "-jar"))
+                else -> throw IllegalArgumentException("Server script must be a .js, .py or .jar file")
             }
-
-            // Start the server process
-            val process = ProcessBuilder(command).start()
-
-            // Setup I/O transport using the process streams
-            val transport = StdioClientTransport(
-                input = process.inputStream.asSource().buffered(),
-                output = process.outputStream.asSink().buffered(),
-            )
-
-            // Connect the MCP client to the server using the transport
-            mcp.connect(transport)
-
-            // Request the list of available tools from the server
-            val toolsResult = mcp.listTools()
-            tools = toolsResult.tools.map { tool ->
-                ToolUnion.ofTool(
-                    Tool.builder()
-                        .name(tool.name)
-                        .description(tool.description ?: "")
-                        .inputSchema(
-                            Tool.InputSchema.builder()
-                                .type(JsonValue.from(tool.inputSchema.type))
-                                .properties(tool.inputSchema.properties?.toJsonValue() ?: EmptyJsonObject.toJsonValue())
-                                .putAdditionalProperty("required", JsonValue.from(tool.inputSchema.required))
-                                .build(),
-                        )
-                        .build(),
-                )
-            }
-            println("Connected to server with tools: ${tools.joinToString(", ") { it.tool().get().name() }}")
-        } catch (e: Exception) {
-            println("Failed to connect to MCP server: $e")
-            throw e
+            add(serverScriptPath)
         }
+
+        // Start the server process
+        val process = withContext(Dispatchers.IO) {
+            ProcessBuilder(command)
+                .redirectError(ProcessBuilder.Redirect.INHERIT)
+                .start()
+        }
+        serverProcess = process
+
+        // Setup I/O transport using the process streams
+        val transport = StdioClientTransport(
+            input = process.inputStream.asSource().buffered(),
+            output = process.outputStream.asSink().buffered(),
+        )
+
+        // Connect the MCP client to the server using the transport
+        mcp.connect(transport)
+
+        // Request the list of available tools from the server
+        val toolsResult = mcp.listTools()
+        tools = toolsResult.tools.map { tool ->
+            ToolUnion.ofTool(
+                Tool.builder()
+                    .name(tool.name)
+                    .description(tool.description ?: "")
+                    .inputSchema(
+                        Tool.InputSchema.builder()
+                            .type(JsonValue.from(tool.inputSchema.type))
+                            .properties(tool.inputSchema.properties?.toJsonValue() ?: EmptyJsonObject.toJsonValue())
+                            .putAdditionalProperty("required", JsonValue.from(tool.inputSchema.required))
+                            .build(),
+                    )
+                    .build(),
+            )
+        }
+        println("Connected to server with tools: ${tools.joinToString(", ") { it.tool().get().name() }}")
     }
 
     // Process a user query and return a string response
@@ -104,23 +109,29 @@ class MCPClient : AutoCloseable {
 
         // Send the query to the Anthropic model and get the response
         val response = anthropic.messages().create(
-            messageParamsBuilder
+            MessageCreateParams.builder()
+                .model(MODEL)
+                .maxTokens(MAX_TOKENS)
                 .messages(messages)
                 .tools(tools)
                 .build(),
         )
 
         val finalText = mutableListOf<String>()
+        val toolResults = mutableListOf<ContentBlockParam>()
+
         response.content().forEach { content ->
             when {
                 // Append text outputs from the response
-                content.isText() -> finalText.add(content.text().getOrNull()?.text() ?: "")
+                content.isText() -> finalText.add(content.text().get().text())
 
                 // If the response indicates a tool use, process it further
                 content.isToolUse() -> {
-                    val toolName = content.toolUse().get().name()
+                    val toolUse = content.toolUse().get()
+                    val toolName = toolUse.name()
+                    val toolUseId = toolUse.id()
                     val toolArgs =
-                        content.toolUse().get()._input().convert(object : TypeReference<Map<String, JsonValue>>() {})
+                        toolUse._input().convert(object : TypeReference<Map<String, JsonValue>>() {})
 
                     // Call the tool with provided arguments
                     val result = mcp.callTool(
@@ -129,35 +140,53 @@ class MCPClient : AutoCloseable {
                     )
                     finalText.add("[Calling tool $toolName with args $toolArgs]")
 
-                    // Add the tool result message to the conversation
-                    messages.add(
-                        MessageParam.builder()
-                            .role(MessageParam.Role.USER)
-                            .content(
-                                """
-                                        "type": "tool_result",
-                                        "tool_name": $toolName,
-                                        "result": ${
-                                    result.content.joinToString("\n") {
-                                        (it as TextContent).text
-                                    }
-                                }
-                                """.trimIndent(),
-                            )
-                            .build(),
-                    )
+                    // Build tool_result content block with tool_use_id
+                    val toolResultContent = result.content
+                        .filterIsInstance<TextContent>()
+                        .joinToString("\n") { it.text }
 
-                    // Retrieve an updated response after tool execution
-                    val aiResponse = anthropic.messages().create(
-                        messageParamsBuilder
-                            .messages(messages)
-                            .build(),
-                    )
+                    val toolResultBlock = ToolResultBlockParam.builder()
+                        .toolUseId(toolUseId)
+                        .content(toolResultContent)
+                        .apply { if (result.isError == true) isError(true) }
+                        .build()
 
-                    // Append the updated response to final text
-                    finalText.add(aiResponse.content().first().text().getOrNull()?.text() ?: "")
+                    toolResults.add(ContentBlockParam.ofToolResult(toolResultBlock))
                 }
             }
+        }
+
+        // If there were tool calls, send tool results back and get final response
+        if (toolResults.isNotEmpty()) {
+            // Add the full assistant response (includes tool_use blocks)
+            messages.add(
+                MessageParam.builder()
+                    .role(MessageParam.Role.ASSISTANT)
+                    .contentOfBlockParams(response.content().map { it.toParam() })
+                    .build(),
+            )
+
+            // Add user message with tool results
+            messages.add(
+                MessageParam.builder()
+                    .role(MessageParam.Role.USER)
+                    .contentOfBlockParams(toolResults)
+                    .build(),
+            )
+
+            // Retrieve an updated response after tool execution (without tools)
+            val aiResponse = anthropic.messages().create(
+                MessageCreateParams.builder()
+                    .model(MODEL)
+                    .maxTokens(MAX_TOKENS)
+                    .messages(messages)
+                    .build(),
+            )
+
+            // Append the updated response to final text
+            aiResponse.content()
+                .filter { it.isText() }
+                .forEach { finalText.add(it.text().get().text()) }
         }
 
         return finalText.joinToString("\n", prefix = "", postfix = "")
@@ -171,17 +200,27 @@ class MCPClient : AutoCloseable {
         while (true) {
             print("\nQuery: ")
             val message = readlnOrNull() ?: break
-            if (message.lowercase() == "quit") break
-            val response = processQuery(message)
-            println("\n$response")
-            yield()
+            if (message.trim().lowercase() == "quit") break
+
+            try {
+                val response = processQuery(message)
+                println("\n$response")
+            } catch (e: Exception) {
+                println("\nError: ${e.message}")
+            }
         }
     }
 
     override fun close() {
         runBlocking {
             mcp.close()
-            anthropic.close()
         }
+        serverProcess?.let { process ->
+            process.destroy()
+            if (!process.waitFor(5, TimeUnit.SECONDS)) {
+                process.destroyForcibly()
+            }
+        }
+        anthropic.close()
     }
 }

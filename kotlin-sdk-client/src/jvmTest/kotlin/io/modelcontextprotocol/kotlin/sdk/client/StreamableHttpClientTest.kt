@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
 import io.kotest.matchers.collections.shouldContain
+import io.kotest.matchers.shouldBe
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
@@ -203,7 +204,31 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
             meta = EmptyJsonObject,
         )
 
+        client.close()
+    }
+
+    @Test
+    fun `terminateSession sends DELETE request`() = runBlocking {
+        val client = Client(
+            clientInfo = Implementation(name = "client1", version = "1.0.0"),
+            options = ClientOptions(capabilities = ClientCapabilities()),
+        )
+        val sessionId = Uuid.random().toString()
+
+        mockMcp.onInitialize(clientName = "client1", sessionId = sessionId)
+        mockMcp.handleJSONRPCRequest(
+            jsonRpcMethod = "notifications/initialized",
+            expectedSessionId = sessionId,
+            sessionId = sessionId,
+            statusCode = HttpStatusCode.Accepted,
+        )
+        mockMcp.handleSubscribeWithGet(sessionId) { emptyFlow() }
+
+        connect(client)
+
         mockMcp.mockUnsubscribeRequest(sessionId = sessionId)
+        (client.transport as StreamableHttpClientTransport).terminateSession()
+        (client.transport as StreamableHttpClientTransport).sessionId shouldBe null
 
         client.close()
     }
@@ -256,8 +281,6 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
         mockMcp.handleWithResult(jsonRpcMethod = "ping", sessionId = sessionId) {
             buildJsonObject {}
         }
-
-        mockMcp.mockUnsubscribeRequest(sessionId = sessionId)
 
         connect(client)
 

@@ -213,14 +213,11 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
             }
         }
 
-        val expectedMessage = "MCP error -32603: Resource not found: test://nonexistent.txt"
-
         assertEquals(
-            RPCError.ErrorCode.INTERNAL_ERROR,
+            RPCError.ErrorCode.RESOURCE_NOT_FOUND,
             exception.code,
-            "Exception code should be INTERNAL_ERROR: ${RPCError.ErrorCode.INTERNAL_ERROR}",
+            "Exception code should be RESOURCE_NOT_FOUND: ${RPCError.ErrorCode.RESOURCE_NOT_FOUND}",
         )
-        assertEquals(expectedMessage, exception.message, "Unexpected error message for invalid resource URI")
     }
 
     @Test

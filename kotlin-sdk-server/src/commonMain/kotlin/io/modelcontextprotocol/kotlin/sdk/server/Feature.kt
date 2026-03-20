@@ -8,7 +8,9 @@ import io.modelcontextprotocol.kotlin.sdk.types.Prompt
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
 import io.modelcontextprotocol.kotlin.sdk.types.Resource
+import io.modelcontextprotocol.kotlin.sdk.types.ResourceTemplate
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
+import io.modelcontextprotocol.kotlin.sdk.utils.ResourceTemplateMatcher
 
 internal typealias FeatureKey = String
 
@@ -56,4 +58,19 @@ public data class RegisteredResource(
     val readHandler: suspend ClientConnection.(ReadResourceRequest) -> ReadResourceResult,
 ) : Feature {
     override val key: String = resource.uri
+}
+
+/**
+ * A registered resource template with its associated read handler.
+ *
+ * @property resourceTemplate The [ResourceTemplate] definition (RFC 6570 URI template).
+ * @property readHandler A suspend function invoked when a client reads a URI that matches
+ *   this template. The second parameter contains the URI variables extracted from the match.
+ */
+internal class RegisteredResourceTemplate(
+    val resourceTemplate: ResourceTemplate,
+    val matcher: ResourceTemplateMatcher,
+    val readHandler: suspend ClientConnection.(ReadResourceRequest, Map<String, String>) -> ReadResourceResult,
+) : Feature {
+    override val key: String = resourceTemplate.uriTemplate
 }
