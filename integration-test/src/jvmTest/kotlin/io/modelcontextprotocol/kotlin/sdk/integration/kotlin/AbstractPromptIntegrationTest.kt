@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.kotlin
 
 import io.kotest.assertions.withClue
+import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequestParams
@@ -8,7 +9,6 @@ import io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.PromptArgument
 import io.modelcontextprotocol.kotlin.sdk.types.PromptMessage
-import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.Role
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
@@ -688,13 +688,13 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
             }
         }
 
-        val expectedMessage = "MCP error -32603: Prompt not found: non-existent-prompt"
+        val expectedMessage = "Prompt not found: non-existent-prompt"
 
-        assertEquals(
-            RPCError.ErrorCode.INTERNAL_ERROR,
-            exception.code,
-            "Exception code should be INTERNAL_ERROR: ${RPCError.ErrorCode.INTERNAL_ERROR}",
-        )
-        assertEquals(expectedMessage, exception.message, "Unexpected error message for non-existent prompt")
+        withClue("Exception code should be INTERNAL_ERROR: -32603") {
+            exception.code shouldBe -32603
+        }
+        withClue("Unexpected error message for non-existent prompt") {
+            exception.message shouldBe expectedMessage
+        }
     }
 }

@@ -45,18 +45,17 @@ fun Server.registerConformanceResources() {
     }
 
     // 3. Template resource
-    // Note: The SDK does not currently support addResourceTemplate().
-    // Register as a static resource; template listing is handled separately.
-    addResource(
-        uri = "test://template/{id}/data",
+    addResourceTemplate(
+        uriTemplate = "test://template/{id}/data",
         name = "template",
         description = "A template resource for testing",
         mimeType = "application/json",
-    ) { request ->
+    ) { request, variables ->
+        val id = variables["id"]
         ReadResourceResult(
             listOf(
                 TextResourceContents(
-                    text = "content for ${request.uri}",
+                    text = """{"id": "$id"}""",
                     uri = request.uri,
                     mimeType = "application/json",
                 ),
