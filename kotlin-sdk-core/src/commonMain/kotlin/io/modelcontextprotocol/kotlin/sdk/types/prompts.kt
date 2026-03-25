@@ -113,23 +113,6 @@ public data class GetPromptRequest(override val params: GetPromptRequestParams) 
     @EncodeDefault
     override val method: Method = Method.Defined.PromptsGet
 
-    @Deprecated(
-        message = "Use constructor with GetPromptRequestParams instead",
-        replaceWith = ReplaceWith("GetPromptRequest(GetPromptRequestParams(name, arguments, meta))"),
-        level = DeprecationLevel.ERROR,
-    )
-    public constructor(
-        name: String,
-        arguments: Map<String, String>? = null,
-        meta: RequestMeta? = null,
-    ) : this(
-        GetPromptRequestParams(
-            name = name,
-            arguments = arguments,
-            meta = meta,
-        ),
-    )
-
     /**
      * The name of the prompt or prompt template to retrieve.
      */
@@ -204,26 +187,6 @@ public data class ListPromptsRequest(override val params: PaginatedRequestParams
     PaginatedRequest {
     @EncodeDefault
     override val method: Method = Method.Defined.PromptsList
-
-    /**
-     * Secondary constructor for creating a [ListPromptsRequest] instance
-     * using optional cursor and metadata parameters.
-     *
-     * This constructor simplifies the creation of the [ListPromptsRequest] by allowing a cursor
-     * and metadata to be provided.
-     *
-     * @param cursor Optional cursor string to specify the starting point of the paginated request.
-     * @param meta Optional metadata associated with the request.
-     */
-    @Deprecated(
-        message = "Use constructor with ListPromptsParams instead",
-        replaceWith = ReplaceWith("ListPromptsRequest(ListPromptsParams(name, arguments, meta))"),
-        level = DeprecationLevel.ERROR,
-    )
-    public constructor(
-        cursor: String?,
-        meta: RequestMeta? = null,
-    ) : this(paginatedRequestParams(cursor, meta))
 }
 
 /**

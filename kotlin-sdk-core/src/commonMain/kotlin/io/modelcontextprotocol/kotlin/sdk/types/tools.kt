@@ -267,26 +267,6 @@ public data class ListToolsRequest(override val params: PaginatedRequestParams? 
     PaginatedRequest {
     @EncodeDefault
     override val method: Method = Method.Defined.ToolsList
-
-    /**
-     * Secondary constructor for creating a [ListToolsRequest] instance
-     * using optional cursor and metadata parameters.
-     *
-     * This constructor simplifies the creation of the [ListToolsRequest] by allowing a cursor
-     * and metadata to be provided.
-     *
-     * @param cursor Optional cursor string to specify the starting point of the paginated request.
-     * @param meta Optional metadata associated with the request.
-     */
-    @Deprecated(
-        message = "Use the constructor with BaseRequestParams property instead",
-        replaceWith = ReplaceWith("ListToolsRequest(BaseRequestParams(meta))"),
-        level = DeprecationLevel.ERROR,
-    )
-    public constructor(
-        cursor: String?,
-        meta: RequestMeta? = null,
-    ) : this(paginatedRequestParams(cursor, meta))
 }
 
 /**
