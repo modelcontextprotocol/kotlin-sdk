@@ -25,9 +25,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-        with:
-          submodules: true  # Fetch Hugo themes (true OR recursive)
-          fetch-depth: 0    # Fetch all history for .GitInfo and .Lastmod
 
       - name: Set up JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v5
@@ -41,7 +38,7 @@ jobs:
 
       - name: Generate Dokka Site
         run: |-
-          ./gradlew clean knit docs:classes docs:knitCheck dokkaGenerate
+          ./gradlew knit docs:classes docs:knitCheck dokkaGenerate
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4

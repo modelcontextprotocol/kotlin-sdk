@@ -1,16 +1,14 @@
 name: "CodeQL Advanced"
 
 on:
-  push:
-    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
   schedule:
-    - cron: '0 4 * * 0'
+    - cron: '0 7 * * 1' # Monday 8:00 CET (7:00 UTC)
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  cancel-in-progress: true
 
 env:
   JAVA_VERSION: 21
@@ -18,30 +16,16 @@ env:
 
 jobs:
   analyze:
-    name: Analyze (${{ matrix.language }})
+    name: Analyze
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
-      # required for all workflows
       security-events: write
-
-      # required to fetch internal or private CodeQL packs
-      packages: read
-
-      # only required for workflows in private repositories
-      actions: read
       contents: read
-
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [ java-kotlin ]
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
 
       - name: Set up JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v5
@@ -49,11 +33,10 @@ jobs:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
 
-      # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
-          languages: ${{ matrix.language }}
+          languages: java-kotlin
           build-mode: manual
 
       - name: Setup Gradle
@@ -64,18 +47,11 @@ jobs:
 
       - name: Build Kotlin sources
         run: |
-          ./gradlew \
-            :kotlin-sdk-core:compileKotlinJvm \
-            :kotlin-sdk-client:compileKotlinJvm \
-            :kotlin-sdk-server:compileKotlinJvm \
-            :kotlin-sdk:compileKotlinJvm \
-            :integration-test:compileKotlinJvm \
-            :conformance-test:testClasses \
-            detekt \
+          ./gradlew compileKotlinJvm :conformance-test:compileKotlin \
             -Pkotlin.incremental=false \
-            --no-daemon --stacktrace --rerun-tasks
+            --no-daemon --rerun-tasks --stacktrace
 
       - name: Analyze
         uses: github/codeql-action/analyze@v4
         with:
-          category: '/language:${{ matrix.language }}'
+          category: '/language:java-kotlin'
