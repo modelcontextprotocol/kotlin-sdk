@@ -4,6 +4,7 @@
   <CurrentIssues>
     <ID>InjectDispatcher:FeatureNotificationService.kt:FeatureNotificationService$Default</ID>
     <ID>LongParameterList:KtorServer.kt:private suspend fun RoutingContext.streamableTransport: StreamableHttpServerTransport?</ID>
+    <ID>LongParameterList:StreamableHttpServerTransport.kt:StreamableHttpServerTransport.Configuration</ID>
     <ID>MagicNumber:StdioServerTransport.kt:StdioServerTransport$8192</ID>
     <ID>MaxLineLength:SSEServerTransport.kt:SseServerTransport$"SSEServerTransport already started! If using Server class, note that connect() calls start() automatically."</ID>
     <ID>MaxLineLength:SSEServerTransport.kt:SseServerTransport$*</ID>
