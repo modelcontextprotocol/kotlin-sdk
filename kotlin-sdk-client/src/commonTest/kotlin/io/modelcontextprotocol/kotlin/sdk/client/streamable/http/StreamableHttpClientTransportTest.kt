@@ -16,7 +16,9 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
+import io.ktor.utils.io.ByteChannel
 import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.writeStringUtf8
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.StreamableHttpClientTransport
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
@@ -31,6 +33,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -547,6 +550,85 @@ class StreamableHttpClientTransportTest {
 
         transport.close()
     }
+
+
+    @Test
+    fun testInlineSSEEventsDeliveredIncrementally() = runTest {
+        val channel = ByteChannel(autoFlush = true)
+
+        val transport = createTransport { request ->
+            if (request.method == HttpMethod.Post) {
+                respond(
+                    content = channel,
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(
+                        HttpHeaders.ContentType,
+                        ContentType.Text.EventStream.toString(),
+                    ),
+                )
+            } else {
+                respond("", HttpStatusCode.OK)
+            }
+        }
+
+        val receivedMessages = mutableListOf<JSONRPCMessage>()
+        val firstMessageReceived = CompletableDeferred<Unit>()
+
+        transport.onMessage { message ->
+            receivedMessages.add(message)
+            if (receivedMessages.size == 1 && !firstMessageReceived.isCompleted) {
+                firstMessageReceived.complete(Unit)
+            }
+        }
+
+        transport.start()
+
+        val sendJob = launch(Dispatchers.Default) {
+            transport.send(
+                JSONRPCRequest(
+                    id = "stream-test",
+                    method = "test",
+                    params = buildJsonObject { },
+                ),
+            )
+        }
+
+        withContext(Dispatchers.Default) {
+            channel.writeStringUtf8(
+                buildSseMessage(
+                    id = "1",
+                    method = "notifications/progress",
+                    params = """{"progressToken":"t1","progress":50,"total":100}""",
+                ),
+            )
+            withTimeout(5.seconds) { firstMessageReceived.await() }
+            channel.writeStringUtf8(
+                buildSseMessage(
+                    id = "2",
+                    method = "notifications/progress",
+                    params = """{"progressToken":"t1","progress":100,"total":100}""",
+                ),
+            )
+            channel.close()
+        }
+
+        sendJob.join()
+
+        receivedMessages shouldHaveSize 2
+
+        val firstNotification = receivedMessages[0] as JSONRPCNotification
+        firstNotification.method shouldBe "notifications/progress"
+        val firstParams = firstNotification.params as JsonObject
+        (firstParams["progress"] as JsonPrimitive).content.toInt() shouldBe 50
+
+        val secondNotification = receivedMessages[1] as JSONRPCNotification
+        secondNotification.method shouldBe "notifications/progress"
+        val secondParams = secondNotification.params as JsonObject
+        (secondParams["progress"] as JsonPrimitive).content.toInt() shouldBe 100
+
+        transport.close()
+    }
+
 
     @Test
     fun testErrorInSSEResponse() = runTest {

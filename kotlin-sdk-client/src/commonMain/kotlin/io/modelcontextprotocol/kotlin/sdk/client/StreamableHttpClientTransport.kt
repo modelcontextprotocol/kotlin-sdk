@@ -10,7 +10,7 @@ import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.accept
 import io.ktor.client.request.delete
 import io.ktor.client.request.headers
-import io.ktor.client.request.post
+import io.ktor.client.request.preparePost
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsChannel
@@ -131,60 +131,60 @@ public class StreamableHttpClientTransport(
         }
 
         val jsonBody = McpJson.encodeToString(message)
-        val response = client.post(url) {
+        client.preparePost(url) {
             applyCommonHeaders(this)
             headers.append(HttpHeaders.Accept, "${ContentType.Application.Json}, ${ContentType.Text.EventStream}")
             contentType(ContentType.Application.Json)
             setBody(jsonBody)
             requestBuilder()
-        }
+        }.execute { response ->
+            response.headers[MCP_SESSION_ID_HEADER]?.let { sessionId = it }
 
-        response.headers[MCP_SESSION_ID_HEADER]?.let { sessionId = it }
-
-        if (response.status == HttpStatusCode.Accepted) {
-            if (message is JSONRPCNotification && message.method == "notifications/initialized") {
-                startSseSession(onResumptionToken = options?.onResumptionToken)
-            }
-            return
-        }
-
-        if (!response.status.isSuccess()) {
-            val error = StreamableHttpError(response.status.value, response.bodyAsText())
-            _onError(error)
-            throw error
-        }
-
-        when (response.contentType()?.withoutParameters()) {
-            ContentType.Application.Json -> response.bodyAsText().takeIf { it.isNotEmpty() }?.let { json ->
-                runCatching { McpJson.decodeFromString<JSONRPCMessage>(json) }
-                    .onSuccess { _onMessage(it) }
-                    .onFailure {
-                        _onError(it)
-                        throw it
-                    }
-            }
-
-            ContentType.Text.EventStream -> {
-                val replayMessageId = if (message is JSONRPCRequest) message.id else null
-                val result = handleInlineSse(response, replayMessageId, options?.onResumptionToken)
-                if (result.hasPrimingEvent && !result.receivedResponse) {
-                    startSseSession(
-                        resumptionToken = result.lastEventId,
-                        replayMessageId = replayMessageId,
-                        onResumptionToken = options?.onResumptionToken,
-                        initialServerRetryDelay = result.serverRetryDelay,
-                    )
+            if (response.status == HttpStatusCode.Accepted) {
+                if (message is JSONRPCNotification && message.method == "notifications/initialized") {
+                    startSseSession(onResumptionToken = options?.onResumptionToken)
                 }
+                return@execute
             }
 
-            else -> {
-                val body = response.bodyAsText()
-                if (response.contentType() == null && body.isBlank()) return
-
-                val ct = response.contentType()?.toString() ?: "<none>"
-                val error = StreamableHttpError(-1, "Unexpected content type: $ct")
+            if (!response.status.isSuccess()) {
+                val error = StreamableHttpError(response.status.value, response.bodyAsText())
                 _onError(error)
                 throw error
+            }
+
+            when (response.contentType()?.withoutParameters()) {
+                ContentType.Application.Json -> response.bodyAsText().takeIf { it.isNotEmpty() }?.let { json ->
+                    runCatching { McpJson.decodeFromString<JSONRPCMessage>(json) }
+                        .onSuccess { _onMessage(it) }
+                        .onFailure {
+                            _onError(it)
+                            throw it
+                        }
+                }
+
+                ContentType.Text.EventStream -> {
+                    val replayMessageId = if (message is JSONRPCRequest) message.id else null
+                    val result = handleInlineSse(response, replayMessageId, options?.onResumptionToken)
+                    if (result.hasPrimingEvent && !result.receivedResponse) {
+                        startSseSession(
+                            resumptionToken = result.lastEventId,
+                            replayMessageId = replayMessageId,
+                            onResumptionToken = options?.onResumptionToken,
+                            initialServerRetryDelay = result.serverRetryDelay,
+                        )
+                    }
+                }
+
+                else -> {
+                    val body = response.bodyAsText()
+                    if (response.contentType() == null && body.isBlank()) return@execute
+
+                    val ct = response.contentType()?.toString() ?: "<none>"
+                    val error = StreamableHttpError(-1, "Unexpected content type: $ct")
+                    _onError(error)
+                    throw error
+                }
             }
         }
     }
