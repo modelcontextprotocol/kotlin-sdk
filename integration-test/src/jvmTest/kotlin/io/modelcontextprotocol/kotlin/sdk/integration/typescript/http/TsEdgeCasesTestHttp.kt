@@ -1,4 +1,4 @@
-package io.modelcontextprotocol.kotlin.sdk.integration.typescript.sse
+package io.modelcontextprotocol.kotlin.sdk.integration.typescript.http
 
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TransportKind
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TsTestBase
@@ -21,9 +21,9 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.test.fail
 
-class TsEdgeCasesTestSse : TsTestBase() {
+class TsEdgeCasesTestHttp : TsTestBase() {
 
-    override val transportKind = TransportKind.SSE
+    override val transportKind = TransportKind.HTTP
 
     private var port: Int = 0
     private lateinit var serverUrl: String
@@ -55,7 +55,7 @@ class TsEdgeCasesTestSse : TsTestBase() {
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
     fun testInvalidURL() = runTest {
-        val nonExistentToolCommand = "npx tsx client/sse-client.ts $serverUrl non-existent-tool"
+        val nonExistentToolCommand = "npx tsx client/http-client.ts $serverUrl non-existent-tool"
         val nonExistentToolOutput = executeCommandAllowingFailure(nonExistentToolCommand, typescriptDir)
 
         assertTrue(
@@ -63,7 +63,7 @@ class TsEdgeCasesTestSse : TsTestBase() {
             "Client should handle non-existent tool gracefully",
         )
 
-        val invalidUrlCommand = "npx tsx client/sse-client.ts http://localhost:${port + 1000}/mcp greet TestUser"
+        val invalidUrlCommand = "npx tsx client/http-client.ts http://localhost:${port + 1000}/mcp greet TestUser"
         val invalidUrlOutput = executeCommandAllowingFailure(invalidUrlCommand, typescriptDir)
 
         assertTrue(
@@ -84,7 +84,7 @@ class TsEdgeCasesTestSse : TsTestBase() {
         tempFile.deleteOnExit()
 
         val specialCharsContent = tempFile.readText()
-        val specialCharsCommand = "npx tsx client/sse-client.ts $serverUrl greet \"$specialCharsContent\""
+        val specialCharsCommand = "npx tsx client/http-client.ts $serverUrl greet \"$specialCharsContent\""
         val specialCharsOutput = executeCommand(specialCharsCommand, typescriptDir)
 
         assertTrue(
@@ -109,7 +109,7 @@ class TsEdgeCasesTestSse : TsTestBase() {
         tempFile.deleteOnExit()
 
         val largeNameContent = tempFile.readText()
-        val largePayloadCommand = "npx tsx client/sse-client.ts $serverUrl greet \"$largeNameContent\""
+        val largePayloadCommand = "npx tsx client/http-client.ts $serverUrl greet \"$largeNameContent\""
         val largePayloadOutput = executeCommand(largePayloadCommand, typescriptDir)
 
         tempFile.delete()
@@ -157,11 +157,11 @@ class TsEdgeCasesTestSse : TsTestBase() {
         }
 
         val commands = listOf(
-            "npx tsx client/sse-client.ts $serverUrl greet \"Client1\"",
-            "npx tsx client/sse-client.ts $serverUrl multi-greet \"Client2\"",
-            "npx tsx client/sse-client.ts $serverUrl greet \"Client3\"",
-            "npx tsx client/sse-client.ts $serverUrl",
-            "npx tsx client/sse-client.ts $serverUrl multi-greet \"Client5\"",
+            "npx tsx client/http-client.ts $serverUrl greet \"Client1\"",
+            "npx tsx client/http-client.ts $serverUrl multi-greet \"Client2\"",
+            "npx tsx client/http-client.ts $serverUrl greet \"Client3\"",
+            "npx tsx client/http-client.ts $serverUrl",
+            "npx tsx client/http-client.ts $serverUrl multi-greet \"Client5\"",
         )
 
         coroutineScope {
@@ -242,7 +242,7 @@ class TsEdgeCasesTestSse : TsTestBase() {
     @Timeout(120, unit = TimeUnit.SECONDS)
     fun testRapidSequentialRequests() = runBlocking {
         val outputs = (1..10).map { i ->
-            val command = "npx tsx client/sse-client.ts $serverUrl greet \"RapidClient$i\""
+            val command = "npx tsx client/http-client.ts $serverUrl greet \"RapidClient$i\""
             val output = executeCommand(command, typescriptDir)
 
             assertTrue(

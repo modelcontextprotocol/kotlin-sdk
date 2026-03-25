@@ -2,14 +2,14 @@ import {Client} from '@modelcontextprotocol/sdk/client/index';
 import {StreamableHTTPClientTransport} from '@modelcontextprotocol/sdk/client/streamableHttp';
 
 const args = process.argv.slice(2);
-const serverUrl = args[0] || 'http://localhost:3001/mcp';
+const serverUrl = args[0] || 'http://localhost:3000/mcp';
 const toolName = args[1];
 const toolArgs = args.slice(2);
-const PROTOCOL_VERSION = "2024-11-05";
+const PROTOCOL_VERSION = "2025-11-25";
 
 async function main() {
     if (!toolName) {
-        console.log('Usage: npx tsx client/sse-client.ts [server-url] <tool-name> [tool-args...]');
+        console.log('Usage: npx tsx client/http-client.ts [server-url] <tool-name> [tool-args...]');
         console.log('Using default server URL:', serverUrl);
         console.log('Available utils will be listed after connection');
     }
@@ -22,6 +22,10 @@ async function main() {
     const client = new Client({
         name: 'test-client',
         version: '1.0.0'
+    }, {
+        fallbackNotificationHandler: async (notification) => {
+            console.log('Notification:', notification.method, JSON.stringify(notification));
+        }
     });
 
     const transport = new StreamableHTTPClientTransport(new URL(serverUrl));
@@ -30,37 +34,20 @@ async function main() {
         await client.connect(transport, {protocolVersion: PROTOCOL_VERSION});
         console.log('Connected to server');
 
-        try {
-            if (typeof (client as any).on === 'function') {
-                (client as any).on('notification', (n: any) => {
-                    try {
-                        const method = (n && (n.method || (n.params && n.params.method))) || 'unknown';
-                        console.log('Notification:', method, JSON.stringify(n));
-                    } catch {
-                        console.log('Notification: <unparsable>');
-                    }
-                });
-            }
-        } catch {
-        }
-
         const toolsResult = await client.listTools();
         const tools = toolsResult.tools;
-        console.log('Available utils:', tools.map((t: { name: any; }) => t.name).join(', '));
+        console.log('Available utils:', tools.map((t) => t.name).join(', '));
 
         if (!toolName) {
-            await client.close();
             return;
         }
 
-        const tool = tools.find((t: { name: string; }) => t.name === toolName);
+        const tool = tools.find((t) => t.name === toolName);
         if (!tool) {
-            console.error(`Tool "${toolName}" not found`);
-            // @ts-ignore
-            process.exit(1);
+            throw new Error(`Tool "${toolName}" not found`);
         }
 
-        const toolArguments = {};
+        const toolArguments: Record<string, string> = {};
 
         if (toolName === "greet" && toolArgs.length > 0) {
             toolArguments["name"] = toolArgs[0];
@@ -93,8 +80,7 @@ async function main() {
 
     } catch (error) {
         console.error('Error:', error);
-        // @ts-ignore
-        process.exit(1);
+        process.exitCode = 1;
     } finally {
         await client.close();
         console.log('Disconnected from server');
@@ -103,6 +89,5 @@ async function main() {
 
 main().catch(error => {
     console.error('Unhandled error:', error);
-    // @ts-ignore
     process.exit(1);
 });
