@@ -379,6 +379,71 @@ class EnterpriseAuthTest {
     }
 
     // -----------------------------------------------------------------------
+    // toString() — sensitive fields must be redacted
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `RequestJwtAuthGrantOptions toString redacts clientSecret and idToken`() {
+        val opts = RequestJwtAuthGrantOptions(
+            tokenEndpoint = "https://idp.example.com/token",
+            idToken = "super-secret-id-token",
+            clientId = "my-client",
+            clientSecret = "super-secret",
+        )
+        val str = opts.toString()
+        str shouldContain "tokenEndpoint=https://idp.example.com/token"
+        str shouldContain "clientId=my-client"
+        str shouldContain "idToken=<redacted>"
+        str shouldContain "clientSecret=<redacted>"
+        str shouldNotContain "super-secret-id-token"
+        str shouldNotContain "super-secret"
+    }
+
+    @Test
+    fun `RequestJwtAuthGrantOptions toString shows null for absent clientSecret`() {
+        val opts = RequestJwtAuthGrantOptions(
+            tokenEndpoint = "https://idp.example.com/token",
+            idToken = "tok",
+            clientId = "client",
+        )
+        opts.toString() shouldContain "clientSecret=null"
+    }
+
+    @Test
+    fun `DiscoverAndRequestJwtAuthGrantOptions toString redacts clientSecret and idToken`() {
+        val opts = DiscoverAndRequestJwtAuthGrantOptions(
+            idpUrl = "https://idp.example.com",
+            idToken = "super-secret-id-token",
+            clientId = "my-client",
+            clientSecret = "super-secret",
+        )
+        val str = opts.toString()
+        str shouldContain "idpUrl=https://idp.example.com"
+        str shouldContain "clientId=my-client"
+        str shouldContain "idToken=<redacted>"
+        str shouldContain "clientSecret=<redacted>"
+        str shouldNotContain "super-secret-id-token"
+        str shouldNotContain "super-secret"
+    }
+
+    @Test
+    fun `ExchangeJwtBearerGrantOptions toString redacts assertion and clientSecret`() {
+        val opts = ExchangeJwtBearerGrantOptions(
+            tokenEndpoint = "https://auth.example.com/token",
+            assertion = "secret-jag-token",
+            clientId = "my-client",
+            clientSecret = "super-secret",
+        )
+        val str = opts.toString()
+        str shouldContain "tokenEndpoint=https://auth.example.com/token"
+        str shouldContain "clientId=my-client"
+        str shouldContain "assertion=<redacted>"
+        str shouldContain "clientSecret=<redacted>"
+        str shouldNotContain "secret-jag-token"
+        str shouldNotContain "super-secret"
+    }
+
+    // -----------------------------------------------------------------------
     // Serialization coverage — all fields of the response models
     // -----------------------------------------------------------------------
 

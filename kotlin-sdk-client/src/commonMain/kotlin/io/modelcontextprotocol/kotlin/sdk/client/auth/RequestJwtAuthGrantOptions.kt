@@ -25,4 +25,9 @@ public data class RequestJwtAuthGrantOptions(
     public val audience: String? = null,
     public val resource: String? = null,
     public val scope: String? = null,
-)
+) {
+    override fun toString(): String =
+        "RequestJwtAuthGrantOptions(tokenEndpoint=$tokenEndpoint, idToken=<redacted>, " +
+            "clientId=$clientId, clientSecret=${if (clientSecret != null) "<redacted>" else "null"}, " +
+            "audience=$audience, resource=$resource, scope=$scope)"
+}

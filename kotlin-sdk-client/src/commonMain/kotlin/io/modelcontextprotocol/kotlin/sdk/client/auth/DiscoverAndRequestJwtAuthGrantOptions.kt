@@ -29,4 +29,10 @@ public data class DiscoverAndRequestJwtAuthGrantOptions(
     public val audience: String? = null,
     public val resource: String? = null,
     public val scope: String? = null,
-)
+) {
+    override fun toString(): String =
+        "DiscoverAndRequestJwtAuthGrantOptions(idpUrl=$idpUrl, idToken=<redacted>, " +
+            "clientId=$clientId, idpTokenEndpoint=$idpTokenEndpoint, " +
+            "clientSecret=${if (clientSecret != null) "<redacted>" else "null"}, " +
+            "audience=$audience, resource=$resource, scope=$scope)"
+}

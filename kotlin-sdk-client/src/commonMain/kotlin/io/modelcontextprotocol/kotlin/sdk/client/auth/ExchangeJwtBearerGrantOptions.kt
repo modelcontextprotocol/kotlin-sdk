@@ -26,4 +26,9 @@ public data class ExchangeJwtBearerGrantOptions(
     public val clientId: String,
     public val clientSecret: String? = null,
     public val scope: String? = null,
-)
+) {
+    override fun toString(): String =
+        "ExchangeJwtBearerGrantOptions(tokenEndpoint=$tokenEndpoint, assertion=<redacted>, " +
+            "clientId=$clientId, clientSecret=${if (clientSecret != null) "<redacted>" else "null"}, " +
+            "scope=$scope)"
+}
