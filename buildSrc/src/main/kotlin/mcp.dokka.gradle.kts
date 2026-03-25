@@ -31,6 +31,11 @@ dokka {
             packageListUrl("https://kotlinlang.org/api/kotlinx.coroutines/package-list")
         }
 
+        externalDocumentationLinks.register("kotlinx-schema") {
+            url("https://kotlin.github.io/kotlinx-schema/")
+            packageListUrl("https://kotlin.github.io/kotlinx-schema/package-list")
+        }
+
         externalDocumentationLinks.register("kotlinx-serialization") {
             url("https://kotlinlang.org/api/kotlinx.serialization/")
             packageListUrl("https://kotlinlang.org/api/kotlinx.serialization/package-list")
