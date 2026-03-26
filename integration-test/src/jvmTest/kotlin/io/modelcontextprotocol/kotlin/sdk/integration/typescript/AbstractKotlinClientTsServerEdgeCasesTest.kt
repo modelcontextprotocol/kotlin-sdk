@@ -1,53 +1,29 @@
-package io.modelcontextprotocol.kotlin.sdk.integration.typescript.sse
+package io.modelcontextprotocol.kotlin.sdk.integration.typescript
 
 import io.modelcontextprotocol.kotlin.sdk.client.Client
-import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TransportKind
-import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TsTestBase
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import kotlin.time.Duration.Companion.seconds
 
-class KotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
+abstract class AbstractKotlinClientTsServerEdgeCasesTest : TsTestBase() {
 
-    override val transportKind = TransportKind.SSE
-
-    private val serverUrl: String by lazy { getSharedSseUrl() }
-
-    private lateinit var client: Client
-
-    @AfterEach
-    fun tearDown() {
-        if (::client.isInitialized) {
-            try {
-                runBlocking {
-                    withTimeout(3.seconds) {
-                        client.close()
-                    }
-                }
-            } catch (e: Exception) {
-                println("Warning: Error during client close: ${e.message}")
-            }
-        }
-    }
+    protected abstract suspend fun <T> useClient(block: suspend (Client) -> T): T
 
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
     fun testNonExistentTool(): Unit = runBlocking(Dispatchers.IO) {
-        withClient(serverUrl) { client ->
+        useClient { client ->
             val nonExistentToolName = "non-existent-tool"
             val arguments = mapOf("name" to "TestUser")
 
@@ -70,7 +46,7 @@ class KotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
     fun testSpecialCharactersInArguments(): Unit = runBlocking(Dispatchers.IO) {
-        withClient(serverUrl) { client ->
+        useClient { client ->
             val specialChars = "!@#$%^&*()_+{}[]|\\:;\"'<>,.?/"
             val arguments = mapOf("name" to specialChars)
 
@@ -91,7 +67,7 @@ class KotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
     fun testLargePayload(): Unit = runBlocking(Dispatchers.IO) {
-        withClient(serverUrl) { client ->
+        useClient { client ->
             val largeName = "A".repeat(10 * 1024)
             val arguments = mapOf("name" to largeName)
 
@@ -112,7 +88,7 @@ class KotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
     @Test
     @Timeout(60, unit = TimeUnit.SECONDS)
     fun testConcurrentRequests(): Unit = runBlocking(Dispatchers.IO) {
-        withClient(serverUrl) { client ->
+        useClient { client ->
             val concurrentCount = 5
             val responses = coroutineScope {
                 val results = (1..concurrentCount).map { i ->
@@ -147,7 +123,7 @@ class KotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
     fun testInvalidArguments(): Unit = runBlocking(Dispatchers.IO) {
-        withClient(serverUrl) { client ->
+        useClient { client ->
             val invalidArguments = mapOf(
                 "name" to JsonObject(mapOf("nested" to JsonPrimitive("value"))),
             )
@@ -171,7 +147,7 @@ class KotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
     @Test
     @Timeout(30, unit = TimeUnit.SECONDS)
     fun testMultipleToolCalls(): Unit = runBlocking(Dispatchers.IO) {
-        withClient(serverUrl) { client ->
+        useClient { client ->
             repeat(10) { i ->
                 val name = "SequentialClient$i"
                 val arguments = mapOf("name" to name)
@@ -179,8 +155,7 @@ class KotlinClientTsServerEdgeCasesTestSse : TsTestBase() {
                 val result = client.callTool("greet", arguments)
                 assertNotNull(result, "Tool call result should not be null for call $i")
 
-                val callResult = result
-                val textContent = callResult.content.firstOrNull { it is TextContent } as? TextContent
+                val textContent = result.content.firstOrNull { it is TextContent } as? TextContent
                 assertNotNull(textContent, "Text content should be present for call $i")
 
                 assertEquals(
