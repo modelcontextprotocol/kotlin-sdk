@@ -19,6 +19,7 @@ concurrency:
 env:
   JAVA_VERSION: 21
   JAVA_DISTRIBUTION: temurin
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
 
 jobs:
   build:
@@ -34,8 +35,6 @@ jobs:
 
     name: Build Sample (${{ matrix.sample }})
     timeout-minutes: 10
-    env:
-      JAVA_OPTS: "-Xmx8g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx6g"
     steps:
       - uses: actions/checkout@v6
 
@@ -54,10 +53,10 @@ jobs:
 
       - name: "Build Sample: ${{ matrix.sample }}"
         working-directory: ./samples/${{ matrix.sample }}
-        run: ./gradlew --no-daemon build
+        run: ./gradlew build
 
       - name: Upload Reports
-        if: ${{ !cancelled() }}
+        if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: reports-samples-${{ matrix.sample }}
