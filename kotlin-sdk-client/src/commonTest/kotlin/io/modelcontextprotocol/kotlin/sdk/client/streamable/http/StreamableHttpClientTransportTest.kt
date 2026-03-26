@@ -148,18 +148,17 @@ class StreamableHttpClientTransportTest {
         )
 
         val transport = createTransport { request ->
-            when (
-                val msg = McpJson.decodeFromString<JSONRPCMessage>(
-                    (request.body as TextContent).text,
-                )
-            ) {
-                is JSONRPCRequest if msg.method == "initialize" -> respond(
+            val msg = McpJson.decodeFromString<JSONRPCMessage>(
+                (request.body as TextContent).text,
+            )
+            when {
+                msg is JSONRPCRequest && msg.method == "initialize" -> respond(
                     content = "",
                     status = HttpStatusCode.OK,
                     headers = headersOf("mcp-session-id", "test-session-id"),
                 )
 
-                is JSONRPCNotification if msg.method == "test" -> {
+                msg is JSONRPCNotification && msg.method == "test" -> {
                     assertEquals("test-session-id", request.headers["mcp-session-id"])
                     respond(
                         content = "",
@@ -246,8 +245,8 @@ class StreamableHttpClientTransportTest {
         var sseStarted = false
 
         val transport = createTransport { request ->
-            when (request.method) {
-                HttpMethod.Post if request.body.toString().contains("notifications/initialized") -> {
+            when {
+                request.method == HttpMethod.Post && request.body.toString().contains("notifications/initialized") -> {
                     respond(
                         content = "",
                         status = HttpStatusCode.Accepted,
@@ -256,7 +255,7 @@ class StreamableHttpClientTransportTest {
                 }
 
                 // Handle SSE connection
-                HttpMethod.Get -> {
+                request.method == HttpMethod.Get -> {
                     sseStarted = true
                     val sseContent = buildString {
                         // Server sends various notifications
@@ -288,7 +287,7 @@ class StreamableHttpClientTransportTest {
                 }
 
                 // Handle regular notifications
-                HttpMethod.Post -> {
+                request.method == HttpMethod.Post -> {
                     respond(
                         content = "",
                         status = HttpStatusCode.Accepted,
