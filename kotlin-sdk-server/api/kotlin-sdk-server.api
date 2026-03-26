@@ -107,7 +107,6 @@ public class io/modelcontextprotocol/kotlin/sdk/server/Server {
 	public final fun addTools (Ljava/util/List;)V
 	public final fun clientConnection (Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/server/ClientConnection;
 	public final fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public final fun connect (Lio/modelcontextprotocol/kotlin/sdk/shared/Transport;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun createElicitation (Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun createElicitation$default (Lio/modelcontextprotocol/kotlin/sdk/server/Server;Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public final fun createMessage (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/CreateMessageRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -125,7 +124,6 @@ public class io/modelcontextprotocol/kotlin/sdk/server/Server {
 	public static synthetic fun listRoots$default (Lio/modelcontextprotocol/kotlin/sdk/server/Server;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public final fun onClose (Lkotlin/jvm/functions/Function0;)V
 	public final fun onConnect (Lkotlin/jvm/functions/Function0;)V
-	public final fun onInitialized (Lkotlin/jvm/functions/Function0;)V
 	public final fun ping (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun removeNotificationHandler (Lio/modelcontextprotocol/kotlin/sdk/types/Method;)V
 	public final fun removeNotificationHandler (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/Method;)V

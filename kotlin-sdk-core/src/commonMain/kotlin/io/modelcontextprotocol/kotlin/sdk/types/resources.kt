@@ -191,26 +191,6 @@ public data class ListResourcesRequest(override val params: PaginatedRequestPara
     PaginatedRequest {
     @EncodeDefault
     override val method: Method = Method.Defined.ResourcesList
-
-    /**
-     * Secondary constructor for creating a [ListResourcesRequest] instance
-     * using optional cursor and metadata parameters.
-     *
-     * This constructor simplifies the creation of the [ListResourcesRequest] by allowing a cursor
-     * and metadata to be provided.
-     *
-     * @param cursor Optional cursor string to specify the starting point of the paginated request.
-     * @param meta Optional metadata associated with the request.
-     */
-    @Deprecated(
-        message = "Use the constructor with PaginatedRequestParams property instead",
-        replaceWith = ReplaceWith("ReadResourceRequest(PaginatedRequestParams(cursor, meta))"),
-        level = DeprecationLevel.ERROR,
-    )
-    public constructor(
-        cursor: String?,
-        meta: RequestMeta? = null,
-    ) : this(paginatedRequestParams(cursor, meta))
 }
 
 /**
@@ -261,16 +241,6 @@ public data class ReadResourceRequest(override val params: ReadResourceRequestPa
      */
     public val meta: RequestMeta?
         get() = params.meta
-
-    @Deprecated(
-        message = "Use the constructor with ReadResourceRequestParams property instead",
-        replaceWith = ReplaceWith("ReadResourceRequest(ReadResourceRequestParams(uri, meta))"),
-        level = DeprecationLevel.ERROR,
-    )
-    public constructor(
-        uri: String,
-        meta: RequestMeta? = null,
-    ) : this(ReadResourceRequestParams(uri, meta))
 }
 
 /**
@@ -337,16 +307,6 @@ public data class SubscribeRequest(override val params: SubscribeRequestParams) 
      */
     public val meta: RequestMeta?
         get() = params.meta
-
-    @Deprecated(
-        message = "Use the constructor with SubscribeRequestParams property instead",
-        replaceWith = ReplaceWith("ReadResourceRequest(SubscribeRequestParams(uri, meta))"),
-        level = DeprecationLevel.ERROR,
-    )
-    public constructor(
-        uri: String,
-        meta: RequestMeta? = null,
-    ) : this(SubscribeRequestParams(uri, meta))
 }
 
 /**
@@ -433,26 +393,6 @@ public data class ListResourceTemplatesRequest(override val params: PaginatedReq
     PaginatedRequest {
     @EncodeDefault
     override val method: Method = Method.Defined.ResourcesTemplatesList
-
-    /**
-     * Secondary constructor for creating a [ListResourceTemplatesRequest] instance
-     * using optional cursor and metadata parameters.
-     *
-     * This constructor simplifies the creation of the [ListResourceTemplatesRequest] by allowing a cursor
-     * and metadata to be provided.
-     *
-     * @param cursor Optional cursor string to specify the starting point of the paginated request.
-     * @param meta Optional metadata associated with the request.
-     */
-    @Deprecated(
-        message = "Use the constructor with PaginatedRequestParams property instead",
-        replaceWith = ReplaceWith("ListResourceTemplatesRequest(PaginatedRequestParams(cursor, meta))"),
-        level = DeprecationLevel.ERROR,
-    )
-    public constructor(
-        cursor: String?,
-        meta: RequestMeta? = null,
-    ) : this(paginatedRequestParams(cursor, meta))
 }
 
 /**
