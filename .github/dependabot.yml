@@ -50,9 +50,6 @@ updates:
           - "org.openapi.generator"
           - "org.jetbrains.dokka:*"
           - "com.vanniktech:*"
-    ignore:
-      - dependency-name: "org.jetbrains.kotlin:*"
-        update-types: ["version-update:semver-major"]
 
   # Samples (independent Gradle builds)
   - package-ecosystem: "gradle"
@@ -76,9 +73,6 @@ updates:
           - "io.ktor*"
           - "org.jetbrains.kotlin*"
           - "io.modelcontextprotocol*"
-    ignore:
-      - dependency-name: "org.jetbrains.kotlin*"
-        update-types: ["version-update:semver-major"]
 
   # npm (integration tests)
   - package-ecosystem: "npm"
