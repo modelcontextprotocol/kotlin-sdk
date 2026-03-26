@@ -1,20 +1,115 @@
-# Configuration options:
-# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#about-the-dependabotyml-file
+# yaml-language-server: $schema=https://json.schemastore.org/dependabot-2.0.json
+# Configuration: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 
 version: 2
+
 updates:
+  # Root Gradle project (includes buildSrc)
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "chore(deps):"
     labels:
       - "dependencies"
       - "kotlin"
+    open-pull-requests-limit: 10
+    groups:
+      ktor:
+        patterns:
+          - "io.ktor:*"
+      kotlinx:
+        patterns:
+          - "org.jetbrains.kotlinx:*"
+      kotlin:
+        patterns:
+          - "org.jetbrains.kotlin:*"
+      kotest:
+        patterns:
+          - "io.kotest:*"
+      testing:
+        patterns:
+          - "io.mockk:*"
+          - "dev.mokksy:*"
+          - "org.awaitility:*"
+          - "org.junit.jupiter:*"
+      infrastructure:
+        patterns:
+          - "io.netty:*"
+          - "io.github.oshai:*"
+          - "org.slf4j:*"
+      gradle-plugins:
+        patterns:
+          - "dev.detekt"
+          - "org.jetbrains.kotlinx.kover"
+          - "org.jlleitschuh.gradle.ktlint"
+          - "org.jetbrains.kotlinx.knit"
+          - "org.jetbrains.kotlinx.binary-compatibility-validator"
+          - "org.openapi.generator"
+          - "org.jetbrains.dokka:*"
+          - "com.vanniktech:*"
+    ignore:
+      - dependency-name: "org.jetbrains.kotlin:*"
+        update-types: ["version-update:semver-major"]
 
+  # Samples (independent Gradle builds)
+  - package-ecosystem: "gradle"
+    directories:
+      - "/samples/*"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "chore(deps):"
+    labels:
+      - "dependencies"
+      - "kotlin"
+      - "samples"
+    open-pull-requests-limit: 10
+    groups:
+      other-dependencies:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "io.ktor*"
+          - "org.jetbrains.kotlin*"
+          - "io.modelcontextprotocol*"
+    ignore:
+      - dependency-name: "org.jetbrains.kotlin*"
+        update-types: ["version-update:semver-major"]
+
+  # npm (integration tests)
+  - package-ecosystem: "npm"
+    directory: "/integration-test/src/jvmTest/typescript"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "chore(deps):"
+    labels:
+      - "dependencies"
+      - "javascript"
+    open-pull-requests-limit: 10
+    groups:
+      all-dependencies:
+        patterns:
+          - "*"
+
+  # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "chore(deps):"
     labels:
       - "dependencies"
       - "github-actions"
+    open-pull-requests-limit: 10
+    groups:
+      all-actions:
+        patterns:
+          - "*"
