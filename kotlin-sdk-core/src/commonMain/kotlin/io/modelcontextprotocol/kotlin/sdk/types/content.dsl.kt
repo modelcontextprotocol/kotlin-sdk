@@ -88,6 +88,7 @@ public abstract class MediaContentBuilder {
         meta = buildJsonObject(block)
     }
 
+    /** Constructs the [MediaContent] instance from the current builder state. */
     @PublishedApi
     internal abstract fun build(): MediaContent
 }

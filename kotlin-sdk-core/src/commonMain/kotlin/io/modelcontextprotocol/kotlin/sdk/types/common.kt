@@ -41,8 +41,10 @@ public sealed interface WithMeta {
  */
 public typealias ProgressToken = RequestId
 
+/** Creates a [ProgressToken] from a string value. */
 public fun ProgressToken(value: String): ProgressToken = RequestId(value)
 
+/** Creates a [ProgressToken] from a numeric value. */
 public fun ProgressToken(value: Long): ProgressToken = RequestId(value)
 
 // ============================================================================
@@ -127,6 +129,7 @@ public sealed interface Reference {
     public val type: ReferenceType
 }
 
+/** Discriminator for [Reference] subtypes used in completion and other operations. */
 @Serializable
 public enum class ReferenceType(public val value: String) {
     @SerialName("ref/prompt")

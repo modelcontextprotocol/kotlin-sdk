@@ -418,6 +418,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         }
     }
 
+    /** Handles an HTTP GET request by establishing a standalone SSE stream for server-initiated notifications. */
     @Suppress("ReturnCount")
     public suspend fun handleGetRequest(session: ServerSSESession?, call: ApplicationCall) {
         // NOTE: enableJsonResponse only controls how POST responses are delivered (JSON vs. SSE).
@@ -465,6 +466,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         awaitCancellation()
     }
 
+    /** Handles an HTTP DELETE request by closing the session and the transport. */
     public suspend fun handleDeleteRequest(call: ApplicationCall) {
         if (!validateSession(call) || !validateProtocolVersion(call)) return
         sessionId?.let { onSessionClosed?.invoke(it) }
