@@ -20,8 +20,10 @@ import io.modelcontextprotocol.kotlin.sdk.types.ListRootsRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsResult
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification
+import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.Method.Defined
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.RequestMeta
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
@@ -52,17 +54,18 @@ public open class ServerSession(
 
     private var _onClose: () -> Unit = {}
 
+    private val _clientCapabilities: AtomicRef<ClientCapabilities?> = atomic(null)
+    private val _clientVersion: AtomicRef<Implementation?> = atomic(null)
+
     /**
      * The client's reported capabilities after initialization.
      */
-    public var clientCapabilities: ClientCapabilities? = null
-        private set
+    public val clientCapabilities: ClientCapabilities? get() = _clientCapabilities.value
 
     /**
      * The client's version information after initialization.
      */
-    public var clientVersion: Implementation? = null
-        private set
+    public val clientVersion: Implementation? get() = _clientVersion.value
 
     /**
      * The capabilities supported by the server, related to the session.
@@ -286,9 +289,15 @@ public open class ServerSession(
     }
 
     private fun handleInitialize(request: InitializeRequest): InitializeResult {
+        if (!_clientCapabilities.compareAndSet(null, request.params.capabilities)) {
+            throw McpException(
+                code = RPCError.ErrorCode.INVALID_REQUEST,
+                message = "Server already initialized",
+            )
+        }
+
         logger.debug { "Handling initialization request from client" }
-        clientCapabilities = request.params.capabilities
-        clientVersion = request.params.clientInfo
+        _clientVersion.value = request.params.clientInfo
 
         val requestedVersion = request.params.protocolVersion
         val protocolVersion = if (SUPPORTED_PROTOCOL_VERSIONS.contains(requestedVersion)) {
