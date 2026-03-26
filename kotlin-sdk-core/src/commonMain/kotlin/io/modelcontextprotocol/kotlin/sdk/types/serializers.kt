@@ -414,9 +414,9 @@ internal object JSONRPCMessagePolymorphicSerializer :
  * Supports both string and number IDs.
  */
 internal object RequestIdPolymorphicSerializer : JsonContentPolymorphicSerializer<RequestId>(RequestId::class) {
-    override fun selectDeserializer(element: JsonElement): DeserializationStrategy<RequestId> = when (element) {
-        is JsonPrimitive if (element.isString) -> RequestId.StringId.serializer()
-        is JsonPrimitive if (element.longOrNull != null) -> RequestId.NumberId.serializer()
+    override fun selectDeserializer(element: JsonElement): DeserializationStrategy<RequestId> = when {
+        element is JsonPrimitive && element.isString -> RequestId.StringId.serializer()
+        element is JsonPrimitive && element.longOrNull != null -> RequestId.NumberId.serializer()
         else -> throw SerializationException("Invalid RequestId type: $element")
     }
 }
