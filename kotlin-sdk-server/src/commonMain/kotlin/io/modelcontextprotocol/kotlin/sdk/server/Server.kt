@@ -118,8 +118,6 @@ public open class Server(
         block: Server.() -> Unit = {},
     ) : this(serverInfo, options, { instructions }, block)
 
-    private var _onInitialized: (() -> Unit) = {}
-
     private var _onConnect: (() -> Unit) = {}
 
     private var _onClose: () -> Unit = {}
@@ -204,20 +202,6 @@ public open class Server(
      * @param transport The transport layer to connect the session with.
      * @return The initialized and connected server session.
      */
-    @Deprecated(
-        "Use createSession(transport) instead.",
-        ReplaceWith("createSession(transport)"),
-        DeprecationLevel.ERROR,
-    )
-    public suspend fun connect(transport: Transport): ServerSession = createSession(transport)
-
-    /**
-     * Starts a new server session with the given transport and initializes
-     * internal request handlers based on the server's capabilities.
-     *
-     * @param transport The transport layer to connect the session with.
-     * @return The initialized and connected server session.
-     */
     public suspend fun createSession(transport: Transport): ServerSession {
         val session = ServerSession(serverInfo, options, instructionsProvider?.invoke())
 
@@ -289,22 +273,6 @@ public open class Server(
     public fun onConnect(block: () -> Unit) {
         val old = _onConnect
         _onConnect = {
-            old()
-            block()
-        }
-    }
-
-    /**
-     * Registers a callback to be invoked when the server has completed initialization.
-     */
-    @Deprecated(
-        "Initialization moved to ServerSession, use ServerSession.onInitialized instead.",
-        ReplaceWith("ServerSession.onInitialized"),
-        DeprecationLevel.ERROR,
-    )
-    public fun onInitialized(block: () -> Unit) {
-        val old = _onInitialized
-        _onInitialized = {
             old()
             block()
         }

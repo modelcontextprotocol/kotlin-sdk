@@ -30,15 +30,6 @@ public val SUPPORTED_PROTOCOL_VERSIONS: List<String> = listOf(
 public sealed interface WithMeta {
     @SerialName("_meta")
     public val meta: JsonObject?
-
-    @Deprecated(
-        message = "Use 'meta' instead.",
-        replaceWith = ReplaceWith("meta"),
-        level = DeprecationLevel.ERROR,
-    )
-    @Suppress("PropertyName", "VariableNaming")
-    public val _meta: JsonObject
-        get() = meta ?: EmptyJsonObject
 }
 
 // ============================================================================

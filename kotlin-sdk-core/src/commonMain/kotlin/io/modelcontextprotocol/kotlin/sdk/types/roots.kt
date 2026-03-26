@@ -62,15 +62,6 @@ public data class ListRootsRequest(override val params: BaseRequestParams? = nul
 
     public val meta: RequestMeta?
         get() = params?.meta
-
-    @Deprecated(
-        message = "Use the constructor with BaseRequestParams property instead",
-        replaceWith = ReplaceWith("ListRootsRequest(BaseRequestParams(meta))"),
-        level = DeprecationLevel.ERROR,
-    )
-    public constructor(
-        meta: RequestMeta?,
-    ) : this(BaseRequestParams(meta))
 }
 
 /**
