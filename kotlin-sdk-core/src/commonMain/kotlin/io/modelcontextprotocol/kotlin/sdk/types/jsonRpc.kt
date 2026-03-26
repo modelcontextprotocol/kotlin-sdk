@@ -40,10 +40,12 @@ public fun RequestId(value: Long): RequestId = RequestId.NumberId(value)
 @Serializable(with = RequestIdPolymorphicSerializer::class)
 public sealed interface RequestId {
 
+    /** A string-based request identifier. */
     @JvmInline
     @Serializable
     public value class StringId(public val value: String) : RequestId
 
+    /** A numeric request identifier. */
     @JvmInline
     @Serializable
     public value class NumberId(public val value: Long) : RequestId

@@ -8,6 +8,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 
+/** Discriminator values for the polymorphic [ContentBlock] hierarchy. */
 @Serializable
 public enum class ContentTypes(public val value: String) {
     @SerialName("text")
