@@ -185,6 +185,7 @@ public open class Server(
         block(this)
     }
 
+    /** Closes this server, shutting down the notification service and all active sessions. */
     public suspend fun close() {
         logger.debug { "Closing MCP server" }
         notificationService.close()
@@ -718,6 +719,7 @@ public open class Server(
 
     // Start the ServerSession / ClientConnection redirection section
 
+    /** Returns the [ClientConnection] for the session identified by [sessionId]. */
     public fun clientConnection(sessionId: String): ClientConnection =
         sessionRegistry.getSession(sessionId).clientConnection
 
@@ -827,18 +829,22 @@ public open class Server(
     // End the ServerSession / ClientConnection redirection section
 
     // Start the notification handling section
+
+    /** Registers a notification [handler] for the given [method] on all active sessions. */
     public fun <T : Notification> setNotificationHandler(method: Method, handler: (notification: T) -> Deferred<Unit>) {
         sessions.forEach { (_, session) ->
             session.setNotificationHandler(method, handler)
         }
     }
 
+    /** Removes the notification handler for the given [method] from all active sessions. */
     public fun removeNotificationHandler(method: Method) {
         sessions.forEach { (_, session) ->
             session.removeNotificationHandler(method)
         }
     }
 
+    /** Registers a notification [handler] for the given [method] on a specific session. */
     public fun <T : Notification> setNotificationHandler(
         sessionId: String,
         method: Method,
@@ -847,6 +853,7 @@ public open class Server(
         sessionRegistry.getSessionOrNull(sessionId)?.setNotificationHandler(method, handler)
     }
 
+    /** Removes the notification handler for the given [method] from a specific session. */
     public fun removeNotificationHandler(sessionId: String, method: Method) {
         sessionRegistry.getSessionOrNull(sessionId)?.removeNotificationHandler(method)
     }

@@ -171,6 +171,7 @@ public class ClientCapabilitiesBuilder @PublishedApi internal constructor() {
      */
     public fun experimental(block: JsonObjectBuilder.() -> Unit): Unit = experimental(buildJsonObject(block))
 
+    /** Constructs the [ClientCapabilities] instance from the current builder state. */
     @PublishedApi
     internal fun build(): ClientCapabilities = ClientCapabilities(
         sampling = sampling,

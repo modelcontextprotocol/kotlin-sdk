@@ -16,6 +16,7 @@ public class ReadBuffer {
 
     private val buffer: Buffer = Buffer()
 
+    /** Appends raw bytes to the internal buffer for subsequent message parsing. */
     public fun append(chunk: ByteArray) {
         buffer.write(chunk)
     }
@@ -86,6 +87,7 @@ public class ReadBuffer {
         }
     }
 
+    /** Clears all buffered data, discarding any partially received messages. */
     public fun clear() {
         buffer.clear()
     }
@@ -93,4 +95,5 @@ public class ReadBuffer {
 
 internal fun deserializeMessage(line: String): JSONRPCMessage = McpJson.decodeFromString<JSONRPCMessage>(line)
 
+/** Serializes a [JSONRPCMessage] to its JSON string representation with a trailing newline. */
 public fun serializeMessage(message: JSONRPCMessage): String = McpJson.encodeToString(message) + "\n"

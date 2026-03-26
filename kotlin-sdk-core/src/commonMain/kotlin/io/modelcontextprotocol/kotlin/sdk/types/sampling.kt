@@ -243,6 +243,7 @@ public data class CreateMessageResult(
     override val meta: JsonObject? = null,
 ) : ClientResult
 
+/** The reason why the LLM stopped generating tokens. */
 @JvmInline
 @Serializable
 public value class StopReason(public val value: String) {
