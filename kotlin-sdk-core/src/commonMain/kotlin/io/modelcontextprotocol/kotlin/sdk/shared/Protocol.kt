@@ -33,9 +33,6 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.json.ClassDiscriminatorMode
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
@@ -51,22 +48,6 @@ public const val IMPLEMENTATION_NAME: String = "mcp-ktor"
  * Callback for progress notifications.
  */
 public typealias ProgressCallback = (Progress) -> Unit
-
-@OptIn(ExperimentalSerializationApi::class)
-@Deprecated(
-    message = "Use McpJson instead",
-    replaceWith = ReplaceWith("McpJson", "io.modelcontextprotocol.kotlin.sdk.types.McpJson"),
-    level = DeprecationLevel.ERROR,
-)
-public val McpJson: Json by lazy {
-    Json {
-        ignoreUnknownKeys = true
-        encodeDefaults = true
-        isLenient = true
-        classDiscriminatorMode = ClassDiscriminatorMode.NONE
-        explicitNulls = false
-    }
-}
 
 /**
  * Additional initialization options.

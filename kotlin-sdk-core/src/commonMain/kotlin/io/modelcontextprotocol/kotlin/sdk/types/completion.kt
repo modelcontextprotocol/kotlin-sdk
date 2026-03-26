@@ -39,18 +39,6 @@ public data class CompleteRequest(override val params: CompleteRequestParams) : 
 
     public val meta: RequestMeta?
         get() = params.meta
-
-    @Deprecated(
-        message = "Will be removed in a future release.",
-        replaceWith = ReplaceWith(expression = "CompleteRequest(CompleteRequestParams(argument, ref, context, meta))"),
-        level = DeprecationLevel.ERROR,
-    )
-    public constructor(
-        argument: Argument,
-        ref: Reference,
-        context: Context? = null,
-        meta: RequestMeta? = null,
-    ) : this(CompleteRequestParams(argument, ref, context, meta))
 }
 
 /**
