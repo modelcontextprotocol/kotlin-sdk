@@ -3,7 +3,7 @@ import {Client} from '@modelcontextprotocol/sdk/client/index';
 const args = process.argv.slice(2);
 const toolName = args[0];
 const toolArgs = args.slice(1);
-const PROTOCOL_VERSION = "2024-11-05";
+const PROTOCOL_VERSION = "2025-11-25";
 
 async function main() {
     if (!toolName) {
@@ -65,6 +65,10 @@ async function main() {
     const client = new Client({
         name: 'test-client',
         version: '1.0.0'
+    }, {
+        fallbackNotificationHandler: async (notification) => {
+            console.error('Notification:', notification.method, JSON.stringify(notification));
+        }
     });
 
     const transport = new MinimalStdioClientTransport();
@@ -72,21 +76,6 @@ async function main() {
     try {
         await client.connect(transport, {protocolVersion: PROTOCOL_VERSION});
         console.error('Connected to server over stdio');
-
-        try {
-            if (typeof (client as any).on === 'function') {
-                (client as any).on('notification', (n: any) => {
-                    try {
-                        const method = (n && (n.method || (n.params && n.params.method))) || 'unknown';
-                        console.error('Notification:', method, JSON.stringify(n));
-                    } catch {
-                        console.error('Notification: <unparsable>');
-                    }
-                });
-            }
-        } catch {
-            // ignore
-        }
 
         const toolsResult = await client.listTools();
         const tools = toolsResult.tools;

@@ -7,28 +7,28 @@ import java.io.File
 /**
  * Component for starting and managing TypeScript MCP clients for integration tests.
  *
- * This class provides methods to start TypeScript clients using SSE or STDIO transports.
+ * This class provides methods to start TypeScript clients using HTTP or STDIO transports.
  * The clients are started using npx tsx to execute TypeScript files directly.
  */
 class TypeScriptClient(private val typescriptDir: File) : AutoCloseable {
     private var process: Process? = null
 
     /**
-     * Starts a TypeScript MCP client using SSE transport.
+     * Starts a TypeScript MCP client using Streamable HTTP transport.
      *
      * @param arguments Arguments to pass to the client (typically server URL, tool name, and tool args)
      * @param log Whether to automatically log process output/error
      * @return The started Process
      */
-    fun startSse(arguments: List<String>, log: Boolean = true): Process {
-        val scriptPath = File(typescriptDir, "client/sse-client.ts").absolutePath
+    fun startHttp(arguments: List<String>, log: Boolean = true): Process {
+        val scriptPath = File(typescriptDir, "client/http-client.ts").absolutePath
         val proc = TypeScriptRunner.run(
             typescriptDir = typescriptDir,
             scriptPath = scriptPath,
             arguments = arguments,
             env = emptyMap(),
             redirectErrorStream = false,
-            logPrefix = "TS-CLIENT-SSE",
+            logPrefix = "TS-CLIENT-HTTP",
             log = log,
         )
         process = proc

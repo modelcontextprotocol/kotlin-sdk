@@ -1,4 +1,4 @@
-package io.modelcontextprotocol.kotlin.sdk.integration.typescript.sse
+package io.modelcontextprotocol.kotlin.sdk.integration.typescript.http
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.ContentType
@@ -42,8 +42,9 @@ import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -132,14 +133,16 @@ class KotlinServerForTsClient {
 
                             call.response.header("mcp-session-id", newSessionId)
 
-                            val serverThread = Thread {
-                                runBlocking {
+                            launch(Dispatchers.IO) {
+                                try {
                                     mcpServer.createSession(transport)
+                                } catch (e: Exception) {
+                                    logger.error(e) { "Failed to create MCP session" }
+                                    transport.ready.completeExceptionally(e)
                                 }
                             }
-                            serverThread.start()
 
-                            Thread.sleep(500)
+                            transport.ready.await()
 
                             transport.handleRequest(call, jsonElement)
                         } else {
@@ -173,9 +176,7 @@ class KotlinServerForTsClient {
                         logger.info { "Terminating session: $sessionId" }
                         val transport = serverTransports[sessionId]!!
                         serverTransports.remove(sessionId)
-                        runBlocking {
-                            transport.close()
-                        }
+                        transport.close()
                         call.respond(HttpStatusCode.OK)
                     } else {
                         logger.warn { "Invalid session termination request: $sessionId" }
@@ -313,9 +314,10 @@ class HttpServerTransport(private val sessionId: String) : AbstractTransport() {
     private val logger = KotlinLogging.logger {}
     private val pendingResponses = ConcurrentHashMap<String, CompletableDeferred<JSONRPCMessage>>()
     private val messageQueue = Channel<JSONRPCMessage>(Channel.UNLIMITED)
+    internal val ready = CompletableDeferred<Unit>()
 
     suspend fun stream(call: ApplicationCall) {
-        logger.debug { "Starting SSE stream for session: $sessionId" }
+        logger.debug { "Starting Event stream for session: $sessionId" }
         call.response.header("Cache-Control", "no-cache")
         call.response.header("Connection", "keep-alive")
         call.respondTextWriter(ContentType.Text.EventStream) {
@@ -331,29 +333,28 @@ class HttpServerTransport(private val sessionId: String) : AbstractTransport() {
                     flush()
                 }
             } catch (e: Exception) {
-                logger.warn(e) { "SSE stream terminated for session: $sessionId" }
+                logger.warn(e) { "Event stream terminated for session: $sessionId" }
             } finally {
-                logger.debug { "SSE stream closed for session: $sessionId" }
+                logger.debug { "Event stream closed for session: $sessionId" }
             }
         }
     }
 
     suspend fun handleRequest(call: ApplicationCall, requestBody: JsonElement) {
         try {
-            logger.info { "Handling request body: $requestBody" }
+            logger.trace { "Handling request body: $requestBody" }
             val message = McpJson.decodeFromJsonElement<JSONRPCMessage>(requestBody)
-            logger.info { "Decoded message: $message" }
+            logger.debug { "Decoded message: $message" }
 
             if (message is JSONRPCRequest) {
                 val id = message.id.toString()
-                logger.info { "Received request with ID: $id, method: ${message.method}" }
+                logger.debug { "Received request with ID: $id, method: ${message.method}" }
                 val responseDeferred = CompletableDeferred<JSONRPCMessage>()
                 pendingResponses[id] = responseDeferred
-                logger.info { "Created deferred response for ID: $id" }
 
-                logger.info { "Invoking onMessage handler" }
+                logger.trace { "Invoking onMessage handler for ID: $id" }
                 _onMessage.invoke(message)
-                logger.info { "onMessage handler completed" }
+                logger.trace { "onMessage handler completed for ID: $id" }
 
                 try {
                     val response = withTimeoutOrNull(10000) {
@@ -426,29 +427,28 @@ class HttpServerTransport(private val sessionId: String) : AbstractTransport() {
 
     override suspend fun start() {
         logger.debug { "Starting HTTP server transport for session: $sessionId" }
+        ready.complete(Unit)
     }
 
     override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
-        logger.info { "Sending message: $message" }
+        logger.trace { "Sending message: $message" }
 
         if (message is JSONRPCResponse) {
             val id = message.id.toString()
-            logger.info { "Sending response for request ID: $id" }
+            logger.debug { "Completing response for request ID: $id" }
             val deferred = pendingResponses.remove(id)
             if (deferred != null) {
-                logger.info { "Found pending response for ID: $id, completing deferred" }
                 deferred.complete(message)
                 return
             } else {
                 logger.warn { "No pending response found for ID: $id" }
             }
         } else if (message is JSONRPCRequest) {
-            logger.info { "Sending request with ID: ${message.id}" }
+            logger.debug { "Sending request with ID: ${message.id}" }
         } else if (message is JSONRPCNotification) {
-            logger.info { "Sending notification: ${message.method}" }
+            logger.debug { "Sending notification: ${message.method}" }
         }
 
-        logger.info { "Queueing message for next client request" }
         messageQueue.send(message)
     }
 

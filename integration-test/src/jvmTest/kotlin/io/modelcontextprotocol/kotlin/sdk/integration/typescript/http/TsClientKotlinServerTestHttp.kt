@@ -1,4 +1,4 @@
-package io.modelcontextprotocol.kotlin.sdk.integration.typescript.sse
+package io.modelcontextprotocol.kotlin.sdk.integration.typescript.http
 
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.AbstractTsClientKotlinServerTest
 import io.modelcontextprotocol.kotlin.sdk.integration.typescript.TransportKind
@@ -7,9 +7,9 @@ import io.modelcontextprotocol.kotlin.test.utils.killProcessOnPort
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
-class TsClientKotlinServerTestSse : AbstractTsClientKotlinServerTest() {
+class TsClientKotlinServerTestHttp : AbstractTsClientKotlinServerTest() {
 
-    override val transportKind = TransportKind.SSE
+    override val transportKind = TransportKind.HTTP
 
     private var port: Int = 0
     private lateinit var serverUrl: String
@@ -36,11 +36,11 @@ class TsClientKotlinServerTestSse : AbstractTsClientKotlinServerTest() {
     }
 
     override fun runClient(vararg args: String): String = tsClient.use { client ->
-        val process = client.startSse(listOf(serverUrl) + args.toList(), log = true)
+        val process = client.startHttp(listOf(serverUrl) + args.toList(), log = true)
         val output = StringBuilder()
         process.inputStream.bufferedReader().useLines { lines ->
             lines.forEach { line ->
-                println("[TS-CLIENT-SSE] $line")
+                println("[TS-CLIENT-HTTP] $line")
                 output.append(line).append("\n")
             }
         }

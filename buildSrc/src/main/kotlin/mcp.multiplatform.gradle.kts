@@ -39,7 +39,6 @@ kotlin {
             forkEvery = 100
             testLogging {
                 exceptionFormat = TestExceptionFormat.SHORT
-                showStandardStreams = true
                 events("failed")
             }
             systemProperty("kotest.output.ansi", "true")
