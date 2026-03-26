@@ -78,11 +78,11 @@ jobs:
           ./gradlew ${{ matrix.gradle-tasks }} --max-workers ${{ matrix.max-workers }} --continue --rerun-tasks
 
       - name: Coverage Report
-        if: matrix.os == 'ubuntu-latest'
+        if: ${{ success() && matrix.os == 'ubuntu-latest' }}
         run: ./gradlew koverLog koverHtmlReport koverXmlReport
 
       - name: Publish to Maven Local
-        if: matrix.os == 'ubuntu-latest'
+        if: ${{ success() && matrix.os == 'ubuntu-latest' }}
         run: ./gradlew publishToMavenLocal -Pversion=1-SNAPSHOT
 
       - name: Upload Reports
