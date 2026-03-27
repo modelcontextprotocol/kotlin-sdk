@@ -417,13 +417,14 @@ class ClientTest {
             clientInfo = Implementation(name = "test client without capability", version = "1.0"),
             options = ClientOptions(
                 capabilities = ClientCapabilities(),
-                //                enforceStrictCapabilities = true // TODO()
             ),
         )
 
-        clientWithoutCapability.connect(clientTransport)
-        // Using the same transport pair might not be realistic - in a real scenario you'd create another pair.
-        // Adjust if necessary.
+        val (clientTransport2, serverTransport2) = InMemoryTransport.createLinkedPair()
+        listOf(
+            launch { clientWithoutCapability.connect(clientTransport2) },
+            launch { server.createSession(serverTransport2) },
+        ).joinAll()
 
         // This should fail
         val ex = assertFailsWith<IllegalStateException> {
