@@ -21,10 +21,10 @@ kotlinx-io = "0.8.2"
 ktor = "3.2.3"
 logging = "8.0.01"
 mockk = "1.14.9"
-mokksy = "0.8.0"
+mokksy = "0.8.1"
 serialization = "1.9.0"
 slf4j = "2.0.17"
-junit = "5.14.2"
+junit = "5.14.3"
 
 [libraries]
 # Plugins
