@@ -1,6 +1,6 @@
 [versions]
 # plugins version
-atomicfu = "0.31.0"
+atomicfu = "0.32.1"
 binaryCompatibilityValidatorPlugin = "0.18.1"
 detekt = "2.0.0-alpha.2"
 dokka = "2.2.0"
