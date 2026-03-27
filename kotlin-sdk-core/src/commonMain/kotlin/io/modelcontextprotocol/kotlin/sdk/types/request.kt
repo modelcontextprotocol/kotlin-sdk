@@ -16,9 +16,9 @@ import kotlin.jvm.JvmInline
 public value class RequestMeta(public val json: JsonObject) {
     public val progressToken: ProgressToken?
         get() = json["progressToken"]?.let { element ->
-            when (element) {
-                is JsonPrimitive if (element.isString) -> ProgressToken(element.content)
-                is JsonPrimitive if (element.longOrNull != null) -> ProgressToken(element.long)
+            when {
+                element is JsonPrimitive && element.isString -> ProgressToken(element.content)
+                element is JsonPrimitive && element.longOrNull != null -> ProgressToken(element.long)
                 else -> null
             }
         }
