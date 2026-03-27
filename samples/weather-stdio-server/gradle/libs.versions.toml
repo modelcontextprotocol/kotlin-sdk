@@ -2,9 +2,9 @@
 coroutines = "1.10.2"
 kotlin = "2.2.21"
 ktor = "3.2.3"
-logging = "7.0.13"
+logging = "8.0.01"
 mcp-kotlin = "0.9.0"
-shadow = "9.2.2"
+shadow = "9.4.0"
 slf4j = "2.0.17"
 
 [libraries]

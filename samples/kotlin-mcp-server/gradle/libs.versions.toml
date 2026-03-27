@@ -3,7 +3,7 @@ kotlin = "2.2.21"
 ktor = "3.2.3"
 mcp-kotlin = "0.8.1"
 slf4j = "2.0.17"
-shadow = "9.2.2"
+shadow = "9.4.0"
 
 [libraries]
 ktor-bom = { group = "io.ktor", name = "ktor-bom", version.ref = "ktor" }
