@@ -6,7 +6,13 @@ import io.kotest.matchers.string.shouldContain
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult
+import io.modelcontextprotocol.kotlin.sdk.types.ListPromptsRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ListPromptsResult
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
+import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError
+import io.modelcontextprotocol.kotlin.sdk.types.PaginatedRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.Prompt
 import io.modelcontextprotocol.kotlin.sdk.types.PromptArgument
 import io.modelcontextprotocol.kotlin.sdk.types.PromptMessage
 import io.modelcontextprotocol.kotlin.sdk.types.Role
@@ -19,6 +25,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -696,5 +703,57 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
         withClue("Unexpected error message for non-existent prompt") {
             exception.message shouldBe expectedMessage
         }
+    }
+
+    @Test
+    fun testListPromptsPagination() = runBlocking(Dispatchers.IO) {
+        val pagePrefix = "paginated-prompt-"
+        (0 until 5).forEach { i ->
+            val name = "$pagePrefix$i"
+            server.addPrompt(name = name, description = "desc", arguments = listOf()) { _ ->
+                GetPromptResult(description = "desc", messages = listOf(PromptMessage(role = Role.Assistant, content = TextContent(text = name))))
+            }
+        }
+
+        server.sessions.forEach { (_, session) ->
+            session.setRequestHandler<ListPromptsRequest>(Method.Defined.PromptsList) { request, _ ->
+                val all = server.prompts.values.map { it.prompt }
+                val cursor = request.cursor?.toIntOrNull() ?: 0
+                val pageSize = 2
+                val page = all.drop(cursor).take(pageSize)
+                val next = if (cursor + page.size < all.size) (cursor + page.size).toString() else null
+                ListPromptsResult(prompts = page, nextCursor = next)
+            }
+        }
+
+        val allPrompts = mutableListOf<Prompt>()
+        var currentCursor: String? = null
+        do {
+            val request = if (currentCursor == null) ListPromptsRequest() else ListPromptsRequest(PaginatedRequestParams(cursor = currentCursor))
+            val response = client.listPrompts(request)
+            allPrompts.addAll(response.prompts)
+            currentCursor = response.nextCursor
+        } while (currentCursor != null)
+
+        val paginatedPrompts = allPrompts.filter { it.name.startsWith(pagePrefix) }
+        assertEquals(5, paginatedPrompts.size, "Should have collected all 5 paginated prompts")
+    }
+
+    @Test
+    fun testListPromptsInvalidCursor() = runBlocking(Dispatchers.IO) {
+        server.sessions.forEach { (_, session) ->
+            session.setRequestHandler<ListPromptsRequest>(Method.Defined.PromptsList) { request, _ ->
+                val cursor = request.cursor?.toIntOrNull() ?: throw IllegalArgumentException("Invalid cursor")
+                val all = server.prompts.values.map { it.prompt }
+                val page = all.drop(cursor).take(2)
+                ListPromptsResult(prompts = page, nextCursor = null)
+            }
+        }
+
+        val exception = assertFailsWith<McpException> {
+            client.listPrompts(ListPromptsRequest(PaginatedRequestParams(cursor = "not-a-number")))
+        }
+
+        assertEquals(RPCError.ErrorCode.INTERNAL_ERROR, exception.code)
     }
 }
