@@ -1,7 +1,11 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.kotlin
 
 import io.modelcontextprotocol.kotlin.sdk.types.BlobResourceContents
+import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesResult
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
+import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.PaginatedRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequestParams
@@ -20,6 +24,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -308,5 +313,63 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
             assertNotNull(result, "Result should not be null")
             assertTrue(result.contents.isNotEmpty(), "Result contents should not be empty")
         }
+    }
+
+    @Test
+    fun testListResourcesPagination() = runBlocking(Dispatchers.IO) {
+        val prefix = "paginated-resource-"
+        (0 until 6).forEach { i ->
+            val uri = "test://$prefix$i.txt"
+            server.addResource(uri = uri, name = "Name-$i", description = "desc", mimeType = "text/plain") { request ->
+                ReadResourceResult(contents = listOf(TextResourceContents(text = uri, uri = request.params.uri, mimeType = "text/plain")))
+            }
+        }
+
+        server.sessions.forEach { (_, session) ->
+            session.setRequestHandler<ListResourcesRequest>(Method.Defined.ResourcesList) { request, _ ->
+                val all = server.resources.values.map { it.resource }
+                val cursor = request.cursor?.toIntOrNull() ?: 0
+                val pageSize = 3
+                val page = all.drop(cursor).take(pageSize)
+                val next = if (cursor + page.size < all.size) (cursor + page.size).toString() else null
+                ListResourcesResult(resources = page, nextCursor = next)
+            }
+        }
+
+        val combinedUris = mutableListOf<String>()
+        var currentCursor: String? = null
+
+        do {
+            val request = if (currentCursor == null) {
+                ListResourcesRequest()
+            } else {
+                ListResourcesRequest(PaginatedRequestParams(cursor = currentCursor))
+            }
+
+            val response = client.listResources(request)
+            combinedUris += response.resources.map { it.uri }
+            currentCursor = response.nextCursor
+        } while (currentCursor != null)
+
+        val paginatedResources = combinedUris.filter { it.contains(prefix) }
+        assertEquals(6, paginatedResources.size, "Should have collected all 6 paginated resources")
+    }
+
+    @Test
+    fun testListResourcesInvalidCursor() = runBlocking(Dispatchers.IO) {
+        server.sessions.forEach { (_, session) ->
+            session.setRequestHandler<ListResourcesRequest>(Method.Defined.ResourcesList) { request, _ ->
+                val cursor = request.cursor?.toIntOrNull() ?: throw IllegalArgumentException("Invalid cursor")
+                val all = server.resources.values.map { it.resource }
+                val page = all.drop(cursor).take(2)
+                ListResourcesResult(resources = page, nextCursor = null)
+            }
+        }
+
+        val exception = assertFailsWith<McpException> {
+            client.listResources(ListResourcesRequest(PaginatedRequestParams(cursor = "bad")))
+        }
+
+        assertEquals(RPCError.ErrorCode.INTERNAL_ERROR, exception.code)
     }
 }
