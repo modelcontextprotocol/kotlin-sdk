@@ -23,6 +23,13 @@ empty-blocks:
     excludes: *testFolders
 
 comments:
+    UndocumentedPublicClass:
+      active: true
+      excludes: [ '**/test/**', '**/commonTest/**', '**/jvmTest/**', '**/generated-sources/**' ]
+      ignoreDefaultCompanionObject: true
+    UndocumentedPublicFunction:
+      active: true
+      excludes: [ '**/test/**', '**/commonTest/**', '**/jvmTest/**', '**/generated-sources/**' ]
     UndocumentedPublicProperty:
       active: true
       excludes: [ '**/test/**', '**/commonTest/**', '**/jvmTest/**', '**/generated-sources/**' ]

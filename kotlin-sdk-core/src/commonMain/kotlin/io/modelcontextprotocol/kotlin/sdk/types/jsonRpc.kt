@@ -112,6 +112,9 @@ public sealed interface JSONRPCMessage {
     public val jsonrpc: String
 }
 
+/**
+ * Represents an empty JSON-RPC message used as a placeholder or no-op response.
+ */
 @Serializable
 public data object JSONRPCEmptyMessage : JSONRPCMessage {
     override val jsonrpc: String = JSONRPC_VERSION

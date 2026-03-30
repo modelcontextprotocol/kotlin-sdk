@@ -49,6 +49,9 @@ public value class RequestMeta(public val json: JsonObject) {
     public operator fun get(key: String): JsonElement? = json[key]
 }
 
+/**
+ * Base interface for parameters attached to a [Request].
+ */
 @Serializable
 public sealed interface RequestParams {
     /**
@@ -61,6 +64,9 @@ public sealed interface RequestParams {
     public val meta: RequestMeta?
 }
 
+/**
+ * Default [RequestParams] implementation carrying only optional metadata.
+ */
 @Serializable
 public data class BaseRequestParams(@SerialName("_meta") override val meta: RequestMeta? = null) : RequestParams
 
@@ -121,9 +127,15 @@ public sealed interface PaginatedRequest : Request {
 @Serializable(with = RequestResultPolymorphicSerializer::class)
 public sealed interface RequestResult : WithMeta
 
+/**
+ * Represents a result returned by the server in response to a [ClientRequest].
+ */
 @Serializable(with = ClientResultPolymorphicSerializer::class)
 public sealed interface ClientResult : RequestResult
 
+/**
+ * Represents a result returned by the client in response to a [ServerRequest].
+ */
 @Serializable(with = ServerResultPolymorphicSerializer::class)
 public sealed interface ServerResult : RequestResult
 

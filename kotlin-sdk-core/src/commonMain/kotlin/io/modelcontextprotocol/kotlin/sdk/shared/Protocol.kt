@@ -100,9 +100,13 @@ public class RequestOptions(
     public val onProgress: ProgressCallback? = null,
     public val timeout: Duration = DEFAULT_REQUEST_TIMEOUT,
 ) : TransportSendOptions(relatedRequestId, resumptionToken, onResumptionToken) {
+    /** Destructuring component for [onProgress]. */
     public operator fun component4(): ProgressCallback? = onProgress
+
+    /** Destructuring component for [timeout]. */
     public operator fun component5(): Duration = timeout
 
+    /** Creates a copy of this [RequestOptions] with the specified fields replaced. */
     public fun copy(
         relatedRequestId: RequestId? = this.relatedRequestId,
         resumptionToken: String? = this.resumptionToken,

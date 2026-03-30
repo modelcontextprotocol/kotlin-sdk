@@ -41,6 +41,9 @@ public sealed interface ContentBlock : WithMeta {
     public val type: ContentTypes
 }
 
+/**
+ * Content block that carries media data such as text, images, or audio.
+ */
 @Serializable(with = MediaContentPolymorphicSerializer::class)
 public sealed interface MediaContent : ContentBlock
 
