@@ -22,6 +22,15 @@ dependencies {
     implementation(libs.ktor.server.sse)
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.slf4j.simple)
+
+    testImplementation(libs.mcp.kotlin.client)
+    testImplementation(libs.ktor.client.cio)
+    testImplementation(libs.junit.jupiter)
+    testImplementation(kotlin("test"))
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 kotlin {
