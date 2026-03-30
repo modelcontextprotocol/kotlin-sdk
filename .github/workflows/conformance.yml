@@ -53,7 +53,7 @@ jobs:
           done
 
       - name: Run conformance tests
-        uses: modelcontextprotocol/conformance@v0.1.15
+        uses: modelcontextprotocol/conformance@v0.1.16
         with:
           mode: server
           url: http://localhost:3001/mcp
@@ -93,7 +93,7 @@ jobs:
         run: ./gradlew :conformance-test:installDist
 
       - name: Run conformance tests
-        uses: modelcontextprotocol/conformance@v0.1.15
+        uses: modelcontextprotocol/conformance@v0.1.16
         with:
           mode: client
           command: conformance-test/build/install/conformance-test/bin/conformance-client
@@ -124,7 +124,7 @@ jobs:
         run: ./gradlew :conformance-test:installDist
 
       - name: Run conformance tests
-        uses: modelcontextprotocol/conformance@v0.1.15
+        uses: modelcontextprotocol/conformance@v0.1.16
         with:
           mode: client
           command: conformance-test/build/install/conformance-test/bin/conformance-client
@@ -163,7 +163,7 @@ jobs:
         run: ./gradlew :conformance-test:installDist
 
       - name: Run conformance tests
-        uses: modelcontextprotocol/conformance@v0.1.15
+        uses: modelcontextprotocol/conformance@v0.1.16
         with:
           mode: client
           command: conformance-test/build/install/conformance-test/bin/conformance-client
