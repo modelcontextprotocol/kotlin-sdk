@@ -21,6 +21,7 @@ include(
     ":test-utils",
     ":kotlin-sdk-core",
     ":kotlin-sdk-client",
+    ":kotlin-sdk-client-enterprise-auth",
     ":kotlin-sdk-server",
     ":kotlin-sdk-testing",
     ":kotlin-sdk",
