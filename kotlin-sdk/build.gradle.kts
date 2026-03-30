@@ -9,6 +9,7 @@ kotlin {
             dependencies {
                 api(project(":kotlin-sdk-core"))
                 api(project(":kotlin-sdk-client"))
+                api(project(":kotlin-sdk-client-enterprise-auth"))
                 api(project(":kotlin-sdk-server"))
             }
         }
