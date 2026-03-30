@@ -4,7 +4,7 @@ kotlin = "2.2.21"
 ktor = "3.2.3"
 logging = "8.0.01"
 mcp-kotlin = "0.10.0"
-shadow = "9.4.0"
+shadow = "9.4.1"
 slf4j = "2.0.17"
 
 [libraries]
