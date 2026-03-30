@@ -1,5 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
+import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
 import io.ktor.http.ContentType
@@ -9,17 +10,22 @@ import io.ktor.sse.ServerSentEvent
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.ProgressNotification
+import io.modelcontextprotocol.kotlin.sdk.types.ProgressToken
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 import org.junit.jupiter.api.TestInstance
+import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -46,28 +52,28 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
         mockMcp.onJSONRPCRequest(
             httpMethod = HttpMethod.Post,
             jsonRpcMethod = "initialize",
-        ).respondsWithStream {
+        ) respondsWithSseStream {
             headers += MCP_SESSION_ID_HEADER to sessionId
-            flow = flowOf(
-                "id: ${Uuid.random()}\n",
-                "data:\n", // empty data
-                "\n",
-                "id: ${Uuid.random()}\n",
-                "data:  \t \n", // tabs and spaces
-                "\n",
-                "id: ${Uuid.random()}\n",
-                "event: message\n",
-                // multiline data
-                "data: {\n",
-                "data: \"result\":{\n" +
-                    "data:    \"protocolVersion\":\"2025-06-18\",\n" +
-                    "data:    \"capabilities\":{},\n" +
-                    "data:    \"serverInfo\":{\"name\":\"simple-streamable-http-server\",\"version\":\"1.0.0\"}\n" +
-                    "data: },\n" +
-                    "data: \"jsonrpc\":\"2.0\",\n" +
-                    "data: \"id\":\"7ce065b0678f49e5b04ce5a0fcc7d518\"\n" +
-                    "data: }\n",
-                "\n",
+            // empty data — should be skipped by client
+            chunks += ServerSentEvent(data = "", id = Uuid.random().toString())
+            // whitespace-only data — should be skipped by client
+            chunks += ServerSentEvent(data = "  \t ", id = Uuid.random().toString())
+            // valid initialize response with multiline JSON
+            @Suppress("MaxLineLength")
+            chunks += ServerSentEvent(
+                event = "message",
+                id = Uuid.random().toString(),
+                //language=json
+                data = """{
+                    |"result":{
+                    |  "protocolVersion":"2025-06-18",
+                    |  "capabilities":{},
+                    |  "serverInfo":{"name":"simple-streamable-http-server","version":"1.0.0"}
+                    |},
+                    |"jsonrpc":"2.0",
+                    |"id":"7ce065b0678f49e5b04ce5a0fcc7d518"
+                    |}
+                    |""".trimMargin(),
             )
         }
 
@@ -111,30 +117,30 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
             statusCode = HttpStatusCode.Accepted,
         )
 
+        @Suppress("MaxLineLength")
         mockMcp.handleSubscribeWithGet(sessionId) {
             flow {
-                delay(500.milliseconds)
-                emit(
-                    ServerSentEvent(
-                        event = "message",
-                        id = "1",
-                        data = @Suppress("MaxLineLength")
-                        //language=json
-                        """{"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"upload-123","progress":50,"total":100}}""",
-                    ),
-                )
-                delay(200.milliseconds)
-                emit(
-                    ServerSentEvent(
-                        data = @Suppress("MaxLineLength")
-                        //language=json
-                        """{"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"upload-123","progress":50,"total":100}}""",
-                    ),
-                )
+                for (i in 0..10) {
+                    delay(100.milliseconds)
+                    emit(
+                        ServerSentEvent(
+                            event = "message",
+                            id = "1",
+                            data =
+                                //language=json
+                                """{"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"upload-123","progress":${i * 10},"total":100}}""",
+                        ),
+                    )
+                }
+                awaitCancellation()
             }
         }
 
-        // TODO: how to get notifications via Client API?
+        val receivedNotifications = CopyOnWriteArrayList<ProgressNotification>()
+        client.setNotificationHandler<ProgressNotification>(Method.Defined.NotificationsProgress) {
+            receivedNotifications.add(it)
+            CompletableDeferred(Unit)
+        }
 
         mockMcp.handleWithResult(
             jsonRpcMethod = "tools/list",
@@ -175,6 +181,16 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
         )
 
         connect(client)
+
+        eventually(5.seconds) {
+            receivedNotifications.size shouldBe 11 // 0..100 with step 10
+
+            receivedNotifications.forEachIndexed { index, notification ->
+                notification.params.progressToken shouldBe ProgressToken("upload-123")
+                notification.params.progress shouldBe index * 10.0
+                notification.params.total shouldBe 100.0
+            }
+        }
 
         val listToolsResult = client.listTools()
 
