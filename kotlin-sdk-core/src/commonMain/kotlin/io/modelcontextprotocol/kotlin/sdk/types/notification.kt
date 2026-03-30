@@ -11,6 +11,9 @@ import kotlinx.serialization.json.JsonObject
 
 /**
  * Represents a notification in the protocol.
+ *
+ * @property method the notification method identifier
+ * @property params optional notification parameters
  */
 @Serializable(with = NotificationPolymorphicSerializer::class)
 public sealed interface Notification {
@@ -73,6 +76,7 @@ public class Progress(
  * @property method The custom method name. By convention, custom methods often contain
  * organization-specific prefixes (e.g., "mycompany/custom_event").
  * @property params Raw JSON parameters for the custom notification, if present.
+ * @property meta optional metadata for this notification
  */
 @Serializable
 public data class CustomNotification(override val method: Method, override val params: BaseNotificationParams? = null) :

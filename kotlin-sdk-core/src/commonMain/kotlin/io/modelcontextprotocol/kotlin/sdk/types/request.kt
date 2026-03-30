@@ -11,6 +11,12 @@ import kotlinx.serialization.json.long
 import kotlinx.serialization.json.longOrNull
 import kotlin.jvm.JvmInline
 
+/**
+ * Metadata attached to a request's `_meta` field.
+ *
+ * @property json the raw JSON object containing the metadata
+ * @property progressToken optional progress token for tracking request progress
+ */
 @JvmInline
 @Serializable
 public value class RequestMeta(public val json: JsonObject) {
@@ -60,6 +66,9 @@ public data class BaseRequestParams(@SerialName("_meta") override val meta: Requ
 
 /**
  * Represents a request in the protocol.
+ *
+ * @property method the request method identifier
+ * @property params optional request parameters
  */
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable(with = RequestPolymorphicSerializer::class)
@@ -129,7 +138,9 @@ public data class EmptyResult(@SerialName("_meta") override val meta: JsonObject
     ServerResult
 
 /**
- * Represents a request supporting pagination.
+ * Represents a paginated result.
+ *
+ * @property nextCursor opaque token for retrieving the next page of results, or `null` if no more results
  */
 @Serializable
 public sealed interface PaginatedResult : RequestResult {

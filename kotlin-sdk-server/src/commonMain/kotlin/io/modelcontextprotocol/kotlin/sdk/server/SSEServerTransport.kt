@@ -26,6 +26,8 @@ internal const val SESSION_ID_PARAM = "sessionId"
  * Server transport for SSE: this will send messages over an SSE connection and receive messages from HTTP POST requests.
  *
  * Creates a new SSE server transport, which will direct the client to POST messages to the relative or absolute URL identified by `_endpoint`.
+ *
+ * @property sessionId unique identifier for this transport session, generated randomly on creation
  */
 @OptIn(ExperimentalAtomicApi::class)
 public class SseServerTransport(private val endpoint: String, private val session: ServerSSESession) :

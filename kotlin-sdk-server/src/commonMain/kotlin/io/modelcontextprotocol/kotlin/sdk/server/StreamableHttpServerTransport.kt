@@ -71,6 +71,7 @@ private data class SessionContext(val session: ServerSSESession?, val call: Appl
  * - No session validation is performed
  *
  * @param configuration Transport configuration. See [Configuration] for available options.
+ * @property sessionId session identifier assigned after initialization, or `null` in stateless mode
  */
 @OptIn(ExperimentalUuidApi::class, ExperimentalAtomicApi::class)
 @Suppress("TooManyFunctions")
@@ -122,25 +123,14 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
     )
 
     /**
-     * Configuration for managing various aspects of the StreamableHttpServerTransport.
+     * Configuration options for [StreamableHttpServerTransport].
      *
-     * @property enableJsonResponse Determines whether the server should return JSON responses.
-     *              Defaults to `false`.
-     *
-     * @property enableDnsRebindingProtection Enables DNS rebinding protection.
-     *              Defaults to `false`.
-     *
-     * @property allowedHosts A list of hosts allowed for server communication.
-     *              Defaults to `null`, allowing all hosts.
-     *
-     * @property allowedOrigins A list of allowed origins for CORS (Cross-Origin Resource Sharing).
-     *              Defaults to `null`, allowing all origins.
-     *
-     * @property eventStore The `EventStore` instance for handling resumable events.
-     *              Defaults to `null`, disabling resumability.
-     *
-     * @property retryInterval Retry interval for event handling or reconnection attempts.
-     *              Defaults to `null`.
+     * @property enableJsonResponse when `true`, returns direct JSON responses instead of SSE streams
+     * @property enableDnsRebindingProtection enables DNS rebinding protection
+     * @property allowedHosts list of hosts allowed for server communication, or `null` to allow all
+     * @property allowedOrigins list of allowed CORS origins, or `null` to allow all
+     * @property eventStore store for resumable events, or `null` to disable resumability
+     * @property retryInterval retry interval for SSE reconnection attempts
      */
     public class Configuration(
         public val enableJsonResponse: Boolean = false,

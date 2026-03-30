@@ -54,6 +54,10 @@ public data class ClientCapabilities(
     public val experimental: JsonObject? = null,
 ) {
 
+    /**
+     * @property sampling convenience value to enable the sampling capability
+     * @property elicitation convenience value to enable the elicitation capability
+     */
     public companion object {
         public val sampling: JsonObject = EmptyJsonObject
         public val elicitation: JsonObject = EmptyJsonObject
@@ -100,6 +104,10 @@ public data class ServerCapabilities(
     val experimental: JsonObject? = null,
 ) {
 
+    /**
+     * @property Logging convenience value to enable the logging capability
+     * @property Completions convenience value to enable the completions capability
+     */
     public companion object {
         public val Logging: JsonObject = EmptyJsonObject
         public val Completions: JsonObject = EmptyJsonObject

@@ -12,6 +12,7 @@ import kotlinx.serialization.json.JsonObject
  * A request from the client to the server to ask for completion options.
  *
  * @property params The request parameters containing the argument to complete and its context.
+ * @property meta optional request metadata
  */
 @Serializable
 public data class CompleteRequest(override val params: CompleteRequestParams) : ClientRequest {

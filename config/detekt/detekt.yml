@@ -22,3 +22,9 @@ empty-blocks:
   EmptyFunctionBlock:
     excludes: *testFolders
 
+comments:
+    UndocumentedPublicProperty:
+      active: true
+      excludes: [ '**/test/**', '**/commonTest/**', '**/jvmTest/**', '**/generated-sources/**' ]
+      searchProtectedProperty: false
+      ignoreEnumEntries: true
