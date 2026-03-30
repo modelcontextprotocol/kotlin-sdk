@@ -17,7 +17,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.RPCError
  * Default list of hostnames allowed for localhost DNS rebinding protection.
  * Matches the TypeScript SDK's `localhostAllowedHostnames()`.
  */
-public val LOCALHOST_ALLOWED_HOSTS: List<String> = listOf("localhost", "127.0.0.1", "[::1]")
+internal val LOCALHOST_ALLOWED_HOSTS: List<String> = listOf("localhost", "127.0.0.1", "[::1]")
 
 /**
  * Extracts the hostname from a Host header value, stripping port and normalizing IPv6.
