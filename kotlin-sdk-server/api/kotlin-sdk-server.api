@@ -44,7 +44,6 @@ public abstract interface class io/modelcontextprotocol/kotlin/sdk/server/EventS
 
 public final class io/modelcontextprotocol/kotlin/sdk/server/HostValidationKt {
 	public static final fun getDnsRebindingProtection ()Lio/ktor/server/application/RouteScopedPlugin;
-	public static final fun getLOCALHOST_ALLOWED_HOSTS ()Ljava/util/List;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/server/KtorServerKt {
