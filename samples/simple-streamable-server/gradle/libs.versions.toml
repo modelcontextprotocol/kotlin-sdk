@@ -1,7 +1,8 @@
 [versions]
 kotlin = "2.2.21"
 ktor = "3.2.3"
-mcp-kotlin = "0.9.0"
+junit = "6.0.3"
+mcp-kotlin = "0.10.0"
 slf4j = "2.0.17"
 shadow = "9.4.1"
 
@@ -13,7 +14,10 @@ ktor-server-content-negotiation = { group = "io.ktor", name = "ktor-server-conte
 ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json" }
 ktor-server-auth = { group = "io.ktor", name = "ktor-server-auth" }
 ktor-server-sse = { group = "io.ktor", name = "ktor-server-sse" }
+mcp-kotlin-client = { group = "io.modelcontextprotocol", name = "kotlin-sdk-client", version.ref = "mcp-kotlin" }
 mcp-kotlin-server = { group = "io.modelcontextprotocol", name = "kotlin-sdk-server", version.ref = "mcp-kotlin" }
+ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio" }
+junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junit" }
 slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
 
 [plugins]
