@@ -25,13 +25,19 @@ empty-blocks:
 comments:
     UndocumentedPublicClass:
       active: true
-      excludes: [ *testFolders, '**/generated-sources/**' ]
+      excludes: &testAndGeneratedFolders
+        - '**/test/**'
+        - '**/commonTest/**'
+        - '**/jvmTest/**'
+        - '**/jsTest/**'
+        - '**/iosTest/**'
+        - '**/generated-sources/**'
       ignoreDefaultCompanionObject: true
     UndocumentedPublicFunction:
       active: true
-      excludes: [ *testFolders, '**/generated-sources/**' ]
+      excludes: *testAndGeneratedFolders
     UndocumentedPublicProperty:
       active: true
-      excludes: [ *testFolders, '**/generated-sources/**' ]
+      excludes: *testAndGeneratedFolders
       searchProtectedProperty: false
       ignoreEnumEntries: true
