@@ -430,10 +430,22 @@ internal object ElicitRequestParamsSerializer : JsonContentPolymorphicSerializer
     ElicitRequestParams::class,
 ) {
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<ElicitRequestParams> {
-        val mode = element.jsonObject["mode"]?.jsonPrimitive?.contentOrNull
+        val mode = when (val modeElement = element.jsonObject["mode"]) {
+            null -> null
+
+            is JsonPrimitive -> {
+                if (!modeElement.isString) {
+                    throw SerializationException("Invalid 'mode' type: expected string but was: $modeElement")
+                }
+                modeElement.contentOrNull
+            }
+
+            else -> throw SerializationException("Invalid 'mode' type: expected string but was: $modeElement")
+        }
         return when (mode) {
             "url" -> ElicitRequestURLParams.serializer()
-            else -> ElicitRequestFormParams.serializer()
+            "form", null -> ElicitRequestFormParams.serializer()
+            else -> throw SerializationException("Unsupported elicitation mode: '$mode'")
         }
     }
 }
@@ -447,13 +459,20 @@ internal object PrimitiveSchemaDefinitionSerializer : JsonContentPolymorphicSeri
 ) {
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<PrimitiveSchemaDefinition> {
         val obj = element.jsonObject
-        return when (val type = obj["type"]?.jsonPrimitive?.contentOrNull) {
+        val typeElement = obj["type"]
+            ?: throw SerializationException("Missing 'type' in PrimitiveSchemaDefinition: $element")
+        val type = if (typeElement is JsonPrimitive && typeElement.isString) {
+            typeElement.content
+        } else {
+            throw SerializationException("Expected 'type' to be a string but was: $typeElement")
+        }
+        return when (type) {
             "boolean" -> BooleanSchema.serializer()
             "integer" -> IntegerSchema.serializer()
             "number" -> DoubleSchema.serializer()
             "string" -> selectStringTypeDeserializer(obj)
             "array" -> selectArrayTypeDeserializer(obj)
-            else -> throw SerializationException("Unknown PrimitiveSchemaDefinition type: $type")
+            else -> throw SerializationException("Unknown PrimitiveSchemaDefinition type: '$type'")
         }
     }
 

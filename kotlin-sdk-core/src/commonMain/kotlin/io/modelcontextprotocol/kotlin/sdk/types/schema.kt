@@ -5,7 +5,11 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Restricted schema definition that only allows primitive types without nested objects or arrays.
+ * Restricted schema definition for elicitation request properties.
+ *
+ * Supports primitive types (string, number, integer, boolean) and enum schemas
+ * (single-select and multi-select). Only flat, top-level properties are allowed —
+ * arbitrary nested objects or arrays are not supported.
  *
  * Implementations: [StringSchema], [NumberSchemaDefinition], [BooleanSchema], [EnumSchemaDefinition].
  */
