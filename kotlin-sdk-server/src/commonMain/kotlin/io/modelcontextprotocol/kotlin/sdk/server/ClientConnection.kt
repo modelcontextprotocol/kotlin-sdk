@@ -218,7 +218,7 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
 
                 is ElicitRequestURLParams ->
                     "Creating URL elicitation with message length=${params.message.length}, " +
-                        "elicitationId=${params.elicitationId}, url=${params.url}"
+                        "elicitationId=${params.elicitationId}"
             }
         }
         logger.trace { "ElicitRequest: $request" }
