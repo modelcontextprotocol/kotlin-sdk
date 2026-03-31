@@ -73,7 +73,8 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
                     |"jsonrpc":"2.0",
                     |"id":"7ce065b0678f49e5b04ce5a0fcc7d518"
                     |}
-                    |""".trimMargin(),
+                    |
+                """.trimMargin(),
             )
         }
 
@@ -126,9 +127,9 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
                         ServerSentEvent(
                             event = "message",
                             id = "1",
+                            //language=json
                             data =
-                                //language=json
-                                """{"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"upload-123","progress":${i * 10},"total":100}}""",
+                            """{"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"upload-123","progress":${i * 10},"total":100}}""",
                         ),
                     )
                 }
