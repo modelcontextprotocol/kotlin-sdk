@@ -12,6 +12,7 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonContentPolymorphicSerializer
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
@@ -418,5 +419,61 @@ internal object RequestIdPolymorphicSerializer : JsonContentPolymorphicSerialize
         element is JsonPrimitive && element.isString -> RequestId.StringId.serializer()
         element is JsonPrimitive && element.longOrNull != null -> RequestId.NumberId.serializer()
         else -> throw SerializationException("Invalid RequestId type: $element")
+    }
+}
+
+// ============================================================================
+// ElicitationParams Serializers
+// ============================================================================
+
+internal object ElicitRequestParamsSerializer : JsonContentPolymorphicSerializer<ElicitRequestParams>(
+    ElicitRequestParams::class,
+) {
+    override fun selectDeserializer(element: JsonElement): DeserializationStrategy<ElicitRequestParams> {
+        val mode = element.jsonObject["mode"]?.jsonPrimitive?.contentOrNull
+        return when (mode) {
+            "url" -> ElicitRequestURLParams.serializer()
+            else -> ElicitRequestFormParams.serializer()
+        }
+    }
+}
+
+// ============================================================================
+// PrimitiveSchemaDefinition Serializers
+// ============================================================================
+
+internal object PrimitiveSchemaDefinitionSerializer : JsonContentPolymorphicSerializer<PrimitiveSchemaDefinition>(
+    PrimitiveSchemaDefinition::class,
+) {
+    override fun selectDeserializer(element: JsonElement): DeserializationStrategy<PrimitiveSchemaDefinition> {
+        val obj = element.jsonObject
+        return when (val type = obj["type"]?.jsonPrimitive?.contentOrNull) {
+            "boolean" -> BooleanSchema.serializer()
+            "integer" -> IntegerSchema.serializer()
+            "number" -> DoubleSchema.serializer()
+            "string" -> selectStringTypeDeserializer(obj)
+            "array" -> selectArrayTypeDeserializer(obj)
+            else -> throw SerializationException("Unknown PrimitiveSchemaDefinition type: $type")
+        }
+    }
+
+    private fun selectArrayTypeDeserializer(
+        obj: Map<String, JsonElement>,
+    ): DeserializationStrategy<PrimitiveSchemaDefinition> {
+        val items = obj["items"]?.jsonObject
+        return when {
+            items != null && "anyOf" in items -> TitledMultiSelectEnumSchema.serializer()
+            else -> UntitledMultiSelectEnumSchema.serializer()
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun selectStringTypeDeserializer(
+        obj: Map<String, JsonElement>,
+    ): DeserializationStrategy<PrimitiveSchemaDefinition> = when {
+        "enumNames" in obj -> LegacyTitledEnumSchema.serializer()
+        "enum" in obj -> UntitledSingleSelectEnumSchema.serializer()
+        "oneOf" in obj -> TitledSingleSelectEnumSchema.serializer()
+        else -> StringSchema.serializer()
     }
 }

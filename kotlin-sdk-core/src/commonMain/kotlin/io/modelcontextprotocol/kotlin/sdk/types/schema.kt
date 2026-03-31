@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
  *
  * Implementations: [StringSchema], [NumberSchemaDefinition], [BooleanSchema], [EnumSchemaDefinition].
  */
-@Serializable
+@Serializable(with = PrimitiveSchemaDefinitionSerializer::class)
 public sealed interface PrimitiveSchemaDefinition
 
 /**
@@ -123,7 +123,7 @@ public data class BooleanSchema(
 /**
  * Defines an enumeration property in an elicitation schema.
  *
- * Implementations: [SingleSelectEnumSchema], [MultiSelectEnumSchema].
+ * Implementations: [SingleSelectEnumSchema], [MultiSelectEnumSchema], [LegacyTitledEnumSchema].
  */
 @Serializable
 public sealed interface EnumSchemaDefinition : PrimitiveSchemaDefinition
@@ -182,6 +182,31 @@ public data class TitledSingleSelectEnumSchema(
     val oneOf: List<EnumOption>,
     val default: String? = null,
 ) : SingleSelectEnumSchema {
+    @EncodeDefault
+    val type: String = "string"
+}
+
+/**
+ * Defines a single-selection enumeration with display names via the deprecated `enumNames` array.
+ *
+ * Use [TitledSingleSelectEnumSchema] instead. This class will be removed in a future version.
+ *
+ * @property title Optional display title for the field.
+ * @property description Optional description for the field.
+ * @property enumValues Array of enum values to choose from.
+ * @property enumNames Display names for enum values. Non-standard according to JSON Schema 2020-12.
+ * @property default Optional default value.
+ */
+@Deprecated("Use TitledSingleSelectEnumSchema instead")
+@Serializable
+public data class LegacyTitledEnumSchema(
+    val title: String? = null,
+    val description: String? = null,
+    @SerialName("enum")
+    val enumValues: List<String>,
+    val enumNames: List<String>? = null,
+    val default: String? = null,
+) : EnumSchemaDefinition {
     @EncodeDefault
     val type: String = "string"
 }

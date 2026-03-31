@@ -4,6 +4,7 @@ import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
@@ -223,6 +224,9 @@ public class ElicitRequestedSchemaBuilder @PublishedApi internal constructor() {
         val properties = requireNotNull(properties) {
             "Missing required field 'properties'. Use properties { put(\"fieldName\", schema) }"
         }
-        return ElicitRequestParams.RequestedSchema(properties, required)
+        val typedProperties: Map<String, PrimitiveSchemaDefinition> = properties.mapValues { (_, value) ->
+            McpJson.decodeFromJsonElement<PrimitiveSchemaDefinition>(value)
+        }
+        return ElicitRequestParams.RequestedSchema(properties = typedProperties, required = required)
     }
 }

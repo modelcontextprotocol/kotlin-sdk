@@ -383,6 +383,24 @@ public open class ServerSession(
     ): ElicitResult = clientConnection.createElicitation(message, requestedSchema, options)
 
     /**
+     * Sends a URL mode elicitation request to the client, directing the user
+     * to an external URL for out-of-band interactions.
+     *
+     * @param message The message explaining why the interaction is needed.
+     * @param elicitationId A unique identifier for the elicitation.
+     * @param url The URL that the user should navigate to.
+     * @param options Optional request options.
+     * @return The result of the elicitation request.
+     * @throws IllegalStateException If the server or client does not support elicitation.
+     */
+    public suspend fun createElicitation(
+        message: String,
+        elicitationId: String,
+        url: String,
+        options: RequestOptions? = null,
+    ): ElicitResult = clientConnection.createElicitation(message, elicitationId, url, options)
+
+    /**
      * Sends a logging message notification to the client.
      * Messages are filtered based on the current logging level set by the client.
      * If no logging level is set, all messages are sent.

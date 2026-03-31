@@ -10,6 +10,7 @@ import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageResult
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestFormParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitResult
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
@@ -35,6 +36,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.Root
 import io.modelcontextprotocol.kotlin.sdk.types.RootsListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.StringSchema
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
@@ -48,7 +50,6 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import kotlinx.serialization.json.putJsonObject
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -953,11 +954,7 @@ class ClientTest {
             serverSession.createElicitation(
                 message = "Please provide your GitHub username",
                 requestedSchema = ElicitRequestParams.RequestedSchema(
-                    properties = buildJsonObject {
-                        putJsonObject("name") {
-                            put("type", "string")
-                        }
-                    },
+                    properties = mapOf("name" to StringSchema()),
                     required = listOf("name"),
                 ),
             )
@@ -1061,11 +1058,7 @@ class ClientTest {
 
         val elicitationMessage = "Please provide your GitHub username"
         val requestedSchema = ElicitRequestParams.RequestedSchema(
-            properties = buildJsonObject {
-                putJsonObject("name") {
-                    put("type", "string")
-                }
-            },
+            properties = mapOf("name" to StringSchema()),
             required = listOf("name"),
         )
 
@@ -1076,7 +1069,8 @@ class ClientTest {
 
         client.setElicitationHandler { request ->
             assertEquals(elicitationMessage, request.params.message)
-            assertEquals(requestedSchema, request.params.requestedSchema)
+            val formParams = request.params as ElicitRequestFormParams
+            assertEquals(requestedSchema, formParams.requestedSchema)
 
             ElicitResult(
                 action = elicitationResultAction,
