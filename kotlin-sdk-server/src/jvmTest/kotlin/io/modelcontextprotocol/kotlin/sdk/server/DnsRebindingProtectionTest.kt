@@ -235,6 +235,31 @@ class DnsRebindingProtectionTest {
         extractHostname("") shouldBe null
     }
 
+    @Test
+    fun `extractHostname rejects userinfo in host header`() {
+        extractHostname("evil.com@localhost") shouldBe null
+    }
+
+    @Test
+    fun `extractHostname rejects path in host header`() {
+        extractHostname("evil.com/path") shouldBe null
+    }
+
+    @Test
+    fun `extractHostname rejects query in host header`() {
+        extractHostname("evil.com?q=1") shouldBe null
+    }
+
+    @Test
+    fun `extractHostname rejects fragment in host header`() {
+        extractHostname("evil.com#frag") shouldBe null
+    }
+
+    @Test
+    fun `extractHostname rejects malformed IPv6`() {
+        extractHostname("[::1") shouldBe null
+    }
+
     private fun testServer(): Server = Server(
         serverInfo = Implementation(name = "test-server", version = "1.0.0"),
         options = ServerOptions(capabilities = ServerCapabilities()),
