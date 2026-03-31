@@ -144,11 +144,20 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
      */
     public class Configuration(
         public val enableJsonResponse: Boolean = false,
-        @Deprecated("Use install(DnsRebindingProtection) on your Ktor route instead")
+        @Deprecated(
+            message = "Use install(DnsRebindingProtection) on your Ktor route instead",
+            level = DeprecationLevel.WARNING,
+        )
         public val enableDnsRebindingProtection: Boolean = false,
-        @Deprecated("Use install(DnsRebindingProtection) on your Ktor route instead")
+        @Deprecated(
+            message = "Use install(DnsRebindingProtection) on your Ktor route instead",
+            level = DeprecationLevel.WARNING,
+        )
         public val allowedHosts: List<String>? = null,
-        @Deprecated("Use install(DnsRebindingProtection) on your Ktor route instead")
+        @Deprecated(
+            message = "Use install(DnsRebindingProtection) on your Ktor route instead",
+            level = DeprecationLevel.WARNING,
+        )
         public val allowedOrigins: List<String>? = null,
         public val eventStore: EventStore? = null,
         public val retryInterval: Duration? = null,

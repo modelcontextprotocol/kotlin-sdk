@@ -24,7 +24,7 @@ class KtorApplicationExtensionsTest : AbstractKtorExtensionsTest() {
      * added to the same application.
      */
     @Test
-    fun `Application mcp should installs SSE and coexist with other routes`() = testApplication {
+    fun `Application mcp should install SSE and coexist with other routes`() = testApplication {
         application {
             mcp(enableDnsRebindingProtection = false) { testServer() }
 
