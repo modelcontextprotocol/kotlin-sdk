@@ -429,6 +429,7 @@ internal object RequestIdPolymorphicSerializer : JsonContentPolymorphicSerialize
 internal object ElicitRequestParamsSerializer : JsonContentPolymorphicSerializer<ElicitRequestParams>(
     ElicitRequestParams::class,
 ) {
+    @Suppress("ThrowsCount")
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<ElicitRequestParams> {
         val mode = when (val modeElement = element.jsonObject["mode"]) {
             null -> null
@@ -457,6 +458,7 @@ internal object ElicitRequestParamsSerializer : JsonContentPolymorphicSerializer
 internal object PrimitiveSchemaDefinitionSerializer : JsonContentPolymorphicSerializer<PrimitiveSchemaDefinition>(
     PrimitiveSchemaDefinition::class,
 ) {
+    @Suppress("ThrowsCount")
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<PrimitiveSchemaDefinition> {
         val obj = element.jsonObject
         val typeElement = obj["type"]
