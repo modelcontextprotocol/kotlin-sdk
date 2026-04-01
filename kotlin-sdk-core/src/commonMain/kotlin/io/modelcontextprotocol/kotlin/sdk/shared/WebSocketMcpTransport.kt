@@ -7,9 +7,9 @@ import io.ktor.websocket.close
 import io.ktor.websocket.readText
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.job
@@ -81,9 +81,8 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
             }
         }
 
-        @OptIn(InternalCoroutinesApi::class)
         session.coroutineContext.job.invokeOnCompletion {
-            if (it != null) {
+            if (it != null && it !is CancellationException) {
                 _onError.invoke(it)
             } else {
                 invokeOnCloseCallback()
