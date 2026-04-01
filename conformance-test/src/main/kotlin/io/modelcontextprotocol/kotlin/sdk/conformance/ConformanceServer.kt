@@ -15,9 +15,6 @@ import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 fun main() {
     val port = System.getenv("MCP_PORT")?.toIntOrNull() ?: 3001
     embeddedServer(CIO, port = port) {
-        install(ContentNegotiation) {
-            json(McpJson)
-        }
         mcpStreamableHttp(
             enableDnsRebindingProtection = true,
             allowedHosts = listOf("localhost", "127.0.0.1", "localhost:$port", "127.0.0.1:$port"),

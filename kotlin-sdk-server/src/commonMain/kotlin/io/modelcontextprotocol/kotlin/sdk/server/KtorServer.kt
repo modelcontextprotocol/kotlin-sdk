@@ -86,11 +86,15 @@ public fun Route.mcp(block: ServerSSESession.() -> Server) {
  * over [Server-Sent Events (SSE) Transport](https://modelcontextprotocol.io/specification/2024-11-05/basic/transports#http-with-sse)
  * and sets up routing with the provided configuration block.
  *
+ * Automatically installs [ContentNegotiation][io.ktor.server.plugins.contentnegotiation.ContentNegotiation]
+ * with [McpJson][io.modelcontextprotocol.kotlin.sdk.types.McpJson] and [SSE].
+ *
  * @param block factory block with access to the [ServerSSESession]
  *      that creates and returns the [Server] to handle the connection.
  */
 @KtorDsl
 public fun Application.mcp(block: ServerSSESession.() -> Server) {
+    installMcpContentNegotiation()
     install(SSE)
 
     routing {
@@ -103,6 +107,7 @@ private fun Application.mcpStreamableHttp(
     configuration: StreamableHttpServerTransport.Configuration,
     block: RoutingContext.() -> Server,
 ) {
+    installMcpContentNegotiation()
     install(SSE)
 
     val transportManager = TransportManager<StreamableHttpServerTransport>()
@@ -177,6 +182,7 @@ private fun Application.mcpStatelessStreamableHttp(
     configuration: StreamableHttpServerTransport.Configuration,
     block: RoutingContext.() -> Server,
 ) {
+    installMcpContentNegotiation()
     install(SSE)
 
     routing {

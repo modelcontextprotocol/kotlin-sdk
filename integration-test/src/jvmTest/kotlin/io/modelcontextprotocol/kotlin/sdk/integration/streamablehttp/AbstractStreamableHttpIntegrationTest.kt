@@ -1,17 +1,13 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.streamablehttp
 
-import io.ktor.serialization.kotlinx.json.json
-import io.ktor.server.application.install
 import io.ktor.server.cio.CIOApplicationEngine
 import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
-import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.mcpStreamableHttp
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
-import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.PromptArgument
 import io.modelcontextprotocol.kotlin.sdk.types.PromptMessage
 import io.modelcontextprotocol.kotlin.sdk.types.Role
@@ -56,9 +52,6 @@ open class AbstractStreamableHttpIntegrationTest {
             host = URL,
             port = PORT,
         ) {
-            install(ContentNegotiation) {
-                json(McpJson)
-            }
             mcpStreamableHttp { mcpServer }
         }
 

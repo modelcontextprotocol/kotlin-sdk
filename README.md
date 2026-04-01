@@ -19,34 +19,34 @@ standardized protocol interface.
 
 * [Overview](#overview)
 * [Installation](#installation)
-    * [Artifacts](#artifacts)
-    * [Gradle setup (JVM)](#gradle-setup-jvm)
-    * [Multiplatform](#multiplatform)
-    * [Ktor dependencies](#ktor-dependencies)
+  * [Artifacts](#artifacts)
+  * [Gradle setup (JVM)](#gradle-setup-jvm)
+  * [Multiplatform](#multiplatform)
+  * [Ktor dependencies](#ktor-dependencies)
 * [Quickstart](#quickstart)
-    * [Creating a Client](#creating-a-client)
-    * [Creating a Server](#creating-a-server)
+  * [Creating a Client](#creating-a-client)
+  * [Creating a Server](#creating-a-server)
 * [Core Concepts](#core-concepts)
-    * [MCP Primitives](#mcp-primitives)
-    * [Capabilities](#capabilities)
-        * [Server Capabilities](#server-capabilities)
-        * [Client Capabilities](#client-capabilities)
-    * [Server Features](#server-features)
-        * [Prompts](#prompts)
-        * [Resources](#resources)
-        * [Tools](#tools)
-        * [Completion](#completion)
-        * [Logging](#logging)
-        * [Pagination](#pagination)
-    * [Client Features](#client-features)
-        * [Roots](#roots)
-        * [Sampling](#sampling)
+  * [MCP Primitives](#mcp-primitives)
+  * [Capabilities](#capabilities)
+    * [Server Capabilities](#server-capabilities)
+    * [Client Capabilities](#client-capabilities)
+  * [Server Features](#server-features)
+    * [Prompts](#prompts)
+    * [Resources](#resources)
+    * [Tools](#tools)
+    * [Completion](#completion)
+    * [Logging](#logging)
+    * [Pagination](#pagination)
+  * [Client Features](#client-features)
+    * [Roots](#roots)
+    * [Sampling](#sampling)
 * [Transports](#transports)
-    * [STDIO Transport](#stdio-transport)
-    * [Streamable HTTP Transport](#streamable-http-transport)
-    * [SSE Transport](#sse-transport)
-    * [WebSocket Transport](#websocket-transport)
-    * [ChannelTransport (testing)](#channeltransport-testing)
+  * [STDIO Transport](#stdio-transport)
+  * [Streamable HTTP Transport](#streamable-http-transport)
+  * [SSE Transport](#sse-transport)
+  * [WebSocket Transport](#websocket-transport)
+  * [ChannelTransport (testing)](#channeltransport-testing)
 * [Connecting your server](#connecting-your-server)
 * [Examples](#examples)
 * [Documentation](#documentation)
@@ -188,17 +188,13 @@ the [simple-streamable-server](samples/simple-streamable-server) sample.
 <!--- CLEAR -->
 
 ```kotlin
-import io.ktor.serialization.kotlinx.json.json
-import io.ktor.server.application.install
 import io.ktor.server.cio.CIO
 import io.ktor.server.engine.embeddedServer
-import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.mcpStreamableHttp
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
-import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
@@ -232,10 +228,9 @@ fun main(args: Array<String>) {
         CallToolResult(content = listOf(TextContent("Hello, world!")))
     }
 
+    // mcpStreamableHttp() automatically installs ContentNegotiation with McpJson.
+    // Do NOT install ContentNegotiation yourself — the SDK handles it.
     embeddedServer(CIO, host = "127.0.0.1", port = port) {
-        install(ContentNegotiation) {
-            json(McpJson)
-        }
         mcpStreamableHttp {
             mcpServer
         }
@@ -774,8 +769,10 @@ CLI tooling that spawns a helper process. No networking setup is required.
 
 `StreamableHttpClientTransport` and the Ktor `mcpStreamableHttp()` / `mcpStatelessStreamableHttp()` helpers expose MCP
 over a single HTTP endpoint with optional JSON-only or SSE streaming responses. This is the recommended choice for
-remote deployments and integrates nicely with proxies or service meshes. Both accept a `path` parameter (default:
-`"/mcp"`) to mount the endpoint at any URL:
+remote deployments and integrates nicely with proxies or service meshes.
+
+These helpers automatically install `ContentNegotiation` with `McpJson` — do not install it yourself, or a warning will
+be logged. Both accept a `path` parameter (default: `"/mcp"`) to mount the endpoint at any URL:
 
 <!--- CLEAR -->
 <!--- INCLUDE 
@@ -809,11 +806,30 @@ embeddedServer(CIO, port = 3000) {
 -->
 <!--- KNIT example-server-routes-01.kt -->
 
+**CORS for browser-based clients (e.g. MCP Inspector):** if you connect from a browser-based
+client you need to install the Ktor CORS plugin so that MCP-specific headers are allowed and exposed:
+
+```kotlin
+install(CORS) {
+    anyHost() // restrict to specific origins in production
+    allowMethod(HttpMethod.Options)
+    allowMethod(HttpMethod.Get)
+    allowMethod(HttpMethod.Post)
+    allowMethod(HttpMethod.Delete)
+    allowNonSimpleContentTypes = true
+    allowHeader("Mcp-Session-Id")
+    allowHeader("Mcp-Protocol-Version")
+    exposeHeader("Mcp-Session-Id")
+    exposeHeader("Mcp-Protocol-Version")
+}
+```
+
 ### SSE Transport
 
 Server-Sent Events remain available for backwards compatibility with older MCP clients. Two Ktor helpers are provided:
 
-- **`Application.mcp { }`** — installs the SSE plugin automatically and registers MCP endpoints at `/`.
+- **`Application.mcp { }`** — installs SSE and `ContentNegotiation` with `McpJson` automatically, then registers MCP
+  endpoints at `/`. Do not install `ContentNegotiation` yourself — the SDK handles it.
 - **`Route.mcp { }`** — registers MCP endpoints at the current route path; requires `install(SSE)` in the application
   first. Use this to host MCP alongside other routes or under a path prefix:
 
