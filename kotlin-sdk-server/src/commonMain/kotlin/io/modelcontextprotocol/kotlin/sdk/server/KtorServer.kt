@@ -144,6 +144,9 @@ private fun Application.mcpStreamableHttp(
  * Sets up SSE, HTTP POST, and DELETE endpoints at the specified [path].
  * Simple request/response pairs are returned as JSON (not SSE streams).
  *
+ * Automatically installs [ContentNegotiation][io.ktor.server.plugins.contentnegotiation.ContentNegotiation]
+ * with [McpJson][io.modelcontextprotocol.kotlin.sdk.types.McpJson] and [SSE].
+ *
  * @param path The base path for the MCP Streamable HTTP endpoint. Defaults to "/mcp".
  * @param enableDnsRebindingProtection Enables DNS rebinding attack protection for the endpoint. Defaults to false.
  * @param allowedHosts A list of hostnames allowed to access the endpoint. If `null`, no restrictions are applied.
@@ -217,6 +220,9 @@ private fun Application.mcpStatelessStreamableHttp(
  *
  * Sets up an HTTP POST endpoint at [path]. GET and DELETE requests return 405 Method Not Allowed.
  * Simple request/response pairs are returned as JSON (not SSE streams).
+ *
+ * Automatically installs [ContentNegotiation][io.ktor.server.plugins.contentnegotiation.ContentNegotiation]
+ * with [McpJson][io.modelcontextprotocol.kotlin.sdk.types.McpJson] and [SSE].
  *
  * @param path The URL path where the server listens for incoming JSON-RPC requests. Defaults to "/mcp".
  * @param enableDnsRebindingProtection Determines whether DNS rebinding protection is enabled. Defaults to `false`.

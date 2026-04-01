@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.kotest.matchers.collections.shouldExist
+import io.kotest.matchers.collections.shouldHaveSize
 import io.ktor.client.request.get
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.install
@@ -31,7 +32,7 @@ class StreamableHttpServerConfigurationTest {
                 }
                 client.get("/mcp")
             }
-            logs.messages.shouldExist { "already installed with an unknown JSON configuration" in it }
+            logs.messages.shouldExist { "ContentNegotiation is already installed" in it }
         }
     }
 
@@ -47,7 +48,7 @@ class StreamableHttpServerConfigurationTest {
                 }
                 client.get("/mcp")
             }
-            logs.messages.shouldExist { "already installed with an unknown JSON configuration" in it }
+            logs.messages.shouldExist { "ContentNegotiation is already installed" in it }
         }
     }
 
@@ -63,7 +64,40 @@ class StreamableHttpServerConfigurationTest {
                 }
                 client.get("/sse")
             }
-            logs.messages.shouldExist { "already installed with an unknown JSON configuration" in it }
+            logs.messages.shouldExist { "ContentNegotiation is already installed" in it }
+        }
+    }
+
+    @Test
+    fun `installMcpContentNegotiation is idempotent`() {
+        LogCapture(MCP_SERVER_PACKAGE).use { logs ->
+            testApplication {
+                application {
+                    installMcpContentNegotiation()
+                    installMcpContentNegotiation()
+                }
+                client.get("/")
+            }
+            logs.messages.filter { "ContentNegotiation is already installed" in it }
+                .shouldHaveSize(0)
+        }
+    }
+
+    @Test
+    fun `installMcpContentNegotiation warns exactly once when ContentNegotiation is pre-installed`() {
+        LogCapture(MCP_SERVER_PACKAGE).use { logs ->
+            testApplication {
+                application {
+                    install(ServerContentNegotiation) {
+                        json()
+                    }
+                    installMcpContentNegotiation()
+                    installMcpContentNegotiation()
+                }
+                client.get("/")
+            }
+            logs.messages.filter { "ContentNegotiation is already installed" in it }
+                .shouldHaveSize(1)
         }
     }
 }

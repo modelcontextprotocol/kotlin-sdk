@@ -201,7 +201,6 @@ import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-
 fun main(args: Array<String>) {
     val port = args.firstOrNull()?.toIntOrNull() ?: 3000
     val mcpServer = Server(
@@ -227,9 +226,7 @@ fun main(args: Array<String>) {
     ) { request ->
         CallToolResult(content = listOf(TextContent("Hello, world!")))
     }
-
-    // mcpStreamableHttp() automatically installs ContentNegotiation with McpJson.
-    // Do NOT install ContentNegotiation yourself — the SDK handles it.
+    
     embeddedServer(CIO, host = "127.0.0.1", port = port) {
         mcpStreamableHttp {
             mcpServer
