@@ -2,5 +2,4 @@
 # Add entries here as tests are identified as known SDK limitations
 server: []
 
-client:
-  - elicitation-sep1034-client-defaults
+client: []
