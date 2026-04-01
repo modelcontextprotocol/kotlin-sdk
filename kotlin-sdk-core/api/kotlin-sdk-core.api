@@ -1417,6 +1417,65 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ElicitResult$Compani
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class io/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotification : io/modelcontextprotocol/kotlin/sdk/types/ServerNotification {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotification$Companion;
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotificationParams;)V
+	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotificationParams;
+	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotificationParams;)Lio/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotification;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotification;Lio/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotificationParams;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotification;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
+	public fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotificationParams;
+	public synthetic fun getParams ()Lio/modelcontextprotocol/kotlin/sdk/types/NotificationParams;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotification$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotification$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotification;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotification;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotification$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotificationParams : io/modelcontextprotocol/kotlin/sdk/types/NotificationParams {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotificationParams$Companion;
+	public fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lkotlinx/serialization/json/JsonObject;
+	public final fun copy (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotificationParams;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotificationParams;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotificationParams;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getElicitationId ()Ljava/lang/String;
+	public fun getMeta ()Lkotlinx/serialization/json/JsonObject;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotificationParams$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotificationParams$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotificationParams;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotificationParams;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotificationParams$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
 public final class io/modelcontextprotocol/kotlin/sdk/types/ElicitationKt {
 	public static final fun ElicitRequestParams-EDEVuBg (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestFormParams;
 	public static synthetic fun ElicitRequestParams-EDEVuBg$default (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestFormParams;
@@ -2939,6 +2998,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/Method$Defined : jav
 	public static final field Initialize Lio/modelcontextprotocol/kotlin/sdk/types/Method$Defined;
 	public static final field LoggingSetLevel Lio/modelcontextprotocol/kotlin/sdk/types/Method$Defined;
 	public static final field NotificationsCancelled Lio/modelcontextprotocol/kotlin/sdk/types/Method$Defined;
+	public static final field NotificationsElicitationComplete Lio/modelcontextprotocol/kotlin/sdk/types/Method$Defined;
 	public static final field NotificationsInitialized Lio/modelcontextprotocol/kotlin/sdk/types/Method$Defined;
 	public static final field NotificationsMessage Lio/modelcontextprotocol/kotlin/sdk/types/Method$Defined;
 	public static final field NotificationsProgress Lio/modelcontextprotocol/kotlin/sdk/types/Method$Defined;
