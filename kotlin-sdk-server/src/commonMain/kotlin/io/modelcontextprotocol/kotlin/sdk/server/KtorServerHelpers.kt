@@ -23,8 +23,6 @@ private val logger = KotlinLogging.logger {}
 internal fun Application.installMcpContentNegotiation() {
     if (pluginOrNull(ContentNegotiation) != null) {
         // ContentNegotiation was already installed by user code.
-        // Ktor throws DuplicatePluginException on a second install, so we cannot override it.
-        // The public API does not expose the Json configuration, so we warn instead.
         logger.warn {
             "ContentNegotiation plugin is already installed with an unknown JSON configuration. " +
                 "MCP requires json(McpJson) for correct JSON-RPC serialization " +
