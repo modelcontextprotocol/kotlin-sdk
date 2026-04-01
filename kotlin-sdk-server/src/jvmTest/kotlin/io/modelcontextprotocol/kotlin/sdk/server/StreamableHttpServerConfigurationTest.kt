@@ -1,7 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
-import io.kotest.matchers.string.shouldContain
-import io.kotest.matchers.string.shouldNotBeEmpty
+import io.kotest.matchers.collections.shouldExist
 import io.ktor.client.request.get
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.install
@@ -11,16 +10,18 @@ import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import kotlin.test.Test
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation as ServerContentNegotiation
 
+private const val MCP_SERVER_PACKAGE = "io.modelcontextprotocol.kotlin.sdk.server"
+
 class StreamableHttpServerConfigurationTest {
 
-    private fun testServer() = Server(
+    private fun testServer(): Server = Server(
         Implementation("test-server", "1.0"),
         ServerOptions(capabilities = ServerCapabilities()),
     )
 
     @Test
     fun `mcpStreamableHttp warns when ContentNegotiation is pre-installed`() {
-        val logOutput = captureStderr {
+        LogCapture(MCP_SERVER_PACKAGE).use { logs ->
             testApplication {
                 application {
                     install(ServerContentNegotiation) {
@@ -30,14 +31,13 @@ class StreamableHttpServerConfigurationTest {
                 }
                 client.get("/mcp")
             }
+            logs.messages.shouldExist { "already installed with an unknown JSON configuration" in it }
         }
-
-        logOutput shouldContain "already installed with an unknown JSON configuration"
     }
 
     @Test
     fun `mcpStatelessStreamableHttp warns when ContentNegotiation is pre-installed`() {
-        val logOutput = captureStderr {
+        LogCapture(MCP_SERVER_PACKAGE).use { logs ->
             testApplication {
                 application {
                     install(ServerContentNegotiation) {
@@ -47,14 +47,13 @@ class StreamableHttpServerConfigurationTest {
                 }
                 client.get("/mcp")
             }
+            logs.messages.shouldExist { "already installed with an unknown JSON configuration" in it }
         }
-
-        logOutput shouldContain "already installed with an unknown JSON configuration"
     }
 
     @Test
     fun `mcp warns when ContentNegotiation is pre-installed`() {
-        val logOutput = captureStderr {
+        LogCapture(MCP_SERVER_PACKAGE).use { logs ->
             testApplication {
                 application {
                     install(ServerContentNegotiation) {
@@ -64,8 +63,7 @@ class StreamableHttpServerConfigurationTest {
                 }
                 client.get("/sse")
             }
+            logs.messages.shouldExist { "already installed with an unknown JSON configuration" in it }
         }
-
-        logOutput shouldContain "already installed with an unknown JSON configuration"
     }
 }
