@@ -144,8 +144,20 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
      */
     public class Configuration(
         public val enableJsonResponse: Boolean = false,
+        @Deprecated(
+            message = "Use install(DnsRebindingProtection) on your Ktor route instead",
+            level = DeprecationLevel.WARNING,
+        )
         public val enableDnsRebindingProtection: Boolean = false,
+        @Deprecated(
+            message = "Use install(DnsRebindingProtection) on your Ktor route instead",
+            level = DeprecationLevel.WARNING,
+        )
         public val allowedHosts: List<String>? = null,
+        @Deprecated(
+            message = "Use install(DnsRebindingProtection) on your Ktor route instead",
+            level = DeprecationLevel.WARNING,
+        )
         public val allowedOrigins: List<String>? = null,
         public val eventStore: EventStore? = null,
         public val retryInterval: Duration? = null,
@@ -627,15 +639,18 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         }
     }
 
-    @Suppress("ReturnCount")
+    @Suppress("ReturnCount", "DEPRECATION")
     private fun validateHeaders(call: ApplicationCall): String? {
         if (!configuration.enableDnsRebindingProtection) return null
 
         configuration.allowedHosts?.let { hosts ->
-            val hostHeader = call.request.headers[HttpHeaders.Host]?.lowercase()
-            val allowedHostsLowercase = hosts.map { it.lowercase() }
+            val hostHeader = call.request.headers[HttpHeaders.Host]
+            val hostname = hostHeader?.let { extractHostname(it) }?.lowercase()
+            val allowedHostsLowercase = hosts.map {
+                extractHostname(it)?.lowercase() ?: it.lowercase()
+            }
 
-            if (hostHeader == null || hostHeader !in allowedHostsLowercase) {
+            if (hostname == null || hostname !in allowedHostsLowercase) {
                 return "Invalid Host header: $hostHeader"
             }
         }
@@ -644,7 +659,8 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             val originHeader = call.request.headers[HttpHeaders.Origin]?.lowercase()
             val allowedOriginsLowercase = origins.map { it.lowercase() }
 
-            if (originHeader == null || originHeader !in allowedOriginsLowercase) {
+            // Allow requests without Origin (non-browser clients cannot perform DNS rebinding)
+            if (originHeader != null && originHeader !in allowedOriginsLowercase) {
                 return "Invalid Origin header: $originHeader"
             }
         }

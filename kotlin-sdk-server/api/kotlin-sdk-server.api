@@ -31,16 +31,31 @@ public final class io/modelcontextprotocol/kotlin/sdk/server/ClientConnection$De
 	public static synthetic fun ping$default (Lio/modelcontextprotocol/kotlin/sdk/server/ClientConnection;Lio/modelcontextprotocol/kotlin/sdk/types/PingRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
+public final class io/modelcontextprotocol/kotlin/sdk/server/DnsRebindingProtectionConfig {
+	public fun <init> ()V
+	public final fun getAllowedHosts ()Ljava/util/List;
+	public final fun getAllowedOrigins ()Ljava/util/List;
+	public final fun setAllowedHosts (Ljava/util/List;)V
+	public final fun setAllowedOrigins (Ljava/util/List;)V
+}
+
 public abstract interface class io/modelcontextprotocol/kotlin/sdk/server/EventStore {
 	public abstract fun getStreamIdForEventId (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun replayEventsAfter (Ljava/lang/String;Lkotlin/jvm/functions/Function3;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun storeEvent (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
+public final class io/modelcontextprotocol/kotlin/sdk/server/HostValidationKt {
+	public static final fun getDnsRebindingProtection ()Lio/ktor/server/application/RouteScopedPlugin;
+}
+
 public final class io/modelcontextprotocol/kotlin/sdk/server/KtorServerKt {
-	public static final fun mcp (Lio/ktor/server/application/Application;Lkotlin/jvm/functions/Function1;)V
-	public static final fun mcp (Lio/ktor/server/routing/Route;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
-	public static final fun mcp (Lio/ktor/server/routing/Route;Lkotlin/jvm/functions/Function1;)V
+	public static final fun mcp (Lio/ktor/server/application/Application;ZLjava/util/List;Ljava/util/List;Lkotlin/jvm/functions/Function1;)V
+	public static final fun mcp (Lio/ktor/server/routing/Route;Ljava/lang/String;ZLjava/util/List;Ljava/util/List;Lkotlin/jvm/functions/Function1;)V
+	public static final fun mcp (Lio/ktor/server/routing/Route;ZLjava/util/List;Ljava/util/List;Lkotlin/jvm/functions/Function1;)V
+	public static synthetic fun mcp$default (Lio/ktor/server/application/Application;ZLjava/util/List;Ljava/util/List;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public static synthetic fun mcp$default (Lio/ktor/server/routing/Route;Ljava/lang/String;ZLjava/util/List;Ljava/util/List;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public static synthetic fun mcp$default (Lio/ktor/server/routing/Route;ZLjava/util/List;Ljava/util/List;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
 	public static final fun mcpStatelessStreamableHttp (Lio/ktor/server/application/Application;Ljava/lang/String;ZLjava/util/List;Ljava/util/List;Lio/modelcontextprotocol/kotlin/sdk/server/EventStore;Lkotlin/jvm/functions/Function1;)V
 	public static synthetic fun mcpStatelessStreamableHttp$default (Lio/ktor/server/application/Application;Ljava/lang/String;ZLjava/util/List;Ljava/util/List;Lio/modelcontextprotocol/kotlin/sdk/server/EventStore;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
 	public static final fun mcpStreamableHttp (Lio/ktor/server/application/Application;Ljava/lang/String;ZLjava/util/List;Ljava/util/List;Lio/modelcontextprotocol/kotlin/sdk/server/EventStore;Lkotlin/jvm/functions/Function1;)V

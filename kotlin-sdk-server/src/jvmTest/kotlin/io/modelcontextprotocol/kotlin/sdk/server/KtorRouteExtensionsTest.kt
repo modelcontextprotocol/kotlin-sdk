@@ -61,7 +61,7 @@ class KtorRouteExtensionsTest : AbstractKtorExtensionsTest() {
 
                 route("/api/mcp") {
                     get("/test") { call.respondText("test-endpoint") }
-                    mcp { testServer() }
+                    mcp(enableDnsRebindingProtection = false) { testServer() }
                 }
             }
         }
@@ -91,7 +91,7 @@ class KtorRouteExtensionsTest : AbstractKtorExtensionsTest() {
                 route("/v1") {
                     route("/services") {
                         route("/mcp") {
-                            mcp { testServer() }
+                            mcp(enableDnsRebindingProtection = false) { testServer() }
                         }
                     }
                 }
@@ -112,7 +112,7 @@ class KtorRouteExtensionsTest : AbstractKtorExtensionsTest() {
 
             routing {
                 route("/api") {
-                    mcp("/mcp-endpoint") { testServer() }
+                    mcp("/mcp-endpoint", enableDnsRebindingProtection = false) { testServer() }
                 }
             }
         }
