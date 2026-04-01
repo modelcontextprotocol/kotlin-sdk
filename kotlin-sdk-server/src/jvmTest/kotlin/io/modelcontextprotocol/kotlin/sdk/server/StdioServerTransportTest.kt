@@ -14,7 +14,11 @@ import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import io.modelcontextprotocol.kotlin.test.utils.runIntegrationTest
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.withTimeout
 import kotlinx.io.Buffer
 import kotlinx.io.RawSink
@@ -67,6 +71,37 @@ class StdioServerTransportTest {
 
         bufferedInput = input.asSource().buffered()
         printOutput = output.asSink().buffered()
+    }
+
+    @Test
+    fun `should construct with builder`() = runIntegrationTest {
+        val received = CompletableDeferred<JSONRPCMessage>()
+
+        // Set every configuration parameter explicitly with non-default values,
+        // then verify a message round-trips correctly.
+        val server = StdioServerTransport(
+            source = bufferedInput,
+            sink = printOutput,
+            readBufferSize = 16L, // non-default: smaller read chunk
+            readingJobDispatcher = Dispatchers.IO.limitedParallelism(4, "Read"), // non-default: limited parallelism
+            writingJobDispatcher = Dispatchers.IO.limitedParallelism(4, "Write"), // non-default: limited parallelism
+            processingJobDispatcher = Dispatchers.IO.limitedParallelism(2, name = "Worker"), // non-default
+            readChannel = Channel(capacity = 8, onBufferOverflow = BufferOverflow.SUSPEND), // non-default: bounded
+            writeChannel = Channel(capacity = 16, onBufferOverflow = BufferOverflow.SUSPEND), // non-default: bounded
+            coroutineScope = CoroutineScope(Dispatchers.Default), // non-default: parent scope provided
+        )
+        server.onError { throw it }
+        server.onMessage { received.complete(it) }
+
+        server.start()
+
+        val message = PingRequest().toJSON()
+        inputWriter.write(serializeMessage(message))
+        inputWriter.flush()
+
+        received.await() shouldBe message
+
+        server.close()
     }
 
     @Test
