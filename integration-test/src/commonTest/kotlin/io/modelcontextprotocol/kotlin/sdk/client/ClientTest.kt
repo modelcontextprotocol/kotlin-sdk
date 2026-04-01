@@ -219,9 +219,8 @@ class ClientTest {
 
             override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
                 if (message !is JSONRPCRequest) return
-                check(message.method == Method.Defined.Initialize.value) {
-                    "Test error"
-                }
+                check(message.method == Method.Defined.Initialize.value)
+                throw IllegalStateException("Test error")
             }
 
             override suspend fun close() {
