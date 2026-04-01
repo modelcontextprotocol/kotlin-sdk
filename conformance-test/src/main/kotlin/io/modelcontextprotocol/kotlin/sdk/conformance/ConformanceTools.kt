@@ -3,12 +3,17 @@ package io.modelcontextprotocol.kotlin.sdk.conformance
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.types.AudioContent
+import io.modelcontextprotocol.kotlin.sdk.types.BooleanSchema
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.DoubleSchema
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.EmbeddedResource
+import io.modelcontextprotocol.kotlin.sdk.types.EnumOption
 import io.modelcontextprotocol.kotlin.sdk.types.ImageContent
+import io.modelcontextprotocol.kotlin.sdk.types.IntegerSchema
+import io.modelcontextprotocol.kotlin.sdk.types.LegacyTitledEnumSchema
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotificationParams
@@ -16,11 +21,15 @@ import io.modelcontextprotocol.kotlin.sdk.types.ProgressNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ProgressNotificationParams
 import io.modelcontextprotocol.kotlin.sdk.types.Role
 import io.modelcontextprotocol.kotlin.sdk.types.SamplingMessage
+import io.modelcontextprotocol.kotlin.sdk.types.StringSchema
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
+import io.modelcontextprotocol.kotlin.sdk.types.TitledMultiSelectEnumSchema
+import io.modelcontextprotocol.kotlin.sdk.types.TitledSingleSelectEnumSchema
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
+import io.modelcontextprotocol.kotlin.sdk.types.UntitledMultiSelectEnumSchema
+import io.modelcontextprotocol.kotlin.sdk.types.UntitledSingleSelectEnumSchema
 import kotlinx.coroutines.delay
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.double
@@ -187,22 +196,10 @@ fun Server.registerConformanceTools() {
     ) { request ->
         val message = request.arguments?.get("message")?.jsonPrimitive?.content ?: "Please provide input"
         val schema = ElicitRequestParams.RequestedSchema(
-            properties = buildJsonObject {
-                put(
-                    "username",
-                    buildJsonObject {
-                        put("type", JsonPrimitive("string"))
-                        put("description", JsonPrimitive("User's response"))
-                    },
-                )
-                put(
-                    "email",
-                    buildJsonObject {
-                        put("type", JsonPrimitive("string"))
-                        put("description", JsonPrimitive("User's email address"))
-                    },
-                )
-            },
+            properties = mapOf(
+                "username" to StringSchema(description = "User's response"),
+                "email" to StringSchema(description = "User's email address"),
+            ),
             required = listOf("username", "email"),
         )
         val result = createElicitation(message, schema)
@@ -215,54 +212,17 @@ fun Server.registerConformanceTools() {
         description = "test_elicitation_sep1034_defaults",
     ) {
         val schema = ElicitRequestParams.RequestedSchema(
-            properties = buildJsonObject {
-                put(
-                    "name",
-                    buildJsonObject {
-                        put("type", JsonPrimitive("string"))
-                        put("description", JsonPrimitive("User name"))
-                        put("default", JsonPrimitive("John Doe"))
-                    },
-                )
-                put(
-                    "age",
-                    buildJsonObject {
-                        put("type", JsonPrimitive("integer"))
-                        put("description", JsonPrimitive("User age"))
-                        put("default", JsonPrimitive(30))
-                    },
-                )
-                put(
-                    "score",
-                    buildJsonObject {
-                        put("type", JsonPrimitive("number"))
-                        put("description", JsonPrimitive("User score"))
-                        put("default", JsonPrimitive(95.5))
-                    },
-                )
-                put(
-                    "status",
-                    buildJsonObject {
-                        put("type", JsonPrimitive("string"))
-                        put("description", JsonPrimitive("User status"))
-                        put("default", JsonPrimitive("active"))
-                        put(
-                            "enum",
-                            JsonArray(
-                                listOf(JsonPrimitive("active"), JsonPrimitive("inactive"), JsonPrimitive("pending")),
-                            ),
-                        )
-                    },
-                )
-                put(
-                    "verified",
-                    buildJsonObject {
-                        put("type", JsonPrimitive("boolean"))
-                        put("description", JsonPrimitive("Verification status"))
-                        put("default", JsonPrimitive(true))
-                    },
-                )
-            },
+            properties = mapOf(
+                "name" to StringSchema(description = "User name", default = "John Doe"),
+                "age" to IntegerSchema(description = "User age", default = 30),
+                "score" to DoubleSchema(description = "User score", default = 95.5),
+                "status" to UntitledSingleSelectEnumSchema(
+                    description = "User status",
+                    enumValues = listOf("active", "inactive", "pending"),
+                    default = "active",
+                ),
+                "verified" to BooleanSchema(description = "Verification status", default = true),
+            ),
             required = listOf("name", "age", "score", "status", "verified"),
         )
         val result = createElicitation(
@@ -278,122 +238,43 @@ fun Server.registerConformanceTools() {
         description = "test_elicitation_sep1330_enums",
     ) {
         val schema = ElicitRequestParams.RequestedSchema(
-            properties = buildJsonObject {
+            properties = mapOf(
                 // Untitled single-select
-                put(
-                    "untitledSingle",
-                    buildJsonObject {
-                        put("type", JsonPrimitive("string"))
-                        put(
-                            "enum",
-                            JsonArray(
-                                listOf(JsonPrimitive("option1"), JsonPrimitive("option2"), JsonPrimitive("option3")),
-                            ),
-                        )
-                    },
-                )
+                "untitledSingle" to UntitledSingleSelectEnumSchema(
+                    enumValues = listOf("option1", "option2", "option3"),
+                ),
                 // Titled single-select
-                put(
-                    "titledSingle",
-                    buildJsonObject {
-                        put("type", JsonPrimitive("string"))
-                        put(
-                            "oneOf",
-                            JsonArray(
-                                listOf(
-                                    buildJsonObject {
-                                        put("const", JsonPrimitive("value1"))
-                                        put("title", JsonPrimitive("First Option"))
-                                    },
-                                    buildJsonObject {
-                                        put("const", JsonPrimitive("value2"))
-                                        put("title", JsonPrimitive("Second Option"))
-                                    },
-                                    buildJsonObject {
-                                        put("const", JsonPrimitive("value3"))
-                                        put("title", JsonPrimitive("Third Option"))
-                                    },
-                                ),
-                            ),
-                        )
-                    },
-                )
-                // Legacy titled (deprecated) - uses enum + enumNames arrays
-                put(
-                    "legacyEnum",
-                    buildJsonObject {
-                        put("type", JsonPrimitive("string"))
-                        put(
-                            "enum",
-                            JsonArray(listOf(JsonPrimitive("opt1"), JsonPrimitive("opt2"), JsonPrimitive("opt3"))),
-                        )
-                        put(
-                            "enumNames",
-                            JsonArray(
-                                listOf(
-                                    JsonPrimitive("Option One"),
-                                    JsonPrimitive("Option Two"),
-                                    JsonPrimitive("Option Three"),
-                                ),
-                            ),
-                        )
-                    },
-                )
+                "titledSingle" to TitledSingleSelectEnumSchema(
+                    oneOf = listOf(
+                        EnumOption(const = "value1", title = "First Option"),
+                        EnumOption(const = "value2", title = "Second Option"),
+                        EnumOption(const = "value3", title = "Third Option"),
+                    ),
+                ),
+                // Legacy titled (deprecated) — uses enum + enumNames
+                @Suppress("DEPRECATION")
+                "legacyEnum"
+                    to LegacyTitledEnumSchema(
+                        enumValues = listOf("opt1", "opt2", "opt3"),
+                        enumNames = listOf("Option One", "Option Two", "Option Three"),
+                    ),
                 // Untitled multi-select
-                put(
-                    "untitledMulti",
-                    buildJsonObject {
-                        put("type", JsonPrimitive("array"))
-                        put(
-                            "items",
-                            buildJsonObject {
-                                put("type", JsonPrimitive("string"))
-                                put(
-                                    "enum",
-                                    JsonArray(
-                                        listOf(
-                                            JsonPrimitive("option1"),
-                                            JsonPrimitive("option2"),
-                                            JsonPrimitive("option3"),
-                                        ),
-                                    ),
-                                )
-                            },
-                        )
-                    },
-                )
-                // Titled multi-select - uses items.anyOf with const/title pairs
-                put(
-                    "titledMulti",
-                    buildJsonObject {
-                        put("type", JsonPrimitive("array"))
-                        put(
-                            "items",
-                            buildJsonObject {
-                                put(
-                                    "anyOf",
-                                    JsonArray(
-                                        listOf(
-                                            buildJsonObject {
-                                                put("const", JsonPrimitive("value1"))
-                                                put("title", JsonPrimitive("First Choice"))
-                                            },
-                                            buildJsonObject {
-                                                put("const", JsonPrimitive("value2"))
-                                                put("title", JsonPrimitive("Second Choice"))
-                                            },
-                                            buildJsonObject {
-                                                put("const", JsonPrimitive("value3"))
-                                                put("title", JsonPrimitive("Third Choice"))
-                                            },
-                                        ),
-                                    ),
-                                )
-                            },
-                        )
-                    },
-                )
-            },
+                "untitledMulti" to UntitledMultiSelectEnumSchema(
+                    items = UntitledMultiSelectEnumSchema.Items(
+                        enumValues = listOf("option1", "option2", "option3"),
+                    ),
+                ),
+                // Titled multi-select
+                "titledMulti" to TitledMultiSelectEnumSchema(
+                    items = TitledMultiSelectEnumSchema.Items(
+                        anyOf = listOf(
+                            EnumOption(const = "value1", title = "First Choice"),
+                            EnumOption(const = "value2", title = "Second Choice"),
+                            EnumOption(const = "value3", title = "Third Choice"),
+                        ),
+                    ),
+                ),
+            ),
         )
         val result = createElicitation(
             "Please review and update the form fields with defaults",
@@ -538,54 +419,17 @@ fun Server.registerConformanceTools() {
         description = "test_client_elicitation_defaults",
     ) {
         val schema = ElicitRequestParams.RequestedSchema(
-            properties = buildJsonObject {
-                put(
-                    "name",
-                    buildJsonObject {
-                        put("type", JsonPrimitive("string"))
-                        put("description", JsonPrimitive("User name"))
-                        put("default", JsonPrimitive("John Doe"))
-                    },
-                )
-                put(
-                    "age",
-                    buildJsonObject {
-                        put("type", JsonPrimitive("integer"))
-                        put("description", JsonPrimitive("User age"))
-                        put("default", JsonPrimitive(30))
-                    },
-                )
-                put(
-                    "score",
-                    buildJsonObject {
-                        put("type", JsonPrimitive("number"))
-                        put("description", JsonPrimitive("User score"))
-                        put("default", JsonPrimitive(95.5))
-                    },
-                )
-                put(
-                    "status",
-                    buildJsonObject {
-                        put("type", JsonPrimitive("string"))
-                        put("description", JsonPrimitive("User status"))
-                        put("default", JsonPrimitive("active"))
-                        put(
-                            "enum",
-                            JsonArray(
-                                listOf(JsonPrimitive("active"), JsonPrimitive("inactive"), JsonPrimitive("pending")),
-                            ),
-                        )
-                    },
-                )
-                put(
-                    "verified",
-                    buildJsonObject {
-                        put("type", JsonPrimitive("boolean"))
-                        put("description", JsonPrimitive("Verification status"))
-                        put("default", JsonPrimitive(true))
-                    },
-                )
-            },
+            properties = mapOf(
+                "name" to StringSchema(description = "User name", default = "John Doe"),
+                "age" to IntegerSchema(description = "User age", default = 30),
+                "score" to DoubleSchema(description = "User score", default = 95.5),
+                "status" to UntitledSingleSelectEnumSchema(
+                    description = "User status",
+                    enumValues = listOf("active", "inactive", "pending"),
+                    default = "active",
+                ),
+                "verified" to BooleanSchema(description = "Verification status", default = true),
+            ),
             required = emptyList(),
         )
         val result = createElicitation(
