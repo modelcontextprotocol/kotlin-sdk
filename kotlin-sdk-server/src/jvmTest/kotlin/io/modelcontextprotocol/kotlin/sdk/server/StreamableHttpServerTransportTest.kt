@@ -43,10 +43,12 @@ import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation as ClientContentNegotiation
@@ -62,6 +64,15 @@ class StreamableHttpServerTransportTest {
             "  \n  \t  ",
             null,
             "lolol",
+        )
+
+        private val sizeTestPayload = "x".repeat(64)
+
+        @JvmStatic
+        fun maxBodySizeTestCases(): List<Arguments> = listOf(
+            Arguments.of(sizeTestPayload.length.toLong() - 1, HttpStatusCode.PayloadTooLarge),
+            Arguments.of(sizeTestPayload.length.toLong(), HttpStatusCode.BadRequest),
+            Arguments.of(sizeTestPayload.length.toLong() + 1, HttpStatusCode.BadRequest),
         )
     }
 
@@ -381,6 +392,45 @@ class StreamableHttpServerTransportTest {
         }
 
         response.status shouldBe HttpStatusCode.PayloadTooLarge
+    }
+
+    @ParameterizedTest
+    @MethodSource("maxBodySizeTestCases")
+    fun `POST with custom max request body size validates payload size`(
+        maxSize: Long,
+        expectedStatus: HttpStatusCode,
+    ) = testApplication {
+        configTestServer()
+
+        val client = createTestClient()
+
+        val transport = StreamableHttpServerTransport(
+            StreamableHttpServerTransport.Configuration(
+                enableJsonResponse = true,
+                maxRequestBodySize = maxSize,
+            ),
+        )
+        transport.onMessage { message ->
+            if (message is JSONRPCRequest) {
+                transport.send(JSONRPCResponse(message.id, EmptyResult()))
+            }
+        }
+
+        configureTransportEndpoint(transport)
+
+        val response = client.post(path) {
+            addStreamableHeaders()
+            setBody(sizeTestPayload)
+        }
+
+        response.status shouldBe expectedStatus
+    }
+
+    @Test
+    fun `Configuration with negative maxRequestBodySize throws IllegalArgumentException`() {
+        assertFailsWith<IllegalArgumentException> {
+            StreamableHttpServerTransport.Configuration(maxRequestBodySize = -1)
+        }
     }
 
     private fun ApplicationTestBuilder.configureTransportEndpoint(transport: StreamableHttpServerTransport) {

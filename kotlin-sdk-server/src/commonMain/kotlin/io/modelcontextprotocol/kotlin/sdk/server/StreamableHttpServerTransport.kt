@@ -45,7 +45,7 @@ import kotlin.uuid.Uuid
 internal const val MCP_SESSION_ID_HEADER = "mcp-session-id"
 private const val MCP_PROTOCOL_VERSION_HEADER = "mcp-protocol-version"
 private const val MCP_RESUMPTION_TOKEN_HEADER = "Last-Event-ID"
-private const val MAXIMUM_MESSAGE_SIZE = 4 * 1024 * 1024 // 4 MB
+private const val DEFAULT_MAX_REQUEST_BODY_SIZE: Long = 4L * 1024 * 1024 // 4 MB
 private const val MIN_PRIMING_EVENT_PROTOCOL_VERSION = "2025-11-25"
 
 /**
@@ -141,6 +141,9 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
      *
      * @property retryInterval Retry interval for event handling or reconnection attempts.
      *              Defaults to `null`.
+     *
+     * @property maxRequestBodySize Maximum allowed size (in bytes) for incoming request bodies.
+     *              Defaults to 4 MB (4,194,304 bytes).
      */
     public class Configuration(
         public val enableJsonResponse: Boolean = false,
@@ -149,7 +152,14 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         public val allowedOrigins: List<String>? = null,
         public val eventStore: EventStore? = null,
         public val retryInterval: Duration? = null,
-    )
+        public val maxRequestBodySize: Long = DEFAULT_MAX_REQUEST_BODY_SIZE,
+    ) {
+        init {
+            require(maxRequestBodySize > 0) {
+                "maxRequestBodySize must be greater than 0"
+            }
+        }
+    }
 
     public var sessionId: String? = null
         private set
@@ -661,24 +671,25 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         }
     }
 
-    @Suppress("ReturnCount", "MagicNumber")
+    @Suppress("ReturnCount")
     private suspend fun parseBody(call: ApplicationCall): List<JSONRPCMessage>? {
-        val contentLength = call.request.header(HttpHeaders.ContentLength)?.toIntOrNull() ?: 0
-        if (contentLength > MAXIMUM_MESSAGE_SIZE) {
+        val maxSize = configuration.maxRequestBodySize
+        val contentLength = call.request.header(HttpHeaders.ContentLength)?.toLongOrNull() ?: 0L
+        if (contentLength > maxSize) {
             call.reject(
                 HttpStatusCode.PayloadTooLarge,
                 RPCError.ErrorCode.INVALID_REQUEST,
-                "Invalid Request: message size exceeds maximum of ${MAXIMUM_MESSAGE_SIZE / (1024 * 1024)} MB",
+                "Invalid Request: message size exceeds maximum of $maxSize bytes",
             )
             return null
         }
 
         val body = call.receiveText()
-        if (body.length > MAXIMUM_MESSAGE_SIZE) {
+        if (body.length.toLong() > maxSize) {
             call.reject(
                 HttpStatusCode.PayloadTooLarge,
                 RPCError.ErrorCode.INVALID_REQUEST,
-                "Invalid Request: message size exceeds maximum of ${MAXIMUM_MESSAGE_SIZE / (1024 * 1024)} MB",
+                "Invalid Request: message size exceeds maximum of $maxSize bytes",
             )
             return null
         }
