@@ -6,13 +6,16 @@ import io.modelcontextprotocol.kotlin.sdk.shared.Protocol
 import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
+import io.modelcontextprotocol.kotlin.sdk.types.BooleanSchema
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.CompleteRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CompleteResult
+import io.modelcontextprotocol.kotlin.sdk.types.DoubleSchema
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestFormParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitResult
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest
@@ -22,7 +25,9 @@ import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeResult
 import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
+import io.modelcontextprotocol.kotlin.sdk.types.IntegerSchema
 import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.LegacyTitledEnumSchema
 import io.modelcontextprotocol.kotlin.sdk.types.ListPromptsRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ListPromptsResult
 import io.modelcontextprotocol.kotlin.sdk.types.ListResourceTemplatesRequest
@@ -37,6 +42,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
+import io.modelcontextprotocol.kotlin.sdk.types.PrimitiveSchemaDefinition
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
 import io.modelcontextprotocol.kotlin.sdk.types.RequestMeta
@@ -46,8 +52,13 @@ import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.SetLevelRequest
 import io.modelcontextprotocol.kotlin.sdk.types.SetLevelRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.StringSchema
 import io.modelcontextprotocol.kotlin.sdk.types.SubscribeRequest
+import io.modelcontextprotocol.kotlin.sdk.types.TitledMultiSelectEnumSchema
+import io.modelcontextprotocol.kotlin.sdk.types.TitledSingleSelectEnumSchema
 import io.modelcontextprotocol.kotlin.sdk.types.UnsubscribeRequest
+import io.modelcontextprotocol.kotlin.sdk.types.UntitledMultiSelectEnumSchema
+import io.modelcontextprotocol.kotlin.sdk.types.UntitledSingleSelectEnumSchema
 import io.modelcontextprotocol.kotlin.sdk.types.toJson
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.getAndUpdate
@@ -56,7 +67,10 @@ import kotlinx.collections.immutable.minus
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
 import kotlin.coroutines.cancellation.CancellationException
 
 private val logger = KotlinLogging.logger {}
@@ -576,6 +590,10 @@ public open class Client(private val clientInfo: Implementation, options: Client
     /**
      * Sets the elicitation handler.
      *
+     * When the handler returns [ElicitResult.Action.Accept], any properties missing from
+     * [ElicitResult.content] are automatically populated with default values defined in the
+     * elicitation schema.
+     *
      * @param handler The elicitation handler.
      * @throws IllegalStateException if the client does not support elicitation.
      */
@@ -587,11 +605,59 @@ public open class Client(private val clientInfo: Implementation, options: Client
         logger.info { "Setting the elicitation handler" }
 
         setRequestHandler<ElicitRequest>(Method.Defined.ElicitationCreate) { request, _ ->
-            handler(request)
+            val result = handler(request)
+            applyElicitationDefaults(request, result)
         }
     }
 
     // --- Internal Handlers ---
+
+    @Suppress("ReturnCount")
+    private fun applyElicitationDefaults(request: ElicitRequest, result: ElicitResult): ElicitResult {
+        if (result.action != ElicitResult.Action.Accept) return result
+        val formParams = request.params as? ElicitRequestFormParams ?: return result
+        val content = result.content ?: return result
+
+        val merged = buildMap {
+            putAll(content)
+            for ((key, schemaDef) in formParams.requestedSchema.properties) {
+                if (key !in content) {
+                    schemaDef.defaultJsonValue()?.let { put(key, it) }
+                }
+            }
+        }
+
+        return if (merged.size == content.size) {
+            result
+        } else {
+            result.copy(content = JsonObject(merged))
+        }
+    }
+
+    @Suppress("DEPRECATION", "CyclomaticComplexMethod")
+    private fun PrimitiveSchemaDefinition.defaultJsonValue(): JsonElement? = when (this) {
+        is StringSchema -> default?.let { JsonPrimitive(it) }
+
+        is IntegerSchema -> default?.let { JsonPrimitive(it) }
+
+        is DoubleSchema -> default?.let { JsonPrimitive(it) }
+
+        is BooleanSchema -> default?.let { JsonPrimitive(it) }
+
+        is UntitledSingleSelectEnumSchema -> default?.let { JsonPrimitive(it) }
+
+        is TitledSingleSelectEnumSchema -> default?.let { JsonPrimitive(it) }
+
+        is LegacyTitledEnumSchema -> default?.let { JsonPrimitive(it) }
+
+        is UntitledMultiSelectEnumSchema -> default?.let { list ->
+            buildJsonArray { list.forEach { add(JsonPrimitive(it)) } }
+        }
+
+        is TitledMultiSelectEnumSchema -> default?.let { list ->
+            buildJsonArray { list.forEach { add(JsonPrimitive(it)) } }
+        }
+    }
 
     private fun handleListRoots(): ListRootsResult {
         val rootList = roots.value.values.toList()
