@@ -32,7 +32,6 @@ class StreamableHttpServerConfigurationTest {
             }
         }
 
-        logOutput.shouldNotBeEmpty()
         logOutput shouldContain "already installed with an unknown JSON configuration"
     }
 
@@ -50,7 +49,6 @@ class StreamableHttpServerConfigurationTest {
             }
         }
 
-        logOutput.shouldNotBeEmpty()
         logOutput shouldContain "already installed with an unknown JSON configuration"
     }
 
