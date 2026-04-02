@@ -243,10 +243,19 @@ public data class CreateMessageResult(
     override val meta: JsonObject? = null,
 ) : ClientResult
 
-/** The reason why the LLM stopped generating tokens. */
+/**
+ * The reason why the LLM stopped generating tokens.
+ *
+ * @property value the string representation of this stop reason
+ */
 @JvmInline
 @Serializable
 public value class StopReason(public val value: String) {
+    /**
+     * @property EndTurn generation ended naturally
+     * @property StopSequence a stop sequence was encountered
+     * @property MaxTokens the maximum token limit was reached
+     */
     public companion object {
         public val EndTurn: StopReason = StopReason("endTurn")
         public val StopSequence: StopReason = StopReason("stopSequence")

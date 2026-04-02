@@ -8,10 +8,13 @@ import kotlinx.serialization.json.JsonObject
 // Protocol Version Constants
 // ============================================================================
 
+/** The latest supported MCP protocol version string. */
 public const val LATEST_PROTOCOL_VERSION: String = "2025-11-25"
 
+/** The default protocol version used when negotiation is not performed. */
 public const val DEFAULT_NEGOTIATED_PROTOCOL_VERSION: String = "2025-06-18"
 
+/** All MCP protocol versions supported by this SDK. */
 public val SUPPORTED_PROTOCOL_VERSIONS: List<String> = listOf(
     LATEST_PROTOCOL_VERSION,
     "2025-06-18",
@@ -25,6 +28,8 @@ public val SUPPORTED_PROTOCOL_VERSIONS: List<String> = listOf(
 
 /**
  * Represents an entity that includes additional metadata in its responses.
+ *
+ * @property meta optional metadata attached to this entity
  */
 @Serializable
 public sealed interface WithMeta {
@@ -123,13 +128,19 @@ public enum class Role {
  *
  * References are used to point to other entities (prompts, resources, etc.)
  * without including their full definitions.
+ *
+ * @property type discriminator identifying the reference subtype
  */
 @Serializable(with = ReferencePolymorphicSerializer::class)
 public sealed interface Reference {
     public val type: ReferenceType
 }
 
-/** Discriminator for [Reference] subtypes used in completion and other operations. */
+/**
+ * Discriminator for [Reference] subtypes used in completion and other operations.
+ *
+ * @property value serialized string representation of this reference type
+ */
 @Serializable
 public enum class ReferenceType(public val value: String) {
     @SerialName("ref/prompt")

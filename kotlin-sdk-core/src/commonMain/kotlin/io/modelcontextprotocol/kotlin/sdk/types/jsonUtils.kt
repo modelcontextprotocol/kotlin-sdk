@@ -11,8 +11,10 @@ import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 
+/** Reusable empty [JsonObject] instance. */
 public val EmptyJsonObject: JsonObject = JsonObject(emptyMap())
 
+/** Pre-configured [Json] instance for MCP serialization. */
 @OptIn(ExperimentalSerializationApi::class)
 public val McpJson: Json by lazy {
     Json {

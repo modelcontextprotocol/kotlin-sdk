@@ -40,6 +40,8 @@ private val logger = KotlinLogging.logger {}
 
 /**
  * Represents a server session.
+ *
+ * @property sessionId unique identifier for this session, generated randomly on creation
  */
 @Suppress("TooManyFunctions")
 public open class ServerSession(

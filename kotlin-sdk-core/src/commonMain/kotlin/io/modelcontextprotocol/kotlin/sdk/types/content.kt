@@ -8,7 +8,11 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 
-/** Discriminator values for the polymorphic [ContentBlock] hierarchy. */
+/**
+ * Discriminator values for the polymorphic [ContentBlock] hierarchy.
+ *
+ * @property value serialized string representation of this content type
+ */
 @Serializable
 public enum class ContentTypes(public val value: String) {
     @SerialName("text")
@@ -27,11 +31,19 @@ public enum class ContentTypes(public val value: String) {
     EMBEDDED_RESOURCE("resource"),
 }
 
+/**
+ * Base interface for all content blocks in the protocol.
+ *
+ * @property type discriminator identifying the content block subtype
+ */
 @Serializable(with = ContentBlockPolymorphicSerializer::class)
 public sealed interface ContentBlock : WithMeta {
     public val type: ContentTypes
 }
 
+/**
+ * Content block that carries media data such as text, images, or audio.
+ */
 @Serializable(with = MediaContentPolymorphicSerializer::class)
 public sealed interface MediaContent : ContentBlock
 

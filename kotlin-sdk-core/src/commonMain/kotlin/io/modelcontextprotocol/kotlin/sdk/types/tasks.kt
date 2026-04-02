@@ -17,6 +17,14 @@ public const val RELATED_TASK_META_KEY: String = "io.modelcontextprotocol/relate
 
 /**
  * Common fields shared by all types representing the task state.
+ *
+ * @property taskId the task identifier
+ * @property status current task state
+ * @property statusMessage optional human-readable message describing the current task state
+ * @property createdAt ISO 8601 timestamp when the task was created
+ * @property lastUpdatedAt ISO 8601 timestamp when the task was last updated
+ * @property ttl actual retention duration from creation in milliseconds, or `null` for unlimited
+ * @property pollInterval suggested polling interval in milliseconds
  */
 public sealed interface TaskFields {
     public val taskId: String
@@ -228,6 +236,7 @@ public data class GetTaskPayloadRequestParams(
  * The structure matches the result type of the original request.
  * For example, a tools/call task would return the [CallToolResult] structure.
  *
+ * @property json the raw JSON object containing the result payload
  * @property meta Optional metadata for this response.
  */
 @JvmInline
