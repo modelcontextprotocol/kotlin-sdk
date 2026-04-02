@@ -232,11 +232,8 @@ public final class io/modelcontextprotocol/kotlin/sdk/server/SseServerTransport 
 	public fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/server/StdioServerTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport {
+public final class io/modelcontextprotocol/kotlin/sdk/server/StdioServerTransport : io/modelcontextprotocol/kotlin/sdk/server/AbstractServerTransport {
 	public fun <init> (Lkotlinx/io/Source;Lkotlinx/io/Sink;)V
-	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun send (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/server/StreamableHttpServerTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport {
