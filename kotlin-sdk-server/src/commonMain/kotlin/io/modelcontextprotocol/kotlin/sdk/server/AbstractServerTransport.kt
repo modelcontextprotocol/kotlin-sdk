@@ -86,6 +86,7 @@ public abstract class AbstractServerTransport : AbstractTransport() {
 
     public override suspend fun start() {
         stateTransition(from = ServerTransportState.New, to = ServerTransportState.Initializing)
+        @Suppress("TooGenericExceptionCaught")
         try {
             initialize()
             stateTransition(from = ServerTransportState.Initializing, to = ServerTransportState.Active)
@@ -96,6 +97,7 @@ public abstract class AbstractServerTransport : AbstractTransport() {
         }
     }
 
+    @Suppress("TooGenericExceptionCaught", "ThrowsCount")
     public override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
         if (state != ServerTransportState.Active) {
             throw McpException(
@@ -109,6 +111,7 @@ public abstract class AbstractServerTransport : AbstractTransport() {
             throw e
         } catch (e: Exception) {
             _onError(e)
+            @Suppress("InstanceOfCheckForException")
             if (e is McpException) {
                 throw e
             } else {
@@ -121,6 +124,7 @@ public abstract class AbstractServerTransport : AbstractTransport() {
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     public override suspend fun close() {
         val performClose: Boolean
         when (state) {
