@@ -2,6 +2,28 @@
 
 This document describes the internal architecture of the MCP Kotlin SDK. It covers both client and server sides, the transport abstraction, state management, and concurrency model. 
 
+<!--- TOC -->
+
+* [Layered Design](#layered-design)
+* [Module Structure](#module-structure)
+* [Client Architecture](#client-architecture)
+  * [How the Client Works](#how-the-client-works)
+  * [Client Transport Hierarchy](#client-transport-hierarchy)
+  * [Client Transport State Machine](#client-transport-state-machine)
+* [Server Architecture](#server-architecture)
+  * [How the Server Works](#how-the-server-works)
+  * [Server Class Hierarchy](#server-class-hierarchy)
+  * [Server Transport State Machine](#server-transport-state-machine)
+  * [Server Components](#server-components)
+  * [Session Lifecycle](#session-lifecycle)
+* [Concurrency Model](#concurrency-model)
+  * [Concurrent Request Handling](#concurrent-request-handling)
+  * [Streamable HTTP Request Flow](#streamable-http-request-flow)
+* [Capability Enforcement](#capability-enforcement)
+* [Testing](#testing)
+
+<!--- END -->
+
 ## Layered Design
 
 The SDK follows a four-layer architecture where each layer has a single responsibility and communicates only with its immediate neighbors.
@@ -358,7 +380,68 @@ sequenceDiagram
 
 Without concurrent dispatch, a long-running tool call would block all other request processing, including ping responses. With it, the server (or client) can handle multiple requests in flight simultaneously.
 
-Active request jobs are tracked in `_activeRequests` (keyed by request ID). When a `notifications/cancelled` message arrives, the corresponding job is cancelled. On `close()`, the entire `handlerScope` is cancelled.
+**Context inheritance.** `handlerScope` inherits its `CoroutineContext` from whoever calls `connect()`. The Protocol does not impose a specific dispatcher — the caller controls threading. In production, a server typically calls `connect()` from a Ktor dispatcher or `Dispatchers.IO` scope; in tests, `runTest` provides a `TestCoroutineScheduler` that the handlers inherit automatically. If you need to isolate handler threads from transport I/O, call `connect()` from a dedicated scope (e.g., `Dispatchers.Default.limitedParallelism(16)`), or use `withContext` inside individual handlers.
+
+**Cancellation.** Active request jobs are tracked in `_activeRequests` (keyed by request ID). Two cancellation paths exist:
+
+- **Remote cancellation**: when a `notifications/cancelled` message arrives, the corresponding handler job is cancelled via `_activeRequests[requestId]?.cancel()`.
+- **Local cancellation**: when the calling coroutine is cancelled (e.g., `job.cancel()`), `Protocol.request()` sends a `CancelledNotification` to the remote side (via `NonCancellable` to guarantee delivery even during cancellation), then rethrows.
+
+On `close()`, the entire `handlerScope` is cancelled.
+
+**Example: tool that elicits user input during execution.** Without concurrent dispatch, the elicitation response from the client would be blocked behind the tool handler — a deadlock. With concurrent dispatch, the server handles the elicitation response on a separate coroutine while the tool handler awaits:
+
+```kotlin
+server.addTool("confirm-action", "Asks user to confirm") {
+    // This sends a request TO the client and suspends until the user responds.
+    // Other incoming requests (including the elicitation response) are handled
+    // concurrently by Protocol's handlerScope.
+    val result = createElicitation(
+        message = "Confirm deployment to production?",
+        requestedSchema = ElicitRequestParams.RequestedSchema(
+            properties = mapOf("confirm" to BooleanSchema(description = "Confirm?")),
+        ),
+    )
+    CallToolResult(content = listOf(TextContent(text = "User said: ${result.action}")))
+}
+```
+
+**Example: controlling the handler dispatcher.** The caller of `connect()` decides the threading model:
+
+```kotlin
+// Production: handlers run on a dedicated pool, isolated from transport I/O
+val handlerPool = Dispatchers.Default.limitedParallelism(16)
+CoroutineScope(handlerPool).launch {
+    session.connect(transport)
+}
+
+// Test: handlers inherit the test scheduler — virtual time, no real threads
+@Test
+fun `should handle concurrent requests`() = runTest {
+    client.connect(transport) // handlerScope inherits TestCoroutineScheduler
+    // ...
+}
+```
+
+**Example: cancelling a request.** The client cancels a long-running tool call; the server handler is cancelled cooperatively:
+
+```kotlin
+// Client side
+val job = launch { client.callTool("slow-tool", emptyMap()) }
+// ... later
+job.cancel("User pressed cancel")
+// Protocol.request() sends CancelledNotification to server via NonCancellable,
+// server's _activeRequests[requestId] job is cancelled
+
+// Server side — handler must be cooperative
+server.addTool("slow-tool", "Takes a long time") {
+    repeat(100) { step ->
+        delay(100) // suspension point — CancellationException thrown here
+        reportProgress(step, 100)
+    }
+    CallToolResult(content = listOf(TextContent(text = "Done")))
+}
+```
 
 ```mermaid
 sequenceDiagram

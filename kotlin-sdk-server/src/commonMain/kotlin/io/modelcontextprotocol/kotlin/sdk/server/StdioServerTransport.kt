@@ -14,6 +14,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -32,18 +33,15 @@ private const val READ_BUFFER_SIZE = 8192L
  *
  * Reads from input [Source] and writes to output [Sink].
  *
+ * The transport's internal I/O coroutines inherit the calling coroutine's context
+ * (from [start] / [io.modelcontextprotocol.kotlin.sdk.shared.Protocol.connect]),
+ * ensuring structured concurrency. The [IODispatcher] is added for I/O operations.
+ *
  * @param inputStream The input [Source] used to receive data.
  * @param outputStream The output [Sink] used to send data.
- * @param parentScope Optional parent [CoroutineScope] for structured concurrency.
- *   When provided, the transport's internal coroutines become children of this scope,
- *   preventing coroutine leaks. When `null` (the default), a detached scope is created.
  */
 @OptIn(ExperimentalAtomicApi::class)
-public class StdioServerTransport(
-    private val inputStream: Source,
-    outputStream: Sink,
-    parentScope: CoroutineScope? = null,
-) : AbstractServerTransport() {
+public class StdioServerTransport(private val inputStream: Source, outputStream: Sink) : AbstractServerTransport() {
 
     override val logger: KLogger = KotlinLogging.logger {}
     private val readBuffer = ReadBuffer()
@@ -51,16 +49,13 @@ public class StdioServerTransport(
     private var sendingJob: Job? = null
     private var processingJob: Job? = null
 
-    private val scope: CoroutineScope = if (parentScope != null) {
-        CoroutineScope(parentScope.coroutineContext + IODispatcher + SupervisorJob(parentScope.coroutineContext[Job]))
-    } else {
-        CoroutineScope(IODispatcher + SupervisorJob())
-    }
+    private lateinit var scope: CoroutineScope
     private val readChannel = Channel<ByteArray>(Channel.UNLIMITED)
     private val writeChannel = Channel<JSONRPCMessage>(Channel.UNLIMITED)
     private val outputSink = outputStream.buffered()
 
     override suspend fun initialize() {
+        scope = CoroutineScope(currentCoroutineContext() + IODispatcher + SupervisorJob())
         readingJob = launchReadingJob()
         processingJob = launchProcessingJob()
         sendingJob = launchSendingJob()

@@ -31,15 +31,17 @@ import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -160,10 +162,7 @@ internal val COMPLETED = CompletableDeferred(Unit).also { it.complete(Unit) }
  * @property responseHandlers pending response handlers keyed by request ID
  * @property progressHandlers registered progress callbacks keyed by progress token
  */
-public abstract class Protocol(
-    @PublishedApi internal val options: ProtocolOptions?,
-    private val handlerDispatcher: CoroutineDispatcher = Dispatchers.Default,
-) {
+public abstract class Protocol(@PublishedApi internal val options: ProtocolOptions?) {
     public var transport: Transport? = null
         private set
 
@@ -249,11 +248,15 @@ public abstract class Protocol(
     /**
      * Attaches to the given transport, starts it, and starts listening for messages.
      *
-     * The Protocol object assumes ownership of the Transport, replacing any callbacks that have already been set, and expects that it is the only user of the Transport instance going forward.
+     * The Protocol object assumes ownership of the Transport, replacing any callbacks
+     * that have already been set, and expects that it is the only user of the Transport instance going forward.
      */
     public open suspend fun connect(transport: Transport) {
         this.transport = transport
-        handlerScope = CoroutineScope(SupervisorJob() + handlerDispatcher)
+        // Inherit the caller's coroutine context (dispatcher, test scheduler, etc.)
+        // but use an independent SupervisorJob — the handler scope's lifetime is managed
+        // by doClose(), not by the caller's job hierarchy.
+        handlerScope = CoroutineScope(currentCoroutineContext() + SupervisorJob())
 
         transport.onClose {
             doClose()
@@ -304,6 +307,8 @@ public abstract class Protocol(
         }
         try {
             handler(notification)
+        } catch (e: CancellationException) {
+            throw e
         } catch (cause: Throwable) {
             logger.error(cause) { "Error handling notification: ${notification.method}" }
             onError(cause)
@@ -317,11 +322,14 @@ public abstract class Protocol(
 
         if (handler == null) {
             logger.trace { "No handler found for request: ${request.method}" }
-            scope.launch { sendMethodNotFound(request) }
+            // UNDISPATCHED: start eagerly on the caller's thread until first suspension,
+            // then resume on the scope's dispatcher. This is compatible with StandardTestDispatcher
+            // and avoids requiring a dispatch before the handler starts executing.
+            scope.launch(start = CoroutineStart.UNDISPATCHED) { sendMethodNotFound(request) }
             return
         }
 
-        val job = scope.launch {
+        val job = scope.launch(start = CoroutineStart.UNDISPATCHED) {
             executeRequestHandler(request, handler)
         }
         _activeRequests.update { it.put(request.id, job) }
@@ -338,6 +346,8 @@ public abstract class Protocol(
                     ),
                 ),
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (cause: Throwable) {
             logger.error(cause) { "Error sending method not found response" }
             onError(cause)
@@ -534,7 +544,10 @@ public abstract class Protocol(
 
             val jsonRpcNotification = notification.toJSON()
 
-            transport.send(jsonRpcNotification, options)
+            // Use NonCancellable to ensure the notification is sent even during cancellation
+            withContext(NonCancellable) {
+                transport.send(jsonRpcNotification, options)
+            }
 
             result.completeExceptionally(reason)
         }
@@ -556,6 +569,10 @@ public abstract class Protocol(
                 ),
             )
             result.cancel(cause)
+            throw cause
+        } catch (cause: CancellationException) {
+            // Coroutine was cancelled (e.g., job.cancel()) — notify the remote side
+            cancel(cause)
             throw cause
         }
     }
