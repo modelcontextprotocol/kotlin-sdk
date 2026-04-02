@@ -781,6 +781,30 @@ public open class Server(
     )
 
     /**
+     * Triggers URL mode [ClientConnection.createElicitation] request for session by provided [sessionId].
+     *
+     * @param sessionId The session ID to create elicitation for.
+     * @param message The message explaining why the interaction is needed.
+     * @param elicitationId A unique identifier for the elicitation.
+     * @param url The URL that the user should navigate to.
+     * @param options Optional request options.
+     * @return The created elicitation result.
+     * @throws IllegalStateException If the server does not support elicitation or if the request fails.
+     */
+    public suspend fun createElicitation(
+        sessionId: String,
+        message: String,
+        elicitationId: String,
+        url: String,
+        options: RequestOptions? = null,
+    ): ElicitResult = clientConnection(sessionId).createElicitation(
+        message = message,
+        elicitationId = elicitationId,
+        url = url,
+        options = options,
+    )
+
+    /**
      * Triggers [ClientConnection.sendLoggingMessage] for session by provided [sessionId].
      *
      * @param sessionId The session ID to send the logging message to.

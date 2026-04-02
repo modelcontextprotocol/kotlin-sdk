@@ -1,58 +1,39 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.kotest.assertions.json.shouldEqualJson
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
 import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.int
-import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 
 class ElicitationTest {
 
+    // ── Form mode ───────────────────────────────────────────────────────
+
     @Test
-    @Suppress("LongMethod")
-    fun `should serialize ElicitRequest with requested schema`() {
+    fun `should serialize form mode ElicitRequest`() {
         val request = ElicitRequest(
-            ElicitRequestParams(
+            ElicitRequestFormParams(
                 message = "Provide repository details",
                 requestedSchema = ElicitRequestParams.RequestedSchema(
-                    properties = buildJsonObject {
-                        put(
-                            "owner",
-                            buildJsonObject {
-                                put("type", "string")
-                                put("description", "GitHub organization")
-                            },
-                        )
-                        put(
-                            "repository",
-                            buildJsonObject {
-                                put("type", "string")
-                                put("title", "Repository name")
-                            },
-                        )
-                        put(
-                            "private",
-                            buildJsonObject {
-                                put("type", "boolean")
-                                put("description", "Is the repository private?")
-                            },
-                        )
-                    },
+                    properties = mapOf(
+                        "owner" to StringSchema(description = "GitHub organization"),
+                        "repository" to StringSchema(title = "Repository name"),
+                        "private" to BooleanSchema(description = "Is the repository private?"),
+                    ),
                     required = listOf("owner", "repository"),
                 ),
                 meta = RequestMeta(
-                    buildJsonObject {
-                        put("progressToken", "token-42")
-                    },
+                    buildJsonObject { put("progressToken", "token-42") },
                 ),
             ),
         )
@@ -68,16 +49,16 @@ class ElicitationTest {
                 "requestedSchema": {
                   "properties": {
                     "owner": {
-                      "type": "string",
-                      "description": "GitHub organization"
+                      "description": "GitHub organization",
+                      "type": "string"
                     },
                     "repository": {
-                      "type": "string",
-                      "title": "Repository name"
+                      "title": "Repository name",
+                      "type": "string"
                     },
                     "private": {
-                      "type": "boolean",
-                      "description": "Is the repository private?"
+                      "description": "Is the repository private?",
+                      "type": "boolean"
                     }
                   },
                   "required": ["owner", "repository"],
@@ -85,7 +66,8 @@ class ElicitationTest {
                 },
                 "_meta": {
                   "progressToken": "token-42"
-                }
+                },
+                "mode": "form"
               }
             }
             """.trimIndent(),
@@ -93,22 +75,16 @@ class ElicitationTest {
     }
 
     @Test
-    fun `should deserialize ElicitRequest from JSON`() {
+    fun `should deserialize form mode ElicitRequest with explicit mode`() {
         val json = """
             {
               "method": "elicitation/create",
               "params": {
-                "message": "Tell us about the repository",
+                "mode": "form",
+                "message": "Enter your name",
                 "requestedSchema": {
                   "properties": {
-                    "name": {
-                      "type": "string",
-                      "title": "Repository name"
-                    },
-                    "stars": {
-                      "type": "number",
-                      "description": "GitHub stars"
-                    }
+                    "name": {"type": "string", "title": "Full name"}
                   },
                   "type": "object"
                 }
@@ -117,26 +93,120 @@ class ElicitationTest {
         """.trimIndent()
 
         val request = verifyDeserialization<ElicitRequest>(McpJson, json)
-        assertEquals(Method.Defined.ElicitationCreate, request.method)
+        request.method shouldBe Method.Defined.ElicitationCreate
+        request.message shouldBe "Enter your name"
 
-        val params = request.params
-        assertEquals("Tell us about the repository", params.message)
-        assertNull(params.meta)
-
-        val schema = params.requestedSchema
-        assertEquals("object", schema.type)
-        assertNull(schema.required)
-
-        val nameDefinition = schema.properties["name"]?.jsonObject
-        assertNotNull(nameDefinition)
-        assertEquals("string", nameDefinition["type"]?.jsonPrimitive?.content)
-        assertEquals("Repository name", nameDefinition["title"]?.jsonPrimitive?.content)
-
-        val starsDefinition = schema.properties["stars"]?.jsonObject
-        assertNotNull(starsDefinition)
-        assertEquals("number", starsDefinition["type"]?.jsonPrimitive?.content)
-        assertEquals("GitHub stars", starsDefinition["description"]?.jsonPrimitive?.content)
+        val params = request.params.shouldBeInstanceOf<ElicitRequestFormParams>()
+        val nameSchema = params.requestedSchema.properties["name"].shouldBeInstanceOf<StringSchema>()
+        nameSchema.title shouldBe "Full name"
     }
+
+    @Test
+    fun `should deserialize form mode ElicitRequest without mode field`() {
+        val json = """
+            {
+              "method": "elicitation/create",
+              "params": {
+                "message": "Enter your name",
+                "requestedSchema": {
+                  "properties": {
+                    "name": {"type": "string"}
+                  },
+                  "type": "object"
+                }
+              }
+            }
+        """.trimIndent()
+
+        val request = McpJson.decodeFromString<ElicitRequest>(json)
+        request.params.shouldBeInstanceOf<ElicitRequestFormParams>()
+        request.params.message shouldBe "Enter your name"
+    }
+
+    // ── URL mode ────────────────────────────────────────────────────────
+
+    @Test
+    fun `should serialize URL mode ElicitRequest`() {
+        val request = ElicitRequest(
+            ElicitRequestURLParams(
+                message = "Please provide your API key",
+                elicitationId = "550e8400-e29b-41d4-a716-446655440000",
+                url = "https://mcp.example.com/ui/set_api_key",
+            ),
+        )
+
+        verifySerialization(
+            request,
+            McpJson,
+            """
+            {
+              "method": "elicitation/create",
+              "params": {
+                "message": "Please provide your API key",
+                "elicitationId": "550e8400-e29b-41d4-a716-446655440000",
+                "url": "https://mcp.example.com/ui/set_api_key",
+                "mode": "url"
+              }
+            }
+            """.trimIndent(),
+        )
+    }
+
+    @Test
+    fun `should deserialize URL mode ElicitRequest`() {
+        val json = """
+            {
+              "method": "elicitation/create",
+              "params": {
+                "mode": "url",
+                "message": "Authorize access",
+                "elicitationId": "id-123",
+                "url": "https://example.com/auth"
+              }
+            }
+        """.trimIndent()
+
+        val request = verifyDeserialization<ElicitRequest>(McpJson, json)
+        val params = request.params.shouldBeInstanceOf<ElicitRequestURLParams>()
+        params.message shouldBe "Authorize access"
+        params.elicitationId shouldBe "id-123"
+        params.url shouldBe "https://example.com/auth"
+    }
+
+    // ── Deprecated compat ───────────────────────────────────────────────
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun `deprecated factory function should create ElicitRequestFormParams`() {
+        val schema = ElicitRequestParams.RequestedSchema(
+            properties = mapOf("name" to StringSchema()),
+        )
+        val params = ElicitRequestParams(message = "Test", requestedSchema = schema)
+        params.shouldBeInstanceOf<ElicitRequestFormParams>()
+        params.message shouldBe "Test"
+        params.requestedSchema shouldBe schema
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun `deprecated requestedSchema should return schema for form mode`() {
+        val schema = ElicitRequestParams.RequestedSchema(
+            properties = mapOf("x" to BooleanSchema()),
+        )
+        val request = ElicitRequest(ElicitRequestFormParams(message = "m", requestedSchema = schema))
+        request.requestedSchema shouldBe schema
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun `deprecated requestedSchema should return null for URL mode`() {
+        val request = ElicitRequest(
+            ElicitRequestURLParams(message = "m", elicitationId = "id", url = "https://example.com"),
+        )
+        request.requestedSchema.shouldBeNull()
+    }
+
+    // ── ElicitResult ────────────────────────────────────────────────────
 
     @Test
     fun `should serialize and deserialize accept result with content`() {
@@ -169,17 +239,15 @@ class ElicitationTest {
         """.trimIndent()
 
         val decoded = verifyDeserialization<ElicitResult>(McpJson, json)
-        assertEquals(ElicitResult.Action.Accept, decoded.action)
+        decoded.action shouldBe ElicitResult.Action.Accept
 
-        val content = decoded.content
-        assertNotNull(content)
-        assertEquals("kotlin-sdk", content["repository"]?.jsonPrimitive?.content)
-        assertEquals(128, content["stars"]?.jsonPrimitive?.int)
-        assertEquals(false, content["private"]?.jsonPrimitive?.boolean)
+        val content = decoded.content.shouldNotBeNull()
+        content["repository"]?.jsonPrimitive?.content shouldBe "kotlin-sdk"
+        content["stars"]?.jsonPrimitive?.int shouldBe 128
+        content["private"]?.jsonPrimitive?.boolean shouldBe false
 
-        val meta = decoded.meta
-        assertNotNull(meta)
-        assertEquals("2025-01-12T15:00:58Z", meta["submittedAt"]?.jsonPrimitive?.content)
+        val meta = decoded.meta.shouldNotBeNull()
+        meta["submittedAt"]?.jsonPrimitive?.content shouldBe "2025-01-12T15:00:58Z"
     }
 
     @Test
@@ -194,14 +262,14 @@ class ElicitationTest {
         """.trimIndent()
 
         val result = verifyDeserialization<ElicitResult>(McpJson, json)
-        assertEquals(ElicitResult.Action.Decline, result.action)
-        assertNull(result.content)
-        assertEquals("User skipped", result.meta?.get("reason")?.jsonPrimitive?.content)
+        result.action shouldBe ElicitResult.Action.Decline
+        result.content.shouldBeNull()
+        result.meta?.get("reason")?.jsonPrimitive?.content shouldBe "User skipped"
     }
 
     @Test
     fun `should require content only for accept action`() {
-        assertFailsWith<IllegalArgumentException> {
+        shouldThrow<IllegalArgumentException> {
             ElicitResult(
                 action = ElicitResult.Action.Cancel,
                 content = buildJsonObject { put("value", "ignored") },

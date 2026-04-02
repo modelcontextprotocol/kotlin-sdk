@@ -5,7 +5,9 @@ import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageResult
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestFormParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestURLParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitResult
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsRequest
@@ -105,6 +107,24 @@ public interface ClientConnection {
     ): ElicitResult
 
     /**
+     * Sends a URL mode elicitation request to the client, directing the user
+     * to an external URL for out-of-band interactions.
+     *
+     * @param message The message explaining why the interaction is needed.
+     * @param elicitationId A unique identifier for the elicitation.
+     * @param url The URL that the user should navigate to.
+     * @param options Optional request options.
+     * @return The result of the elicitation request.
+     * @throws IllegalStateException If the server or client does not support elicitation.
+     */
+    public suspend fun createElicitation(
+        message: String,
+        elicitationId: String,
+        url: String,
+        options: RequestOptions? = null,
+    ): ElicitResult
+
+    /**
      * Sends a message to the client requesting elicitation.
      * This typically results in a form being displayed to the user.
      *
@@ -189,10 +209,16 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
     }
 
     override suspend fun createElicitation(request: ElicitRequest, options: RequestOptions?): ElicitResult {
-        with(request.params) {
-            logger.debug {
-                "Creating elicitation with message length=${message.length}, " +
-                    "schema properties count=${requestedSchema.properties.size}"
+        val params = request.params
+        logger.debug {
+            when (params) {
+                is ElicitRequestFormParams ->
+                    "Creating form elicitation with message length=${params.message.length}, " +
+                        "schema properties count=${params.requestedSchema.properties.size}"
+
+                is ElicitRequestURLParams ->
+                    "Creating URL elicitation with message length=${params.message.length}, " +
+                        "elicitationId=${params.elicitationId}"
             }
         }
         logger.trace { "ElicitRequest: $request" }
@@ -204,7 +230,19 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
         requestedSchema: ElicitRequestParams.RequestedSchema,
         options: RequestOptions?,
     ): ElicitResult = createElicitation(
-        request = ElicitRequest(params = ElicitRequestParams(message, requestedSchema)),
+        request = ElicitRequest(params = ElicitRequestFormParams(message = message, requestedSchema = requestedSchema)),
+        options = options,
+    )
+
+    override suspend fun createElicitation(
+        message: String,
+        elicitationId: String,
+        url: String,
+        options: RequestOptions?,
+    ): ElicitResult = createElicitation(
+        request = ElicitRequest(
+            params = ElicitRequestURLParams(message = message, elicitationId = elicitationId, url = url),
+        ),
         options = options,
     )
 

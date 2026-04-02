@@ -12,9 +12,10 @@ import io.modelcontextprotocol.kotlin.sdk.server.mcp
 import io.modelcontextprotocol.kotlin.sdk.shared.BaseTransportTest
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import kotlin.test.BeforeTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 import io.ktor.client.plugins.sse.SSE as ClientSSE
 import io.ktor.server.sse.SSE as ServerSSE
@@ -37,7 +38,6 @@ class SseTransportTest : BaseTransportTest() {
     }
 
     @Test
-    @Ignore // Ignored because it doesn’t work with wasm/js in Ktor 3.2.3
     fun `should start then close cleanly`() = runTest {
         val server = embeddedServer(CIO, port = 0) {
             install(ServerSSE)
@@ -58,13 +58,12 @@ class SseTransportTest : BaseTransportTest() {
         }
 
         try {
-            testTransportRead(transport)
+            testTransportOpenClose(transport)
         } finally {
             server.stopSuspend()
         }
     }
 
-    @Ignore
     @Test
     fun `should read messages`() = runTest {
         val server = embeddedServer(CIO, port = 0) {
@@ -85,20 +84,28 @@ class SseTransportTest : BaseTransportTest() {
             }
         }
 
+        val client = Client(
+            clientInfo = Implementation(name = "test-client", version = "1.0"),
+            options = ClientOptions(),
+        )
+
         try {
-            testTransportRead(transport)
+            withContext(Dispatchers.Default) {
+                client.connect(transport)
+                client.ping()
+            }
         } finally {
+            client.close()
             server.stopSuspend()
         }
     }
 
-    @Ignore
     @Test
     fun `test sse path not root path`() = runTest {
         val server = embeddedServer(CIO, port = 0) {
             install(ServerSSE)
             routing {
-                mcp { mcpServer }
+                mcp("/sse") { mcpServer }
             }
         }.startSuspend(wait = false)
 
@@ -114,9 +121,18 @@ class SseTransportTest : BaseTransportTest() {
             }
         }
 
+        val client = Client(
+            clientInfo = Implementation(name = "test-client", version = "1.0"),
+            options = ClientOptions(),
+        )
+
         try {
-            testTransportRead(transport)
+            withContext(Dispatchers.Default) {
+                client.connect(transport)
+                client.ping()
+            }
         } finally {
+            client.close()
             server.stopSuspend()
         }
     }

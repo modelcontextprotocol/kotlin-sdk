@@ -24,6 +24,7 @@ mockk = "1.14.9"
 mokksy = "0.8.1"
 serialization = "1.10.0"
 slf4j = "2.0.17"
+logback = "1.5.32"
 junit = "5.14.3"
 
 [libraries]
@@ -67,6 +68,7 @@ mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 mokksy = { group = "dev.mokksy", name = "mokksy", version.ref = "mokksy" }
 netty-bom = { group = "io.netty", name = "netty-bom", version.ref = "netty" }
 slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
+logback-classic = { group = "ch.qos.logback", name = "logback-classic", version.ref = "logback" }
 junit-jupiter-params = { module = "org.junit.jupiter:junit-jupiter-params", version.ref = "junit" }
 
 # Samples

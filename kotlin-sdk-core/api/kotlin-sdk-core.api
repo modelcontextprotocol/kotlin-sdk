@@ -336,6 +336,40 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/BlobResourceContents
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class io/modelcontextprotocol/kotlin/sdk/types/BooleanSchema : io/modelcontextprotocol/kotlin/sdk/types/PrimitiveSchemaDefinition {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/BooleanSchema$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/Boolean;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;)Lio/modelcontextprotocol/kotlin/sdk/types/BooleanSchema;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/BooleanSchema;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/BooleanSchema;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDefault ()Ljava/lang/Boolean;
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getTitle ()Ljava/lang/String;
+	public final fun getType ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/BooleanSchema$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/BooleanSchema$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/BooleanSchema;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/BooleanSchema;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/BooleanSchema$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
 public final class io/modelcontextprotocol/kotlin/sdk/types/CallToolRequest : io/modelcontextprotocol/kotlin/sdk/types/ClientRequest {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/CallToolRequest$Companion;
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/CallToolRequestParams;)V
@@ -1134,6 +1168,44 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/CustomRequest$Compan
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class io/modelcontextprotocol/kotlin/sdk/types/DoubleSchema : io/modelcontextprotocol/kotlin/sdk/types/NumberSchemaDefinition {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/DoubleSchema$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/Double;
+	public final fun component4 ()Ljava/lang/Double;
+	public final fun component5 ()Ljava/lang/Double;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;)Lio/modelcontextprotocol/kotlin/sdk/types/DoubleSchema;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/DoubleSchema;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/DoubleSchema;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDefault ()Ljava/lang/Double;
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getMaximum ()Ljava/lang/Double;
+	public final fun getMinimum ()Ljava/lang/Double;
+	public final fun getTitle ()Ljava/lang/String;
+	public final fun getType ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/DoubleSchema$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/DoubleSchema$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/DoubleSchema;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/DoubleSchema;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/DoubleSchema$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
 public final class io/modelcontextprotocol/kotlin/sdk/types/ElicitRequest : io/modelcontextprotocol/kotlin/sdk/types/ServerRequest {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequest$Companion;
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams;)V
@@ -1176,32 +1248,44 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ElicitRequestBuilder
 	public final fun setMessage (Ljava/lang/String;)V
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams : io/modelcontextprotocol/kotlin/sdk/types/RequestParams {
-	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$Companion;
-	public synthetic fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public synthetic fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;Lkotlinx/serialization/json/JsonObject;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+public final class io/modelcontextprotocol/kotlin/sdk/types/ElicitRequestFormParams : io/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestFormParams$Companion;
+	public synthetic fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskMetadata;Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskMetadata;Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;Lkotlinx/serialization/json/JsonObject;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;
-	public final fun component3-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
-	public final fun copy-EDEVuBg (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams;
-	public static synthetic fun copy-EDEVuBg$default (Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams;
+	public final fun component2 ()Lio/modelcontextprotocol/kotlin/sdk/types/TaskMetadata;
+	public final fun component3 ()Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;
+	public final fun component4-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
+	public final fun copy-6R815Ik (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskMetadata;Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestFormParams;
+	public static synthetic fun copy-6R815Ik$default (Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestFormParams;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskMetadata;Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestFormParams;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getMessage ()Ljava/lang/String;
+	public fun getMessage ()Ljava/lang/String;
 	public fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
+	public final fun getMode ()Ljava/lang/String;
 	public final fun getRequestedSchema ()Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;
+	public final fun getTask ()Lio/modelcontextprotocol/kotlin/sdk/types/TaskMetadata;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
 
-public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
-	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$$serializer;
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/ElicitRequestFormParams$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestFormParams$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
-	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestFormParams;
 	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
-	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams;)V
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestFormParams;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
 	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/ElicitRequestFormParams$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public abstract interface class io/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams : io/modelcontextprotocol/kotlin/sdk/types/RequestParams {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$Companion;
+	public abstract fun getMessage ()Ljava/lang/String;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$Companion {
@@ -1210,15 +1294,17 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema$Companion;
-	public fun <init> (Lkotlinx/serialization/json/JsonObject;Ljava/util/List;)V
-	public synthetic fun <init> (Lkotlinx/serialization/json/JsonObject;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lkotlinx/serialization/json/JsonObject;
-	public final fun component2 ()Ljava/util/List;
-	public final fun copy (Lkotlinx/serialization/json/JsonObject;Ljava/util/List;)Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;
-	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;Lkotlinx/serialization/json/JsonObject;Ljava/util/List;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;
+	public fun <init> (Ljava/lang/String;Ljava/util/Map;Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/util/Map;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/util/Map;
+	public final fun component3 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/String;Ljava/util/Map;Ljava/util/List;)Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;Ljava/lang/String;Ljava/util/Map;Ljava/util/List;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getProperties ()Lkotlinx/serialization/json/JsonObject;
+	public final fun getProperties ()Ljava/util/Map;
 	public final fun getRequired ()Ljava/util/List;
+	public final fun getSchema ()Ljava/lang/String;
 	public final fun getType ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -1236,6 +1322,43 @@ public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/ElicitRequ
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/ElicitRequestURLParams : io/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestURLParams$Companion;
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskMetadata;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskMetadata;Lkotlinx/serialization/json/JsonObject;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Lio/modelcontextprotocol/kotlin/sdk/types/TaskMetadata;
+	public final fun component5-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
+	public final fun copy-4asOmiE (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskMetadata;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestURLParams;
+	public static synthetic fun copy-4asOmiE$default (Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestURLParams;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/TaskMetadata;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestURLParams;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getElicitationId ()Ljava/lang/String;
+	public fun getMessage ()Ljava/lang/String;
+	public fun getMeta-VI-3G7E ()Lkotlinx/serialization/json/JsonObject;
+	public final fun getMode ()Ljava/lang/String;
+	public final fun getTask ()Lio/modelcontextprotocol/kotlin/sdk/types/TaskMetadata;
+	public final fun getUrl ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/ElicitRequestURLParams$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestURLParams$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestURLParams;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestURLParams;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/ElicitRequestURLParams$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
@@ -1292,6 +1415,11 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ElicitResult$Action$
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/ElicitResult$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/ElicitationKt {
+	public static final fun ElicitRequestParams-EDEVuBg (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestFormParams;
+	public static synthetic fun ElicitRequestParams-EDEVuBg$default (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestFormParams;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/Elicitation_dslKt {
@@ -1357,6 +1485,43 @@ public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/EmptyResul
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/EmptyResult$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/EnumOption {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/EnumOption$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/types/EnumOption;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/EnumOption;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/EnumOption;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConst ()Ljava/lang/String;
+	public final fun getTitle ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/EnumOption$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/EnumOption$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/EnumOption;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/EnumOption;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/EnumOption$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public abstract interface class io/modelcontextprotocol/kotlin/sdk/types/EnumSchemaDefinition : io/modelcontextprotocol/kotlin/sdk/types/PrimitiveSchemaDefinition {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/EnumSchemaDefinition$Companion;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/EnumSchemaDefinition$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
@@ -1955,6 +2120,44 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/InitializedNotificat
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class io/modelcontextprotocol/kotlin/sdk/types/IntegerSchema : io/modelcontextprotocol/kotlin/sdk/types/NumberSchemaDefinition {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/IntegerSchema$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/Integer;
+	public final fun component4 ()Ljava/lang/Integer;
+	public final fun component5 ()Ljava/lang/Integer;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;)Lio/modelcontextprotocol/kotlin/sdk/types/IntegerSchema;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/IntegerSchema;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/IntegerSchema;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDefault ()Ljava/lang/Integer;
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getMaximum ()Ljava/lang/Integer;
+	public final fun getMinimum ()Ljava/lang/Integer;
+	public final fun getTitle ()Ljava/lang/String;
+	public final fun getType ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/IntegerSchema$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/IntegerSchema$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/IntegerSchema;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/IntegerSchema;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/IntegerSchema$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
 public final class io/modelcontextprotocol/kotlin/sdk/types/JSONRPCEmptyMessage : io/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage {
 	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCEmptyMessage;
 	public fun equals (Ljava/lang/Object;)Z
@@ -2117,6 +2320,43 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/JsonUtilsKt {
 	public static final fun getEmptyJsonObject ()Lkotlinx/serialization/json/JsonObject;
 	public static final fun getMcpJson ()Lkotlinx/serialization/json/Json;
 	public static final fun toJson (Ljava/util/Map;)Ljava/util/Map;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/LegacyTitledEnumSchema : io/modelcontextprotocol/kotlin/sdk/types/EnumSchemaDefinition {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/LegacyTitledEnumSchema$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/util/List;
+	public final fun component4 ()Ljava/util/List;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/types/LegacyTitledEnumSchema;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/LegacyTitledEnumSchema;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/LegacyTitledEnumSchema;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDefault ()Ljava/lang/String;
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getEnumNames ()Ljava/util/List;
+	public final fun getEnumValues ()Ljava/util/List;
+	public final fun getTitle ()Ljava/lang/String;
+	public final fun getType ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/LegacyTitledEnumSchema$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/LegacyTitledEnumSchema$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/LegacyTitledEnumSchema;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/LegacyTitledEnumSchema;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/LegacyTitledEnumSchema$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/ListPromptsRequest : io/modelcontextprotocol/kotlin/sdk/types/ClientRequest, io/modelcontextprotocol/kotlin/sdk/types/PaginatedRequest {
@@ -2796,6 +3036,14 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ModelPreferences$Com
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public abstract interface class io/modelcontextprotocol/kotlin/sdk/types/MultiSelectEnumSchema : io/modelcontextprotocol/kotlin/sdk/types/EnumSchemaDefinition {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/MultiSelectEnumSchema$Companion;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/MultiSelectEnumSchema$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
 public abstract interface class io/modelcontextprotocol/kotlin/sdk/types/Notification {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/Notification$Companion;
 	public abstract fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
@@ -2811,6 +3059,14 @@ public abstract interface class io/modelcontextprotocol/kotlin/sdk/types/Notific
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/NotificationParams$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public abstract interface class io/modelcontextprotocol/kotlin/sdk/types/NumberSchemaDefinition : io/modelcontextprotocol/kotlin/sdk/types/PrimitiveSchemaDefinition {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/NumberSchemaDefinition$Companion;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/NumberSchemaDefinition$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
@@ -2915,6 +3171,14 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/PingRequestBuilder :
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/PingRequest_dslKt {
 	public static final fun buildPingRequest (Lkotlin/jvm/functions/Function1;)Lio/modelcontextprotocol/kotlin/sdk/types/PingRequest;
+}
+
+public abstract interface class io/modelcontextprotocol/kotlin/sdk/types/PrimitiveSchemaDefinition {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/PrimitiveSchemaDefinition$Companion;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/PrimitiveSchemaDefinition$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/Progress {
@@ -4141,6 +4405,14 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/SetLevelRequestParam
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public abstract interface class io/modelcontextprotocol/kotlin/sdk/types/SingleSelectEnumSchema : io/modelcontextprotocol/kotlin/sdk/types/EnumSchemaDefinition {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/SingleSelectEnumSchema$Companion;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/SingleSelectEnumSchema$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
 public final class io/modelcontextprotocol/kotlin/sdk/types/StopReason {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/StopReason$Companion;
 	public static final synthetic fun box-impl (Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/types/StopReason;
@@ -4171,6 +4443,61 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/StopReason$Companion
 	public final fun getEndTurn--MeDoko ()Ljava/lang/String;
 	public final fun getMaxTokens--MeDoko ()Ljava/lang/String;
 	public final fun getStopSequence--MeDoko ()Ljava/lang/String;
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/StringSchema : io/modelcontextprotocol/kotlin/sdk/types/PrimitiveSchemaDefinition {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/StringSchema$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Lio/modelcontextprotocol/kotlin/sdk/types/StringSchemaFormat;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Lio/modelcontextprotocol/kotlin/sdk/types/StringSchemaFormat;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/Integer;
+	public final fun component4 ()Ljava/lang/Integer;
+	public final fun component5 ()Lio/modelcontextprotocol/kotlin/sdk/types/StringSchemaFormat;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Lio/modelcontextprotocol/kotlin/sdk/types/StringSchemaFormat;Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/types/StringSchema;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/StringSchema;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Lio/modelcontextprotocol/kotlin/sdk/types/StringSchemaFormat;Ljava/lang/String;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/StringSchema;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDefault ()Ljava/lang/String;
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getFormat ()Lio/modelcontextprotocol/kotlin/sdk/types/StringSchemaFormat;
+	public final fun getMaxLength ()Ljava/lang/Integer;
+	public final fun getMinLength ()Ljava/lang/Integer;
+	public final fun getTitle ()Ljava/lang/String;
+	public final fun getType ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/StringSchema$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/StringSchema$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/StringSchema;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/StringSchema;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/StringSchema$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/StringSchemaFormat : java/lang/Enum {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/StringSchemaFormat$Companion;
+	public static final field Date Lio/modelcontextprotocol/kotlin/sdk/types/StringSchemaFormat;
+	public static final field DateTime Lio/modelcontextprotocol/kotlin/sdk/types/StringSchemaFormat;
+	public static final field Email Lio/modelcontextprotocol/kotlin/sdk/types/StringSchemaFormat;
+	public static final field Uri Lio/modelcontextprotocol/kotlin/sdk/types/StringSchemaFormat;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/types/StringSchemaFormat;
+	public static fun values ()[Lio/modelcontextprotocol/kotlin/sdk/types/StringSchemaFormat;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/StringSchemaFormat$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
@@ -4503,6 +4830,107 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/TextResourceContents
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class io/modelcontextprotocol/kotlin/sdk/types/TitledMultiSelectEnumSchema : io/modelcontextprotocol/kotlin/sdk/types/MultiSelectEnumSchema {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/TitledMultiSelectEnumSchema$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Lio/modelcontextprotocol/kotlin/sdk/types/TitledMultiSelectEnumSchema$Items;Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Lio/modelcontextprotocol/kotlin/sdk/types/TitledMultiSelectEnumSchema$Items;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/Integer;
+	public final fun component4 ()Ljava/lang/Integer;
+	public final fun component5 ()Lio/modelcontextprotocol/kotlin/sdk/types/TitledMultiSelectEnumSchema$Items;
+	public final fun component6 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Lio/modelcontextprotocol/kotlin/sdk/types/TitledMultiSelectEnumSchema$Items;Ljava/util/List;)Lio/modelcontextprotocol/kotlin/sdk/types/TitledMultiSelectEnumSchema;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/TitledMultiSelectEnumSchema;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Lio/modelcontextprotocol/kotlin/sdk/types/TitledMultiSelectEnumSchema$Items;Ljava/util/List;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/TitledMultiSelectEnumSchema;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDefault ()Ljava/util/List;
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getItems ()Lio/modelcontextprotocol/kotlin/sdk/types/TitledMultiSelectEnumSchema$Items;
+	public final fun getMaxItems ()Ljava/lang/Integer;
+	public final fun getMinItems ()Ljava/lang/Integer;
+	public final fun getTitle ()Ljava/lang/String;
+	public final fun getType ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/TitledMultiSelectEnumSchema$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/TitledMultiSelectEnumSchema$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/TitledMultiSelectEnumSchema;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/TitledMultiSelectEnumSchema;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/TitledMultiSelectEnumSchema$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/TitledMultiSelectEnumSchema$Items {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/TitledMultiSelectEnumSchema$Items$Companion;
+	public fun <init> (Ljava/util/List;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun copy (Ljava/util/List;)Lio/modelcontextprotocol/kotlin/sdk/types/TitledMultiSelectEnumSchema$Items;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/TitledMultiSelectEnumSchema$Items;Ljava/util/List;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/TitledMultiSelectEnumSchema$Items;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAnyOf ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/TitledMultiSelectEnumSchema$Items$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/TitledMultiSelectEnumSchema$Items$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/TitledMultiSelectEnumSchema$Items;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/TitledMultiSelectEnumSchema$Items;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/TitledMultiSelectEnumSchema$Items$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/TitledSingleSelectEnumSchema : io/modelcontextprotocol/kotlin/sdk/types/SingleSelectEnumSchema {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/TitledSingleSelectEnumSchema$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/util/List;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/types/TitledSingleSelectEnumSchema;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/TitledSingleSelectEnumSchema;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/TitledSingleSelectEnumSchema;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDefault ()Ljava/lang/String;
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getOneOf ()Ljava/util/List;
+	public final fun getTitle ()Ljava/lang/String;
+	public final fun getType ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/TitledSingleSelectEnumSchema$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/TitledSingleSelectEnumSchema$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/TitledSingleSelectEnumSchema;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/TitledSingleSelectEnumSchema;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/TitledSingleSelectEnumSchema$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
 public final class io/modelcontextprotocol/kotlin/sdk/types/Tool : io/modelcontextprotocol/kotlin/sdk/types/WithMeta {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/Tool$Companion;
 	public fun <init> (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/ToolSchema;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/ToolSchema;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/ToolAnnotations;Ljava/util/List;Lio/modelcontextprotocol/kotlin/sdk/types/ToolExecution;Lkotlinx/serialization/json/JsonObject;)V
@@ -4790,6 +5218,108 @@ public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/Unsubscrib
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/UnsubscribeRequestParams$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/UntitledMultiSelectEnumSchema : io/modelcontextprotocol/kotlin/sdk/types/MultiSelectEnumSchema {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/UntitledMultiSelectEnumSchema$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Lio/modelcontextprotocol/kotlin/sdk/types/UntitledMultiSelectEnumSchema$Items;Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Lio/modelcontextprotocol/kotlin/sdk/types/UntitledMultiSelectEnumSchema$Items;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/Integer;
+	public final fun component4 ()Ljava/lang/Integer;
+	public final fun component5 ()Lio/modelcontextprotocol/kotlin/sdk/types/UntitledMultiSelectEnumSchema$Items;
+	public final fun component6 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Lio/modelcontextprotocol/kotlin/sdk/types/UntitledMultiSelectEnumSchema$Items;Ljava/util/List;)Lio/modelcontextprotocol/kotlin/sdk/types/UntitledMultiSelectEnumSchema;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/UntitledMultiSelectEnumSchema;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Lio/modelcontextprotocol/kotlin/sdk/types/UntitledMultiSelectEnumSchema$Items;Ljava/util/List;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/UntitledMultiSelectEnumSchema;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDefault ()Ljava/util/List;
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getItems ()Lio/modelcontextprotocol/kotlin/sdk/types/UntitledMultiSelectEnumSchema$Items;
+	public final fun getMaxItems ()Ljava/lang/Integer;
+	public final fun getMinItems ()Ljava/lang/Integer;
+	public final fun getTitle ()Ljava/lang/String;
+	public final fun getType ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/UntitledMultiSelectEnumSchema$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/UntitledMultiSelectEnumSchema$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/UntitledMultiSelectEnumSchema;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/UntitledMultiSelectEnumSchema;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/UntitledMultiSelectEnumSchema$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/UntitledMultiSelectEnumSchema$Items {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/UntitledMultiSelectEnumSchema$Items$Companion;
+	public fun <init> (Ljava/util/List;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun copy (Ljava/util/List;)Lio/modelcontextprotocol/kotlin/sdk/types/UntitledMultiSelectEnumSchema$Items;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/UntitledMultiSelectEnumSchema$Items;Ljava/util/List;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/UntitledMultiSelectEnumSchema$Items;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEnumValues ()Ljava/util/List;
+	public final fun getType ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/UntitledMultiSelectEnumSchema$Items$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/UntitledMultiSelectEnumSchema$Items$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/UntitledMultiSelectEnumSchema$Items;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/UntitledMultiSelectEnumSchema$Items;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/UntitledMultiSelectEnumSchema$Items$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/UntitledSingleSelectEnumSchema : io/modelcontextprotocol/kotlin/sdk/types/SingleSelectEnumSchema {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/UntitledSingleSelectEnumSchema$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/util/List;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/types/UntitledSingleSelectEnumSchema;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/UntitledSingleSelectEnumSchema;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/UntitledSingleSelectEnumSchema;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDefault ()Ljava/lang/String;
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getEnumValues ()Ljava/util/List;
+	public final fun getTitle ()Ljava/lang/String;
+	public final fun getType ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/UntitledSingleSelectEnumSchema$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/UntitledSingleSelectEnumSchema$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/UntitledSingleSelectEnumSchema;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/UntitledSingleSelectEnumSchema;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/UntitledSingleSelectEnumSchema$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
