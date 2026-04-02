@@ -1,0 +1,15 @@
+<configuration>
+    <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
+        <target>System.err</target>
+        <encoder>
+            <pattern>[%thread] %level %logger - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="io.ktor.server" level="DEBUG"/>
+    <logger name="io.modelcontextprotocol" level="DEBUG"/>
+
+    <root level="INFO">
+        <appender-ref ref="STDERR"/>
+    </root>
+</configuration>

@@ -12,7 +12,9 @@ kotlin {
                 api(project(":kotlin-sdk-core"))
                 api(libs.ktor.server.core)
                 api(libs.ktor.server.sse)
+                implementation(libs.ktor.server.content.negotiation)
                 implementation(libs.ktor.server.websockets)
+                implementation(libs.ktor.serialization)
                 implementation(libs.kotlin.logging)
             }
         }
@@ -37,7 +39,7 @@ kotlin {
                 implementation(libs.ktor.server.content.negotiation)
                 implementation(libs.ktor.server.test.host)
 
-                runtimeOnly(libs.slf4j.simple)
+                implementation(libs.logback.classic)
             }
         }
     }
