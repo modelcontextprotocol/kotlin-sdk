@@ -335,6 +335,36 @@ public data class RootsListChangedNotification(override val params: BaseNotifica
 }
 
 // ============================================================================
+// Elicitation Complete Notification
+// ============================================================================
+
+/**
+ * An optional notification from the server to the client,
+ * informing it of a completion of an out-of-band elicitation request.
+ *
+ * @property params Parameters identifying which elicitation completed.
+ */
+@Serializable
+public data class ElicitationCompleteNotification(override val params: ElicitationCompleteNotificationParams) :
+    ServerNotification {
+    @EncodeDefault
+    override val method: Method = Method.Defined.NotificationsElicitationComplete
+}
+
+/**
+ * Parameters for a notifications/elicitation/complete notification.
+ *
+ * @property elicitationId The ID of the elicitation that completed.
+ * @property meta Optional metadata for this notification.
+ */
+@Serializable
+public data class ElicitationCompleteNotificationParams(
+    val elicitationId: String,
+    @SerialName("_meta")
+    override val meta: JsonObject? = null,
+) : NotificationParams
+
+// ============================================================================
 // Tools List Changed Notification
 // ============================================================================
 
