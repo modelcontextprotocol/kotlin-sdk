@@ -46,6 +46,8 @@ public data class ElicitRequest(override val params: ElicitRequestParams) : Serv
  * Represents the parameters for an `elicitation/create` request.
  *
  * Implementations: [ElicitRequestFormParams], [ElicitRequestURLParams].
+ *
+ * @property message The message to present to the user describing what information is being requested.
  */
 @Serializable(with = ElicitRequestParamsSerializer::class)
 public sealed interface ElicitRequestParams : RequestParams {
@@ -111,6 +113,7 @@ public fun ElicitRequestParams(
  *   later via `tasks/result`.
  * @property requestedSchema A restricted subset of JSON Schema. Only top-level properties
  *   are allowed, without nesting.
+ * @property mode The elicitation mode discriminator, always `"form"`.
  * @property meta Optional metadata. May include a progressToken for out-of-band progress notifications.
  */
 @Serializable
@@ -138,6 +141,7 @@ public data class ElicitRequestFormParams(
  * @property task If specified, the caller is requesting task-augmented execution. The request
  *   will return a [CreateTaskResult] immediately, and the actual result can be retrieved
  *   later via `tasks/result`.
+ * @property mode The elicitation mode discriminator, always `"url"`.
  * @property meta Optional metadata. May include a progressToken for out-of-band progress notifications.
  */
 @Serializable
