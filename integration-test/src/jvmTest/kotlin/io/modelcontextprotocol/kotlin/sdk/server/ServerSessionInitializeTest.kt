@@ -1,5 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
+import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.shared.InMemoryTransport
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
@@ -23,7 +25,6 @@ import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 class ServerSessionInitializeTest {
 
@@ -94,13 +95,16 @@ class ServerSessionInitializeTest {
 
         secondResponseDone.await()
 
-        assertEquals(2, responses.size)
-        assertTrue(responses[0] is JSONRPCResponse, "First response should be success")
-        assertTrue(responses[1] is JSONRPCError, "Second response should be error")
-        assertEquals(RPCError.ErrorCode.INVALID_REQUEST, (responses[1] as JSONRPCError).error.code)
+        responses.size shouldBe 2
+        // With concurrent dispatch, responses may arrive in any order
+        val successResponses = responses.filterIsInstance<JSONRPCResponse>()
+        val errorResponses = responses.filterIsInstance<JSONRPCError>()
+        successResponses.shouldHaveSize(1)
+        errorResponses.shouldHaveSize(1)
+        errorResponses[0].error.code shouldBe RPCError.ErrorCode.INVALID_REQUEST
 
         // Capabilities still reflect the first client, not overwritten
-        assertEquals("first-client", session.clientVersion?.name)
+        session.clientVersion?.name shouldBe "first-client"
     }
 
     @Test

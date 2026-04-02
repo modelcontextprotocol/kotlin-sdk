@@ -29,14 +29,23 @@ import kotlinx.atomicfu.getAndUpdate
 import kotlinx.atomicfu.update
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
-import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -185,6 +194,10 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     public val progressHandlers: Map<ProgressToken, ProgressCallback>
         get() = _progressHandlers.value
 
+    private var handlerScope: CoroutineScope? = null
+    private val _activeRequests: AtomicRef<PersistentMap<RequestId, Job>> =
+        atomic(persistentMapOf())
+
     /**
      * Callback for when the connection is closed for any reason.
      *
@@ -222,15 +235,29 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         setRequestHandler<PingRequest>(Method.Defined.Ping) { _, _ ->
             EmptyResult()
         }
+
+        setNotificationHandler<CancelledNotification>(Method.Defined.NotificationsCancelled) { notification ->
+            val requestId = notification.params.requestId
+            _activeRequests.value[requestId]?.cancel(
+                CancellationException(notification.params.reason ?: "Request cancelled"),
+            )
+            COMPLETED
+        }
     }
 
     /**
      * Attaches to the given transport, starts it, and starts listening for messages.
      *
-     * The Protocol object assumes ownership of the Transport, replacing any callbacks that have already been set, and expects that it is the only user of the Transport instance going forward.
+     * The Protocol object assumes ownership of the Transport, replacing any callbacks
+     * that have already been set, and expects that it is the only user of the Transport instance going forward.
      */
     public open suspend fun connect(transport: Transport) {
         this.transport = transport
+        // Inherit the caller's coroutine context (dispatcher, test scheduler, etc.)
+        // but use an independent SupervisorJob — the handler scope's lifetime is managed
+        // by doClose(), not by the caller's job hierarchy.
+        handlerScope = CoroutineScope(currentCoroutineContext() + SupervisorJob())
+
         transport.onClose {
             doClose()
         }
@@ -254,6 +281,9 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     }
 
     private fun doClose() {
+        handlerScope?.cancel()
+        handlerScope = null
+        _activeRequests.getAndSet(persistentMapOf())
         val handlersToNotify = _responseHandlers.value.values.toList()
         _responseHandlers.getAndSet(persistentMapOf())
         _progressHandlers.getAndSet(persistentMapOf())
@@ -277,66 +307,87 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         }
         try {
             handler(notification)
+        } catch (e: CancellationException) {
+            throw e
         } catch (cause: Throwable) {
             logger.error(cause) { "Error handling notification: ${notification.method}" }
             onError(cause)
         }
     }
 
-    private suspend fun onRequest(request: JSONRPCRequest) {
+    private fun onRequest(request: JSONRPCRequest) {
         logger.trace { "Received request: ${request.method} (id: ${request.id})" }
-
+        val scope = handlerScope ?: return
         val handler = requestHandlers[request.method] ?: fallbackRequestHandler
 
-        if (handler === null) {
+        if (handler == null) {
             logger.trace { "No handler found for request: ${request.method}" }
-            try {
-                transport?.send(
-                    JSONRPCError(
-                        id = request.id,
-                        error = RPCError(
-                            code = RPCError.ErrorCode.METHOD_NOT_FOUND,
-                            message = "Server does not support ${request.method}",
-                        ),
-                    ),
-                )
-            } catch (cause: Throwable) {
-                logger.error(cause) { "Error sending method not found response" }
-                onError(cause)
-            }
+            // UNDISPATCHED: start eagerly on the caller's thread until first suspension,
+            // then resume on the scope's dispatcher. This is compatible with StandardTestDispatcher
+            // and avoids requiring a dispatch before the handler starts executing.
+            scope.launch(start = CoroutineStart.UNDISPATCHED) { sendMethodNotFound(request) }
             return
         }
 
-        @Suppress("TooGenericExceptionCaught", "InstanceOfCheckForException")
-        try {
-            val result = handler(request, RequestHandlerExtra())
-            logger.trace { "Request handled successfully: ${request.method} (id: ${request.id})" }
+        val job = scope.launch(start = CoroutineStart.UNDISPATCHED) {
+            executeRequestHandler(request, handler)
+        }
+        _activeRequests.update { it.put(request.id, job) }
+    }
 
+    private suspend fun sendMethodNotFound(request: JSONRPCRequest) {
+        try {
             transport?.send(
-                JSONRPCResponse(
+                JSONRPCError(
                     id = request.id,
-                    result = result ?: EmptyResult(),
+                    error = RPCError(
+                        code = RPCError.ErrorCode.METHOD_NOT_FOUND,
+                        message = "Server does not support ${request.method}",
+                    ),
                 ),
             )
         } catch (e: CancellationException) {
             throw e
         } catch (cause: Throwable) {
-            logger.error(cause) { "Error handling request: ${request.method} (id: ${request.id})" }
+            logger.error(cause) { "Error sending method not found response" }
+            onError(cause)
+        }
+    }
 
-            try {
-                val rpcError = if (cause is McpException) {
-                    RPCError(code = cause.code, message = cause.message.orEmpty(), data = cause.data)
-                } else {
-                    RPCError(code = RPCError.ErrorCode.INTERNAL_ERROR, message = cause.message ?: "Internal error")
-                }
-                transport?.send(JSONRPCError(id = request.id, error = rpcError))
-            } catch (e: CancellationException) {
-                throw e
-            } catch (sendError: Throwable) {
-                logger.error(sendError) {
-                    "Failed to send error response for request: ${request.method} (id: ${request.id})"
-                }
-                // Optionally implement fallback behavior here
+    @Suppress("TooGenericExceptionCaught", "InstanceOfCheckForException")
+    private suspend fun executeRequestHandler(
+        request: JSONRPCRequest,
+        handler: suspend (JSONRPCRequest, RequestHandlerExtra) -> RequestResult?,
+    ) {
+        try {
+            val result = handler(request, RequestHandlerExtra())
+            logger.trace { "Request handled successfully: ${request.method} (id: ${request.id})" }
+            transport?.send(
+                JSONRPCResponse(id = request.id, result = result ?: EmptyResult()),
+            )
+        } catch (_: CancellationException) {
+            // Request cancelled — no response sent
+        } catch (cause: Throwable) {
+            logger.error(cause) { "Error handling request: ${request.method} (id: ${request.id})" }
+            sendErrorResponse(request, cause)
+        } finally {
+            _activeRequests.update { it.remove(request.id) }
+        }
+    }
+
+    private suspend fun sendErrorResponse(request: JSONRPCRequest, cause: Throwable) {
+        try {
+            val rpcError = if (cause is McpException) {
+                RPCError(code = cause.code, message = cause.message.orEmpty(), data = cause.data)
+            } else {
+                RPCError(code = RPCError.ErrorCode.INTERNAL_ERROR, message = cause.message ?: "Internal error")
+            }
+            transport?.send(JSONRPCError(id = request.id, error = rpcError))
+        } catch (_: CancellationException) {
+            // Shutting down
+        } catch (sendError: Throwable) {
+            logger.error(sendError) {
+                "Failed to send error response for request: ${request.method} (id: ${request.id})"
             }
         }
     }
@@ -493,7 +544,10 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
 
             val jsonRpcNotification = notification.toJSON()
 
-            transport.send(jsonRpcNotification, options)
+            // Use NonCancellable to ensure the notification is sent even during cancellation
+            withContext(NonCancellable) {
+                transport.send(jsonRpcNotification, options)
+            }
 
             result.completeExceptionally(reason)
         }
@@ -515,6 +569,10 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                 ),
             )
             result.cancel(cause)
+            throw cause
+        } catch (cause: CancellationException) {
+            // Coroutine was cancelled (e.g., job.cancel()) — notify the remote side
+            cancel(cause)
             throw cause
         }
     }

@@ -38,6 +38,22 @@ public enum class ClientTransportState {
     Operational,
 
     /**
+     * The underlying connection has been lost but the session may be recoverable.
+     *
+     * The transport can attempt to reconnect by transitioning to [Reconnecting],
+     * or give up by transitioning to [ShuttingDown] or [Stopped].
+     */
+    Disconnected,
+
+    /**
+     * The transport is actively attempting to re-establish the connection.
+     *
+     * On success, transitions back to [Operational].
+     * On failure, transitions to [Disconnected] (to allow retry) or [Stopped] (to give up).
+     */
+    Reconnecting,
+
+    /**
      * Represents the shutting down phase of the protocol lifecycle.
      *
      * This state indicates that the transport is in the process of shutting down
@@ -68,7 +84,9 @@ public enum class ClientTransportState {
         val VALID_TRANSITIONS: Map<ClientTransportState, Set<ClientTransportState>> = mapOf(
             New to setOf(Initializing, Stopped),
             Initializing to setOf(Operational, InitializationFailed),
-            Operational to setOf(ShuttingDown),
+            Operational to setOf(Disconnected, ShuttingDown),
+            Disconnected to setOf(Reconnecting, ShuttingDown, Stopped),
+            Reconnecting to setOf(Operational, Disconnected, ShuttingDown, Stopped),
             ShuttingDown to setOf(Stopped, ShutdownFailed),
             // Terminal states allow no transitions
             InitializationFailed to emptySet(),

@@ -40,10 +40,12 @@ public abstract class io/modelcontextprotocol/kotlin/sdk/shared/AbstractTranspor
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState : java/lang/Enum {
+	public static final field Disconnected Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
 	public static final field InitializationFailed Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
 	public static final field Initializing Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
 	public static final field New Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
 	public static final field Operational Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
+	public static final field Reconnecting Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
 	public static final field ShutdownFailed Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
 	public static final field ShuttingDown Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
 	public static final field Stopped Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;

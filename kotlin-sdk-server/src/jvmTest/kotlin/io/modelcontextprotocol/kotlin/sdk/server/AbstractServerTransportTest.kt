@@ -1,4 +1,4 @@
-package io.modelcontextprotocol.kotlin.sdk.shared
+package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KLogger
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -7,6 +7,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.mockk.spyk
 import io.modelcontextprotocol.kotlin.sdk.InternalMcpApi
+import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
@@ -20,33 +21,17 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.EnumSource
-import org.junit.jupiter.params.provider.MethodSource
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.cancellation.CancellationException
 
-/**
- * Unit tests for [AbstractClientTransport] state machine and lifecycle.
- *
- * Tests behavioral correctness of state transitions, lifecycle management,
- * and message sending without relying on mocking frameworks.
- */
 @OptIn(ExperimentalAtomicApi::class)
-class AbstractClientTransportTest {
+class AbstractServerTransportTest {
 
-    companion object {
-        @JvmStatic
-        fun nonMcpExceptions() = listOf(
-            TestException("Generic failure"),
-            java.io.IOException("Network error"),
-            IllegalStateException("Invalid state"),
-        )
-    }
-
-    private lateinit var transport: TestClientTransport
+    private lateinit var transport: TestServerTransport
 
     @BeforeEach
     fun beforeEach() {
-        transport = spyk(TestClientTransport())
+        transport = spyk(TestServerTransport())
     }
 
     @Nested
@@ -54,15 +39,15 @@ class AbstractClientTransportTest {
     inner class LifecycleTests {
 
         @Test
-        fun `should start with NEW state`() {
-            transport.currentState shouldBe ClientTransportState.New
+        fun `should start with New state`() {
+            transport.currentState shouldBe ServerTransportState.New
         }
 
         @Test
-        fun `should transition to OPERATIONAL after successful start`() = runTest {
+        fun `should transition to Active after successful start`() = runTest {
             transport.start()
 
-            transport.currentState shouldBe ClientTransportState.Operational
+            transport.currentState shouldBe ServerTransportState.Active
             transport.initializeCalled shouldBe true
         }
 
@@ -71,18 +56,18 @@ class AbstractClientTransportTest {
             transport.start()
 
             transport.initializeCalled shouldBe true
-            transport.currentState shouldBe ClientTransportState.Operational
+            transport.currentState shouldBe ServerTransportState.Active
         }
 
         @Test
-        fun `should transition to INITIALIZATION_FAILED on start error`() = runTest {
+        fun `should transition to InitializationFailed on start error`() = runTest {
             transport.shouldFailInitialization = true
 
             shouldThrow<TestException> {
                 transport.start()
             }
 
-            transport.currentState shouldBe ClientTransportState.InitializationFailed
+            transport.currentState shouldBe ServerTransportState.InitializationFailed
             transport.closeResourcesCalled shouldBe true
         }
 
@@ -108,11 +93,11 @@ class AbstractClientTransportTest {
         }
 
         @Test
-        fun `should transition to STOPPED after successful close`() = runTest {
+        fun `should transition to Stopped after successful close`() = runTest {
             transport.start()
             transport.close()
 
-            transport.currentState shouldBe ClientTransportState.Stopped
+            transport.currentState shouldBe ServerTransportState.Stopped
             transport.closeResourcesCalled shouldBe true
         }
 
@@ -123,19 +108,18 @@ class AbstractClientTransportTest {
             transport.close()
 
             transport.closeResourcesCalled shouldBe true
-            transport.currentState shouldBe ClientTransportState.Stopped
+            transport.currentState shouldBe ServerTransportState.Stopped
         }
 
         @Test
         fun `should be idempotent when closed multiple times`() = runTest {
-            // given
             transport.start()
             transport.close()
-            // when
+
             transport.close()
             transport.close()
 
-            transport.currentState shouldBe ClientTransportState.Stopped
+            transport.currentState shouldBe ServerTransportState.Stopped
             transport.closeResourcesCallCount shouldBe 1
         }
 
@@ -152,39 +136,37 @@ class AbstractClientTransportTest {
         }
 
         @Test
-        fun `should transition to SHUTDOWN_FAILED on close error`() = runTest {
+        fun `should transition to ShutdownFailed on close error`() = runTest {
             transport.shouldFailClose = true
             transport.start()
 
             transport.close()
 
-            transport.currentState shouldBe ClientTransportState.ShutdownFailed
+            transport.currentState shouldBe ServerTransportState.ShutdownFailed
         }
 
         @Test
         fun `should call onClose even when close fails`() = runTest {
-            // given
             var onCloseCalled = false
             transport.onClose { onCloseCalled = true }
             transport.shouldFailClose = true
             transport.start()
-            // when
+
             transport.close()
-            // then
+
             onCloseCalled shouldBe true
         }
 
         @Test
         fun `should propagate CancellationException on close`() = runTest {
-            // given
             transport.shouldThrowCancellation = true
             transport.start()
-            // when-then
+
             shouldThrow<CancellationException> {
                 transport.close()
             }
 
-            transport.currentState shouldBe ClientTransportState.ShutdownFailed
+            transport.currentState shouldBe ServerTransportState.ShutdownFailed
         }
 
         @Test
@@ -210,23 +192,15 @@ class AbstractClientTransportTest {
         @CsvSource(
             "New, Initializing",
             "New, Stopped",
-            "Initializing, Operational",
+            "Initializing, Active",
             "Initializing, InitializationFailed",
-            "Operational, Disconnected",
-            "Operational, ShuttingDown",
-            "Disconnected, Reconnecting",
-            "Disconnected, ShuttingDown",
-            "Disconnected, Stopped",
-            "Reconnecting, Operational",
-            "Reconnecting, Disconnected",
-            "Reconnecting, ShuttingDown",
-            "Reconnecting, Stopped",
+            "Active, ShuttingDown",
             "ShuttingDown, Stopped",
             "ShuttingDown, ShutdownFailed",
         )
         fun `should allow valid transitions`(fromName: String, toName: String) {
-            val from = ClientTransportState.valueOf(fromName)
-            val to = ClientTransportState.valueOf(toName)
+            val from = ServerTransportState.valueOf(fromName)
+            val to = ServerTransportState.valueOf(toName)
 
             transport.forceState(from)
             transport.testStateTransition(from, to)
@@ -236,58 +210,34 @@ class AbstractClientTransportTest {
 
         @ParameterizedTest
         @CsvSource(
-            // From New: only Initializing and Stopped are valid
-            "New, Operational",
+            "New, Active",
             "New, InitializationFailed",
-            "New, Disconnected",
-            "New, Reconnecting",
             "New, ShuttingDown",
             "New, ShutdownFailed",
-            // From Initializing: only Operational or InitializationFailed are valid
             "Initializing, New",
             "Initializing, Initializing",
-            "Initializing, Disconnected",
-            "Initializing, Reconnecting",
             "Initializing, ShuttingDown",
             "Initializing, Stopped",
-            "Initializing, ShutdownFailed",
-            // From Operational: only Disconnected and ShuttingDown are valid
-            "Operational, New",
-            "Operational, Initializing",
-            "Operational, InitializationFailed",
-            "Operational, Operational",
-            "Operational, Reconnecting",
-            "Operational, Stopped",
-            "Operational, ShutdownFailed",
-            // From Disconnected: only Reconnecting, ShuttingDown, Stopped are valid
-            "Disconnected, New",
-            "Disconnected, Operational",
-            "Disconnected, Disconnected",
-            "Disconnected, InitializationFailed",
-            // From Reconnecting: only Operational, Disconnected, ShuttingDown, Stopped are valid
-            "Reconnecting, New",
-            "Reconnecting, Initializing",
-            "Reconnecting, InitializationFailed",
-            "Reconnecting, Reconnecting",
-            // From ShuttingDown: only Stopped or ShutdownFailed are valid
+            "Active, New",
+            "Active, Initializing",
+            "Active, InitializationFailed",
+            "Active, Active",
+            "Active, Stopped",
+            "Active, ShutdownFailed",
             "ShuttingDown, New",
             "ShuttingDown, Initializing",
-            "ShuttingDown, InitializationFailed",
-            "ShuttingDown, Operational",
-            "ShuttingDown, Disconnected",
-            "ShuttingDown, Reconnecting",
+            "ShuttingDown, Active",
             "ShuttingDown, ShuttingDown",
-            // From terminal states: no transitions allowed
             "InitializationFailed, New",
-            "InitializationFailed, Operational",
+            "InitializationFailed, Active",
             "Stopped, New",
-            "Stopped, Operational",
+            "Stopped, Active",
             "ShutdownFailed, New",
-            "ShutdownFailed, Operational",
+            "ShutdownFailed, Active",
         )
         fun `should reject invalid transitions`(fromName: String, toName: String) {
-            val from = ClientTransportState.valueOf(fromName)
-            val to = ClientTransportState.valueOf(toName)
+            val from = ServerTransportState.valueOf(fromName)
+            val to = ServerTransportState.valueOf(toName)
 
             transport.forceState(from)
 
@@ -303,7 +253,7 @@ class AbstractClientTransportTest {
     inner class SendTests {
 
         @Test
-        fun `should send message successfully when OPERATIONAL`() = runTest {
+        fun `should send message successfully when Active`() = runTest {
             val message = PingRequest().toJSON()
 
             transport.start()
@@ -331,7 +281,7 @@ class AbstractClientTransportTest {
             }
 
             exception.code shouldBe RPCError.ErrorCode.CONNECTION_CLOSED
-            exception.message shouldContain "Transport is not ready"
+            exception.message shouldContain "Transport is not active"
         }
 
         @Test
@@ -344,16 +294,16 @@ class AbstractClientTransportTest {
             }
 
             exception.code shouldBe RPCError.ErrorCode.CONNECTION_CLOSED
-            exception.message shouldContain "Transport is not ready"
+            exception.message shouldContain "Transport is not active"
         }
 
         @ParameterizedTest
         @EnumSource(
-            value = ClientTransportState::class,
-            names = ["Operational"],
+            value = ServerTransportState::class,
+            names = ["Active"],
             mode = EnumSource.Mode.EXCLUDE,
         )
-        fun `should throw when sending in non-OPERATIONAL state`(state: ClientTransportState) = runTest {
+        fun `should throw when sending in non-Active state`(state: ServerTransportState) = runTest {
             transport.forceState(state)
 
             val exception = shouldThrow<McpException> {
@@ -361,18 +311,14 @@ class AbstractClientTransportTest {
             }
 
             exception.code shouldBe RPCError.ErrorCode.CONNECTION_CLOSED
-            exception.message shouldContain "Transport is not ready"
+            exception.message shouldContain "Transport is not active"
             transport.sentMessages.isEmpty() shouldBe true
         }
 
         @Test
         fun `should call onError when performSend throws McpException`() = runTest {
-            var errorCallCount = 0
             var capturedError: Throwable? = null
-            transport.onError { error ->
-                errorCallCount++
-                capturedError = error
-            }
+            transport.onError { capturedError = it }
             transport.shouldFailSend = true
             transport.sendException = McpException(RPCError.ErrorCode.INTERNAL_ERROR, "Send failed")
 
@@ -381,32 +327,8 @@ class AbstractClientTransportTest {
                 transport.send(PingRequest().toJSON())
             }
 
-            errorCallCount shouldBe 1
             capturedError shouldBe transport.sendException
             exception shouldBe transport.sendException
-        }
-
-        @ParameterizedTest
-        @MethodSource("io.modelcontextprotocol.kotlin.sdk.shared.AbstractClientTransportTest#nonMcpExceptions")
-        fun `should call onError when performSend throws non-MCP exception`(testException: Throwable) = runTest {
-            var errorCallCount = 0
-            var capturedError: Throwable? = null
-            transport.onError { error ->
-                errorCallCount++
-                capturedError = error
-            }
-            transport.shouldFailSend = true
-            transport.sendException = testException
-
-            transport.start()
-            val exception = shouldThrow<McpException> {
-                transport.send(PingRequest().toJSON())
-            }
-
-            errorCallCount shouldBe 1
-            capturedError shouldBe testException
-            exception.code shouldBe RPCError.ErrorCode.INTERNAL_ERROR
-            exception.cause shouldBe testException
         }
 
         @Test
@@ -430,31 +352,30 @@ class AbstractClientTransportTest {
     inner class IdempotencyTests {
 
         @Test
-        fun `should be idempotent when closing from NEW state`() = runTest {
+        fun `should be idempotent when closing from New state`() = runTest {
             transport.close()
 
-            transport.currentState shouldBe ClientTransportState.Stopped
+            transport.currentState shouldBe ServerTransportState.Stopped
             transport.closeResourcesCalled shouldBe false
         }
 
         @Test
-        fun `should be idempotent when closing from INITIALIZATION_FAILED state`() = runTest {
+        fun `should be idempotent when closing from InitializationFailed state`() = runTest {
             transport.shouldFailInitialization = true
             shouldThrow<TestException> { transport.start() }
 
             transport.close()
 
-            transport.currentState shouldBe ClientTransportState.InitializationFailed
-            // closeResources was called during a failed start, but not during this close
+            transport.currentState shouldBe ServerTransportState.InitializationFailed
             transport.closeResourcesCallCount shouldBe 1
         }
 
         @ParameterizedTest
         @EnumSource(
-            value = ClientTransportState::class,
+            value = ServerTransportState::class,
             names = ["ShuttingDown", "ShutdownFailed", "Stopped"],
         )
-        fun `should be idempotent when closing from terminal or shutdown states`(state: ClientTransportState) =
+        fun `should be idempotent when closing from terminal or shutdown states`(state: ServerTransportState) =
             runTest {
                 transport.forceState(state)
                 val initialCloseCount = transport.closeResourcesCallCount
@@ -466,12 +387,8 @@ class AbstractClientTransportTest {
             }
     }
 
-    /**
-     * Simple test implementation of [AbstractClientTransport] for behavioral testing.
-     * Tracks method calls without mocking frameworks.
-     */
     @OptIn(InternalMcpApi::class)
-    private class TestClientTransport : AbstractClientTransport() {
+    class TestServerTransport : AbstractServerTransport() {
         override val logger: KLogger = KotlinLogging.logger {}
         val sentMessages = mutableListOf<JSONRPCMessage>()
         var lastSendOptions: TransportSendOptions? = null
@@ -484,7 +401,7 @@ class AbstractClientTransportTest {
         var shouldFailSend = false
         var sendException: Throwable? = null
 
-        val currentState: ClientTransportState
+        val currentState: ServerTransportState
             get() = state
 
         override suspend fun initialize() {
@@ -512,11 +429,11 @@ class AbstractClientTransportTest {
             }
         }
 
-        fun testStateTransition(from: ClientTransportState, to: ClientTransportState) {
+        fun testStateTransition(from: ServerTransportState, to: ServerTransportState) {
             stateTransition(from, to)
         }
 
-        fun forceState(newState: ClientTransportState) = updateState(newState)
+        fun forceState(newState: ServerTransportState) = updateState(newState)
     }
 
     private class TestException(message: String) : Exception(message)

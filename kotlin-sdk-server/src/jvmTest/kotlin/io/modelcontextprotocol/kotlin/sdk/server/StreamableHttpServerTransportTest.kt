@@ -441,6 +441,7 @@ class StreamableHttpServerTransportTest {
                 }
             }
         }
+        kotlinx.coroutines.runBlocking { transport.start() }
     }
 
     private fun HttpRequestBuilder.addStreamableHeaders() {

@@ -18,7 +18,10 @@ tasks.matching {
 
 knit {
     rootDir = project.rootDir
-    files = files(project.rootDir.resolve("README.md"))
+    files = files(
+        project.rootDir.resolve("README.md"),
+        project.rootDir.resolve("docs/architecture.md"),
+    )
     defaultLineSeparator = "\n"
     siteRoot = "" // Disable site root validation
 }

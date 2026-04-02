@@ -231,13 +231,21 @@ public abstract class AbstractClientTransport : AbstractTransport() {
         val performClose: Boolean
         when (state) {
             ClientTransportState.Operational -> {
-                // Only Operational state can transition to ShuttingDown
                 stateTransition(ClientTransportState.Operational, ClientTransportState.ShuttingDown)
                 performClose = true
             }
 
+            ClientTransportState.Disconnected -> {
+                stateTransition(ClientTransportState.Disconnected, ClientTransportState.ShuttingDown)
+                performClose = true
+            }
+
+            ClientTransportState.Reconnecting -> {
+                stateTransition(ClientTransportState.Reconnecting, ClientTransportState.ShuttingDown)
+                performClose = true
+            }
+
             ClientTransportState.New -> {
-                // New state transitions directly to Stopped without any cleanup
                 stateTransition(ClientTransportState.New, ClientTransportState.Stopped)
                 performClose = false
             }

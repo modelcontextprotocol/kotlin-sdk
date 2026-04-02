@@ -1,8 +1,8 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
+import io.github.oshai.kotlinlogging.KLogger
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.internal.IODispatcher
-import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.ReadBuffer
 import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.serializeMessage
@@ -14,6 +14,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -23,9 +24,7 @@ import kotlinx.io.Source
 import kotlinx.io.buffered
 import kotlinx.io.readByteArray
 import kotlinx.io.writeString
-import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
-import kotlin.coroutines.CoroutineContext
 
 private const val READ_BUFFER_SIZE = 8192L
 
@@ -34,38 +33,31 @@ private const val READ_BUFFER_SIZE = 8192L
  *
  * Reads from input [Source] and writes to output [Sink].
  *
- * @constructor Creates a new instance of [StdioServerTransport].
+ * The transport's internal I/O coroutines inherit the calling coroutine's context
+ * (from [start] / [io.modelcontextprotocol.kotlin.sdk.shared.Protocol.connect]),
+ * ensuring structured concurrency. The [IODispatcher] is added for I/O operations.
+ *
  * @param inputStream The input [Source] used to receive data.
  * @param outputStream The output [Sink] used to send data.
  */
 @OptIn(ExperimentalAtomicApi::class)
-public class StdioServerTransport(private val inputStream: Source, outputStream: Sink) : AbstractTransport() {
+public class StdioServerTransport(private val inputStream: Source, outputStream: Sink) : AbstractServerTransport() {
 
-    private val logger = KotlinLogging.logger {}
+    override val logger: KLogger = KotlinLogging.logger {}
     private val readBuffer = ReadBuffer()
-    private val initialized: AtomicBoolean = AtomicBoolean(false)
     private var readingJob: Job? = null
     private var sendingJob: Job? = null
     private var processingJob: Job? = null
 
-    private val coroutineContext: CoroutineContext = IODispatcher + SupervisorJob()
-    private val scope = CoroutineScope(coroutineContext)
+    private lateinit var scope: CoroutineScope
     private val readChannel = Channel<ByteArray>(Channel.UNLIMITED)
     private val writeChannel = Channel<JSONRPCMessage>(Channel.UNLIMITED)
     private val outputSink = outputStream.buffered()
 
-    override suspend fun start() {
-        if (!initialized.compareAndSet(expectedValue = false, newValue = true)) {
-            error("StdioServerTransport already started!")
-        }
-
-        // Launch a coroutine to read from stdin
+    override suspend fun initialize() {
+        scope = CoroutineScope(currentCoroutineContext() + IODispatcher + SupervisorJob())
         readingJob = launchReadingJob()
-
-        // Launch a coroutine to process messages from readChannel
         processingJob = launchProcessingJob()
-
-        // Launch a coroutine to handle message sending
         sendingJob = launchSendingJob()
     }
 
@@ -77,7 +69,6 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
                 while (isActive) {
                     val bytesRead = inputStream.readAtMostTo(buf, READ_BUFFER_SIZE)
                     if (bytesRead == -1L) {
-                        // EOF reached
                         break
                     }
                     if (bytesRead > 0) {
@@ -91,7 +82,6 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
                 logger.error(e) { "Error reading from stdin" }
                 _onError.invoke(e)
             } finally {
-                // Reached EOF or error, close connection
                 close()
             }
         }
@@ -157,7 +147,6 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
             }
 
             if (message == null) break
-            // Async invocation broke delivery order
             try {
                 _onMessage.invoke(message)
             } catch (e: CancellationException) {
@@ -171,22 +160,13 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
 
     private fun logJobCompletion(jobName: String, cause: Throwable?) {
         when (cause) {
-            is CancellationException -> {
-            }
-
-            null -> {
-                logger.debug { "$jobName job completed" }
-            }
-
-            else -> {
-                logger.debug(cause) { "$jobName job completed exceptionally" }
-            }
+            is CancellationException -> {}
+            null -> logger.debug { "$jobName job completed" }
+            else -> logger.debug(cause) { "$jobName job completed exceptionally" }
         }
     }
 
-    override suspend fun close() {
-        if (!initialized.compareAndSet(expectedValue = true, newValue = false)) return
-
+    override suspend fun closeResources() {
         withContext(NonCancellable) {
             writeChannel.close()
             sendingJob?.cancelAndJoin()
@@ -206,12 +186,10 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
                 outputSink.flush()
                 outputSink.close()
             }.onFailure { logger.warn(it) { "Failed to close stdout" } }
-
-            invokeOnCloseCallback()
         }
     }
 
-    override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
+    override suspend fun performSend(message: JSONRPCMessage, options: TransportSendOptions?) {
         writeChannel.send(message)
     }
 }
