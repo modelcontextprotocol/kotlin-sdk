@@ -212,7 +212,15 @@ class AbstractClientTransportTest {
             "New, Stopped",
             "Initializing, Operational",
             "Initializing, InitializationFailed",
+            "Operational, Disconnected",
             "Operational, ShuttingDown",
+            "Disconnected, Reconnecting",
+            "Disconnected, ShuttingDown",
+            "Disconnected, Stopped",
+            "Reconnecting, Operational",
+            "Reconnecting, Disconnected",
+            "Reconnecting, ShuttingDown",
+            "Reconnecting, Stopped",
             "ShuttingDown, Stopped",
             "ShuttingDown, ShutdownFailed",
         )
@@ -228,29 +236,46 @@ class AbstractClientTransportTest {
 
         @ParameterizedTest
         @CsvSource(
-            // From New: only Initializing is valid
+            // From New: only Initializing and Stopped are valid
             "New, Operational",
             "New, InitializationFailed",
+            "New, Disconnected",
+            "New, Reconnecting",
             "New, ShuttingDown",
             "New, ShutdownFailed",
             // From Initializing: only Operational or InitializationFailed are valid
             "Initializing, New",
             "Initializing, Initializing",
+            "Initializing, Disconnected",
+            "Initializing, Reconnecting",
             "Initializing, ShuttingDown",
             "Initializing, Stopped",
             "Initializing, ShutdownFailed",
-            // From Operational: only ShuttingDown is valid
+            // From Operational: only Disconnected and ShuttingDown are valid
             "Operational, New",
             "Operational, Initializing",
             "Operational, InitializationFailed",
             "Operational, Operational",
+            "Operational, Reconnecting",
             "Operational, Stopped",
             "Operational, ShutdownFailed",
+            // From Disconnected: only Reconnecting, ShuttingDown, Stopped are valid
+            "Disconnected, New",
+            "Disconnected, Operational",
+            "Disconnected, Disconnected",
+            "Disconnected, InitializationFailed",
+            // From Reconnecting: only Operational, Disconnected, ShuttingDown, Stopped are valid
+            "Reconnecting, New",
+            "Reconnecting, Initializing",
+            "Reconnecting, InitializationFailed",
+            "Reconnecting, Reconnecting",
             // From ShuttingDown: only Stopped or ShutdownFailed are valid
             "ShuttingDown, New",
             "ShuttingDown, Initializing",
             "ShuttingDown, InitializationFailed",
             "ShuttingDown, Operational",
+            "ShuttingDown, Disconnected",
+            "ShuttingDown, Reconnecting",
             "ShuttingDown, ShuttingDown",
             // From terminal states: no transitions allowed
             "InitializationFailed, New",

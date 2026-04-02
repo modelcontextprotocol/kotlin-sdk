@@ -40,10 +40,12 @@ public abstract class io/modelcontextprotocol/kotlin/sdk/shared/AbstractTranspor
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState : java/lang/Enum {
+	public static final field Disconnected Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
 	public static final field InitializationFailed Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
 	public static final field Initializing Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
 	public static final field New Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
 	public static final field Operational Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
+	public static final field Reconnecting Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
 	public static final field ShutdownFailed Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
 	public static final field ShuttingDown Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
 	public static final field Stopped Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
@@ -122,6 +124,19 @@ public final class io/modelcontextprotocol/kotlin/sdk/shared/RequestOptions : io
 	public final fun getTimeout-UwyO8pc ()J
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/shared/ServerTransportState : java/lang/Enum {
+	public static final field Active Lio/modelcontextprotocol/kotlin/sdk/shared/ServerTransportState;
+	public static final field InitializationFailed Lio/modelcontextprotocol/kotlin/sdk/shared/ServerTransportState;
+	public static final field Initializing Lio/modelcontextprotocol/kotlin/sdk/shared/ServerTransportState;
+	public static final field New Lio/modelcontextprotocol/kotlin/sdk/shared/ServerTransportState;
+	public static final field ShutdownFailed Lio/modelcontextprotocol/kotlin/sdk/shared/ServerTransportState;
+	public static final field ShuttingDown Lio/modelcontextprotocol/kotlin/sdk/shared/ServerTransportState;
+	public static final field Stopped Lio/modelcontextprotocol/kotlin/sdk/shared/ServerTransportState;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/shared/ServerTransportState;
+	public static fun values ()[Lio/modelcontextprotocol/kotlin/sdk/shared/ServerTransportState;
 }
 
 public abstract interface class io/modelcontextprotocol/kotlin/sdk/shared/Transport {
