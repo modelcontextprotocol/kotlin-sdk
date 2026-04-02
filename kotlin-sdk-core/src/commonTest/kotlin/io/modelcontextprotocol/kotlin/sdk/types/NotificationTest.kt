@@ -312,6 +312,51 @@ class NotificationTest {
     }
 
     @Test
+    fun `should serialize ElicitationCompleteNotification with meta`() {
+        val notification = ElicitationCompleteNotification(
+            ElicitationCompleteNotificationParams(
+                elicitationId = "elicit-42",
+                meta = buildJsonObject { put("source", "oauth-flow") },
+            ),
+        )
+
+        verifySerialization(
+            notification,
+            McpJson,
+            """
+            {
+              "method": "notifications/elicitation/complete",
+              "params": {
+                "elicitationId": "elicit-42",
+                "_meta": {
+                  "source": "oauth-flow"
+                }
+              }
+            }
+            """.trimIndent(),
+        )
+    }
+
+    @Test
+    fun `should deserialize ElicitationCompleteNotification`() {
+        val json = """
+            {
+              "method": "notifications/elicitation/complete",
+              "params": {
+                "elicitationId": "elicit-99"
+              }
+            }
+        """.trimIndent()
+
+        val notification = verifyDeserialization<ElicitationCompleteNotification>(McpJson, json)
+        val params = notification.params
+
+        assertEquals(Method.Defined.NotificationsElicitationComplete, notification.method)
+        assertEquals("elicit-99", params.elicitationId)
+        assertNull(params.meta)
+    }
+
+    @Test
     fun `should serialize TaskStatusNotification with all fields`() {
         val notification = TaskStatusNotification(
             TaskStatusNotificationParams(
