@@ -24,7 +24,6 @@ import kotlinx.io.buffered
 import kotlinx.io.readByteArray
 import kotlinx.io.writeString
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
-import kotlin.coroutines.CoroutineContext
 
 private const val READ_BUFFER_SIZE = 8192L
 
@@ -33,12 +32,18 @@ private const val READ_BUFFER_SIZE = 8192L
  *
  * Reads from input [Source] and writes to output [Sink].
  *
- * @constructor Creates a new instance of [StdioServerTransport].
  * @param inputStream The input [Source] used to receive data.
  * @param outputStream The output [Sink] used to send data.
+ * @param parentScope Optional parent [CoroutineScope] for structured concurrency.
+ *   When provided, the transport's internal coroutines become children of this scope,
+ *   preventing coroutine leaks. When `null` (the default), a detached scope is created.
  */
 @OptIn(ExperimentalAtomicApi::class)
-public class StdioServerTransport(private val inputStream: Source, outputStream: Sink) : AbstractServerTransport() {
+public class StdioServerTransport(
+    private val inputStream: Source,
+    outputStream: Sink,
+    parentScope: CoroutineScope? = null,
+) : AbstractServerTransport() {
 
     override val logger: KLogger = KotlinLogging.logger {}
     private val readBuffer = ReadBuffer()
@@ -46,8 +51,11 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
     private var sendingJob: Job? = null
     private var processingJob: Job? = null
 
-    private val coroutineContext: CoroutineContext = IODispatcher + SupervisorJob()
-    private val scope = CoroutineScope(coroutineContext)
+    private val scope: CoroutineScope = if (parentScope != null) {
+        CoroutineScope(parentScope.coroutineContext + IODispatcher + SupervisorJob(parentScope.coroutineContext[Job]))
+    } else {
+        CoroutineScope(IODispatcher + SupervisorJob())
+    }
     private val readChannel = Channel<ByteArray>(Channel.UNLIMITED)
     private val writeChannel = Channel<JSONRPCMessage>(Channel.UNLIMITED)
     private val outputSink = outputStream.buffered()

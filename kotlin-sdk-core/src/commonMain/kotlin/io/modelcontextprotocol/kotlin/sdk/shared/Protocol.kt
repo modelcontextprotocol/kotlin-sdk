@@ -30,6 +30,7 @@ import kotlinx.atomicfu.update
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
@@ -42,7 +43,7 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
-import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.CancellationException
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -159,7 +160,10 @@ internal val COMPLETED = CompletableDeferred(Unit).also { it.complete(Unit) }
  * @property responseHandlers pending response handlers keyed by request ID
  * @property progressHandlers registered progress callbacks keyed by progress token
  */
-public abstract class Protocol(@PublishedApi internal val options: ProtocolOptions?) {
+public abstract class Protocol(
+    @PublishedApi internal val options: ProtocolOptions?,
+    private val handlerDispatcher: CoroutineDispatcher = Dispatchers.Default,
+) {
     public var transport: Transport? = null
         private set
 
@@ -249,7 +253,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
      */
     public open suspend fun connect(transport: Transport) {
         this.transport = transport
-        handlerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        handlerScope = CoroutineScope(SupervisorJob() + handlerDispatcher)
 
         transport.onClose {
             doClose()
@@ -308,71 +312,74 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
 
     private fun onRequest(request: JSONRPCRequest) {
         logger.trace { "Received request: ${request.method} (id: ${request.id})" }
-
+        val scope = handlerScope ?: return
         val handler = requestHandlers[request.method] ?: fallbackRequestHandler
 
-        if (handler === null) {
+        if (handler == null) {
             logger.trace { "No handler found for request: ${request.method}" }
-            val scope = handlerScope ?: return
-            scope.launch {
-                try {
-                    transport?.send(
-                        JSONRPCError(
-                            id = request.id,
-                            error = RPCError(
-                                code = RPCError.ErrorCode.METHOD_NOT_FOUND,
-                                message = "Server does not support ${request.method}",
-                            ),
-                        ),
-                    )
-                } catch (cause: Throwable) {
-                    logger.error(cause) { "Error sending method not found response" }
-                    onError(cause)
-                }
-            }
+            scope.launch { sendMethodNotFound(request) }
             return
         }
 
-        val scope = handlerScope ?: return
         val job = scope.launch {
-            @Suppress("TooGenericExceptionCaught", "InstanceOfCheckForException")
-            try {
-                val result = handler(request, RequestHandlerExtra())
-                logger.trace { "Request handled successfully: ${request.method} (id: ${request.id})" }
-
-                transport?.send(
-                    JSONRPCResponse(
-                        id = request.id,
-                        result = result ?: EmptyResult(),
-                    ),
-                )
-            } catch (_: CancellationException) {
-                // Request cancelled — no response sent
-            } catch (cause: Throwable) {
-                logger.error(cause) { "Error handling request: ${request.method} (id: ${request.id})" }
-
-                try {
-                    val rpcError = if (cause is McpException) {
-                        RPCError(code = cause.code, message = cause.message.orEmpty(), data = cause.data)
-                    } else {
-                        RPCError(
-                            code = RPCError.ErrorCode.INTERNAL_ERROR,
-                            message = cause.message ?: "Internal error",
-                        )
-                    }
-                    transport?.send(JSONRPCError(id = request.id, error = rpcError))
-                } catch (_: CancellationException) {
-                    // Shutting down
-                } catch (sendError: Throwable) {
-                    logger.error(sendError) {
-                        "Failed to send error response for request: ${request.method} (id: ${request.id})"
-                    }
-                }
-            } finally {
-                _activeRequests.update { it.remove(request.id) }
-            }
+            executeRequestHandler(request, handler)
         }
         _activeRequests.update { it.put(request.id, job) }
+    }
+
+    private suspend fun sendMethodNotFound(request: JSONRPCRequest) {
+        try {
+            transport?.send(
+                JSONRPCError(
+                    id = request.id,
+                    error = RPCError(
+                        code = RPCError.ErrorCode.METHOD_NOT_FOUND,
+                        message = "Server does not support ${request.method}",
+                    ),
+                ),
+            )
+        } catch (cause: Throwable) {
+            logger.error(cause) { "Error sending method not found response" }
+            onError(cause)
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught", "InstanceOfCheckForException")
+    private suspend fun executeRequestHandler(
+        request: JSONRPCRequest,
+        handler: suspend (JSONRPCRequest, RequestHandlerExtra) -> RequestResult?,
+    ) {
+        try {
+            val result = handler(request, RequestHandlerExtra())
+            logger.trace { "Request handled successfully: ${request.method} (id: ${request.id})" }
+            transport?.send(
+                JSONRPCResponse(id = request.id, result = result ?: EmptyResult()),
+            )
+        } catch (_: CancellationException) {
+            // Request cancelled — no response sent
+        } catch (cause: Throwable) {
+            logger.error(cause) { "Error handling request: ${request.method} (id: ${request.id})" }
+            sendErrorResponse(request, cause)
+        } finally {
+            _activeRequests.update { it.remove(request.id) }
+        }
+    }
+
+    private suspend fun sendErrorResponse(request: JSONRPCRequest, cause: Throwable) {
+        try {
+            val rpcError = if (cause is McpException) {
+                RPCError(code = cause.code, message = cause.message.orEmpty(), data = cause.data)
+            } else {
+                RPCError(code = RPCError.ErrorCode.INTERNAL_ERROR, message = cause.message ?: "Internal error")
+            }
+            transport?.send(JSONRPCError(id = request.id, error = rpcError))
+        } catch (_: CancellationException) {
+            // Shutting down
+        } catch (sendError: Throwable) {
+            logger.error(sendError) {
+                "Failed to send error response for request: ${request.method} (id: ${request.id})"
+            }
+        }
     }
 
     private fun onProgress(notification: ProgressNotification) {

@@ -3,13 +3,12 @@ package io.modelcontextprotocol.kotlin.sdk.shared
 import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.types.CancelledNotification
 import io.modelcontextprotocol.kotlin.sdk.types.CancelledNotificationParams
+import io.modelcontextprotocol.kotlin.sdk.types.CustomRequest
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.Method
-import io.modelcontextprotocol.kotlin.sdk.types.CustomRequest
-import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import io.modelcontextprotocol.kotlin.test.utils.runIntegrationTest

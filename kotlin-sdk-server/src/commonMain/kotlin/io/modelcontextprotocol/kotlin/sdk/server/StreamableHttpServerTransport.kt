@@ -1,5 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
+import io.github.oshai.kotlinlogging.KLogger
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -13,8 +15,6 @@ import io.ktor.server.response.header
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondNullable
 import io.ktor.server.sse.ServerSSESession
-import io.github.oshai.kotlinlogging.KLogger
-import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.util.collections.ConcurrentMap
 import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
 import io.modelcontextprotocol.kotlin.sdk.types.DEFAULT_NEGOTIATED_PROTOCOL_VERSION
@@ -57,10 +57,7 @@ private const val MIN_PRIMING_EVENT_PROTOCOL_VERSION = "2025-11-25"
  */
 private data class SessionContext(val session: ServerSSESession?, val call: ApplicationCall)
 
-private data class StreamCompletion(
-    val pendingRequestIds: Set<RequestId>,
-    val deferred: CompletableDeferred<Unit>,
-)
+private data class StreamCompletion(val pendingRequestIds: Set<RequestId>, val deferred: CompletableDeferred<Unit>)
 
 /**
  * Server transport for Streamable HTTP: this implements the MCP Streamable HTTP transport specification.
