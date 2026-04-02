@@ -29,6 +29,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.REQUEST_TIMEOUT
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.job
 import kotlinx.coroutines.sync.Mutex
@@ -55,6 +56,11 @@ private const val MIN_PRIMING_EVENT_PROTOCOL_VERSION = "2025-11-25"
  * Otherwise, the session is not null.
  */
 private data class SessionContext(val session: ServerSSESession?, val call: ApplicationCall)
+
+private data class StreamCompletion(
+    val pendingRequestIds: Set<RequestId>,
+    val deferred: CompletableDeferred<Unit>,
+)
 
 /**
  * Server transport for Streamable HTTP: this implements the MCP Streamable HTTP transport specification.
@@ -164,6 +170,8 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
     private val streamsMapping: ConcurrentMap<String, SessionContext> = ConcurrentMap()
     private val requestToStreamMapping: ConcurrentMap<RequestId, String> = ConcurrentMap()
     private val requestToResponseMapping: ConcurrentMap<RequestId, JSONRPCMessage> = ConcurrentMap()
+
+    private val streamCompletions: ConcurrentMap<String, StreamCompletion> = ConcurrentMap()
 
     private val sessionMutex = Mutex()
     private val streamMutex = Mutex()
@@ -278,6 +286,9 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 requestToResponseMapping.remove(requestId)
                 requestToStreamMapping.remove(requestId)
             }
+
+            // Signal batch completion so handlePostRequest can return
+            streamCompletions.remove(streamId)?.deferred?.complete(Unit)
         }
     }
 
@@ -292,6 +303,8 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             streamsMapping.clear()
             requestToStreamMapping.clear()
             requestToResponseMapping.clear()
+            streamCompletions.values.forEach { it.deferred.complete(Unit) }
+            streamCompletions.clear()
         }
     }
 
@@ -404,7 +417,18 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             }
             call.coroutineContext.job.invokeOnCompletion { streamsMapping.remove(streamId) }
 
+            // Signal when all responses for this batch have been sent.
+            // Request handlers may run asynchronously (launched by Protocol),
+            // so we must not return before the responses are delivered.
+            val batchComplete = if (hasRequest) CompletableDeferred<Unit>() else null
+            if (batchComplete != null) {
+                val requestIds = messages.filterIsInstance<JSONRPCRequest>().map { it.id }.toSet()
+                streamCompletions[streamId] = StreamCompletion(requestIds, batchComplete)
+            }
+
             messages.forEach { message -> _onMessage(message) }
+
+            batchComplete?.await()
         } catch (e: Exception) {
             call.reject(
                 HttpStatusCode.BadRequest,
