@@ -233,7 +233,8 @@ public final class io/modelcontextprotocol/kotlin/sdk/server/SseServerTransport 
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/server/StdioServerTransport : io/modelcontextprotocol/kotlin/sdk/server/AbstractServerTransport {
-	public fun <init> (Lkotlinx/io/Source;Lkotlinx/io/Sink;)V
+	public fun <init> (Lkotlinx/io/Source;Lkotlinx/io/Sink;Lkotlinx/coroutines/CoroutineScope;)V
+	public synthetic fun <init> (Lkotlinx/io/Source;Lkotlinx/io/Sink;Lkotlinx/coroutines/CoroutineScope;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/server/StreamableHttpServerTransport : io/modelcontextprotocol/kotlin/sdk/server/AbstractServerTransport {

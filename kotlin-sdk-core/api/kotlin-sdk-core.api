@@ -55,7 +55,8 @@ public final class io/modelcontextprotocol/kotlin/sdk/shared/ClientTransportStat
 }
 
 public abstract class io/modelcontextprotocol/kotlin/sdk/shared/Protocol {
-	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/shared/ProtocolOptions;)V
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/shared/ProtocolOptions;Lkotlinx/coroutines/CoroutineDispatcher;)V
+	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/shared/ProtocolOptions;Lkotlinx/coroutines/CoroutineDispatcher;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	protected abstract fun assertCapabilityForMethod (Lio/modelcontextprotocol/kotlin/sdk/types/Method;)V
 	protected abstract fun assertNotificationCapability (Lio/modelcontextprotocol/kotlin/sdk/types/Method;)V
 	public abstract fun assertRequestHandlerCapability (Lio/modelcontextprotocol/kotlin/sdk/types/Method;)V
