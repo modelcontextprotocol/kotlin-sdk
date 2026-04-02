@@ -13,8 +13,9 @@ import io.ktor.server.response.header
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondNullable
 import io.ktor.server.sse.ServerSSESession
+import io.github.oshai.kotlinlogging.KLogger
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.util.collections.ConcurrentMap
-import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
 import io.modelcontextprotocol.kotlin.sdk.types.DEFAULT_NEGOTIATED_PROTOCOL_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCEmptyMessage
@@ -75,7 +76,7 @@ private data class SessionContext(val session: ServerSSESession?, val call: Appl
  */
 @OptIn(ExperimentalUuidApi::class, ExperimentalAtomicApi::class)
 @Suppress("TooManyFunctions")
-public class StreamableHttpServerTransport(private val configuration: Configuration) : AbstractTransport() {
+public class StreamableHttpServerTransport(private val configuration: Configuration) : AbstractServerTransport() {
 
     @Deprecated("Use default constructor with explicit Configuration()")
     public constructor() : this(configuration = Configuration())
@@ -157,7 +158,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
     private var onSessionInitialized: ((sessionId: String) -> Unit)? = null
     private var onSessionClosed: ((sessionId: String) -> Unit)? = null
 
-    private val started: AtomicBoolean = AtomicBoolean(false)
+    override val logger: KLogger = KotlinLogging.logger {}
     private val initialized: AtomicBoolean = AtomicBoolean(false)
 
     private val streamsMapping: ConcurrentMap<String, SessionContext> = ConcurrentMap()
@@ -205,15 +206,13 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         onSessionClosed = block
     }
 
-    override suspend fun start() {
-        check(started.compareAndSet(expectedValue = false, newValue = true)) {
-            "StreamableHttpServerTransport already started! If using Server class, " +
-                "note that connect() calls start() automatically."
-        }
+    override suspend fun initialize() {
+        // No transport-specific initialization needed.
+        // HTTP requests are handled per-call via handleRequest().
     }
 
     @Suppress("CyclomaticComplexMethod", "ReturnCount")
-    override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
+    override suspend fun performSend(message: JSONRPCMessage, options: TransportSendOptions?) {
         val responseRequestId: RequestId? = when (message) {
             is JSONRPCResponse -> message.id
             is JSONRPCError -> message.id
@@ -282,7 +281,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         }
     }
 
-    override suspend fun close() {
+    override suspend fun closeResources() {
         streamMutex.withLock {
             streamsMapping.values.forEach {
                 try {
@@ -293,7 +292,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             streamsMapping.clear()
             requestToStreamMapping.clear()
             requestToResponseMapping.clear()
-            invokeOnCloseCallback()
         }
     }
 
