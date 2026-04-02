@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes the internal architecture of the MCP Kotlin SDK. It covers both client and server sides, the transport abstraction, state management, and concurrency model. All diagrams use Mermaid syntax and render in GitHub, IntelliJ, and most Markdown viewers.
+This document describes the internal architecture of the MCP Kotlin SDK. It covers both client and server sides, the transport abstraction, state management, and concurrency model. 
 
 ## Layered Design
 
@@ -115,6 +115,8 @@ classDiagram
 **`SseClientTransport`** implements the legacy HTTP+SSE transport (protocol version 2024-11-05). It's kept for backward compatibility with older servers.
 
 **`ChannelTransport`** (in `kotlin-sdk-testing`) connects a client and server through coroutine channels. `createLinkedPair()` returns two transports wired back-to-back — useful for tests that need to exercise the full protocol stack without network I/O.
+
+> **Deprecated transports:** `WebSocketClientTransport` and `SseClientTransport` are legacy transports from earlier MCP protocol versions. They still work but receive no new features. Use `StreamableHttpClientTransport` for all new HTTP-based integrations — it subsumes both SSE and WebSocket use cases and supports session management, resumption, and server-side disconnect.
 
 ### Client Transport State Machine
 
@@ -260,6 +262,8 @@ classDiagram
     Server *-- FeatureRegistry : tools, prompts, resources
     ServerSession --> Transport : uses
 ```
+
+> **Deprecated transports:** `SseServerTransport` and `WebSocketMcpServerTransport` are legacy server transports. They extend `AbstractTransport` directly (not `AbstractServerTransport`) and use ad-hoc `AtomicBoolean` state guards instead of the state machine. They still function but are not actively developed. New servers should use `StdioServerTransport` or `StreamableHttpServerTransport`.
 
 ### Server Transport State Machine
 
