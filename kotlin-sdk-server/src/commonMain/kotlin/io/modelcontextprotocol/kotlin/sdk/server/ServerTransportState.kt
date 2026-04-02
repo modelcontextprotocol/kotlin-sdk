@@ -1,4 +1,4 @@
-package io.modelcontextprotocol.kotlin.sdk.shared
+package io.modelcontextprotocol.kotlin.sdk.server
 
 /**
  * States of a server transport within the protocol lifecycle.
@@ -6,7 +6,7 @@ package io.modelcontextprotocol.kotlin.sdk.shared
  * These states model the lifecycle of a server-side transport connection,
  * from creation through active message exchange to shutdown.
  *
- * Unlike [ClientTransportState], server transports do not support reconnection —
+ * Unlike [io.modelcontextprotocol.kotlin.sdk.shared.ClientTransportState], server transports do not support reconnection —
  * when a client disconnects, the server transport closes. Session recovery
  * on reconnect is handled at the [io.modelcontextprotocol.kotlin.sdk.server.Server] level.
  */

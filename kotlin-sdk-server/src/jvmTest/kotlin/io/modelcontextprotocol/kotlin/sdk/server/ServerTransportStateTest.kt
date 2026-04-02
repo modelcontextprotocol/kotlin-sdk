@@ -1,4 +1,4 @@
-package io.modelcontextprotocol.kotlin.sdk.shared
+package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe

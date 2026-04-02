@@ -1,3 +1,20 @@
+public abstract class io/modelcontextprotocol/kotlin/sdk/server/AbstractServerTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport {
+	public fun <init> ()V
+	protected final fun checkState (Lio/modelcontextprotocol/kotlin/sdk/server/ServerTransportState;Lkotlin/jvm/functions/Function1;)V
+	public static synthetic fun checkState$default (Lio/modelcontextprotocol/kotlin/sdk/server/AbstractServerTransport;Lio/modelcontextprotocol/kotlin/sdk/server/ServerTransportState;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	protected abstract fun closeResources (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	protected abstract fun getLogger ()Lio/github/oshai/kotlinlogging/KLogger;
+	protected final fun getState ()Lio/modelcontextprotocol/kotlin/sdk/server/ServerTransportState;
+	protected abstract fun initialize (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	protected abstract fun performSend (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun performSend$default (Lio/modelcontextprotocol/kotlin/sdk/server/AbstractServerTransport;Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public fun send (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	protected final fun stateTransition (Lio/modelcontextprotocol/kotlin/sdk/server/ServerTransportState;Lio/modelcontextprotocol/kotlin/sdk/server/ServerTransportState;)V
+	protected final fun updateState (Lio/modelcontextprotocol/kotlin/sdk/server/ServerTransportState;)V
+}
+
 public abstract interface class io/modelcontextprotocol/kotlin/sdk/server/ClientConnection {
 	public abstract fun createElicitation (Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun createElicitation (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -190,6 +207,19 @@ public class io/modelcontextprotocol/kotlin/sdk/server/ServerSession : io/modelc
 	public final fun sendResourceListChanged (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun sendResourceUpdated (Lio/modelcontextprotocol/kotlin/sdk/types/ResourceUpdatedNotification;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun sendToolListChanged (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/server/ServerTransportState : java/lang/Enum {
+	public static final field Active Lio/modelcontextprotocol/kotlin/sdk/server/ServerTransportState;
+	public static final field InitializationFailed Lio/modelcontextprotocol/kotlin/sdk/server/ServerTransportState;
+	public static final field Initializing Lio/modelcontextprotocol/kotlin/sdk/server/ServerTransportState;
+	public static final field New Lio/modelcontextprotocol/kotlin/sdk/server/ServerTransportState;
+	public static final field ShutdownFailed Lio/modelcontextprotocol/kotlin/sdk/server/ServerTransportState;
+	public static final field ShuttingDown Lio/modelcontextprotocol/kotlin/sdk/server/ServerTransportState;
+	public static final field Stopped Lio/modelcontextprotocol/kotlin/sdk/server/ServerTransportState;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/modelcontextprotocol/kotlin/sdk/server/ServerTransportState;
+	public static fun values ()[Lio/modelcontextprotocol/kotlin/sdk/server/ServerTransportState;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/server/SseServerTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport {
