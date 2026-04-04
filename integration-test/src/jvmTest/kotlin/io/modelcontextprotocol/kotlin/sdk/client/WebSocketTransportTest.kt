@@ -6,12 +6,13 @@ import io.modelcontextprotocol.kotlin.sdk.server.mcpWebSocket
 import io.modelcontextprotocol.kotlin.sdk.server.mcpWebSocketTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.BaseTransportTest
 import kotlinx.coroutines.CompletableDeferred
-import kotlin.test.Ignore
-import kotlin.test.Test
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
+import java.util.concurrent.TimeUnit
 
+@Timeout(30, unit = TimeUnit.SECONDS)
 class WebSocketTransportTest : BaseTransportTest() {
     @Test
-    @Ignore // "Test disabled for investigation #17"
     fun `should start then close cleanly`() = testApplication {
         install(WebSockets)
         routing {
@@ -26,7 +27,6 @@ class WebSocketTransportTest : BaseTransportTest() {
     }
 
     @Test
-    @Ignore // "Test disabled for investigation #17"
     fun `should read messages`() = testApplication {
         val clientFinished = CompletableDeferred<Unit>()
 
