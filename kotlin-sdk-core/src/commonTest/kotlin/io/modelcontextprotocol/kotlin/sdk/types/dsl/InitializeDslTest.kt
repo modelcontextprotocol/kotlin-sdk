@@ -5,6 +5,7 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.buildInitializeRequest
 import kotlinx.serialization.json.buildJsonObject
@@ -30,6 +31,11 @@ class InitializeDslTest {
                 experimental {
                     put("custom", true)
                 }
+                extensions(
+                    mapOf(
+                        "io.modelcontextprotocol/ui" to EmptyJsonObject,
+                    ),
+                )
             }
             info(
                 name = "TestClient",
@@ -45,6 +51,9 @@ class InitializeDslTest {
             roots?.listChanged shouldBe true
             elicitation?.get("mode")?.jsonPrimitive?.content shouldBe "interactive"
             experimental?.get("custom")?.jsonPrimitive?.content shouldBe "true"
+            extensions shouldNotBeNull {
+                get("io.modelcontextprotocol/ui") shouldBe EmptyJsonObject
+            }
         }
         request.params.clientInfo.shouldNotBeNull {
             name shouldBe "TestClient"
@@ -74,6 +83,9 @@ class InitializeDslTest {
         val samplingObj = buildJsonObject { put("key", "value") }
         val elicitationObj = buildJsonObject { put("key", "value") }
         val experimentalObj = buildJsonObject { put("key", "value") }
+        val extensionsMap = mapOf(
+            "io.modelcontextprotocol/ui" to buildJsonObject { put("key", "value") },
+        )
 
         val request = buildInitializeRequest {
             protocolVersion = "1.0"
@@ -81,6 +93,7 @@ class InitializeDslTest {
                 sampling(samplingObj)
                 elicitation(elicitationObj)
                 experimental(experimentalObj)
+                extensions(extensionsMap)
             }
             info("Test", "1.0")
         }
@@ -89,6 +102,7 @@ class InitializeDslTest {
             sampling shouldBe samplingObj
             elicitation shouldBe elicitationObj
             experimental shouldBe experimentalObj
+            extensions shouldBe extensionsMap
         }
     }
 

@@ -4,7 +4,9 @@ import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
+import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.types.buildInitializeRequest
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.double
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
@@ -31,6 +33,7 @@ class CapabilitiesDslTest {
             roots.shouldBeNull()
             elicitation.shouldBeNull()
             experimental.shouldBeNull()
+            extensions.shouldBeNull()
         }
     }
 
@@ -56,6 +59,13 @@ class CapabilitiesDslTest {
                     put("beta", false)
                     put("maxConcurrency", 10)
                 }
+                extensions(
+                    mapOf(
+                        "io.modelcontextprotocol/ui" to buildJsonObject {
+                            put("mimeTypes", "text/html")
+                        },
+                    ),
+                )
             }
             info("Test", "1.0")
         }
@@ -79,6 +89,11 @@ class CapabilitiesDslTest {
                 get("version")?.jsonPrimitive?.content shouldBe "1.0"
                 get("beta")?.jsonPrimitive?.content shouldBe "false"
                 get("maxConcurrency")?.jsonPrimitive?.content shouldBe "10"
+            }
+            extensions shouldNotBeNull {
+                get("io.modelcontextprotocol/ui") shouldNotBeNull {
+                    get("mimeTypes")?.jsonPrimitive?.content shouldBe "text/html"
+                }
             }
         }
     }
@@ -108,6 +123,50 @@ class CapabilitiesDslTest {
             info("Test", "1.0")
         }
         requestNull.params.capabilities.roots?.listChanged.shouldBeNull()
+    }
+
+    @Test
+    fun `capabilities should build with extensions containing empty settings`() {
+        val request = buildInitializeRequest {
+            protocolVersion = "2024-11-05"
+            capabilities {
+                extensions(
+                    mapOf(
+                        "io.modelcontextprotocol/ui" to EmptyJsonObject,
+                        "com.example/custom" to EmptyJsonObject,
+                    ),
+                )
+            }
+            info("Test", "1.0")
+        }
+
+        request.params.capabilities.shouldNotBeNull {
+            extensions shouldNotBeNull {
+                size shouldBe 2
+                get("io.modelcontextprotocol/ui") shouldBe EmptyJsonObject
+                get("com.example/custom") shouldBe EmptyJsonObject
+            }
+        }
+    }
+
+    @Test
+    fun `capabilities should overwrite extensions when set multiple times`() {
+        val request = buildInitializeRequest {
+            protocolVersion = "2024-11-05"
+            capabilities {
+                extensions(mapOf("io.modelcontextprotocol/ui" to EmptyJsonObject))
+                extensions(mapOf("com.example/custom" to EmptyJsonObject)) // Should overwrite
+            }
+            info("Test", "1.0")
+        }
+
+        request.params.capabilities.shouldNotBeNull {
+            extensions shouldNotBeNull {
+                size shouldBe 1
+                get("com.example/custom") shouldBe EmptyJsonObject
+                get("io.modelcontextprotocol/ui").shouldBeNull()
+            }
+        }
     }
 
     @Test

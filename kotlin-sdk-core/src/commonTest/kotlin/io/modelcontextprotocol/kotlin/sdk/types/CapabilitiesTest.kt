@@ -183,6 +183,53 @@ class CapabilitiesTest {
     }
 
     @Test
+    fun `should serialize ClientCapabilities with extensions`() {
+        val extensions = mapOf(
+            "io.modelcontextprotocol/ui" to buildJsonObject {
+                put("mimeTypes", buildJsonObject { put("text/html", true) })
+            },
+        )
+        val capabilities = ClientCapabilities(
+            extensions = extensions,
+        )
+        verifySerialization(
+            capabilities,
+            McpJson,
+            """
+            {
+              "extensions": {
+                "io.modelcontextprotocol/ui": {
+                  "mimeTypes": {
+                    "text/html": true
+                  }
+                }
+              }
+            }
+            """.trimIndent(),
+        )
+    }
+
+    @Test
+    fun `should serialize ClientCapabilities with empty extensions settings`() {
+        val capabilities = ClientCapabilities(
+            extensions = mapOf(
+                "io.modelcontextprotocol/ui" to EmptyJsonObject,
+            ),
+        )
+        verifySerialization(
+            capabilities,
+            McpJson,
+            """
+            {
+              "extensions": {
+                "io.modelcontextprotocol/ui": {}
+              }
+            }
+            """.trimIndent(),
+        )
+    }
+
+    @Test
     fun `should serialize ClientCapabilities with experimental`() {
         val experimental = buildJsonObject {
             put(
@@ -215,11 +262,15 @@ class CapabilitiesTest {
         val experimental = buildJsonObject {
             put("feature1", buildJsonObject { put("enabled", true) })
         }
+        val extensions = mapOf(
+            "io.modelcontextprotocol/ui" to EmptyJsonObject,
+        )
         val capabilities = ClientCapabilities(
             sampling = ClientCapabilities.sampling,
             roots = ClientCapabilities.Roots(listChanged = true),
             elicitation = ClientCapabilities.elicitation,
             experimental = experimental,
+            extensions = extensions,
         )
         verifySerialization(
             capabilities,
@@ -235,6 +286,9 @@ class CapabilitiesTest {
                 "feature1": {
                   "enabled": true
                 }
+              },
+              "extensions": {
+                "io.modelcontextprotocol/ui": {}
               }
             }
             """.trimIndent(),
@@ -270,6 +324,7 @@ class CapabilitiesTest {
         assertNull(capabilities.roots)
         assertNull(capabilities.elicitation)
         assertNull(capabilities.experimental)
+        assertNull(capabilities.extensions)
     }
 
     @Test
@@ -278,6 +333,11 @@ class CapabilitiesTest {
             sampling = ClientCapabilities.sampling,
             roots = ClientCapabilities.Roots(listChanged = false),
             elicitation = ClientCapabilities.elicitation,
+            extensions = mapOf(
+                "io.modelcontextprotocol/ui" to buildJsonObject {
+                    put("mimeTypes", buildJsonObject { put("text/html", true) })
+                },
+            ),
         )
 
         verifySerializationRoundTrip(original, McpJson)
@@ -467,6 +527,32 @@ class CapabilitiesTest {
     }
 
     @Test
+    fun `should serialize ServerCapabilities with extensions`() {
+        val capabilities = ServerCapabilities(
+            extensions = mapOf(
+                "io.modelcontextprotocol/ui" to EmptyJsonObject,
+                "com.example/custom" to buildJsonObject {
+                    put("setting", "value")
+                },
+            ),
+        )
+        verifySerialization(
+            capabilities,
+            McpJson,
+            """
+            {
+              "extensions": {
+                "io.modelcontextprotocol/ui": {},
+                "com.example/custom": {
+                  "setting": "value"
+                }
+              }
+            }
+            """.trimIndent(),
+        )
+    }
+
+    @Test
     fun `should serialize ServerCapabilities with experimental`() {
         val experimental = buildJsonObject {
             put(
@@ -499,6 +585,9 @@ class CapabilitiesTest {
         val experimental = buildJsonObject {
             put("feature1", buildJsonObject { put("enabled", true) })
         }
+        val extensions = mapOf(
+            "io.modelcontextprotocol/ui" to EmptyJsonObject,
+        )
         val capabilities = ServerCapabilities(
             tools = ServerCapabilities.Tools(listChanged = true),
             resources = ServerCapabilities.Resources(
@@ -509,6 +598,7 @@ class CapabilitiesTest {
             logging = ServerCapabilities.Logging,
             completions = ServerCapabilities.Completions,
             experimental = experimental,
+            extensions = extensions,
         )
         verifySerialization(
             capabilities,
@@ -531,6 +621,9 @@ class CapabilitiesTest {
                 "feature1": {
                   "enabled": true
                 }
+              },
+              "extensions": {
+                "io.modelcontextprotocol/ui": {}
               }
             }
             """.trimIndent(),
@@ -578,6 +671,7 @@ class CapabilitiesTest {
         assertNull(capabilities.logging)
         assertNull(capabilities.completions)
         assertNull(capabilities.experimental)
+        assertNull(capabilities.extensions)
     }
 
     @Test
@@ -590,6 +684,9 @@ class CapabilitiesTest {
             ),
             prompts = ServerCapabilities.Prompts(listChanged = true),
             logging = ServerCapabilities.Logging,
+            extensions = mapOf(
+                "io.modelcontextprotocol/ui" to EmptyJsonObject,
+            ),
         )
 
         verifySerializationRoundTrip(original, McpJson)

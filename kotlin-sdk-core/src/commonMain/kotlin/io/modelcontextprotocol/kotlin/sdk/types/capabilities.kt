@@ -45,6 +45,9 @@ public data class Implementation(
  * @property elicitation Present if the client supports elicitation from the server.
  * @property experimental Experimental, non-standard capabilities that the client supports.
  * Keys are capability names, values are capability-specific configuration objects.
+ * @property extensions Optional extensions that the client supports.
+ * Keys are extension identifiers (e.g., `"io.modelcontextprotocol/ui"`),
+ * values are extension-specific settings objects.
  */
 @Serializable
 public data class ClientCapabilities(
@@ -52,6 +55,7 @@ public data class ClientCapabilities(
     public val roots: Roots? = null,
     public val elicitation: JsonObject? = null,
     public val experimental: JsonObject? = null,
+    public val extensions: Map<String, JsonObject>? = null,
 ) {
 
     /**
@@ -93,6 +97,9 @@ public data class ClientCapabilities(
  * @property completions Present if the server supports argument autocompletion suggestions.
  * Keys are capability names, values are capability-specific configuration objects.
  * @property experimental Experimental, non-standard capabilities that the server supports.
+ * @property extensions Optional extensions that the server supports.
+ * Keys are extension identifiers (e.g., `"io.modelcontextprotocol/ui"`),
+ * values are extension-specific settings objects.
  */
 @Serializable
 public data class ServerCapabilities(
@@ -102,6 +109,7 @@ public data class ServerCapabilities(
     val logging: JsonObject? = null,
     val completions: JsonObject? = null,
     val experimental: JsonObject? = null,
+    val extensions: Map<String, JsonObject>? = null,
 ) {
 
     /**

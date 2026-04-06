@@ -39,6 +39,7 @@ public class ClientCapabilitiesBuilder @PublishedApi internal constructor() {
     private var sampling: JsonObject? = null
     private var roots: ClientCapabilities.Roots? = null
     private var elicitation: JsonObject? = null
+    private var extensions: Map<String, JsonObject>? = null
     private var experimental: JsonObject? = null
 
     /**
@@ -133,6 +134,30 @@ public class ClientCapabilitiesBuilder @PublishedApi internal constructor() {
     public fun elicitation(block: JsonObjectBuilder.() -> Unit): Unit = elicitation(buildJsonObject(block))
 
     /**
+     * Defines extensions that the client supports.
+     *
+     * Extension identifiers use the format `{vendor-prefix}/{extension-name}`,
+     * e.g., `"io.modelcontextprotocol/ui"`. Each value is an extension-specific
+     * settings object; an empty [JsonObject] indicates no settings.
+     *
+     * Example:
+     * ```kotlin
+     * capabilities {
+     *     extensions(mapOf(
+     *         "io.modelcontextprotocol/ui" to buildJsonObject {
+     *             put("mimeTypes", JsonArray(listOf(JsonPrimitive("text/html"))))
+     *         }
+     *     ))
+     * }
+     * ```
+     *
+     * @param value The map of extension identifiers to their settings
+     */
+    public fun extensions(value: Map<String, JsonObject>) {
+        this.extensions = value
+    }
+
+    /**
      * Defines experimental, non-standard capabilities that the client supports.
      *
      * Example:
@@ -177,6 +202,7 @@ public class ClientCapabilitiesBuilder @PublishedApi internal constructor() {
         sampling = sampling,
         roots = roots,
         elicitation = elicitation,
+        extensions = extensions,
         experimental = experimental,
     )
 }
