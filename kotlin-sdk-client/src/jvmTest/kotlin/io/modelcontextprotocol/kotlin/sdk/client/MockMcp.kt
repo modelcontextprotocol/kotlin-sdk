@@ -25,7 +25,7 @@ const val MCP_SESSION_ID_HEADER = "MCP-Session-Id"
 
 internal class MockMcp(verbose: Boolean = false) : AutoCloseable {
 
-    private val mokksy: Mokksy = Mokksy(verbose = verbose).apply {
+    private val mokksy = Mokksy(verbose = verbose).apply {
         start()
     }
 
@@ -90,7 +90,7 @@ internal class MockMcp(verbose: Boolean = false) : AutoCloseable {
         expectedSessionId: String? = null,
         vararg bodyPredicates: (JSONRPCRequest) -> Boolean,
     ): BuildingStep<JSONRPCRequest> = mokksy.method(
-        configuration = StubConfiguration(removeAfterMatch = true),
+        configuration = StubConfiguration.once(),
         httpMethod = httpMethod,
         requestType = JSONRPCRequest::class,
     ) {
@@ -219,20 +219,18 @@ internal class MockMcp(verbose: Boolean = false) : AutoCloseable {
             sessionId = sessionId,
         ) respondsWithSseStream {
             headers += MCP_SESSION_ID_HEADER to sessionId
-            this.flow = block.invoke()
+            flow = block.invoke()
         }
     }
 
     fun mockUnsubscribeRequest(sessionId: String) {
         mokksy.delete(
-            configuration = StubConfiguration(removeAfterMatch = true),
+            configuration = StubConfiguration.once(),
             requestType = JSONRPCRequest::class,
         ) {
             path("/mcp")
             containsHeader(MCP_SESSION_ID_HEADER, sessionId)
-        } respondsWith {
-            body = null
-        }
+        } respondsWithStatus HttpStatusCode.OK
     }
 
     override fun close() {
