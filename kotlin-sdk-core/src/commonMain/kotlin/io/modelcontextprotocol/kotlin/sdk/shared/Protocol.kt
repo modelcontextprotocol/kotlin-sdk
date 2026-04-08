@@ -42,6 +42,7 @@ import kotlin.time.Duration.Companion.seconds
 
 private val logger = KotlinLogging.logger { }
 
+/** Default implementation name used in MCP handshake. */
 public const val IMPLEMENTATION_NAME: String = "mcp-ktor"
 
 /**
@@ -51,6 +52,8 @@ public typealias ProgressCallback = (Progress) -> Unit
 
 /**
  * Additional initialization options.
+ *
+ * @property timeout default timeout for outgoing requests
  */
 public open class ProtocolOptions(
     /**
@@ -97,9 +100,13 @@ public class RequestOptions(
     public val onProgress: ProgressCallback? = null,
     public val timeout: Duration = DEFAULT_REQUEST_TIMEOUT,
 ) : TransportSendOptions(relatedRequestId, resumptionToken, onResumptionToken) {
+    /** Destructuring component for [onProgress]. */
     public operator fun component4(): ProgressCallback? = onProgress
+
+    /** Destructuring component for [timeout]. */
     public operator fun component5(): Duration = timeout
 
+    /** Creates a copy of this [RequestOptions] with the specified fields replaced. */
     public fun copy(
         relatedRequestId: RequestId? = this.relatedRequestId,
         resumptionToken: String? = this.resumptionToken,
@@ -139,6 +146,12 @@ internal val COMPLETED = CompletableDeferred(Unit).also { it.complete(Unit) }
 /**
  * Implements MCP protocol framing on top of a pluggable transport, including
  * features like request/response linking, notifications, and progress.
+ *
+ * @property transport the active transport, or `null` if not connected
+ * @property requestHandlers registered request handlers keyed by method name
+ * @property notificationHandlers registered notification handlers keyed by method name
+ * @property responseHandlers pending response handlers keyed by request ID
+ * @property progressHandlers registered progress callbacks keyed by progress token
  */
 public abstract class Protocol(@PublishedApi internal val options: ProtocolOptions?) {
     public var transport: Transport? = null

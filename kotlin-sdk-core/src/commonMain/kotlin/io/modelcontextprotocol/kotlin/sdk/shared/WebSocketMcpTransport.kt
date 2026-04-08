@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
+/** WebSocket subprotocol identifier for MCP connections. */
 public const val MCP_SUBPROTOCOL: String = "mcp"
 
 private val logger = KotlinLogging.logger {}

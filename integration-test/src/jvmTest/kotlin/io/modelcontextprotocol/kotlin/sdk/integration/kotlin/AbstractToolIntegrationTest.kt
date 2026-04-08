@@ -14,6 +14,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.PaginatedRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
+import io.modelcontextprotocol.kotlin.sdk.types.Tool
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.Test
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.Locale
+import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
@@ -801,59 +803,72 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
 
     @Test
     fun testListToolsPagination() = runBlocking(Dispatchers.IO) {
-        val prefix = "paginated-tool-"
-        (0 until 5).forEach { i ->
-            val name = "$prefix$i"
-            server.addTool(name = name, description = "desc") { request ->
-                CallToolResult(content = listOf(TextContent(text = name)), structuredContent = buildJsonObject { put("name", name) })
-            }
-        }
+        val receivedCursors = CopyOnWriteArrayList<String?>()
+        val page1 = listOf(
+            Tool(name = "t-1", inputSchema = ToolSchema()),
+            Tool(name = "t-2", inputSchema = ToolSchema()),
+        )
+        val page2 = listOf(
+            Tool(name = "t-3", inputSchema = ToolSchema()),
+            Tool(name = "t-4", inputSchema = ToolSchema()),
+        )
+        val page3 = listOf(Tool(name = "t-5", inputSchema = ToolSchema()))
 
         server.sessions.forEach { (_, session) ->
             session.setRequestHandler<ListToolsRequest>(Method.Defined.ToolsList) { request, _ ->
-                val all = server.tools.values.map { it.tool }
-                val cursor = request.cursor?.toIntOrNull() ?: 0
-                val pageSize = 2
-                val page = all.drop(cursor).take(pageSize)
-                val next = if (cursor + page.size < all.size) (cursor + page.size).toString() else null
-                ListToolsResult(tools = page, nextCursor = next)
+                receivedCursors += request.cursor
+                when (request.cursor) {
+                    null -> ListToolsResult(tools = page1, nextCursor = "cursor-2")
+                    "cursor-2" -> ListToolsResult(tools = page2, nextCursor = "cursor-3")
+                    "cursor-3" -> ListToolsResult(tools = page3, nextCursor = null)
+                    else -> error("Unexpected cursor: ${request.cursor}")
+                }
             }
         }
 
-        val combinedNames = mutableListOf<String>()
-        var currentCursor: String? = null
-
+        val collected = mutableListOf<Tool>()
+        var cursor: String? = null
         do {
-            val request = if (currentCursor == null) {
+            val request = if (cursor == null) {
                 ListToolsRequest()
             } else {
-                ListToolsRequest(PaginatedRequestParams(cursor = currentCursor))
+                ListToolsRequest(PaginatedRequestParams(cursor = cursor))
             }
-
             val response = client.listTools(request)
-            combinedNames += response.tools.map { it.name }
-            currentCursor = response.nextCursor
-        } while (currentCursor != null)
+            collected += response.tools
+            cursor = response.nextCursor
+        } while (cursor != null)
 
-        val paginatedTools = combinedNames.filter { it.startsWith(prefix) }
-        assertEquals(5, paginatedTools.size, "Should have collected all 5 paginated tools")
+        assertEquals(
+            listOf(null, "cursor-2", "cursor-3"),
+            receivedCursors.toList(),
+            "Client must forward each nextCursor into the next request",
+        )
+        assertEquals(
+            listOf("t-1", "t-2", "t-3", "t-4", "t-5"),
+            collected.map { it.name },
+            "Client must accumulate pages in order without duplicates or reordering",
+        )
     }
 
     @Test
     fun testListToolsInvalidCursor() = runBlocking(Dispatchers.IO) {
+        val invalidCursor = "not-a-valid-cursor"
+
         server.sessions.forEach { (_, session) ->
-            session.setRequestHandler<ListToolsRequest>(Method.Defined.ToolsList) { request, _ ->
-                val cursor = request.cursor?.toIntOrNull() ?: throw IllegalArgumentException("Invalid cursor")
-                val all = server.tools.values.map { it.tool }
-                val page = all.drop(cursor).take(2)
-                ListToolsResult(tools = page)
+            session.setRequestHandler<ListToolsRequest>(Method.Defined.ToolsList) { _, _ ->
+                throw McpException(
+                    code = RPCError.ErrorCode.INVALID_PARAMS,
+                    message = "Invalid cursor: $invalidCursor",
+                )
             }
         }
 
         val exception = assertFailsWith<McpException> {
-            client.listTools(ListToolsRequest(PaginatedRequestParams(cursor = "bad")))
+            client.listTools(ListToolsRequest(PaginatedRequestParams(cursor = invalidCursor)))
         }
 
-        assertEquals(RPCError.ErrorCode.INTERNAL_ERROR, exception.code)
+        assertEquals(RPCError.ErrorCode.INVALID_PARAMS, exception.code)
+        assertEquals("Invalid cursor: $invalidCursor", exception.message)
     }
 }

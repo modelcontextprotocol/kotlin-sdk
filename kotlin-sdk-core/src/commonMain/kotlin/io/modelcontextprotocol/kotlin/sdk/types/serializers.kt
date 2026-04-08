@@ -241,6 +241,7 @@ private val serverNotificationDeserializers: Map<String, DeserializationStrategy
         Method.Defined.NotificationsResourcesListChanged.value to ResourceListChangedNotification.serializer(),
         Method.Defined.NotificationsToolsListChanged.value to ToolListChangedNotification.serializer(),
         Method.Defined.NotificationsPromptsListChanged.value to PromptListChangedNotification.serializer(),
+        Method.Defined.NotificationsElicitationComplete.value to ElicitationCompleteNotification.serializer(),
         Method.Defined.NotificationsTasksStatus.value to TaskStatusNotification.serializer(),
     )
 }

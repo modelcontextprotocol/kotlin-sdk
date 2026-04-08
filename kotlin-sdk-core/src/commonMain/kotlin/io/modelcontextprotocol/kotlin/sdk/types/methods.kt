@@ -4,6 +4,8 @@ import kotlinx.serialization.Serializable
 
 /**
  * Represents a method in the protocol, which can be predefined or custom.
+ *
+ * @property value the string representation of this method name
  */
 @Serializable(with = MethodSerializer::class)
 public sealed interface Method {
@@ -32,6 +34,7 @@ public sealed interface Method {
         NotificationsToolsListChanged("notifications/tools/list_changed"),
         NotificationsRootsListChanged("notifications/roots/list_changed"),
         NotificationsPromptsListChanged("notifications/prompts/list_changed"),
+        NotificationsElicitationComplete("notifications/elicitation/complete"),
         NotificationsTasksStatus("notifications/tasks/status"),
         ToolsList("tools/list"),
         ToolsCall("tools/call"),

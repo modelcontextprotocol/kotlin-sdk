@@ -7,6 +7,8 @@ import io.kotest.matchers.string.shouldNotBeBlank
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotification
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotificationParams
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsRequest
@@ -77,6 +79,8 @@ class ClientConnectionTest : AbstractServerFeaturesTest() {
         val loggingMessage = onClientNotification<LoggingMessageNotification>(Method.Defined.NotificationsMessage)
         val resourceUpdated =
             onClientNotification<ResourceUpdatedNotification>(Method.Defined.NotificationsResourcesUpdated)
+        val elicitationComplete =
+            onClientNotification<ElicitationCompleteNotification>(Method.Defined.NotificationsElicitationComplete)
 
         init {
             onClientRequest<ListRootsRequest, ListRootsResult>(Method.Defined.RootsList) {
@@ -109,6 +113,12 @@ class ClientConnectionTest : AbstractServerFeaturesTest() {
                 withClue("sendResourceUpdated() delivered wrong URI") {
                     resourceUri shouldBe "test://res"
                 }
+                withClue("sendElicitationComplete() did not deliver a notification to the client") {
+                    elicitationComplete.isCompleted shouldBe true
+                }
+                withClue("sendElicitationComplete() delivered wrong elicitationId") {
+                    elicitationComplete.await().params.elicitationId shouldBe "elicit-123"
+                }
                 capturedSessionId.shouldNotBeBlank()
             }
         }
@@ -128,6 +138,9 @@ class ClientConnectionTest : AbstractServerFeaturesTest() {
             ),
         )
         sendResourceUpdated(ResourceUpdatedNotification(ResourceUpdatedNotificationParams("test://res")))
+        sendElicitationComplete(
+            ElicitationCompleteNotification(ElicitationCompleteNotificationParams(elicitationId = "elicit-123")),
+        )
         cap.sessionId.complete(sessionId)
     }
 

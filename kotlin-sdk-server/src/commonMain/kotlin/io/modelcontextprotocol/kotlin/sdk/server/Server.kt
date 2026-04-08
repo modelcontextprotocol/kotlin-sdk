@@ -10,6 +10,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageResult
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitResult
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotification
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest
@@ -849,6 +850,16 @@ public open class Server(
      */
     public suspend fun sendPromptListChanged(sessionId: String) {
         clientConnection(sessionId).sendPromptListChanged()
+    }
+
+    /**
+     * Triggers [ClientConnection.sendElicitationComplete] for session by provided [sessionId].
+     *
+     * @param sessionId The session ID to send the elicitation complete notification to.
+     * @param notification Details of the completed elicitation.
+     */
+    public suspend fun sendElicitationComplete(sessionId: String, notification: ElicitationCompleteNotification) {
+        clientConnection(sessionId).sendElicitationComplete(notification)
     }
     // End the ServerSession / ClientConnection redirection section
 

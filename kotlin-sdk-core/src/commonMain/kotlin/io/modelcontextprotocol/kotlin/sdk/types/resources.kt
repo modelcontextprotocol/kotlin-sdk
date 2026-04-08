@@ -8,6 +8,9 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 
+/**
+ * Common interface for resource-like types that share URI, name, and description fields.
+ */
 @Serializable
 public sealed interface ResourceLike : WithMeta
 

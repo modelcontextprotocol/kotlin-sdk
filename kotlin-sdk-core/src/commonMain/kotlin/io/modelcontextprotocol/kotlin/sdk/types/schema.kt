@@ -24,6 +24,7 @@ public sealed interface PrimitiveSchemaDefinition
  * @property minLength Minimum string length.
  * @property maxLength Maximum string length.
  * @property format Optional format constraint (e.g., email, URI, date).
+ * @property type JSON Schema type discriminator, always `"string"`.
  * @property default Optional default value.
  */
 @Serializable
@@ -72,6 +73,7 @@ public sealed interface NumberSchemaDefinition : PrimitiveSchemaDefinition
  * @property description Optional description for the field.
  * @property minimum Minimum allowed value.
  * @property maximum Maximum allowed value.
+ * @property type JSON Schema type discriminator, always `"integer"`.
  * @property default Optional default value.
  */
 @Serializable
@@ -93,6 +95,7 @@ public data class IntegerSchema(
  * @property description Optional description for the field.
  * @property minimum Minimum allowed value.
  * @property maximum Maximum allowed value.
+ * @property type JSON Schema type discriminator, always `"number"`.
  * @property default Optional default value.
  */
 @Serializable
@@ -112,6 +115,7 @@ public data class DoubleSchema(
  *
  * @property title Optional display title for the field.
  * @property description Optional description for the field.
+ * @property type JSON Schema type discriminator, always `"boolean"`.
  * @property default Optional default value.
  */
 @Serializable
@@ -157,6 +161,7 @@ public sealed interface SingleSelectEnumSchema : EnumSchemaDefinition
  * @property title Optional display title for the field.
  * @property description Optional description for the field.
  * @property enumValues Array of enum values to choose from.
+ * @property type JSON Schema type discriminator, always `"string"`.
  * @property default Optional default value.
  */
 @Serializable
@@ -177,6 +182,7 @@ public data class UntitledSingleSelectEnumSchema(
  * @property title Optional display title for the field.
  * @property description Optional description for the field.
  * @property oneOf Array of enum options with values and display labels.
+ * @property type JSON Schema type discriminator, always `"string"`.
  * @property default Optional default value.
  */
 @Serializable
@@ -199,6 +205,7 @@ public data class TitledSingleSelectEnumSchema(
  * @property description Optional description for the field.
  * @property enumValues Array of enum values to choose from.
  * @property enumNames Display names for enum values. Non-standard according to JSON Schema 2020-12.
+ * @property type JSON Schema type discriminator, always `"string"`.
  * @property default Optional default value.
  */
 @Deprecated("Use TitledSingleSelectEnumSchema instead")
@@ -231,6 +238,7 @@ public sealed interface MultiSelectEnumSchema : EnumSchemaDefinition
  * @property minItems Minimum number of items to select.
  * @property maxItems Maximum number of items to select.
  * @property items Schema for the array items.
+ * @property type JSON Schema type discriminator, always `"array"`.
  * @property default Optional default value.
  */
 @Serializable
@@ -248,6 +256,7 @@ public data class UntitledMultiSelectEnumSchema(
     /**
      * Schema for the array items with plain enum values.
      *
+     * @property type JSON Schema type discriminator, always `"string"`.
      * @property enumValues Array of enum values to choose from.
      */
     @Serializable
@@ -268,6 +277,7 @@ public data class UntitledMultiSelectEnumSchema(
  * @property minItems Minimum number of items to select.
  * @property maxItems Maximum number of items to select.
  * @property items Schema for array items with enum options and display labels.
+ * @property type JSON Schema type discriminator, always `"array"`.
  * @property default Optional default value.
  */
 @Serializable

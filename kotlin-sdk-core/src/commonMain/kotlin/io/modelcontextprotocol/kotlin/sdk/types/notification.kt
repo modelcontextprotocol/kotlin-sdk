@@ -11,6 +11,9 @@ import kotlinx.serialization.json.JsonObject
 
 /**
  * Represents a notification in the protocol.
+ *
+ * @property method the notification method identifier
+ * @property params optional notification parameters
  */
 @Serializable(with = NotificationPolymorphicSerializer::class)
 public sealed interface Notification {
@@ -73,6 +76,7 @@ public class Progress(
  * @property method The custom method name. By convention, custom methods often contain
  * organization-specific prefixes (e.g., "mycompany/custom_event").
  * @property params Raw JSON parameters for the custom notification, if present.
+ * @property meta optional metadata for this notification
  */
 @Serializable
 public data class CustomNotification(override val method: Method, override val params: BaseNotificationParams? = null) :
@@ -329,6 +333,36 @@ public data class RootsListChangedNotification(override val params: BaseNotifica
     @EncodeDefault
     override val method: Method = Method.Defined.NotificationsRootsListChanged
 }
+
+// ============================================================================
+// Elicitation Complete Notification
+// ============================================================================
+
+/**
+ * An optional notification from the server to the client,
+ * informing it of a completion of an out-of-band elicitation request.
+ *
+ * @property params Parameters identifying which elicitation completed.
+ */
+@Serializable
+public data class ElicitationCompleteNotification(override val params: ElicitationCompleteNotificationParams) :
+    ServerNotification {
+    @EncodeDefault
+    override val method: Method = Method.Defined.NotificationsElicitationComplete
+}
+
+/**
+ * Parameters for a notifications/elicitation/complete notification.
+ *
+ * @property elicitationId The ID of the elicitation that completed.
+ * @property meta Optional metadata for this notification.
+ */
+@Serializable
+public data class ElicitationCompleteNotificationParams(
+    val elicitationId: String,
+    @SerialName("_meta")
+    override val meta: JsonObject? = null,
+) : NotificationParams
 
 // ============================================================================
 // Tools List Changed Notification

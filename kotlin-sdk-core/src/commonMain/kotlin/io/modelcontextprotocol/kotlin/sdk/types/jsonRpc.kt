@@ -14,6 +14,7 @@ import kotlin.jvm.JvmOverloads
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
+/** JSON-RPC protocol version used by MCP (`"2.0"`). */
 public const val JSONRPC_VERSION: String = "2.0"
 
 /**
@@ -40,12 +41,20 @@ public fun RequestId(value: Long): RequestId = RequestId.NumberId(value)
 @Serializable(with = RequestIdPolymorphicSerializer::class)
 public sealed interface RequestId {
 
-    /** A string-based request identifier. */
+    /**
+     * A string-based request identifier.
+     *
+     * @property value the string representation of this request ID
+     */
     @JvmInline
     @Serializable
     public value class StringId(public val value: String) : RequestId
 
-    /** A numeric request identifier. */
+    /**
+     * A numeric request identifier.
+     *
+     * @property value the numeric representation of this request ID
+     */
     @JvmInline
     @Serializable
     public value class NumberId(public val value: Long) : RequestId
@@ -95,12 +104,17 @@ internal fun JSONRPCNotification.fromJSON(): Notification =
  * Base interface for all JSON-RPC 2.0 messages.
  *
  * All messages in the MCP protocol follow the JSON-RPC 2.0 specification.
+ *
+ * @property jsonrpc the JSON-RPC protocol version, always `"2.0"`
  */
 @Serializable(with = JSONRPCMessagePolymorphicSerializer::class)
 public sealed interface JSONRPCMessage {
     public val jsonrpc: String
 }
 
+/**
+ * Represents an empty JSON-RPC message used as a placeholder or no-op response.
+ */
 @Serializable
 public data object JSONRPCEmptyMessage : JSONRPCMessage {
     override val jsonrpc: String = JSONRPC_VERSION

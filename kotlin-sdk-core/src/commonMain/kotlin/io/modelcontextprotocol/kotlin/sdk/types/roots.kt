@@ -53,6 +53,7 @@ public data class Root(
  * `listChanged = true` to receive these requests.
  *
  * @property params Optional request parameters containing metadata.
+ * @property meta optional request metadata
  */
 @Serializable
 public data class ListRootsRequest(override val params: BaseRequestParams? = null) : ServerRequest {

@@ -9,6 +9,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestFormParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestURLParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitResult
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotification
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsResult
@@ -165,6 +166,13 @@ public interface ClientConnection {
      * Sends a notification to the client indicating that the list of prompts has changed.
      */
     public suspend fun sendPromptListChanged()
+
+    /**
+     * Sends a notification to the client indicating that an out-of-band elicitation has completed.
+     *
+     * @param notification Details of the completed elicitation.
+     */
+    public suspend fun sendElicitationComplete(notification: ElicitationCompleteNotification)
 }
 
 @Suppress("TooManyFunctions")
@@ -268,6 +276,11 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
     override suspend fun sendPromptListChanged() {
         logger.debug { "Sending prompt list changed notification" }
         notification(PromptListChangedNotification())
+    }
+
+    override suspend fun sendElicitationComplete(notification: ElicitationCompleteNotification) {
+        logger.debug { "Sending elicitation complete notification for: ${notification.params.elicitationId}" }
+        notification(notification)
     }
 
     /**

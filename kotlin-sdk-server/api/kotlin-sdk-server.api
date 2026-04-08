@@ -14,6 +14,7 @@ public abstract interface class io/modelcontextprotocol/kotlin/sdk/server/Client
 	public static synthetic fun notification$default (Lio/modelcontextprotocol/kotlin/sdk/server/ClientConnection;Lio/modelcontextprotocol/kotlin/sdk/types/ServerNotification;Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public abstract fun ping (Lio/modelcontextprotocol/kotlin/sdk/types/PingRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun ping$default (Lio/modelcontextprotocol/kotlin/sdk/server/ClientConnection;Lio/modelcontextprotocol/kotlin/sdk/types/PingRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public abstract fun sendElicitationComplete (Lio/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotification;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun sendLoggingMessage (Lio/modelcontextprotocol/kotlin/sdk/types/LoggingMessageNotification;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun sendPromptListChanged (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun sendResourceListChanged (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -139,6 +140,7 @@ public class io/modelcontextprotocol/kotlin/sdk/server/Server {
 	public final fun removeResources (Ljava/util/List;)I
 	public final fun removeTool (Ljava/lang/String;)Z
 	public final fun removeTools (Ljava/util/List;)I
+	public final fun sendElicitationComplete (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotification;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun sendLoggingMessage (Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/types/LoggingMessageNotification;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun sendPromptListChanged (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun sendResourceListChanged (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -182,6 +184,7 @@ public class io/modelcontextprotocol/kotlin/sdk/server/ServerSession : io/modelc
 	public final fun onClose (Lkotlin/jvm/functions/Function0;)V
 	public final fun onInitialized (Lkotlin/jvm/functions/Function0;)V
 	public final fun ping (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun sendElicitationComplete (Lio/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotification;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun sendLoggingMessage (Lio/modelcontextprotocol/kotlin/sdk/types/LoggingMessageNotification;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun sendPromptListChanged (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun sendResourceListChanged (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;

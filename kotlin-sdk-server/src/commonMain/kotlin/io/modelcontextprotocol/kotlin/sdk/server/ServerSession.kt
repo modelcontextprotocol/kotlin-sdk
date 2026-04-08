@@ -9,6 +9,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageResult
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitResult
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotification
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
@@ -39,6 +40,8 @@ private val logger = KotlinLogging.logger {}
 
 /**
  * Represents a server session.
+ *
+ * @property sessionId unique identifier for this session, generated randomly on creation
  */
 @Suppress("TooManyFunctions")
 public open class ServerSession(
@@ -432,5 +435,13 @@ public open class ServerSession(
      * Sends a notification to the client indicating that the list of prompts has changed.
      */
     public suspend fun sendPromptListChanged(): Unit = clientConnection.sendPromptListChanged()
+
+    /**
+     * Sends a notification to the client indicating that an out-of-band elicitation has completed.
+     *
+     * @param notification Details of the completed elicitation.
+     */
+    public suspend fun sendElicitationComplete(notification: ElicitationCompleteNotification): Unit =
+        clientConnection.sendElicitationComplete(notification)
     // End the ClientConnection redirection section
 }

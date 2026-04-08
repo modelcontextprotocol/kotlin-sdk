@@ -51,7 +51,9 @@ private const val MCP_PROTOCOL_VERSION_HEADER = "mcp-protocol-version"
 private const val MCP_RESUMPTION_TOKEN_HEADER = "Last-Event-ID"
 
 /**
- * Error class for Streamable HTTP transport errors.
+ * Represents an error from the Streamable HTTP transport.
+ *
+ * @property code HTTP status code associated with the error, or `null` if unavailable
  */
 public class StreamableHttpError(public val code: Int? = null, message: String? = null) :
     Exception("Streamable HTTP error: $message")
@@ -66,6 +68,9 @@ private sealed interface ConnectResult {
  * Client transport for Streamable HTTP: this implements the MCP Streamable HTTP transport specification.
  * It will connect to a server using HTTP POST for sending messages and HTTP GET with Server-Sent Events
  * for receiving messages.
+ *
+ * @property sessionId session identifier assigned by the server after initialization, or `null` before connection
+ * @property protocolVersion MCP protocol version negotiated with the server, or `null` before connection
  */
 @Suppress("TooManyFunctions")
 public class StreamableHttpClientTransport(
