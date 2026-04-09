@@ -3,13 +3,17 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
+import io.ktor.server.application.ApplicationCallPipeline
 import io.ktor.server.application.MissingApplicationPluginException
 import io.ktor.server.application.install
 import io.ktor.server.request.ApplicationRequest
 import io.ktor.server.request.header
+import io.ktor.server.request.httpMethod
+import io.ktor.server.response.header
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.RoutingContext
@@ -114,6 +118,16 @@ private fun Application.mcpStreamableHttp(
 
     routing {
         route(path) {
+            // Set Mcp-Session-Id on GET responses before Ktor's sse {} commits headers.
+            intercept(ApplicationCallPipeline.Plugins) {
+                if (context.request.httpMethod == HttpMethod.Get) {
+                    val sessionId = context.request.header(MCP_SESSION_ID_HEADER)
+                    if (sessionId != null && transportManager.getTransport(sessionId) != null) {
+                        context.response.header(MCP_SESSION_ID_HEADER, sessionId)
+                    }
+                }
+            }
+
             sse {
                 val transport = existingStreamableTransport(call, transportManager) ?: return@sse
                 transport.handleRequest(this, call)

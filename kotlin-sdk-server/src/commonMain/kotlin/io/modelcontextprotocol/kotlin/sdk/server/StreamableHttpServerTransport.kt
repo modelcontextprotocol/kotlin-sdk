@@ -453,8 +453,8 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             return
         }
 
-        call.appendSseHeaders()
-        flushSse(sseSession) // flush headers immediately
+        // SSE headers (Content-Type, Cache-Control, Connection) are already set by the framework's SSE handler
+        flushSse(sseSession)
         streamsMapping[STANDALONE_SSE_STREAM_ID] = SessionContext(sseSession, call)
         maybeSendPrimingEvent(STANDALONE_SSE_STREAM_ID, sseSession, call.request.header(MCP_PROTOCOL_VERSION_HEADER))
         sseSession.coroutineContext.job.invokeOnCompletion {
@@ -529,8 +529,8 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 }
             }
 
-            call.appendSseHeaders()
-            flushSse(session) // flush headers immediately
+            // SSE headers are already set by the framework's SSE handler.
+            flushSse(session)
 
             val streamId = store.replayEventsAfter(lastEventId) { eventId, message ->
                 try {

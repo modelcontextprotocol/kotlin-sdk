@@ -2,6 +2,7 @@ package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.equals.shouldBeEqual
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -10,7 +11,9 @@ import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.header
 import io.ktor.client.request.post
+import io.ktor.client.request.prepareGet
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -21,6 +24,7 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
+import io.ktor.utils.io.readUTF8Line
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
@@ -36,6 +40,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
@@ -430,6 +435,47 @@ class StreamableHttpServerTransportTest {
     fun `Configuration with negative maxRequestBodySize throws IllegalArgumentException`() {
         assertFailsWith<IllegalArgumentException> {
             StreamableHttpServerTransport.Configuration(maxRequestBodySize = -1)
+        }
+    }
+
+    @Test
+    fun `GET SSE stream includes Mcp-Session-Id header and stays open`() = testApplication {
+        val mcpPath = "/mcp"
+
+        application {
+            mcpStreamableHttp(mcpPath) {
+                Server(
+                    Implementation("test-server", "1.0.0"),
+                    ServerOptions(capabilities = ServerCapabilities()),
+                )
+            }
+        }
+
+        val client = createTestClient()
+
+        // Step 1: Initialize session via POST
+        val initResponse = client.post(mcpPath) {
+            addStreamableHeaders()
+            setBody(buildInitializeRequestPayload())
+        }
+        initResponse.status shouldBe HttpStatusCode.OK
+        val sessionId = assertNotNull(initResponse.headers[MCP_SESSION_ID_HEADER])
+
+        // Step 2: Open GET SSE stream with session ID
+        client.prepareGet(mcpPath) {
+            header(HttpHeaders.Accept, ContentType.Text.EventStream.toString())
+            header(MCP_SESSION_ID_HEADER, sessionId)
+            header("mcp-protocol-version", LATEST_PROTOCOL_VERSION)
+        }.execute { response ->
+            // Verify Mcp-Session-Id is present on the SSE response
+            response.status shouldBe HttpStatusCode.OK
+            response.headers[MCP_SESSION_ID_HEADER] shouldBe sessionId
+
+            // Verify the stream is alive by reading at least one line (flush event)
+            val channel = response.bodyAsChannel()
+            val firstLine = channel.readUTF8Line()
+            firstLine.shouldNotBeNull()
+            channel.isClosedForRead shouldBe false
         }
     }
 
