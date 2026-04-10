@@ -32,6 +32,9 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
 
+      - name: Check
+        run: ./gradlew check --no-configuration-cache
+
       - name: Publish to Maven Central Portal
         id: publish
         run: ./gradlew publishToMavenCentral --no-configuration-cache
