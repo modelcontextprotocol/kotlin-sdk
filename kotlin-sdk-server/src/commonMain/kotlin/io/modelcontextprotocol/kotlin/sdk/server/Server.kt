@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.modelcontextprotocol.kotlin.sdk.server.utils.warnIfInvalidToolName
 import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
@@ -303,7 +304,7 @@ public open class Server(
             logger.error { "Failed to add tool '${tool.name}': Server does not support tools capability" }
             "Server does not support tools capability. Enable it in ServerOptions."
         }
-
+        warnIfInvalidToolName(tool.name)
         toolRegistry.add(RegisteredTool(tool, handler))
     }
 
@@ -357,6 +358,7 @@ public open class Server(
             logger.error { "Failed to add tools: Server does not support tools capability" }
             "Server does not support tools capability."
         }
+        toolsToAdd.forEach { warnIfInvalidToolName(it.tool.name) }
         toolRegistry.addAll(toolsToAdd)
     }
 
