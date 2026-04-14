@@ -177,7 +177,7 @@ class StreamableHttpServerTransportTest {
     }
 
     @Test
-    fun `request with unsupported protocol version returns an HTTP error`() = testApplication {
+    fun `init request with unsupported protocol version returns an HTTP error`() = testApplication {
         configTestServer()
 
         val client = createTestClient()
@@ -202,7 +202,7 @@ class StreamableHttpServerTransportTest {
     }
 
     @Test
-    fun `non-init request with unsupported protocol version returns an HTTP error`() = testApplication {
+    fun `request with unsupported protocol version returns an HTTP error`() = testApplication {
         configTestServer()
 
         val client = createTestClient()
