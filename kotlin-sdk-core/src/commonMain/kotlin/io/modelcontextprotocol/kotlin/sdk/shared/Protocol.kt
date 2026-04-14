@@ -277,12 +277,15 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         }
         try {
             handler(notification)
+        } catch (e: CancellationException) {
+            throw e
         } catch (cause: Throwable) {
             logger.error(cause) { "Error handling notification: ${notification.method}" }
             onError(cause)
         }
     }
 
+    @Suppress("ThrowsCount")
     private suspend fun onRequest(request: JSONRPCRequest) {
         logger.trace { "Received request: ${request.method} (id: ${request.id})" }
 
@@ -300,6 +303,8 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                         ),
                     ),
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (cause: Throwable) {
                 logger.error(cause) { "Error sending method not found response" }
                 onError(cause)

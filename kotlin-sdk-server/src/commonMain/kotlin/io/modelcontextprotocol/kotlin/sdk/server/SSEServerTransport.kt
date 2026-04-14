@@ -84,6 +84,8 @@ public class SseServerTransport(private val endpoint: String, private val sessio
             }
 
             call.receiveText()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             call.respondText("Invalid message: ${e.message}", status = HttpStatusCode.BadRequest)
             _onError.invoke(e)
@@ -92,6 +94,8 @@ public class SseServerTransport(private val endpoint: String, private val sessio
 
         try {
             handleMessage(body)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             call.respondText("Error handling message $body: ${e.message}", status = HttpStatusCode.BadRequest)
             return
@@ -108,6 +112,8 @@ public class SseServerTransport(private val endpoint: String, private val sessio
         try {
             val parsedMessage = McpJson.decodeFromString<JSONRPCMessage>(message)
             _onMessage.invoke(parsedMessage)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             _onError.invoke(e)
             throw e

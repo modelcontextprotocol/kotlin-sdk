@@ -21,6 +21,7 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
@@ -31,6 +32,7 @@ import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import kotlinx.io.Buffer
 import kotlinx.io.IOException
@@ -241,8 +243,10 @@ public class StdioClientTransport @JvmOverloads public constructor(
     }
 
     override suspend fun closeResources() {
-        scope.stopProcessing("Closed")
-        scope.coroutineContext[Job]?.join() // Wait for all coroutines to complete
+        withContext(NonCancellable) {
+            scope.stopProcessing("Closed")
+            scope.coroutineContext[Job]?.join() // Wait for all coroutines to complete
+        }
     }
 
     private fun sendOutboundMessage(message: JSONRPCMessage, sink: Sink, mainScope: CoroutineScope) {
@@ -264,6 +268,8 @@ public class StdioClientTransport @JvmOverloads public constructor(
     private suspend fun handleJSONRPCMessage(msg: JSONRPCMessage) {
         try {
             _onMessage.invoke(msg)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Throwable) {
             logger.error(e) { "Error processing message." }
             runCatching { _onError.invoke(e) }
