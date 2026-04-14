@@ -10,7 +10,6 @@ ktlint = "14.2.0"
 knit = "0.5.1"
 mavenPublish = "0.36.0"
 netty = "4.2.12.Final"
-openapi-generator = "7.21.0"
 
 # libraries version
 awaitility = "4.3.0"
@@ -81,4 +80,3 @@ kotlinx-binary-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-co
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
 knit = { id = "org.jetbrains.kotlinx.knit", version.ref = "knit" }
-openapi-generator = { id = "org.openapi.generator", version.ref = "openapi-generator" }

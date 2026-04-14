@@ -24,11 +24,16 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22' # increase only after https://github.com/nodejs/node/issues/56645 will be fixed
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Build
-        run: ./gradlew build --rerun-tasks --max-workers 2 --continue
+      - name: Check
+        run: ./gradlew check --no-configuration-cache
 
       - name: Publish to Maven Central Portal
         id: publish
