@@ -177,6 +177,31 @@ class StreamableHttpServerTransportTest {
     }
 
     @Test
+    fun `init request with unsupported protocol version returns an HTTP error`() = testApplication {
+        configTestServer()
+
+        val client = createTestClient()
+
+        val transport = StreamableHttpServerTransport(enableJsonResponse = true)
+        transport.onMessage { message ->
+            if (message is JSONRPCRequest) {
+                transport.send(JSONRPCResponse(message.id, EmptyResult()))
+            }
+        }
+
+        configureTransportEndpoint(transport)
+
+        val initResponse = client.post(path) {
+            addStreamableHeaders()
+            header("mcp-protocol-version", "1900-01-01")
+            setBody(buildInitializeRequestPayload())
+        }
+
+        initResponse.status shouldBe HttpStatusCode.BadRequest
+        initResponse.headers[MCP_SESSION_ID_HEADER] shouldBe null
+    }
+
+    @Test
     fun `request with unsupported protocol version returns an HTTP error`() = testApplication {
         configTestServer()
 
@@ -191,18 +216,15 @@ class StreamableHttpServerTransportTest {
 
         configureTransportEndpoint(transport)
 
-        val initPayload = buildInitializeRequestPayload()
         val initResponse = client.post(path) {
             addStreamableHeaders()
-            setBody(initPayload)
+            setBody(buildInitializeRequestPayload())
         }
 
         initResponse.status shouldBe HttpStatusCode.OK
         val sessionId = initResponse.headers[MCP_SESSION_ID_HEADER]
         assertNotNull(sessionId)
 
-        // TODO When https://github.com/modelcontextprotocol/kotlin-sdk/issues/547 is fixed,
-        //  check the incompatible mcp-protocol-version in the InitializeRequest and delete the part below
         val response = client.post(path) {
             addStreamableHeaders()
             header("mcp-session-id", sessionId)
