@@ -477,6 +477,7 @@ class StreamableHttpServerTransportTest {
 
         // Step 1: Initialize session via POST
         val initResponse = client.post(mcpPath) {
+            header(HttpHeaders.Host, "localhost")
             addStreamableHeaders()
             setBody(buildInitializeRequestPayload())
         }
@@ -485,6 +486,7 @@ class StreamableHttpServerTransportTest {
 
         // Step 2: Open GET SSE stream with session ID
         client.prepareGet(mcpPath) {
+            header(HttpHeaders.Host, "localhost")
             header(HttpHeaders.Accept, ContentType.Text.EventStream.toString())
             header(MCP_SESSION_ID_HEADER, sessionId)
             header("mcp-protocol-version", LATEST_PROTOCOL_VERSION)
