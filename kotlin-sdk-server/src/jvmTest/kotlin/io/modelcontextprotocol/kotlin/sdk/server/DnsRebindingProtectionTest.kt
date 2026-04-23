@@ -123,7 +123,7 @@ class DnsRebindingProtectionTest {
             header(HttpHeaders.Origin, "http://evil.com")
         }
         response.shouldHaveStatus(HttpStatusCode.Forbidden)
-        response.bodyAsText() shouldContain "Invalid Origin header"
+        response.bodyAsText() shouldContain "Invalid Origin host: evil.com"
     }
 
     @Test
@@ -136,6 +136,42 @@ class DnsRebindingProtectionTest {
         }
         response.shouldHaveStatus(HttpStatusCode.OK)
         response.bodyAsText() shouldBe "ok"
+    }
+
+    @Test
+    fun `plugin allows Origin with different port but same hostname`() = testWithPlugin(
+        config = { allowedOrigins = listOf("http://localhost:3000") },
+    ) {
+        val response = client.post("/mcp") {
+            header(HttpHeaders.Host, "localhost")
+            header(HttpHeaders.Origin, "http://localhost:9999")
+        }
+        response.shouldHaveStatus(HttpStatusCode.OK)
+        response.bodyAsText() shouldBe "ok"
+    }
+
+    @Test
+    fun `plugin allows Origin with different scheme but same hostname`() = testWithPlugin(
+        config = { allowedOrigins = listOf("http://localhost:3000") },
+    ) {
+        val response = client.post("/mcp") {
+            header(HttpHeaders.Host, "localhost")
+            header(HttpHeaders.Origin, "https://localhost:3000")
+        }
+        response.shouldHaveStatus(HttpStatusCode.OK)
+        response.bodyAsText() shouldBe "ok"
+    }
+
+    @Test
+    fun `plugin rejects unparseable Origin header`() = testWithPlugin(
+        config = { allowedOrigins = listOf("http://localhost:3000") },
+    ) {
+        val response = client.post("/mcp") {
+            header(HttpHeaders.Host, "localhost")
+            header(HttpHeaders.Origin, "not-a-url")
+        }
+        response.shouldHaveStatus(HttpStatusCode.Forbidden)
+        response.bodyAsText() shouldContain "Invalid Origin header: (unparseable)"
     }
 
     @Test
@@ -275,6 +311,43 @@ class DnsRebindingProtectionTest {
     @Test
     fun `extractHostname rejects malformed IPv6`() {
         extractHostname("[::1") shouldBe null
+    }
+
+    // -- extractOriginHost unit tests --
+
+    @Test
+    fun `extractOriginHost extracts host from http URL`() {
+        extractOriginHost("http://example.com") shouldBe "example.com"
+    }
+
+    @Test
+    fun `extractOriginHost strips port`() {
+        extractOriginHost("http://example.com:8080") shouldBe "example.com"
+    }
+
+    @Test
+    fun `extractOriginHost lowercases host`() {
+        extractOriginHost("https://Example.COM") shouldBe "example.com"
+    }
+
+    @Test
+    fun `extractOriginHost handles https`() {
+        extractOriginHost("https://example.com") shouldBe "example.com"
+    }
+
+    @Test
+    fun `extractOriginHost returns null for bare hostname without scheme`() {
+        extractOriginHost("example.com") shouldBe null
+    }
+
+    @Test
+    fun `extractOriginHost returns null for unparseable origin`() {
+        extractOriginHost("not-a-url") shouldBe null
+    }
+
+    @Test
+    fun `extractOriginHost returns null for empty string`() {
+        extractOriginHost("") shouldBe null
     }
 
     private fun testServer(): Server = Server(

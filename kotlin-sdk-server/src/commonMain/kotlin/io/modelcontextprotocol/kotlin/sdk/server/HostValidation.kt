@@ -3,6 +3,7 @@ package io.modelcontextprotocol.kotlin.sdk.server
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.parseUrl
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.RouteScopedPlugin
 import io.ktor.server.application.createRouteScopedPlugin
@@ -60,16 +61,29 @@ internal fun extractHostname(hostHeader: String): String? = when {
 }
 
 /**
+ * Extracts the lower-cased hostname from an `Origin` header value.
+ *
+ * Uses Ktor's [parseUrl] to avoid reimplementing RFC 6454 parsing.
+ * Scheme, port, userinfo, and path are discarded — only the host matters for
+ * DNS-rebinding protection.
+ *
+ * @return the hostname, or `null` if [origin] cannot be parsed or has no host part.
+ */
+internal fun extractOriginHost(origin: String): String? =
+    parseUrl(origin)?.host?.lowercase()?.takeIf(String::isNotEmpty)
+
+/**
  * Configuration for the [DnsRebindingProtection] Ktor route-scoped plugin.
  *
  * @property allowedHosts List of hostnames allowed in the `Host` header.
  *     Comparison is port-agnostic and case-insensitive.
  *     Defaults to [LOCALHOST_ALLOWED_HOSTS].
  *     An empty list will reject **all** requests.
- * @property allowedOrigins Optional list of allowed `Origin` header values.
+ * @property allowedOrigins Optional list of allowed `Origin` values. Entries are parsed as URLs
+ *     (via [parseUrl]) and compared by **hostname only** — scheme and port are ignored.
  *     If `null`, origin validation is disabled.
- *     If configured, requests **with** an `Origin` header not in the list are rejected,
- *     but requests **without** an `Origin` header are allowed (non-browser clients).
+ *     If configured, requests **with** an `Origin` header whose hostname is not in the list
+ *     are rejected, but requests **without** an `Origin` header are allowed (non-browser clients).
  */
 public class DnsRebindingProtectionConfig {
     public var allowedHosts: List<String> = LOCALHOST_ALLOWED_HOSTS
@@ -98,7 +112,10 @@ public val DnsRebindingProtection: RouteScopedPlugin<DnsRebindingProtectionConfi
         val hosts: Set<String> = pluginConfig.allowedHosts.mapTo(mutableSetOf()) {
             extractHostname(it)?.lowercase() ?: it.lowercase()
         }
-        val origins: Set<String>? = pluginConfig.allowedOrigins?.mapTo(mutableSetOf()) { it.lowercase() }
+        val originHosts: Set<String>? = pluginConfig.allowedOrigins?.mapNotNullTo(
+            mutableSetOf(),
+            ::extractOriginHost,
+        )
 
         onCall { call ->
             val hostHeader = call.request.header(HttpHeaders.Host)
@@ -109,12 +126,19 @@ public val DnsRebindingProtection: RouteScopedPlugin<DnsRebindingProtectionConfi
                 return@onCall
             }
 
-            if (origins != null) {
-                val origin = call.request.header(HttpHeaders.Origin)?.lowercase()
+            if (originHosts != null) {
+                val originHeader = call.request.header(HttpHeaders.Origin)
                 // Allow requests without Origin (non-browser clients cannot perform DNS rebinding)
-                if (origin != null && origin !in origins) {
-                    call.rejectDnsValidation("Invalid Origin header: $origin")
-                    return@onCall
+                if (originHeader != null) {
+                    val originHost = extractOriginHost(originHeader)
+                    if (originHost == null) {
+                        call.rejectDnsValidation("Invalid Origin header: (unparseable)")
+                        return@onCall
+                    }
+                    if (originHost !in originHosts) {
+                        call.rejectDnsValidation("Invalid Origin host: $originHost")
+                        return@onCall
+                    }
                 }
             }
         }
