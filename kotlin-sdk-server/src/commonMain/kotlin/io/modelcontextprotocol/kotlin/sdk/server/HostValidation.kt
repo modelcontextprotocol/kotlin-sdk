@@ -127,7 +127,7 @@ private suspend fun ApplicationCall.rejectDnsValidation(message: String) {
     val error = JSONRPCError(
         id = null,
         error = RPCError(
-            code = RPCError.ErrorCode.CONNECTION_CLOSED,
+            code = -32_000,
             message = message,
         ),
     )
