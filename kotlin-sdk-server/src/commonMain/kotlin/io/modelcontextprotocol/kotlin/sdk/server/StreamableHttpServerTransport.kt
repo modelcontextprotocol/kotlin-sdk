@@ -315,7 +315,12 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
     }
 
     /**
-     * Handles an incoming HTTP request, whether GET, POST or DELETE
+     * Handles an incoming HTTP request, whether GET, POST or DELETE.
+     *
+     * **Note:** this method does not perform DNS rebinding protection on its own.
+     * When using this transport outside the [mcpStreamableHttp] / [mcpStatelessStreamableHttp]
+     * DSL, install the [DnsRebindingProtection] plugin on your Ktor route
+     * (or apply equivalent middleware) to validate `Host` / `Origin` headers.
      */
     public suspend fun handleRequest(session: ServerSSESession?, call: ApplicationCall) {
         validateHeaders(call)?.let { reason ->

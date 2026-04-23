@@ -4,6 +4,7 @@ import io.kotest.assertions.ktor.client.shouldHaveStatus
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldNotContain
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.statement.bodyAsText
@@ -21,9 +22,66 @@ import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
+import org.junit.jupiter.params.provider.ValueSource
 import kotlin.test.Test
 
 class DnsRebindingProtectionTest {
+
+    companion object {
+        @JvmStatic
+        fun invalidHostCases(): List<Arguments> = listOf(
+            Arguments.of("", "Invalid Host header: (malformed or missing)"),
+            Arguments.of("evil.com", "Invalid Host: evil.com"),
+        )
+
+        @JvmStatic
+        fun extractHostnameAcceptCases(): List<Arguments> = listOf(
+            Arguments.of("localhost", "localhost"),
+            Arguments.of("localhost:3000", "localhost"),
+            Arguments.of("127.0.0.1:8080", "127.0.0.1"),
+            Arguments.of("[::1]", "[::1]"),
+            Arguments.of("[::1]:3000", "[::1]"),
+            Arguments.of("localhost:", "localhost"),
+            Arguments.of("[::1]:", "[::1]"),
+        )
+
+        @JvmStatic
+        fun extractHostnameRejectCases(): List<String> = listOf(
+            "", // empty
+            "evil.com@localhost", // userinfo
+            "evil.com/path", // path
+            "evil.com?q=1", // query
+            "evil.com#frag", // fragment
+            "[::1", // malformed IPv6
+            "[]", // empty brackets
+            "[]:3000", // empty brackets + port
+            " localhost", // leading whitespace
+            "localhost ", // trailing whitespace
+            "localhost\t:80", // embedded tab
+            "localhost:abc", // non-numeric port
+            "localhost:-1", // negative port
+            "[::1]:abc", // non-numeric IPv6 port
+            ":80", // leading colon
+        )
+
+        @JvmStatic
+        fun extractOriginHostAcceptCases(): List<Arguments> = listOf(
+            Arguments.of("http://example.com", "example.com"),
+            Arguments.of("http://example.com:8080", "example.com"),
+            Arguments.of("https://Example.COM", "example.com"),
+            Arguments.of("https://example.com", "example.com"),
+        )
+
+        @JvmStatic
+        fun extractOriginHostRejectCases(): List<String> = listOf(
+            "example.com", // no scheme
+            "not-a-url", // unparseable
+            "", // empty
+        )
+    }
 
     private fun testWithPlugin(
         config: DnsRebindingProtectionConfig.() -> Unit = {},
@@ -41,67 +99,34 @@ class DnsRebindingProtectionTest {
         test()
     }
 
-    @Test
-    fun `plugin rejects request with empty Host header`() = testWithPlugin {
+    @ParameterizedTest
+    @ValueSource(strings = ["localhost", "127.0.0.1", "[::1]", "localhost:3000", "[::1]:8080"])
+    fun `plugin accepts valid Host header`(hostHeader: String) = testWithPlugin {
         val response = client.post("/mcp") {
-            header(HttpHeaders.Host, "")
+            header(HttpHeaders.Host, hostHeader)
+        }
+        response.shouldHaveStatus(HttpStatusCode.OK)
+        response.bodyAsText() shouldBe "ok"
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidHostCases")
+    fun `plugin rejects invalid Host header`(hostHeader: String, expectedBody: String) = testWithPlugin {
+        val response = client.post("/mcp") {
+            header(HttpHeaders.Host, hostHeader)
         }
         response.shouldHaveStatus(HttpStatusCode.Forbidden)
-        response.bodyAsText() shouldContain "Invalid Host header"
+        response.bodyAsText() shouldContain expectedBody
     }
 
     @Test
-    fun `plugin allows localhost Host header`() = testWithPlugin {
+    fun `plugin does not echo raw malformed Host in rejection`() = testWithPlugin {
         val response = client.post("/mcp") {
-            header(HttpHeaders.Host, "localhost")
-        }
-        response.shouldHaveStatus(HttpStatusCode.OK)
-        response.bodyAsText() shouldBe "ok"
-    }
-
-    @Test
-    fun `plugin allows 127_0_0_1 Host header`() = testWithPlugin {
-        val response = client.post("/mcp") {
-            header(HttpHeaders.Host, "127.0.0.1")
-        }
-        response.shouldHaveStatus(HttpStatusCode.OK)
-        response.bodyAsText() shouldBe "ok"
-    }
-
-    @Test
-    fun `plugin allows IPv6 localhost Host header`() = testWithPlugin {
-        val response = client.post("/mcp") {
-            header(HttpHeaders.Host, "[::1]")
-        }
-        response.shouldHaveStatus(HttpStatusCode.OK)
-        response.bodyAsText() shouldBe "ok"
-    }
-
-    @Test
-    fun `plugin strips port from Host header`() = testWithPlugin {
-        val response = client.post("/mcp") {
-            header(HttpHeaders.Host, "localhost:3000")
-        }
-        response.shouldHaveStatus(HttpStatusCode.OK)
-        response.bodyAsText() shouldBe "ok"
-    }
-
-    @Test
-    fun `plugin strips port from IPv6 Host header`() = testWithPlugin {
-        val response = client.post("/mcp") {
-            header(HttpHeaders.Host, "[::1]:8080")
-        }
-        response.shouldHaveStatus(HttpStatusCode.OK)
-        response.bodyAsText() shouldBe "ok"
-    }
-
-    @Test
-    fun `plugin rejects non-localhost Host header`() = testWithPlugin {
-        val response = client.post("/mcp") {
-            header(HttpHeaders.Host, "evil.com")
+            header(HttpHeaders.Host, "evil.com@localhost")
         }
         response.shouldHaveStatus(HttpStatusCode.Forbidden)
-        response.bodyAsText() shouldContain "Invalid Host header"
+        response.bodyAsText() shouldNotContain "evil.com@localhost"
+        response.bodyAsText() shouldContain "malformed or missing"
     }
 
     @Test
@@ -215,13 +240,13 @@ class DnsRebindingProtectionTest {
             header(HttpHeaders.Host, "localhost")
         }
         localhostResponse.shouldHaveStatus(HttpStatusCode.Forbidden)
-        localhostResponse.bodyAsText() shouldContain "Invalid Host header"
+        localhostResponse.bodyAsText() shouldContain "Invalid Host: localhost"
 
         val otherResponse = client.post("/mcp") {
             header(HttpHeaders.Host, "myapp.com")
         }
         otherResponse.shouldHaveStatus(HttpStatusCode.Forbidden)
-        otherResponse.bodyAsText() shouldContain "Invalid Host header"
+        otherResponse.bodyAsText() shouldContain "Invalid Host: myapp.com"
     }
 
     @Test
@@ -269,98 +294,58 @@ class DnsRebindingProtectionTest {
         response.shouldHaveStatus(HttpStatusCode.BadRequest)
     }
 
+    @Test
+    fun `mcpStreamableHttp rejects non-localhost Host by default`() = testApplication {
+        application {
+            mcpStreamableHttp { testServer() }
+        }
+
+        val response = client.post("/mcp") {
+            header(HttpHeaders.Host, "evil.com")
+            contentType(ContentType.Application.Json)
+        }
+        response.shouldHaveStatus(HttpStatusCode.Forbidden)
+    }
+
+    @Test
+    fun `mcpStatelessStreamableHttp rejects non-localhost Host by default`() = testApplication {
+        application {
+            mcpStatelessStreamableHttp { testServer() }
+        }
+
+        val response = client.post("/mcp") {
+            header(HttpHeaders.Host, "evil.com")
+            contentType(ContentType.Application.Json)
+        }
+        response.shouldHaveStatus(HttpStatusCode.Forbidden)
+    }
+
     // -- extractHostname unit tests --
 
-    @Test
-    fun `extractHostname strips port from hostname`() {
-        extractHostname("localhost:3000") shouldBe "localhost"
+    @ParameterizedTest
+    @MethodSource("extractHostnameAcceptCases")
+    fun `extractHostname accepts valid host`(input: String, expected: String) {
+        extractHostname(input) shouldBe expected
     }
 
-    @Test
-    fun `extractHostname returns hostname without port unchanged`() {
-        extractHostname("localhost") shouldBe "localhost"
-    }
-
-    @Test
-    fun `extractHostname handles IPv4 with port`() {
-        extractHostname("127.0.0.1:8080") shouldBe "127.0.0.1"
-    }
-
-    @Test
-    fun `extractHostname handles IPv6 with port`() {
-        extractHostname("[::1]:3000") shouldBe "[::1]"
-    }
-
-    @Test
-    fun `extractHostname handles IPv6 without port`() {
-        extractHostname("[::1]") shouldBe "[::1]"
-    }
-
-    @Test
-    fun `extractHostname returns null for empty string`() {
-        extractHostname("") shouldBe null
-    }
-
-    @Test
-    fun `extractHostname rejects userinfo in host header`() {
-        extractHostname("evil.com@localhost") shouldBe null
-    }
-
-    @Test
-    fun `extractHostname rejects path in host header`() {
-        extractHostname("evil.com/path") shouldBe null
-    }
-
-    @Test
-    fun `extractHostname rejects query in host header`() {
-        extractHostname("evil.com?q=1") shouldBe null
-    }
-
-    @Test
-    fun `extractHostname rejects fragment in host header`() {
-        extractHostname("evil.com#frag") shouldBe null
-    }
-
-    @Test
-    fun `extractHostname rejects malformed IPv6`() {
-        extractHostname("[::1") shouldBe null
+    @ParameterizedTest
+    @MethodSource("extractHostnameRejectCases")
+    fun `extractHostname rejects invalid host`(input: String) {
+        extractHostname(input) shouldBe null
     }
 
     // -- extractOriginHost unit tests --
 
-    @Test
-    fun `extractOriginHost extracts host from http URL`() {
-        extractOriginHost("http://example.com") shouldBe "example.com"
+    @ParameterizedTest
+    @MethodSource("extractOriginHostAcceptCases")
+    fun `extractOriginHost extracts hostname`(input: String, expected: String) {
+        extractOriginHost(input) shouldBe expected
     }
 
-    @Test
-    fun `extractOriginHost strips port`() {
-        extractOriginHost("http://example.com:8080") shouldBe "example.com"
-    }
-
-    @Test
-    fun `extractOriginHost lowercases host`() {
-        extractOriginHost("https://Example.COM") shouldBe "example.com"
-    }
-
-    @Test
-    fun `extractOriginHost handles https`() {
-        extractOriginHost("https://example.com") shouldBe "example.com"
-    }
-
-    @Test
-    fun `extractOriginHost returns null for bare hostname without scheme`() {
-        extractOriginHost("example.com") shouldBe null
-    }
-
-    @Test
-    fun `extractOriginHost returns null for unparseable origin`() {
-        extractOriginHost("not-a-url") shouldBe null
-    }
-
-    @Test
-    fun `extractOriginHost returns null for empty string`() {
-        extractOriginHost("") shouldBe null
+    @ParameterizedTest
+    @MethodSource("extractOriginHostRejectCases")
+    fun `extractOriginHost returns null for invalid origin`(input: String) {
+        extractOriginHost(input) shouldBe null
     }
 
     private fun testServer(): Server = Server(

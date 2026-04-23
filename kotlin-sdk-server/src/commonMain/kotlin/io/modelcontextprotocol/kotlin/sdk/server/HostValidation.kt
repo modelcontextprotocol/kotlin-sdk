@@ -49,15 +49,32 @@ internal fun extractHostname(hostHeader: String): String? = when {
 
     hostHeader.startsWith("[") -> {
         val end = hostHeader.indexOf(']')
-        val tail = if (end > 0) hostHeader.substring(end + 1) else ""
-        if (end > 0 && (tail.isEmpty() || tail.startsWith(':'))) {
-            hostHeader.substring(0, end + 1)
-        } else {
-            null
+        when {
+            end <= 1 -> null
+            isValidPortSuffix(hostHeader.substring(end + 1)) -> hostHeader.substring(0, end + 1)
+            else -> null
         }
     }
 
-    else -> hostHeader.substringBefore(':').ifEmpty { null }
+    else -> {
+        val colon = hostHeader.indexOf(':')
+        when {
+            colon < 0 -> hostHeader
+            colon == 0 -> null
+            isValidPortSuffix(hostHeader.substring(colon)) -> hostHeader.substring(0, colon)
+            else -> null
+        }
+    }
+}
+
+/**
+ * Checks that [tail] is either empty (no port part) or `":"` followed by zero or more digits,
+ * matching RFC 7230 §3.2.3 where `port = *DIGIT`. Non-empty non-digit characters are rejected.
+ */
+private fun isValidPortSuffix(tail: String): Boolean = when {
+    tail.isEmpty() -> true
+    tail[0] != ':' -> false
+    else -> tail.substring(1).all { it.isDigit() }
 }
 
 /**
@@ -122,8 +139,12 @@ public val DnsRebindingProtection: RouteScopedPlugin<DnsRebindingProtectionConfi
             val hostHeader = call.request.header(HttpHeaders.Host)
             val hostname = hostHeader?.let { extractHostname(it) }?.lowercase()
 
-            if (hostname == null || hostname !in hosts) {
-                call.rejectDnsValidation("Invalid Host header: $hostHeader")
+            if (hostname == null) {
+                call.rejectDnsValidation("Invalid Host header: (malformed or missing)")
+                return@onCall
+            }
+            if (hostname !in hosts) {
+                call.rejectDnsValidation("Invalid Host: $hostname")
                 return@onCall
             }
 
