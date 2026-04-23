@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.kotest.assertions.ktor.client.shouldHaveStatus
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.ktor.client.request.header
@@ -41,7 +42,7 @@ class DnsRebindingProtectionTest {
     }
 
     @Test
-    fun `plugin rejects request with missing Host header`() = testWithPlugin {
+    fun `plugin rejects request with empty Host header`() = testWithPlugin {
         val response = client.post("/mcp") {
             header(HttpHeaders.Host, "")
         }
@@ -221,6 +222,18 @@ class DnsRebindingProtectionTest {
         }
         otherResponse.shouldHaveStatus(HttpStatusCode.Forbidden)
         otherResponse.bodyAsText() shouldContain "Invalid Host header"
+    }
+
+    @Test
+    fun `plugin fails to install when allowedHosts contains an invalid host`() {
+        val ex = shouldThrow<IllegalStateException> {
+            testWithPlugin(
+                config = { allowedHosts = listOf("https://example.com") },
+            ) {
+                client.post("/mcp") { header(HttpHeaders.Host, "example.com") }
+            }
+        }
+        ex.message shouldContain "https://example.com"
     }
 
     @Test

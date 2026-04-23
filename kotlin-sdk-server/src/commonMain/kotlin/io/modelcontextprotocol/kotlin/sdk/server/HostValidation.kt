@@ -110,7 +110,8 @@ public val DnsRebindingProtection: RouteScopedPlugin<DnsRebindingProtectionConfi
         ::DnsRebindingProtectionConfig,
     ) {
         val hosts: Set<String> = pluginConfig.allowedHosts.mapTo(mutableSetOf()) {
-            extractHostname(it)?.lowercase() ?: it.lowercase()
+            extractHostname(it)?.lowercase()
+                ?: error("Invalid host in DnsRebindingProtection.allowedHosts: '$it'")
         }
         val originHosts: Set<String>? = pluginConfig.allowedOrigins?.mapNotNullTo(
             mutableSetOf(),
