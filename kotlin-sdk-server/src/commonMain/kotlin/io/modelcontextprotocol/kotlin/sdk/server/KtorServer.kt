@@ -92,12 +92,7 @@ public fun Route.mcp(
         )
     }
 
-    if (enableDnsRebindingProtection) {
-        install(DnsRebindingProtection) {
-            this.allowedHosts = allowedHosts ?: LOCALHOST_ALLOWED_HOSTS
-            allowedOrigins?.let { this.allowedOrigins = it }
-        }
-    }
+    installDnsRebindingProtection(enableDnsRebindingProtection, allowedHosts, allowedOrigins)
 
     val transportManager = TransportManager<SseServerTransport>()
 
@@ -155,12 +150,7 @@ private fun Application.mcpStreamableHttp(
 
     routing {
         route(path) {
-            if (enableDnsRebindingProtection) {
-                install(DnsRebindingProtection) {
-                    this.allowedHosts = allowedHosts ?: LOCALHOST_ALLOWED_HOSTS
-                    allowedOrigins?.let { this.allowedOrigins = it }
-                }
-            }
+            installDnsRebindingProtection(enableDnsRebindingProtection, allowedHosts, allowedOrigins)
 
             // Set Mcp-Session-Id on GET responses before Ktor's sse {} commits headers.
             intercept(ApplicationCallPipeline.Plugins) {
@@ -253,12 +243,7 @@ private fun Application.mcpStatelessStreamableHttp(
 
     routing {
         route(path) {
-            if (enableDnsRebindingProtection) {
-                install(DnsRebindingProtection) {
-                    this.allowedHosts = allowedHosts ?: LOCALHOST_ALLOWED_HOSTS
-                    allowedOrigins?.let { this.allowedOrigins = it }
-                }
-            }
+            installDnsRebindingProtection(enableDnsRebindingProtection, allowedHosts, allowedOrigins)
 
             post {
                 mcpStatelessStreamableHttpEndpoint(
@@ -455,4 +440,12 @@ private suspend fun RoutingContext.streamableTransport(
     server.createSession(transport)
 
     return transport
+}
+
+private fun Route.installDnsRebindingProtection(enabled: Boolean, hosts: List<String>?, origins: List<String>?) {
+    if (!enabled) return
+    install(DnsRebindingProtection) {
+        allowedHosts = hosts ?: LOCALHOST_ALLOWED_HOSTS
+        origins?.let { allowedOrigins = it }
+    }
 }
