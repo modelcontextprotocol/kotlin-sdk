@@ -77,7 +77,7 @@ internal fun extractOriginHost(origin: String): String? =
  *
  * @property allowedHosts List of hostnames allowed in the `Host` header.
  *     Comparison is port-agnostic and case-insensitive.
- *     Defaults to [LOCALHOST_ALLOWED_HOSTS].
+ *     Defaults to `localhost`, `127.0.0.1`, `[::1]`.
  *     An empty list will reject **all** requests.
  * @property allowedOrigins Optional list of allowed `Origin` values. Entries are parsed as URLs
  *     (via [parseUrl]) and compared by **hostname only** — scheme and port are ignored.

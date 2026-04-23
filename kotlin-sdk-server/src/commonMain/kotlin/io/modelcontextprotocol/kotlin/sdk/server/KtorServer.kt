@@ -40,7 +40,7 @@ private val logger = KotlinLogging.logger {}
  *
  * @param path the URL path to register the SSE endpoint.
  * @param enableDnsRebindingProtection whether to install [DnsRebindingProtection] on this route. Defaults to `true`.
- * @param allowedHosts hostnames allowed in the `Host` header. Defaults to [LOCALHOST_ALLOWED_HOSTS].
+ * @param allowedHosts hostnames allowed in the `Host` header. Defaults to `localhost`, `127.0.0.1`, `[::1]`.
  * @param allowedOrigins origins allowed in the `Origin` header, or `null` to skip origin validation.
  * @param block factory block with access to the [ServerSSESession]
  *      that creates and returns the [Server] to handle the connection.
@@ -68,7 +68,7 @@ public fun Route.mcp(
  * Use [Application.mcp] if you want SSE to be installed automatically.
  *
  * @param enableDnsRebindingProtection whether to install [DnsRebindingProtection] on this route. Defaults to `true`.
- * @param allowedHosts hostnames allowed in the `Host` header. Defaults to [LOCALHOST_ALLOWED_HOSTS].
+ * @param allowedHosts hostnames allowed in the `Host` header. Defaults to `localhost`, `127.0.0.1`, `[::1]`.
  * @param allowedOrigins origins allowed in the `Origin` header, or `null` to skip origin validation.
  * @param block factory block with access to the [ServerSSESession]
  *      that creates and returns the [Server] to handle the connection.
@@ -114,7 +114,7 @@ public fun Route.mcp(
  * with [McpJson][io.modelcontextprotocol.kotlin.sdk.types.McpJson] and [SSE].
  *
  * @param enableDnsRebindingProtection whether to install [DnsRebindingProtection] on this route. Defaults to `true`.
- * @param allowedHosts hostnames allowed in the `Host` header. Defaults to [LOCALHOST_ALLOWED_HOSTS].
+ * @param allowedHosts hostnames allowed in the `Host` header. Defaults to `localhost`, `127.0.0.1`, `[::1]`.
  * @param allowedOrigins origins allowed in the `Origin` header, or `null` to skip origin validation.
  * @param block factory block with access to the [ServerSSESession]
  *      that creates and returns the [Server] to handle the connection.
@@ -198,7 +198,7 @@ private fun Application.mcpStreamableHttp(
  * @param path The base path for the MCP Streamable HTTP endpoint. Defaults to "/mcp".
  * @param enableDnsRebindingProtection Enables DNS rebinding attack protection for the endpoint. Defaults to `true`.
  * @param allowedHosts A list of hostnames allowed to access the endpoint.
- *          If `null` and DNS rebinding protection is enabled, defaults to [LOCALHOST_ALLOWED_HOSTS].
+ *          If `null` and DNS rebinding protection is enabled, defaults to `localhost`, `127.0.0.1`, `[::1]`.
  * @param allowedOrigins A list of origins allowed to perform cross-origin requests (CORS).
  *          If `null`, origin validation is disabled.
  * @param eventStore An optional [EventStore] instance to enable resumable event stream functionality.
@@ -282,7 +282,7 @@ private fun Application.mcpStatelessStreamableHttp(
  * @param path The URL path where the server listens for incoming JSON-RPC requests. Defaults to "/mcp".
  * @param enableDnsRebindingProtection Determines whether DNS rebinding protection is enabled. Defaults to `true`.
  * @param allowedHosts A list of allowed hostnames. If `null` and DNS rebinding protection is enabled,
- * defaults to [LOCALHOST_ALLOWED_HOSTS].
+ * defaults to `localhost`, `127.0.0.1`, `[::1]`.
  * @param allowedOrigins A list of allowed origins for CORS. If `null`, origin validation is disabled.
  * @param eventStore An optional [EventStore] implementation to provide resumability and event replay support.
  * @param block factory block with access to the [RoutingContext] (for reading request headers)
