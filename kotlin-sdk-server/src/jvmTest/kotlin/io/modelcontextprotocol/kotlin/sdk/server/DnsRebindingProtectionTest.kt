@@ -171,6 +171,23 @@ class DnsRebindingProtectionTest {
     }
 
     @Test
+    fun `plugin with empty allowedHosts rejects all requests`() = testWithPlugin(
+        config = { allowedHosts = emptyList() },
+    ) {
+        val localhostResponse = client.post("/mcp") {
+            header(HttpHeaders.Host, "localhost")
+        }
+        localhostResponse.shouldHaveStatus(HttpStatusCode.Forbidden)
+        localhostResponse.bodyAsText() shouldContain "Invalid Host header"
+
+        val otherResponse = client.post("/mcp") {
+            header(HttpHeaders.Host, "myapp.com")
+        }
+        otherResponse.shouldHaveStatus(HttpStatusCode.Forbidden)
+        otherResponse.bodyAsText() shouldContain "Invalid Host header"
+    }
+
+    @Test
     fun `Route mcp with DNS protection enabled rejects non-localhost`() = testApplication {
         application {
             install(SSE)
