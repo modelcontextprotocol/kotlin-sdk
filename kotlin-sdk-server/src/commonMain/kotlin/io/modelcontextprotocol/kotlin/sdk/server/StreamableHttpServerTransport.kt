@@ -464,27 +464,43 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             }
         }
 
-        if (STANDALONE_SSE_STREAM_ID in streamsMapping) {
-            call.reject(
-                HttpStatusCode.Conflict,
-                RPCError.ErrorCode.CONNECTION_CLOSED,
-                "Conflict: Only one SSE stream is allowed per session",
-            )
-            return
+        streamsMapping[STANDALONE_SSE_STREAM_ID]?.let { existingContext ->
+            // Close the previous SSE session. If the stream is already dead this
+            // is a no-op. If it is still alive, closing it cancels the coroutine
+            // blocked in awaitCancellation(), which triggers the identity-guarded
+            // finally block to remove the mapping.
+            try {
+                existingContext.session?.close()
+            } catch (_: CancellationException) {
+                throw CancellationException("Cancelled while closing previous SSE stream")
+            } catch (_: Exception) {
+                // Ignore — the old stream may already be closed.
+            }
+            // After closing, give the old coroutine's finally block a chance to
+            // remove the mapping. If the entry is still present (race edge case),
+            // evict it — the old session is closed either way.
+            streamsMapping.remove(STANDALONE_SSE_STREAM_ID)
         }
 
         // SSE headers (Content-Type, Cache-Control, Connection) are already set by the framework's SSE handler
         flushSse(sseSession)
-        streamsMapping[STANDALONE_SSE_STREAM_ID] = SessionContext(sseSession, call)
+        val newContext = SessionContext(sseSession, call)
+        streamsMapping[STANDALONE_SSE_STREAM_ID] = newContext
         val clientProtocolVersion =
             call.request.header(MCP_PROTOCOL_VERSION_HEADER) ?: DEFAULT_NEGOTIATED_PROTOCOL_VERSION
         maybeSendPrimingEvent(STANDALONE_SSE_STREAM_ID, sseSession, clientProtocolVersion)
-        sseSession.coroutineContext.job.invokeOnCompletion {
-            streamsMapping.remove(STANDALONE_SSE_STREAM_ID)
-        }
         // Keep the SSE connection open until the client disconnects or the transport is closed.
-        // Without this, the Ktor sse{} handler returns immediately, closing the stream.
-        awaitCancellation()
+        // Cleanup uses try/finally (runs during cancellation propagation) instead of
+        // invokeOnCompletion (runs after job completion) to minimize the window between
+        // disconnect and mapping removal. Identity check ensures only this stream's entry
+        // is removed — not a replacement that arrived in the meantime.
+        try {
+            awaitCancellation()
+        } finally {
+            if (streamsMapping[STANDALONE_SSE_STREAM_ID] === newContext) {
+                streamsMapping.remove(STANDALONE_SSE_STREAM_ID)
+            }
+        }
     }
 
     /** Handles an HTTP DELETE request by closing the session and the transport. */
@@ -725,10 +741,17 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         try {
             session?.send(event = "message", id = eventId, data = McpJson.encodeToString(message))
         } catch (e: CancellationException) {
-            streamsMapping.remove(streamId)
+            // Identity-based removal: only evict this stream's entry, not a replacement's.
+            val current = streamsMapping[streamId]
+            if (current?.session === session) {
+                streamsMapping.remove(streamId)
+            }
             throw e
         } catch (_: Exception) {
-            streamsMapping.remove(streamId)
+            val current = streamsMapping[streamId]
+            if (current?.session === session) {
+                streamsMapping.remove(streamId)
+            }
         }
     }
 
