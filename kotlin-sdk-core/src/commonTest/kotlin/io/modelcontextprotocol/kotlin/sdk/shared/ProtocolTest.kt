@@ -16,9 +16,11 @@ import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.RequestMeta
+import io.modelcontextprotocol.kotlin.sdk.types.RequestResult
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
@@ -185,7 +187,40 @@ class ProtocolTest {
         transport.deliver(JSONRPCResponse(sent.id, EmptyResult()))
         inFlight.await()
     }
+
+    @Test
+    fun `should deserialize response into requested result type instead of casting runtime subtype`() = runTest {
+        protocol.connect(transport)
+        val request = CustomRequest(
+            method = Method.Custom("example"),
+            params = null,
+        )
+
+        val inFlight = async {
+            protocol.request<TestExpectedResult>(request)
+        }
+
+        val sent = transport.awaitRequest()
+        transport.deliver(
+            JSONRPCResponse(
+                sent.id,
+                TestWireCompatibleResult(value = "ok"),
+            ),
+        )
+
+        inFlight.await() shouldBe TestExpectedResult(value = "ok")
+    }
 }
+
+@Serializable
+private data class TestExpectedResult(
+    val value: String,
+) : RequestResult
+
+@Serializable
+private data class TestWireCompatibleResult(
+    val value: String,
+) : RequestResult
 
 private class TestProtocol : Protocol(null) {
     val errors = mutableListOf<Throwable>()

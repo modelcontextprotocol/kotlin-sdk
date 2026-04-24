@@ -438,7 +438,21 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
      *
      * Do not use this method to emit notifications! Use notification() instead.
      */
-    public suspend fun <T : RequestResult> request(request: Request, options: RequestOptions? = null): T {
+    public suspend inline fun <reified T : RequestResult> request(
+        request: Request,
+        options: RequestOptions? = null,
+    ): T = requestInternal(request, options) { response ->
+        McpJson.decodeFromJsonElement<T>(
+            McpJson.encodeToJsonElement(response.result),
+        )
+    }
+
+    @PublishedApi
+    internal suspend fun <T : RequestResult> requestInternal(
+        request: Request,
+        options: RequestOptions? = null,
+        decodeResult: (JSONRPCResponse) -> T,
+    ): T {
         logger.trace { "Sending request: ${request.method}" }
         val result = CompletableDeferred<T>()
         val transport = transport ?: error("Not connected")
@@ -477,8 +491,13 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                 }
 
                 try {
-                    @Suppress("UNCHECKED_CAST")
-                    result.complete(response!!.result as T)
+                    result.complete(
+                        decodeResult(
+                            requireNotNull(response) {
+                                "Response handler invoked without a JSON-RPC response for request id: $jsonRpcRequestId"
+                            },
+                        ),
+                    )
                 } catch (error: Throwable) {
                     result.completeExceptionally(error)
                 }
