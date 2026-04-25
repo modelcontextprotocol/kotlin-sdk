@@ -42,7 +42,7 @@ class ContentDslTest {
             }
         }
 
-        (request.params.messages[0].content as TextContent).shouldNotBeNull {
+        (request.params.messages[0].content.single() as TextContent).shouldNotBeNull {
             text shouldBe "Hello, world!"
             annotations.shouldBeNull()
             meta.shouldBeNull()
@@ -71,7 +71,7 @@ class ContentDslTest {
             }
         }
 
-        (request.params.messages[0].content as TextContent).shouldNotBeNull {
+        (request.params.messages[0].content.single() as TextContent).shouldNotBeNull {
             text shouldBe "Analyze the quarterly sales report for Q4 2025"
             annotations shouldNotBeNull {
                 audience shouldBe listOf(Role.User, Role.Assistant)
@@ -98,7 +98,7 @@ class ContentDslTest {
             }
         }
 
-        (request.params.messages[0].content as TextContent).text shouldBe "Hello 🌍! Ça va? Москва 北京 مرحبا"
+        (request.params.messages[0].content.single() as TextContent).text shouldBe "Hello 🌍! Ça va? Москва 北京 مرحبا"
     }
 
     @Test
@@ -112,7 +112,7 @@ class ContentDslTest {
             }
         }
 
-        (request.params.messages[0].content as TextContent).text shouldBe ""
+        (request.params.messages[0].content.single() as TextContent).text shouldBe ""
     }
 
     @Test
@@ -144,7 +144,7 @@ class ContentDslTest {
             }
         }
 
-        (request.params.messages[0].content as ImageContent).shouldNotBeNull {
+        (request.params.messages[0].content.single() as ImageContent).shouldNotBeNull {
             data shouldBe
                 "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
             mimeType shouldBe "image/png"
@@ -177,7 +177,7 @@ class ContentDslTest {
             }
         }
 
-        (request.params.messages[0].content as ImageContent).shouldNotBeNull {
+        (request.params.messages[0].content.single() as ImageContent).shouldNotBeNull {
             mimeType shouldBe "image/jpeg"
             annotations shouldNotBeNull {
                 audience shouldBe listOf(Role.Assistant)
@@ -208,7 +208,7 @@ class ContentDslTest {
                     }
                 }
             }
-            (request.params.messages[0].content as ImageContent).mimeType shouldBe mime
+            (request.params.messages[0].content.single() as ImageContent).mimeType shouldBe mime
         }
     }
 
@@ -256,7 +256,7 @@ class ContentDslTest {
             }
         }
 
-        (request.params.messages[0].content as AudioContent).shouldNotBeNull {
+        (request.params.messages[0].content.single() as AudioContent).shouldNotBeNull {
             data shouldBe "UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAAABmYWN0BAAAAAAAAABkYXRhAAAAAA=="
             mimeType shouldBe "audio/wav"
             annotations.shouldBeNull()
@@ -288,7 +288,7 @@ class ContentDslTest {
             }
         }
 
-        (request.params.messages[0].content as AudioContent).shouldNotBeNull {
+        (request.params.messages[0].content.single() as AudioContent).shouldNotBeNull {
             mimeType shouldBe "audio/mpeg"
             annotations shouldNotBeNull {
                 audience shouldBe listOf(Role.User)
@@ -349,7 +349,7 @@ class ContentDslTest {
                 }
             }
         }
-        (requestMin.params.messages[0].content as TextContent).annotations?.priority shouldBe 0.0
+        (requestMin.params.messages[0].content.single() as TextContent).annotations?.priority shouldBe 0.0
 
         // Priority = 1.0 (maximum)
         val requestMax = buildCreateMessageRequest {
@@ -361,7 +361,7 @@ class ContentDslTest {
                 }
             }
         }
-        (requestMax.params.messages[0].content as TextContent).annotations?.priority shouldBe 1.0
+        (requestMax.params.messages[0].content.single() as TextContent).annotations?.priority shouldBe 1.0
     }
 
     @Test
@@ -376,7 +376,7 @@ class ContentDslTest {
             }
         }
 
-        (request.params.messages[0].content as TextContent).annotations shouldNotBeNull {
+        (request.params.messages[0].content.single() as TextContent).annotations shouldNotBeNull {
             priority shouldBe 0.5
             audience shouldBe listOf(Role.User)
             lastModified.shouldBeNull()

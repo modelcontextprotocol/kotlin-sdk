@@ -41,6 +41,7 @@ public data class Implementation(
  * supports that capability.
  *
  * @property sampling Present if the client supports sampling from an LLM.
+ * Use [ClientCapabilities.Sampling] to configure SEP-1577 sub-capabilities (tools, context).
  * @property roots Present if the client supports listing roots.
  * @property elicitation Present if the client supports elicitation from the server.
  * @property experimental Experimental, non-standard capabilities that the client supports.
@@ -51,7 +52,7 @@ public data class Implementation(
  */
 @Serializable
 public data class ClientCapabilities(
-    public val sampling: JsonObject? = null,
+    public val sampling: Sampling? = null,
     public val roots: Roots? = null,
     public val elicitation: JsonObject? = null,
     public val experimental: JsonObject? = null,
@@ -59,11 +60,51 @@ public data class ClientCapabilities(
 ) {
 
     /**
-     * @property sampling convenience value to enable the sampling capability
+     * Source-compatibility constructor retaining the pre-SEP-1577 `sampling: JsonObject?`
+     * shape. Any non-null [sampling] is converted to an empty [Sampling] (sub-capabilities
+     * cannot be recovered from the old opaque `JsonObject`).
+     */
+    @Deprecated(
+        "ClientCapabilities.sampling is now typed. Pass a ClientCapabilities.Sampling? " +
+            "instead of JsonObject?.",
+        ReplaceWith(
+            "ClientCapabilities(sampling?.let { ClientCapabilities.Sampling() }, " +
+                "roots, elicitation, experimental, extensions)",
+        ),
+    )
+    public constructor(
+        sampling: JsonObject?,
+        roots: Roots? = null,
+        elicitation: JsonObject? = null,
+        experimental: JsonObject? = null,
+        extensions: Map<String, JsonObject>? = null,
+    ) : this(
+        sampling = sampling?.let { Sampling() },
+        roots = roots,
+        elicitation = elicitation,
+        experimental = experimental,
+        extensions = extensions,
+    )
+
+    /**
+     * sub-capabilities for sampling.
+     *
+     * @property context Present if the client supports context inclusion via
+     * [CreateMessageRequestParams.includeContext] with values other than [IncludeContext.None].
+     * Servers SHOULD avoid non-`none` values when this field is absent.
+     * @property tools Present if the client supports tool use via
+     * [CreateMessageRequestParams.tools] / [CreateMessageRequestParams.toolChoice].
+     * Servers MUST NOT send `tools`/`toolChoice` when this field is absent.
+     */
+    @Serializable
+    public data class Sampling(public val context: JsonObject? = null, public val tools: JsonObject? = null)
+
+    /**
+     * @property sampling convenience value to enable the base sampling capability with no sub-capabilities
      * @property elicitation convenience value to enable the elicitation capability
      */
     public companion object {
-        public val sampling: JsonObject = EmptyJsonObject
+        public val sampling: Sampling = Sampling()
         public val elicitation: JsonObject = EmptyJsonObject
     }
 

@@ -176,11 +176,11 @@ fun Server.registerConformanceTools() {
             CreateMessageRequest(
                 CreateMessageRequestParams(
                     maxTokens = 10000,
-                    messages = listOf(SamplingMessage(Role.User, TextContent(prompt))),
+                    messages = listOf(SamplingMessage(Role.User, listOf(TextContent(prompt)))),
                 ),
             ),
         )
-        CallToolResult(listOf(TextContent(result.content.toString())))
+        CallToolResult(listOf(TextContent(result.content.joinToString("\n") { it.toString() })))
     }
 
     // 9. Elicitation

@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.kotest.assertions.json.shouldEqualJson
+import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
 import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
 import io.modelcontextprotocol.kotlin.test.utils.verifySerializationRoundTrip
@@ -8,6 +9,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 class CapabilitiesTest {
@@ -119,7 +121,7 @@ class CapabilitiesTest {
     @Test
     fun `should serialize ClientCapabilities with sampling`() {
         val capabilities = ClientCapabilities(
-            sampling = ClientCapabilities.sampling,
+            sampling = ClientCapabilities.Sampling(),
         )
         verifySerialization(
             capabilities,
@@ -266,7 +268,7 @@ class CapabilitiesTest {
             "io.modelcontextprotocol/ui" to EmptyJsonObject,
         )
         val capabilities = ClientCapabilities(
-            sampling = ClientCapabilities.sampling,
+            sampling = ClientCapabilities.Sampling(),
             roots = ClientCapabilities.Roots(listChanged = true),
             elicitation = ClientCapabilities.elicitation,
             experimental = experimental,
@@ -309,7 +311,7 @@ class CapabilitiesTest {
 
         val capabilities = verifyDeserialization<ClientCapabilities>(McpJson, json)
 
-        assertEquals(EmptyJsonObject, capabilities.sampling)
+        assertEquals(ClientCapabilities.Sampling(), capabilities.sampling)
         assertEquals(true, capabilities.roots?.listChanged)
         assertEquals(EmptyJsonObject, capabilities.elicitation)
     }
@@ -330,7 +332,7 @@ class CapabilitiesTest {
     @Test
     fun `should serialize and deserialize ClientCapabilities round trip`() {
         val original = ClientCapabilities(
-            sampling = ClientCapabilities.sampling,
+            sampling = ClientCapabilities.Sampling(),
             roots = ClientCapabilities.Roots(listChanged = false),
             elicitation = ClientCapabilities.elicitation,
             extensions = mapOf(
@@ -734,10 +736,11 @@ class CapabilitiesTest {
             }
         """.trimIndent()
 
-        val capabilities = verifyDeserialization<ClientCapabilities>(McpJson, json)
+        // Sampling is now a typed struct; unknown fields are ignored on deserialization
+        val capabilities = McpJson.decodeFromString<ClientCapabilities>(json)
 
-        // Should not fail - additionalProperties are allowed
-        assertEquals("customValue", capabilities.sampling?.get("customProperty")?.toString()?.trim('"'))
+        // Should not fail - additionalProperties are allowed (unknown fields are ignored by Sampling)
+        assertNotNull(capabilities.sampling)
     }
 
     @Test
@@ -754,5 +757,51 @@ class CapabilitiesTest {
 
         // Should not fail - additionalProperties are allowed
         assertEquals("debug", capabilities.logging?.get("level")?.toString()?.trim('"'))
+    }
+
+    // ============================================================================
+    // ClientCapabilities.Sampling sub-capabilities (SEP-1577)
+    // ============================================================================
+
+    @Test
+    fun `empty sampling serialises as empty object`() {
+        val caps = ClientCapabilities(sampling = ClientCapabilities.Sampling())
+        val json = McpJson.encodeToString(ClientCapabilities.serializer(), caps)
+        check("\"sampling\":{}" in json) { json }
+    }
+
+    @Test
+    fun `sampling with tools sub-capability serialises tools`() {
+        val caps = ClientCapabilities(sampling = ClientCapabilities.Sampling(tools = EmptyJsonObject))
+        val json = McpJson.encodeToString(ClientCapabilities.serializer(), caps)
+        check("\"tools\":{}" in json) { json }
+    }
+
+    @Test
+    fun `sampling with context sub-capability serialises context`() {
+        val caps = ClientCapabilities(sampling = ClientCapabilities.Sampling(context = EmptyJsonObject))
+        val json = McpJson.encodeToString(ClientCapabilities.serializer(), caps)
+        check("\"context\":{}" in json) { json }
+    }
+
+    @Test
+    fun `sampling with combined tools and context round-trips`() {
+        val original = ClientCapabilities(
+            sampling = ClientCapabilities.Sampling(
+                context = EmptyJsonObject,
+                tools = EmptyJsonObject,
+            ),
+        )
+        val json = McpJson.encodeToString(ClientCapabilities.serializer(), original)
+        val decoded = McpJson.decodeFromString(ClientCapabilities.serializer(), json)
+        decoded shouldBe original
+        decoded.sampling?.tools shouldBe EmptyJsonObject
+        decoded.sampling?.context shouldBe EmptyJsonObject
+    }
+
+    @Test
+    fun `absent sampling means unsupported`() {
+        val caps = ClientCapabilities()
+        caps.sampling shouldBe null
     }
 }

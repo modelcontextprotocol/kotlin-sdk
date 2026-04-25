@@ -112,8 +112,8 @@ public class CreateMessageRequestBuilder @PublishedApi internal constructor() : 
      * Example:
      * ```kotlin
      * messages(listOf(
-     *     SamplingMessage(Role.User, TextContent("Hello")),
-     *     SamplingMessage(Role.Assistant, TextContent("Hi!"))
+     *     SamplingMessage(Role.User, listOf(TextContent("Hello"))),
+     *     SamplingMessage(Role.Assistant, listOf(TextContent("Hi!")))
      * ))
      * ```
      */
@@ -246,7 +246,7 @@ public class SamplingMessageBuilder @PublishedApi internal constructor() {
      * ```
      */
     public fun user(content: MediaContent) {
-        messages.add(SamplingMessage(Role.User, content))
+        messages.add(SamplingMessage(Role.User, listOf(content)))
     }
 
     /**
@@ -258,7 +258,7 @@ public class SamplingMessageBuilder @PublishedApi internal constructor() {
      * ```
      */
     public fun assistant(content: MediaContent) {
-        messages.add(SamplingMessage(Role.Assistant, content))
+        messages.add(SamplingMessage(Role.Assistant, listOf(content)))
     }
 
     @PublishedApi

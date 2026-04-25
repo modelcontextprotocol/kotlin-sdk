@@ -556,15 +556,30 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         block: suspend (T, RequestHandlerExtra) -> RequestResult?,
     ) {
         assertRequestHandlerCapability(method)
+        val wrapped = wrapRequestHandler(method, block)
 
         _requestHandlers.update { current ->
             current.put(method.value) { jSONRPCRequest, extraHandler ->
                 val request = jSONRPCRequest.fromJSON()
-                val response = block(request as T, extraHandler)
+                val response = wrapped(request as T, extraHandler)
                 response
             }
         }
     }
+
+    /**
+     * Subclass hook to wrap an incoming-request handler before it is registered.
+     *
+     * Called once by [setRequestHandler] during registration. Subclasses may return a
+     * new function that, when invoked, performs additional checks (capability gates,
+     * schema validation, etc.) before delegating to [block]. The default implementation
+     * is the identity.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    protected open fun <T : Request> wrapRequestHandler(
+        method: Method,
+        block: suspend (T, RequestHandlerExtra) -> RequestResult?,
+    ): suspend (T, RequestHandlerExtra) -> RequestResult? = block
 
     /**
      * Removes the request handler for the given method.
