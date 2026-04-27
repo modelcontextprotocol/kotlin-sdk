@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
 plugins {
     id("mcp.multiplatform")
+    id("mcp.detekt")
 }
 
 kotlin {

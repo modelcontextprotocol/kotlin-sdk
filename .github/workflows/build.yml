@@ -34,7 +34,7 @@ jobs:
         include:
           - os: ubuntu-latest
             job-name: "Linux Tests"
-            gradle-tasks: "ktlintCheck build"
+            gradle-tasks: "build"
             max-workers: 3
 
           - os: macos-latest

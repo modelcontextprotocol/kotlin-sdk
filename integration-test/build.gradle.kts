@@ -1,5 +1,6 @@
 plugins {
     id("mcp.multiplatform")
+    id("mcp.detekt")
 }
 
 kotlin {
