@@ -27,13 +27,15 @@ internal const val SESSION_ID_PARAM = "sessionId"
  *
  * Creates a new SSE server transport, which will direct the client to POST messages to the relative or absolute URL identified by `_endpoint`.
  *
- * @property sessionId unique identifier for this transport session, generated randomly on creation
+ * @param endpoint relative or absolute URL the client will POST messages to
+ * @param session active SSE session used to deliver server-to-client events
  */
 @OptIn(ExperimentalAtomicApi::class)
 public class SseServerTransport(private val endpoint: String, private val session: ServerSSESession) :
     AbstractTransport() {
     private val initialized: AtomicBoolean = AtomicBoolean(false)
 
+    /** Unique identifier for this transport session, generated randomly on creation. */
     @OptIn(ExperimentalUuidApi::class)
     public val sessionId: String = Uuid.random().toString()
 

@@ -54,6 +54,7 @@ private const val MCP_RESUMPTION_TOKEN_HEADER = "Last-Event-ID"
  * Represents an error from the Streamable HTTP transport.
  *
  * @property code HTTP status code associated with the error, or `null` if unavailable
+ * @param message detailed error description appended to the exception message
  */
 public class StreamableHttpError(public val code: Int? = null, message: String? = null) :
     Exception("Streamable HTTP error: $message")
@@ -65,12 +66,16 @@ private sealed interface ConnectResult {
 }
 
 /**
- * Client transport for Streamable HTTP: this implements the MCP Streamable HTTP transport specification.
- * It will connect to a server using HTTP POST for sending messages and HTTP GET with Server-Sent Events
- * for receiving messages.
+ * Client transport implementing the MCP Streamable HTTP transport specification.
  *
- * @property sessionId session identifier assigned by the server after initialization, or `null` before connection
- * @property protocolVersion MCP protocol version negotiated with the server, or `null` before connection
+ * Sends messages via HTTP POST and receives messages via HTTP GET with Server-Sent Events.
+ * Supports automatic SSE reconnection with exponential backoff, stream resumption via the
+ * `Last-Event-ID` header, and explicit session termination.
+ *
+ * @param client Ktor HTTP client used for all requests
+ * @param url MCP endpoint URL
+ * @param reconnectionOptions reconnection backoff and retry-limit settings for the SSE stream
+ * @param requestBuilder builder applied to every outgoing HTTP request, e.g. for adding auth headers
  */
 public class StreamableHttpClientTransport(
     private val client: HttpClient,
@@ -97,8 +102,11 @@ public class StreamableHttpClientTransport(
 
     override val logger: KLogger = KotlinLogging.logger {}
 
+    /** Session identifier assigned by the server after initialization, or `null` before connection. */
     public var sessionId: String? = null
         private set
+
+    /** MCP protocol version negotiated with the server, or `null` before connection. */
     public var protocolVersion: String? = null
 
     private var sseJob: Job? = null

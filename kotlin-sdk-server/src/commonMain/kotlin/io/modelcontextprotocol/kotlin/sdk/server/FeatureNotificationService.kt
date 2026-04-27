@@ -38,6 +38,7 @@ private sealed class NotificationEvent(open val timestamp: Long)
 /**
  * Represents an event for a notification.
  *
+ * @property timestamp Timestamp at which this event was created.
  * @property notification The notification associated with the event.
  */
 private class SendEvent(override val timestamp: Long, val notification: Notification) : NotificationEvent(timestamp)

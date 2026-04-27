@@ -79,7 +79,7 @@ private val logger = KotlinLogging.logger {}
  * Options for configuring the MCP client.
  *
  * @property capabilities The capabilities this client supports.
- * @property enforceStrictCapabilities Whether to strictly enforce capabilities when interacting with the server.
+ * @param enforceStrictCapabilities Whether to strictly enforce capabilities when interacting with the server.
  */
 public class ClientOptions(
     public val capabilities: ClientCapabilities = ClientCapabilities(),

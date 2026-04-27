@@ -74,7 +74,6 @@ private data class SessionContext(val session: ServerSSESession?, val call: Appl
  * - No session validation is performed
  *
  * @param configuration Transport configuration. See [Configuration] for available options.
- * @property sessionId session identifier assigned after initialization, or `null` in stateless mode
  */
 @OptIn(ExperimentalUuidApi::class, ExperimentalAtomicApi::class)
 public class StreamableHttpServerTransport(private val configuration: Configuration) : AbstractTransport() {
@@ -151,6 +150,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         }
     }
 
+    /** Session identifier assigned after initialization in stateful mode, or `null` in stateless mode. */
     public var sessionId: String? = null
         private set
 
