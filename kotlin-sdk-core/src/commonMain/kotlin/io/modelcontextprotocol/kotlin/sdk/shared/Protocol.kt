@@ -392,7 +392,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         if (response != null) {
             handler(response, null)
         } else {
-            check(error != null)
+            checkNotNull(error)
             val mcpException = McpException(
                 code = error.error.code,
                 message = error.error.message,
@@ -476,8 +476,8 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                 try {
                     @Suppress("UNCHECKED_CAST")
                     result.complete(response!!.result as T)
-                } catch (error: Throwable) {
-                    result.completeExceptionally(error)
+                } catch (e: Throwable) {
+                    result.completeExceptionally(e)
                 }
             }
         }

@@ -341,7 +341,7 @@ internal class FeatureNotificationService(
         emitJobs.getAndUpdate { it.add(job) }
 
         // Register completion
-        job.invokeOnCompletion {
+        job.invokeOnCompletion { _ ->
             emitJobs.getAndUpdate { it.remove(job) }
         }
 

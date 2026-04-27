@@ -237,7 +237,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
             Method.Defined.CompletionComplete,
             -> {
                 checkNotNull(serverCapabilities?.prompts) {
-                    throw IllegalStateException("Server does not support prompts (required for $method)")
+                    "Server does not support prompts (required for $method)"
                 }
             }
 
@@ -250,10 +250,10 @@ public open class Client(private val clientInfo: Implementation, options: Client
                 val resCaps = serverCapabilities?.resources
                     ?: error("Server does not support resources (required for $method)")
 
-                if (method == Method.Defined.ResourcesSubscribe && resCaps.subscribe != true) {
-                    throw IllegalStateException(
-                        "Server does not support resource subscriptions (required for $method)",
-                    )
+                if (method == Method.Defined.ResourcesSubscribe) {
+                    check(resCaps.subscribe == true) {
+                        "Server does not support resource subscriptions (required for $method)"
+                    }
                 }
             }
 
@@ -531,9 +531,8 @@ public open class Client(private val clientInfo: Implementation, options: Client
      * @throws IllegalStateException If the client does not support roots.
      */
     public fun removeRoot(uri: String): Boolean {
-        if (capabilities.roots == null) {
-            logger.error { "Failed to remove root '$uri': Client does not support roots capability" }
-            throw IllegalStateException("Client does not support roots capability.")
+        checkNotNull(capabilities.roots) {
+            "Client does not support roots capability."
         }
         logger.info { "Removing root: $uri" }
         val oldMap = roots.getAndUpdate { current -> current.remove(uri) }
