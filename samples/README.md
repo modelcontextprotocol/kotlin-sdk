@@ -9,6 +9,7 @@ For background on the protocol itself, see the [MCP documentation](https://model
 | Sample                                                 | Type              | Transport       | MCP Features                       |
 |--------------------------------------------------------|-------------------|-----------------|------------------------------------|
 | [simple-streamable-server](./simple-streamable-server) | Server            | Streamable HTTP | Tools, Resources, Prompts, Logging |
+| [kotlinlang-mcp-server](./kotlinlang-mcp-server)       | Server            | Streamable HTTP | Tools                              |
 | [kotlin-mcp-server](./kotlin-mcp-server)               | Server            | STDIO, SSE      | Tools, Resources, Prompts          |
 | [weather-stdio-server](./weather-stdio-server)         | Server            | STDIO           | Tools                              |
 | [kotlin-mcp-client](./kotlin-mcp-client)               | Client            | STDIO           | Tool discovery & invocation        |
@@ -29,6 +30,13 @@ For background on the protocol itself, see the [MCP documentation](https://model
 A minimal Streamable HTTP server with optional Bearer token authentication. Demonstrates tools
 (`greet`, `multi-greet`), a prompt template, a resource, and server-to-client logging notifications.
 [Read more →](./simple-streamable-server)
+
+### Kotlinlang MCP Server
+
+A Streamable HTTP server that exposes the official Kotlin documentation (kotlinlang.org) to LLM
+clients — full-text search via Algolia and page retrieval in markdown. Demonstrates wrapping a real
+external API in an MCP server with in-memory caching.
+[Read more →](./kotlinlang-mcp-server)
 
 ### Kotlin MCP Server
 
