@@ -1,3 +1,4 @@
+import dev.detekt.gradle.Detekt
 import dev.detekt.gradle.extensions.FailOnSeverity
 
 plugins {
@@ -6,9 +7,13 @@ plugins {
 
 detekt {
     config = files("$rootDir/config/detekt/detekt.yml")
-    buildUponDefaultConfig = true
+    buildUponDefaultConfig = false
     parallel = true
     failOnSeverity = FailOnSeverity.Error
+}
+
+tasks.withType<Detekt>().configureEach {
+    exclude("**/generated/**", "**/generated-sources/**", "**/build/**")
 }
 
 pluginManager.withPlugin("org.jetbrains.kotlin.multiplatform") {
