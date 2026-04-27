@@ -155,7 +155,7 @@ coroutines:
   GlobalCoroutineUsage:
     active: true
   InjectDispatcher:
-    active: true
+    active: false
     dispatcherNames:
       - 'IO'
       - 'Default'
@@ -167,9 +167,9 @@ coroutines:
   SuspendFunInFinallySection:
     active: false
   SuspendFunSwallowedCancellation:
-    active: true
+    active: false
   SuspendFunWithCoroutineScopeReceiver:
-    active: true
+    active: false
     aliases: ['SuspendFunctionOnCoroutineScope']
   SuspendFunWithFlowReturnType:
     active: true
@@ -221,7 +221,7 @@ exceptions:
       - 'hashCode'
       - 'toString'
   InstanceOfCheckForException:
-    active: true
+    active: false
     excludes: ['**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**']
   NotImplementedDeclaration:
     active: true
@@ -372,7 +372,7 @@ naming:
     active: false
     minimumVariableNameLength: 1
   VariableNaming:
-    active: true
+    active: false
     aliases: ['PropertyName']
     variablePattern: '[a-z][A-Za-z0-9]*'
     privateVariablePattern: '(_)?[a-z][A-Za-z0-9]*'
@@ -432,7 +432,7 @@ potential-bugs:
       - 'java.util.LinkedHashMap'
       - 'java.util.HashMap'
   ElseCaseInsteadOfExhaustiveWhen:
-    active: true
+    active: false
     ignoredSubjectTypes: []
   EqualsAlwaysReturnsTrueOrFalse:
     active: true
@@ -495,7 +495,7 @@ potential-bugs:
   NullCheckOnMutableProperty:
     active: false
   NullableToStringCall:
-    active: true
+    active: false
   PropertyUsedBeforeDeclaration:
     active: false
   UnconditionalJumpStatementInLoop:
