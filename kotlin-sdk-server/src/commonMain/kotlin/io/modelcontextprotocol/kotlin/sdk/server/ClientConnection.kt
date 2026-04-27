@@ -24,6 +24,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ResourceListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ServerNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ToolListChangedNotification
+import kotlinx.serialization.DeserializationStrategy
 
 private val logger = KotlinLogging.logger {}
 
@@ -180,9 +181,13 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
 
     override val sessionId: String get() = session.sessionId
 
-    private suspend fun <T : RequestResult> request(request: Request, options: RequestOptions? = null): T {
+    private suspend fun <T : RequestResult> request(
+        request: Request,
+        deserializer: DeserializationStrategy<T>,
+        options: RequestOptions? = null,
+    ): T {
         logger.trace { "Sending request to client for session $sessionId: $request" }
-        return session.request(request, options)
+        return session.request(request, options, deserializer)
     }
 
     override suspend fun notification(notification: ServerNotification, relatedRequestId: RequestId?) {
@@ -196,7 +201,7 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
 
     override suspend fun ping(request: PingRequest, options: RequestOptions?): EmptyResult {
         logger.trace { "Sending ping request: $request" }
-        return request(request, options)
+        return request(request, EmptyResult.serializer(), options)
     }
 
     override suspend fun createMessage(request: CreateMessageRequest, options: RequestOptions?): CreateMessageResult {
@@ -208,12 +213,12 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
             }
         }
         logger.trace { "Full createMessage params: $request" }
-        return request(request, options)
+        return request(request, CreateMessageResult.serializer(), options)
     }
 
     override suspend fun listRoots(request: ListRootsRequest, options: RequestOptions?): ListRootsResult {
         logger.debug { "Listing roots" }
-        return request(request, options)
+        return request(request, ListRootsResult.serializer(), options)
     }
 
     override suspend fun createElicitation(request: ElicitRequest, options: RequestOptions?): ElicitResult {
@@ -230,7 +235,7 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
             }
         }
         logger.trace { "ElicitRequest: $request" }
-        return request(request, options)
+        return request(request, ElicitResult.serializer(), options)
     }
 
     override suspend fun createElicitation(

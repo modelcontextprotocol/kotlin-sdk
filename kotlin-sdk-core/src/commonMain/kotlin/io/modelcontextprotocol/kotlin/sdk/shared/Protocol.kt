@@ -33,9 +33,12 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.serializer
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -438,14 +441,25 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
      *
      * Do not use this method to emit notifications! Use notification() instead.
      */
-    public suspend inline fun <reified T : RequestResult> request(
+    public suspend fun <T : RequestResult> request(
         request: Request,
         options: RequestOptions? = null,
+        deserializer: DeserializationStrategy<T>,
     ): T = requestInternal(request, options) { response ->
-        McpJson.decodeFromJsonElement<T>(
+        McpJson.decodeFromJsonElement(
+            deserializer,
             McpJson.encodeToJsonElement(response.result),
         )
     }
+
+    public suspend inline fun <reified T : RequestResult> request(
+        request: Request,
+        options: RequestOptions? = null,
+    ): T = request(
+        request = request,
+        options = options,
+        deserializer = serializer<T>(),
+    )
 
     @PublishedApi
     internal suspend fun <T : RequestResult> requestInternal(

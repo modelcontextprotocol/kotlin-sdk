@@ -5,8 +5,12 @@ import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.CustomRequest
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
+import io.modelcontextprotocol.kotlin.sdk.types.GetTaskPayloadRequest
+import io.modelcontextprotocol.kotlin.sdk.types.GetTaskPayloadRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.GetTaskPayloadResult
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
@@ -16,11 +20,10 @@ import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.RequestMeta
-import io.modelcontextprotocol.kotlin.sdk.types.RequestResult
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
@@ -191,36 +194,30 @@ class ProtocolTest {
     @Test
     fun `should deserialize response into requested result type instead of casting runtime subtype`() = runTest {
         protocol.connect(transport)
-        val request = CustomRequest(
-            method = Method.Custom("example"),
-            params = null,
+        val request = GetTaskPayloadRequest(
+            GetTaskPayloadRequestParams(taskId = "task-123"),
+        )
+        val expected = CallToolResult(
+            content = listOf(TextContent("ok")),
         )
 
         val inFlight = async {
-            protocol.request<TestExpectedResult>(request)
+            protocol.request<CallToolResult>(request)
         }
 
         val sent = transport.awaitRequest()
         transport.deliver(
             JSONRPCResponse(
                 sent.id,
-                TestWireCompatibleResult(value = "ok"),
+                GetTaskPayloadResult(
+                    McpJson.encodeToJsonElement(expected).jsonObject,
+                ),
             ),
         )
 
-        inFlight.await() shouldBe TestExpectedResult(value = "ok")
+        inFlight.await() shouldBe expected
     }
 }
-
-@Serializable
-private data class TestExpectedResult(
-    val value: String,
-) : RequestResult
-
-@Serializable
-private data class TestWireCompatibleResult(
-    val value: String,
-) : RequestResult
 
 private class TestProtocol : Protocol(null) {
     val errors = mutableListOf<Throwable>()
