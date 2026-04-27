@@ -72,7 +72,6 @@ private sealed interface ConnectResult {
  * @property sessionId session identifier assigned by the server after initialization, or `null` before connection
  * @property protocolVersion MCP protocol version negotiated with the server, or `null` before connection
  */
-@Suppress("TooManyFunctions")
 public class StreamableHttpClientTransport(
     private val client: HttpClient,
     private val url: String,
@@ -121,7 +120,6 @@ public class StreamableHttpClientTransport(
     /**
      * Sends a single message with optional resumption support
      */
-    @Suppress("ReturnCount", "CyclomaticComplexMethod", "LongMethod", "TooGenericExceptionCaught", "ThrowsCount")
     override suspend fun performSend(message: JSONRPCMessage, options: TransportSendOptions?) {
         logger.debug { "Client sending message via POST to $url: ${McpJson.encodeToString(message)}" }
 
@@ -260,7 +258,6 @@ public class StreamableHttpClientTransport(
             var attempt = 0
             var needsDelay = initialServerRetryDelay != null
 
-            @Suppress("LoopWithTooManyJumpStatements")
             while (isActive) {
                 // Delay before (re)connection: skip only for first fresh SSE connection
                 if (needsDelay) {
@@ -296,7 +293,6 @@ public class StreamableHttpClientTransport(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private suspend fun connectSse(lastEventId: String?): ConnectResult {
         logger.debug { "Client attempting to start SSE session at url: $url" }
         return try {
@@ -363,7 +359,6 @@ public class StreamableHttpClientTransport(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private suspend fun collectSse(
         session: ClientSSESession,
         replayMessageId: RequestId?,
@@ -408,7 +403,6 @@ public class StreamableHttpClientTransport(
         return SseStreamResult(hasPrimingEvent, receivedResponse, localLastEventId, localServerRetryDelay)
     }
 
-    @Suppress("CyclomaticComplexMethod")
     private suspend fun handleInlineSse(
         response: HttpResponse,
         replayMessageId: RequestId?,
@@ -455,7 +449,6 @@ public class StreamableHttpClientTransport(
             }
         }
 
-        @Suppress("LoopWithTooManyJumpStatements")
         while (!channel.isClosedForRead) {
             val line = channel.readUTF8Line() ?: break
             if (line.isEmpty()) {

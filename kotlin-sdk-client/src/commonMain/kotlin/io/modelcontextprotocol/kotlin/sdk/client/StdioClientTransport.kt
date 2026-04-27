@@ -227,7 +227,6 @@ public class StdioClientTransport @JvmOverloads public constructor(
     }
 
     override suspend fun performSend(message: JSONRPCMessage, options: TransportSendOptions?) {
-        @Suppress("SwallowedException")
         try {
             sendChannel.send(message)
         } catch (e: CancellationException) {

@@ -106,7 +106,6 @@ public class ChannelTransport(
     override suspend fun initialize() {
         logger.info { "ChannelTransport starting message processing" }
         val started = CompletableDeferred<Unit>()
-        @Suppress("TooGenericExceptionCaught")
         scope.launch(CoroutineName("ChannelTransport#${hashCode()}-event-loop")) {
             try {
                 // Signal that event loop has started, then yield to ensure we're ready

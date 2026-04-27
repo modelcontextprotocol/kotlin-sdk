@@ -121,7 +121,6 @@ public suspend fun mcpClient(
  * @param clientInfo Information about the client implementation (name, version).
  * @param options Configuration options for this client.
  */
-@Suppress("TooManyFunctions")
 public open class Client(private val clientInfo: Implementation, options: ClientOptions = ClientOptions()) :
     Protocol(options) {
 
@@ -612,7 +611,6 @@ public open class Client(private val clientInfo: Implementation, options: Client
 
     // --- Internal Handlers ---
 
-    @Suppress("ReturnCount")
     private fun applyElicitationDefaults(request: ElicitRequest, result: ElicitResult): ElicitResult {
         if (result.action != ElicitResult.Action.Accept) return result
         val formParams = request.params as? ElicitRequestFormParams ?: return result

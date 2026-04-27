@@ -285,7 +285,6 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         }
     }
 
-    @Suppress("ThrowsCount")
     private suspend fun onRequest(request: JSONRPCRequest) {
         logger.trace { "Received request: ${request.method} (id: ${request.id})" }
 
@@ -312,7 +311,6 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             return
         }
 
-        @Suppress("TooGenericExceptionCaught", "InstanceOfCheckForException")
         try {
             val result = handler(request, RequestHandlerExtra())
             logger.trace { "Request handled successfully: ${request.method} (id: ${request.id})" }

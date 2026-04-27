@@ -18,7 +18,6 @@ public object TypeScriptRunner {
      * @param logPrefix Prefix for log lines
      * @return The started Process
      */
-    @Suppress("LongParameterList")
     public fun run(
         typescriptDir: File,
         scriptPath: String,
@@ -54,7 +53,6 @@ public object TypeScriptRunner {
      * @param typescriptDir The directory containing package.json
      * @throws RuntimeException if npm install fails
      */
-    @Suppress("ReturnCount")
     public fun installDependencies(typescriptDir: File) {
         require(typescriptDir.isDirectory()) { "Type script directory does not exist: ${typescriptDir.absolutePath}" }
         println("Installing TypeScript dependencies in ${typescriptDir.absolutePath}")

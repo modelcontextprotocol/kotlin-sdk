@@ -118,7 +118,6 @@ public class PathSegmentTemplateMatcher @JvmOverloads constructor(
         variableIndices = vars.toImmutableMap()
     }
 
-    @Suppress("ReturnCount")
     override fun match(resourceUri: String): MatchResult? {
         if (resourceUri.length > maxUriLength) {
             logger.debug { "URL is too long (max=$maxUriLength)" }

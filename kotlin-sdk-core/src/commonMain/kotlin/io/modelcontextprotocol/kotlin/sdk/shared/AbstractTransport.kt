@@ -10,7 +10,6 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
  * corresponding [_onClose], [_onError] and [_onMessage] properties to use for an implementation.
  */
 @OptIn(ExperimentalAtomicApi::class)
-@Suppress("PropertyName")
 public abstract class AbstractTransport : Transport {
     private val onCloseCalled = AtomicBoolean(false)
     private var _onClose: (() -> Unit) = {}

@@ -43,7 +43,6 @@ private val logger = KotlinLogging.logger {}
  *
  * @property sessionId unique identifier for this session, generated randomly on creation
  */
-@Suppress("TooManyFunctions")
 public open class ServerSession(
     protected val serverInfo: Implementation,
     options: ServerOptions,

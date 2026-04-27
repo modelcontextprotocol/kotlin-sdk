@@ -77,7 +77,6 @@ private data class SessionContext(val session: ServerSSESession?, val call: Appl
  * @property sessionId session identifier assigned after initialization, or `null` in stateless mode
  */
 @OptIn(ExperimentalUuidApi::class, ExperimentalAtomicApi::class)
-@Suppress("TooManyFunctions")
 public class StreamableHttpServerTransport(private val configuration: Configuration) : AbstractTransport() {
 
     @Deprecated("Use default constructor with explicit Configuration()")
@@ -100,7 +99,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
      * @param retryIntervalMillis Retry interval in milliseconds for event handling or reconnection attempts.
      *          Defaults to `null`.
      */
-    @Suppress("MaxLineLength")
     @Deprecated(
         "Use constructor with Configuration: StreamableHttpServerTransport(Configuration(enableJsonResponse = ...))",
         replaceWith = ReplaceWith(
@@ -215,7 +213,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         }
     }
 
-    @Suppress("CyclomaticComplexMethod", "ReturnCount")
     override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
         val responseRequestId: RequestId? = when (message) {
             is JSONRPCResponse -> message.id
@@ -329,7 +326,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
     /**
      * Handles POST requests containing JSON-RPC messages
      */
-    @Suppress("CyclomaticComplexMethod", "LongMethod", "ReturnCount", "TooGenericExceptionCaught")
     public suspend fun handlePostRequest(session: ServerSSESession?, call: ApplicationCall) {
         try {
             if (!configuration.enableJsonResponse && session == null) {
@@ -438,7 +434,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
     }
 
     /** Handles an HTTP GET request by establishing a standalone SSE stream for server-initiated notifications. */
-    @Suppress("ReturnCount")
     public suspend fun handleGetRequest(session: ServerSSESession?, call: ApplicationCall) {
         // NOTE: enableJsonResponse only controls how POST responses are delivered (JSON vs. SSE).
         // The standalone GET SSE stream is always supported — it is the only channel available
@@ -499,7 +494,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
      * Closes the SSE stream associated with the given [requestId], prompting the client to reconnect.
      * Useful for implementing polling behavior for long-running operations.
      */
-    @Suppress("ReturnCount", "TooGenericExceptionCaught")
     public suspend fun closeSseStream(requestId: RequestId) {
         if (configuration.enableJsonResponse) return
         val streamId = requestToStreamMapping[requestId] ?: return
@@ -516,7 +510,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private suspend fun replayEvents(store: EventStore, lastEventId: String, session: ServerSSESession) {
         val call: ApplicationCall = session.call
 
@@ -583,7 +576,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         }
     }
 
-    @Suppress("ReturnCount")
     private suspend fun validateSession(call: ApplicationCall): Boolean {
         if (sessionIdGenerator == null) return true
 
@@ -642,7 +634,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         }
     }
 
-    @Suppress("ReturnCount")
     private fun validateHeaders(call: ApplicationCall): String? {
         if (!configuration.enableDnsRebindingProtection) return null
 
@@ -667,7 +658,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         return null
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private suspend fun flushSse(session: ServerSSESession?) {
         try {
             session?.send(data = "")
@@ -678,7 +668,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         }
     }
 
-    @Suppress("ReturnCount")
     private suspend fun parseBody(call: ApplicationCall): List<JSONRPCMessage>? {
         val maxSize = configuration.maxRequestBodySize
         val contentLength = call.request.header(HttpHeaders.ContentLength)?.toLongOrNull() ?: 0L
@@ -732,7 +721,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private suspend fun maybeSendPrimingEvent(
         streamId: String,
         session: ServerSSESession?,

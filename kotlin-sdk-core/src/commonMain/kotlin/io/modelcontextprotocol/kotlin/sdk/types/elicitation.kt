@@ -91,7 +91,7 @@ public sealed interface ElicitRequestParams : RequestParams {
     ReplaceWith("ElicitRequestFormParams(message, requestedSchema = requestedSchema, meta = meta)"),
     DeprecationLevel.WARNING,
 )
-@Suppress("FunctionNaming", "FunctionName")
+@Suppress("FunctionName")
 public fun ElicitRequestParams(
     message: String,
     requestedSchema: ElicitRequestParams.RequestedSchema,
