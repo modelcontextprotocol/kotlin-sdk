@@ -4,13 +4,18 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonContentPolymorphicSerializer
+import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonEncoder
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
@@ -118,6 +123,101 @@ internal object MediaContentPolymorphicSerializer :
             ContentTypes.IMAGE.value -> ImageContent.serializer()
             ContentTypes.AUDIO.value -> AudioContent.serializer()
             else -> throw SerializationException("Unknown media content type: ${element.getTypeOrNull()}")
+        }
+}
+
+/**
+ * Polymorphic serializer for [SamplingMessageContent] types.
+ * Determines the concrete type based on the "type" field in JSON.
+ */
+internal object SamplingMessageContentPolymorphicSerializer :
+    JsonContentPolymorphicSerializer<SamplingMessageContent>(SamplingMessageContent::class) {
+    override fun selectDeserializer(element: JsonElement): DeserializationStrategy<SamplingMessageContent> =
+        when (element.getType()) {
+            ContentTypes.TEXT.value -> TextContent.serializer()
+
+            ContentTypes.IMAGE.value -> ImageContent.serializer()
+
+            ContentTypes.AUDIO.value -> AudioContent.serializer()
+
+            ContentTypes.TOOL_USE.value -> ToolUseContent.serializer()
+
+            ContentTypes.TOOL_RESULT.value -> ToolResultContent.serializer()
+
+            else -> throw SerializationException(
+                "Unknown sampling message content type: ${element.getTypeOrNull()}",
+            )
+        }
+}
+
+/**
+ * Wire-format serializer for `List<SamplingMessageContent>` honouring SEP-1577's
+ * single-object-or-array content shape.
+ *
+ * **Why this exists.** SEP-1577 widens the `content` field of [SamplingMessage] and
+ * [CreateMessageResult] from a single content block to either a single block or an
+ * array of blocks. Pre-SEP peers only understand a single object on the wire; post-SEP
+ * peers may send arrays when a turn carries multiple blocks (e.g. an assistant reply
+ * containing `[TextContent, ToolUseContent]` during a tool-loop step).
+ *
+ * The Kotlin API uses `List<SamplingMessageContent>` uniformly to avoid branching in
+ * caller code. This serializer bridges the type difference:
+ *
+ * - **Read:** accepts both shapes; a single JSON object becomes `listOf(block)`, an
+ *   array becomes the decoded list.
+ * - **Write:** size-1 list → single object (wire-compatible with pre-SEP peers);
+ *   size≥2 → array; empty list throws (sampling content has no valid empty meaning
+ *   per spec).
+ */
+internal object SamplingContentSerializer : KSerializer<List<SamplingMessageContent>> {
+
+    private val listSerializer = ListSerializer(SamplingMessageContentPolymorphicSerializer)
+
+    override val descriptor: SerialDescriptor = listSerializer.descriptor
+
+    override fun serialize(encoder: Encoder, value: List<SamplingMessageContent>) {
+        check(value.isNotEmpty()) { "content must contain at least one block" }
+        val jsonEncoder = encoder as? JsonEncoder
+            ?: throw SerializationException("SamplingContentSerializer requires a Json encoder")
+        if (value.size == 1) {
+            jsonEncoder.encodeJsonElement(
+                jsonEncoder.json.encodeToJsonElement(
+                    SamplingMessageContentPolymorphicSerializer,
+                    value[0],
+                ),
+            )
+        } else {
+            jsonEncoder.encodeJsonElement(
+                jsonEncoder.json.encodeToJsonElement(listSerializer, value),
+            )
+        }
+    }
+
+    override fun deserialize(decoder: Decoder): List<SamplingMessageContent> {
+        val jsonDecoder = decoder as? JsonDecoder
+            ?: throw SerializationException("SamplingContentSerializer requires a Json decoder")
+        return decodeFromElement(jsonDecoder, jsonDecoder.decodeJsonElement())
+    }
+
+    private fun decodeFromElement(jsonDecoder: JsonDecoder, element: JsonElement): List<SamplingMessageContent> =
+        when (element) {
+            is JsonArray -> {
+                if (element.isEmpty()) {
+                    throw SerializationException("content must contain at least one block")
+                }
+                jsonDecoder.json.decodeFromJsonElement(listSerializer, element)
+            }
+
+            is JsonObject -> listOf(
+                jsonDecoder.json.decodeFromJsonElement(
+                    SamplingMessageContentPolymorphicSerializer,
+                    element,
+                ),
+            )
+
+            else -> throw SerializationException(
+                "content must be a JSON object or array of objects, got $element",
+            )
         }
 }
 

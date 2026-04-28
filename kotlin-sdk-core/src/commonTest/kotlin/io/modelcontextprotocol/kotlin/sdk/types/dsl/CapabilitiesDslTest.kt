@@ -4,10 +4,10 @@ import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
+import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.types.buildInitializeRequest
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.double
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlin.test.Test
@@ -42,11 +42,7 @@ class CapabilitiesDslTest {
         val request = buildInitializeRequest {
             protocolVersion = "2024-11-05"
             capabilities {
-                sampling {
-                    put("temperature", 0.7)
-                    put("maxTokens", 1000)
-                    put("topP", 0.95)
-                }
+                sampling(ClientCapabilities.Sampling(tools = EmptyJsonObject))
                 roots(listChanged = true)
                 elicitation {
                     put("mode", "interactive")
@@ -72,9 +68,7 @@ class CapabilitiesDslTest {
 
         request.params.capabilities.shouldNotBeNull {
             sampling shouldNotBeNull {
-                get("temperature")?.jsonPrimitive?.double shouldBe 0.7
-                get("maxTokens")?.jsonPrimitive?.content shouldBe "1000"
-                get("topP")?.jsonPrimitive?.double shouldBe 0.95
+                tools shouldBe EmptyJsonObject
             }
             roots shouldNotBeNull {
                 listChanged shouldBe true
@@ -174,8 +168,8 @@ class CapabilitiesDslTest {
         val request = buildInitializeRequest {
             protocolVersion = "2024-11-05"
             capabilities {
-                sampling { put("temperature", 0.5) }
-                sampling { put("temperature", 0.9) } // Should overwrite
+                sampling(ClientCapabilities.Sampling())
+                sampling(ClientCapabilities.Sampling(tools = EmptyJsonObject)) // Should overwrite
                 experimental { put("feature", "v1") }
                 experimental { put("feature", "v2") } // Should overwrite
             }
@@ -184,7 +178,7 @@ class CapabilitiesDslTest {
 
         request.params.capabilities.shouldNotBeNull {
             sampling shouldNotBeNull {
-                get("temperature")?.jsonPrimitive?.double shouldBe 0.9
+                tools shouldBe EmptyJsonObject
             }
             experimental shouldNotBeNull {
                 get("feature")?.jsonPrimitive?.content shouldBe "v2"

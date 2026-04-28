@@ -45,11 +45,6 @@ kotlin {
                 events("failed")
             }
             systemProperty("kotest.output.ansi", "true")
-            reports {
-                junitXml.required.set(true)
-                junitXml.includeSystemOutLog.set(true)
-                junitXml.includeSystemErrLog.set(true)
-            }
         }
     }
     macosArm64()

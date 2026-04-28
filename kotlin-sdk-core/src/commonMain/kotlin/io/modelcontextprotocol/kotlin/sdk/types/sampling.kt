@@ -75,11 +75,33 @@ public data class ModelPreferences(
  *
  * Used in sampling requests to provide conversation context and history to the LLM.
  *
+ * Under SEP-1577, [content] is a list of [SamplingMessageContent] blocks rather than a
+ * single block. On the wire, a list of size 1 is serialised as a single object (wire-compatible
+ * with pre-SEP single-block content); a list of size 2+ is serialised as a JSON array.
+ *
  * @property role The role of the message sender (user, assistant, or system).
- * @property content The content of the message. Can be text, image, or audio content.
+ * @property content The content blocks of the message; MUST contain at least one block.
+ * @property meta Optional metadata reserved by MCP for clients and servers.
  */
 @Serializable
-public data class SamplingMessage(val role: Role, val content: MediaContent)
+public data class SamplingMessage(
+    val role: Role,
+    @Serializable(with = SamplingContentSerializer::class)
+    val content: List<SamplingMessageContent>,
+    @SerialName("_meta")
+    val meta: JsonObject? = null,
+) {
+    /**
+     * Convenience constructor for a single-block message. Wraps [content] in a
+     * singleton list so call sites can write `SamplingMessage(Role.User, TextContent("hi"))`
+     * without the explicit `listOf(...)`.
+     */
+    public constructor(
+        role: Role,
+        content: SamplingMessageContent,
+        meta: JsonObject? = null,
+    ) : this(role, listOf(content), meta)
+}
 
 // ============================================================================
 // sampling/createMessage
@@ -184,6 +206,12 @@ public data class CreateMessageRequest(override val params: CreateMessageRequest
  * @property stopSequences Optional list of sequences that will stop generation if encountered.
  * @property metadata Optional metadata to pass through to the LLM provider.
  * The format of this metadata is provider-specific.
+ * @property tools Optional list of tools the model may use during generation.
+ * The client MUST return an error if this field is present but the client did not advertise
+ * [ClientCapabilities.Sampling.tools].
+ * @property toolChoice Optional policy controlling how the model uses the provided [tools].
+ * The client MUST return an error if this field is present but the client did not advertise
+ * [ClientCapabilities.Sampling.tools].
  * @property meta Optional metadata for this request. May include a progressToken for
  * out-of-band progress notifications.
  */
@@ -197,6 +225,8 @@ public data class CreateMessageRequestParams(
     val temperature: Double? = null,
     val stopSequences: List<String>? = null,
     val metadata: JsonObject? = null,
+    val tools: List<Tool>? = null,
+    val toolChoice: ToolChoice? = null,
     @SerialName("_meta")
     override val meta: RequestMeta? = null,
 ) : RequestParams
@@ -226,22 +256,37 @@ public enum class IncludeContext {
  * to inspect the response (human in the loop) and decide whether to allow the server to see it.
  *
  * @property role The role of the message sender. Typically [Role.Assistant] for LLM-generated responses.
- * @property content The generated content. Can be text, image, or audio content.
- * @property model The name of the model that generated the message (e.g., "claude-3-opus-20240229",
- * "gpt-4-turbo-preview"). This helps the server understand which model was used.
+ * @property content The generated content blocks; at least one block is required.
+ * @property model The name of the model that generated the message (e.g., "claude-3-opus-20240229").
  * @property stopReason The reason why sampling stopped, if known.
- * Common values: "end_turn", "max_tokens", "stop_sequence", "content_filter"
+ * Common values: [StopReason.EndTurn], [StopReason.StopSequence], [StopReason.MaxTokens],
+ * [StopReason.ToolUse].
  * @property meta Optional metadata for this response.
  */
 @Serializable
 public data class CreateMessageResult(
     val role: Role,
-    val content: MediaContent,
+    @Serializable(with = SamplingContentSerializer::class)
+    val content: List<SamplingMessageContent>,
     val model: String,
     val stopReason: StopReason? = null,
     @SerialName("_meta")
     override val meta: JsonObject? = null,
-) : ClientResult
+) : ClientResult {
+    /**
+     * Convenience constructor for a single-block response. Wraps [content] in a
+     * singleton list so call sites can write
+     * `CreateMessageResult(Role.Assistant, TextContent("ok"), "model-name")`
+     * without the explicit `listOf(...)`.
+     */
+    public constructor(
+        role: Role,
+        content: SamplingMessageContent,
+        model: String,
+        stopReason: StopReason? = null,
+        meta: JsonObject? = null,
+    ) : this(role, listOf(content), model, stopReason, meta)
+}
 
 /**
  * The reason why the LLM stopped generating tokens.
@@ -255,10 +300,38 @@ public value class StopReason(public val value: String) {
      * @property EndTurn generation ended naturally
      * @property StopSequence a stop sequence was encountered
      * @property MaxTokens the maximum token limit was reached
+     * @property ToolUse the assistant issued a tool call (see SEP-1577)
      */
     public companion object {
         public val EndTurn: StopReason = StopReason("endTurn")
         public val StopSequence: StopReason = StopReason("stopSequence")
         public val MaxTokens: StopReason = StopReason("maxTokens")
+        public val ToolUse: StopReason = StopReason("toolUse")
+    }
+}
+
+/**
+ * Controls tool-selection behaviour for [CreateMessageRequest] under SEP-1577.
+ *
+ * @property mode Tool-use policy:
+ *  - [Mode.Auto]: the model decides whether to use tools (default when [mode] is absent)
+ *  - [Mode.Required]: the model MUST use at least one tool before completing
+ *  - [Mode.None]: the model MUST NOT use any tool
+ */
+@Serializable
+public data class ToolChoice(public val mode: Mode? = null) {
+    /**
+     * Allowed values of [ToolChoice.mode] per SEP-1577.
+     */
+    @Serializable
+    public enum class Mode {
+        @SerialName("auto")
+        Auto,
+
+        @SerialName("required")
+        Required,
+
+        @SerialName("none")
+        None,
     }
 }

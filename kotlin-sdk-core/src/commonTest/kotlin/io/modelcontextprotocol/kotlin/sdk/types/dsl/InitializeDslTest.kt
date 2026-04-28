@@ -9,7 +9,6 @@ import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.buildInitializeRequest
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlin.test.Test
@@ -21,9 +20,7 @@ class InitializeDslTest {
         val request = buildInitializeRequest {
             protocolVersion = "2024-11-05"
             capabilities {
-                sampling {
-                    put("maxTokens", 100)
-                }
+                sampling(ClientCapabilities.Sampling())
                 roots(listChanged = true)
                 elicitation {
                     put("mode", "interactive")
@@ -47,7 +44,7 @@ class InitializeDslTest {
 
         request.params.protocolVersion shouldBe "2024-11-05"
         request.params.capabilities.shouldNotBeNull {
-            sampling?.get("maxTokens")?.jsonPrimitive?.int shouldBe 100
+            sampling shouldNotBeNull { }
             roots?.listChanged shouldBe true
             elicitation?.get("mode")?.jsonPrimitive?.content shouldBe "interactive"
             experimental?.get("custom")?.jsonPrimitive?.content shouldBe "true"
@@ -79,8 +76,8 @@ class InitializeDslTest {
     }
 
     @Test
-    fun `capabilities DSL should support direct JsonObject values`() {
-        val samplingObj = buildJsonObject { put("key", "value") }
+    fun `capabilities DSL should support direct typed values`() {
+        val samplingValue = ClientCapabilities.Sampling(tools = EmptyJsonObject)
         val elicitationObj = buildJsonObject { put("key", "value") }
         val experimentalObj = buildJsonObject { put("key", "value") }
         val extensionsMap = mapOf(
@@ -90,7 +87,7 @@ class InitializeDslTest {
         val request = buildInitializeRequest {
             protocolVersion = "1.0"
             capabilities {
-                sampling(samplingObj)
+                sampling(samplingValue)
                 elicitation(elicitationObj)
                 experimental(experimentalObj)
                 extensions(extensionsMap)
@@ -99,7 +96,7 @@ class InitializeDslTest {
         }
 
         request.params.capabilities.shouldNotBeNull {
-            sampling shouldBe samplingObj
+            sampling shouldBe samplingValue
             elicitation shouldBe elicitationObj
             experimental shouldBe experimentalObj
             extensions shouldBe extensionsMap

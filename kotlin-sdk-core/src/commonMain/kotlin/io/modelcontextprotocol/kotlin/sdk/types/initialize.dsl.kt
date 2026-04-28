@@ -21,7 +21,7 @@ import kotlin.contracts.contract
  * val request = buildInitializeRequest {
  *     protocolVersion = "2024-11-05"
  *     capabilities {
- *         sampling(ClientCapabilities.sampling)
+ *         sampling(ClientCapabilities.Sampling())
  *         roots(listChanged = true)
  *     }
  *     info("MyClient", "1.0.0")
@@ -33,7 +33,7 @@ import kotlin.contracts.contract
  * val request = buildInitializeRequest {
  *     protocolVersion = "2024-11-05"
  *     capabilities {
- *         sampling(ClientCapabilities.sampling)
+ *         sampling(ClientCapabilities.Sampling())
  *         experimental {
  *             put("feature", JsonPrimitive(true))
  *         }
@@ -94,7 +94,7 @@ public class InitializeRequestBuilder @PublishedApi internal constructor() : Req
      * Example:
      * ```kotlin
      * capabilities(ClientCapabilities(
-     *     sampling = ClientCapabilities.sampling,
+     *     sampling = ClientCapabilities.Sampling(),
      *     roots = ClientCapabilities.Roots(listChanged = true)
      * ))
      * ```
@@ -113,7 +113,7 @@ public class InitializeRequestBuilder @PublishedApi internal constructor() : Req
      * Example:
      * ```kotlin
      * capabilities {
-     *     sampling(ClientCapabilities.sampling)
+     *     sampling(ClientCapabilities.Sampling())
      *     roots(listChanged = true)
      *     elicitation(ClientCapabilities.elicitation)
      * }

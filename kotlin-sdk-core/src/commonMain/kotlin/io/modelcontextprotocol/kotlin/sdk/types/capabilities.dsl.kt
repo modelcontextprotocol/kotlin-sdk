@@ -21,7 +21,7 @@ import kotlinx.serialization.json.buildJsonObject
  * val request = buildInitializeRequest {
  *     protocolVersion = "1.0"
  *     capabilities {
- *         sampling(ClientCapabilities.sampling)
+ *         sampling(ClientCapabilities.Sampling())
  *         roots(listChanged = true)
  *         experimental {
  *             put("customFeature", JsonPrimitive(true))
@@ -36,45 +36,31 @@ import kotlinx.serialization.json.buildJsonObject
  */
 @McpDsl
 public class ClientCapabilitiesBuilder @PublishedApi internal constructor() {
-    private var sampling: JsonObject? = null
+    private var sampling: ClientCapabilities.Sampling? = null
     private var roots: ClientCapabilities.Roots? = null
     private var elicitation: JsonObject? = null
     private var extensions: Map<String, JsonObject>? = null
     private var experimental: JsonObject? = null
 
     /**
-     * Indicates that the client supports sampling from an LLM.
+     * Sampling capability configuration. See [ClientCapabilities.Sampling].
      *
-     * Use [ClientCapabilities.sampling] for default empty configuration.
+     * Pass `ClientCapabilities.Sampling()` to enable base sampling with no sub-capabilities.
+     * Construct `ClientCapabilities.Sampling(tools = EmptyJsonObject, context = EmptyJsonObject)`
+     * directly to enable SEP-1577 sub-capabilities.
      *
      * Example:
      * ```kotlin
      * capabilities {
-     *     sampling(ClientCapabilities.sampling)
+     *     sampling(ClientCapabilities.Sampling(tools = EmptyJsonObject))
      * }
      * ```
      *
      * @param value The sampling capability configuration
      */
-    public fun sampling(value: JsonObject) {
+    public fun sampling(value: ClientCapabilities.Sampling) {
         this.sampling = value
     }
-
-    /**
-     * Indicates that the client supports sampling from an LLM with custom configuration.
-     *
-     * Example:
-     * ```kotlin
-     * capabilities {
-     *     sampling {
-     *         put("temperature", JsonPrimitive(0.7))
-     *     }
-     * }
-     * ```
-     *
-     * @param block Lambda for building the sampling configuration
-     */
-    public fun sampling(block: JsonObjectBuilder.() -> Unit): Unit = sampling(buildJsonObject(block))
 
     /**
      * Indicates that the client supports listing roots.
