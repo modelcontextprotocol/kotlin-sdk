@@ -464,28 +464,26 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             }
         }
 
-        streamsMapping[STANDALONE_SSE_STREAM_ID]?.let { existingContext ->
-            // Close the previous SSE session. If the stream is already dead this
-            // is a no-op. If it is still alive, closing it cancels the coroutine
-            // blocked in awaitCancellation(), which triggers the identity-guarded
-            // finally block to remove the mapping.
-            try {
-                existingContext.session?.close()
-            } catch (_: CancellationException) {
-                throw CancellationException("Cancelled while closing previous SSE stream")
-            } catch (_: Exception) {
-                // Ignore — the old stream may already be closed.
-            }
-            // After closing, give the old coroutine's finally block a chance to
-            // remove the mapping. If the entry is still present (race edge case),
-            // evict it — the old session is closed either way.
-            streamsMapping.remove(STANDALONE_SSE_STREAM_ID)
-        }
-
         // SSE headers (Content-Type, Cache-Control, Connection) are already set by the framework's SSE handler
         flushSse(sseSession)
         val newContext = SessionContext(sseSession, call)
-        streamsMapping[STANDALONE_SSE_STREAM_ID] = newContext
+        streamMutex.withLock {
+            streamsMapping[STANDALONE_SSE_STREAM_ID]?.let { existingContext ->
+                // Close the previous SSE session. If alive, this cancels the old
+                // coroutine (which will hit its identity-guarded finally — that finally
+                // won't double-remove, since we replace the mapping below).
+                try {
+                    existingContext.session?.close()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    // Ignore — the old stream may already be closed.
+                }
+                // Evict the stale mapping — the old session is closed either way.
+                streamsMapping.remove(STANDALONE_SSE_STREAM_ID)
+            }
+            streamsMapping[STANDALONE_SSE_STREAM_ID] = newContext
+        }
         val clientProtocolVersion =
             call.request.header(MCP_PROTOCOL_VERSION_HEADER) ?: DEFAULT_NEGOTIATED_PROTOCOL_VERSION
         maybeSendPrimingEvent(STANDALONE_SSE_STREAM_ID, sseSession, clientProtocolVersion)
@@ -497,9 +495,8 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         try {
             awaitCancellation()
         } finally {
-            if (streamsMapping[STANDALONE_SSE_STREAM_ID] === newContext) {
-                streamsMapping.remove(STANDALONE_SSE_STREAM_ID)
-            }
+            // Atomic compare-and-remove — only evict our own entry, not a replacement's.
+            streamsMapping.remove(STANDALONE_SSE_STREAM_ID, newContext)
         }
     }
 
@@ -741,16 +738,16 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         try {
             session?.send(event = "message", id = eventId, data = McpJson.encodeToString(message))
         } catch (e: CancellationException) {
-            // Identity-based removal: only evict this stream's entry, not a replacement's.
+            // Atomic compare-and-remove — only evict this stream's entry, not a replacement's.
             val current = streamsMapping[streamId]
-            if (current?.session === session) {
-                streamsMapping.remove(streamId)
+            if (current != null && current.session === session) {
+                streamsMapping.remove(streamId, current)
             }
             throw e
         } catch (_: Exception) {
             val current = streamsMapping[streamId]
-            if (current?.session === session) {
-                streamsMapping.remove(streamId)
+            if (current != null && current.session === session) {
+                streamsMapping.remove(streamId, current)
             }
         }
     }
