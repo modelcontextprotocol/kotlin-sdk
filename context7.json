@@ -12,7 +12,6 @@
     "CONTRIBUTING.md",
     "LICENSE",
     "SECURITY.md",
-    "codecov.yml",
     "gradlew",
     "gradlew.bat",
     ".editorconfig",

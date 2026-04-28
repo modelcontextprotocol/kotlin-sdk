@@ -11,6 +11,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestURLParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitResult
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotification
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
+import io.modelcontextprotocol.kotlin.sdk.types.IncludeContext
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsResult
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
@@ -200,12 +201,33 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
     }
 
     override suspend fun createMessage(request: CreateMessageRequest, options: RequestOptions?): CreateMessageResult {
-        with(request.params) {
-            logger.debug {
-                "Creating message with ${messages.size} messages, maxTokens=$maxTokens, " +
-                    "temperature=$temperature, " +
-                    "systemPrompt=${if (systemPrompt != null) "present" else "absent"}"
+        val caps = session.clientCapabilities
+        val params = request.params
+
+        if (params.tools != null || params.toolChoice != null) {
+            requireNotNull(caps?.sampling?.tools) {
+                "Client did not advertise sampling.tools capability; cannot send " +
+                    "tools/toolChoice in sampling/createMessage request."
             }
+        }
+
+        if (params.includeContext != null && params.includeContext != IncludeContext.None) {
+            if (caps?.sampling?.context == null) {
+                logger.warn {
+                    "Client did not advertise sampling.context capability but server requested " +
+                        "includeContext=${params.includeContext}. This is soft-deprecated and may be " +
+                        "rejected by future spec versions."
+                }
+            }
+        }
+
+        validateSamplingMessages(params.messages)
+
+        logger.debug {
+            "Creating message with ${params.messages.size} messages, maxTokens=${params.maxTokens}, " +
+                "temperature=${params.temperature}, " +
+                "systemPrompt=${if (params.systemPrompt != null) "present" else "absent"}, " +
+                "tools=${params.tools?.size ?: 0}, toolChoice=${params.toolChoice?.mode}"
         }
         logger.trace { "Full createMessage params: $request" }
         return request(request, options)

@@ -28,15 +28,18 @@ import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.REQUEST_TIMEOUT
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.job
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.ExperimentalUuidApi
@@ -283,17 +286,19 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
     }
 
     override suspend fun close() {
-        streamMutex.withLock {
-            streamsMapping.values.forEach {
-                try {
-                    it.session?.close()
-                } catch (_: Exception) {
+        withContext(NonCancellable) {
+            streamMutex.withLock {
+                streamsMapping.values.forEach {
+                    try {
+                        it.session?.close()
+                    } catch (_: Exception) {
+                    }
                 }
+                streamsMapping.clear()
+                requestToStreamMapping.clear()
+                requestToResponseMapping.clear()
+                invokeOnCloseCallback()
             }
-            streamsMapping.clear()
-            requestToStreamMapping.clear()
-            requestToResponseMapping.clear()
-            invokeOnCloseCallback()
         }
     }
 
@@ -367,6 +372,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                     )
                     return
                 }
+                if (!validateProtocolVersion(call)) return
                 if (messages.size > 1) {
                     call.reject(
                         HttpStatusCode.BadRequest,
@@ -393,11 +399,23 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 return
             }
 
+            // Extract protocol version for priming event decision.
+            // For initialize requests, get from request params.
+            // For other requests, get from header (already validated).
+            val clientProtocolVersion = if (isInitializationRequest) {
+                val initRequest = messages.first() as JSONRPCRequest
+                (initRequest.params as? JsonObject)?.get("protocolVersion")
+                    ?.let { McpJson.decodeFromJsonElement<String>(it) }
+                    ?: DEFAULT_NEGOTIATED_PROTOCOL_VERSION
+            } else {
+                call.request.header(MCP_PROTOCOL_VERSION_HEADER) ?: DEFAULT_NEGOTIATED_PROTOCOL_VERSION
+            }
+
             val streamId = Uuid.random().toString()
             if (!configuration.enableJsonResponse) {
                 call.appendSseHeaders()
                 flushSse(session) // flush headers immediately
-                maybeSendPrimingEvent(streamId, session, call.request.header(MCP_PROTOCOL_VERSION_HEADER))
+                maybeSendPrimingEvent(streamId, session, clientProtocolVersion)
             }
 
             streamMutex.withLock {
@@ -407,6 +425,8 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             call.coroutineContext.job.invokeOnCompletion { streamsMapping.remove(streamId) }
 
             messages.forEach { message -> _onMessage(message) }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             call.reject(
                 HttpStatusCode.BadRequest,
@@ -453,10 +473,12 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             return
         }
 
-        call.appendSseHeaders()
-        flushSse(sseSession) // flush headers immediately
+        // SSE headers (Content-Type, Cache-Control, Connection) are already set by the framework's SSE handler
+        flushSse(sseSession)
         streamsMapping[STANDALONE_SSE_STREAM_ID] = SessionContext(sseSession, call)
-        maybeSendPrimingEvent(STANDALONE_SSE_STREAM_ID, sseSession, call.request.header(MCP_PROTOCOL_VERSION_HEADER))
+        val clientProtocolVersion =
+            call.request.header(MCP_PROTOCOL_VERSION_HEADER) ?: DEFAULT_NEGOTIATED_PROTOCOL_VERSION
+        maybeSendPrimingEvent(STANDALONE_SSE_STREAM_ID, sseSession, clientProtocolVersion)
         sseSession.coroutineContext.job.invokeOnCompletion {
             streamsMapping.remove(STANDALONE_SSE_STREAM_ID)
         }
@@ -483,12 +505,14 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         val streamId = requestToStreamMapping[requestId] ?: return
         val sessionContext = streamsMapping[streamId] ?: return
 
-        try {
-            sessionContext.session?.close()
-        } catch (e: Exception) {
-            _onError(e)
-        } finally {
-            streamsMapping.remove(streamId)
+        withContext(NonCancellable) {
+            try {
+                sessionContext.session?.close()
+            } catch (e: Exception) {
+                _onError(e)
+            } finally {
+                streamsMapping.remove(streamId)
+            }
         }
     }
 
@@ -529,8 +553,8 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 }
             }
 
-            call.appendSseHeaders()
-            flushSse(session) // flush headers immediately
+            // SSE headers are already set by the framework's SSE handler.
+            flushSse(session)
 
             val streamId = store.replayEventsAfter(lastEventId) { eventId, message ->
                 try {
@@ -539,6 +563,8 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                         id = eventId,
                         data = McpJson.encodeToString(message),
                     )
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     _onError(IllegalStateException("Failed to replay event: ${e.message}", e))
                 }
@@ -550,6 +576,8 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 streamsMapping.remove(streamId)
                 throwable?.let { _onError(it) }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             _onError(e)
         }
@@ -568,9 +596,9 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             return false
         }
 
-        val sessionHeaderValues = call.request.headers.getAll(MCP_SESSION_ID_HEADER)
+        val headerId = call.request.header(MCP_SESSION_ID_HEADER)
 
-        if (sessionHeaderValues.isNullOrEmpty()) {
+        if (headerId == null) {
             call.reject(
                 HttpStatusCode.BadRequest,
                 RPCError.ErrorCode.CONNECTION_CLOSED,
@@ -578,17 +606,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             )
             return false
         }
-
-        if (sessionHeaderValues.size > 1) {
-            call.reject(
-                HttpStatusCode.BadRequest,
-                RPCError.ErrorCode.CONNECTION_CLOSED,
-                "Bad Request: Mcp-Session-Id header must be a single value",
-            )
-            return false
-        }
-
-        val headerId = sessionHeaderValues.single()
 
         return when (headerId) {
             sessionId -> true
@@ -605,8 +622,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
     }
 
     private suspend fun validateProtocolVersion(call: ApplicationCall): Boolean {
-        val protocolVersions = call.request.headers.getAll(MCP_PROTOCOL_VERSION_HEADER)
-        val version = protocolVersions?.lastOrNull() ?: DEFAULT_NEGOTIATED_PROTOCOL_VERSION
+        val version = call.request.headers[MCP_PROTOCOL_VERSION_HEADER] ?: return true
 
         return when (version) {
             !in SUPPORTED_PROTOCOL_VERSIONS -> {
@@ -655,6 +671,8 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
     private suspend fun flushSse(session: ServerSSESession?) {
         try {
             session?.send(data = "")
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             _onError(e)
         }
@@ -706,6 +724,9 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         val eventId = configuration.eventStore?.storeEvent(streamId, message)
         try {
             session?.send(event = "message", id = eventId, data = McpJson.encodeToString(message))
+        } catch (e: CancellationException) {
+            streamsMapping.remove(streamId)
+            throw e
         } catch (_: Exception) {
             streamsMapping.remove(streamId)
         }
@@ -715,14 +736,14 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
     private suspend fun maybeSendPrimingEvent(
         streamId: String,
         session: ServerSSESession?,
-        clientProtocolVersion: String? = null,
+        clientProtocolVersion: String,
     ) {
         val store = configuration.eventStore
         if (store == null || session == null) return
         // Priming events have empty data which older clients cannot handle.
         // Only send priming events to clients with protocol version >= 2025-11-25
         // which includes the fix for handling empty SSE data.
-        if (clientProtocolVersion != null && clientProtocolVersion < MIN_PRIMING_EVENT_PROTOCOL_VERSION) return
+        if (clientProtocolVersion < MIN_PRIMING_EVENT_PROTOCOL_VERSION) return
         try {
             val primingEventId = store.storeEvent(streamId, JSONRPCEmptyMessage)
             session.send(
@@ -730,6 +751,8 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 retry = configuration.retryInterval?.inWholeMilliseconds,
                 data = "",
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             _onError(e)
         }

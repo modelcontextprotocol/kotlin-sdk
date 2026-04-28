@@ -71,7 +71,7 @@ class SamplingDslTest {
         request.params.stopSequences shouldBe listOf("STOP")
         request.params.messages shouldHaveSize 5
 
-        (request.params.messages[2].content as TextContent).shouldNotBeNull {
+        (request.params.messages[2].content.single() as TextContent).shouldNotBeNull {
             text shouldBe "Text with annotations"
             annotations shouldNotBeNull {
                 audience shouldBe listOf(Role.User)
@@ -81,13 +81,13 @@ class SamplingDslTest {
             meta?.get("key")?.jsonPrimitive?.content shouldBe "value"
         }
 
-        (request.params.messages[3].content as ImageContent).shouldNotBeNull {
+        (request.params.messages[3].content.single() as ImageContent).shouldNotBeNull {
             data shouldBe "base64image"
             mimeType shouldBe "image/png"
             annotations?.priority shouldBe 0.5
         }
 
-        (request.params.messages[4].content as AudioContent).shouldNotBeNull {
+        (request.params.messages[4].content.single() as AudioContent).shouldNotBeNull {
             data shouldBe "base64audio"
             mimeType shouldBe "audio/wav"
         }
@@ -102,7 +102,7 @@ class SamplingDslTest {
 
     @Test
     fun `buildCreateMessageRequest should support direct assignments`() {
-        val messages = listOf(SamplingMessage(Role.User, TextContent("Hello")))
+        val messages = listOf(SamplingMessage(Role.User, listOf(TextContent("Hello"))))
         val preferences = ModelPreferences(costPriority = 0.1)
         val request = buildCreateMessageRequest {
             maxTokens = 100
@@ -126,8 +126,8 @@ class SamplingDslTest {
                 assistant(content)
             }
         }
-        request.params.messages[0].content shouldBe content
-        request.params.messages[1].content shouldBe content
+        request.params.messages[0].content.single() shouldBe content
+        request.params.messages[1].content.single() shouldBe content
     }
 
     @Test

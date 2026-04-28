@@ -99,6 +99,16 @@ class ServerToolsTest : AbstractServerFeaturesTest() {
     }
 
     @Test
+    fun `addTool should succeed with non-conforming tool name`() = runTest {
+        server.addTool("my invalid tool!", "Tool with non-conforming name", ToolSchema()) {
+            CallToolResult(listOf(TextContent("It works")))
+        }
+
+        val result = server.removeTool("my invalid tool!")
+        assertTrue(result, "Tool with non-conforming name should have been registered and removable")
+    }
+
+    @Test
     fun `removeTool should throw when tools capability is not supported`() = runTest {
         var toolListChangedNotificationReceived = false
         client.setNotificationHandler<ToolListChangedNotification>(Method.Defined.NotificationsToolsListChanged) {

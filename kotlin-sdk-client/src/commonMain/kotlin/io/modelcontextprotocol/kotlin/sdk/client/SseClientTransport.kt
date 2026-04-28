@@ -24,11 +24,12 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.time.Duration
@@ -171,13 +172,15 @@ public class SseClientTransport(
     }
 
     override suspend fun closeResources() {
-        job?.cancelAndJoin()
-        try {
-            if (::session.isInitialized) session.cancel()
-            if (::scope.isInitialized) scope.cancel()
-            endpoint.cancel()
-        } catch (e: Throwable) {
-            _onError(e)
+        withContext(NonCancellable) {
+            job?.cancel()
+            try {
+                if (::session.isInitialized) session.cancel()
+                if (::scope.isInitialized) scope.cancel()
+                endpoint.cancel()
+            } catch (e: Throwable) {
+                _onError(e)
+            }
         }
     }
 }

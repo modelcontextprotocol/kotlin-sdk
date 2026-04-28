@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.shared.Protocol
 import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions
+import io.modelcontextprotocol.kotlin.sdk.shared.RequestHandlerExtra
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
 import io.modelcontextprotocol.kotlin.sdk.types.BooleanSchema
@@ -13,6 +14,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.CompleteRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CompleteResult
+import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
 import io.modelcontextprotocol.kotlin.sdk.types.DoubleSchema
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestFormParams
@@ -45,7 +47,9 @@ import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.types.PrimitiveSchemaDefinition
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
+import io.modelcontextprotocol.kotlin.sdk.types.Request
 import io.modelcontextprotocol.kotlin.sdk.types.RequestMeta
+import io.modelcontextprotocol.kotlin.sdk.types.RequestResult
 import io.modelcontextprotocol.kotlin.sdk.types.Root
 import io.modelcontextprotocol.kotlin.sdk.types.RootsListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
@@ -320,6 +324,26 @@ public open class Client(private val clientInfo: Implementation, options: Client
             }
 
             else -> {}
+        }
+    }
+
+    /**
+     * Wraps incoming-request handlers with SEP-1577 client-side enforcement.
+     *
+     * For `sampling/createMessage`: if the incoming request carries `tools` or
+     * `toolChoice` but this client did not advertise [ClientCapabilities.Sampling.tools],
+     * the wrapper throws an [McpException] with JSON-RPC error code `InvalidParams`
+     * before the user-supplied handler runs. Matches the TypeScript SDK wrapper in
+     * `Client.setRequestHandler`.
+     */
+    override fun <T : Request> wrapRequestHandler(
+        method: Method,
+        block: suspend (T, RequestHandlerExtra) -> RequestResult?,
+    ): suspend (T, RequestHandlerExtra) -> RequestResult? {
+        if (method != Method.Defined.SamplingCreateMessage) return block
+        return { request, extra ->
+            (request as? CreateMessageRequest)?.let { validateSamplingToolsCapability(it, capabilities) }
+            block(request, extra)
         }
     }
 

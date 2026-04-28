@@ -4,13 +4,12 @@ atomicfu = "0.32.1"
 binaryCompatibilityValidatorPlugin = "0.18.1"
 detekt = "2.0.0-alpha.2"
 dokka = "2.2.0"
-kotlin = "2.3.10"
+kotlin = "2.3.21"
 kover = "0.9.8"
 ktlint = "14.2.0"
 knit = "0.5.1"
 mavenPublish = "0.36.0"
 netty = "4.2.12.Final"
-openapi-generator = "7.21.0"
 
 # libraries version
 awaitility = "4.3.0"
@@ -22,7 +21,7 @@ ktor = "3.3.3"
 logging = "8.0.01"
 mockk = "1.14.9"
 mokksy = "0.8.1"
-serialization = "1.10.0"
+serialization = "1.11.0"
 slf4j = "2.0.17"
 logback = "1.5.32"
 junit = "5.14.3"
@@ -81,4 +80,3 @@ kotlinx-binary-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-co
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
 knit = { id = "org.jetbrains.kotlinx.knit", version.ref = "knit" }
-openapi-generator = { id = "org.openapi.generator", version.ref = "openapi-generator" }

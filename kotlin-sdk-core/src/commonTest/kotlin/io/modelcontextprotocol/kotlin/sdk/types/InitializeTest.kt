@@ -21,7 +21,7 @@ class InitializeTest {
             InitializeRequestParams(
                 protocolVersion = "2024-11-05",
                 capabilities = ClientCapabilities(
-                    sampling = ClientCapabilities.sampling,
+                    sampling = ClientCapabilities.Sampling(),
                     roots = ClientCapabilities.Roots(listChanged = true),
                     elicitation = ClientCapabilities.elicitation,
                     experimental = buildJsonObject {
