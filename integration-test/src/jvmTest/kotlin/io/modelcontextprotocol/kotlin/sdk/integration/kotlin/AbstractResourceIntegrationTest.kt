@@ -1,11 +1,16 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.kotlin
 
 import io.modelcontextprotocol.kotlin.sdk.types.BlobResourceContents
+import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesResult
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
+import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.PaginatedRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
+import io.modelcontextprotocol.kotlin.sdk.types.Resource
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.SubscribeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.SubscribeRequestParams
@@ -18,8 +23,10 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -308,5 +315,77 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
             assertNotNull(result, "Result should not be null")
             assertTrue(result.contents.isNotEmpty(), "Result contents should not be empty")
         }
+    }
+
+    @Test
+    fun testListResourcesPagination() = runBlocking(Dispatchers.IO) {
+        val receivedCursors = CopyOnWriteArrayList<String?>()
+        val page1 = listOf(
+            Resource(uri = "test://r-1", name = "r-1"),
+            Resource(uri = "test://r-2", name = "r-2"),
+            Resource(uri = "test://r-3", name = "r-3"),
+        )
+        val page2 = listOf(
+            Resource(uri = "test://r-4", name = "r-4"),
+            Resource(uri = "test://r-5", name = "r-5"),
+        )
+        val page3 = listOf(Resource(uri = "test://r-6", name = "r-6"))
+
+        server.sessions.forEach { (_, session) ->
+            session.setRequestHandler<ListResourcesRequest>(Method.Defined.ResourcesList) { request, _ ->
+                receivedCursors += request.cursor
+                when (request.cursor) {
+                    null -> ListResourcesResult(resources = page1, nextCursor = "cursor-2")
+                    "cursor-2" -> ListResourcesResult(resources = page2, nextCursor = "cursor-3")
+                    "cursor-3" -> ListResourcesResult(resources = page3, nextCursor = null)
+                    else -> error("Unexpected cursor: ${request.cursor}")
+                }
+            }
+        }
+
+        val collected = mutableListOf<Resource>()
+        var cursor: String? = null
+        do {
+            val request = if (cursor == null) {
+                ListResourcesRequest()
+            } else {
+                ListResourcesRequest(PaginatedRequestParams(cursor = cursor))
+            }
+            val response = client.listResources(request)
+            collected += response.resources
+            cursor = response.nextCursor
+        } while (cursor != null)
+
+        assertEquals(
+            listOf(null, "cursor-2", "cursor-3"),
+            receivedCursors.toList(),
+            "Client must forward each nextCursor into the next request",
+        )
+        assertEquals(
+            listOf("test://r-1", "test://r-2", "test://r-3", "test://r-4", "test://r-5", "test://r-6"),
+            collected.map { it.uri },
+            "Client must accumulate pages in order without duplicates or reordering",
+        )
+    }
+
+    @Test
+    fun testListResourcesInvalidCursor() = runBlocking(Dispatchers.IO) {
+        val invalidCursor = "not-a-valid-cursor"
+
+        server.sessions.forEach { (_, session) ->
+            session.setRequestHandler<ListResourcesRequest>(Method.Defined.ResourcesList) { _, _ ->
+                throw McpException(
+                    code = RPCError.ErrorCode.INVALID_PARAMS,
+                    message = "Invalid cursor: $invalidCursor",
+                )
+            }
+        }
+
+        val exception = assertFailsWith<McpException> {
+            client.listResources(ListResourcesRequest(PaginatedRequestParams(cursor = invalidCursor)))
+        }
+
+        assertEquals(RPCError.ErrorCode.INVALID_PARAMS, exception.code)
+        assertEquals("Invalid cursor: $invalidCursor", exception.message)
     }
 }
