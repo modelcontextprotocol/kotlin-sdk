@@ -16,7 +16,5 @@
     <ID>ForbiddenMethodCall:processUtils.kt:println("[$prefix] $it")</ID>
     <ID>ForbiddenMethodCall:processUtils.kt:println("[$prefix][err] $it")</ID>
     <ID>ForbiddenVoid:Retry.kt:RetryExtension$Void</ID>
-    <ID>OutdatedDocumentation:TypeScriptRunner.kt:TypeScriptRunner$public fun run: Process</ID>
-    <ID>OutdatedDocumentation:testing.kt:public fun runIntegrationTest: Unit</ID>
   </CurrentIssues>
 </SmellBaseline>
