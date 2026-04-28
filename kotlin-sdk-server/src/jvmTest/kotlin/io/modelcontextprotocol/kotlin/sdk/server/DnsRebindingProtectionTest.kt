@@ -71,7 +71,7 @@ class DnsRebindingProtectionTest {
         fun extractOriginHostAcceptCases(): List<Arguments> = listOf(
             Arguments.of("http://example.com", "example.com"),
             Arguments.of("http://example.com:8080", "example.com"),
-            Arguments.of("https://Example.COM", "example.com"),
+            Arguments.of("https://Example.COM", "Example.COM"),
             Arguments.of("https://example.com", "example.com"),
         )
 
@@ -233,6 +233,21 @@ class DnsRebindingProtectionTest {
     }
 
     @Test
+    fun `origin validation is case insensitive`() = testWithPlugin(
+        config = {
+            allowedHosts = listOf("localhost")
+            allowedOrigins = listOf("https://MyApp.COM")
+        },
+    ) {
+        val response = client.post("/mcp") {
+            header(HttpHeaders.Host, "localhost")
+            header(HttpHeaders.Origin, "https://myapp.com")
+        }
+        response.shouldHaveStatus(HttpStatusCode.OK)
+        response.bodyAsText() shouldBe "ok"
+    }
+
+    @Test
     fun `plugin with empty allowedHosts rejects all requests`() = testWithPlugin(
         config = { allowedHosts = emptyList() },
     ) {
@@ -259,6 +274,18 @@ class DnsRebindingProtectionTest {
             }
         }
         ex.message shouldContain "https://example.com"
+    }
+
+    @Test
+    fun `plugin fails to install when allowedOrigins contains an invalid origin`() {
+        val ex = shouldThrow<IllegalStateException> {
+            testWithPlugin(
+                config = { allowedOrigins = listOf("not-a-url") },
+            ) {
+                client.post("/mcp") { header(HttpHeaders.Host, "localhost") }
+            }
+        }
+        ex.message shouldContain "not-a-url"
     }
 
     @Test

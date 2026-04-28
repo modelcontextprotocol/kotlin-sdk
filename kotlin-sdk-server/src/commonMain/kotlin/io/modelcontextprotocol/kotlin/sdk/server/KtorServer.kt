@@ -41,7 +41,9 @@ private val logger = KotlinLogging.logger {}
  * @param path the URL path to register the SSE endpoint.
  * @param enableDnsRebindingProtection whether to install [DnsRebindingProtection] on this route. Defaults to `true`.
  * @param allowedHosts hostnames allowed in the `Host` header. Defaults to `localhost`, `127.0.0.1`, `[::1]`.
- * @param allowedOrigins origins allowed in the `Origin` header, or `null` to skip origin validation.
+ * @param allowedOrigins origins allowed in the `Origin` header, compared by hostname only
+ *      (scheme and port are ignored). Requests without an `Origin` header are allowed.
+ *      Pass `null` to skip origin validation.
  * @param block factory block with access to the [ServerSSESession]
  *      that creates and returns the [Server] to handle the connection.
  * @throws IllegalStateException if the [SSE] plugin is not installed.
@@ -69,7 +71,9 @@ public fun Route.mcp(
  *
  * @param enableDnsRebindingProtection whether to install [DnsRebindingProtection] on this route. Defaults to `true`.
  * @param allowedHosts hostnames allowed in the `Host` header. Defaults to `localhost`, `127.0.0.1`, `[::1]`.
- * @param allowedOrigins origins allowed in the `Origin` header, or `null` to skip origin validation.
+ * @param allowedOrigins origins allowed in the `Origin` header, compared by hostname only
+ *      (scheme and port are ignored). Requests without an `Origin` header are allowed.
+ *      Pass `null` to skip origin validation.
  * @param block factory block with access to the [ServerSSESession]
  *      that creates and returns the [Server] to handle the connection.
  * @throws IllegalStateException if the [SSE] plugin is not installed.
@@ -115,7 +119,9 @@ public fun Route.mcp(
  *
  * @param enableDnsRebindingProtection whether to install [DnsRebindingProtection] on this route. Defaults to `true`.
  * @param allowedHosts hostnames allowed in the `Host` header. Defaults to `localhost`, `127.0.0.1`, `[::1]`.
- * @param allowedOrigins origins allowed in the `Origin` header, or `null` to skip origin validation.
+ * @param allowedOrigins origins allowed in the `Origin` header, compared by hostname only
+ *      (scheme and port are ignored). Requests without an `Origin` header are allowed.
+ *      Pass `null` to skip origin validation.
  * @param block factory block with access to the [ServerSSESession]
  *      that creates and returns the [Server] to handle the connection.
  */
@@ -199,7 +205,8 @@ private fun Application.mcpStreamableHttp(
  * @param enableDnsRebindingProtection Enables DNS rebinding attack protection for the endpoint. Defaults to `true`.
  * @param allowedHosts A list of hostnames allowed to access the endpoint.
  *          If `null` and DNS rebinding protection is enabled, defaults to `localhost`, `127.0.0.1`, `[::1]`.
- * @param allowedOrigins A list of origins allowed to perform cross-origin requests (CORS).
+ * @param allowedOrigins A list of allowed `Origin` header values, compared by hostname only
+ *          (scheme and port are ignored). Requests without an `Origin` header are allowed.
  *          If `null`, origin validation is disabled.
  * @param eventStore An optional [EventStore] instance to enable resumable event stream functionality.
  *          Allows storing and replaying events.
@@ -283,7 +290,9 @@ private fun Application.mcpStatelessStreamableHttp(
  * @param enableDnsRebindingProtection Determines whether DNS rebinding protection is enabled. Defaults to `true`.
  * @param allowedHosts A list of allowed hostnames. If `null` and DNS rebinding protection is enabled,
  * defaults to `localhost`, `127.0.0.1`, `[::1]`.
- * @param allowedOrigins A list of allowed origins for CORS. If `null`, origin validation is disabled.
+ * @param allowedOrigins A list of allowed `Origin` header values, compared by hostname only
+ *      (scheme and port are ignored). Requests without an `Origin` header are allowed.
+ *      If `null`, origin validation is disabled.
  * @param eventStore An optional [EventStore] implementation to provide resumability and event replay support.
  * @param block factory block with access to the [RoutingContext] (for reading request headers)
  *          that creates and returns the [Server] to handle the connection.

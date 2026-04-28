@@ -78,16 +78,16 @@ private fun isValidPortSuffix(tail: String): Boolean = when {
 }
 
 /**
- * Extracts the lower-cased hostname from an `Origin` header value.
+ * Extracts the hostname from an `Origin` header value.
  *
  * Uses Ktor's [parseUrl] to avoid reimplementing RFC 6454 parsing.
  * Scheme, port, userinfo, and path are discarded — only the host matters for
- * DNS-rebinding protection.
+ * DNS-rebinding protection. The result is **not** normalized to lower-case;
+ * callers should apply [String.lowercase] if they need case-insensitive comparison.
  *
  * @return the hostname, or `null` if [origin] cannot be parsed or has no host part.
  */
-internal fun extractOriginHost(origin: String): String? =
-    parseUrl(origin)?.host?.lowercase()?.takeIf(String::isNotEmpty)
+internal fun extractOriginHost(origin: String): String? = parseUrl(origin)?.host?.takeIf(String::isNotEmpty)
 
 /**
  * Configuration for the [DnsRebindingProtection] Ktor route-scoped plugin.
@@ -130,10 +130,10 @@ public val DnsRebindingProtection: RouteScopedPlugin<DnsRebindingProtectionConfi
             extractHostname(it)?.lowercase()
                 ?: error("Invalid host in DnsRebindingProtection.allowedHosts: '$it'")
         }
-        val originHosts: Set<String>? = pluginConfig.allowedOrigins?.mapNotNullTo(
-            mutableSetOf(),
-            ::extractOriginHost,
-        )
+        val originHosts: Set<String>? = pluginConfig.allowedOrigins?.mapTo(mutableSetOf()) {
+            extractOriginHost(it)?.lowercase()
+                ?: error("Invalid origin in DnsRebindingProtection.allowedOrigins: '$it'")
+        }
 
         onCall { call ->
             val hostHeader = call.request.header(HttpHeaders.Host)
@@ -152,7 +152,7 @@ public val DnsRebindingProtection: RouteScopedPlugin<DnsRebindingProtectionConfi
                 val originHeader = call.request.header(HttpHeaders.Origin)
                 // Allow requests without Origin (non-browser clients cannot perform DNS rebinding)
                 if (originHeader != null) {
-                    val originHost = extractOriginHost(originHeader)
+                    val originHost = extractOriginHost(originHeader)?.lowercase()
                     if (originHost == null) {
                         call.rejectDnsValidation("Invalid Origin header: (unparseable)")
                         return@onCall
