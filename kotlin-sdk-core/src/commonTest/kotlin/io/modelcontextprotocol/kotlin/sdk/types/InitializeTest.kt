@@ -15,7 +15,6 @@ import kotlin.test.assertNull
 class InitializeTest {
 
     @Test
-    @Suppress("LongMethod")
     fun `should serialize InitializeRequest with capabilities and meta`() {
         val request = InitializeRequest(
             InitializeRequestParams(

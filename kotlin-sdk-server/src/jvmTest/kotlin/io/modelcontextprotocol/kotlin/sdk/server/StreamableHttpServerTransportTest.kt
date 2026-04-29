@@ -461,6 +461,107 @@ class StreamableHttpServerTransportTest {
     }
 
     @Test
+    fun `second concurrent GET SSE closes old stream and takes over`() = testApplication {
+        val mcpPath = "/mcp"
+
+        application {
+            mcpStreamableHttp(mcpPath) {
+                Server(
+                    Implementation("test-server", "1.0.0"),
+                    ServerOptions(capabilities = ServerCapabilities()),
+                )
+            }
+        }
+
+        val client = createTestClient()
+
+        // Step 1: Initialize session via POST
+        val initResponse = client.post(mcpPath) {
+            addStreamableHeaders()
+            setBody(buildInitializeRequestPayload())
+        }
+        initResponse.status shouldBe HttpStatusCode.OK
+        val sessionId = assertNotNull(initResponse.headers[MCP_SESSION_ID_HEADER])
+
+        // Step 2: Open first GET SSE stream
+        client.prepareGet(mcpPath) {
+            header(HttpHeaders.Accept, ContentType.Text.EventStream.toString())
+            header(MCP_SESSION_ID_HEADER, sessionId)
+            header("mcp-protocol-version", LATEST_PROTOCOL_VERSION)
+        }.execute { firstResponse ->
+            firstResponse.status shouldBe HttpStatusCode.OK
+            firstResponse.bodyAsChannel().readUTF8Line()
+
+            // Step 3: Open a second GET — the transport closes the old session
+            // and the new stream takes over.
+            client.prepareGet(mcpPath) {
+                header(HttpHeaders.Accept, ContentType.Text.EventStream.toString())
+                header(MCP_SESSION_ID_HEADER, sessionId)
+                header("mcp-protocol-version", LATEST_PROTOCOL_VERSION)
+            }.execute { secondResponse ->
+                secondResponse.status shouldBe HttpStatusCode.OK
+                secondResponse.headers[MCP_SESSION_ID_HEADER] shouldBe sessionId
+
+                // New stream is alive
+                val secondChannel = secondResponse.bodyAsChannel()
+                val firstLine = secondChannel.readUTF8Line()
+                firstLine.shouldNotBeNull()
+                secondChannel.isClosedForRead shouldBe false
+            }
+        }
+    }
+
+    @Test
+    fun `GET SSE reconnect after previous stream disconnects should succeed`() = testApplication {
+        val mcpPath = "/mcp"
+
+        application {
+            mcpStreamableHttp(mcpPath) {
+                Server(
+                    Implementation("test-server", "1.0.0"),
+                    ServerOptions(capabilities = ServerCapabilities()),
+                )
+            }
+        }
+
+        val client = createTestClient()
+
+        // Step 1: Initialize session via POST
+        val initResponse = client.post(mcpPath) {
+            addStreamableHeaders()
+            setBody(buildInitializeRequestPayload())
+        }
+        initResponse.status shouldBe HttpStatusCode.OK
+        val sessionId = assertNotNull(initResponse.headers[MCP_SESSION_ID_HEADER])
+
+        // Step 2: Open and then close a GET SSE stream
+        client.prepareGet(mcpPath) {
+            header(HttpHeaders.Accept, ContentType.Text.EventStream.toString())
+            header(MCP_SESSION_ID_HEADER, sessionId)
+            header("mcp-protocol-version", LATEST_PROTOCOL_VERSION)
+        }.execute { response ->
+            response.status shouldBe HttpStatusCode.OK
+            response.bodyAsChannel().readUTF8Line()
+        }
+
+        // Step 3: Immediately reconnect — the transport should close the stale
+        // stream and allow the new one.
+        client.prepareGet(mcpPath) {
+            header(HttpHeaders.Accept, ContentType.Text.EventStream.toString())
+            header(MCP_SESSION_ID_HEADER, sessionId)
+            header("mcp-protocol-version", LATEST_PROTOCOL_VERSION)
+        }.execute { response ->
+            response.status shouldBe HttpStatusCode.OK
+            response.headers[MCP_SESSION_ID_HEADER] shouldBe sessionId
+
+            val channel = response.bodyAsChannel()
+            val firstLine = channel.readUTF8Line()
+            firstLine.shouldNotBeNull()
+            channel.isClosedForRead shouldBe false
+        }
+    }
+
+    @Test
     fun `GET SSE stream includes Mcp-Session-Id header and stays open`() = testApplication {
         val mcpPath = "/mcp"
 

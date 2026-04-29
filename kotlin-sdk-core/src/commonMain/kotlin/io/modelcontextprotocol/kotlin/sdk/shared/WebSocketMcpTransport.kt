@@ -45,7 +45,6 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
      */
     protected abstract suspend fun initializeSession()
 
-    @Suppress("ThrowsCount")
     override suspend fun start() {
         logger.debug { "Starting websocket transport" }
 

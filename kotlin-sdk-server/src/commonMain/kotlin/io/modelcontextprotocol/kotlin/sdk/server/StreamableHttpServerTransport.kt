@@ -74,10 +74,8 @@ private data class SessionContext(val session: ServerSSESession?, val call: Appl
  * - No session validation is performed
  *
  * @param configuration Transport configuration. See [Configuration] for available options.
- * @property sessionId session identifier assigned after initialization, or `null` in stateless mode
  */
 @OptIn(ExperimentalUuidApi::class, ExperimentalAtomicApi::class)
-@Suppress("TooManyFunctions")
 public class StreamableHttpServerTransport(private val configuration: Configuration) : AbstractTransport() {
 
     @Deprecated("Use default constructor with explicit Configuration()")
@@ -100,7 +98,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
      * @param retryIntervalMillis Retry interval in milliseconds for event handling or reconnection attempts.
      *          Defaults to `null`.
      */
-    @Suppress("MaxLineLength")
     @Deprecated(
         "Use constructor with Configuration: StreamableHttpServerTransport(Configuration(enableJsonResponse = ...))",
         replaceWith = ReplaceWith(
@@ -165,6 +162,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         }
     }
 
+    /** Session identifier assigned after initialization in stateful mode, or `null` in stateless mode. */
     public var sessionId: String? = null
         private set
 
@@ -227,7 +225,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         }
     }
 
-    @Suppress("CyclomaticComplexMethod", "ReturnCount")
     override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
         val responseRequestId: RequestId? = when (message) {
             is JSONRPCResponse -> message.id
@@ -346,7 +343,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
     /**
      * Handles POST requests containing JSON-RPC messages
      */
-    @Suppress("CyclomaticComplexMethod", "LongMethod", "ReturnCount", "TooGenericExceptionCaught")
     public suspend fun handlePostRequest(session: ServerSSESession?, call: ApplicationCall) {
         try {
             if (!configuration.enableJsonResponse && session == null) {
@@ -455,7 +451,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
     }
 
     /** Handles an HTTP GET request by establishing a standalone SSE stream for server-initiated notifications. */
-    @Suppress("ReturnCount")
     public suspend fun handleGetRequest(session: ServerSSESession?, call: ApplicationCall) {
         // NOTE: enableJsonResponse only controls how POST responses are delivered (JSON vs. SSE).
         // The standalone GET SSE stream is always supported — it is the only channel available
@@ -481,27 +476,40 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             }
         }
 
-        if (STANDALONE_SSE_STREAM_ID in streamsMapping) {
-            call.reject(
-                HttpStatusCode.Conflict,
-                RPCError.ErrorCode.CONNECTION_CLOSED,
-                "Conflict: Only one SSE stream is allowed per session",
-            )
-            return
-        }
-
         // SSE headers (Content-Type, Cache-Control, Connection) are already set by the framework's SSE handler
         flushSse(sseSession)
-        streamsMapping[STANDALONE_SSE_STREAM_ID] = SessionContext(sseSession, call)
+        val newContext = SessionContext(sseSession, call)
+        streamMutex.withLock {
+            streamsMapping[STANDALONE_SSE_STREAM_ID]?.let { existingContext ->
+                // Close the previous SSE session. If alive, this cancels the old
+                // coroutine (which will hit its identity-guarded finally — that finally
+                // won't double-remove, since we replace the mapping below).
+                try {
+                    existingContext.session?.close()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    // Ignore — the old stream may already be closed.
+                }
+                // Evict the stale mapping — the old session is closed either way.
+                streamsMapping.remove(STANDALONE_SSE_STREAM_ID)
+            }
+            streamsMapping[STANDALONE_SSE_STREAM_ID] = newContext
+        }
         val clientProtocolVersion =
             call.request.header(MCP_PROTOCOL_VERSION_HEADER) ?: DEFAULT_NEGOTIATED_PROTOCOL_VERSION
         maybeSendPrimingEvent(STANDALONE_SSE_STREAM_ID, sseSession, clientProtocolVersion)
-        sseSession.coroutineContext.job.invokeOnCompletion {
-            streamsMapping.remove(STANDALONE_SSE_STREAM_ID)
-        }
         // Keep the SSE connection open until the client disconnects or the transport is closed.
-        // Without this, the Ktor sse{} handler returns immediately, closing the stream.
-        awaitCancellation()
+        // Cleanup uses try/finally (runs during cancellation propagation) instead of
+        // invokeOnCompletion (runs after job completion) to minimize the window between
+        // disconnect and mapping removal. Identity check ensures only this stream's entry
+        // is removed — not a replacement that arrived in the meantime.
+        try {
+            awaitCancellation()
+        } finally {
+            // Atomic compare-and-remove — only evict our own entry, not a replacement's.
+            streamsMapping.remove(STANDALONE_SSE_STREAM_ID, newContext)
+        }
     }
 
     /** Handles an HTTP DELETE request by closing the session and the transport. */
@@ -516,7 +524,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
      * Closes the SSE stream associated with the given [requestId], prompting the client to reconnect.
      * Useful for implementing polling behavior for long-running operations.
      */
-    @Suppress("ReturnCount", "TooGenericExceptionCaught")
     public suspend fun closeSseStream(requestId: RequestId) {
         if (configuration.enableJsonResponse) return
         val streamId = requestToStreamMapping[requestId] ?: return
@@ -533,7 +540,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private suspend fun replayEvents(store: EventStore, lastEventId: String, session: ServerSSESession) {
         val call: ApplicationCall = session.call
 
@@ -600,7 +606,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         }
     }
 
-    @Suppress("ReturnCount")
     private suspend fun validateSession(call: ApplicationCall): Boolean {
         if (sessionIdGenerator == null) return true
 
@@ -659,7 +664,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         }
     }
 
-    @Suppress("ReturnCount", "DEPRECATION")
     private fun validateHeaders(call: ApplicationCall): String? {
         if (!configuration.enableDnsRebindingProtection) return null
 
@@ -688,7 +692,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         return null
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private suspend fun flushSse(session: ServerSSESession?) {
         try {
             session?.send(data = "")
@@ -699,7 +702,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         }
     }
 
-    @Suppress("ReturnCount")
     private suspend fun parseBody(call: ApplicationCall): List<JSONRPCMessage>? {
         val maxSize = configuration.maxRequestBodySize
         val contentLength = call.request.header(HttpHeaders.ContentLength)?.toLongOrNull() ?: 0L
@@ -746,14 +748,20 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         try {
             session?.send(event = "message", id = eventId, data = McpJson.encodeToString(message))
         } catch (e: CancellationException) {
-            streamsMapping.remove(streamId)
+            // Atomic compare-and-remove — only evict this stream's entry, not a replacement's.
+            val current = streamsMapping[streamId]
+            if (current != null && current.session === session) {
+                streamsMapping.remove(streamId, current)
+            }
             throw e
         } catch (_: Exception) {
-            streamsMapping.remove(streamId)
+            val current = streamsMapping[streamId]
+            if (current != null && current.session === session) {
+                streamsMapping.remove(streamId, current)
+            }
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private suspend fun maybeSendPrimingEvent(
         streamId: String,
         session: ServerSSESession?,

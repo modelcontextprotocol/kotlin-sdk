@@ -45,7 +45,6 @@ internal const val WAV_BASE64 = "UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABA
 
 private val logger = KotlinLogging.logger {}
 
-@Suppress("LongMethod")
 fun Server.registerConformanceTools() {
     // 1. Simple text
     addTool(

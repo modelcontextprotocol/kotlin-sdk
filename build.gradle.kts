@@ -1,8 +1,5 @@
-import dev.detekt.gradle.extensions.FailOnSeverity
-
 plugins {
     id("mcp.dokka")
-    alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.kover)
 }
@@ -23,16 +20,6 @@ dependencies {
 subprojects {
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
     apply(plugin = "org.jetbrains.kotlinx.kover")
-
-    if (name != "conformance-test" && name != "docs") {
-        apply(plugin = "dev.detekt")
-
-        detekt {
-            config = files("$rootDir/config/detekt/detekt.yml")
-            buildUponDefaultConfig = true
-            failOnSeverity.set(FailOnSeverity.Error)
-        }
-    }
 }
 
 dokka {

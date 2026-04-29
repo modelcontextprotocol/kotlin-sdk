@@ -1,0 +1,20 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ForbiddenMethodCall:Retry.kt:RetryExtension$println( "[Retry] Failure on attempt $attempt/$maxAttempts for ${ describeTest( extensionContext, ) }: ${lastError.message}", )</ID>
+    <ID>ForbiddenMethodCall:Retry.kt:RetryExtension$println( "[Retry] Giving up after $attempt attempts for ${ describeTest( extensionContext, ) }: ${lastError.message}", )</ID>
+    <ID>ForbiddenMethodCall:TypeScriptRunner.kt:TypeScriptRunner$println("Adding exports to ${file.absolutePath}")</ID>
+    <ID>ForbiddenMethodCall:TypeScriptRunner.kt:TypeScriptRunner$println("Command failed: ${e.message}")</ID>
+    <ID>ForbiddenMethodCall:TypeScriptRunner.kt:TypeScriptRunner$println("Detected pnpm-specific protocols or workspace. Attempting pnpm install...")</ID>
+    <ID>ForbiddenMethodCall:TypeScriptRunner.kt:TypeScriptRunner$println("Executing: ${fullCommand.joinToString(" ")}")</ID>
+    <ID>ForbiddenMethodCall:TypeScriptRunner.kt:TypeScriptRunner$println("Installing TypeScript dependencies in ${typescriptDir.absolutePath}")</ID>
+    <ID>ForbiddenMethodCall:TypeScriptRunner.kt:TypeScriptRunner$println("[TS-INSTALL] $it")</ID>
+    <ID>ForbiddenMethodCall:TypeScriptRunner.kt:TypeScriptRunner$println("npm install failed. Patching package.json and trying again...")</ID>
+    <ID>ForbiddenMethodCall:processUtils.kt:println("Warning: Error reading process error stream: ${e.message}")</ID>
+    <ID>ForbiddenMethodCall:processUtils.kt:println("Warning: Error reading process output: ${e.message}")</ID>
+    <ID>ForbiddenMethodCall:processUtils.kt:println("[$prefix] $it")</ID>
+    <ID>ForbiddenMethodCall:processUtils.kt:println("[$prefix][err] $it")</ID>
+    <ID>ForbiddenVoid:Retry.kt:RetryExtension$Void</ID>
+  </CurrentIssues>
+</SmellBaseline>

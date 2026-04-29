@@ -57,12 +57,3 @@ kotlin {
     explicitApi = ExplicitApiMode.Strict
     jvmToolchain(21)
 }
-
-tasks.named("detekt").configure {
-    dependsOn(
-        "detektMainJvm",
-        "detektCommonMainSourceSet",
-        "detektTestJvm",
-        "detektCommonTestSourceSet",
-    )
-}

@@ -106,7 +106,6 @@ class SamplingTest {
     }
 
     @Test
-    @Suppress("LongMethod")
     fun `should serialize CreateMessageRequest with all fields`() {
         val request = CreateMessageRequest(
             CreateMessageRequestParams(

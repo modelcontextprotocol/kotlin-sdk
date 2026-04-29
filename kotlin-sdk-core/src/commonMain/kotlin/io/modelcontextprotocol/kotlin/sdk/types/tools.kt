@@ -84,7 +84,6 @@ public data class Tool(
  * @property schema Optional URI identifying the JSON Schema dialect (e.g.,
  *   `https://json-schema.org/draft/2020-12/schema`). Serialized as `$schema`.
  *   When absent, JSON Schema 2020-12 is assumed by default.
- * @property type Always "object" for tool schemas.
  * @property properties Optional map of property names to their schema definitions.
  * @property required Optional list of property names that are required.
  * @property defs Optional schema definitions available to references in [properties]. Serialized as `$defs`.
@@ -98,6 +97,7 @@ public data class ToolSchema(
     @SerialName("\$defs")
     val defs: JsonObject? = null,
 ) {
+    /** Always `"object"` for tool schemas. */
     @OptIn(ExperimentalSerializationApi::class)
     @EncodeDefault
     val type: String = "object"

@@ -14,7 +14,6 @@ import io.ktor.utils.io.readUTF8Line
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 
-@Suppress("AbstractClassCanBeConcreteClass")
 abstract class AbstractKtorExtensionsTest {
 
     protected val sseContentType = ContentType("text", "event-stream")

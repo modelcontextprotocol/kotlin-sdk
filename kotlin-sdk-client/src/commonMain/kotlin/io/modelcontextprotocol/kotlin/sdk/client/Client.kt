@@ -83,7 +83,7 @@ private val logger = KotlinLogging.logger {}
  * Options for configuring the MCP client.
  *
  * @property capabilities The capabilities this client supports.
- * @property enforceStrictCapabilities Whether to strictly enforce capabilities when interacting with the server.
+ * @param enforceStrictCapabilities Whether to strictly enforce capabilities when interacting with the server.
  */
 public class ClientOptions(
     public val capabilities: ClientCapabilities = ClientCapabilities(),
@@ -125,7 +125,6 @@ public suspend fun mcpClient(
  * @param clientInfo Information about the client implementation (name, version).
  * @param options Configuration options for this client.
  */
-@Suppress("TooManyFunctions")
 public open class Client(private val clientInfo: Implementation, options: ClientOptions = ClientOptions()) :
     Protocol(options) {
 
@@ -242,7 +241,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
             Method.Defined.CompletionComplete,
             -> {
                 checkNotNull(serverCapabilities?.prompts) {
-                    throw IllegalStateException("Server does not support prompts (required for $method)")
+                    "Server does not support prompts (required for $method)"
                 }
             }
 
@@ -255,10 +254,10 @@ public open class Client(private val clientInfo: Implementation, options: Client
                 val resCaps = serverCapabilities?.resources
                     ?: error("Server does not support resources (required for $method)")
 
-                if (method == Method.Defined.ResourcesSubscribe && resCaps.subscribe != true) {
-                    throw IllegalStateException(
-                        "Server does not support resource subscriptions (required for $method)",
-                    )
+                if (method == Method.Defined.ResourcesSubscribe) {
+                    check(resCaps.subscribe == true) {
+                        "Server does not support resource subscriptions (required for $method)"
+                    }
                 }
             }
 
@@ -556,9 +555,8 @@ public open class Client(private val clientInfo: Implementation, options: Client
      * @throws IllegalStateException If the client does not support roots.
      */
     public fun removeRoot(uri: String): Boolean {
-        if (capabilities.roots == null) {
-            logger.error { "Failed to remove root '$uri': Client does not support roots capability" }
-            throw IllegalStateException("Client does not support roots capability.")
+        checkNotNull(capabilities.roots) {
+            "Client does not support roots capability."
         }
         logger.info { "Removing root: $uri" }
         val oldMap = roots.getAndUpdate { current -> current.remove(uri) }
@@ -636,7 +634,6 @@ public open class Client(private val clientInfo: Implementation, options: Client
 
     // --- Internal Handlers ---
 
-    @Suppress("ReturnCount")
     private fun applyElicitationDefaults(request: ElicitRequest, result: ElicitResult): ElicitResult {
         if (result.action != ElicitResult.Action.Accept) return result
         val formParams = request.params as? ElicitRequestFormParams ?: return result

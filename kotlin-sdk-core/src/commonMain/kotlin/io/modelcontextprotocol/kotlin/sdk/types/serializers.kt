@@ -424,7 +424,6 @@ private fun selectClientResultDeserializer(element: JsonElement): Deserializatio
  * Selects the appropriate deserializer for server results based on JSON content.
  * Returns null if the structure doesn't match any known server result type.
  */
-@Suppress("CyclomaticComplexMethod")
 private fun selectServerResultDeserializer(element: JsonElement): DeserializationStrategy<ServerResult>? {
     val jsonObject = element.jsonObject
     return when {
@@ -530,7 +529,6 @@ internal object RequestIdPolymorphicSerializer : JsonContentPolymorphicSerialize
 internal object ElicitRequestParamsSerializer : JsonContentPolymorphicSerializer<ElicitRequestParams>(
     ElicitRequestParams::class,
 ) {
-    @Suppress("ThrowsCount")
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<ElicitRequestParams> {
         val mode = when (val modeElement = element.jsonObject["mode"]) {
             null -> null
@@ -559,7 +557,6 @@ internal object ElicitRequestParamsSerializer : JsonContentPolymorphicSerializer
 internal object PrimitiveSchemaDefinitionSerializer : JsonContentPolymorphicSerializer<PrimitiveSchemaDefinition>(
     PrimitiveSchemaDefinition::class,
 ) {
-    @Suppress("ThrowsCount")
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<PrimitiveSchemaDefinition> {
         val obj = element.jsonObject
         val typeElement = obj["type"]
@@ -589,7 +586,6 @@ internal object PrimitiveSchemaDefinitionSerializer : JsonContentPolymorphicSeri
         }
     }
 
-    @Suppress("DEPRECATION")
     private fun selectStringTypeDeserializer(
         obj: Map<String, JsonElement>,
     ): DeserializationStrategy<PrimitiveSchemaDefinition> = when {

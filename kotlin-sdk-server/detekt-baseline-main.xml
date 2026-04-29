@@ -2,29 +2,6 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>InjectDispatcher:FeatureNotificationService.kt:FeatureNotificationService$Default</ID>
-    <ID>LongParameterList:KtorServer.kt:private suspend fun RoutingContext.streamableTransport: StreamableHttpServerTransport?</ID>
-    <ID>LongParameterList:StreamableHttpServerTransport.kt:StreamableHttpServerTransport.Configuration</ID>
-    <ID>MagicNumber:StdioServerTransport.kt:StdioServerTransport$8192</ID>
-    <ID>MaxLineLength:SSEServerTransport.kt:SseServerTransport$"SSEServerTransport already started! If using Server class, note that connect() calls start() automatically."</ID>
-    <ID>MaxLineLength:SSEServerTransport.kt:SseServerTransport$*</ID>
-    <ID>NoNameShadowing:FeatureNotificationService.kt:FeatureNotificationService${ it.remove(job) }</ID>
-    <ID>ReturnCount:KtorServer.kt:private suspend fun existingStreamableTransport: StreamableHttpServerTransport?</ID>
-    <ID>TooGenericExceptionCaught:SSEServerTransport.kt:SseServerTransport$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:StdioServerTransport.kt:StdioServerTransport$e: Throwable</ID>
-    <ID>TooManyFunctions:KtorServer.kt:io.modelcontextprotocol.kotlin.sdk.server.KtorServer.kt</ID>
     <ID>UnsafeCallOnNullableType:StreamableHttpServerTransport.kt:StreamableHttpServerTransport$responseRequestId!!</ID>
-    <ID>UseCheckNotNull:Server.kt:Server$check(options.capabilities.prompts != null) { logger.error { "Failed to add prompt '${prompt.name}': Server does not support prompts capability" } "Server does not support prompts capability." }</ID>
-    <ID>UseCheckNotNull:Server.kt:Server$check(options.capabilities.prompts != null) { logger.error { "Failed to add prompts: Server does not support prompts capability" } "Server does not support prompts capability." }</ID>
-    <ID>UseCheckNotNull:Server.kt:Server$check(options.capabilities.prompts != null) { logger.error { "Failed to remove prompt '$name': Server does not support prompts capability" } "Server does not support prompts capability." }</ID>
-    <ID>UseCheckNotNull:Server.kt:Server$check(options.capabilities.prompts != null) { logger.error { "Failed to remove prompts: Server does not support prompts capability" } "Server does not support prompts capability." }</ID>
-    <ID>UseCheckNotNull:Server.kt:Server$check(options.capabilities.resources != null) { logger.error { "Failed to add resource '$name': Server does not support resources capability" } "Server does not support resources capability." }</ID>
-    <ID>UseCheckNotNull:Server.kt:Server$check(options.capabilities.resources != null) { logger.error { "Failed to add resources: Server does not support resources capability" } "Server does not support resources capability." }</ID>
-    <ID>UseCheckNotNull:Server.kt:Server$check(options.capabilities.resources != null) { logger.error { "Failed to remove resource '$uri': Server does not support resources capability" } "Server does not support resources capability." }</ID>
-    <ID>UseCheckNotNull:Server.kt:Server$check(options.capabilities.resources != null) { logger.error { "Failed to remove resources: Server does not support resources capability" } "Server does not support resources capability." }</ID>
-    <ID>UseCheckNotNull:Server.kt:Server$check(options.capabilities.tools != null) { logger.error { "Failed to add tool '${tool.name}': Server does not support tools capability" } "Server does not support tools capability. Enable it in ServerOptions." }</ID>
-    <ID>UseCheckNotNull:Server.kt:Server$check(options.capabilities.tools != null) { logger.error { "Failed to add tools: Server does not support tools capability" } "Server does not support tools capability." }</ID>
-    <ID>UseCheckNotNull:Server.kt:Server$check(options.capabilities.tools != null) { logger.error { "Failed to remove tool '$name': Server does not support tools capability" } "Server does not support tools capability." }</ID>
-    <ID>UseCheckNotNull:Server.kt:Server$check(options.capabilities.tools != null) { logger.error { "Failed to remove tools: Server does not support tools capability" } "Server does not support tools capability." }</ID>
   </CurrentIssues>
 </SmellBaseline>

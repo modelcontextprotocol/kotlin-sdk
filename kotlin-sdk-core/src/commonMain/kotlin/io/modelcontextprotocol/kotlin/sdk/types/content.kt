@@ -39,11 +39,10 @@ public enum class ContentTypes(public val value: String) {
 
 /**
  * Base interface for all content blocks in the protocol.
- *
- * @property type discriminator identifying the content block subtype
  */
 @Serializable(with = ContentBlockPolymorphicSerializer::class)
 public sealed interface ContentBlock : WithMeta {
+    /** Discriminator identifying the content block subtype. */
     public val type: ContentTypes
 }
 
@@ -63,11 +62,10 @@ public sealed interface MediaContent :
  *
  * Implemented by [TextContent], [ImageContent], [AudioContent], [ToolUseContent],
  * and [ToolResultContent].
- *
- * @property type discriminator identifying the content block subtype
  */
 @Serializable(with = SamplingMessageContentPolymorphicSerializer::class)
 public sealed interface SamplingMessageContent : WithMeta {
+    /** discriminator identifying the content block subtype */
     public val type: ContentTypes
 }
 

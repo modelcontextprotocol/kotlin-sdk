@@ -397,7 +397,6 @@ class PrimitiveSchemaTest {
 
     // ── LegacyTitledEnumSchema ────────────────────────────────────────────
 
-    @Suppress("DEPRECATION")
     @Test
     fun `should serialize LegacyTitledEnumSchema`() {
         verifySerialization(
@@ -420,7 +419,6 @@ class PrimitiveSchemaTest {
         )
     }
 
-    @Suppress("DEPRECATION")
     @Test
     fun `should deserialize LegacyTitledEnumSchema from JSON`() {
         val json = """

@@ -33,7 +33,6 @@ private val logger = KotlinLogging.logger {}
  * communication through notifications, requests, and other operations.
  * This interface defines various methods to facilitate the interaction.
  */
-@Suppress("TooManyFunctions")
 public interface ClientConnection {
 
     /**
@@ -176,7 +175,6 @@ public interface ClientConnection {
     public suspend fun sendElicitationComplete(notification: ElicitationCompleteNotification)
 }
 
-@Suppress("TooManyFunctions")
 internal class ClientConnectionImpl(private val session: ServerSession) : ClientConnection {
 
     override val sessionId: String get() = session.sessionId

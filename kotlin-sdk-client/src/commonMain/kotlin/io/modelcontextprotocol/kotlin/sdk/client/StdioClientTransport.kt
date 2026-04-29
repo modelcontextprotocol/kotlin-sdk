@@ -227,7 +227,6 @@ public class StdioClientTransport @JvmOverloads public constructor(
     }
 
     override suspend fun performSend(message: JSONRPCMessage, options: TransportSendOptions?) {
-        @Suppress("SwallowedException")
         try {
             sendChannel.send(message)
         } catch (e: CancellationException) {
@@ -290,7 +289,7 @@ public class StdioClientTransport @JvmOverloads public constructor(
     ) {
         val buffer = Buffer()
         try {
-            source.use { source ->
+            source.use {
                 while (isActive) {
                     val bytesRead = source.readAtMostTo(buffer, BUFFER_SIZE)
                     if (bytesRead == -1L) {

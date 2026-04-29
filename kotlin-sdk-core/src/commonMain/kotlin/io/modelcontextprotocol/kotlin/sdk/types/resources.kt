@@ -117,15 +117,14 @@ public data class ResourceTemplateReference(val uri: String) : Reference {
 }
 
 /**
- * The contents of a specific resource or sub-resource.
- *
- * @property uri The URI of this resource.
- * @property mimeType The MIME type of this resource, if known.
- * @property meta Optional metadata for this response.
+ * The contents of a specific resource or sub-resource. Carries the optional `_meta` field via [WithMeta].
  */
 @Serializable(with = ResourceContentsPolymorphicSerializer::class)
 public sealed interface ResourceContents : WithMeta {
+    /** The URI of this resource. */
     public val uri: String
+
+    /** The MIME type of this resource, if known. */
     public val mimeType: String?
 }
 
@@ -136,6 +135,7 @@ public sealed interface ResourceContents : WithMeta {
  * This must only be set if the item can actually be represented as text (not binary data).
  * @property uri The URI of this resource.
  * @property mimeType The MIME type of this resource, if known.
+ * @property meta Optional metadata for these contents.
  */
 @Serializable
 public data class TextResourceContents(
@@ -152,6 +152,7 @@ public data class TextResourceContents(
  * @property blob A base64-encoded string representing the binary data of the item.
  * @property uri The URI of this resource.
  * @property mimeType The MIME type of this resource, if known.
+ * @property meta Optional metadata for these contents.
  */
 @Serializable
 public data class BlobResourceContents(
@@ -167,6 +168,7 @@ public data class BlobResourceContents(
  *
  * @property uri The URI of this resource.
  * @property mimeType The MIME type of this resource, if known.
+ * @property meta Optional metadata for these contents.
  */
 @Serializable
 public data class UnknownResourceContents(

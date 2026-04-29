@@ -118,16 +118,16 @@ internal class StreamableHttpClientTest : AbstractStreamableHttpClientTest() {
                     ServerSentEvent(
                         event = "message",
                         id = "1",
-                        data = @Suppress("MaxLineLength")
                         //language=json
+                        data =
                         """{"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"upload-123","progress":50,"total":100}}""",
                     ),
                 )
                 delay(200.milliseconds)
                 emit(
                     ServerSentEvent(
-                        data = @Suppress("MaxLineLength")
                         //language=json
+                        data =
                         """{"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"upload-123","progress":50,"total":100}}""",
                     ),
                 )

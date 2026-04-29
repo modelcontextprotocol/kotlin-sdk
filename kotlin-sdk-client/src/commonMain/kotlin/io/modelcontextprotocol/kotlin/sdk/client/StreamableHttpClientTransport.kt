@@ -54,6 +54,7 @@ private const val MCP_RESUMPTION_TOKEN_HEADER = "Last-Event-ID"
  * Represents an error from the Streamable HTTP transport.
  *
  * @property code HTTP status code associated with the error, or `null` if unavailable
+ * @param message detailed error description appended to the exception message
  */
 public class StreamableHttpError(public val code: Int? = null, message: String? = null) :
     Exception("Streamable HTTP error: $message")
@@ -65,14 +66,17 @@ private sealed interface ConnectResult {
 }
 
 /**
- * Client transport for Streamable HTTP: this implements the MCP Streamable HTTP transport specification.
- * It will connect to a server using HTTP POST for sending messages and HTTP GET with Server-Sent Events
- * for receiving messages.
+ * Client transport implementing the MCP Streamable HTTP transport specification.
  *
- * @property sessionId session identifier assigned by the server after initialization, or `null` before connection
- * @property protocolVersion MCP protocol version negotiated with the server, or `null` before connection
+ * Sends messages via HTTP POST and receives messages via HTTP GET with Server-Sent Events.
+ * Supports automatic SSE reconnection with exponential backoff, stream resumption via the
+ * `Last-Event-ID` header, and explicit session termination.
+ *
+ * @param client Ktor HTTP client used for all requests
+ * @param url MCP endpoint URL
+ * @param reconnectionOptions reconnection backoff and retry-limit settings for the SSE stream
+ * @param requestBuilder builder applied to every outgoing HTTP request, e.g. for adding auth headers
  */
-@Suppress("TooManyFunctions")
 public class StreamableHttpClientTransport(
     private val client: HttpClient,
     private val url: String,
@@ -98,8 +102,11 @@ public class StreamableHttpClientTransport(
 
     override val logger: KLogger = KotlinLogging.logger {}
 
+    /** Session identifier assigned by the server after initialization, or `null` before connection. */
     public var sessionId: String? = null
         private set
+
+    /** MCP protocol version negotiated with the server, or `null` before connection. */
     public var protocolVersion: String? = null
 
     private var sseJob: Job? = null
@@ -121,7 +128,6 @@ public class StreamableHttpClientTransport(
     /**
      * Sends a single message with optional resumption support
      */
-    @Suppress("ReturnCount", "CyclomaticComplexMethod", "LongMethod", "TooGenericExceptionCaught", "ThrowsCount")
     override suspend fun performSend(message: JSONRPCMessage, options: TransportSendOptions?) {
         logger.debug { "Client sending message via POST to $url: ${McpJson.encodeToString(message)}" }
 
@@ -260,7 +266,6 @@ public class StreamableHttpClientTransport(
             var attempt = 0
             var needsDelay = initialServerRetryDelay != null
 
-            @Suppress("LoopWithTooManyJumpStatements")
             while (isActive) {
                 // Delay before (re)connection: skip only for first fresh SSE connection
                 if (needsDelay) {
@@ -296,7 +301,6 @@ public class StreamableHttpClientTransport(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private suspend fun connectSse(lastEventId: String?): ConnectResult {
         logger.debug { "Client attempting to start SSE session at url: $url" }
         return try {
@@ -363,7 +367,6 @@ public class StreamableHttpClientTransport(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private suspend fun collectSse(
         session: ClientSSESession,
         replayMessageId: RequestId?,
@@ -408,7 +411,6 @@ public class StreamableHttpClientTransport(
         return SseStreamResult(hasPrimingEvent, receivedResponse, localLastEventId, localServerRetryDelay)
     }
 
-    @Suppress("CyclomaticComplexMethod")
     private suspend fun handleInlineSse(
         response: HttpResponse,
         replayMessageId: RequestId?,
@@ -455,7 +457,6 @@ public class StreamableHttpClientTransport(
             }
         }
 
-        @Suppress("LoopWithTooManyJumpStatements")
         while (!channel.isClosedForRead) {
             val line = channel.readUTF8Line() ?: break
             if (line.isEmpty()) {

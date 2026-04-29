@@ -66,11 +66,9 @@ private const val VARIABLE_MATCH_SCORE = 1
  * no normalizer is available, so dot-segment traversal is **not** mitigated at this
  * layer — handlers on those targets must normalize paths themselves.
  *
- * @param resourceTemplate The resource template to match against. Must follow RFC 6570 Level 1 syntax.
- * @param maxUriLength Maximum allowed length for incoming URIs. Defaults to 2048.
- * @param maxDepth Maximum allowed segment count for the template/uri. Defaults to 50.
- *
- * @property resourceTemplate The resource template against which resource URIs will be matched.
+ * @property resourceTemplate the resource template to match against; must follow RFC 6570 Level 1 syntax
+ * @param maxDepth maximum allowed segment count for the template/uri (defaults to 50)
+ * @param maxUriLength maximum allowed length for incoming URIs (defaults to 2048)
  */
 public class PathSegmentTemplateMatcher @JvmOverloads constructor(
     override val resourceTemplate: ResourceTemplate,
@@ -118,7 +116,6 @@ public class PathSegmentTemplateMatcher @JvmOverloads constructor(
         variableIndices = vars.toImmutableMap()
     }
 
-    @Suppress("ReturnCount")
     override fun match(resourceUri: String): MatchResult? {
         if (resourceUri.length > maxUriLength) {
             logger.debug { "URL is too long (max=$maxUriLength)" }

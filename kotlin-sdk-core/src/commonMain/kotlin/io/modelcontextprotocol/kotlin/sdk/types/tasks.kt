@@ -17,22 +17,27 @@ public const val RELATED_TASK_META_KEY: String = "io.modelcontextprotocol/relate
 
 /**
  * Common fields shared by all types representing the task state.
- *
- * @property taskId the task identifier
- * @property status current task state
- * @property statusMessage optional human-readable message describing the current task state
- * @property createdAt ISO 8601 timestamp when the task was created
- * @property lastUpdatedAt ISO 8601 timestamp when the task was last updated
- * @property ttl actual retention duration from creation in milliseconds, or `null` for unlimited
- * @property pollInterval suggested polling interval in milliseconds
  */
 public sealed interface TaskFields {
+    /** The task identifier. */
     public val taskId: String
+
+    /** Current task state. */
     public val status: TaskStatus
+
+    /** Optional human-readable message describing the current task state. */
     public val statusMessage: String?
+
+    /** ISO 8601 timestamp when the task was created. */
     public val createdAt: String
+
+    /** ISO 8601 timestamp when the task was last updated. */
     public val lastUpdatedAt: String
+
+    /** Actual retention duration from creation in milliseconds, or `null` for unlimited. */
     public val ttl: Long?
+
+    /** Suggested polling interval in milliseconds. */
     public val pollInterval: Long?
 }
 
@@ -237,13 +242,13 @@ public data class GetTaskPayloadRequestParams(
  * For example, a tools/call task would return the [CallToolResult] structure.
  *
  * @property json the raw JSON object containing the result payload
- * @property meta Optional metadata for this response.
  */
 @JvmInline
 @Serializable
 public value class GetTaskPayloadResult(public val json: JsonObject) :
     ClientResult,
     ServerResult {
+    /** Optional metadata for this response, extracted from the `_meta` field of [json]. */
     override val meta: JsonObject?
         get() = json["_meta"]?.takeIf { it is JsonObject } as? JsonObject
 

@@ -99,8 +99,10 @@ public abstract class AbstractClientTransport : AbstractTransport() {
      * proceeding with further operations. It is often used to enforce state invariants within the transport's
      * lifecycle mechanics, enabling robust error handling and debugging in case of unexpected state transitions.
      *
-     * @param expected The expected transport state. An exception will be thrown if the actual state does not match this value.
-     * @throws IllegalStateException If the current state does not match the expected state.
+     * @param expected The expected transport state.
+     * An exception will be thrown if the actual state does not match this value.
+     * @param lazyMessage Function that builds the exception message from the actual state when the check fails.
+     * Defaults to a message that compares the expected state against the observed one.
      */
     protected fun checkState(
         expected: ClientTransportState,

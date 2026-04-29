@@ -37,7 +37,6 @@ class ToolsTest {
     }
 
     @Test
-    @Suppress("LongMethod")
     fun `should serialize Tool with annotations and schemas`() {
         val inputSchema = ToolSchema(
             properties = buildJsonObject {
