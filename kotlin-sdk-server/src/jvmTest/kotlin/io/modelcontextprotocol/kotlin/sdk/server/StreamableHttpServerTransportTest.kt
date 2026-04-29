@@ -477,6 +477,7 @@ class StreamableHttpServerTransportTest {
 
         // Step 1: Initialize session via POST
         val initResponse = client.post(mcpPath) {
+            header(HttpHeaders.Host, "localhost")
             addStreamableHeaders()
             setBody(buildInitializeRequestPayload())
         }
@@ -485,6 +486,7 @@ class StreamableHttpServerTransportTest {
 
         // Step 2: Open first GET SSE stream
         client.prepareGet(mcpPath) {
+            header(HttpHeaders.Host, "localhost")
             header(HttpHeaders.Accept, ContentType.Text.EventStream.toString())
             header(MCP_SESSION_ID_HEADER, sessionId)
             header("mcp-protocol-version", LATEST_PROTOCOL_VERSION)
@@ -495,6 +497,7 @@ class StreamableHttpServerTransportTest {
             // Step 3: Open a second GET — the transport closes the old session
             // and the new stream takes over.
             client.prepareGet(mcpPath) {
+                header(HttpHeaders.Host, "localhost")
                 header(HttpHeaders.Accept, ContentType.Text.EventStream.toString())
                 header(MCP_SESSION_ID_HEADER, sessionId)
                 header("mcp-protocol-version", LATEST_PROTOCOL_VERSION)
@@ -528,6 +531,7 @@ class StreamableHttpServerTransportTest {
 
         // Step 1: Initialize session via POST
         val initResponse = client.post(mcpPath) {
+            header(HttpHeaders.Host, "localhost")
             addStreamableHeaders()
             setBody(buildInitializeRequestPayload())
         }
@@ -536,6 +540,7 @@ class StreamableHttpServerTransportTest {
 
         // Step 2: Open and then close a GET SSE stream
         client.prepareGet(mcpPath) {
+            header(HttpHeaders.Host, "localhost")
             header(HttpHeaders.Accept, ContentType.Text.EventStream.toString())
             header(MCP_SESSION_ID_HEADER, sessionId)
             header("mcp-protocol-version", LATEST_PROTOCOL_VERSION)
@@ -547,6 +552,7 @@ class StreamableHttpServerTransportTest {
         // Step 3: Immediately reconnect — the transport should close the stale
         // stream and allow the new one.
         client.prepareGet(mcpPath) {
+            header(HttpHeaders.Host, "localhost")
             header(HttpHeaders.Accept, ContentType.Text.EventStream.toString())
             header(MCP_SESSION_ID_HEADER, sessionId)
             header("mcp-protocol-version", LATEST_PROTOCOL_VERSION)
