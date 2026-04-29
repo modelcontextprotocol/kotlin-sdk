@@ -2,6 +2,7 @@ package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
+import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageResult
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequest
@@ -11,6 +12,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestURLParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitResult
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotification
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.IncludeContext
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsResult
@@ -40,6 +42,19 @@ public interface ClientConnection {
      * Has no inherent meaning.
      */
     public val sessionId: String
+
+    /**
+     * The client's reported [Implementation] (name and version) after initialization.
+     */
+    public val clientImplementation: Implementation?
+
+    /**
+     * The client's reported [ClientCapabilities] after initialization.
+     *
+     * Consult before invoking [createMessage], [listRoots], or [createElicitation]
+     * to fall back gracefully when a capability is not advertised.
+     */
+    public val clientCapabilities: ClientCapabilities?
 
     /**
      * Sends a server-side notification to the client.
@@ -178,6 +193,10 @@ public interface ClientConnection {
 internal class ClientConnectionImpl(private val session: ServerSession) : ClientConnection {
 
     override val sessionId: String get() = session.sessionId
+
+    override val clientImplementation: Implementation? get() = session.clientVersion
+
+    override val clientCapabilities: ClientCapabilities? get() = session.clientCapabilities
 
     private suspend fun <T : RequestResult> request(request: Request, options: RequestOptions? = null): T {
         logger.trace { "Sending request to client for session $sessionId: $request" }
