@@ -38,7 +38,7 @@ import kotlinx.serialization.json.buildJsonObject
 public class ClientCapabilitiesBuilder @PublishedApi internal constructor() {
     private var sampling: ClientCapabilities.Sampling? = null
     private var roots: ClientCapabilities.Roots? = null
-    private var elicitation: JsonObject? = null
+    private var elicitation: ClientCapabilities.Elicitation? = null
     private var extensions: Map<String, JsonObject>? = null
     private var experimental: JsonObject? = null
 
@@ -47,7 +47,7 @@ public class ClientCapabilitiesBuilder @PublishedApi internal constructor() {
      *
      * Pass `ClientCapabilities.Sampling()` to enable base sampling with no sub-capabilities.
      * Construct `ClientCapabilities.Sampling(tools = EmptyJsonObject, context = EmptyJsonObject)`
-     * directly to enable SEP-1577 sub-capabilities.
+     * directly to enable tools/context sub-capabilities.
      *
      * Example:
      * ```kotlin
@@ -99,25 +99,9 @@ public class ClientCapabilitiesBuilder @PublishedApi internal constructor() {
      *
      * @param value The elicitation capability configuration
      */
-    public fun elicitation(value: JsonObject) {
+    public fun elicitation(value: ClientCapabilities.Elicitation) {
         this.elicitation = value
     }
-
-    /**
-     * Indicates that the client supports elicitation from the server with custom configuration.
-     *
-     * Example:
-     * ```kotlin
-     * capabilities {
-     *     elicitation {
-     *         put("mode", JsonPrimitive("interactive"))
-     *     }
-     * }
-     * ```
-     *
-     * @param block Lambda for building the elicitation configuration
-     */
-    public fun elicitation(block: JsonObjectBuilder.() -> Unit): Unit = elicitation(buildJsonObject(block))
 
     /**
      * Defines extensions that the client supports.
