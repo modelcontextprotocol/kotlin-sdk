@@ -834,7 +834,6 @@ class StreamableHttpClientTransportTest {
         transport.close()
     }
 
-    @Suppress("DEPRECATION")
     @Test
     fun testDeprecatedConstructorStillWorks() = runTest {
         val mockEngine = MockEngine { _ ->

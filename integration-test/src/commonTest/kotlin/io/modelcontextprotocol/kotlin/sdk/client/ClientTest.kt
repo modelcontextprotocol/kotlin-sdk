@@ -106,7 +106,7 @@ class ClientTest {
             ),
             options = ClientOptions(
                 capabilities = ClientCapabilities(
-                    sampling = EmptyJsonObject,
+                    sampling = ClientCapabilities.sampling,
                 ),
             ),
         )
@@ -152,7 +152,7 @@ class ClientTest {
             ),
             options = ClientOptions(
                 capabilities = ClientCapabilities(
-                    sampling = EmptyJsonObject,
+                    sampling = ClientCapabilities.sampling,
                 ),
             ),
         )
@@ -339,7 +339,7 @@ class ClientTest {
         val client = Client(
             clientInfo = Implementation(name = "test client", version = "1.0"),
             options = ClientOptions(
-                capabilities = ClientCapabilities(sampling = EmptyJsonObject),
+                capabilities = ClientCapabilities(sampling = ClientCapabilities.sampling),
             ),
         )
 
@@ -633,18 +633,16 @@ class ClientTest {
             ),
             options = ClientOptions(
                 capabilities = ClientCapabilities(
-                    sampling = EmptyJsonObject,
+                    sampling = ClientCapabilities.sampling,
                 ),
             ),
         )
 
         client.setRequestHandler<CreateMessageRequest>(Method.Defined.SamplingCreateMessage) { _, _ ->
             CreateMessageResult(
-                model = "test-model",
                 role = Role.Assistant,
-                content = TextContent(
-                    text = "Test response",
-                ),
+                content = TextContent(text = "Test response"),
+                model = "test-model",
             )
         }
 
@@ -670,7 +668,7 @@ class ClientTest {
         val client = Client(
             clientInfo = Implementation(name = "test client", version = "1.0"),
             options = ClientOptions(
-                capabilities = ClientCapabilities(sampling = EmptyJsonObject),
+                capabilities = ClientCapabilities(sampling = ClientCapabilities.sampling),
             ),
         )
 

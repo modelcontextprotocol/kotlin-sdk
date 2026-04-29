@@ -64,6 +64,7 @@ public data class RegisteredResource(
  * A registered resource template with its associated read handler.
  *
  * @property resourceTemplate The [ResourceTemplate] definition (RFC 6570 URI template).
+ * @property matcher Pre-built matcher used to test incoming URIs against [resourceTemplate].
  * @property readHandler A suspend function invoked when a client reads a URI that matches
  *   this template. The second parameter contains the URI variables extracted from the match.
  */

@@ -39,7 +39,6 @@ internal class MockMcp(verbose: Boolean = false) : AutoCloseable {
 
     val url = "${mokksy.baseUrl()}/mcp"
 
-    @Suppress("LongParameterList")
     fun onInitialize(
         clientName: String? = null,
         sessionId: String,
@@ -117,7 +116,6 @@ internal class MockMcp(verbose: Boolean = false) : AutoCloseable {
         }
     }
 
-    @Suppress("LongParameterList")
     fun handleWithResult(
         httpMethod: HttpMethod = HttpMethod.Post,
         jsonRpcMethod: String,
@@ -153,7 +151,6 @@ internal class MockMcp(verbose: Boolean = false) : AutoCloseable {
         }
     }
 
-    @Suppress("LongParameterList")
     fun handleWithResult(
         httpMethod: HttpMethod = HttpMethod.Post,
         jsonRpcMethod: String,
@@ -178,7 +175,6 @@ internal class MockMcp(verbose: Boolean = false) : AutoCloseable {
         )
     }
 
-    @Suppress("LongParameterList")
     fun handleJSONRPCRequest(
         httpMethod: HttpMethod = HttpMethod.Post,
         jsonRpcMethod: String,

@@ -299,21 +299,18 @@ class StdioServerTransportTest {
         server.close()
     }
 
-    @Suppress("unused")
     private fun inputErrors() = listOf(
         IOException("simulated read failure"),
         RuntimeException("unexpected read exception"),
         OutOfMemoryError("unexpected read error"),
     )
 
-    @Suppress("unused")
     private fun outputErrors() = listOf(
         IOException("simulated write failure"),
         RuntimeException("unexpected write exception"),
         OutOfMemoryError("unexpected write error"),
     )
 
-    @Suppress("unused")
     private fun handlerErrors() = listOf(
         RuntimeException("handler failure"),
         IOException("handler IO failure"),

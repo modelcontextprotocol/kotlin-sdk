@@ -32,11 +32,10 @@ public class MatchResult(public val variables: Map<String, String>, public val s
  * candidate URIs against that template via [match]. The returned [MatchResult.score]
  * must reflect match specificity so that a selection algorithm can prefer the most
  * specific template when multiple templates match the same URI.
- *
- * @property resourceTemplate the template to match URIs against
  */
 public interface ResourceTemplateMatcher {
 
+    /** The template to match URIs against. */
     public val resourceTemplate: ResourceTemplate
 
     /**

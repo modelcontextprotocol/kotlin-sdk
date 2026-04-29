@@ -15,13 +15,12 @@ import kotlin.test.assertNull
 class InitializeTest {
 
     @Test
-    @Suppress("LongMethod")
     fun `should serialize InitializeRequest with capabilities and meta`() {
         val request = InitializeRequest(
             InitializeRequestParams(
                 protocolVersion = "2024-11-05",
                 capabilities = ClientCapabilities(
-                    sampling = ClientCapabilities.sampling,
+                    sampling = ClientCapabilities.Sampling(),
                     roots = ClientCapabilities.Roots(listChanged = true),
                     elicitation = ClientCapabilities.elicitation,
                     experimental = buildJsonObject {

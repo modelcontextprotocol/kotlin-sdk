@@ -64,7 +64,8 @@ private val logger = KotlinLogging.logger {}
  * Configuration options for the MCP server.
  *
  * @property capabilities The capabilities this server supports.
- * @property enforceStrictCapabilities Whether to strictly enforce capabilities when interacting with clients.
+ * @param enforceStrictCapabilities Whether to strictly enforce capabilities when interacting with clients.
+ * Forwarded to [ProtocolOptions.enforceStrictCapabilities].
  * @property resourceTemplateMatcherFactory The factory used to create [ResourceTemplateMatcher] instances
  *   for matching resource URIs against registered templates. Defaults to [PathSegmentTemplateMatcher.factory].
  */
@@ -92,13 +93,12 @@ public class ServerOptions(
  * Currently, after subscription to a resource, the server will NOT send the subscription confirmation
  * as this response schema is not defined in the protocol.
  *
- * @param serverInfo Information about this server implementation (name, version).
- * @param options Configuration options for the server.
- * @param instructionsProvider Optional provider for instructions from the server to the client about how to use
+ * @property serverInfo Information about this server implementation (name, version).
+ * @property options Configuration options for the server.
+ * @property instructionsProvider Optional provider for instructions from the server to the client about how to use
  * this server. The provider is called each time a new session is started to support dynamic instructions.
  * @param block A block to configure the mcp server.
  */
-@Suppress("TooManyFunctions")
 public open class Server(
     protected val serverInfo: Implementation,
     protected val options: ServerOptions,
@@ -312,9 +312,9 @@ public open class Server(
      * Registers a single tool. The client can then call this tool.
      *
      * @param name The name of the tool.
-     * @param title An optional human-readable name of the tool for display purposes.
      * @param description A human-readable description of what the tool does.
      * @param inputSchema The expected input schema for the tool.
+     * @param title An optional human-readable name of the tool for display purposes.
      * @param outputSchema The optional expected output schema for the tool.
      * @param toolAnnotations Optional additional tool information.
      * @param execution Optional execution-related properties, such as task-augmented execution support.
@@ -322,7 +322,6 @@ public open class Server(
      * @param handler A suspend function that handles executing the tool when called by the client.
      * @throws IllegalStateException If the server does not support tools.
      */
-    @Suppress("LongParameterList")
     public fun addTool(
         name: String,
         description: String,
@@ -645,7 +644,6 @@ public open class Server(
         }
 
         // Execute the tool handler and catch any errors
-        @Suppress("TooGenericExceptionCaught")
         return try {
             logger.trace { "Executing tool ${requestParams.name} with input: ${requestParams.arguments}" }
             tool.run {

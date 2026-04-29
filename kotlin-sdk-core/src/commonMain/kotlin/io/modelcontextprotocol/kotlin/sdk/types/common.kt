@@ -12,7 +12,7 @@ import kotlinx.serialization.json.JsonObject
 public const val LATEST_PROTOCOL_VERSION: String = "2025-11-25"
 
 /** The default protocol version used when negotiation is not performed. */
-public const val DEFAULT_NEGOTIATED_PROTOCOL_VERSION: String = "2025-06-18"
+public const val DEFAULT_NEGOTIATED_PROTOCOL_VERSION: String = "2025-03-26"
 
 /** All MCP protocol versions supported by this SDK. */
 public val SUPPORTED_PROTOCOL_VERSIONS: List<String> = listOf(
@@ -28,11 +28,10 @@ public val SUPPORTED_PROTOCOL_VERSIONS: List<String> = listOf(
 
 /**
  * Represents an entity that includes additional metadata in its responses.
- *
- * @property meta optional metadata attached to this entity
  */
 @Serializable
 public sealed interface WithMeta {
+    /** Optional metadata attached to this entity. */
     @SerialName("_meta")
     public val meta: JsonObject?
 }
@@ -91,9 +90,6 @@ public data class Icon(
 ) {
     /**
      * The theme context for which an icon is designed.
-     *
-     * @property Light Icon designed for use with a light background (typically darker icon).
-     * @property Dark Icon designed for use with a dark background (typically lighter icon).
      */
     @Serializable
     public enum class Theme {
@@ -128,11 +124,10 @@ public enum class Role {
  *
  * References are used to point to other entities (prompts, resources, etc.)
  * without including their full definitions.
- *
- * @property type discriminator identifying the reference subtype
  */
 @Serializable(with = ReferencePolymorphicSerializer::class)
 public sealed interface Reference {
+    /** Discriminator identifying the reference subtype. */
     public val type: ReferenceType
 }
 

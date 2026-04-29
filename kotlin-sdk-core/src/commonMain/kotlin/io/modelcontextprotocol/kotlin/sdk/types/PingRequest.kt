@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 /**
  * Represents a ping request used to check if the connection is alive.
  *
- * @property meta optional request metadata
+ * @property params optional request parameters carrying metadata
  */
 @Serializable
 public data class PingRequest(override val params: BaseRequestParams? = null) :
@@ -17,6 +17,7 @@ public data class PingRequest(override val params: BaseRequestParams? = null) :
     @EncodeDefault
     override val method: Method = Method.Defined.Ping
 
+    /** Convenience accessor for [params]'s metadata. */
     public val meta: RequestMeta?
         get() = params?.meta
 }

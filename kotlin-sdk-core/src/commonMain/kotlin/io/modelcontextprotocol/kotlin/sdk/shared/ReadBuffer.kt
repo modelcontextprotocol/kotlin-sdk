@@ -39,7 +39,6 @@ public class ReadBuffer {
             val line = readNextLine() ?: return null
             if (line.isBlank()) continue
 
-            @Suppress("TooGenericExceptionCaught")
             val message = try {
                 deserializeMessage(line)
             } catch (e: Exception) {
@@ -78,7 +77,7 @@ public class ReadBuffer {
         if (braceIndex == -1) return null
 
         val trimmed = line.substring(braceIndex)
-        @Suppress("TooGenericExceptionCaught")
+
         return try {
             deserializeMessage(trimmed)
         } catch (ignored: Exception) {

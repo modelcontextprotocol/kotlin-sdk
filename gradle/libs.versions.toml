@@ -2,9 +2,9 @@
 # plugins version
 atomicfu = "0.32.1"
 binaryCompatibilityValidatorPlugin = "0.18.1"
-detekt = "2.0.0-alpha.2"
+detekt = "2.0.0-alpha.3"
 dokka = "2.2.0"
-kotlin = "2.3.10"
+kotlin = "2.3.21"
 kover = "0.9.8"
 ktlint = "14.2.0"
 knit = "0.5.1"
@@ -21,13 +21,14 @@ ktor = "3.3.3"
 logging = "8.0.01"
 mockk = "1.14.9"
 mokksy = "0.8.1"
-serialization = "1.10.0"
+serialization = "1.11.0"
 slf4j = "2.0.17"
 logback = "1.5.32"
 junit = "5.14.3"
 
 [libraries]
 # Plugins
+detekt-gradle = { module = "dev.detekt:detekt-gradle-plugin", version.ref = "detekt" }
 dokka-gradle = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
 kotlin-gradle = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlin-serialization = { module = "org.jetbrains.kotlin:kotlin-serialization", version.ref = "kotlin" }
@@ -75,7 +76,6 @@ ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "
 ktor-server-cio = { group = "io.ktor", name = "ktor-server-cio", version.ref = "ktor" }
 
 [plugins]
-detekt = { id = "dev.detekt", version.ref = "detekt" }
 kotlinx-binary-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibilityValidatorPlugin" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }

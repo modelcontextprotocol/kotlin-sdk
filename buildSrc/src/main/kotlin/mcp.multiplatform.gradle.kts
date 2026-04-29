@@ -45,11 +45,6 @@ kotlin {
                 events("failed")
             }
             systemProperty("kotest.output.ansi", "true")
-            reports {
-                junitXml.required.set(true)
-                junitXml.includeSystemOutLog.set(true)
-                junitXml.includeSystemErrLog.set(true)
-            }
         }
     }
     macosArm64()
@@ -61,13 +56,4 @@ kotlin {
 
     explicitApi = ExplicitApiMode.Strict
     jvmToolchain(21)
-}
-
-tasks.named("detekt").configure {
-    dependsOn(
-        "detektMainJvm",
-        "detektCommonMainSourceSet",
-        "detektTestJvm",
-        "detektCommonTestSourceSet",
-    )
 }

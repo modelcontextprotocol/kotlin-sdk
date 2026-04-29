@@ -39,17 +39,28 @@ import kotlin.uuid.Uuid
 private val logger = KotlinLogging.logger {}
 
 /**
- * Represents a server session.
+ * Represents an active server-side session in the Model Context Protocol.
  *
- * @property sessionId unique identifier for this session, generated randomly on creation
+ * Owns the server side of a single client connection on top of [Protocol]. Drives the
+ * initialize/initialized handshake, tracks the negotiated client capabilities and version,
+ * asserts capability requirements before dispatching requests and notifications, and exposes
+ * server-to-client operations such as sampling, root listing, elicitation, logging, and
+ * list-change notifications.
+ *
+ * Equality and hashing are based on [sessionId], so a session can be used as a key in
+ * routing structures.
+ *
+ * @property serverInfo server name and version reported to the client during initialization
+ * @param options server capabilities and protocol options used by [Protocol]
+ * @property instructions optional human-readable instructions for the client, sent in the initialize result
  */
-@Suppress("TooManyFunctions")
 public open class ServerSession(
     protected val serverInfo: Implementation,
     options: ServerOptions,
     protected val instructions: String?,
 ) : Protocol(options) {
 
+    /** Unique identifier for this session, generated on creation. */
     @OptIn(ExperimentalUuidApi::class)
     public val sessionId: String = Uuid.random().toString()
 
@@ -60,14 +71,10 @@ public open class ServerSession(
     private val _clientCapabilities: AtomicRef<ClientCapabilities?> = atomic(null)
     private val _clientVersion: AtomicRef<Implementation?> = atomic(null)
 
-    /**
-     * The client's reported capabilities after initialization.
-     */
+    /** Capabilities reported by the client during initialization, or `null` before the handshake completes. */
     public val clientCapabilities: ClientCapabilities? get() = _clientCapabilities.value
 
-    /**
-     * The client's version information after initialization.
-     */
+    /** Client implementation information reported during initialization, or `null` before the handshake completes. */
     public val clientVersion: Implementation? get() = _clientVersion.value
 
     /**

@@ -176,7 +176,6 @@ class ElicitationTest {
     // ── Deprecated compat ───────────────────────────────────────────────
 
     @Test
-    @Suppress("DEPRECATION")
     fun `deprecated factory function should create ElicitRequestFormParams`() {
         val schema = ElicitRequestParams.RequestedSchema(
             properties = mapOf("name" to StringSchema()),
@@ -188,7 +187,6 @@ class ElicitationTest {
     }
 
     @Test
-    @Suppress("DEPRECATION")
     fun `deprecated requestedSchema should return schema for form mode`() {
         val schema = ElicitRequestParams.RequestedSchema(
             properties = mapOf("x" to BooleanSchema()),
@@ -198,7 +196,6 @@ class ElicitationTest {
     }
 
     @Test
-    @Suppress("DEPRECATION")
     fun `deprecated requestedSchema should return null for URL mode`() {
         val request = ElicitRequest(
             ElicitRequestURLParams(message = "m", elicitationId = "id", url = "https://example.com"),

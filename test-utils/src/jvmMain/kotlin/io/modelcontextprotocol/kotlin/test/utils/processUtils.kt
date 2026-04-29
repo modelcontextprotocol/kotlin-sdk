@@ -14,7 +14,6 @@ import kotlin.time.Duration.Companion.seconds
  */
 public fun killProcessOnPort(port: Int) {
     val killCommand = if (isWindows) {
-        @Suppress("MaxLineLength")
         listOf(
             "cmd.exe",
             "/c",

@@ -186,7 +186,6 @@ class ChannelTransportTest {
             val id = ((msg as JSONRPCRequest).id as RequestId.NumberId).value.toInt()
             received.add(id)
             if (id == 2) {
-                @Suppress("TooGenericExceptionThrown")
                 throw RuntimeException("Error processing message 2")
             }
             if (received.size == 4) {

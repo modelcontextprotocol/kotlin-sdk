@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.shared.Protocol
 import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions
+import io.modelcontextprotocol.kotlin.sdk.shared.RequestHandlerExtra
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
 import io.modelcontextprotocol.kotlin.sdk.types.BooleanSchema
@@ -13,6 +14,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.CompleteRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CompleteResult
+import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
 import io.modelcontextprotocol.kotlin.sdk.types.DoubleSchema
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestFormParams
@@ -45,7 +47,9 @@ import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.types.PrimitiveSchemaDefinition
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
+import io.modelcontextprotocol.kotlin.sdk.types.Request
 import io.modelcontextprotocol.kotlin.sdk.types.RequestMeta
+import io.modelcontextprotocol.kotlin.sdk.types.RequestResult
 import io.modelcontextprotocol.kotlin.sdk.types.Root
 import io.modelcontextprotocol.kotlin.sdk.types.RootsListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
@@ -79,7 +83,7 @@ private val logger = KotlinLogging.logger {}
  * Options for configuring the MCP client.
  *
  * @property capabilities The capabilities this client supports.
- * @property enforceStrictCapabilities Whether to strictly enforce capabilities when interacting with the server.
+ * @param enforceStrictCapabilities Whether to strictly enforce capabilities when interacting with the server.
  */
 public class ClientOptions(
     public val capabilities: ClientCapabilities = ClientCapabilities(),
@@ -121,7 +125,6 @@ public suspend fun mcpClient(
  * @param clientInfo Information about the client implementation (name, version).
  * @param options Configuration options for this client.
  */
-@Suppress("TooManyFunctions")
 public open class Client(private val clientInfo: Implementation, options: ClientOptions = ClientOptions()) :
     Protocol(options) {
 
@@ -238,7 +241,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
             Method.Defined.CompletionComplete,
             -> {
                 checkNotNull(serverCapabilities?.prompts) {
-                    throw IllegalStateException("Server does not support prompts (required for $method)")
+                    "Server does not support prompts (required for $method)"
                 }
             }
 
@@ -251,10 +254,10 @@ public open class Client(private val clientInfo: Implementation, options: Client
                 val resCaps = serverCapabilities?.resources
                     ?: error("Server does not support resources (required for $method)")
 
-                if (method == Method.Defined.ResourcesSubscribe && resCaps.subscribe != true) {
-                    throw IllegalStateException(
-                        "Server does not support resource subscriptions (required for $method)",
-                    )
+                if (method == Method.Defined.ResourcesSubscribe) {
+                    check(resCaps.subscribe == true) {
+                        "Server does not support resource subscriptions (required for $method)"
+                    }
                 }
             }
 
@@ -320,6 +323,26 @@ public open class Client(private val clientInfo: Implementation, options: Client
             }
 
             else -> {}
+        }
+    }
+
+    /**
+     * Wraps incoming-request handlers with SEP-1577 client-side enforcement.
+     *
+     * For `sampling/createMessage`: if the incoming request carries `tools` or
+     * `toolChoice` but this client did not advertise [ClientCapabilities.Sampling.tools],
+     * the wrapper throws an [McpException] with JSON-RPC error code `InvalidParams`
+     * before the user-supplied handler runs. Matches the TypeScript SDK wrapper in
+     * `Client.setRequestHandler`.
+     */
+    override fun <T : Request> wrapRequestHandler(
+        method: Method,
+        block: suspend (T, RequestHandlerExtra) -> RequestResult?,
+    ): suspend (T, RequestHandlerExtra) -> RequestResult? {
+        if (method != Method.Defined.SamplingCreateMessage) return block
+        return { request, extra ->
+            (request as? CreateMessageRequest)?.let { validateSamplingToolsCapability(it, capabilities) }
+            block(request, extra)
         }
     }
 
@@ -532,9 +555,8 @@ public open class Client(private val clientInfo: Implementation, options: Client
      * @throws IllegalStateException If the client does not support roots.
      */
     public fun removeRoot(uri: String): Boolean {
-        if (capabilities.roots == null) {
-            logger.error { "Failed to remove root '$uri': Client does not support roots capability" }
-            throw IllegalStateException("Client does not support roots capability.")
+        checkNotNull(capabilities.roots) {
+            "Client does not support roots capability."
         }
         logger.info { "Removing root: $uri" }
         val oldMap = roots.getAndUpdate { current -> current.remove(uri) }
@@ -612,7 +634,6 @@ public open class Client(private val clientInfo: Implementation, options: Client
 
     // --- Internal Handlers ---
 
-    @Suppress("ReturnCount")
     private fun applyElicitationDefaults(request: ElicitRequest, result: ElicitResult): ElicitResult {
         if (result.action != ElicitResult.Action.Accept) return result
         val formParams = request.params as? ElicitRequestFormParams ?: return result

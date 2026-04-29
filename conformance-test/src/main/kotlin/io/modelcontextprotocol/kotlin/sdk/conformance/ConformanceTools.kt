@@ -45,7 +45,6 @@ internal const val WAV_BASE64 = "UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABA
 
 private val logger = KotlinLogging.logger {}
 
-@Suppress("LongMethod")
 fun Server.registerConformanceTools() {
     // 1. Simple text
     addTool(
@@ -176,11 +175,11 @@ fun Server.registerConformanceTools() {
             CreateMessageRequest(
                 CreateMessageRequestParams(
                     maxTokens = 10000,
-                    messages = listOf(SamplingMessage(Role.User, TextContent(prompt))),
+                    messages = listOf(SamplingMessage(Role.User, listOf(TextContent(prompt)))),
                 ),
             ),
         )
-        CallToolResult(listOf(TextContent(result.content.toString())))
+        CallToolResult(listOf(TextContent(result.content.joinToString("\n") { it.toString() })))
     }
 
     // 9. Elicitation

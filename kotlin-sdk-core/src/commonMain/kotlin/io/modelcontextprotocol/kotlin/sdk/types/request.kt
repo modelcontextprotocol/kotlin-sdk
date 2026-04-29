@@ -15,11 +15,11 @@ import kotlin.jvm.JvmInline
  * Metadata attached to a request's `_meta` field.
  *
  * @property json the raw JSON object containing the metadata
- * @property progressToken optional progress token for tracking request progress
  */
 @JvmInline
 @Serializable
 public value class RequestMeta(public val json: JsonObject) {
+    /** Optional progress token for tracking request progress. */
     public val progressToken: ProgressToken?
         get() = json["progressToken"]?.let { element ->
             when {
@@ -72,14 +72,14 @@ public data class BaseRequestParams(@SerialName("_meta") override val meta: Requ
 
 /**
  * Represents a request in the protocol.
- *
- * @property method the request method identifier
- * @property params optional request parameters
  */
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable(with = RequestPolymorphicSerializer::class)
 public sealed interface Request {
+    /** The request method identifier. */
     public val method: Method
+
+    /** Optional request parameters. */
     public val params: RequestParams?
 }
 
@@ -142,7 +142,7 @@ public sealed interface ServerResult : RequestResult
 /**
  * An empty result for a request containing optional metadata.
  *
- * @param meta Additional metadata for the response. Defaults to an empty JSON object.
+ * @property meta Additional metadata for the response. Defaults to an empty JSON object.
  */
 @Serializable
 public data class EmptyResult(@SerialName("_meta") override val meta: JsonObject? = null) :
@@ -151,11 +151,10 @@ public data class EmptyResult(@SerialName("_meta") override val meta: JsonObject
 
 /**
  * Represents a paginated result.
- *
- * @property nextCursor opaque token for retrieving the next page of results, or `null` if no more results
  */
 @Serializable
 public sealed interface PaginatedResult : RequestResult {
+    /** Opaque token for retrieving the next page of results, or `null` if no more results. */
     public val nextCursor: String?
 }
 

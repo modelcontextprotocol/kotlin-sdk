@@ -72,7 +72,6 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
     private fun launchReadingJob(): Job {
         val job = scope.launch {
             val buf = Buffer()
-            @Suppress("TooGenericExceptionCaught")
             try {
                 while (isActive) {
                     val bytesRead = inputStream.readAtMostTo(buf, READ_BUFFER_SIZE)
@@ -103,7 +102,6 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
 
     private fun launchProcessingJob(): Job {
         val job = scope.launch {
-            @Suppress("TooGenericExceptionCaught")
             try {
                 for (chunk in readChannel) {
                     readBuffer.append(chunk)
@@ -123,7 +121,6 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
 
     private fun launchSendingJob(): Job {
         val job = scope.launch {
-            @Suppress("TooGenericExceptionCaught")
             try {
                 for (message in writeChannel) {
                     val json = serializeMessage(message)
@@ -147,7 +144,6 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
     }
 
     private suspend fun processReadBuffer() {
-        @Suppress("TooGenericExceptionCaught")
         while (true) {
             val message = try {
                 readBuffer.readMessage()

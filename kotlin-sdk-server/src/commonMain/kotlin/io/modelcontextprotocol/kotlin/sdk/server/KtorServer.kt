@@ -1,5 +1,3 @@
-@file:Suppress("TooManyFunctions")
-
 package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -172,7 +170,6 @@ private fun Application.mcpStreamableHttp(
  *          that creates and returns the [Server] to handle the connection.
  */
 @KtorDsl
-@Suppress("LongParameterList")
 public fun Application.mcpStreamableHttp(
     path: String = "/mcp",
     enableDnsRebindingProtection: Boolean = false,
@@ -247,7 +244,6 @@ private fun Application.mcpStatelessStreamableHttp(
  *          that creates and returns the [Server] to handle the connection.
  */
 @KtorDsl
-@Suppress("LongParameterList")
 public fun Application.mcpStatelessStreamableHttp(
     path: String = "/mcp",
     enableDnsRebindingProtection: Boolean = false,

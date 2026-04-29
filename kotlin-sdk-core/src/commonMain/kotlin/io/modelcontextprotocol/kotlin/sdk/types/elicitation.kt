@@ -46,11 +46,10 @@ public data class ElicitRequest(override val params: ElicitRequestParams) : Serv
  * Represents the parameters for an `elicitation/create` request.
  *
  * Implementations: [ElicitRequestFormParams], [ElicitRequestURLParams].
- *
- * @property message The message to present to the user describing what information is being requested.
  */
 @Serializable(with = ElicitRequestParamsSerializer::class)
 public sealed interface ElicitRequestParams : RequestParams {
+    /** The message to present to the user describing what information is being requested. */
     public val message: String
 
     /**
@@ -64,7 +63,6 @@ public sealed interface ElicitRequestParams : RequestParams {
      * Each property must be a primitive type (string, number, boolean).
      * @property required Optional list of property names that must be provided by the user.
      * If omitted, all fields are considered optional.
-     * @property type Always "object" for elicitation schemas.
      */
     @Serializable
     public data class RequestedSchema(
@@ -73,6 +71,7 @@ public sealed interface ElicitRequestParams : RequestParams {
         val properties: Map<String, PrimitiveSchemaDefinition>,
         val required: List<String>? = null,
     ) {
+        /** Always "object" for elicitation schemas. */
         @EncodeDefault
         val type: String = "object"
     }
@@ -91,7 +90,7 @@ public sealed interface ElicitRequestParams : RequestParams {
     ReplaceWith("ElicitRequestFormParams(message, requestedSchema = requestedSchema, meta = meta)"),
     DeprecationLevel.WARNING,
 )
-@Suppress("FunctionNaming", "FunctionName")
+@Suppress("FunctionName")
 public fun ElicitRequestParams(
     message: String,
     requestedSchema: ElicitRequestParams.RequestedSchema,
@@ -113,7 +112,6 @@ public fun ElicitRequestParams(
  *   later via `tasks/result`.
  * @property requestedSchema A restricted subset of JSON Schema. Only top-level properties
  *   are allowed, without nesting.
- * @property mode The elicitation mode discriminator, always `"form"`.
  * @property meta Optional metadata. May include a progressToken for out-of-band progress notifications.
  */
 @Serializable
@@ -124,6 +122,7 @@ public data class ElicitRequestFormParams(
     @SerialName("_meta")
     override val meta: RequestMeta? = null,
 ) : ElicitRequestParams {
+    /** The elicitation mode discriminator, always `"form"`. */
     @EncodeDefault
     public val mode: String = "form"
 }
@@ -141,7 +140,6 @@ public data class ElicitRequestFormParams(
  * @property task If specified, the caller is requesting task-augmented execution. The request
  *   will return a [CreateTaskResult] immediately, and the actual result can be retrieved
  *   later via `tasks/result`.
- * @property mode The elicitation mode discriminator, always `"url"`.
  * @property meta Optional metadata. May include a progressToken for out-of-band progress notifications.
  */
 @Serializable
@@ -153,6 +151,7 @@ public data class ElicitRequestURLParams(
     @SerialName("_meta")
     override val meta: RequestMeta? = null,
 ) : ElicitRequestParams {
+    /** The elicitation mode discriminator, always `"url"`. */
     @EncodeDefault
     public val mode: String = "url"
 }
@@ -182,10 +181,6 @@ public data class ElicitResult(
 
     /**
      * The user's response action to an elicitation request.
-     *
-     * @property Accept User submitted the form/confirmed the action. Content will be provided.
-     * @property Decline User explicitly declined the action. No content provided.
-     * @property Cancel User dismissed the dialog without making an explicit choice. No content provided.
      */
     @Serializable
     public enum class Action {

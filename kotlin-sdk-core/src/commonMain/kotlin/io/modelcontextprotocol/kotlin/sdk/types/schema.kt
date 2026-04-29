@@ -24,7 +24,6 @@ public sealed interface PrimitiveSchemaDefinition
  * @property minLength Minimum string length.
  * @property maxLength Maximum string length.
  * @property format Optional format constraint (e.g., email, URI, date).
- * @property type JSON Schema type discriminator, always `"string"`.
  * @property default Optional default value.
  */
 @Serializable
@@ -36,6 +35,7 @@ public data class StringSchema(
     val format: StringSchemaFormat? = null,
     val default: String? = null,
 ) : PrimitiveSchemaDefinition {
+    /** JSON Schema type discriminator, always `"string"`. */
     @EncodeDefault
     public val type: String = "string"
 }
@@ -73,7 +73,6 @@ public sealed interface NumberSchemaDefinition : PrimitiveSchemaDefinition
  * @property description Optional description for the field.
  * @property minimum Minimum allowed value.
  * @property maximum Maximum allowed value.
- * @property type JSON Schema type discriminator, always `"integer"`.
  * @property default Optional default value.
  */
 @Serializable
@@ -84,6 +83,7 @@ public data class IntegerSchema(
     val maximum: Int? = null,
     val default: Int? = null,
 ) : NumberSchemaDefinition {
+    /** JSON Schema type discriminator, always `"integer"`. */
     @EncodeDefault
     val type: String = "integer"
 }
@@ -95,7 +95,6 @@ public data class IntegerSchema(
  * @property description Optional description for the field.
  * @property minimum Minimum allowed value.
  * @property maximum Maximum allowed value.
- * @property type JSON Schema type discriminator, always `"number"`.
  * @property default Optional default value.
  */
 @Serializable
@@ -106,6 +105,7 @@ public data class DoubleSchema(
     val maximum: Double? = null,
     val default: Double? = null,
 ) : NumberSchemaDefinition {
+    /** JSON Schema type discriminator, always `"number"`. */
     @EncodeDefault
     val type: String = "number"
 }
@@ -115,7 +115,6 @@ public data class DoubleSchema(
  *
  * @property title Optional display title for the field.
  * @property description Optional description for the field.
- * @property type JSON Schema type discriminator, always `"boolean"`.
  * @property default Optional default value.
  */
 @Serializable
@@ -124,6 +123,7 @@ public data class BooleanSchema(
     val description: String? = null,
     val default: Boolean? = null,
 ) : PrimitiveSchemaDefinition {
+    /** JSON Schema type discriminator, always `"boolean"`. */
     @EncodeDefault
     val type: String = "boolean"
 }
@@ -161,7 +161,6 @@ public sealed interface SingleSelectEnumSchema : EnumSchemaDefinition
  * @property title Optional display title for the field.
  * @property description Optional description for the field.
  * @property enumValues Array of enum values to choose from.
- * @property type JSON Schema type discriminator, always `"string"`.
  * @property default Optional default value.
  */
 @Serializable
@@ -172,6 +171,7 @@ public data class UntitledSingleSelectEnumSchema(
     val enumValues: List<String>,
     val default: String? = null,
 ) : SingleSelectEnumSchema {
+    /** JSON Schema type discriminator, always `"string"`. */
     @EncodeDefault
     val type: String = "string"
 }
@@ -182,7 +182,6 @@ public data class UntitledSingleSelectEnumSchema(
  * @property title Optional display title for the field.
  * @property description Optional description for the field.
  * @property oneOf Array of enum options with values and display labels.
- * @property type JSON Schema type discriminator, always `"string"`.
  * @property default Optional default value.
  */
 @Serializable
@@ -192,6 +191,7 @@ public data class TitledSingleSelectEnumSchema(
     val oneOf: List<EnumOption>,
     val default: String? = null,
 ) : SingleSelectEnumSchema {
+    /** JSON Schema type discriminator, always `"string"`. */
     @EncodeDefault
     val type: String = "string"
 }
@@ -205,7 +205,6 @@ public data class TitledSingleSelectEnumSchema(
  * @property description Optional description for the field.
  * @property enumValues Array of enum values to choose from.
  * @property enumNames Display names for enum values. Non-standard according to JSON Schema 2020-12.
- * @property type JSON Schema type discriminator, always `"string"`.
  * @property default Optional default value.
  */
 @Deprecated("Use TitledSingleSelectEnumSchema instead")
@@ -218,6 +217,7 @@ public data class LegacyTitledEnumSchema(
     val enumNames: List<String>? = null,
     val default: String? = null,
 ) : EnumSchemaDefinition {
+    /** JSON Schema type discriminator, always `"string"`. */
     @EncodeDefault
     val type: String = "string"
 }
@@ -238,7 +238,6 @@ public sealed interface MultiSelectEnumSchema : EnumSchemaDefinition
  * @property minItems Minimum number of items to select.
  * @property maxItems Maximum number of items to select.
  * @property items Schema for the array items.
- * @property type JSON Schema type discriminator, always `"array"`.
  * @property default Optional default value.
  */
 @Serializable
@@ -250,13 +249,13 @@ public data class UntitledMultiSelectEnumSchema(
     val items: Items,
     val default: List<String>? = null,
 ) : MultiSelectEnumSchema {
+    /** JSON Schema type discriminator, always `"array"`. */
     @EncodeDefault
     val type: String = "array"
 
     /**
      * Schema for the array items with plain enum values.
      *
-     * @property type JSON Schema type discriminator, always `"string"`.
      * @property enumValues Array of enum values to choose from.
      */
     @Serializable
@@ -264,6 +263,7 @@ public data class UntitledMultiSelectEnumSchema(
         @SerialName("enum")
         val enumValues: List<String>,
     ) {
+        /** JSON Schema type discriminator, always `"string"`. */
         @EncodeDefault
         val type: String = "string"
     }
@@ -277,7 +277,6 @@ public data class UntitledMultiSelectEnumSchema(
  * @property minItems Minimum number of items to select.
  * @property maxItems Maximum number of items to select.
  * @property items Schema for array items with enum options and display labels.
- * @property type JSON Schema type discriminator, always `"array"`.
  * @property default Optional default value.
  */
 @Serializable
@@ -289,6 +288,7 @@ public data class TitledMultiSelectEnumSchema(
     val items: Items,
     val default: List<String>? = null,
 ) : MultiSelectEnumSchema {
+    /** JSON Schema type discriminator, always `"array"`. */
     @EncodeDefault
     val type: String = "array"
 
