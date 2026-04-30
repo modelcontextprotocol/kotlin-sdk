@@ -48,7 +48,8 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
     private var sendingJob: Job? = null
     private var processingJob: Job? = null
 
-    private val coroutineContext: CoroutineContext = IODispatcher + SupervisorJob()
+    private val supervisorJob = SupervisorJob()
+    private val coroutineContext: CoroutineContext = IODispatcher + supervisorJob
     private val scope = CoroutineScope(coroutineContext)
     private val readChannel = Channel<ByteArray>(Channel.UNLIMITED)
     private val writeChannel = Channel<JSONRPCMessage>(Channel.UNLIMITED)
@@ -204,6 +205,12 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
             }.onFailure { logger.warn(it) { "Failed to close stdout" } }
 
             invokeOnCloseCallback()
+
+            // Cancel the supervisor job so the coroutine scope completes and
+            // the process can exit. Without this, the scope stays alive after
+            // EOF and the server process hangs indefinitely.
+            // See https://github.com/modelcontextprotocol/kotlin-sdk/issues/708
+            supervisorJob.cancel()
         }
     }
 
