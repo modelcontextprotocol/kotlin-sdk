@@ -31,8 +31,10 @@ import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.ToolListChangedNotification
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.jupiter.api.Test
+import kotlin.time.Duration.Companion.seconds
 
 class ClientConnectionTest : AbstractServerFeaturesTest() {
 
@@ -172,5 +174,38 @@ class ClientConnectionTest : AbstractServerFeaturesTest() {
         client.readResource(ReadResourceRequest(ReadResourceRequestParams("test://resource")))
 
         cap.assertAll()
+    }
+
+    @Test
+    fun `onSessionClose callback runs when the session closes`() = runTest {
+        val cleanupRan = CompletableDeferred<Unit>()
+        addTool("test") { onSessionClose { cleanupRan.complete(Unit) } }
+
+        client.callTool(CallToolRequest(CallToolRequestParams("test")))
+        client.close()
+
+        withClue("onSessionClose callback should fire when the session closes") {
+            withTimeout(1.seconds) { cleanupRan.await() }
+        }
+    }
+
+    @Test
+    fun `multiple onSessionClose callbacks run in registration order`() = runTest {
+        val invocations = mutableListOf<Int>()
+        val allRan = CompletableDeferred<Unit>()
+        addTool("test") {
+            onSessionClose { invocations += 1 }
+            onSessionClose { invocations += 2 }
+            onSessionClose {
+                invocations += 3
+                allRan.complete(Unit)
+            }
+        }
+
+        client.callTool(CallToolRequest(CallToolRequestParams("test")))
+        client.close()
+
+        withTimeout(1.seconds) { allRan.await() }
+        invocations shouldBe listOf(1, 2, 3)
     }
 }
