@@ -245,6 +245,10 @@ class StdioServerTransportTest {
         inputWriter.flush()
 
         secondMessageProcessed.await()
+        // With concurrent message processing, the error from the first
+        // message handler is delivered asynchronously on IODispatcher.
+        // Wait briefly for the error callback to fire.
+        kotlinx.coroutines.delay(100)
 
         capturedErrors shouldContain throwable
         receivedMessages shouldBe listOf(message2)

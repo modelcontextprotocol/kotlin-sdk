@@ -153,14 +153,19 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
             }
 
             if (message == null) break
-            // Async invocation broke delivery order
-            try {
-                _onMessage.invoke(message)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Throwable) {
-                logger.error(e) { "Error processing message" }
-                _onError.invoke(e)
+            // Launch each message handler concurrently so long-running
+            // request handlers (e.g. tool calls) do not block processing
+            // of subsequent messages (pings, elicitation responses, etc.).
+            // See https://github.com/modelcontextprotocol/kotlin-sdk/issues/572
+            scope.launch {
+                try {
+                    _onMessage.invoke(message)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Throwable) {
+                    logger.error(e) { "Error processing message" }
+                    _onError.invoke(e)
+                }
             }
         }
     }
