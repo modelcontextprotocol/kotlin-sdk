@@ -6,6 +6,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
 import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
+import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
@@ -775,6 +776,40 @@ class TasksTest {
         )
 
         meta.relatedTask.shouldBeNull()
+    }
+
+    @Test
+    fun `task payload result with content field is not deserialized as GetTaskResult`() {
+        // A tasks/result response wraps arbitrary JSON (e.g. a CallToolResult).
+        // It may contain "taskId" but will NOT contain "status".
+        // The deserializer must not match this as GetTaskResult.
+        val json = buildJsonObject {
+            put("content", kotlinx.serialization.json.buildJsonArray {
+                add(buildJsonObject {
+                    put("type", "text")
+                    put("text", "hello")
+                })
+            })
+        }
+
+        // Should not match GetTaskResult since there is no "status" field
+        val result = McpJson.decodeFromJsonElement(RequestResultPolymorphicSerializer, json)
+        result.shouldBeInstanceOf<CallToolResult>()
+    }
+
+    @Test
+    fun `task get result with status is correctly deserialized as GetTaskResult`() {
+        val json = buildJsonObject {
+            put("taskId", "task-1")
+            put("status", "working")
+            put("createdAt", "2025-01-01T00:00:00Z")
+            put("lastUpdatedAt", "2025-01-01T00:01:00Z")
+            put("ttl", 60000)
+        }
+
+        val result = McpJson.decodeFromJsonElement(RequestResultPolymorphicSerializer, json)
+        result.shouldBeInstanceOf<GetTaskResult>()
+        result.taskId shouldBe "task-1"
     }
 
     @Test

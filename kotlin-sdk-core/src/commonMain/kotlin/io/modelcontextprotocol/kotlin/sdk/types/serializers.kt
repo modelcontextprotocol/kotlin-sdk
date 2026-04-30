@@ -415,7 +415,11 @@ private fun selectClientResultDeserializer(element: JsonElement): Deserializatio
         "action" in jsonObject -> ElicitResult.serializer()
         "task" in jsonObject -> CreateTaskResult.serializer()
         "tasks" in jsonObject -> ListTasksResult.serializer()
-        "taskId" in jsonObject -> GetTaskResult.serializer()
+        // GetTaskResult always has both taskId and status. Matching on taskId alone
+        // would incorrectly capture GetTaskPayloadResult responses (tasks/result),
+        // which wrap arbitrary JSON and may not contain status.
+        // See https://github.com/modelcontextprotocol/kotlin-sdk/issues/601
+        "taskId" in jsonObject && "status" in jsonObject -> GetTaskResult.serializer()
         else -> null
     }
 }
@@ -438,7 +442,9 @@ private fun selectServerResultDeserializer(element: JsonElement): Deserializatio
         "content" in jsonObject -> CallToolResult.serializer()
         "task" in jsonObject -> CreateTaskResult.serializer()
         "tasks" in jsonObject -> ListTasksResult.serializer()
-        "taskId" in jsonObject -> GetTaskResult.serializer()
+        // Require status alongside taskId to distinguish GetTaskResult from
+        // GetTaskPayloadResult, which wraps arbitrary JSON.
+        "taskId" in jsonObject && "status" in jsonObject -> GetTaskResult.serializer()
         else -> null
     }
 }
