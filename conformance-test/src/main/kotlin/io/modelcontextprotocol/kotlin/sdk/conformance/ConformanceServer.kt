@@ -12,8 +12,6 @@ fun main() {
     val port = System.getenv("MCP_PORT")?.toIntOrNull() ?: 3001
     embeddedServer(CIO, port = port) {
         mcpStreamableHttp(
-            enableDnsRebindingProtection = true,
-            allowedHosts = listOf("localhost", "127.0.0.1", "localhost:$port", "127.0.0.1:$port"),
             eventStore = InMemoryEventStore(),
         ) {
             createConformanceServer()
