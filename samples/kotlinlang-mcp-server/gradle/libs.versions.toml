@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.3.20"
+kotlin = "2.3.21"
 ktor = "3.3.3"
 mcp-kotlin = "0.11.1"
 serialization = "1.10.0"
