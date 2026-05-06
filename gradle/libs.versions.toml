@@ -20,7 +20,6 @@ kotlinx-io = "0.9.0"
 ktor = "3.3.3"
 logging = "8.0.02"
 mockk = "1.14.9"
-mokksy = "0.8.1"
 serialization = "1.11.0"
 slf4j = "2.0.17"
 logback = "1.5.32"
@@ -65,7 +64,6 @@ kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 ktor-client-mock = { group = "io.ktor", name = "ktor-client-mock", version.ref = "ktor" }
 ktor-server-test-host = { group = "io.ktor", name = "ktor-server-test-host", version.ref = "ktor" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
-mokksy = { group = "dev.mokksy", name = "mokksy", version.ref = "mokksy" }
 netty-bom = { group = "io.netty", name = "netty-bom", version.ref = "netty" }
 slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
 logback-classic = { group = "ch.qos.logback", name = "logback-classic", version.ref = "logback" }
