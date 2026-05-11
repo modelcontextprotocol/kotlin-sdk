@@ -20,8 +20,10 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
+import io.ktor.server.sse.Heartbeat
 import io.ktor.server.sse.SSE
 import io.ktor.server.sse.ServerSSESession
+import io.ktor.server.sse.heartbeat
 import io.ktor.server.sse.sse
 import io.ktor.utils.io.KtorDsl
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
@@ -167,6 +169,7 @@ private fun Application.mcpStreamableHttp(
             }
 
             sse {
+                configuration.sseHeartbeatConfig?.let { config -> heartbeat(config) }
                 val transport = existingStreamableTransport(call, transportManager) ?: return@sse
                 transport.handleRequest(this, call)
             }
@@ -208,6 +211,8 @@ private fun Application.mcpStreamableHttp(
  *          If `null`, origin validation is disabled.
  * @param eventStore An optional [EventStore] instance to enable resumable event stream functionality.
  *          Allows storing and replaying events.
+ * @param sseHeartbeatConfig The heartbeat configuration option for SSE connections. Null by default,
+ *          meaning no heartbeat is sent.
  * @param block factory block with access to the [RoutingContext] (for reading request headers)
  *          that creates and returns the [Server] to handle the connection.
  */
@@ -218,6 +223,7 @@ public fun Application.mcpStreamableHttp(
     allowedHosts: List<String>? = null,
     allowedOrigins: List<String>? = null,
     eventStore: EventStore? = null,
+    sseHeartbeatConfig: (Heartbeat.() -> Unit)? = null,
     block: RoutingContext.() -> Server,
 ) {
     mcpStreamableHttp(
@@ -228,6 +234,7 @@ public fun Application.mcpStreamableHttp(
         configuration = StreamableHttpServerTransport.Configuration(
             eventStore = eventStore,
             enableJsonResponse = true,
+            sseHeartbeatConfig = sseHeartbeatConfig,
         ),
         block = block,
     )

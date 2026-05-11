@@ -12,6 +12,7 @@ import io.ktor.server.request.receiveText
 import io.ktor.server.response.header
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondNullable
+import io.ktor.server.sse.Heartbeat
 import io.ktor.server.sse.ServerSSESession
 import io.ktor.util.collections.ConcurrentMap
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
@@ -133,6 +134,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
      * @property retryInterval retry interval for SSE reconnection attempts
      * @property maxRequestBodySize Maximum allowed size (in bytes) for incoming request bodies.
      * Defaults to 4 MB (4,194,304 bytes).
+     * @property sseHeartbeatConfig Configuration options for SSE heartbeat
      */
     public class Configuration(
         public val enableJsonResponse: Boolean = false,
@@ -154,6 +156,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         public val eventStore: EventStore? = null,
         public val retryInterval: Duration? = null,
         public val maxRequestBodySize: Long = DEFAULT_MAX_REQUEST_BODY_SIZE,
+        public val sseHeartbeatConfig: (Heartbeat.() -> Unit)? = null,
     ) {
         init {
             require(maxRequestBodySize > 0) {
