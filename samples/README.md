@@ -13,6 +13,7 @@ For background on the protocol itself, see the [MCP documentation](https://model
 | [kotlin-mcp-server](./kotlin-mcp-server)               | Server            | STDIO, SSE      | Tools, Resources, Prompts          |
 | [weather-stdio-server](./weather-stdio-server)         | Server            | STDIO           | Tools                              |
 | [kotlin-mcp-client](./kotlin-mcp-client)               | Client            | STDIO           | Tool discovery & invocation        |
+| [roots-demo](./roots-demo)                             | Client + Server   | In-memory       | Roots                              |
 | [notebooks](./notebooks)                               | Client (Notebook) | Streamable HTTP | Tool discovery & invocation        |
 
 ## Getting Started
@@ -55,6 +56,12 @@ Includes Claude Desktop integration instructions.
 An interactive CLI client that connects to any MCP server over STDIO and routes queries through
 Anthropic's Claude API, bridging MCP tools with LLM conversations.
 [Read more →](./kotlin-mcp-client)
+
+### Roots Demo
+
+A minimal in-memory sample demonstrating the MCP Roots capability — how a client exposes
+filesystem roots to a server, and how the server reacts when the root list changes.
+[Read more →](./roots-demo)
 
 ### MCP Client Notebook
 

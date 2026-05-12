@@ -1,0 +1,15 @@
+[versions]
+kotlin = "2.3.21"
+mcp-kotlin = "0.12.0"
+shadow = "9.4.1"
+slf4j = "2.0.17"
+
+[libraries]
+mcp-kotlin-client = { group = "io.modelcontextprotocol", name = "kotlin-sdk-client", version.ref = "mcp-kotlin" }
+mcp-kotlin-server = { group = "io.modelcontextprotocol", name = "kotlin-sdk-server", version.ref = "mcp-kotlin" }
+mcp-kotlin-testing = { group = "io.modelcontextprotocol", name = "kotlin-sdk-testing", version.ref = "mcp-kotlin" }
+slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
