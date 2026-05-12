@@ -13,10 +13,10 @@ import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.RootsListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.async
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 
 @OptIn(ExperimentalMcpApi::class)
 fun main() = runBlocking {
@@ -49,17 +49,29 @@ fun main() = runBlocking {
 
     println("=== MCP Roots Demo ===\n")
 
+    var notificationCount = 0
+    val rootsUpdated = CompletableDeferred<Unit>()
+
     serverSession.setNotificationHandler<RootsListChangedNotification>(
         Method.Defined.NotificationsRootsListChanged,
     ) {
-        async {
-            println("[Server] Received roots list changed notification — re-fetching roots...")
-            val updatedRoots = serverSession.listRoots()
-            println("[Server] Updated roots:")
-            updatedRoots.roots.forEach { root ->
-                println("  - ${root.name ?: "(unnamed)"}: ${root.uri}")
+        launch {
+            try {
+                println("[Server] Received roots list changed notification — re-fetching roots...")
+                val updatedRoots = serverSession.listRoots()
+                println("[Server] Updated roots:")
+                updatedRoots.roots.forEach { root ->
+                    println("  - ${root.name ?: "(unnamed)"}: ${root.uri}")
+                }
+                notificationCount++
+                if (notificationCount >= 2) {
+                    rootsUpdated.complete(Unit)
+                }
+            } catch (e: Exception) {
+                println("[Server] Error handling roots list changed: ${e.message}")
             }
         }
+        CompletableDeferred(Unit)
     }
 
     println("[Client] Adding initial roots...")
@@ -81,16 +93,16 @@ fun main() = runBlocking {
     client.addRoot(sharedLibsRoot, "Shared Libraries")
     client.sendRootsListChanged()
 
-    kotlinx.coroutines.delay(500)
-
     println("\n[Client] Removing a root and sending list changed notification...")
     client.removeRoot(backendRoot)
     client.sendRootsListChanged()
 
-    kotlinx.coroutines.delay(500)
+    withTimeout(5000) {
+        rootsUpdated.await()
+    }
 
     println("\n=== Demo Complete ===")
 
-    client.close()
     server.close()
+    client.close()
 }
