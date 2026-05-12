@@ -64,12 +64,13 @@ fun main() = runBlocking {
                 updatedRoots.roots.forEach { root ->
                     println("  - ${root.name ?: "(unnamed)"}: ${root.uri}")
                 }
+            } catch (e: Exception) {
+                println("[Server] Error handling roots list changed: ${e.message}")
+            } finally {
                 when (notificationCount.incrementAndGet()) {
                     1 -> firstNotification.complete(Unit)
                     2 -> secondNotification.complete(Unit)
                 }
-            } catch (e: Exception) {
-                println("[Server] Error handling roots list changed: ${e.message}")
             }
         }
         CompletableDeferred(Unit)
