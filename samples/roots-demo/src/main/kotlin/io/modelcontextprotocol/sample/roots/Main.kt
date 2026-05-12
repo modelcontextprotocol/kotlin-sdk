@@ -13,6 +13,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.RootsListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -33,7 +34,7 @@ fun main() = runBlocking {
     val server = Server(
         Implementation(name = "roots-demo-server", version = "1.0.0"),
         ServerOptions(
-            capabilities = ServerCapabilities(tools = ServerCapabilities.Tools(listChanged = true)),
+            capabilities = ServerCapabilities(),
         ),
     )
 
@@ -51,7 +52,7 @@ fun main() = runBlocking {
     serverSession.setNotificationHandler<RootsListChangedNotification>(
         Method.Defined.NotificationsRootsListChanged,
     ) {
-        launch {
+        async {
             println("[Server] Received roots list changed notification — re-fetching roots...")
             val updatedRoots = serverSession.listRoots()
             println("[Server] Updated roots:")
@@ -59,29 +60,31 @@ fun main() = runBlocking {
                 println("  - ${root.name ?: "(unnamed)"}: ${root.uri}")
             }
         }
-        CompletableDeferred(Unit)
     }
 
     println("[Client] Adding initial roots...")
-    client.addRoot("file:///home/user/projects/frontend", "Frontend Project")
-    client.addRoot("file:///home/user/projects/backend", "Backend Project")
+    val frontendRoot = java.io.File(System.getProperty("user.home"), "projects/frontend").toPath().toUri().toString()
+    val backendRoot = java.io.File(System.getProperty("user.home"), "projects/backend").toPath().toUri().toString()
+    client.addRoot(frontendRoot, "Frontend Project")
+    client.addRoot(backendRoot, "Backend Project")
     println("[Client] Roots registered: Frontend Project, Backend Project\n")
 
     println("[Server] Requesting roots from client...")
     val rootsResult = serverSession.listRoots()
     println("[Server] Received roots:")
     rootsResult.roots.forEach { root ->
-        println("  - ${root.name}: ${root.uri}")
+        println("  - ${root.name ?: "(unnamed)"}: ${root.uri}")
     }
 
     println("\n[Client] Adding a new root and sending list changed notification...")
-    client.addRoot("file:///home/user/projects/shared-libs", "Shared Libraries")
+    val sharedLibsRoot = java.io.File(System.getProperty("user.home"), "projects/shared-libs").toPath().toUri().toString()
+    client.addRoot(sharedLibsRoot, "Shared Libraries")
     client.sendRootsListChanged()
 
     kotlinx.coroutines.delay(500)
 
     println("\n[Client] Removing a root and sending list changed notification...")
-    client.removeRoot("file:///home/user/projects/backend")
+    client.removeRoot(backendRoot)
     client.sendRootsListChanged()
 
     kotlinx.coroutines.delay(500)
