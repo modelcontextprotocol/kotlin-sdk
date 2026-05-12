@@ -12,12 +12,11 @@ import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.RootsListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
-import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
+import java.util.concurrent.atomic.AtomicInteger
 
 @OptIn(ExperimentalMcpApi::class)
 fun main() = runBlocking {
@@ -50,8 +49,9 @@ fun main() = runBlocking {
 
     println("=== MCP Roots Demo ===\n")
 
+    val firstNotification = CompletableDeferred<Unit>()
+    val secondNotification = CompletableDeferred<Unit>()
     val notificationCount = AtomicInteger(0)
-    val rootsUpdated = CompletableDeferred<Unit>()
 
     serverSession.setNotificationHandler<RootsListChangedNotification>(
         Method.Defined.NotificationsRootsListChanged,
@@ -64,8 +64,9 @@ fun main() = runBlocking {
                 updatedRoots.roots.forEach { root ->
                     println("  - ${root.name ?: "(unnamed)"}: ${root.uri}")
                 }
-                if (notificationCount.incrementAndGet() >= 2) {
-                    rootsUpdated.complete(Unit)
+                when (notificationCount.incrementAndGet()) {
+                    1 -> firstNotification.complete(Unit)
+                    2 -> secondNotification.complete(Unit)
                 }
             } catch (e: Exception) {
                 println("[Server] Error handling roots list changed: ${e.message}")
@@ -92,14 +93,12 @@ fun main() = runBlocking {
     val sharedLibsRoot = java.io.File(System.getProperty("user.home"), "projects/shared-libs").toPath().toUri().toString()
     client.addRoot(sharedLibsRoot, "Shared Libraries")
     client.sendRootsListChanged()
+    firstNotification.await()
 
     println("\n[Client] Removing a root and sending list changed notification...")
     client.removeRoot(backendRoot)
     client.sendRootsListChanged()
-
-    withTimeout(5000) {
-        rootsUpdated.await()
-    }
+    secondNotification.await()
 
     println("\n=== Demo Complete ===")
 
