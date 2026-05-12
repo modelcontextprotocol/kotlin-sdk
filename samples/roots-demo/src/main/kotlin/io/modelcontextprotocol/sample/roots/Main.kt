@@ -12,6 +12,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.RootsListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
@@ -49,7 +50,7 @@ fun main() = runBlocking {
 
     println("=== MCP Roots Demo ===\n")
 
-    var notificationCount = 0
+    val notificationCount = AtomicInteger(0)
     val rootsUpdated = CompletableDeferred<Unit>()
 
     serverSession.setNotificationHandler<RootsListChangedNotification>(
@@ -63,8 +64,7 @@ fun main() = runBlocking {
                 updatedRoots.roots.forEach { root ->
                     println("  - ${root.name ?: "(unnamed)"}: ${root.uri}")
                 }
-                notificationCount++
-                if (notificationCount >= 2) {
+                if (notificationCount.incrementAndGet() >= 2) {
                     rootsUpdated.complete(Unit)
                 }
             } catch (e: Exception) {
