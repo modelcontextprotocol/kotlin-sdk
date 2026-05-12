@@ -16,7 +16,10 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.atomic.AtomicInteger
+
+const val NOTIFICATION_TIMEOUT_MS = 5000L
 
 @OptIn(ExperimentalMcpApi::class)
 fun main() = runBlocking {
@@ -76,33 +79,39 @@ fun main() = runBlocking {
         CompletableDeferred(Unit)
     }
 
-    println("[Client] Adding initial roots...")
-    val frontendRoot = java.io.File(System.getProperty("user.home"), "projects/frontend").toPath().toUri().toString()
-    val backendRoot = java.io.File(System.getProperty("user.home"), "projects/backend").toPath().toUri().toString()
-    client.addRoot(frontendRoot, "Frontend Project")
-    client.addRoot(backendRoot, "Backend Project")
-    println("[Client] Roots registered: Frontend Project, Backend Project\n")
+    try {
+        println("[Client] Adding initial roots...")
+        val frontendRoot = java.io.File(System.getProperty("user.home"), "projects/frontend").toPath().toUri().toString()
+        val backendRoot = java.io.File(System.getProperty("user.home"), "projects/backend").toPath().toUri().toString()
+        client.addRoot(frontendRoot, "Frontend Project")
+        client.addRoot(backendRoot, "Backend Project")
+        println("[Client] Roots registered: Frontend Project, Backend Project\n")
 
-    println("[Server] Requesting roots from client...")
-    val rootsResult = serverSession.listRoots()
-    println("[Server] Received roots:")
-    rootsResult.roots.forEach { root ->
-        println("  - ${root.name ?: "(unnamed)"}: ${root.uri}")
+        println("[Server] Requesting roots from client...")
+        val rootsResult = serverSession.listRoots()
+        println("[Server] Received roots:")
+        rootsResult.roots.forEach { root ->
+            println("  - ${root.name ?: "(unnamed)"}: ${root.uri}")
+        }
+
+        println("\n[Client] Adding a new root and sending list changed notification...")
+        val sharedLibsRoot = java.io.File(System.getProperty("user.home"), "projects/shared-libs").toPath().toUri().toString()
+        client.addRoot(sharedLibsRoot, "Shared Libraries")
+        client.sendRootsListChanged()
+        if (withTimeoutOrNull(NOTIFICATION_TIMEOUT_MS) { firstNotification.await() } == null) {
+            println("[Client] Timed out waiting for server to process first notification")
+        }
+
+        println("\n[Client] Removing a root and sending list changed notification...")
+        client.removeRoot(backendRoot)
+        client.sendRootsListChanged()
+        if (withTimeoutOrNull(NOTIFICATION_TIMEOUT_MS) { secondNotification.await() } == null) {
+            println("[Client] Timed out waiting for server to process second notification")
+        }
+
+        println("\n=== Demo Complete ===")
+    } finally {
+        server.close()
+        client.close()
     }
-
-    println("\n[Client] Adding a new root and sending list changed notification...")
-    val sharedLibsRoot = java.io.File(System.getProperty("user.home"), "projects/shared-libs").toPath().toUri().toString()
-    client.addRoot(sharedLibsRoot, "Shared Libraries")
-    client.sendRootsListChanged()
-    firstNotification.await()
-
-    println("\n[Client] Removing a root and sending list changed notification...")
-    client.removeRoot(backendRoot)
-    client.sendRootsListChanged()
-    secondNotification.await()
-
-    println("\n=== Demo Complete ===")
-
-    server.close()
-    client.close()
 }
