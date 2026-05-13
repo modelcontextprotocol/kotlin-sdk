@@ -13,13 +13,10 @@ import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.RootsListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeoutOrNull
-import java.util.concurrent.atomic.AtomicInteger
-
-const val NOTIFICATION_TIMEOUT_MS = 5000L
 
 @OptIn(ExperimentalMcpApi::class)
 fun main() = runBlocking {
@@ -41,77 +38,45 @@ fun main() = runBlocking {
         ),
     )
 
-    val serverSessionResult = CompletableDeferred<ServerSession>()
-
+    val serverSession = CompletableDeferred<ServerSession>()
     listOf(
         launch { client.connect(clientTransport) },
-        launch { serverSessionResult.complete(server.createSession(serverTransport)) },
+        launch { serverSession.complete(server.createSession(serverTransport)) },
     ).joinAll()
+    val session = serverSession.await()
 
-    val serverSession = serverSessionResult.await()
-
-    println("=== MCP Roots Demo ===\n")
-
-    val firstNotification = CompletableDeferred<Unit>()
-    val secondNotification = CompletableDeferred<Unit>()
-    val notificationCount = AtomicInteger(0)
-
-    serverSession.setNotificationHandler<RootsListChangedNotification>(
+    // Register a notification handler so the server reacts when roots change
+    session.setNotificationHandler<RootsListChangedNotification>(
         Method.Defined.NotificationsRootsListChanged,
     ) {
         launch {
-            try {
-                println("[Server] Received roots list changed notification — re-fetching roots...")
-                val updatedRoots = serverSession.listRoots()
-                println("[Server] Updated roots:")
-                updatedRoots.roots.forEach { root ->
-                    println("  - ${root.name ?: "(unnamed)"}: ${root.uri}")
-                }
-            } catch (e: Exception) {
-                println("[Server] Error handling roots list changed: ${e.message}")
-            } finally {
-                when (notificationCount.incrementAndGet()) {
-                    1 -> firstNotification.complete(Unit)
-                    2 -> secondNotification.complete(Unit)
-                }
+            val updatedRoots = session.listRoots()
+            println("\n[Server] Roots list changed — updated roots:")
+            updatedRoots.roots.forEach { root ->
+                println("  ${root.name ?: "(unnamed)"}: ${root.uri}")
             }
         }
         CompletableDeferred(Unit)
     }
 
-    try {
-        println("[Client] Adding initial roots...")
-        val frontendRoot = java.io.File(System.getProperty("user.home"), "projects/frontend").toPath().toUri().toString()
-        val backendRoot = java.io.File(System.getProperty("user.home"), "projects/backend").toPath().toUri().toString()
-        client.addRoot(frontendRoot, "Frontend Project")
-        client.addRoot(backendRoot, "Backend Project")
-        println("[Client] Roots registered: Frontend Project, Backend Project\n")
+    // Register roots on the client
+    client.addRoot("file:///home/user/projects/my-project", "My Project")
+    client.addRoot("file:///home/user/Documents", "Documents")
 
-        println("[Server] Requesting roots from client...")
-        val rootsResult = serverSession.listRoots()
-        println("[Server] Received roots:")
-        rootsResult.roots.forEach { root ->
-            println("  - ${root.name ?: "(unnamed)"}: ${root.uri}")
-        }
-
-        println("\n[Client] Adding a new root and sending list changed notification...")
-        val sharedLibsRoot = java.io.File(System.getProperty("user.home"), "projects/shared-libs").toPath().toUri().toString()
-        client.addRoot(sharedLibsRoot, "Shared Libraries")
-        client.sendRootsListChanged()
-        if (withTimeoutOrNull(NOTIFICATION_TIMEOUT_MS) { firstNotification.await() } == null) {
-            println("[Client] Timed out waiting for server to process first notification")
-        }
-
-        println("\n[Client] Removing a root and sending list changed notification...")
-        client.removeRoot(backendRoot)
-        client.sendRootsListChanged()
-        if (withTimeoutOrNull(NOTIFICATION_TIMEOUT_MS) { secondNotification.await() } == null) {
-            println("[Client] Timed out waiting for server to process second notification")
-        }
-
-        println("\n=== Demo Complete ===")
-    } finally {
-        server.close()
-        client.close()
+    // Server queries the client's root list
+    val roots = session.listRoots()
+    println("Initial roots reported by client:")
+    roots.roots.forEach { root ->
+        println("  ${root.name}: ${root.uri}")
     }
+
+    // Client adds a root and notifies the server
+    client.addRoot("file:///home/user/projects/shared", "Shared Libraries")
+    client.sendRootsListChanged()
+
+    // Allow the notification handler to process before shutting down
+    delay(500)
+
+    client.close()
+    server.close()
 }
