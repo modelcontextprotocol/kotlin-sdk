@@ -30,8 +30,14 @@ import kotlinx.atomicfu.update
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -64,6 +70,7 @@ public typealias ProgressCallback = (Progress) -> Unit
 public open class ProtocolOptions(
     public var enforceStrictCapabilities: Boolean = false,
     public var timeout: Duration = DEFAULT_REQUEST_TIMEOUT,
+    public var dispatcher: CoroutineDispatcher = Dispatchers.Default,
 )
 
 /**
@@ -148,6 +155,13 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     public var transport: Transport? = null
         private set
 
+    /**
+     * Coroutine scope for dispatching incoming messages concurrently.
+     * Created in [connect] and cancelled in [doClose].
+     * Uses [SupervisorJob] so that a failure in one message handler does not cancel the scope.
+     */
+    private var messageScope: CoroutineScope? = null
+
     private val _requestHandlers:
         AtomicRef<PersistentMap<String, suspend (JSONRPCRequest, RequestHandlerExtra) -> RequestResult?>> =
         atomic(persistentMapOf())
@@ -230,6 +244,8 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
      */
     public open suspend fun connect(transport: Transport) {
         this.transport = transport
+        this.messageScope = CoroutineScope(SupervisorJob() + (options?.dispatcher ?: Dispatchers.Default))
+
         transport.onClose {
             doClose()
         }
@@ -239,12 +255,14 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         }
 
         transport.onMessage { message ->
-            when (message) {
-                is JSONRPCResponse -> onResponse(message, null)
-                is JSONRPCRequest -> onRequest(message)
-                is JSONRPCNotification -> onNotification(message)
-                is JSONRPCError -> onResponse(null, message)
-                is JSONRPCEmptyMessage -> Unit
+            messageScope?.launch {
+                when (message) {
+                    is JSONRPCResponse -> onResponse(message, null)
+                    is JSONRPCRequest -> onRequest(message)
+                    is JSONRPCNotification -> onNotification(message)
+                    is JSONRPCError -> onResponse(null, message)
+                    is JSONRPCEmptyMessage -> Unit
+                }
             }
         }
 
@@ -253,6 +271,9 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     }
 
     private fun doClose() {
+        messageScope?.cancel()
+        messageScope = null
+
         val handlersToNotify = _responseHandlers.value.values.toList()
         _responseHandlers.getAndSet(persistentMapOf())
         _progressHandlers.getAndSet(persistentMapOf())
