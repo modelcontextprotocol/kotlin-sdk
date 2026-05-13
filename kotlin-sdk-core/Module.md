@@ -16,7 +16,11 @@ designed for Kotlin Multiplatform with explicit API mode enabled.
   handling. `WebSocketMcpTransport` adds a shared WebSocket implementation for both client and server sides, and
   `ReadBuffer` handles streaming JSON-RPC framing.
 - **Protocol engine**: The `Protocol` base class manages request/response correlation, notifications, progress tokens,
-  and capability assertions. Higher-level modules extend it to become `Client` and `Server`.
+  and capability assertions. Incoming messages are dispatched concurrently — each message is launched in a
+  `CoroutineScope(SupervisorJob)` so that a slow or suspended handler does not block subsequent messages. This prevents
+  deadlock when a request handler sends its own request (e.g., `roots/list`) before responding. The dispatcher can be
+  configured via `ProtocolOptions.dispatcher`; defaults to `Dispatchers.Default`. Higher-level modules extend `Protocol`
+  to become `Client` and `Server`.
 - **Errors and safety**: Common exception types (`McpException`, parsing errors) plus capability enforcement hooks
   ensure callers cannot use endpoints the peer does not advertise.
 

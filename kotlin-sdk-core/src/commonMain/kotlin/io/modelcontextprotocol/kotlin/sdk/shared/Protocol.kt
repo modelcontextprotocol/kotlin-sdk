@@ -66,6 +66,10 @@ public typealias ProgressCallback = (Progress) -> Unit
  * Currently defaults to `false` for backwards compatibility with SDK versions that did not advertise
  * capabilities correctly; in the future, this will default to `true`.
  * @property timeout default timeout for outgoing requests
+ * @property dispatcher the [CoroutineDispatcher] used to dispatch incoming messages concurrently.
+ * Each incoming message is launched in a [CoroutineScope][kotlinx.coroutines.CoroutineScope] backed
+ * by this dispatcher, so that handlers can run in parallel without blocking subsequent messages.
+ * Defaults to [Dispatchers.Default]. Use [Dispatchers.Unconfined] for deterministic test execution.
  */
 public open class ProtocolOptions(
     public var enforceStrictCapabilities: Boolean = false,
