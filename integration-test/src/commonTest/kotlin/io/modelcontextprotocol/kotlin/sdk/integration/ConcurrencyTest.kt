@@ -26,7 +26,9 @@ import kotlinx.coroutines.withTimeout
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.test.Test
 import kotlin.test.assertNotNull
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
 
 /**
  * Tests that the Protocol layer handles incoming messages concurrently,
@@ -80,11 +82,15 @@ class ConcurrencyTest {
     /**
      * Verifies that concurrent tool calls are handled concurrently, not serially.
      * Uses real Dispatchers instead of runTest's virtual time to allow actual concurrent execution.
+     *
+     * Both tools have delays — if handling were serial, total time would be the sum of both
+     * delays. With concurrent handling, total time is roughly max(slow, fast) + overhead.
      */
     @OptIn(ExperimentalAtomicApi::class)
     @Test
     fun `server handles concurrent requests concurrently`() = runBlocking {
-        val slowToolDelay = 500L
+        val slowToolDelay = 500.milliseconds
+        val fastToolDelay = 50.milliseconds
 
         val serverOptions = ServerOptions(
             capabilities = ServerCapabilities(tools = ServerCapabilities.Tools(null)),
@@ -97,10 +103,11 @@ class ConcurrencyTest {
         )
 
         server.addTool("slow_tool", "A tool that takes a while") {
-            delay(slowToolDelay)
+            delay(slowToolDelay.inWholeMilliseconds)
             CallToolResult(content = listOf(TextContent("slow_tool_done")))
         }
-        server.addTool("fast_tool", "A tool that is quick") {
+        server.addTool("fast_tool", "A tool that is quick but still has delay") {
+            delay(fastToolDelay.inWholeMilliseconds)
             CallToolResult(content = listOf(TextContent("fast_tool_done")))
         }
 
@@ -119,7 +126,7 @@ class ConcurrencyTest {
                 launch { serverSessionResult.complete(server.createSession(serverTransport)) },
             ).joinAll()
 
-            val startTime = System.currentTimeMillis()
+            val mark = TimeSource.Monotonic.markNow()
 
             val slowResult = CompletableDeferred<CallToolResult>()
             val fastResult = CompletableDeferred<CallToolResult>()
@@ -140,13 +147,14 @@ class ConcurrencyTest {
             assertNotNull(slow)
             assertNotNull(fast)
 
-            val elapsed = System.currentTimeMillis() - startTime
-            // If concurrent: elapsed ≈ slowToolDelay + overhead
-            // If serial: elapsed ≈ slowToolDelay * 2
-            if (elapsed >= slowToolDelay * 2L) {
+            val elapsed = mark.elapsedNow()
+            // If concurrent: elapsed ≈ max(slowToolDelay, fastToolDelay) + overhead
+            // If serial: elapsed ≈ slowToolDelay + fastToolDelay
+            val serialThreshold = slowToolDelay + fastToolDelay
+            if (elapsed >= serialThreshold) {
                 throw AssertionError(
-                    "Fast tool was blocked by slow tool. Total duration ${elapsed}ms " +
-                        "should be < ${slowToolDelay * 2}ms.",
+                    "Requests were handled serially. Total duration ${elapsed.inWholeMilliseconds}ms " +
+                        "should be < ${serialThreshold.inWholeMilliseconds}ms.",
                 )
             }
         } finally {
