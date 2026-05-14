@@ -250,8 +250,8 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
      *
      * The Protocol object assumes ownership of the Transport, replacing any callbacks that have already been set, and expects that it is the only user of the Transport instance going forward.
      *
-     * @property concurrentMessageHandling when true, incoming requests and notifications are handled
-     * concurrently in separate coroutines, allowing the message receive loop to continue processing
+     * When [ProtocolOptions.concurrentMessageHandling] is true, incoming requests and notifications
+     * are handled concurrently in separate coroutines, allowing the message receive loop to continue processing
      * other messages (including responses to outgoing requests). This prevents deadlock when a request
      * handler sends its own request to the peer and awaits the response. Defaults to false for backward
      * compatibility; set to true for transports with independent receive loops (Stdio, WebSocket,
