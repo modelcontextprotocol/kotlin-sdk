@@ -30,7 +30,7 @@ import kotlinx.atomicfu.update
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
@@ -66,16 +66,21 @@ public typealias ProgressCallback = (Progress) -> Unit
  * Currently defaults to `false` for backwards compatibility with SDK versions that did not advertise
  * capabilities correctly; in the future, this will default to `true`.
  * @property timeout default timeout for outgoing requests
- * @property dispatcher the [CoroutineDispatcher] used to dispatch incoming messages concurrently.
- * Each incoming message is launched in a [CoroutineScope][kotlinx.coroutines.CoroutineScope] backed
- * by this dispatcher, so that handlers can run in parallel without blocking subsequent messages.
- * Defaults to [Dispatchers.Default]. Use [Dispatchers.Unconfined] for deterministic test execution.
  */
 public open class ProtocolOptions(
     public var enforceStrictCapabilities: Boolean = false,
     public var timeout: Duration = DEFAULT_REQUEST_TIMEOUT,
-    public var dispatcher: CoroutineDispatcher = Dispatchers.Default,
-)
+) {
+    /**
+     * When true, incoming requests and notifications are handled concurrently
+     * in separate coroutines, allowing the message receive loop to continue
+     * processing other messages. This prevents deadlock when a handler sends
+     * its own request to the peer. Defaults to false for backward compatibility;
+     * set to true for transports with independent receive loops (Stdio, WebSocket,
+     * Channel) where a blocking handler would otherwise stall message processing.
+     */
+    public var concurrentMessageHandling: Boolean = false
+}
 
 /**
  * The default request timeout.
@@ -160,11 +165,11 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         private set
 
     /**
-     * Coroutine scope for dispatching incoming messages concurrently.
-     * Created in [connect] and cancelled in [doClose].
-     * Uses [SupervisorJob] so that a failure in one message handler does not cancel the scope.
+     * Scope for launching concurrent request and notification handlers.
+     * Created on [connect] and cancelled on [doClose].
+     * Using [SupervisorJob] so a failing handler doesn't cancel sibling handlers.
      */
-    private var messageScope: CoroutineScope? = null
+    private var handlerScope: CoroutineScope? = null
 
     private val _requestHandlers:
         AtomicRef<PersistentMap<String, suspend (JSONRPCRequest, RequestHandlerExtra) -> RequestResult?>> =
@@ -245,10 +250,19 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
      * Attaches to the given transport, starts it, and starts listening for messages.
      *
      * The Protocol object assumes ownership of the Transport, replacing any callbacks that have already been set, and expects that it is the only user of the Transport instance going forward.
+     *
+     * @property concurrentMessageHandling when true, incoming requests and notifications are handled
+     * concurrently in separate coroutines, allowing the message receive loop to continue processing
+     * other messages (including responses to outgoing requests). This prevents deadlock when a request
+     * handler sends its own request to the peer and awaits the response. Defaults to false for backward
+     * compatibility; set to true for transports with independent receive loops (Stdio, WebSocket,
+     * Channel) where a blocking handler would otherwise stall message processing.
      */
     public open suspend fun connect(transport: Transport) {
         this.transport = transport
-        this.messageScope = CoroutineScope(SupervisorJob() + (options?.dispatcher ?: Dispatchers.Default))
+        if (options?.concurrentMessageHandling == true) {
+            handlerScope = CoroutineScope(SupervisorJob() + kotlinx.coroutines.Dispatchers.Default)
+        }
 
         transport.onClose {
             doClose()
@@ -259,14 +273,38 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         }
 
         transport.onMessage { message ->
-            messageScope?.launch {
-                when (message) {
-                    is JSONRPCResponse -> onResponse(message, null)
-                    is JSONRPCRequest -> onRequest(message)
-                    is JSONRPCNotification -> onNotification(message)
-                    is JSONRPCError -> onResponse(null, message)
-                    is JSONRPCEmptyMessage -> Unit
+            when (message) {
+                is JSONRPCResponse -> onResponse(message, null)
+
+                is JSONRPCError -> onResponse(null, message)
+
+                is JSONRPCRequest -> {
+                    val scope = handlerScope
+                    if (scope != null) {
+                        // Concurrent handling: launch in a separate coroutine so the message
+                        // receive loop is not blocked while the handler runs.
+                        scope.launch(CoroutineName("MCP-Request-${message.id}")) {
+                            onRequest(message)
+                        }
+                    } else {
+                        // Synchronous handling: for transports that need responses sent within
+                        // the same context (e.g., HTTP transports responding directly).
+                        onRequest(message)
+                    }
                 }
+
+                is JSONRPCNotification -> {
+                    val scope = handlerScope
+                    if (scope != null) {
+                        scope.launch(CoroutineName("MCP-Notification-${message.method}")) {
+                            onNotification(message)
+                        }
+                    } else {
+                        onNotification(message)
+                    }
+                }
+
+                is JSONRPCEmptyMessage -> Unit
             }
         }
 
@@ -275,8 +313,8 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     }
 
     private fun doClose() {
-        messageScope?.cancel()
-        messageScope = null
+        handlerScope?.cancel()
+        handlerScope = null
 
         val handlersToNotify = _responseHandlers.value.values.toList()
         _responseHandlers.getAndSet(persistentMapOf())
