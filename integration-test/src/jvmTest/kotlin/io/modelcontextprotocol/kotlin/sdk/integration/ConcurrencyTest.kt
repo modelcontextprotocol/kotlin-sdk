@@ -18,7 +18,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -26,9 +25,8 @@ import kotlinx.coroutines.withTimeout
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.test.Test
 import kotlin.test.assertNotNull
-import kotlin.time.Duration.Companion.milliseconds
+import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
-import kotlin.time.TimeSource
 
 /**
  * Tests that the Protocol layer handles incoming messages concurrently,
@@ -81,17 +79,14 @@ class ConcurrencyTest {
 
     /**
      * Verifies that concurrent tool calls are handled concurrently, not serially.
-     * Uses real Dispatchers instead of runTest's virtual time to allow actual concurrent execution.
      *
-     * Both tools have delays — if handling were serial, total time would be the sum of both
-     * delays. With concurrent handling, total time is roughly max(slow, fast) + overhead.
+     * Uses deterministic synchronization: the fast tool completes while the slow
+     * handler is still suspended, proving that handlers run concurrently rather
+     * than serially. No wall-clock timing thresholds are used.
      */
     @OptIn(ExperimentalAtomicApi::class)
     @Test
     fun `server handles concurrent requests concurrently`() = runBlocking {
-        val slowToolDelay = 500.milliseconds
-        val fastToolDelay = 50.milliseconds
-
         val serverOptions = ServerOptions(
             capabilities = ServerCapabilities(tools = ServerCapabilities.Tools(null)),
         )
@@ -102,12 +97,17 @@ class ConcurrencyTest {
             options = serverOptions,
         )
 
-        server.addTool("slow_tool", "A tool that takes a while") {
-            delay(slowToolDelay.inWholeMilliseconds)
+        // Latch that blocks the slow handler until we signal it to finish.
+        // This lets us prove the fast handler completed while the slow one
+        // was still running — impossible under serial dispatch.
+        val slowHandlerCanFinish = CompletableDeferred<Unit>()
+
+        server.addTool("slow_tool", "A tool that blocks until signaled") {
+            slowHandlerCanFinish.await()
             CallToolResult(content = listOf(TextContent("slow_tool_done")))
         }
-        server.addTool("fast_tool", "A tool that is quick but still has delay") {
-            delay(fastToolDelay.inWholeMilliseconds)
+
+        server.addTool("fast_tool", "A tool that completes immediately") {
             CallToolResult(content = listOf(TextContent("fast_tool_done")))
         }
 
@@ -126,39 +126,30 @@ class ConcurrencyTest {
                 launch { serverSessionResult.complete(server.createSession(serverTransport)) },
             ).joinAll()
 
-            val mark = TimeSource.Monotonic.markNow()
-
+            // Start the slow request (handler blocks on slowHandlerCanFinish)
             val slowResult = CompletableDeferred<CallToolResult>()
-            val fastResult = CompletableDeferred<CallToolResult>()
-
             launch {
                 slowResult.complete(client.callTool("slow_tool", mapOf()))
             }
 
-            delay(50)
-
+            // Start the fast request
+            val fastResult = CompletableDeferred<CallToolResult>()
             launch {
                 fastResult.complete(client.callTool("fast_tool", mapOf()))
             }
 
-            val slow = withTimeout(5.seconds) { slowResult.await() }
+            // The fast request must complete while the slow handler is still suspended.
+            // Under serial dispatch, both requests would be blocked behind the slow handler,
+            // so the fast result could never arrive.
             val fast = withTimeout(5.seconds) { fastResult.await() }
-
-            assertNotNull(slow)
             assertNotNull(fast)
 
-            val elapsed = mark.elapsedNow()
-            // If concurrent: elapsed ≈ max(slowToolDelay, fastToolDelay) + overhead
-            // If serial: elapsed ≈ slowToolDelay + fastToolDelay
-            val serialThreshold = slowToolDelay + fastToolDelay
-            if (elapsed >= serialThreshold) {
-                throw AssertionError(
-                    "Requests were handled serially. Total duration ${elapsed.inWholeMilliseconds}ms " +
-                        "should be < ${serialThreshold.inWholeMilliseconds}ms.",
-                )
-            }
+            // Now release the slow handler and verify it completes
+            slowHandlerCanFinish.complete(Unit)
+            val slow = withTimeout(5.seconds) { slowResult.await() }
+            assertNotNull(slow)
+            Unit
         } finally {
-            // Clean up: close transports and cancel scope to prevent coroutine leaks
             clientTransport.close()
             serverTransport.close()
             scope.cancel()
