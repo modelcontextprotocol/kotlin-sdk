@@ -179,7 +179,13 @@ fun Server.registerConformanceTools() {
                 ),
             ),
         )
-        CallToolResult(listOf(TextContent(result.content.joinToString("\n") { it.toString() })))
+        val sampledText = result.content.joinToString("\n") { content ->
+            when (content) {
+                is TextContent -> content.text
+                else -> "Non-text sampling content: ${content::class.simpleName}"
+            }
+        }
+        CallToolResult(listOf(TextContent(sampledText)))
     }
 
     // 9. Elicitation
