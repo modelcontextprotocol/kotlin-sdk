@@ -23,7 +23,7 @@ mockk = "1.14.9"
 serialization = "1.11.0"
 slf4j = "2.0.17"
 logback = "1.5.32"
-junit = "5.14.3"
+junit = "5.14.4"
 
 [libraries]
 # Plugins
