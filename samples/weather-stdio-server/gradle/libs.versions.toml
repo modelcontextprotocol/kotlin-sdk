@@ -5,7 +5,7 @@ ktor = "3.3.3"
 logging = "8.0.02"
 mcp-kotlin = "0.12.0"
 shadow = "9.4.1"
-slf4j = "2.0.17"
+slf4j = "2.0.18"
 
 [libraries]
 kotlin-logging = { group = "io.github.oshai", name = "kotlin-logging-jvm", version.ref = "logging" }
