@@ -1,6 +1,6 @@
 [versions]
 kotlin = "2.3.21"
-ktor = "3.3.3"
+ktor = "3.5.0"
 mcp-kotlin = "0.12.0"
 serialization = "1.11.0"
 coroutines = "1.11.0"
