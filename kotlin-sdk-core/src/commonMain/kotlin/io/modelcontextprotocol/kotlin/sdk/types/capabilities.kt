@@ -41,9 +41,11 @@ public data class Implementation(
  * supports that capability.
  *
  * @property sampling Present if the client supports sampling from an LLM.
- * Use [ClientCapabilities.Sampling] to configure SEP-1577 sub-capabilities (tools, context).
+ * Use [ClientCapabilities.Sampling] to configure tools/context sub-capabilities.
  * @property roots Present if the client supports listing roots.
  * @property elicitation Present if the client supports elicitation from the server.
+ * Use [ClientCapabilities.Elicitation] to configure form/url mode sub-capabilities.
+ * @property tasks Present if the client supports task-augmented requests, listing, or cancellation.
  * @property experimental Experimental, non-standard capabilities that the client supports.
  * Keys are capability names, values are capability-specific configuration objects.
  * @property extensions Optional extensions that the client supports.
@@ -54,23 +56,33 @@ public data class Implementation(
 public data class ClientCapabilities(
     public val sampling: Sampling? = null,
     public val roots: Roots? = null,
-    public val elicitation: JsonObject? = null,
+    public val elicitation: Elicitation? = null,
+    public val tasks: Tasks? = null,
     public val experimental: JsonObject? = null,
     public val extensions: Map<String, JsonObject>? = null,
 ) {
 
     /**
-     * Source-compatibility constructor retaining the pre-SEP-1577 `sampling: JsonObject?`
-     * shape. Any non-null [sampling] is converted to an empty [Sampling] (sub-capabilities
-     * cannot be recovered from the old opaque `JsonObject`).
+     * Source-compatibility constructor retaining the older `sampling: JsonObject?` /
+     * `elicitation: JsonObject?` shapes. Any non-null [sampling] is converted to an
+     * empty [Sampling], and any non-null [elicitation] is converted to an empty
+     * [Elicitation] (sub-capabilities cannot be recovered from the old opaque
+     * `JsonObject`).
      */
     @Deprecated(
-        "ClientCapabilities.sampling is now typed. Pass a ClientCapabilities.Sampling? " +
+        "ClientCapabilities.sampling and ClientCapabilities.elicitation are now typed. " +
+            "Pass typed ClientCapabilities.Sampling? / ClientCapabilities.Elicitation? " +
             "instead of JsonObject?.",
         ReplaceWith(
-            "ClientCapabilities(sampling?.let { ClientCapabilities.Sampling() }, " +
-                "roots, elicitation, experimental, extensions)",
+            "ClientCapabilities(" +
+                "sampling?.let { ClientCapabilities.Sampling() }, " +
+                "roots, " +
+                "elicitation?.let { ClientCapabilities.Elicitation() }, " +
+                "tasks = null, " +
+                "experimental = experimental, " +
+                "extensions = extensions)",
         ),
+        level = DeprecationLevel.WARNING,
     )
     public constructor(
         sampling: JsonObject?,
@@ -81,7 +93,8 @@ public data class ClientCapabilities(
     ) : this(
         sampling = sampling?.let { Sampling() },
         roots = roots,
-        elicitation = elicitation,
+        elicitation = elicitation?.let { Elicitation() },
+        tasks = null,
         experimental = experimental,
         extensions = extensions,
     )
@@ -101,11 +114,11 @@ public data class ClientCapabilities(
 
     /**
      * @property sampling convenience value to enable the base sampling capability with no sub-capabilities
-     * @property elicitation convenience value to enable the elicitation capability
+     * @property elicitation convenience value to enable the elicitation capability with default form mode
      */
     public companion object {
         public val sampling: Sampling = Sampling()
-        public val elicitation: JsonObject = EmptyJsonObject
+        public val elicitation: Elicitation = Elicitation()
     }
 
     /**
@@ -120,6 +133,60 @@ public data class ClientCapabilities(
      */
     @Serializable
     public data class Roots(val listChanged: Boolean? = null)
+
+    /**
+     * Sub-capabilities for elicitation.
+     *
+     * An empty [Elicitation] (both fields null) is equivalent to declaring `form` mode only.
+     *
+     * @property form Present if the client supports form-mode elicitation
+     * (in-band structured data collection).
+     * @property url  Present if the client supports url-mode elicitation
+     * (out-of-band interaction via URL navigation).
+     */
+    @Serializable
+    public data class Elicitation(public val form: JsonObject? = null, public val url: JsonObject? = null)
+
+    /**
+     * Sub-capabilities for tasks (client side).
+     *
+     * Declares which client-side requests can be augmented with task execution,
+     * and whether the client supports listing and cancelling tasks.
+     *
+     * @property list     Present if the client supports the `tasks/list` operation.
+     * @property cancel   Present if the client supports the `tasks/cancel` operation.
+     * @property requests Present if the client supports task-augmented sampling and/or elicitation requests.
+     */
+    @Serializable
+    public data class Tasks(
+        public val list: JsonObject? = null,
+        public val cancel: JsonObject? = null,
+        public val requests: Requests? = null,
+    ) {
+        /**
+         * Task-augmentable client-side request categories.
+         *
+         * @property sampling    Present if the client supports task-augmented `sampling/createMessage` requests.
+         * @property elicitation Present if the client supports task-augmented `elicitation/create` requests.
+         */
+        @Serializable
+        public data class Requests(
+            public val sampling: Sampling? = null,
+            public val elicitation: Elicitation? = null,
+        ) {
+            /**
+             * @property createMessage Present if the client supports task-augmented `sampling/createMessage` requests.
+             */
+            @Serializable
+            public data class Sampling(public val createMessage: JsonObject? = null)
+
+            /**
+             * @property create Present if the client supports task-augmented `elicitation/create` requests.
+             */
+            @Serializable
+            public data class Elicitation(public val create: JsonObject? = null)
+        }
+    }
 }
 
 /**
@@ -137,6 +204,7 @@ public data class ClientCapabilities(
  * @property logging Present if the server supports sending log messages to the client.
  * @property completions Present if the server supports argument autocompletion suggestions.
  * Keys are capability names, values are capability-specific configuration objects.
+ * @property tasks Present if the server supports task-augmented requests, listing, or cancellation.
  * @property experimental Experimental, non-standard capabilities that the server supports.
  * @property extensions Optional extensions that the server supports.
  * Keys are extension identifiers (e.g., `"io.modelcontextprotocol/ui"`),
@@ -149,6 +217,7 @@ public data class ServerCapabilities(
     val prompts: Prompts? = null,
     val logging: JsonObject? = null,
     val completions: JsonObject? = null,
+    val tasks: Tasks? = null,
     val experimental: JsonObject? = null,
     val extensions: Map<String, JsonObject>? = null,
 ) {
@@ -199,4 +268,35 @@ public data class ServerCapabilities(
      */
     @Serializable
     public data class Prompts(val listChanged: Boolean? = null)
+
+    /**
+     * Sub-capabilities for tasks (server side).
+     *
+     * Declares which server-side requests can be augmented with task execution,
+     * and whether the server supports listing and cancelling tasks.
+     *
+     * @property list     Present if the server supports the `tasks/list` operation.
+     * @property cancel   Present if the server supports the `tasks/cancel` operation.
+     * @property requests Present if the server supports task-augmented tool call requests.
+     */
+    @Serializable
+    public data class Tasks(
+        public val list: JsonObject? = null,
+        public val cancel: JsonObject? = null,
+        public val requests: Requests? = null,
+    ) {
+        /**
+         * Task-augmentable server-side request categories.
+         *
+         * @property tools Present if the server supports task-augmented `tools/call` requests.
+         */
+        @Serializable
+        public data class Requests(public val tools: Tools? = null) {
+            /**
+             * @property call Present if the server supports task-augmented `tools/call` requests.
+             */
+            @Serializable
+            public data class Tools(public val call: JsonObject? = null)
+        }
+    }
 }
