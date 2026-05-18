@@ -136,6 +136,7 @@ public class SseClientTransport(
             throw e
         } finally {
             closeResources()
+            invokeOnCloseCallback()
         }
     }
 

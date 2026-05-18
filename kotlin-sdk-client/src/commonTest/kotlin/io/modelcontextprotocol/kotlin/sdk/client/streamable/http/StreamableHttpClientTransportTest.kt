@@ -479,6 +479,79 @@ class StreamableHttpClientTransportTest {
     }
 
     @Test
+    fun testSkipEmptySSE() = runTest {
+        val transport = createTransport { request ->
+            if (request.method == HttpMethod.Post) {
+                val sseContent = buildString {
+                    // Event 1: empty data — must be skipped without error
+                    appendLine("id: a")
+                    appendLine("data:")
+                    appendLine()
+                    // Event 2: whitespace-only data — must be skipped without error
+                    appendLine("id: b")
+                    appendLine("data:  \t ")
+                    appendLine()
+                    // Event 3: multi-line data lines that together form a valid JSON-RPC response
+                    appendLine("id: c")
+                    appendLine("event: message")
+                    appendLine("data: {")
+                    appendLine("""data: "jsonrpc":"2.0",""")
+                    appendLine("""data: "id":"test-1",""")
+                    appendLine("""data: "result":{""")
+                    appendLine("""data: "protocolVersion":"2025-06-18",""")
+                    appendLine("""data: "capabilities":{},""")
+                    appendLine("""data: "serverInfo":{"name":"server","version":"1.0.0"}""")
+                    appendLine("data: }")
+                    appendLine("data: }")
+                    appendLine()
+                }
+
+                respond(
+                    content = ByteReadChannel(sseContent),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(
+                        HttpHeaders.ContentType,
+                        ContentType.Text.EventStream.toString(),
+                    ),
+                )
+            } else {
+                respond("", HttpStatusCode.OK)
+            }
+        }
+
+        val receivedMessages = mutableListOf<JSONRPCMessage>()
+        val messageReceived = CompletableDeferred<Unit>()
+
+        transport.onMessage { message ->
+            receivedMessages.add(message)
+            if (!messageReceived.isCompleted) {
+                messageReceived.complete(Unit)
+            }
+        }
+
+        transport.start()
+
+        transport.send(
+            JSONRPCRequest(
+                id = "test-1",
+                method = "initialize",
+                params = buildJsonObject { },
+            ),
+        )
+
+        eventually {
+            messageReceived.await()
+        }
+
+        receivedMessages shouldHaveSize 1
+        val response = receivedMessages[0]
+        response.shouldBeInstanceOf<JSONRPCResponse>()
+        response.id shouldBe RequestId.StringId("test-1")
+
+        transport.close()
+    }
+
+    @Test
     fun testInlineSSEInResponse() = runTest {
         val transport = createTransport { request ->
             if (request.method == HttpMethod.Post) {
