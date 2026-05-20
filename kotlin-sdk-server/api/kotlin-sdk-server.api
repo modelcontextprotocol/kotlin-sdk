@@ -219,9 +219,20 @@ public final class io/modelcontextprotocol/kotlin/sdk/server/SseServerTransport 
 
 public final class io/modelcontextprotocol/kotlin/sdk/server/StdioServerTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport {
 	public fun <init> (Lkotlinx/io/Source;Lkotlinx/io/Sink;)V
+	public fun <init> (Lkotlinx/io/Source;Lkotlinx/io/Sink;Lkotlin/jvm/functions/Function1;)V
+	public synthetic fun <init> (Lkotlinx/io/Source;Lkotlinx/io/Sink;Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun send (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/server/StdioServerTransport$Builder {
+	public final fun getHandlerDispatcher ()Lkotlinx/coroutines/CoroutineDispatcher;
+	public final fun getIoDispatcher ()Lkotlinx/coroutines/CoroutineDispatcher;
+	public final fun getScope ()Lkotlinx/coroutines/CoroutineScope;
+	public final fun setHandlerDispatcher (Lkotlinx/coroutines/CoroutineDispatcher;)V
+	public final fun setIoDispatcher (Lkotlinx/coroutines/CoroutineDispatcher;)V
+	public final fun setScope (Lkotlinx/coroutines/CoroutineScope;)V
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/server/StreamableHttpServerTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractTransport {
