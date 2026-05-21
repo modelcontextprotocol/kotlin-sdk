@@ -33,6 +33,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
@@ -256,11 +257,12 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
      * handler sends its own request to the peer and awaits the response. Defaults to false for backward
      * compatibility; set to true for transports with independent receive loops (Stdio, WebSocket,
      * Channel) where a blocking handler would otherwise stall message processing.
+     * @see ProtocolOptions.concurrentMessageHandling
      */
     public open suspend fun connect(transport: Transport) {
         this.transport = transport
         if (options?.concurrentMessageHandling == true) {
-            handlerScope = CoroutineScope(SupervisorJob() + kotlinx.coroutines.Dispatchers.Default)
+            handlerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         }
 
         transport.onClose {

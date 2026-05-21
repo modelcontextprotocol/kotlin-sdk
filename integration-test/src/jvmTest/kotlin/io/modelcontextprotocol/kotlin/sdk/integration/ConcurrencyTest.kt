@@ -25,7 +25,6 @@ import kotlinx.coroutines.withTimeout
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.test.Test
 import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -97,12 +96,18 @@ class ConcurrencyTest {
             options = serverOptions,
         )
 
+        // Latch that signals when the slow handler has started and suspended.
+        // This ensures the fast request arrives while the slow handler is already
+        // blocking, proving the test is a true concurrency regression test.
+        val slowHandlerStarted = CompletableDeferred<Unit>()
+
         // Latch that blocks the slow handler until we signal it to finish.
         // This lets us prove the fast handler completed while the slow one
         // was still running — impossible under serial dispatch.
         val slowHandlerCanFinish = CompletableDeferred<Unit>()
 
         server.addTool("slow_tool", "A tool that blocks until signaled") {
+            slowHandlerStarted.complete(Unit)
             slowHandlerCanFinish.await()
             CallToolResult(content = listOf(TextContent("slow_tool_done")))
         }
@@ -131,6 +136,10 @@ class ConcurrencyTest {
             launch {
                 slowResult.complete(client.callTool("slow_tool", mapOf()))
             }
+
+            // Wait until the slow handler has actually started and suspended,
+            // so the fast request arrives while the slow handler is blocking.
+            withTimeout(5.seconds) { slowHandlerStarted.await() }
 
             // Start the fast request
             val fastResult = CompletableDeferred<CallToolResult>()
