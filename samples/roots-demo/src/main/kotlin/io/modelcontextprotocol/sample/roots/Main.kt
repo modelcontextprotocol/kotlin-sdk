@@ -13,10 +13,11 @@ import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.RootsListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
+import java.nio.file.Path
 
 @OptIn(ExperimentalMcpApi::class)
 fun main() = runBlocking {
@@ -45,38 +46,63 @@ fun main() = runBlocking {
     ).joinAll()
     val session = serverSession.await()
 
-    // Register a notification handler so the server reacts when roots change
+    val firstNotification = CompletableDeferred<Unit>()
+    val secondNotification = CompletableDeferred<Unit>()
+
     session.setNotificationHandler<RootsListChangedNotification>(
         Method.Defined.NotificationsRootsListChanged,
-    ) {
+    ) { _ ->
         launch {
-            val updatedRoots = session.listRoots()
-            println("\n[Server] Roots list changed — updated roots:")
-            updatedRoots.roots.forEach { root ->
-                println("  ${root.name ?: "(unnamed)"}: ${root.uri}")
+            try {
+                val updatedRoots = session.listRoots()
+                println("\n[Server] Roots list changed — updated roots:")
+                updatedRoots.roots.forEach { root ->
+                    println("  ${root.name ?: "(unnamed)"}: ${root.uri}")
+                }
+            } catch (e: Exception) {
+                println("[Server] Error fetching updated roots: ${e.message}")
+            } finally {
+                if (!firstNotification.isCompleted) {
+                    firstNotification.complete(Unit)
+                } else if (!secondNotification.isCompleted) {
+                    secondNotification.complete(Unit)
+                }
             }
         }
         CompletableDeferred(Unit)
     }
 
-    // Register roots on the client
-    client.addRoot("file:///home/user/projects/my-project", "My Project")
-    client.addRoot("file:///home/user/Documents", "Documents")
+    try {
+        val homeDir = Path.of(System.getProperty("user.home"))
 
-    // Server queries the client's root list
-    val roots = session.listRoots()
-    println("Initial roots reported by client:")
-    roots.roots.forEach { root ->
-        println("  ${root.name}: ${root.uri}")
+        client.addRoot(homeDir.resolve("projects/my-project").toUri().toString(), "My Project")
+        client.addRoot(homeDir.resolve("Documents").toUri().toString(), "Documents")
+
+        val roots = session.listRoots()
+        println("Initial roots reported by client:")
+        roots.roots.forEach { root ->
+            println("  ${root.name ?: "(unnamed)"}: ${root.uri}")
+        }
+
+        val sharedRootUri = homeDir.resolve("projects/shared").toUri().toString()
+        client.addRoot(sharedRootUri, "Shared Libraries")
+        client.sendRootsListChanged()
+
+        val firstResult = withTimeoutOrNull(5000L) { firstNotification.await() }
+        if (firstResult == null) {
+            println("[Warning] Timed out waiting for server to process first roots change")
+        }
+
+        println("\n[Client] Removing a root and sending list changed notification...")
+        client.removeRoot(sharedRootUri)
+        client.sendRootsListChanged()
+
+        val secondResult = withTimeoutOrNull(5000L) { secondNotification.await() }
+        if (secondResult == null) {
+            println("[Warning] Timed out waiting for server to process second roots change")
+        }
+    } finally {
+        client.close()
+        server.close()
     }
-
-    // Client adds a root and notifies the server
-    client.addRoot("file:///home/user/projects/shared", "Shared Libraries")
-    client.sendRootsListChanged()
-
-    // Allow the notification handler to process before shutting down
-    delay(500)
-
-    client.close()
-    server.close()
 }
