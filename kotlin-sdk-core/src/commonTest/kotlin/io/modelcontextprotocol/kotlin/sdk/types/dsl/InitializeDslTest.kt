@@ -22,9 +22,7 @@ class InitializeDslTest {
             capabilities {
                 sampling(ClientCapabilities.Sampling())
                 roots(listChanged = true)
-                elicitation {
-                    put("mode", "interactive")
-                }
+                elicitation(ClientCapabilities.Elicitation(form = EmptyJsonObject))
                 experimental {
                     put("custom", true)
                 }
@@ -46,7 +44,7 @@ class InitializeDslTest {
         request.params.capabilities.shouldNotBeNull {
             sampling shouldNotBeNull { }
             roots?.listChanged shouldBe true
-            elicitation?.get("mode")?.jsonPrimitive?.content shouldBe "interactive"
+            elicitation?.form shouldBe EmptyJsonObject
             experimental?.get("custom")?.jsonPrimitive?.content shouldBe "true"
             extensions shouldNotBeNull {
                 get("io.modelcontextprotocol/ui") shouldBe EmptyJsonObject
@@ -78,7 +76,7 @@ class InitializeDslTest {
     @Test
     fun `capabilities DSL should support direct typed values`() {
         val samplingValue = ClientCapabilities.Sampling(tools = EmptyJsonObject)
-        val elicitationObj = buildJsonObject { put("key", "value") }
+        val elicitationValue = ClientCapabilities.Elicitation(form = EmptyJsonObject, url = EmptyJsonObject)
         val experimentalObj = buildJsonObject { put("key", "value") }
         val extensionsMap = mapOf(
             "io.modelcontextprotocol/ui" to buildJsonObject { put("key", "value") },
@@ -88,7 +86,7 @@ class InitializeDslTest {
             protocolVersion = "1.0"
             capabilities {
                 sampling(samplingValue)
-                elicitation(elicitationObj)
+                elicitation(elicitationValue)
                 experimental(experimentalObj)
                 extensions(extensionsMap)
             }
@@ -97,7 +95,7 @@ class InitializeDslTest {
 
         request.params.capabilities.shouldNotBeNull {
             sampling shouldBe samplingValue
-            elicitation shouldBe elicitationObj
+            elicitation shouldBe elicitationValue
             experimental shouldBe experimentalObj
             extensions shouldBe extensionsMap
         }

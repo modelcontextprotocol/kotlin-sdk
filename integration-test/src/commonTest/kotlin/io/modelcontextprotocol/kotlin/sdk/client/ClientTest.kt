@@ -1058,7 +1058,7 @@ class ClientTest {
             Implementation(name = "test client", version = "1.0"),
             ClientOptions(
                 capabilities = ClientCapabilities(
-                    elicitation = EmptyJsonObject,
+                    elicitation = ClientCapabilities.Elicitation(),
                 ),
             ),
         )
@@ -1270,7 +1270,7 @@ class ClientTest {
     ): Pair<Client, ServerSession> = kotlinx.coroutines.coroutineScope {
         val client = Client(
             Implementation(name = "test client", version = "1.0"),
-            ClientOptions(capabilities = ClientCapabilities(elicitation = EmptyJsonObject)),
+            ClientOptions(capabilities = ClientCapabilities(elicitation = ClientCapabilities.Elicitation())),
         )
         client.setElicitationHandler(handler)
 

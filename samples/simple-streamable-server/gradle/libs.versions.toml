@@ -3,7 +3,7 @@ kotlin = "2.3.21"
 ktor = "3.3.3"
 junit = "6.0.3"
 mcp-kotlin = "0.12.0"
-slf4j = "2.0.17"
+slf4j = "2.0.18"
 shadow = "9.4.1"
 
 [libraries]

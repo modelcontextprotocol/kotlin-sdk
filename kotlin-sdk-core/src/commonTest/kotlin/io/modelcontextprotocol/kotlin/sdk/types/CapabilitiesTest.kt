@@ -313,7 +313,7 @@ class CapabilitiesTest {
 
         assertEquals(ClientCapabilities.Sampling(), capabilities.sampling)
         assertEquals(true, capabilities.roots?.listChanged)
-        assertEquals(EmptyJsonObject, capabilities.elicitation)
+        assertEquals(ClientCapabilities.Elicitation(), capabilities.elicitation)
     }
 
     @Test
@@ -803,5 +803,124 @@ class CapabilitiesTest {
     fun `absent sampling means unsupported`() {
         val caps = ClientCapabilities()
         caps.sampling shouldBe null
+    }
+
+    @Test
+    fun `should serialize ServerCapabilities with tasks`() {
+        val capabilities = ServerCapabilities(
+            tasks = ServerCapabilities.Tasks(
+                list = EmptyJsonObject,
+                cancel = EmptyJsonObject,
+                requests = ServerCapabilities.Tasks.Requests(
+                    tools = ServerCapabilities.Tasks.Requests.Tools(call = EmptyJsonObject),
+                ),
+            ),
+        )
+        verifySerialization(
+            capabilities,
+            McpJson,
+            """
+            {
+              "tasks": {
+                "list": {},
+                "cancel": {},
+                "requests": {
+                  "tools": {
+                    "call": {}
+                  }
+                }
+              }
+            }
+            """.trimIndent(),
+        )
+    }
+
+    @Test
+    fun `should deserialize ServerCapabilities with tasks`() {
+        val json = """
+            {
+              "tasks": {
+                "list": {},
+                "requests": {"tools": {"call": {}}}
+              }
+            }
+        """.trimIndent()
+        val capabilities = verifyDeserialization<ServerCapabilities>(McpJson, json)
+        assertEquals(EmptyJsonObject, capabilities.tasks?.list)
+        assertNull(capabilities.tasks?.cancel)
+        assertEquals(EmptyJsonObject, capabilities.tasks?.requests?.tools?.call)
+    }
+
+    @Test
+    fun `should serialize ClientCapabilities with tasks`() {
+        val capabilities = ClientCapabilities(
+            tasks = ClientCapabilities.Tasks(
+                list = EmptyJsonObject,
+                cancel = EmptyJsonObject,
+                requests = ClientCapabilities.Tasks.Requests(
+                    sampling = ClientCapabilities.Tasks.Requests.Sampling(createMessage = EmptyJsonObject),
+                    elicitation = ClientCapabilities.Tasks.Requests.Elicitation(create = EmptyJsonObject),
+                ),
+            ),
+        )
+        verifySerialization(
+            capabilities,
+            McpJson,
+            """
+            {
+              "tasks": {
+                "list": {},
+                "cancel": {},
+                "requests": {
+                  "sampling": {"createMessage": {}},
+                  "elicitation": {"create": {}}
+                }
+              }
+            }
+            """.trimIndent(),
+        )
+    }
+
+    @Test
+    fun `should serialize ClientCapabilities with structured elicitation form and url`() {
+        val capabilities = ClientCapabilities(
+            elicitation = ClientCapabilities.Elicitation(form = EmptyJsonObject, url = EmptyJsonObject),
+        )
+        verifySerialization(
+            capabilities,
+            McpJson,
+            """
+            {
+              "elicitation": {
+                "form": {},
+                "url": {}
+              }
+            }
+            """.trimIndent(),
+        )
+    }
+
+    @Test
+    fun `should deserialize ClientCapabilities with elicitation and tasks`() {
+        val json = """
+            {
+              "elicitation": {"form": {}, "url": {}},
+              "tasks": {
+                "list": {},
+                "cancel": {},
+                "requests": {
+                  "sampling": {"createMessage": {}},
+                  "elicitation": {"create": {}}
+                }
+              }
+            }
+        """.trimIndent()
+        val capabilities = verifyDeserialization<ClientCapabilities>(McpJson, json)
+        assertEquals(EmptyJsonObject, capabilities.elicitation?.form)
+        assertEquals(EmptyJsonObject, capabilities.elicitation?.url)
+        assertEquals(EmptyJsonObject, capabilities.tasks?.list)
+        assertEquals(EmptyJsonObject, capabilities.tasks?.cancel)
+        assertEquals(EmptyJsonObject, capabilities.tasks?.requests?.sampling?.createMessage)
+        assertEquals(EmptyJsonObject, capabilities.tasks?.requests?.elicitation?.create)
     }
 }
