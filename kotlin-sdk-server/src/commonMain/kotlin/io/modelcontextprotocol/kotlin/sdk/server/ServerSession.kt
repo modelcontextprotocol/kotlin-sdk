@@ -172,12 +172,40 @@ public open class ServerSession(
                 }
             }
 
+            Defined.TasksGet,
+            Defined.TasksResult,
+            Defined.TasksList,
+            Defined.TasksCancel,
+            -> assertTasksCapabilityForMethod(method)
+
             Defined.Ping -> {
                 // No specific capability required
             }
 
             else -> {
                 // For notifications not specifically listed, no assertion by default
+            }
+        }
+    }
+
+    private fun assertTasksCapabilityForMethod(method: Method) {
+        val tasks = clientCapabilities?.tasks
+            ?: error("Client does not support tasks (required for ${method.value})")
+        when (method) {
+            Defined.TasksList -> {
+                if (tasks.list == null) {
+                    error("Client does not support listing tasks (required for ${method.value})")
+                }
+            }
+
+            Defined.TasksCancel -> {
+                if (tasks.cancel == null) {
+                    error("Client does not support cancelling tasks (required for ${method.value})")
+                }
+            }
+
+            else -> {
+                // TasksGet, TasksResult: base tasks capability suffices.
             }
         }
     }
@@ -222,6 +250,12 @@ public open class ServerSession(
                     error(
                         "Server does not support notifying of prompt list changes (required for ${method.value})",
                     )
+                }
+            }
+
+            Defined.NotificationsTasksStatus -> {
+                if (serverCapabilities.tasks == null) {
+                    error("Server does not support tasks (required for ${method.value})")
                 }
             }
 

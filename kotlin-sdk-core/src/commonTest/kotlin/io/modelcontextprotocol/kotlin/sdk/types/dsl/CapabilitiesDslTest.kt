@@ -44,11 +44,7 @@ class CapabilitiesDslTest {
             capabilities {
                 sampling(ClientCapabilities.Sampling(tools = EmptyJsonObject))
                 roots(listChanged = true)
-                elicitation {
-                    put("mode", "interactive")
-                    put("timeout", 30)
-                    put("retries", 3)
-                }
+                elicitation(ClientCapabilities.Elicitation(form = EmptyJsonObject, url = EmptyJsonObject))
                 experimental {
                     put("customFeature", true)
                     put("version", "1.0")
@@ -74,9 +70,8 @@ class CapabilitiesDslTest {
                 listChanged shouldBe true
             }
             elicitation shouldNotBeNull {
-                get("mode")?.jsonPrimitive?.content shouldBe "interactive"
-                get("timeout")?.jsonPrimitive?.content shouldBe "30"
-                get("retries")?.jsonPrimitive?.content shouldBe "3"
+                form shouldBe EmptyJsonObject
+                url shouldBe EmptyJsonObject
             }
             experimental shouldNotBeNull {
                 get("customFeature")?.jsonPrimitive?.content shouldBe "true"

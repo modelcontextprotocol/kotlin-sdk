@@ -174,6 +174,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
             "prompts" -> caps?.prompts != null
             "resources" -> caps?.resources != null
             "tools" -> caps?.tools != null
+            "tasks" -> caps?.tasks != null
             else -> true
         }
 
@@ -267,6 +268,12 @@ public open class Client(private val clientInfo: Implementation, options: Client
                 }
             }
 
+            Method.Defined.TasksGet,
+            Method.Defined.TasksResult,
+            Method.Defined.TasksList,
+            Method.Defined.TasksCancel,
+            -> assertTasksCapabilityForMethod(method)
+
             Method.Defined.Initialize, Method.Defined.Ping -> {
                 // No specific capability required
             }
@@ -277,11 +284,35 @@ public open class Client(private val clientInfo: Implementation, options: Client
         }
     }
 
+    private fun assertTasksCapabilityForMethod(method: Method) {
+        val tasks = serverCapabilities?.tasks
+            ?: error("Server does not support tasks (required for $method)")
+        when (method) {
+            Method.Defined.TasksList -> checkNotNull(tasks.list) {
+                "Server does not support listing tasks (required for $method)"
+            }
+
+            Method.Defined.TasksCancel -> checkNotNull(tasks.cancel) {
+                "Server does not support cancelling tasks (required for $method)"
+            }
+
+            else -> {
+                // TasksGet, TasksResult: base tasks capability suffices.
+            }
+        }
+    }
+
     override fun assertNotificationCapability(method: Method) {
         when (method) {
             Method.Defined.NotificationsRootsListChanged -> {
                 check(capabilities.roots?.listChanged == true) {
                     "Client does not support roots list changed notifications (required for $method)"
+                }
+            }
+
+            Method.Defined.NotificationsTasksStatus -> {
+                checkNotNull(capabilities.tasks) {
+                    "Client does not support tasks (required for $method)"
                 }
             }
 
