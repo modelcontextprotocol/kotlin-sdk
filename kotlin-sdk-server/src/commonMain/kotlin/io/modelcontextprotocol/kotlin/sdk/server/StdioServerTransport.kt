@@ -20,6 +20,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.currentCoroutineContext
@@ -145,7 +146,10 @@ public class StdioServerTransport private constructor(
      */
     override suspend fun start() {
         if (!state.compareAndSet(State.New, State.Operational)) {
-            error("StdioServerTransport already started!")
+            when (state.load()) {
+                State.Stopped -> error("StdioServerTransport is already closed!")
+                else -> error("StdioServerTransport already started!")
+            }
         }
 
         try {
@@ -187,7 +191,7 @@ public class StdioServerTransport private constructor(
             if (state.load() == State.Stopped) {
                 logger.debug(e) { "Reader interrupted by close()" }
             } else {
-                logger.error(e) { "Error reading from stdin" }
+                logger.error(e) { "Error reading from input source" }
                 _onError(e)
             }
         } finally {
@@ -237,7 +241,7 @@ public class StdioServerTransport private constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
-            logger.error(e) { "Error writing to stdout" }
+            logger.error(e) { "Error writing to output sink" }
             _onError(e)
         } finally {
             transitionToStoppedNaturally()
@@ -245,9 +249,12 @@ public class StdioServerTransport private constructor(
     }
 
     /**
-     * Closes the transport and waits for in-flight outbound messages to be flushed. Releases the
-     * input source and output sink, cancels the internal scope when the transport owns it, and
-     * invokes `onClose`. Safe to call multiple times and safe to race with [start].
+     * Closes the transport. When called after [start], waits for in-flight outbound messages to be
+     * flushed, releases the input source and output sink, cancels the internal scope when the
+     * transport owns it, and invokes `onClose`. When called before [start], transitions directly
+     * to the closed state without releasing the input/output or invoking `onClose` — the caller
+     * remains responsible for resources that were never handed off to a running transport. Safe to
+     * call multiple times and safe to race with [start].
      */
     override suspend fun close() {
         var previous: State
@@ -268,14 +275,15 @@ public class StdioServerTransport private constructor(
                 return@withContext
             }
 
-            runCatching { input.close() }.onFailure { logger.warn(it) { "Failed to close stdin" } }
+            runCatching { input.close() }
+                .onFailure { logger.warn(it) { "Failed to close input source" } }
             readerJob?.cancel()
             readChannel.close()
-            processorJob?.join()
+            processorJob?.cancelAndJoin()
             writeChannel.close()
             writerJob?.join()
             runCatching { outputSink.close() }
-                .onFailure { logger.warn(it) { "Failed to close stdout" } }
+                .onFailure { logger.warn(it) { "Failed to close output sink" } }
             readBuffer.clear()
             if (ownsScope) {
                 effectiveScope?.coroutineContext?.get(Job)?.cancel()
@@ -323,9 +331,9 @@ public class StdioServerTransport private constructor(
     private fun transitionToStoppedNaturally() {
         if (!state.compareAndSet(State.Operational, State.Stopped)) return
         runCatching { input.close() }
-            .onFailure { logger.warn(it) { "Failed to close stdin" } }
+            .onFailure { logger.warn(it) { "Failed to close input source" } }
         runCatching { outputSink.close() }
-            .onFailure { logger.warn(it) { "Failed to close stdout" } }
+            .onFailure { logger.warn(it) { "Failed to close output sink" } }
         readBuffer.clear()
         if (ownsScope) {
             // Non-null in practice: writer launches after effectiveScope is published.

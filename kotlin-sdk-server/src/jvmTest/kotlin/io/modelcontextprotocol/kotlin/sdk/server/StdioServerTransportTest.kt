@@ -24,6 +24,7 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
@@ -229,6 +230,20 @@ class StdioServerTransportTest {
             }
         }
         server.close()
+    }
+
+    @Test
+    fun `should report 'closed' error message when starting after close`(): Unit = runIntegrationTest {
+        val server = StdioServerTransport(input = bufferedInput, output = printOutput)
+        server.onError {}
+        server.onMessage {}
+        server.start()
+        server.close()
+
+        val ex = shouldThrow<IllegalStateException> {
+            server.start()
+        }
+        ex.message shouldContain "closed"
     }
 
     @ParameterizedTest(name = "[{index}] handler throws {0}")
@@ -458,6 +473,39 @@ class StdioServerTransportTest {
         )
         // Unblock writer so close() can drain.
         unblock.countDown()
+        server.close()
+    }
+
+    @Test
+    fun `should not hang close when handler suspends indefinitely`() = runIntegrationTest {
+        val server = StdioServerTransport(input = bufferedInput, output = printOutput)
+        val handlerEntered = CompletableDeferred<Unit>()
+        val neverComplete = CompletableDeferred<Unit>()
+        server.onError {}
+        server.onMessage {
+            handlerEntered.complete(Unit)
+            neverComplete.await()
+        }
+        server.start()
+
+        inputWriter.write(serializeMessage(PingRequest().toJSON()))
+        inputWriter.flush()
+
+        handlerEntered.await()
+        server.close()
+    }
+
+    @Test
+    fun `should not hang close when onMessage was never registered`() = runIntegrationTest {
+        val server = StdioServerTransport(input = bufferedInput, output = printOutput)
+        server.onError {}
+        server.start()
+
+        inputWriter.write(serializeMessage(PingRequest().toJSON()))
+        inputWriter.flush()
+
+        delay(200.milliseconds)
+
         server.close()
     }
 
