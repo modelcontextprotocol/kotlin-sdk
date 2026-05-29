@@ -12,7 +12,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
@@ -121,19 +120,8 @@ public class ChannelTransport(
 
                 for (message in receiveChannel) {
                     logger.debug { "Received message: ${message::class.simpleName}" }
-
-                    try {
-                        _onMessage.invoke(message)
-                        logger.trace { "Message processed successfully: ${message::class.simpleName}" }
-                    } catch (e: CancellationException) {
-                        // Let cancellation propagate immediately
-                        logger.debug { "Cancellation requested during message processing" }
-                        throw e
-                    } catch (e: Exception) {
-                        // Report other errors but continue processing
-                        logger.warn(e) { "Error processing message: ${message::class.simpleName}" }
-                        _onError.invoke(e)
-                    }
+                    launchMessageHandler(message)
+                    yield()
                 }
                 logger.info { "ChannelTransport stopped: receive channel closed" }
             } catch (e: Exception) {
@@ -148,6 +136,23 @@ public class ChannelTransport(
         }
         // Wait for the event loop to start
         started.await()
+    }
+
+    private fun launchMessageHandler(message: JSONRPCMessage) {
+        scope.launch(CoroutineName("ChannelTransport#${hashCode()}-message")) {
+            try {
+                _onMessage.invoke(message)
+                logger.trace { "Message processed successfully: ${message::class.simpleName}" }
+            } catch (e: CancellationException) {
+                // Let cancellation propagate immediately
+                logger.debug { "Cancellation requested during message processing" }
+                throw e
+            } catch (e: Throwable) {
+                // Report other errors but continue processing
+                logger.warn(e) { "Error processing message: ${message::class.simpleName}" }
+                _onError.invoke(e)
+            }
+        }
     }
 
     /**
@@ -170,13 +175,13 @@ public class ChannelTransport(
      */
     override suspend fun closeResources() {
         logger.info { "Closing ChannelTransport" }
+        invokeOnCloseCallback()
         sendChannel.close()
         if (receiveChannel !== sendChannel) {
             logger.debug { "Cancelling separate receive channel" }
             receiveChannel.cancel()
         }
         scope.cancel()
-        scope.coroutineContext[Job]?.join() // Wait for cleanup
         logger.info { "ChannelTransport closed" }
     }
 }

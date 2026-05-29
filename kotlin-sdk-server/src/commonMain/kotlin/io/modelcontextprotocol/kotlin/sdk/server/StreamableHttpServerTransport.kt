@@ -29,8 +29,11 @@ import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.REQUEST_TIMEO
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.job
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -408,7 +411,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             val hasRequest = messages.any { it is JSONRPCRequest }
             if (!hasRequest) {
                 call.respondNullable(status = HttpStatusCode.Accepted, message = null)
-                messages.forEach { message -> _onMessage(message) }
+                dispatchMessagesConcurrently(messages)
                 return
             }
 
@@ -437,16 +440,39 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             }
             call.coroutineContext.job.invokeOnCompletion { streamsMapping.remove(streamId) }
 
-            messages.forEach { message -> _onMessage(message) }
+            // Batch dispatch with parallel message processing. Non-cancellation
+            // handler failures are reported after every already-started handler
+            // has completed, so one failure does not cancel sibling handlers.
+            dispatchMessagesConcurrently(messages)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            call.reject(
-                HttpStatusCode.BadRequest,
-                RPCError.ErrorCode.PARSE_ERROR,
-                "Parse error: ${e.message}",
-            )
+        } catch (e: Throwable) {
             _onError(e)
+            runCatching {
+                call.reject(
+                    HttpStatusCode.BadRequest,
+                    RPCError.ErrorCode.PARSE_ERROR,
+                    "Parse error: ${e.message}",
+                )
+            }
+        }
+    }
+
+    private suspend fun dispatchMessagesConcurrently(messages: List<JSONRPCMessage>) {
+        supervisorScope {
+            val handlerErrors = messages.map { message ->
+                async {
+                    try {
+                        _onMessage(message)
+                        null
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Throwable) {
+                        e
+                    }
+                }
+            }.awaitAll()
+            handlerErrors.firstOrNull { it != null }?.let { throw it }
         }
     }
 

@@ -8,10 +8,12 @@ import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.serializeMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.isActive
@@ -143,7 +145,7 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
         return job
     }
 
-    private suspend fun processReadBuffer() {
+    private fun processReadBuffer() {
         while (true) {
             val message = try {
                 readBuffer.readMessage()
@@ -153,7 +155,12 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
             }
 
             if (message == null) break
-            // Async invocation broke delivery order
+            launchMessageHandler(message)
+        }
+    }
+
+    private fun launchMessageHandler(message: JSONRPCMessage) {
+        scope.launch(CoroutineName("StdioServerTransport.message#${hashCode()}")) {
             try {
                 _onMessage.invoke(message)
             } catch (e: CancellationException) {
@@ -197,6 +204,7 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
             processingJob?.cancelAndJoin()
 
             readBuffer.clear()
+            scope.cancel()
 
             runCatching {
                 outputSink.flush()

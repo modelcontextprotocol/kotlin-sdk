@@ -2,6 +2,7 @@ package io.modelcontextprotocol.kotlin.sdk.testing
 
 import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
@@ -9,11 +10,14 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 
@@ -57,7 +61,40 @@ class ChannelTransportTest {
         // Wait for messages to be processed
         messagesProcessed.await()
 
-        received.shouldContainExactly(msg1, msg2)
+        received.shouldContainExactlyInAnyOrder(msg1, msg2)
+    }
+
+    @Test
+    fun `receive loop continues while previous handler is suspended`() = runTest {
+        val receiveChannel = Channel<JSONRPCMessage>(Channel.UNLIMITED)
+        val transport = ChannelTransport(Channel(), receiveChannel)
+
+        val firstMessage = JSONRPCRequest(RequestId.NumberId(1), "method1")
+        val secondMessage = JSONRPCRequest(RequestId.NumberId(2), "method2")
+        val releaseFirstHandler = CompletableDeferred<Unit>()
+        val secondMessageProcessed = CompletableDeferred<Unit>()
+
+        transport.onMessage { message ->
+            if (message == firstMessage) {
+                releaseFirstHandler.await()
+            }
+            if (message == secondMessage) {
+                secondMessageProcessed.complete(Unit)
+            }
+        }
+
+        transport.start()
+
+        receiveChannel.send(firstMessage)
+        receiveChannel.send(secondMessage)
+
+        withContext(Dispatchers.Default.limitedParallelism(1)) {
+            withTimeout(2.seconds) {
+                secondMessageProcessed.await()
+            }
+        }
+        releaseFirstHandler.complete(Unit)
+        transport.close()
     }
 
     @Test
@@ -204,8 +241,9 @@ class ChannelTransportTest {
         allProcessed.await()
 
         // All messages should be processed despite error in message 2
-        received.shouldContainExactly(1, 2, 3, 4)
+        received.shouldContainExactlyInAnyOrder(1, 2, 3, 4)
         errors.size shouldBe 1
         errors[0].message shouldBe "Error processing message 2"
+        transport.close()
     }
 }

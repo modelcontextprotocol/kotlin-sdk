@@ -4,6 +4,7 @@ import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldContain
+import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.shared.ReadBuffer
 import io.modelcontextprotocol.kotlin.sdk.shared.serializeMessage
@@ -154,7 +155,39 @@ class StdioServerTransportTest {
         server.start()
         finished.await()
 
-        readMessages shouldBe messages
+        readMessages.shouldContainExactlyInAnyOrder(messages)
+    }
+
+    @Test
+    fun `should continue receiving while previous handler is suspended`() = runIntegrationTest {
+        val server = StdioServerTransport(bufferedInput, printOutput)
+        server.onError { error ->
+            throw error
+        }
+
+        val firstMessage = PingRequest().toJSON()
+        val secondMessage = InitializedNotification().toJSON()
+        val releaseFirstHandler = CompletableDeferred<Unit>()
+        val secondMessageProcessed = CompletableDeferred<Unit>()
+
+        server.onMessage { message ->
+            if (message == firstMessage) {
+                releaseFirstHandler.await()
+            }
+            if (message == secondMessage) {
+                secondMessageProcessed.complete(Unit)
+            }
+        }
+
+        server.start()
+
+        inputWriter.write(serializeMessage(firstMessage))
+        inputWriter.write(serializeMessage(secondMessage))
+        inputWriter.flush()
+
+        secondMessageProcessed.await()
+        releaseFirstHandler.complete(Unit)
+        server.close()
     }
 
     // region: Exception handling
@@ -224,11 +257,15 @@ class StdioServerTransportTest {
         val capturedErrors = mutableListOf<Throwable>()
         val receivedMessages = mutableListOf<JSONRPCMessage>()
         val secondMessageProcessed = CompletableDeferred<Unit>()
+        val handlerErrorCaptured = CompletableDeferred<Unit>()
 
         val message1 = PingRequest().toJSON()
         val message2 = InitializedNotification().toJSON()
 
-        server.onError { capturedErrors.add(it) }
+        server.onError {
+            capturedErrors.add(it)
+            handlerErrorCaptured.complete(Unit)
+        }
         server.onMessage { message ->
             if (message == message1) {
                 throw throwable
@@ -245,6 +282,7 @@ class StdioServerTransportTest {
         inputWriter.flush()
 
         secondMessageProcessed.await()
+        handlerErrorCaptured.await()
 
         capturedErrors shouldContain throwable
         receivedMessages shouldBe listOf(message2)

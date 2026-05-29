@@ -109,6 +109,9 @@ public class SseServerTransport(private val endpoint: String, private val sessio
     /**
      * Handle a client message, regardless of how it arrived.
      * This can be used to inform the server of messages that arrive via a means different from HTTP POST.
+     *
+     * Ktor provides concurrency across POST requests by invoking [handlePostMessage] in a separate
+     * [ApplicationCall] coroutine, so this path keeps handler errors synchronous to the current POST.
      */
     public suspend fun handleMessage(message: String) {
         try {
