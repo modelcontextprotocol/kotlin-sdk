@@ -447,7 +447,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            _onError(e)
             runCatching {
                 call.reject(
                     HttpStatusCode.BadRequest,
@@ -455,6 +454,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                     "Parse error: ${e.message}",
                 )
             }
+            _onError(e)
         }
     }
 

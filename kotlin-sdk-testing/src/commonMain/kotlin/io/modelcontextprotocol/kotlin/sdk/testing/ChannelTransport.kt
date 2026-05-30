@@ -19,9 +19,10 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
-import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
+import kotlin.coroutines.coroutineContext
 
 /**
  *  A transport implementation that uses Kotlin Coroutines Channels for asynchronous
@@ -42,7 +43,6 @@ public class ChannelTransport(
     override val logger: KLogger = KotlinLogging.logger {}
 
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
-    private val handlerJobs = mutableListOf<Job>()
 
     /**
      * Creates a `ChannelTransport` instance using a single channel for both sending and receiving messages.
@@ -141,7 +141,7 @@ public class ChannelTransport(
     }
 
     private fun launchMessageHandler(message: JSONRPCMessage) {
-        val job = scope.launch(CoroutineName("ChannelTransport#${hashCode()}-message")) {
+        scope.launch(CoroutineName("ChannelTransport#${hashCode()}-message")) {
             try {
                 _onMessage.invoke(message)
                 logger.trace { "Message processed successfully: ${message::class.simpleName}" }
@@ -155,7 +155,6 @@ public class ChannelTransport(
                 _onError.invoke(e)
             }
         }
-        handlerJobs.add(job)
     }
 
     /**
@@ -184,7 +183,12 @@ public class ChannelTransport(
             logger.debug { "Cancelling separate receive channel" }
             receiveChannel.cancel()
         }
-        handlerJobs.joinAll()
+        // Join in-flight handler child jobs before cancelling the scope.
+        // Filter out the current (event-loop) coroutine to avoid deadlock.
+        // Using scope.coroutineContext.job.children instead of a manual
+        // handlerJobs list avoids thread-safety and memory-leak concerns.
+        val currentJob = currentCoroutineContext()[Job]
+        scope.coroutineContext[Job]?.children?.filter { it !== currentJob }?.forEach { it.join() }
         scope.coroutineContext[Job]?.cancelAndJoin()
         logger.info { "ChannelTransport closed" }
     }

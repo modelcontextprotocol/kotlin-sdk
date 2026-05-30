@@ -244,6 +244,7 @@ public class StdioClientTransport @JvmOverloads public constructor(
     override suspend fun closeResources() {
         withContext(NonCancellable) {
             scope.stopProcessing("Closed")
+            scope.coroutineContext[Job]?.join() // Wait for all coroutines to complete
         }
     }
 
