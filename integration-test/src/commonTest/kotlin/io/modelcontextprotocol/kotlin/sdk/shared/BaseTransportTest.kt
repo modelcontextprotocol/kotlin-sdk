@@ -3,6 +3,8 @@ package io.modelcontextprotocol.kotlin.sdk.shared
 import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
@@ -48,10 +50,13 @@ abstract class BaseTransportTest {
         )
 
         val readMessages = mutableListOf<JSONRPCMessage>()
+        val mutex = Mutex()
         val semaphore = Semaphore(messages.size, messages.size)
 
         transport.onMessage { message ->
-            readMessages.add(message)
+            mutex.withLock {
+                readMessages.add(message)
+            }
             semaphore.release()
         }
 

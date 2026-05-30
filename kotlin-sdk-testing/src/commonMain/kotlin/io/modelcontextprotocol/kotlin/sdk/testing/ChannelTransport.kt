@@ -12,8 +12,9 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.channels.ReceiveChannel
@@ -121,6 +122,11 @@ public class ChannelTransport(
                 for (message in receiveChannel) {
                     logger.debug { "Received message: ${message::class.simpleName}" }
                     launchMessageHandler(message)
+                    // Yield after launching each handler so the dispatcher can schedule it
+                    // before the event loop continues. Without this, if the channel closes
+                    // immediately after the last message, the event loop enters finally ->
+                    // closeResources -> scope.cancel(), which cancels the pending handler
+                    // coroutine before it has a chance to run.
                     yield()
                 }
                 logger.info { "ChannelTransport stopped: receive channel closed" }
@@ -181,7 +187,8 @@ public class ChannelTransport(
             logger.debug { "Cancelling separate receive channel" }
             receiveChannel.cancel()
         }
-        scope.cancel()
+        scope.coroutineContext[Job]?.cancelAndJoin()
+        
         logger.info { "ChannelTransport closed" }
     }
 }

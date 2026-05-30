@@ -13,6 +13,7 @@ import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
@@ -129,7 +130,7 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
         withContext(NonCancellable) {
             invokeOnCloseCallback()
             session.close()
-            scope.cancel()
+            scope.coroutineContext.job.cancelAndJoin()
         }
     }
 }
