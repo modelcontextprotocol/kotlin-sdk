@@ -19,6 +19,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 
@@ -41,6 +42,7 @@ public class ChannelTransport(
     override val logger: KLogger = KotlinLogging.logger {}
 
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
+    private val handlerJobs = mutableListOf<Job>()
 
     /**
      * Creates a `ChannelTransport` instance using a single channel for both sending and receiving messages.
@@ -122,12 +124,6 @@ public class ChannelTransport(
                 for (message in receiveChannel) {
                     logger.debug { "Received message: ${message::class.simpleName}" }
                     launchMessageHandler(message)
-                    // Yield after launching each handler so the dispatcher can schedule it
-                    // before the event loop continues. Without this, if the channel closes
-                    // immediately after the last message, the event loop enters finally ->
-                    // closeResources -> scope.cancel(), which cancels the pending handler
-                    // coroutine before it has a chance to run.
-                    yield()
                 }
                 logger.info { "ChannelTransport stopped: receive channel closed" }
             } catch (e: Exception) {
@@ -145,7 +141,7 @@ public class ChannelTransport(
     }
 
     private fun launchMessageHandler(message: JSONRPCMessage) {
-        scope.launch(CoroutineName("ChannelTransport#${hashCode()}-message")) {
+        val job = scope.launch(CoroutineName("ChannelTransport#${hashCode()}-message")) {
             try {
                 _onMessage.invoke(message)
                 logger.trace { "Message processed successfully: ${message::class.simpleName}" }
@@ -159,6 +155,7 @@ public class ChannelTransport(
                 _onError.invoke(e)
             }
         }
+        handlerJobs.add(job)
     }
 
     /**
@@ -187,6 +184,7 @@ public class ChannelTransport(
             logger.debug { "Cancelling separate receive channel" }
             receiveChannel.cancel()
         }
+        handlerJobs.joinAll()
         scope.coroutineContext[Job]?.cancelAndJoin()
         logger.info { "ChannelTransport closed" }
     }

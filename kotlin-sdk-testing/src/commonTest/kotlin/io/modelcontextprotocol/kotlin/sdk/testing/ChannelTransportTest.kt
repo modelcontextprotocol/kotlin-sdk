@@ -10,14 +10,11 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 
@@ -88,11 +85,7 @@ class ChannelTransportTest {
         receiveChannel.send(firstMessage)
         receiveChannel.send(secondMessage)
 
-        withContext(Dispatchers.Default.limitedParallelism(1)) {
-            withTimeout(2.seconds) {
-                secondMessageProcessed.await()
-            }
-        }
+        secondMessageProcessed.await()
         releaseFirstHandler.complete(Unit)
         transport.close()
     }

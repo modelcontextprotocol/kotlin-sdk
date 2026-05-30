@@ -111,15 +111,11 @@ class WebSocketMcpTransportTest {
         transport.close()
     }
 
-    private class TestWebSocketMcpTransport(
-        override val session: WebSocketSession,
-    ) : WebSocketMcpTransport() {
+    private class TestWebSocketMcpTransport(override val session: WebSocketSession) : WebSocketMcpTransport() {
         override suspend fun initializeSession() = Unit
     }
 
-    private class TestWebSocketSession(
-        parentContext: CoroutineContext,
-    ) : WebSocketSession {
+    private class TestWebSocketSession(parentContext: CoroutineContext) : WebSocketSession {
         private val job = Job(parentContext[Job])
 
         override val coroutineContext: CoroutineContext = parentContext + job
@@ -143,7 +139,7 @@ class WebSocketMcpTransportTest {
         @Deprecated(
             "Use cancel() instead.",
             replaceWith = ReplaceWith("cancel()", "kotlinx.coroutines.cancel"),
-            level = DeprecationLevel.ERROR
+            level = DeprecationLevel.ERROR,
         )
         override fun terminate() {
             job.cancel()

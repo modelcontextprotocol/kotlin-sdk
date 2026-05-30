@@ -65,8 +65,6 @@ abstract class BaseTransportTest {
             }
         }
 
-
-
         readMessages shouldContainExactlyInAnyOrder messages
 
         transport.close()

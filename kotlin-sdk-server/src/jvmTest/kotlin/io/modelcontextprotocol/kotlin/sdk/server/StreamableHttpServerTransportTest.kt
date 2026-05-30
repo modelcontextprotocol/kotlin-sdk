@@ -373,11 +373,13 @@ class StreamableHttpServerTransportTest {
                         releaseFirstHandler.await()
                         transport.send(JSONRPCResponse(message.id, EmptyResult()), null)
                     }
+
                     secondRequest.id -> {
                         firstHandlerStarted.await()
                         transport.send(JSONRPCResponse(message.id, secondResult), null)
                         secondHandlerCompleted.complete(Unit)
                     }
+
                     else -> transport.send(JSONRPCResponse(message.id, EmptyResult()), null)
                 }
             }
@@ -427,14 +429,17 @@ class StreamableHttpServerTransportTest {
         transport.onMessage { message ->
             when (message) {
                 is JSONRPCRequest -> transport.send(JSONRPCResponse(message.id, EmptyResult()))
+
                 firstNotification -> {
                     firstHandlerStarted.complete(Unit)
                     releaseFirstHandler.await()
                 }
+
                 secondNotification -> {
                     firstHandlerStarted.await()
                     secondHandlerCompleted.complete(Unit)
                 }
+
                 else -> Unit
             }
         }
@@ -481,15 +486,18 @@ class StreamableHttpServerTransportTest {
         transport.onMessage { message ->
             when (message) {
                 is JSONRPCRequest -> transport.send(JSONRPCResponse(message.id, EmptyResult()))
+
                 firstNotification -> {
                     firstHandlerStarted.complete(Unit)
                     releaseFirstHandler.await()
                 }
+
                 secondNotification -> {
                     firstHandlerStarted.await()
                     secondHandlerStarted.complete(Unit)
                     throw expected
                 }
+
                 else -> Unit
             }
         }
@@ -539,12 +547,15 @@ class StreamableHttpServerTransportTest {
                     transport.send(JSONRPCResponse(firstRequest.id, EmptyResult()), null)
                     requestResponseSent.complete(Unit)
                 }
+
                 notification -> {
                     requestResponseSent.await()
                     releaseNotificationHandler.await()
                     throw expected
                 }
+
                 is JSONRPCRequest -> transport.send(JSONRPCResponse(message.id, EmptyResult()), null)
+
                 else -> Unit
             }
         }
