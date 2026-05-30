@@ -446,7 +446,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             dispatchMessagesConcurrently(messages)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Throwable) {
+        } catch (e: Exception) {
             _onError(e)
             runCatching {
                 call.reject(
@@ -460,19 +460,29 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
 
     private suspend fun dispatchMessagesConcurrently(messages: List<JSONRPCMessage>) {
         supervisorScope {
-            val handlerErrors = messages.map { message ->
+            messages.map { message ->
                 async {
                     try {
                         _onMessage(message)
-                        null
                     } catch (e: CancellationException) {
                         throw e
-                    } catch (e: Throwable) {
-                        e
+                    } catch (e: Exception) {
+                        _onError(e)
+                        if (message is JSONRPCRequest) {
+                            send(
+                                JSONRPCError(
+                                    id = message.id,
+                                    error = RPCError(
+                                        code = RPCError.ErrorCode.INTERNAL_ERROR,
+                                        message = "Message processing error: ${e.message}",
+                                    ),
+                                ),
+                                TransportSendOptions(relatedRequestId = message.id),
+                            )
+                        }
                     }
                 }
             }.awaitAll()
-            handlerErrors.firstOrNull { it != null }?.let { throw it }
         }
     }
 
