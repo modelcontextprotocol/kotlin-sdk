@@ -204,7 +204,6 @@ public class StdioServerTransport(private val inputStream: Source, outputStream:
             processingJob?.cancelAndJoin()
 
             readBuffer.clear()
-            scope.cancel()
 
             runCatching {
                 outputSink.flush()

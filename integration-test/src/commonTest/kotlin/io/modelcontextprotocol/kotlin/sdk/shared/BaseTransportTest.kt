@@ -3,13 +3,11 @@ package io.modelcontextprotocol.kotlin.sdk.shared
 import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
-import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.channels.Channel
 import kotlin.test.fail
 import kotlin.time.Duration.Companion.seconds
 
@@ -49,15 +47,10 @@ abstract class BaseTransportTest {
             InitializedNotification().toJSON(),
         )
 
-        val readMessages = mutableListOf<JSONRPCMessage>()
-        val mutex = Mutex()
-        val semaphore = Semaphore(messages.size, messages.size)
+        val chan = Channel<JSONRPCMessage>()
 
         transport.onMessage { message ->
-            mutex.withLock {
-                readMessages.add(message)
-            }
-            semaphore.release()
+            chan.send(message)
         }
 
         transport.start()
@@ -66,7 +59,13 @@ abstract class BaseTransportTest {
             transport.send(message)
         }
 
-        repeat(messages.size) { semaphore.acquire() }
+        val readMessages = buildList {
+            repeat(messages.size) {
+                add(chan.receive())
+            }
+        }
+
+
 
         readMessages shouldContainExactlyInAnyOrder messages
 

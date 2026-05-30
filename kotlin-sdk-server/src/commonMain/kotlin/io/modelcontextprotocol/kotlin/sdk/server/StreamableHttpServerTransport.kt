@@ -469,16 +469,20 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                     } catch (e: Exception) {
                         _onError(e)
                         if (message is JSONRPCRequest) {
-                            send(
-                                JSONRPCError(
-                                    id = message.id,
-                                    error = RPCError(
-                                        code = RPCError.ErrorCode.INTERNAL_ERROR,
-                                        message = "Message processing error: ${e.message}",
+                            runCatching {
+                                send(
+                                    JSONRPCError(
+                                        id = message.id,
+                                        error = RPCError(
+                                            code = RPCError.ErrorCode.INTERNAL_ERROR,
+                                            message = "Message processing error: ${e.message}",
+                                        ),
                                     ),
-                                ),
-                                TransportSendOptions(relatedRequestId = message.id),
-                            )
+                                    TransportSendOptions(relatedRequestId = message.id),
+                                )
+                            }.onFailure { sendError ->
+                                _onError(sendError)
+                            }
                         }
                     }
                 }

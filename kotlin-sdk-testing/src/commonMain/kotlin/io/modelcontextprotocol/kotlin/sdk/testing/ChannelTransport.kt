@@ -188,7 +188,6 @@ public class ChannelTransport(
             receiveChannel.cancel()
         }
         scope.coroutineContext[Job]?.cancelAndJoin()
-        
         logger.info { "ChannelTransport closed" }
     }
 }
