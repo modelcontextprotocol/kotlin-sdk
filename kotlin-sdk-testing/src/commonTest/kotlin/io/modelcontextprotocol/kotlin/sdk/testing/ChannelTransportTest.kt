@@ -208,9 +208,9 @@ class ChannelTransportTest {
         val transport = ChannelTransport(Channel(), receiveChannel)
 
         val received = Channel<Int>(Channel.UNLIMITED)
-        val errors = mutableListOf<Throwable>()
+        val errors = Channel<Throwable>(Channel.UNLIMITED)
 
-        transport.onError { errors.add(it) }
+        transport.onError { errors.trySend(it) }
         transport.onMessage { msg ->
             val id = ((msg as JSONRPCRequest).id as RequestId.NumberId).value.toInt()
             received.send(id)
@@ -231,8 +231,10 @@ class ChannelTransportTest {
 
         // All messages should be processed despite error in message 2
         receivedValues.shouldContainExactlyInAnyOrder(1, 2, 3, 4)
-        errors.size shouldBe 1
-        errors[0].message shouldBe "Error processing message 2"
+        val error = errors.receive()
+        error.message shouldBe "Error processing message 2"
+        // Ensure no extra errors were reported
+        errors.tryReceive().getOrNull() shouldBe null
         transport.close()
     }
 }
