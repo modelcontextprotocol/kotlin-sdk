@@ -63,7 +63,7 @@ abstract class BaseTransportTest {
 
         repeat(messages.size) { semaphore.acquire() }
 
-        messages shouldContainExactlyInAnyOrder readMessages
+        readMessages shouldContainExactlyInAnyOrder messages
 
         transport.close()
     }
