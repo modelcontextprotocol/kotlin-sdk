@@ -455,6 +455,8 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                     RPCError.ErrorCode.PARSE_ERROR,
                     "Parse error: ${e.message}",
                 )
+            }.onFailure { rejectFailure ->
+                _onError(rejectFailure)
             }
             _onError(e)
         }
