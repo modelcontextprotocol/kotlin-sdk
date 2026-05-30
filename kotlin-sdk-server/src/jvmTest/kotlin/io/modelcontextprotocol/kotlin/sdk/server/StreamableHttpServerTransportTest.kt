@@ -31,8 +31,8 @@ import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
-import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
@@ -348,7 +348,7 @@ class StreamableHttpServerTransportTest {
         val firstMeta = (responses[0] as ListToolsResult).meta
         val secondMeta = (responses[1] as ListResourcesResult).meta
         assertEquals("first", firstMeta?.get("label")?.jsonPrimitive?.content)
-            assertEquals("second", secondMeta?.get("label")?.jsonPrimitive?.content)*/
+        assertEquals("second", secondMeta?.get("label")?.jsonPrimitive?.content)*/
     }
 
     @Test
