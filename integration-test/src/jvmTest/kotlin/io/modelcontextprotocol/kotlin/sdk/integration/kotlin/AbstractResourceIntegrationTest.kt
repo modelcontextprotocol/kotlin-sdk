@@ -21,6 +21,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.util.concurrent.CopyOnWriteArrayList
@@ -215,7 +216,7 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
         val invalidUri = "test://nonexistent.txt"
 
         val exception = assertThrows<McpException> {
-            runBlocking {
+            withContext(Dispatchers.Default){
                 client.readResource(ReadResourceRequest(ReadResourceRequestParams(uri = invalidUri)))
             }
         }
