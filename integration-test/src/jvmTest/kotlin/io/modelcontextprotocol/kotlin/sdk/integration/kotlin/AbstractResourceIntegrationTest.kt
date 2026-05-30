@@ -216,7 +216,7 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
         val invalidUri = "test://nonexistent.txt"
 
         val exception = assertThrows<McpException> {
-            withContext(Dispatchers.Default){
+            withContext(Dispatchers.Default) {
                 client.readResource(ReadResourceRequest(ReadResourceRequestParams(uri = invalidUri)))
             }
         }

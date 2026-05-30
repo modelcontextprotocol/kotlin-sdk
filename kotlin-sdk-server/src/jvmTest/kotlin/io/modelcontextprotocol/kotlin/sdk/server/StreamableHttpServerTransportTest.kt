@@ -520,7 +520,7 @@ class StreamableHttpServerTransportTest {
 
             secondHandlerStarted.await()
             releaseFirstHandler.complete(Unit)
-            responseDeferred.await().status
+            responseDeferred.await().status shouldBe HttpStatusCode.Accepted
         }
 
         capturedError.await() shouldBe expected
@@ -578,7 +578,7 @@ class StreamableHttpServerTransportTest {
 
             requestResponseSent.await()
             releaseNotificationHandler.complete(Unit)
-            responseDeferred.await().status
+            responseDeferred.await().status shouldBe HttpStatusCode.OK
         }
 
         capturedError.await() shouldBe expected

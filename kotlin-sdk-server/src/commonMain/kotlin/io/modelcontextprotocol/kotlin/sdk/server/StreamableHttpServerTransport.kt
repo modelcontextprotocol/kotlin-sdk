@@ -344,7 +344,9 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
     }
 
     /**
-     * Handles POST requests containing JSON-RPC messages
+     * Handles POST requests containing JSON-RPC messages. Batch messages are
+     * dispatched concurrently — the MCP batch spec does not mandate sequential
+     * processing, and individual POST requests were already concurrent.
      */
     public suspend fun handlePostRequest(session: ServerSSESession?, call: ApplicationCall) {
         try {

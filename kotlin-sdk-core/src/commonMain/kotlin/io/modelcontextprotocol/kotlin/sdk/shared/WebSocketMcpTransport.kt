@@ -90,6 +90,10 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
 
         @OptIn(InternalCoroutinesApi::class)
         session.coroutineContext.job.invokeOnCompletion {
+            // Cancel the scope when the session completes. For normal session
+            // completion the SupervisorJob parent does not auto-cancel children;
+            // for error/cancellation the propagation already cancels the scope
+            // job, making this cancel a no-op.
             scope.cancel()
             if (it != null) {
                 _onError.invoke(it)
