@@ -170,7 +170,7 @@ class StdioServerTransportTest {
         server.start()
         finished.await()
 
-       readMessages.shouldContainExactlyInAnyOrder(messages)
+        readMessages.shouldContainExactlyInAnyOrder(messages)
     }
 
     @Test
@@ -283,7 +283,7 @@ class StdioServerTransportTest {
 
     @ParameterizedTest(name = "[{index}] handler throws {0}")
     @MethodSource("handlerErrors")
-   fun `should continue processing messages after handler throws`(throwable: Throwable) = runIntegrationTest {
+    fun `should continue processing messages after handler throws`(throwable: Throwable) = runIntegrationTest {
         val server = StdioServerTransport(input = bufferedInput, output = printOutput)
         val capturedError = CompletableDeferred<Throwable>()
         val receivedMessages = mutableListOf<JSONRPCMessage>()

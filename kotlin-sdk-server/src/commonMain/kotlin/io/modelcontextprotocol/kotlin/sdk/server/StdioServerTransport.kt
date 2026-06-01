@@ -199,19 +199,19 @@ public class StdioServerTransport private constructor(
         }
     }
 
-   private suspend fun processorPump() {
-       try {
-           for (chunk in readChannel) {
-               readBuffer.append(chunk)
-               while (true) {
-                   val message = try {
-                       readBuffer.readMessage()
-                   } catch (e: CancellationException) {
-                       throw e
-                   } catch (e: Throwable) {
-                       _onError(e)
-                       null
-                   } ?: break
+    private suspend fun processorPump() {
+        try {
+            for (chunk in readChannel) {
+                readBuffer.append(chunk)
+                while (true) {
+                    val message = try {
+                        readBuffer.readMessage()
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Throwable) {
+                        _onError(e)
+                        null
+                    } ?: break
                     launchMessageHandler(message)
                 }
             }
@@ -224,7 +224,7 @@ public class StdioServerTransport private constructor(
         }
     }
 
-   private suspend fun writerPump() {
+    private suspend fun writerPump() {
         try {
             for (message in writeChannel) {
                 val json = serializeMessage(message)

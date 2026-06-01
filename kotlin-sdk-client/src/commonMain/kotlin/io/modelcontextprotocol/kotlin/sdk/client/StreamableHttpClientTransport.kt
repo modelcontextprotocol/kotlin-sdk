@@ -166,9 +166,9 @@ public class StreamableHttpClientTransport(
 
         when (response.contentType()?.withoutParameters()) {
             ContentType.Application.Json -> response.bodyAsText().takeIf { it.isNotEmpty() }?.let { json ->
-               runCatching { McpJson.decodeFromString<JSONRPCMessage>(json) }
+                runCatching { McpJson.decodeFromString<JSONRPCMessage>(json) }
                     .onSuccess { launchMessageHandler(it) }
-                   .onFailure {
+                    .onFailure {
                         _onError(it)
                         throw it
                     }
@@ -392,12 +392,12 @@ public class StreamableHttpClientTransport(
                                 .onSuccess { msg ->
                                     if (msg is JSONRPCResponse) receivedResponse = true
                                     if (replayMessageId != null && msg is JSONRPCResponse) {
-                                       launchMessageHandler(msg.copy(id = replayMessageId))
-                                   } else {
+                                        launchMessageHandler(msg.copy(id = replayMessageId))
+                                    } else {
                                         launchMessageHandler(msg)
-                                   }
-                               }
-                               .onFailure(_onError)
+                                    }
+                                }
+                                .onFailure(_onError)
                         }
 
                     "error" -> _onError(StreamableHttpError(null, event.data))
@@ -441,12 +441,12 @@ public class StreamableHttpClientTransport(
                     .onSuccess { msg ->
                         if (msg is JSONRPCResponse) receivedResponse = true
                         if (replayMessageId != null && msg is JSONRPCResponse) {
-                           launchMessageHandler(msg.copy(id = replayMessageId))
-                       } else {
+                            launchMessageHandler(msg.copy(id = replayMessageId))
+                        } else {
                             launchMessageHandler(msg)
-                       }
-                   }
-                   .onFailure {
+                        }
+                    }
+                    .onFailure {
                         _onError(it)
                         throw it
                     }
@@ -477,10 +477,10 @@ public class StreamableHttpClientTransport(
                 line.startsWith("retry:") -> line.substringAfter("retry:").trim().toLongOrNull()?.let {
                     localServerRetryDelay = it.milliseconds
                 }
-           }
-       }
-       return SseStreamResult(hasPrimingEvent, receivedResponse, localLastEventId, localServerRetryDelay)
-   }
+            }
+        }
+        return SseStreamResult(hasPrimingEvent, receivedResponse, localLastEventId, localServerRetryDelay)
+    }
     private fun launchMessageHandler(message: JSONRPCMessage) {
         scope.launch(CoroutineName("StreamableHttpTransport.message#${hashCode()}")) {
             try {
