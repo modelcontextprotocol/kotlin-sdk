@@ -20,7 +20,6 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
-import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
@@ -168,8 +167,6 @@ public class ChannelTransport(
                 logger.debug { "Cancelling separate receive channel" }
                 receiveChannel.cancel()
             }
-            val currentJob = currentCoroutineContext()[Job]
-            scope.coroutineContext[Job]?.children?.filter { it !== currentJob }?.forEach { it.join() }
             scope.coroutineContext[Job]?.cancelAndJoin()
         }
         logger.info { "ChannelTransport closed" }

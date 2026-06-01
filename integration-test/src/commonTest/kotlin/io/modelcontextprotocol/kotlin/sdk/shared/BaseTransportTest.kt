@@ -47,7 +47,7 @@ abstract class BaseTransportTest {
             InitializedNotification().toJSON(),
         )
 
-        val chan = Channel<JSONRPCMessage>()
+        val chan = Channel<JSONRPCMessage>(messages.size)
 
         transport.onMessage { message ->
             chan.send(message)
