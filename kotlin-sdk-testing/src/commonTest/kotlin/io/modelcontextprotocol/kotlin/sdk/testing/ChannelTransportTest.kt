@@ -58,7 +58,7 @@ class ChannelTransportTest {
         // Wait for messages to be processed
         messagesProcessed.await()
 
-        received.shouldContainExactlyInAnyOrder(msg1, msg2)
+       received.shouldContainExactlyInAnyOrder(msg1, msg2)
     }
 
     @Test

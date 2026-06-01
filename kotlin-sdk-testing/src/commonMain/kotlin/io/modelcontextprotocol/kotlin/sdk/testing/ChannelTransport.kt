@@ -141,23 +141,6 @@ public class ChannelTransport(
         started.await()
     }
 
-    private fun launchMessageHandler(message: JSONRPCMessage) {
-        scope.launch(CoroutineName("ChannelTransport#${hashCode()}-message")) {
-            try {
-                _onMessage.invoke(message)
-                logger.trace { "Message processed successfully: ${message::class.simpleName}" }
-            } catch (e: CancellationException) {
-                // Let cancellation propagate immediately
-                logger.debug { "Cancellation requested during message processing" }
-                throw e
-            } catch (e: Throwable) {
-                // Report other errors but continue processing
-                logger.warn(e) { "Error processing message: ${message::class.simpleName}" }
-                _onError.invoke(e)
-            }
-        }
-    }
-
     /**
      * Sends a JSON-RPC message through the transport.
      *
@@ -185,12 +168,25 @@ public class ChannelTransport(
                 logger.debug { "Cancelling separate receive channel" }
                 receiveChannel.cancel()
             }
-            // Join in-flight handler child jobs before cancelling the scope.
-            // Filter out the current (event-loop) coroutine to avoid deadlock.
             val currentJob = currentCoroutineContext()[Job]
             scope.coroutineContext[Job]?.children?.filter { it !== currentJob }?.forEach { it.join() }
             scope.coroutineContext[Job]?.cancelAndJoin()
         }
         logger.info { "ChannelTransport closed" }
+    }
+
+    private fun launchMessageHandler(message: JSONRPCMessage) {
+        scope.launch(CoroutineName("ChannelTransport#${hashCode()}-message")) {
+            try {
+                _onMessage.invoke(message)
+                logger.trace { "Message processed successfully: ${message::class.simpleName}" }
+            } catch (e: CancellationException) {
+                logger.debug { "Cancellation requested during message processing" }
+                throw e
+            } catch (e: Throwable) {
+                logger.warn(e) { "Error processing message: ${message::class.simpleName}" }
+                _onError.invoke(e)
+            }
+        }
     }
 }
