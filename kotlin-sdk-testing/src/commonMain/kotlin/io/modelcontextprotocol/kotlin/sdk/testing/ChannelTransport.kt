@@ -13,15 +13,14 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 
 /**
@@ -160,15 +159,14 @@ public class ChannelTransport(
      */
     override suspend fun closeResources() {
         logger.info { "Closing ChannelTransport" }
-        withContext(NonCancellable) {
-            invokeOnCloseCallback()
-            sendChannel.close()
-            if (receiveChannel !== sendChannel) {
-                logger.debug { "Cancelling separate receive channel" }
-                receiveChannel.cancel()
-            }
-            scope.coroutineContext[Job]?.cancelAndJoin()
+        invokeOnCloseCallback()
+        sendChannel.close()
+        if (receiveChannel !== sendChannel) {
+            logger.debug { "Cancelling separate receive channel" }
+            receiveChannel.cancel()
         }
+        scope.cancel()
+        scope.coroutineContext[Job]?.join()
         logger.info { "ChannelTransport closed" }
     }
 
