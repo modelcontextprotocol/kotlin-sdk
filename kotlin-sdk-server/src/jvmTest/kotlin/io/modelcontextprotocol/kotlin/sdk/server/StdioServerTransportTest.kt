@@ -283,16 +283,16 @@ class StdioServerTransportTest {
 
     @ParameterizedTest(name = "[{index}] handler throws {0}")
     @MethodSource("handlerErrors")
-    fun `should continue processing messages after handler throws`(throwable: Throwable) = runIntegrationTest {
+   fun `should continue processing messages after handler throws`(throwable: Throwable) = runIntegrationTest {
         val server = StdioServerTransport(input = bufferedInput, output = printOutput)
-        val capturedErrors = mutableListOf<Throwable>()
+        val capturedError = CompletableDeferred<Throwable>()
         val receivedMessages = mutableListOf<JSONRPCMessage>()
         val secondMessageProcessed = CompletableDeferred<Unit>()
 
         val message1 = PingRequest().toJSON()
         val message2 = InitializedNotification().toJSON()
 
-        server.onError { capturedErrors.add(it) }
+        server.onError { capturedError.complete(it) }
         server.onMessage { message ->
             if (message == message1) {
                 throw throwable
@@ -310,7 +310,7 @@ class StdioServerTransportTest {
 
         secondMessageProcessed.await()
 
-        capturedErrors shouldContain throwable
+        capturedError.await() shouldBe throwable
         receivedMessages shouldBe listOf(message2)
         server.close()
     }
