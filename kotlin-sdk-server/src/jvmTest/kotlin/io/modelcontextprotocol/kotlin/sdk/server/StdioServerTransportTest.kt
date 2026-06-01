@@ -18,6 +18,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import io.modelcontextprotocol.kotlin.test.utils.runIntegrationTest
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -151,14 +152,9 @@ class StdioServerTransportTest {
             InitializedNotification().toJSON(),
         )
 
-        val readMessages = mutableListOf<JSONRPCMessage>()
-        val finished = CompletableDeferred<Unit>()
-
+        val received = Channel<JSONRPCMessage>(messages.size)
         server.onMessage { message ->
-            readMessages.add(message)
-            if (message == messages[1]) {
-                finished.complete(Unit)
-            }
+            received.trySend(message)
         }
 
         // Push both messages before starting the server
@@ -168,8 +164,12 @@ class StdioServerTransportTest {
         inputWriter.flush()
 
         server.start()
-        finished.await()
 
+        val readMessages = buildList {
+            repeat(messages.size) {
+                add(received.receive())
+            }
+        }
         readMessages.shouldContainExactlyInAnyOrder(messages)
     }
 

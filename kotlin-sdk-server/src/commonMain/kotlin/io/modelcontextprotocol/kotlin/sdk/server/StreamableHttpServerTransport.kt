@@ -307,7 +307,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
 
     override suspend fun close() {
         withContext(NonCancellable) {
-            handlerScope.cancel()
             streamMutex.withLock {
                 streamsMapping.values.forEach {
                     try {
@@ -320,6 +319,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 requestToResponseMapping.clear()
                 invokeOnCloseCallback()
             }
+            handlerScope.cancel()
         }
     }
 
@@ -497,20 +497,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                         throw e
                     } catch (e: Exception) {
                         _onError(e)
-                        runCatching {
-                            send(
-                                JSONRPCError(
-                                    id = request.id,
-                                    error = RPCError(
-                                        code = RPCError.ErrorCode.INTERNAL_ERROR,
-                                        message = "Message processing error: ${e.message}",
-                                    ),
-                                ),
-                                TransportSendOptions(relatedRequestId = request.id),
-                            )
-                        }.onFailure { sendError ->
-                            _onError(sendError)
-                        }
                     }
                 }
             }.awaitAll()
