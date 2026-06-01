@@ -35,11 +35,13 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.pow
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -217,9 +219,11 @@ public class StreamableHttpClientTransport(
 
     override suspend fun closeResources() {
         logger.debug { "Client transport closing." }
-        invokeOnCloseCallback()
-        sseJob?.cancel()
-        scope.coroutineContext[Job]?.cancelAndJoin()
+        withContext(NonCancellable) {
+            invokeOnCloseCallback()
+            sseJob?.cancel()
+            scope.coroutineContext[Job]?.cancelAndJoin()
+        }
     }
 
     /**
