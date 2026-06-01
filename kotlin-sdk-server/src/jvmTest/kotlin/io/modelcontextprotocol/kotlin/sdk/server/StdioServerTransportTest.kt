@@ -4,6 +4,7 @@ import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldContain
+import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.modelcontextprotocol.kotlin.sdk.shared.ReadBuffer
@@ -169,7 +170,41 @@ class StdioServerTransportTest {
         server.start()
         finished.await()
 
-        readMessages shouldBe messages
+       readMessages.shouldContainExactlyInAnyOrder(messages)
+    }
+
+    @Test
+    fun `should continue receiving while previous handler is suspended`() = runIntegrationTest {
+        val server = StdioServerTransport(input = bufferedInput, output = printOutput)
+        server.onError { error ->
+            throw error
+        }
+
+        val firstMessage = PingRequest().toJSON()
+        val secondMessage = InitializedNotification().toJSON()
+        val releaseFirstHandler = CompletableDeferred<Unit>()
+        val secondMessageProcessed = CompletableDeferred<Unit>()
+
+        server.onMessage { message ->
+            if (message == firstMessage) {
+                releaseFirstHandler.await()
+            }
+            if (message == secondMessage) {
+                secondMessageProcessed.complete(Unit)
+            }
+        }
+
+        // Push messages before starting
+        inputWriter.write(serializeMessage(firstMessage))
+        inputWriter.write(serializeMessage(secondMessage))
+        inputWriter.flush()
+
+        server.start()
+
+        // second message should be processed even though first is still suspended
+        secondMessageProcessed.await()
+        releaseFirstHandler.complete(Unit)
+        server.close()
     }
 
     // region: Exception handling

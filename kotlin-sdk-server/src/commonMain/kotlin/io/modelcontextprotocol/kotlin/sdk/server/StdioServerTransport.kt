@@ -199,27 +199,20 @@ public class StdioServerTransport private constructor(
         }
     }
 
-    private suspend fun processorPump() {
-        try {
-            for (chunk in readChannel) {
-                readBuffer.append(chunk)
-                while (true) {
-                    val message = try {
-                        readBuffer.readMessage()
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Throwable) {
-                        _onError(e)
-                        null
-                    } ?: break
-                    try {
-                        _onMessage(message)
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Throwable) {
-                        logger.error(e) { "Error processing message" }
-                        _onError(e)
-                    }
+   private suspend fun processorPump() {
+       try {
+           for (chunk in readChannel) {
+               readBuffer.append(chunk)
+               while (true) {
+                   val message = try {
+                       readBuffer.readMessage()
+                   } catch (e: CancellationException) {
+                       throw e
+                   } catch (e: Throwable) {
+                       _onError(e)
+                       null
+                   } ?: break
+                    launchMessageHandler(message)
                 }
             }
         } catch (e: CancellationException) {
@@ -231,7 +224,7 @@ public class StdioServerTransport private constructor(
         }
     }
 
-    private suspend fun writerPump() {
+   private suspend fun writerPump() {
         try {
             for (message in writeChannel) {
                 val json = serializeMessage(message)
@@ -245,6 +238,20 @@ public class StdioServerTransport private constructor(
             _onError(e)
         } finally {
             transitionToStoppedNaturally()
+        }
+    }
+
+    private fun launchMessageHandler(message: JSONRPCMessage) {
+        val s = effectiveScope ?: return
+        s.launch(handlerDispatcher + CoroutineName("StdioServerTransport.message#${hashCode()}")) {
+            try {
+                _onMessage(message)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                logger.error(e) { "Error processing message" }
+                _onError(e)
+            }
         }
     }
 

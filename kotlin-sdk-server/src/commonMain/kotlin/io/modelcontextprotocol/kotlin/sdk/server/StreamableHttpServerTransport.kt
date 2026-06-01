@@ -29,8 +29,11 @@ import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.REQUEST_TIMEO
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.job
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -341,7 +344,9 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
     }
 
     /**
-     * Handles POST requests containing JSON-RPC messages
+     * Handles POST requests containing JSON-RPC messages. Batch messages are
+     * dispatched concurrently — the MCP batch spec does not mandate sequential
+     * processing, and individual POST requests were already concurrent.
      */
     public suspend fun handlePostRequest(session: ServerSSESession?, call: ApplicationCall) {
         try {
@@ -408,7 +413,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             val hasRequest = messages.any { it is JSONRPCRequest }
             if (!hasRequest) {
                 call.respondNullable(status = HttpStatusCode.Accepted, message = null)
-                messages.forEach { message -> _onMessage(message) }
+                dispatchMessagesConcurrently(messages)
                 return
             }
 
@@ -437,16 +442,55 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             }
             call.coroutineContext.job.invokeOnCompletion { streamsMapping.remove(streamId) }
 
-            messages.forEach { message -> _onMessage(message) }
+            // Batch dispatch with parallel message processing. Non-cancellation
+            // handler failures are reported after every already-started handler
+            // has completed, so one failure does not cancel sibling handlers.
+            dispatchMessagesConcurrently(messages)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            call.reject(
-                HttpStatusCode.BadRequest,
-                RPCError.ErrorCode.PARSE_ERROR,
-                "Parse error: ${e.message}",
-            )
+            runCatching {
+                call.reject(
+                    HttpStatusCode.BadRequest,
+                    RPCError.ErrorCode.PARSE_ERROR,
+                    "Parse error: ${e.message}",
+                )
+            }.onFailure { rejectFailure ->
+                _onError(rejectFailure)
+            }
             _onError(e)
+        }
+    }
+
+    private suspend fun dispatchMessagesConcurrently(messages: List<JSONRPCMessage>) {
+        supervisorScope {
+            messages.map { message ->
+                async {
+                    try {
+                        _onMessage(message)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        _onError(e)
+                        if (message is JSONRPCRequest) {
+                            runCatching {
+                                send(
+                                    JSONRPCError(
+                                        id = message.id,
+                                        error = RPCError(
+                                            code = RPCError.ErrorCode.INTERNAL_ERROR,
+                                            message = "Message processing error: ${e.message}",
+                                        ),
+                                    ),
+                                    TransportSendOptions(relatedRequestId = message.id),
+                                )
+                            }.onFailure { sendError ->
+                                _onError(sendError)
+                            }
+                        }
+                    }
+                }
+            }.awaitAll()
         }
     }
 

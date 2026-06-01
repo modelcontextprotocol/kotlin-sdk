@@ -80,7 +80,7 @@ public class SseClientTransport(
             reconnectionTime = reconnectionTime,
             block = requestBuilder,
         )
-        scope = CoroutineScope(session.coroutineContext + SupervisorJob())
+        scope = CoroutineScope(session.coroutineContext + SupervisorJob(session.coroutineContext[Job]))
 
         job = scope.launch(CoroutineName("SseMcpClientTransport.connect#${hashCode()}")) {
             collectMessages()
@@ -163,17 +163,31 @@ public class SseClientTransport(
         }
     }
 
-    private suspend fun handleMessage(data: String) {
+    private fun handleMessage(data: String) {
         try {
             val message = McpJson.decodeFromString<JSONRPCMessage>(data)
-            _onMessage(message)
+            launchMessageHandler(message)
         } catch (e: SerializationException) {
             _onError(e)
         }
     }
 
+    private fun launchMessageHandler(message: JSONRPCMessage) {
+        scope.launch(CoroutineName("SseMcpClientTransport.message#${hashCode()}")) {
+            try {
+                _onMessage(message)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                logger.error(e) { "Error processing message" }
+                _onError(e)
+            }
+        }
+    }
+
     override suspend fun closeResources() {
         withContext(NonCancellable) {
+            invokeOnCloseCallback()
             job?.cancel()
             try {
                 if (::session.isInitialized) session.cancel()
