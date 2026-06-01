@@ -15,7 +15,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.channels.ReceiveChannel
@@ -42,6 +44,7 @@ public class ChannelTransport(
     override val logger: KLogger = KotlinLogging.logger {}
 
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
+    private val handlerScope = CoroutineScope(SupervisorJob() + dispatcher)
 
     /**
      * Creates a `ChannelTransport` instance using a single channel for both sending and receiving messages.
@@ -159,19 +162,21 @@ public class ChannelTransport(
      */
     override suspend fun closeResources() {
         logger.info { "Closing ChannelTransport" }
-        invokeOnCloseCallback()
-        sendChannel.close()
-        if (receiveChannel !== sendChannel) {
-            logger.debug { "Cancelling separate receive channel" }
-            receiveChannel.cancel()
+        withContext(NonCancellable) {
+            invokeOnCloseCallback()
+            sendChannel.close()
+            if (receiveChannel !== sendChannel) {
+                logger.debug { "Cancelling separate receive channel" }
+                receiveChannel.cancel()
+            }
+            handlerScope.cancel()
+            handlerScope.coroutineContext[Job]?.join()
         }
-        scope.cancel()
-        scope.coroutineContext[Job]?.join()
         logger.info { "ChannelTransport closed" }
     }
 
     private fun launchMessageHandler(message: JSONRPCMessage) {
-        scope.launch(CoroutineName("ChannelTransport#${hashCode()}-message")) {
+        handlerScope.launch(CoroutineName("ChannelTransport#${hashCode()}-message")) {
             try {
                 _onMessage.invoke(message)
                 logger.trace { "Message processed successfully: ${message::class.simpleName}" }
