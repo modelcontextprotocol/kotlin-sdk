@@ -125,6 +125,12 @@ public final class io/modelcontextprotocol/kotlin/sdk/shared/RequestOptions : io
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class io/modelcontextprotocol/kotlin/sdk/shared/TooLongFrameException : java/io/IOException {
+	public fun <init> (JI)V
+	public final fun getFrameSize ()J
+	public final fun getMaxFrameSize ()I
+}
+
 public abstract interface class io/modelcontextprotocol/kotlin/sdk/shared/Transport {
 	public abstract fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun onClose (Lkotlin/jvm/functions/Function0;)V

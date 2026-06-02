@@ -4,13 +4,24 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import kotlinx.io.Buffer
+import kotlinx.io.IOException
 import kotlinx.io.indexOf
 import kotlinx.io.readString
 
 /**
  * Buffers a continuous stdio stream into discrete JSON-RPC messages.
+ *
+ * A single newline-terminated frame may not exceed an internal size cap (16 MiB): a peer that streams
+ * bytes without ever sending a newline triggers a [TooLongFrameException] from [readMessage] instead
+ * of growing the buffer without bound. A non-positive cap disables the check.
  */
-public class ReadBuffer {
+public class ReadBuffer internal constructor(private val maxFrameSize: Int) {
+
+    public constructor() : this(DEFAULT_MAX_FRAME_SIZE)
+
+    internal companion object {
+        internal const val DEFAULT_MAX_FRAME_SIZE: Int = 16 * 1024 * 1024
+    }
 
     private val logger = KotlinLogging.logger { }
 
@@ -53,7 +64,11 @@ public class ReadBuffer {
 
     private fun readNextLine(): String? {
         val lfIndex = if (buffer.exhausted()) -1L else buffer.indexOf('\n'.code.toByte())
-        if (lfIndex == -1L) return null
+        if (lfIndex == -1L) {
+            failIfFrameTooLong(buffer.size)
+            return null
+        }
+        failIfFrameTooLong(lfIndex)
 
         return if (lfIndex == 0L) {
             buffer.skip(1)
@@ -68,6 +83,13 @@ public class ReadBuffer {
             val string = buffer.readString(messageLength)
             buffer.skip(skipBytes.toLong())
             string
+        }
+    }
+
+    private fun failIfFrameTooLong(frameSize: Long) {
+        if (maxFrameSize in 1..<frameSize) {
+            buffer.clear()
+            throw TooLongFrameException(frameSize, maxFrameSize)
         }
     }
 
@@ -91,6 +113,20 @@ public class ReadBuffer {
         buffer.clear()
     }
 }
+
+/**
+ * Thrown by [ReadBuffer.readMessage] when a single newline-terminated frame exceeds the maximum size
+ * before its terminator arrives — i.e. a peer is streaming data without ever framing it. Transports
+ * treat it as fatal and close the connection.
+ *
+ * @property frameSize number of unframed bytes observed when the limit was tripped
+ * @property maxFrameSize the maximum frame size that was exceeded
+ */
+public class TooLongFrameException(public val frameSize: Long, public val maxFrameSize: Int) :
+    IOException(
+        "JSON-RPC frame exceeded the maximum size of $maxFrameSize bytes " +
+            "before a newline terminator (observed $frameSize bytes).",
+    )
 
 internal fun deserializeMessage(line: String): JSONRPCMessage = McpJson.decodeFromString<JSONRPCMessage>(line)
 

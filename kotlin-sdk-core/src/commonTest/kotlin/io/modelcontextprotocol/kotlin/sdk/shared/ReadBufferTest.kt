@@ -6,7 +6,9 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 
 class ReadBufferTest {
@@ -74,5 +76,36 @@ class ReadBufferTest {
         readBuffer.append("\n".toByteArray(Charsets.UTF_8))
         val message = readBuffer.readMessage()
         assertEquals(testMessage, message)
+    }
+
+    @Test
+    fun `should fail when an unframed blob exceeds the cap`() {
+        val readBuffer = ReadBuffer(maxFrameSize = 64)
+        // No newline ever arrives: the memory-exhaustion vector.
+        readBuffer.append(ByteArray(100) { 'a'.code.toByte() })
+        val ex = assertFailsWith<TooLongFrameException> { readBuffer.readMessage() }
+        assertContains(ex.message.orEmpty(), "maximum size")
+    }
+
+    @Test
+    fun `should fail when a completed line exceeds the cap`() {
+        val readBuffer = ReadBuffer(maxFrameSize = 64)
+        readBuffer.append(ByteArray(100) { 'a'.code.toByte() } + '\n'.code.toByte())
+        assertFailsWith<TooLongFrameException> { readBuffer.readMessage() }
+    }
+
+    @Test
+    fun `should not enforce a cap when maxFrameSize is non-positive`() {
+        val readBuffer = ReadBuffer(maxFrameSize = 0)
+        // Well beyond any small cap and still no newline — must not throw when disabled.
+        readBuffer.append(ByteArray(8192) { 'a'.code.toByte() })
+        assertNull(readBuffer.readMessage())
+    }
+
+    @Test
+    fun `should parse a message that fits under the cap`() {
+        val readBuffer = ReadBuffer(maxFrameSize = 1024)
+        readBuffer.append(serializeMessage(testMessage).encodeToByteArray())
+        assertEquals(testMessage, readBuffer.readMessage())
     }
 }
