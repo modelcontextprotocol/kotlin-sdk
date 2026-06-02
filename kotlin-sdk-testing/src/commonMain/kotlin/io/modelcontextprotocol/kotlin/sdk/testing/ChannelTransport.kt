@@ -13,16 +13,16 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  *  A transport implementation that uses Kotlin Coroutines Channels for asynchronous
@@ -46,6 +46,7 @@ public class ChannelTransport(
     private val handlerScope = CoroutineScope(SupervisorJob() + dispatcher)
     private val eventLoopStarted = CompletableDeferred<Unit>()
     private val messageProcessingReady = CompletableDeferred<Unit>()
+    private var eventLoopJob: Job? = null
 
     /**
      * Creates a `ChannelTransport` instance using a single channel for both sending and receiving messages.
@@ -117,7 +118,7 @@ public class ChannelTransport(
      */
     override suspend fun initialize() {
         logger.info { "ChannelTransport starting message processing" }
-        scope.launch(CoroutineName("ChannelTransport#${hashCode()}-event-loop")) {
+        eventLoopJob = scope.launch(CoroutineName("ChannelTransport#${hashCode()}-event-loop")) {
             try {
                 eventLoopStarted.complete(Unit)
                 messageProcessingReady.await()
@@ -166,6 +167,7 @@ public class ChannelTransport(
      */
     override suspend fun closeResources() {
         logger.info { "Closing ChannelTransport" }
+        val closeCallerJob = currentCoroutineContext()[Job]
         withContext(NonCancellable) {
             invokeOnCloseCallback()
             sendChannel.close()
@@ -174,8 +176,10 @@ public class ChannelTransport(
                 receiveChannel.cancel()
             }
             messageProcessingReady.complete(Unit)
-            handlerScope.cancel()
-            handlerScope.coroutineContext[Job]?.join()
+            if (closeCallerJob == eventLoopJob) {
+                handlerScope.coroutineContext[Job]?.children?.forEach { it.join() }
+            }
+            handlerScope.coroutineContext[Job]?.cancelAndJoin()
         }
         logger.info { "ChannelTransport closed" }
     }
