@@ -6,15 +6,20 @@ import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
+import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Runnable
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlin.coroutines.CoroutineContext
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 
@@ -88,6 +93,32 @@ class ChannelTransportTest {
         secondMessageProcessed.await()
         releaseFirstHandler.complete(Unit)
         transport.close()
+    }
+
+    @Test
+    fun `queued messages are processed after start reaches operational state`() = runTest {
+        val sendChannel = Channel<JSONRPCMessage>(Channel.UNLIMITED)
+        val receiveChannel = Channel<JSONRPCMessage>(Channel.UNLIMITED)
+        val transport = ChannelTransport(sendChannel, receiveChannel, ImmediateDispatcher)
+
+        val requestId = RequestId.NumberId(1)
+        val errors = Channel<Throwable>(Channel.UNLIMITED)
+        transport.onError { errors.trySend(it) }
+        transport.onMessage {
+            transport.send(JSONRPCResponse(requestId, EmptyResult()))
+        }
+
+        try {
+            receiveChannel.send(JSONRPCRequest(requestId, "method1"))
+            transport.start()
+
+            eventually(2.seconds) {
+                sendChannel.tryReceive().getOrNull() shouldBe JSONRPCResponse(requestId, EmptyResult())
+            }
+            errors.tryReceive().getOrNull() shouldBe null
+        } finally {
+            transport.close()
+        }
     }
 
     @Test
@@ -236,5 +267,11 @@ class ChannelTransportTest {
         // Ensure no extra errors were reported
         errors.tryReceive().getOrNull() shouldBe null
         transport.close()
+    }
+
+    private object ImmediateDispatcher : CoroutineDispatcher() {
+        override fun dispatch(context: CoroutineContext, block: Runnable) {
+            block.run()
+        }
     }
 }

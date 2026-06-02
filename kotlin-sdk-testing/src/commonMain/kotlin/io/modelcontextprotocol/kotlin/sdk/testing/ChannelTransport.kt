@@ -23,7 +23,6 @@ import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.yield
 
 /**
  *  A transport implementation that uses Kotlin Coroutines Channels for asynchronous
@@ -45,6 +44,8 @@ public class ChannelTransport(
 
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
     private val handlerScope = CoroutineScope(SupervisorJob() + dispatcher)
+    private val eventLoopStarted = CompletableDeferred<Unit>()
+    private val messageProcessingReady = CompletableDeferred<Unit>()
 
     /**
      * Creates a `ChannelTransport` instance using a single channel for both sending and receiving messages.
@@ -116,12 +117,10 @@ public class ChannelTransport(
      */
     override suspend fun initialize() {
         logger.info { "ChannelTransport starting message processing" }
-        val started = CompletableDeferred<Unit>()
         scope.launch(CoroutineName("ChannelTransport#${hashCode()}-event-loop")) {
             try {
-                // Signal that event loop has started, then yield to ensure we're ready
-                started.complete(Unit)
-                yield()
+                eventLoopStarted.complete(Unit)
+                messageProcessingReady.await()
 
                 for (message in receiveChannel) {
                     logger.debug { "Received message: ${message::class.simpleName}" }
@@ -130,8 +129,8 @@ public class ChannelTransport(
                 logger.info { "ChannelTransport stopped: receive channel closed" }
             } catch (e: Exception) {
                 // Only complete exceptionally if not already completed
-                if (!started.isCompleted) {
-                    started.completeExceptionally(e)
+                if (!eventLoopStarted.isCompleted) {
+                    eventLoopStarted.completeExceptionally(e)
                 }
                 throw e
             } finally {
@@ -139,7 +138,12 @@ public class ChannelTransport(
             }
         }
         // Wait for the event loop to start
-        started.await()
+        eventLoopStarted.await()
+    }
+
+    override suspend fun start() {
+        super.start()
+        messageProcessingReady.complete(Unit)
     }
 
     /**
@@ -169,6 +173,7 @@ public class ChannelTransport(
                 logger.debug { "Cancelling separate receive channel" }
                 receiveChannel.cancel()
             }
+            messageProcessingReady.complete(Unit)
             handlerScope.cancel()
             handlerScope.coroutineContext[Job]?.join()
         }
