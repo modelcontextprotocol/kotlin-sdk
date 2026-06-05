@@ -11,6 +11,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotificationParams
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsResult
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
@@ -70,6 +71,8 @@ class ClientConnectionTest : AbstractServerFeaturesTest() {
         val pingComplete = CompletableDeferred<Unit>()
         val rootsResult = CompletableDeferred<ListRootsResult>()
         val sessionId = CompletableDeferred<String>()
+        val clientImplementation = CompletableDeferred<Implementation?>()
+        val clientCapabilities = CompletableDeferred<ClientCapabilities?>()
         val toolListChanged =
             onClientNotification<ToolListChangedNotification>(Method.Defined.NotificationsToolsListChanged)
         val resourceListChanged =
@@ -120,6 +123,12 @@ class ClientConnectionTest : AbstractServerFeaturesTest() {
                     elicitationComplete.await().params.elicitationId shouldBe "elicit-123"
                 }
                 capturedSessionId.shouldNotBeBlank()
+                withClue("clientImplementation should expose the connected client's name and version") {
+                    clientImplementation.await() shouldBe Implementation(name = "test client", version = "1.0")
+                }
+                withClue("clientCapabilities should expose what the client advertised at initialize") {
+                    clientCapabilities.await() shouldBe getClientCapabilities()
+                }
             }
         }
     }
@@ -142,6 +151,8 @@ class ClientConnectionTest : AbstractServerFeaturesTest() {
             ElicitationCompleteNotification(ElicitationCompleteNotificationParams(elicitationId = "elicit-123")),
         )
         cap.sessionId.complete(sessionId)
+        cap.clientImplementation.complete(clientImplementation)
+        cap.clientCapabilities.complete(clientCapabilities)
     }
 
     @Test
