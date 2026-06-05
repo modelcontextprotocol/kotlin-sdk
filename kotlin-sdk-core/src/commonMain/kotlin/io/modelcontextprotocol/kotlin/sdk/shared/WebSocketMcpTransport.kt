@@ -10,10 +10,14 @@ import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.InternalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.cancellation.CancellationException
@@ -30,7 +34,7 @@ private val logger = KotlinLogging.logger {}
 @OptIn(ExperimentalAtomicApi::class)
 public abstract class WebSocketMcpTransport : AbstractTransport() {
     private val scope by lazy {
-        CoroutineScope(session.coroutineContext + SupervisorJob())
+        CoroutineScope(session.coroutineContext + SupervisorJob(session.coroutineContext.job))
     }
 
     private val initialized: AtomicBoolean = AtomicBoolean(false)
@@ -73,8 +77,8 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
                 }
 
                 try {
-                    val message = McpJson.decodeFromString<JSONRPCMessage>(message.readText())
-                    _onMessage.invoke(message)
+                    val parsedMessage = McpJson.decodeFromString<JSONRPCMessage>(message.readText())
+                    launchMessageHandler(parsedMessage)
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
@@ -86,10 +90,28 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
 
         @OptIn(InternalCoroutinesApi::class)
         session.coroutineContext.job.invokeOnCompletion {
+            // Cancel the scope when the session completes. For normal session
+            // completion the SupervisorJob parent does not auto-cancel children;
+            // for error/cancellation the propagation already cancels the scope
+            // job, making this cancel a no-op.
+            scope.cancel()
             if (it != null) {
                 _onError.invoke(it)
             } else {
                 invokeOnCloseCallback()
+            }
+        }
+    }
+
+    private fun launchMessageHandler(message: JSONRPCMessage) {
+        scope.launch(CoroutineName("WebSocketMcpTransport.message#${hashCode()}")) {
+            try {
+                _onMessage.invoke(message)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                logger.error(e) { "Error processing message" }
+                _onError.invoke(e)
             }
         }
     }
@@ -109,7 +131,10 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
         }
 
         logger.debug { "Closing websocket session" }
-        session.close()
-        session.coroutineContext.job.join()
+        withContext(NonCancellable) {
+            invokeOnCloseCallback()
+            session.close()
+            scope.coroutineContext.job.cancelAndJoin()
+        }
     }
 }

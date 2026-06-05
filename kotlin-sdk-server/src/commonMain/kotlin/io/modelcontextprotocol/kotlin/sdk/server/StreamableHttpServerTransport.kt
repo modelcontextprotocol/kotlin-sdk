@@ -28,9 +28,18 @@ import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.REQUEST_TIMEOUT
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
+import kotlinx.coroutines.CoroutineName
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -180,6 +189,8 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
     private val sessionMutex = Mutex()
     private val streamMutex = Mutex()
 
+    private val handlerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
     private companion object {
         const val STANDALONE_SSE_STREAM_ID = "_GET_stream"
     }
@@ -308,6 +319,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 requestToResponseMapping.clear()
                 invokeOnCloseCallback()
             }
+            handlerScope.cancel()
         }
     }
 
@@ -341,7 +353,9 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
     }
 
     /**
-     * Handles POST requests containing JSON-RPC messages
+     * Handles POST requests containing JSON-RPC messages. Batch messages are
+     * dispatched concurrently — the MCP batch spec does not mandate sequential
+     * processing, and individual POST requests were already concurrent.
      */
     public suspend fun handlePostRequest(session: ServerSSESession?, call: ApplicationCall) {
         try {
@@ -405,10 +419,12 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 if (!validateSession(call) || !validateProtocolVersion(call)) return
             }
 
-            val hasRequest = messages.any { it is JSONRPCRequest }
-            if (!hasRequest) {
+            val (notifications, requests) = messages.partition { it !is JSONRPCRequest }
+
+            notifications.forEach { launchNotificationHandler(it) }
+
+            if (requests.isEmpty()) {
                 call.respondNullable(status = HttpStatusCode.Accepted, message = null)
-                messages.forEach { message -> _onMessage(message) }
                 return
             }
 
@@ -437,16 +453,53 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             }
             call.coroutineContext.job.invokeOnCompletion { streamsMapping.remove(streamId) }
 
-            messages.forEach { message -> _onMessage(message) }
+            dispatchRequestsConcurrently(requests)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            call.reject(
-                HttpStatusCode.BadRequest,
-                RPCError.ErrorCode.PARSE_ERROR,
-                "Parse error: ${e.message}",
-            )
+            runCatching {
+                call.reject(
+                    HttpStatusCode.BadRequest,
+                    RPCError.ErrorCode.PARSE_ERROR,
+                    "Parse error: ${e.message}",
+                )
+            }.onFailure { rejectFailure ->
+                _onError(rejectFailure)
+            }
             _onError(e)
+        }
+    }
+
+    private fun launchNotificationHandler(message: JSONRPCMessage) {
+        handlerScope.launch(
+            CoroutineName("StreamableHttpTransport.notification#${hashCode()}"),
+        ) {
+            try {
+                _onMessage(message)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _onError(e)
+            }
+        }
+    }
+
+    private suspend fun dispatchRequestsConcurrently(requests: List<JSONRPCMessage>) {
+        if (requests.isEmpty()) return
+        @Suppress("UNCHECKED_CAST")
+        val requestList = requests as List<JSONRPCRequest>
+        supervisorScope {
+            requestList.map { request ->
+                async {
+                    try {
+                        _onMessage(request)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        _onError(e)
+                    }
+                }
+            }.awaitAll()
         }
     }
 

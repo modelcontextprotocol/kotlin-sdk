@@ -4,6 +4,7 @@ import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldContain
+import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.modelcontextprotocol.kotlin.sdk.shared.ReadBuffer
@@ -17,6 +18,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import io.modelcontextprotocol.kotlin.test.utils.runIntegrationTest
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -150,14 +152,9 @@ class StdioServerTransportTest {
             InitializedNotification().toJSON(),
         )
 
-        val readMessages = mutableListOf<JSONRPCMessage>()
-        val finished = CompletableDeferred<Unit>()
-
+        val received = Channel<JSONRPCMessage>(messages.size)
         server.onMessage { message ->
-            readMessages.add(message)
-            if (message == messages[1]) {
-                finished.complete(Unit)
-            }
+            received.trySend(message)
         }
 
         // Push both messages before starting the server
@@ -167,9 +164,47 @@ class StdioServerTransportTest {
         inputWriter.flush()
 
         server.start()
-        finished.await()
 
-        readMessages shouldBe messages
+        val readMessages = buildList {
+            repeat(messages.size) {
+                add(received.receive())
+            }
+        }
+        readMessages.shouldContainExactlyInAnyOrder(messages)
+    }
+
+    @Test
+    fun `should continue receiving while previous handler is suspended`() = runIntegrationTest {
+        val server = StdioServerTransport(input = bufferedInput, output = printOutput)
+        server.onError { error ->
+            throw error
+        }
+
+        val firstMessage = PingRequest().toJSON()
+        val secondMessage = InitializedNotification().toJSON()
+        val releaseFirstHandler = CompletableDeferred<Unit>()
+        val secondMessageProcessed = CompletableDeferred<Unit>()
+
+        server.onMessage { message ->
+            if (message == firstMessage) {
+                releaseFirstHandler.await()
+            }
+            if (message == secondMessage) {
+                secondMessageProcessed.complete(Unit)
+            }
+        }
+
+        // Push messages before starting
+        inputWriter.write(serializeMessage(firstMessage))
+        inputWriter.write(serializeMessage(secondMessage))
+        inputWriter.flush()
+
+        server.start()
+
+        // second message should be processed even though first is still suspended
+        secondMessageProcessed.await()
+        releaseFirstHandler.complete(Unit)
+        server.close()
     }
 
     // region: Exception handling
@@ -250,14 +285,14 @@ class StdioServerTransportTest {
     @MethodSource("handlerErrors")
     fun `should continue processing messages after handler throws`(throwable: Throwable) = runIntegrationTest {
         val server = StdioServerTransport(input = bufferedInput, output = printOutput)
-        val capturedErrors = mutableListOf<Throwable>()
+        val capturedError = CompletableDeferred<Throwable>()
         val receivedMessages = mutableListOf<JSONRPCMessage>()
         val secondMessageProcessed = CompletableDeferred<Unit>()
 
         val message1 = PingRequest().toJSON()
         val message2 = InitializedNotification().toJSON()
 
-        server.onError { capturedErrors.add(it) }
+        server.onError { capturedError.complete(it) }
         server.onMessage { message ->
             if (message == message1) {
                 throw throwable
@@ -275,7 +310,7 @@ class StdioServerTransportTest {
 
         secondMessageProcessed.await()
 
-        capturedErrors shouldContain throwable
+        capturedError.await() shouldBe throwable
         receivedMessages shouldBe listOf(message2)
         server.close()
     }

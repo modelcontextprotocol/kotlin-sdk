@@ -35,12 +35,13 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.pow
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -168,7 +169,7 @@ public class StreamableHttpClientTransport(
         when (response.contentType()?.withoutParameters()) {
             ContentType.Application.Json -> response.bodyAsText().takeIf { it.isNotEmpty() }?.let { json ->
                 runCatching { McpJson.decodeFromString<JSONRPCMessage>(json) }
-                    .onSuccess { _onMessage(it) }
+                    .onSuccess { launchMessageHandler(it) }
                     .onFailure {
                         _onError(it)
                         throw it
@@ -218,8 +219,11 @@ public class StreamableHttpClientTransport(
 
     override suspend fun closeResources() {
         logger.debug { "Client transport closing." }
-        sseJob?.cancelAndJoin()
-        scope.cancel()
+        withContext(NonCancellable) {
+            invokeOnCloseCallback()
+            sseJob?.cancel()
+            scope.coroutineContext[Job]?.cancelAndJoin()
+        }
     }
 
     /**
@@ -392,9 +396,9 @@ public class StreamableHttpClientTransport(
                                 .onSuccess { msg ->
                                     if (msg is JSONRPCResponse) receivedResponse = true
                                     if (replayMessageId != null && msg is JSONRPCResponse) {
-                                        _onMessage(msg.copy(id = replayMessageId))
+                                        launchMessageHandler(msg.copy(id = replayMessageId))
                                     } else {
-                                        _onMessage(msg)
+                                        launchMessageHandler(msg)
                                     }
                                 }
                                 .onFailure(_onError)
@@ -427,7 +431,7 @@ public class StreamableHttpClientTransport(
         var id: String? = null
         var eventName: String? = null
 
-        suspend fun dispatch(id: String?, eventName: String?, data: String) {
+        fun dispatch(id: String?, eventName: String?, data: String) {
             id?.let {
                 localLastEventId = it
                 hasPrimingEvent = true
@@ -441,9 +445,9 @@ public class StreamableHttpClientTransport(
                     .onSuccess { msg ->
                         if (msg is JSONRPCResponse) receivedResponse = true
                         if (replayMessageId != null && msg is JSONRPCResponse) {
-                            _onMessage(msg.copy(id = replayMessageId))
+                            launchMessageHandler(msg.copy(id = replayMessageId))
                         } else {
-                            _onMessage(msg)
+                            launchMessageHandler(msg)
                         }
                     }
                     .onFailure {
@@ -480,5 +484,17 @@ public class StreamableHttpClientTransport(
             }
         }
         return SseStreamResult(hasPrimingEvent, receivedResponse, localLastEventId, localServerRetryDelay)
+    }
+    private fun launchMessageHandler(message: JSONRPCMessage) {
+        scope.launch(CoroutineName("StreamableHttpTransport.message#${hashCode()}")) {
+            try {
+                _onMessage(message)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                logger.error(e) { "Error processing message" }
+                _onError(e)
+            }
+        }
     }
 }

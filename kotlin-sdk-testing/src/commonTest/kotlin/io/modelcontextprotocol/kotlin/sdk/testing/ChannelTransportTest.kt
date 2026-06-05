@@ -2,18 +2,24 @@ package io.modelcontextprotocol.kotlin.sdk.testing
 
 import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
+import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Runnable
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlin.coroutines.CoroutineContext
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 
@@ -57,7 +63,62 @@ class ChannelTransportTest {
         // Wait for messages to be processed
         messagesProcessed.await()
 
-        received.shouldContainExactly(msg1, msg2)
+        received.shouldContainExactlyInAnyOrder(msg1, msg2)
+    }
+
+    @Test
+    fun `receive loop continues while previous handler is suspended`() = runTest {
+        val receiveChannel = Channel<JSONRPCMessage>(Channel.UNLIMITED)
+        val transport = ChannelTransport(Channel(), receiveChannel)
+
+        val firstMessage = JSONRPCRequest(RequestId.NumberId(1), "method1")
+        val secondMessage = JSONRPCRequest(RequestId.NumberId(2), "method2")
+        val releaseFirstHandler = CompletableDeferred<Unit>()
+        val secondMessageProcessed = CompletableDeferred<Unit>()
+
+        transport.onMessage { message ->
+            if (message == firstMessage) {
+                releaseFirstHandler.await()
+            }
+            if (message == secondMessage) {
+                secondMessageProcessed.complete(Unit)
+            }
+        }
+
+        transport.start()
+
+        receiveChannel.send(firstMessage)
+        receiveChannel.send(secondMessage)
+
+        secondMessageProcessed.await()
+        releaseFirstHandler.complete(Unit)
+        transport.close()
+    }
+
+    @Test
+    fun `queued messages are processed after start reaches operational state`() = runTest {
+        val sendChannel = Channel<JSONRPCMessage>(Channel.UNLIMITED)
+        val receiveChannel = Channel<JSONRPCMessage>(Channel.UNLIMITED)
+        val transport = ChannelTransport(sendChannel, receiveChannel, ImmediateDispatcher)
+
+        val requestId = RequestId.NumberId(1)
+        val errors = Channel<Throwable>(Channel.UNLIMITED)
+        transport.onError { errors.trySend(it) }
+        transport.onMessage {
+            transport.send(JSONRPCResponse(requestId, EmptyResult()))
+        }
+
+        try {
+            receiveChannel.send(JSONRPCRequest(requestId, "method1"))
+            transport.start()
+
+            eventually(2.seconds) {
+                sendChannel.tryReceive().getOrNull() shouldBe JSONRPCResponse(requestId, EmptyResult())
+            }
+            errors.tryReceive().getOrNull() shouldBe null
+        } finally {
+            transport.close()
+        }
     }
 
     @Test
@@ -177,19 +238,15 @@ class ChannelTransportTest {
         val receiveChannel = Channel<JSONRPCMessage>(Channel.UNLIMITED)
         val transport = ChannelTransport(Channel(), receiveChannel)
 
-        val allProcessed = CompletableDeferred<Unit>()
-        val received = mutableListOf<Int>()
-        val errors = mutableListOf<Throwable>()
+        val received = Channel<Int>(Channel.UNLIMITED)
+        val errors = Channel<Throwable>(Channel.UNLIMITED)
 
-        transport.onError { errors.add(it) }
+        transport.onError { errors.trySend(it) }
         transport.onMessage { msg ->
             val id = ((msg as JSONRPCRequest).id as RequestId.NumberId).value.toInt()
-            received.add(id)
+            received.send(id)
             if (id == 2) {
                 throw RuntimeException("Error processing message 2")
-            }
-            if (received.size == 4) {
-                allProcessed.complete(Unit)
             }
         }
 
@@ -201,11 +258,20 @@ class ChannelTransportTest {
         receiveChannel.send(JSONRPCRequest(RequestId.NumberId(3), "m3"))
         receiveChannel.send(JSONRPCRequest(RequestId.NumberId(4), "m4"))
 
-        allProcessed.await()
+        val receivedValues = buildList { repeat(4) { add(received.receive()) } }
 
         // All messages should be processed despite error in message 2
-        received.shouldContainExactly(1, 2, 3, 4)
-        errors.size shouldBe 1
-        errors[0].message shouldBe "Error processing message 2"
+        receivedValues.shouldContainExactlyInAnyOrder(1, 2, 3, 4)
+        val error = errors.receive()
+        error.message shouldBe "Error processing message 2"
+        // Ensure no extra errors were reported
+        errors.tryReceive().getOrNull() shouldBe null
+        transport.close()
+    }
+
+    private object ImmediateDispatcher : CoroutineDispatcher() {
+        override fun dispatch(context: CoroutineContext, block: Runnable) {
+            block.run()
+        }
     }
 }

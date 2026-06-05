@@ -2,6 +2,7 @@ package io.modelcontextprotocol.kotlin.sdk.client.streamable.http
 
 import io.kotest.assertions.fail
 import io.kotest.assertions.nondeterministic.eventually
+import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -611,11 +612,10 @@ class StreamableHttpClientTransportTest {
 
         receivedMessages shouldHaveSize 2
 
-        val firstNotification = receivedMessages[0] as JSONRPCNotification
-        firstNotification.method shouldBe "notifications/progress"
-
-        val secondNotification = receivedMessages[1] as JSONRPCNotification
-        secondNotification.method shouldBe "notifications/tools/list_changed"
+        receivedMessages
+            .filterIsInstance<JSONRPCNotification>()
+            .map { it.method }
+            .shouldContainExactlyInAnyOrder("notifications/progress", "notifications/tools/list_changed")
 
         transport.close()
     }
