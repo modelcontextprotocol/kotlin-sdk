@@ -173,6 +173,15 @@ public interface ClientConnection {
      * @param notification Details of the completed elicitation.
      */
     public suspend fun sendElicitationComplete(notification: ElicitationCompleteNotification)
+
+    /**
+     * Registers a callback to be invoked when the underlying server session is closing.
+     *
+     * Use this to release session-scoped resources (e.g. database connections, temporary files,
+     * background jobs) created by tool, prompt, or resource handlers. Multiple callbacks may be
+     * registered and are invoked in registration order.
+     */
+    public fun onSessionClose(block: () -> Unit)
 }
 
 internal class ClientConnectionImpl(private val session: ServerSession) : ClientConnection {
@@ -301,6 +310,10 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
     override suspend fun sendElicitationComplete(notification: ElicitationCompleteNotification) {
         logger.debug { "Sending elicitation complete notification for: ${notification.params.elicitationId}" }
         notification(notification)
+    }
+
+    override fun onSessionClose(block: () -> Unit) {
+        session.onClose(block)
     }
 
     /**
