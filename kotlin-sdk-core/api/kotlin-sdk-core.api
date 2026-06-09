@@ -90,8 +90,10 @@ public final class io/modelcontextprotocol/kotlin/sdk/shared/ProtocolKt {
 public class io/modelcontextprotocol/kotlin/sdk/shared/ProtocolOptions {
 	public synthetic fun <init> (ZJILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public synthetic fun <init> (ZJLkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getConcurrentMessageHandling ()Z
 	public final fun getEnforceStrictCapabilities ()Z
 	public final fun getTimeout-UwyO8pc ()J
+	public final fun setConcurrentMessageHandling (Z)V
 	public final fun setEnforceStrictCapabilities (Z)V
 	public final fun setTimeout-LRDsOJo (J)V
 }
