@@ -132,7 +132,15 @@ run_client_auth_suite() {
         --expected-failures "$SCRIPT_DIR/conformance-baseline.yml" \
         "$@" || rc=$?
 
-    local extra_scenarios=("auth/client-credentials-jwt" "auth/client-credentials-basic" "auth/cross-app-access-complete-flow")
+    local extra_scenarios=(
+        "auth/client-credentials-jwt"
+        "auth/client-credentials-basic"
+        "auth/cross-app-access-complete-flow"
+        # Exercise EnterpriseAuthProvider plugin and discoverAndRequestJwtAuthorizationGrant
+        # using the same mock IdP/AS infrastructure as cross-app-access-complete-flow.
+        "auth/cross-app-access-enterprise-auth-provider"
+        "auth/cross-app-access-discover-and-request"
+    )
     for scenario in "${extra_scenarios[@]}"; do
         npx "@modelcontextprotocol/conformance@$CONFORMANCE_VERSION" client \
             --command "$CLIENT_DIST" \

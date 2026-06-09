@@ -29,4 +29,10 @@ fun registerAuthScenarios() {
     scenarioHandlers["auth/client-credentials-jwt"] = ::runClientCredentialsJwt
     scenarioHandlers["auth/client-credentials-basic"] = ::runClientCredentialsBasic
     scenarioHandlers["auth/cross-app-access-complete-flow"] = ::runCrossAppAccess
+    // SEP-990 scenarios that exercise the EnterpriseAuthProvider Ktor plugin and the
+    // discoverAndRequestJwtAuthorizationGrant combined call.
+    scenarioHandlers["auth/cross-app-access-enterprise-auth-provider"] =
+        ::runCrossAppAccessViaEnterpriseAuthProvider
+    scenarioHandlers["auth/cross-app-access-discover-and-request"] =
+        ::runCrossAppAccessViaDiscoverAndRequest
 }
