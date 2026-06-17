@@ -198,8 +198,8 @@ abstract class TsTestBase {
         // Create Kotlin server and attach stdio transport to the process streams
         val server: Server = KotlinServerForTsClient().createMcpServer()
         val transport = StdioServerTransport(
-            inputStream = process.inputStream.asSource().buffered(),
-            outputStream = process.outputStream.asSink().buffered(),
+            input = process.inputStream.asSource().buffered(),
+            output = process.outputStream.asSink().buffered(),
         )
 
         // Connect server in a background thread to avoid blocking

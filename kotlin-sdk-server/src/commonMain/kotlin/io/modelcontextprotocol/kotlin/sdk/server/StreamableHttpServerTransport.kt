@@ -138,17 +138,17 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         public val enableJsonResponse: Boolean = false,
         @Deprecated(
             message = "Use install(DnsRebindingProtection) on your Ktor route instead",
-            level = DeprecationLevel.WARNING,
+            level = DeprecationLevel.ERROR,
         )
         public val enableDnsRebindingProtection: Boolean = false,
         @Deprecated(
             message = "Use install(DnsRebindingProtection) on your Ktor route instead",
-            level = DeprecationLevel.WARNING,
+            level = DeprecationLevel.ERROR,
         )
         public val allowedHosts: List<String>? = null,
         @Deprecated(
             message = "Use install(DnsRebindingProtection) on your Ktor route instead",
-            level = DeprecationLevel.WARNING,
+            level = DeprecationLevel.ERROR,
         )
         public val allowedOrigins: List<String>? = null,
         public val eventStore: EventStore? = null,
@@ -320,12 +320,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
      * (or apply equivalent middleware) to validate `Host` / `Origin` headers.
      */
     public suspend fun handleRequest(session: ServerSSESession?, call: ApplicationCall) {
-        validateHeaders(call)?.let { reason ->
-            call.reject(HttpStatusCode.Forbidden, RPCError.ErrorCode.CONNECTION_CLOSED, reason)
-            _onError(Error(reason))
-            return
-        }
-
         when (call.request.httpMethod) {
             HttpMethod.Post -> handlePostRequest(session, call)
 
@@ -662,34 +656,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
 
             else -> true
         }
-    }
-
-    private fun validateHeaders(call: ApplicationCall): String? {
-        if (!configuration.enableDnsRebindingProtection) return null
-
-        configuration.allowedHosts?.let { hosts ->
-            val hostHeader = call.request.headers[HttpHeaders.Host]
-            val hostname = hostHeader?.let { extractHostname(it) }?.lowercase()
-            val allowedHostsLowercase = hosts.map {
-                extractHostname(it)?.lowercase() ?: it.lowercase()
-            }
-
-            if (hostname == null || hostname !in allowedHostsLowercase) {
-                return "Invalid Host header: $hostHeader"
-            }
-        }
-
-        configuration.allowedOrigins?.let { origins ->
-            val originHeader = call.request.headers[HttpHeaders.Origin]?.lowercase()
-            val allowedOriginsLowercase = origins.map { it.lowercase() }
-
-            // Allow requests without Origin (non-browser clients cannot perform DNS rebinding)
-            if (originHeader != null && originHeader !in allowedOriginsLowercase) {
-                return "Invalid Origin header: $originHeader"
-            }
-        }
-
-        return null
     }
 
     private suspend fun flushSse(session: ServerSSESession?) {

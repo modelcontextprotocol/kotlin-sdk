@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestFormParams
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.buildJsonObject
@@ -153,7 +154,7 @@ public class ElicitRequestBuilder @PublishedApi internal constructor() : Request
             "Missing required field 'requestedSchema'. Use requestedSchema { properties { ... } }"
         }
 
-        val params = ElicitRequestParams(message = message, requestedSchema = requestedSchema, meta = meta)
+        val params = ElicitRequestFormParams(message = message, requestedSchema = requestedSchema, meta = meta)
         return ElicitRequest(params)
     }
 }

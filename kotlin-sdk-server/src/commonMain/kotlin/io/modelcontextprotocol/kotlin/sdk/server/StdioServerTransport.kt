@@ -112,7 +112,7 @@ public class StdioServerTransport private constructor(
     @Deprecated(
         message = "Use StdioServerTransport(input, output) { ... } instead.",
         replaceWith = ReplaceWith("StdioServerTransport(input = inputStream, output = outputStream)"),
-        level = DeprecationLevel.WARNING,
+        level = DeprecationLevel.ERROR,
     )
     public constructor(inputStream: Source, outputStream: Sink) : this(
         input = inputStream,

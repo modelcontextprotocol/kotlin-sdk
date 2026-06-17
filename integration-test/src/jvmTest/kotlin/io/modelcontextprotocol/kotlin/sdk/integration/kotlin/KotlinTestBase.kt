@@ -182,8 +182,8 @@ abstract class KotlinTestBase {
 
                 // Server transport reads from client and writes to client
                 val serverTransport = StdioServerTransport(
-                    inputStream = clientToServerIn.asSource().buffered(),
-                    outputStream = serverToClientOut.asSink().buffered(),
+                    input = clientToServerIn.asSource().buffered(),
+                    output = serverToClientOut.asSink().buffered(),
                 )
                 stdioServerTransport = serverTransport
 
