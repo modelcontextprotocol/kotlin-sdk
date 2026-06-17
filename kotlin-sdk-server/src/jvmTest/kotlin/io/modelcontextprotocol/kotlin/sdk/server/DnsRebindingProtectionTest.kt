@@ -3,6 +3,7 @@ package io.modelcontextprotocol.kotlin.sdk.server
 import io.kotest.assertions.ktor.client.shouldHaveStatus
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import io.ktor.client.request.header
@@ -345,6 +346,51 @@ class DnsRebindingProtectionTest {
             contentType(ContentType.Application.Json)
         }
         response.shouldHaveStatus(HttpStatusCode.Forbidden)
+    }
+
+    // -- default Origin validation (secure-by-default for localhost) --
+
+    @Test
+    fun `mcpStreamableHttp rejects hostile Origin by default`() = testApplication {
+        application {
+            mcpStreamableHttp { testServer() }
+        }
+
+        val response = client.post("/mcp") {
+            header(HttpHeaders.Host, "localhost")
+            header(HttpHeaders.Origin, "http://evil.com")
+            contentType(ContentType.Application.Json)
+        }
+        response.shouldHaveStatus(HttpStatusCode.Forbidden)
+        response.bodyAsText() shouldContain "Invalid Origin host: evil.com"
+    }
+
+    @Test
+    fun `mcpStreamableHttp allows localhost Origin by default`() = testApplication {
+        application {
+            mcpStreamableHttp { testServer() }
+        }
+
+        val response = client.post("/mcp") {
+            header(HttpHeaders.Host, "localhost")
+            header(HttpHeaders.Origin, "http://localhost:5173")
+            contentType(ContentType.Application.Json)
+        }
+        response.status shouldNotBe HttpStatusCode.Forbidden
+    }
+
+    @Test
+    fun `mcpStreamableHttp with custom allowedHosts does not auto-validate Origin`() = testApplication {
+        application {
+            mcpStreamableHttp(allowedHosts = listOf("myapp.com")) { testServer() }
+        }
+
+        val response = client.post("/mcp") {
+            header(HttpHeaders.Host, "myapp.com")
+            header(HttpHeaders.Origin, "http://evil.com")
+            contentType(ContentType.Application.Json)
+        }
+        response.status shouldNotBe HttpStatusCode.Forbidden
     }
 
     // -- extractHostname unit tests --
