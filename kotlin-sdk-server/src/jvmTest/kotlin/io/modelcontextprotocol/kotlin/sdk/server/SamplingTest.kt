@@ -8,6 +8,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ToolUseContent
 import kotlinx.serialization.json.JsonObject
 import org.junit.jupiter.api.assertDoesNotThrow
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 /**
@@ -82,5 +83,22 @@ class SamplingTest {
                 ),
             )
         }
+    }
+
+    @Test
+    fun `validate tool_use requires explicit tool_result in last message`() {
+        val error = assertFailsWith<IllegalArgumentException> {
+            validateSamplingMessages(
+                listOf(
+                    SamplingMessage(Role.Assistant, toolUse("c1")),
+                    SamplingMessage(Role.User, TextContent("missing result")),
+                ),
+            )
+        }
+
+        assertEquals(
+            "tool_use blocks from previous message must be followed by matching tool_result blocks",
+            error.message,
+        )
     }
 }

@@ -20,8 +20,8 @@ import io.modelcontextprotocol.kotlin.sdk.types.ToolUseContent
  * 3. If the previous message contains `tool_use` blocks, the last message's
  *    `tool_result` ids MUST form exactly the same set.
  *
- * On the first violation throws [IllegalArgumentException]. No-op when there are fewer
- * than two messages or no tool_use / tool_result blocks are involved.
+ * On the first violation throws [IllegalArgumentException]. No-op when no
+ * tool_use / tool_result blocks are involved.
  */
 internal fun validateSamplingMessages(messages: List<SamplingMessage>) {
     if (messages.isEmpty()) return
@@ -44,6 +44,9 @@ internal fun validateSamplingMessages(messages: List<SamplingMessage>) {
     if (hasPreviousToolUse) {
         val toolUseIds = previous.filterIsInstance<ToolUseContent>().map { it.id }.toSet()
         val toolResultIds = last.filterIsInstance<ToolResultContent>().map { it.toolUseId }.toSet()
+        require(toolResultIds.isNotEmpty()) {
+            "tool_use blocks from previous message must be followed by matching tool_result blocks"
+        }
         require(toolUseIds == toolResultIds) {
             "ids of tool_result blocks and tool_use blocks from previous message do not match"
         }
