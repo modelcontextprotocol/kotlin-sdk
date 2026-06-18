@@ -12,9 +12,26 @@ import kotlin.jvm.JvmOverloads
  * @property data optional additional error payload as a JSON element
  * @param cause the original cause
  */
-public class McpException @JvmOverloads public constructor(
+public open class McpException @JvmOverloads public constructor(
     public val code: Int,
     message: String = "MCP error $code",
     public val data: JsonElement? = null,
     cause: Throwable? = null,
-) : Exception(message, cause)
+) : Exception(message, cause) {
+    internal companion object {
+        /**
+         * Reconstructs the most specific [McpException] subtype for a JSON-RPC error.
+         *
+         * Recognizes [RPCError.ErrorCode.URL_ELICITATION_REQUIRED] errors and returns a
+         * [UrlElicitationRequiredException] when [data] carries valid URL-mode elicitations;
+         * otherwise returns a plain [McpException]. Never throws — a malformed payload simply
+         * degrades to a plain [McpException].
+         */
+        fun fromError(code: Int, message: String, data: JsonElement?): McpException {
+            if (code == RPCError.ErrorCode.URL_ELICITATION_REQUIRED && data != null) {
+                UrlElicitationRequiredException.fromDataOrNull(message, data)?.let { return it }
+            }
+            return McpException(code = code, message = message, data = data)
+        }
+    }
+}

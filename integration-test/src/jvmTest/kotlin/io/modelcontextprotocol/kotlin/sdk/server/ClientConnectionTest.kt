@@ -9,6 +9,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotificationParams
+import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsRequest
@@ -61,6 +62,7 @@ class ClientConnectionTest : AbstractServerFeaturesTest() {
 
     override fun getClientCapabilities(): ClientCapabilities = ClientCapabilities(
         roots = ClientCapabilities.Roots(listChanged = true),
+        elicitation = ClientCapabilities.Elicitation(url = EmptyJsonObject),
     )
 
     private val sampleRoots = listOf(Root("file:///project", "Project Root"))
