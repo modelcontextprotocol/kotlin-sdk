@@ -21,8 +21,10 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
+import io.ktor.utils.io.charsets.TooLongLineException
 import io.ktor.utils.io.readUTF8Line
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractClientTransport
+import io.modelcontextprotocol.kotlin.sdk.shared.TooLongFrameException
 import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
@@ -51,6 +53,14 @@ private const val MCP_PROTOCOL_VERSION_HEADER = "mcp-protocol-version"
 private const val MCP_RESUMPTION_TOKEN_HEADER = "Last-Event-ID"
 
 /**
+ * Default maximum size, in characters, of a single inline SSE event assembled from a POST response.
+ *
+ * Mirrors the stdio transport's 16 MiB frame cap: a server that streams `data:` lines without ever
+ * terminating the event cannot grow the client's buffer without bound.
+ */
+private const val DEFAULT_MAX_INLINE_SSE_EVENT_SIZE: Int = 16 * 1024 * 1024
+
+/**
  * Represents an error from the Streamable HTTP transport.
  *
  * @property code HTTP status code associated with the error, or `null` if unavailable
@@ -75,14 +85,22 @@ private sealed interface ConnectResult {
  * @param client Ktor HTTP client used for all requests
  * @param url MCP endpoint URL
  * @param reconnectionOptions reconnection backoff and retry-limit settings for the SSE stream
+ * @param maxInlineSseEventSize maximum size, in characters, of a single inline SSE event parsed from a
+ *      POST response; a server that exceeds it (including by never terminating an event) fails the send
+ *      with [io.modelcontextprotocol.kotlin.sdk.shared.TooLongFrameException]. Defaults to 16 MiB.
  * @param requestBuilder builder applied to every outgoing HTTP request, e.g. for adding auth headers
  */
 public class StreamableHttpClientTransport(
     private val client: HttpClient,
     private val url: String,
     private val reconnectionOptions: ReconnectionOptions = ReconnectionOptions(),
+    private val maxInlineSseEventSize: Int = DEFAULT_MAX_INLINE_SSE_EVENT_SIZE,
     private val requestBuilder: HttpRequestBuilder.() -> Unit = {},
 ) : AbstractClientTransport() {
+
+    init {
+        require(maxInlineSseEventSize > 0) { "maxInlineSseEventSize must be greater than 0" }
+    }
 
     @Deprecated(
         "Use constructor with ReconnectionOptions",
@@ -98,7 +116,12 @@ public class StreamableHttpClientTransport(
         url: String,
         reconnectionTime: Duration?,
         requestBuilder: HttpRequestBuilder.() -> Unit = {},
-    ) : this(client, url, ReconnectionOptions(initialReconnectionDelay = reconnectionTime ?: 1.seconds), requestBuilder)
+    ) : this(
+        client,
+        url,
+        ReconnectionOptions(initialReconnectionDelay = reconnectionTime ?: 1.seconds),
+        requestBuilder = requestBuilder,
+    )
 
     override val logger: KLogger = KotlinLogging.logger {}
 
@@ -458,7 +481,14 @@ public class StreamableHttpClientTransport(
         }
 
         while (!channel.isClosedForRead) {
-            val line = channel.readUTF8Line() ?: break
+            // Bound each line so a server that streams a line without ever terminating it cannot
+            // exhaust client memory; readUTF8Line returns null at the end of the stream.
+            val line = try {
+                channel.readUTF8Line(maxInlineSseEventSize)
+            } catch (_: TooLongLineException) {
+                throw TooLongFrameException(maxInlineSseEventSize.toLong() + 1, maxInlineSseEventSize)
+            }
+            if (line == null) break
             if (line.isEmpty()) {
                 dispatch(id = id, eventName = eventName, data = sb.toString())
                 // reset
@@ -472,7 +502,13 @@ public class StreamableHttpClientTransport(
 
                 line.startsWith("event:") -> eventName = line.substringAfter("event:").trim()
 
-                line.startsWith("data:") -> sb.append(line.substringAfter("data:").trim())
+                line.startsWith("data:") -> {
+                    sb.append(line.substringAfter("data:").trim())
+                    // Cap an event assembled from many data: lines that never sees a terminating blank line.
+                    if (sb.length > maxInlineSseEventSize) {
+                        throw TooLongFrameException(sb.length.toLong(), maxInlineSseEventSize)
+                    }
+                }
 
                 line.startsWith("retry:") -> line.substringAfter("retry:").trim().toLongOrNull()?.let {
                     localServerRetryDelay = it.milliseconds
