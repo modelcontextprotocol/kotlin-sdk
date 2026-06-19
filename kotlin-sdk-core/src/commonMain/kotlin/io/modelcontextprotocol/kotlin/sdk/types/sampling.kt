@@ -183,6 +183,12 @@ public data class CreateMessageRequest(override val params: CreateMessageRequest
         get() = params.metadata
 
     /**
+     * Task metadata, if the caller is requesting task-augmented execution.
+     */
+    public val task: TaskMetadata?
+        get() = params.task
+
+    /**
      * Metadata for this request. May include a progressToken for out-of-band progress notifications.
      */
     public val meta: RequestMeta?
@@ -216,6 +222,8 @@ public data class CreateMessageRequest(override val params: CreateMessageRequest
  * @property toolChoice Optional policy controlling how the model uses the provided [tools].
  * The client MUST return an error if this field is present but the client did not advertise
  * [ClientCapabilities.Sampling.tools].
+ * @property task If specified, the caller is requesting task-augmented execution. The request
+ * will return a [CreateTaskResult] immediately, and the actual result can be retrieved later via `tasks/result`.
  * @property meta Optional metadata for this request. May include a progressToken for
  * out-of-band progress notifications.
  */
@@ -231,6 +239,7 @@ public data class CreateMessageRequestParams(
     val metadata: JsonObject? = null,
     val tools: List<Tool>? = null,
     val toolChoice: ToolChoice? = null,
+    val task: TaskMetadata? = null,
     @SerialName("_meta")
     override val meta: RequestMeta? = null,
 ) : RequestParams
