@@ -84,6 +84,25 @@ class ClientAssertCapabilityTest {
         ex.message.orEmpty() shouldContain "Client does not support tasks"
     }
 
+    @Test
+    fun `CompletionComplete does not throw when server declared completions`() = runTest {
+        val client = newTestClient(
+            serverCapabilities = ServerCapabilities(completions = ServerCapabilities.Completions),
+        )
+        client.exposedAssertCapabilityForMethod(Method.Defined.CompletionComplete)
+    }
+
+    @Test
+    fun `CompletionComplete throws when server has no completions capability`() = runTest {
+        val client = newTestClient(
+            serverCapabilities = ServerCapabilities(prompts = ServerCapabilities.Prompts()),
+        )
+        val ex = assertFailsWith<IllegalStateException> {
+            client.exposedAssertCapabilityForMethod(Method.Defined.CompletionComplete)
+        }
+        ex.message.orEmpty() shouldContain "Server does not support completions"
+    }
+
     private suspend fun newTestClient(
         serverCapabilities: ServerCapabilities = ServerCapabilities(),
         clientCapabilities: ClientCapabilities = ClientCapabilities(),
