@@ -25,6 +25,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ResourceListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ServerNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ToolListChangedNotification
+import io.modelcontextprotocol.kotlin.sdk.types.supportsUrl
 
 private val logger = KotlinLogging.logger {}
 
@@ -238,6 +239,11 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
 
     override suspend fun createElicitation(request: ElicitRequest, options: RequestOptions?): ElicitResult {
         val params = request.params
+        if (params is ElicitRequestURLParams) {
+            require(session.clientCapabilities?.elicitation.supportsUrl) {
+                "Client did not advertise elicitation.url capability; cannot send a URL-mode elicitation."
+            }
+        }
         logger.debug {
             when (params) {
                 is ElicitRequestFormParams ->
@@ -299,6 +305,9 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
     }
 
     override suspend fun sendElicitationComplete(notification: ElicitationCompleteNotification) {
+        require(session.clientCapabilities?.elicitation.supportsUrl) {
+            "Client did not advertise elicitation.url capability; cannot send an elicitation completion notification."
+        }
         logger.debug { "Sending elicitation complete notification for: ${notification.params.elicitationId}" }
         notification(notification)
     }

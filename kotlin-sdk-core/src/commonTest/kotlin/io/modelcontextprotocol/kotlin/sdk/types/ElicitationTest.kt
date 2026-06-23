@@ -10,6 +10,7 @@ import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
 import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
@@ -272,5 +273,87 @@ class ElicitationTest {
                 content = buildJsonObject { put("value", "ignored") },
             )
         }
+    }
+
+    // ── URLElicitationRequired error (-32042) ───────────────────────────
+
+    @Test
+    fun `UrlElicitationRequiredException carries code and serialized elicitations`() {
+        val elicitation = ElicitRequestURLParams(
+            message = "Authorize access to continue",
+            elicitationId = "550e8400-e29b-41d4-a716-446655440000",
+            url = "https://oauth.example.com/authorize",
+        )
+        val exception = UrlElicitationRequiredException(listOf(elicitation))
+
+        exception.code shouldBe RPCError.ErrorCode.URL_ELICITATION_REQUIRED
+        exception.elicitations shouldBe listOf(elicitation)
+
+        val data = exception.data.shouldNotBeNull()
+        McpJson.encodeToString(data) shouldEqualJson """
+            {
+              "elicitations": [
+                {
+                  "message": "Authorize access to continue",
+                  "elicitationId": "550e8400-e29b-41d4-a716-446655440000",
+                  "url": "https://oauth.example.com/authorize",
+                  "mode": "url"
+                }
+              ]
+            }
+        """.trimIndent()
+    }
+
+    @Test
+    fun `fromError reconstructs typed exception for -32042 with valid data`() {
+        val data = McpJson.encodeToJsonElement(
+            UrlElicitationRequiredData(
+                listOf(ElicitRequestURLParams(message = "m", elicitationId = "id-1", url = "https://example.com/a")),
+            ),
+        )
+
+        val exception = McpException.fromError(
+            code = RPCError.ErrorCode.URL_ELICITATION_REQUIRED,
+            message = "needs auth",
+            data = data,
+        )
+
+        val typed = exception.shouldBeInstanceOf<UrlElicitationRequiredException>()
+        typed.message shouldBe "needs auth"
+        typed.elicitations.single().elicitationId shouldBe "id-1"
+    }
+
+    @Test
+    fun `fromError returns plain McpException for unrelated code`() {
+        val exception = McpException.fromError(
+            code = RPCError.ErrorCode.INVALID_PARAMS,
+            message = "bad params",
+            data = null,
+        )
+        (exception is UrlElicitationRequiredException) shouldBe false
+        exception.code shouldBe RPCError.ErrorCode.INVALID_PARAMS
+    }
+
+    @Test
+    fun `fromError degrades to plain McpException for -32042 with malformed data`() {
+        val malformed = buildJsonObject { put("unexpected", "shape") }
+
+        val exception = McpException.fromError(
+            code = RPCError.ErrorCode.URL_ELICITATION_REQUIRED,
+            message = "x",
+            data = malformed,
+        )
+
+        (exception is UrlElicitationRequiredException) shouldBe false
+        exception.code shouldBe RPCError.ErrorCode.URL_ELICITATION_REQUIRED
+    }
+
+    @Test
+    fun `fromError degrades to plain McpException when elicitations empty`() {
+        val data = McpJson.encodeToJsonElement(UrlElicitationRequiredData(emptyList()))
+
+        val exception = McpException.fromError(RPCError.ErrorCode.URL_ELICITATION_REQUIRED, "x", data)
+
+        (exception is UrlElicitationRequiredException) shouldBe false
     }
 }

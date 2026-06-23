@@ -14,7 +14,10 @@ import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageResult
 import io.modelcontextprotocol.kotlin.sdk.types.DoubleSchema
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestFormParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestURLParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitResult
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotification
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotificationParams
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
@@ -46,6 +49,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.Tool
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import io.modelcontextprotocol.kotlin.sdk.types.UntitledMultiSelectEnumSchema
 import io.modelcontextprotocol.kotlin.sdk.types.UntitledSingleSelectEnumSchema
+import io.modelcontextprotocol.kotlin.sdk.types.UrlElicitationRequiredException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
@@ -1247,6 +1251,189 @@ class ClientTest {
         assertIs<kotlinx.serialization.json.JsonArray>(options)
         assertEquals(1, options.size)
         assertEquals("x", options[0].jsonPrimitive.content)
+
+        client.close()
+    }
+
+    // ── URL-mode elicitation (SEP-1036) ─────────────────────────────────
+
+    @Test
+    fun `should handle URL mode elicitation end-to-end`() = runTest {
+        val client = Client(
+            Implementation(name = "test client", version = "1.0"),
+            ClientOptions(
+                capabilities = ClientCapabilities(
+                    elicitation = ClientCapabilities.Elicitation(url = EmptyJsonObject),
+                ),
+            ),
+        )
+
+        val elicitationId = "550e8400-e29b-41d4-a716-446655440000"
+        val url = "https://oauth.example.com/authorize"
+
+        client.setElicitationHandler { request ->
+            val params = assertIs<ElicitRequestURLParams>(request.params)
+            assertEquals(elicitationId, params.elicitationId)
+            assertEquals(url, params.url)
+            ElicitResult(action = ElicitResult.Action.Accept)
+        }
+
+        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
+        val server = Server(
+            serverInfo = Implementation(name = "test server", version = "1.0"),
+            options = ServerOptions(capabilities = ServerCapabilities()),
+        )
+
+        val serverSessionResult = CompletableDeferred<ServerSession>()
+        listOf(
+            launch { client.connect(clientTransport) },
+            launch { serverSessionResult.complete(server.createSession(serverTransport)) },
+        ).joinAll()
+        val serverSession = serverSessionResult.await()
+
+        val result = serverSession.createElicitation(
+            message = "Authorize access to continue",
+            elicitationId = elicitationId,
+            url = url,
+        )
+
+        assertEquals(ElicitResult.Action.Accept, result.action)
+        assertNull(result.content)
+
+        client.close()
+    }
+
+    @Test
+    fun `should reject URL mode elicitation when client supports only form mode`() = runTest {
+        val (client, serverSession) = setupElicitationPair {
+            ElicitResult(action = ElicitResult.Action.Accept)
+        }
+
+        val exception = assertFailsWith<IllegalArgumentException> {
+            serverSession.createElicitation(
+                message = "Authorize",
+                elicitationId = "id-1",
+                url = "https://example.com/auth",
+            )
+        }
+        assertTrue(exception.message!!.contains("elicitation.url"))
+
+        client.close()
+    }
+
+    @Test
+    fun `should deliver elicitation complete notification to client`() = runTest {
+        val received = CompletableDeferred<ElicitationCompleteNotification>()
+        val client = Client(
+            Implementation(name = "test client", version = "1.0"),
+            ClientOptions(
+                capabilities = ClientCapabilities(
+                    elicitation = ClientCapabilities.Elicitation(url = EmptyJsonObject),
+                ),
+            ),
+        )
+        client.setElicitationCompleteHandler { received.complete(it) }
+
+        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
+        val server = Server(
+            serverInfo = Implementation(name = "test server", version = "1.0"),
+            options = ServerOptions(capabilities = ServerCapabilities()),
+        )
+
+        val serverSessionResult = CompletableDeferred<ServerSession>()
+        listOf(
+            launch { client.connect(clientTransport) },
+            launch { serverSessionResult.complete(server.createSession(serverTransport)) },
+        ).joinAll()
+        val serverSession = serverSessionResult.await()
+
+        val elicitationId = "complete-id-1"
+        serverSession.sendElicitationComplete(
+            ElicitationCompleteNotification(ElicitationCompleteNotificationParams(elicitationId = elicitationId)),
+        )
+
+        val notification = received.await()
+        assertEquals(elicitationId, notification.params.elicitationId)
+
+        client.close()
+    }
+
+    @Test
+    fun `should reject elicitation complete when client supports only form mode`() = runTest {
+        val (client, serverSession) = setupElicitationPair {
+            ElicitResult(action = ElicitResult.Action.Accept)
+        }
+
+        val exception = assertFailsWith<IllegalArgumentException> {
+            serverSession.sendElicitationComplete(
+                ElicitationCompleteNotification(ElicitationCompleteNotificationParams(elicitationId = "id-1")),
+            )
+        }
+        assertTrue(exception.message!!.contains("elicitation.url"))
+
+        client.close()
+    }
+
+    @Test
+    fun `setElicitationCompleteHandler should require url capability`() = runTest {
+        val client = Client(
+            Implementation(name = "test client", version = "1.0"),
+            ClientOptions(
+                capabilities = ClientCapabilities(
+                    elicitation = ClientCapabilities.Elicitation(),
+                ),
+            ),
+        )
+
+        assertFailsWith<IllegalStateException> {
+            client.setElicitationCompleteHandler { }
+        }
+    }
+
+    @Test
+    fun `should surface URL elicitation required error to client as typed exception`() = runTest {
+        val client = Client(
+            Implementation(name = "test client", version = "1.0"),
+            ClientOptions(
+                capabilities = ClientCapabilities(
+                    elicitation = ClientCapabilities.Elicitation(url = EmptyJsonObject),
+                ),
+            ),
+        )
+
+        val elicitationId = "auth-required-1"
+        val url = "https://oauth.example.com/authorize"
+
+        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
+        val server = Server(
+            serverInfo = Implementation(name = "test server", version = "1.0"),
+            options = ServerOptions(capabilities = ServerCapabilities(tools = ServerCapabilities.Tools(true))),
+        )
+        server.addTool("needs-auth", "Requires URL elicitation") {
+            throw UrlElicitationRequiredException(
+                listOf(
+                    ElicitRequestURLParams(
+                        message = "Authorize to continue",
+                        elicitationId = elicitationId,
+                        url = url,
+                    ),
+                ),
+            )
+        }
+
+        val serverSessionResult = CompletableDeferred<ServerSession>()
+        listOf(
+            launch { client.connect(clientTransport) },
+            launch { serverSessionResult.complete(server.createSession(serverTransport)) },
+        ).joinAll()
+        serverSessionResult.await()
+
+        val exception = assertFailsWith<UrlElicitationRequiredException> {
+            client.callTool(name = "needs-auth", arguments = emptyMap())
+        }
+        val elicitation = exception.elicitations.single()
+        assertEquals(elicitationId, elicitation.elicitationId)
+        assertEquals(url, elicitation.url)
 
         client.close()
     }
