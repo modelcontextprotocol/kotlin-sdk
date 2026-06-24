@@ -190,6 +190,15 @@ public data class ClientCapabilities(
 }
 
 /**
+ * Whether the client supports url-mode elicitation (out-of-band interaction via URL navigation).
+ *
+ * `false` when the client declared no elicitation capability at all, or only form mode (an empty
+ * [ClientCapabilities.Elicitation] is treated as form mode only).
+ */
+public val ClientCapabilities.Elicitation?.supportsUrl: Boolean
+    get() = this?.url != null
+
+/**
  * Capabilities that a server may support.
  *
  * Known capabilities are defined here, but this is not a closed set: any server

@@ -393,7 +393,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             handler(response, null)
         } else {
             checkNotNull(error)
-            val mcpException = McpException(
+            val mcpException = McpException.fromError(
                 code = error.error.code,
                 message = error.error.message,
                 data = error.error.data,

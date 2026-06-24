@@ -269,6 +269,13 @@ public data class RPCError(val code: Int, val message: String, val data: JsonEle
         /** Resource not found */
         public const val RESOURCE_NOT_FOUND: Int = -32002
 
+        /**
+         * A URL-mode elicitation must be completed before the request can be processed.
+         * The error [data][RPCError.data] carries the required URL-mode elicitations
+         * (see [UrlElicitationRequiredException]).
+         */
+        public const val URL_ELICITATION_REQUIRED: Int = -32042
+
         // Standard JSON-RPC 2.0 error codes
 
         /** Invalid JSON was received */
