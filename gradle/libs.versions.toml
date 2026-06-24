@@ -8,7 +8,7 @@ kotlin = "2.3.21"
 kover = "0.9.8"
 ktlint = "14.2.0"
 knit = "0.5.1"
-mavenPublish = "0.36.0"
+mavenPublish = "0.37.0"
 netty = "4.2.15.Final"
 
 # libraries version
