@@ -19,6 +19,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.DoubleSchema
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestFormParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitResult
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotification
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult
@@ -63,6 +64,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.TitledSingleSelectEnumSchema
 import io.modelcontextprotocol.kotlin.sdk.types.UnsubscribeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.UntitledMultiSelectEnumSchema
 import io.modelcontextprotocol.kotlin.sdk.types.UntitledSingleSelectEnumSchema
+import io.modelcontextprotocol.kotlin.sdk.types.supportsUrl
 import io.modelcontextprotocol.kotlin.sdk.types.toJson
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.getAndUpdate
@@ -70,6 +72,7 @@ import kotlinx.atomicfu.update
 import kotlinx.collections.immutable.minus
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentSet
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -643,9 +646,18 @@ public open class Client(private val clientInfo: Implementation, options: Client
     /**
      * Sets the elicitation handler.
      *
-     * When the handler returns [ElicitResult.Action.Accept], any properties missing from
+     * The handler receives both form-mode ([ElicitRequestFormParams]) and URL-mode
+     * ([io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestURLParams]) requests;
+     * branch on `request.params` to tell them apart. For URL mode,
+     * the host application must obtain explicit user consent and display the target domain before
+     * navigating — the SDK never opens or validates the URL — and should return
+     * [ElicitResult.Action.Decline] or [ElicitResult.Action.Cancel] when it cannot or will not proceed.
+     * A URL-mode [ElicitResult.Action.Accept] only signals consent; the outcome arrives out-of-band via
+     * [setElicitationCompleteHandler].
+     *
+     * When a form-mode handler returns [ElicitResult.Action.Accept], any properties missing from
      * [ElicitResult.content] are automatically populated with default values defined in the
-     * elicitation schema.
+     * elicitation schema. URL-mode responses carry no content.
      *
      * @param handler The elicitation handler.
      * @throws IllegalStateException if the client does not support elicitation.
@@ -660,6 +672,35 @@ public open class Client(private val clientInfo: Implementation, options: Client
         setRequestHandler<ElicitRequest>(Method.Defined.ElicitationCreate) { request, _ ->
             val result = handler(request)
             applyElicitationDefaults(request, result)
+        }
+    }
+
+    /**
+     * Sets the handler invoked when the server reports that a URL-mode elicitation has completed.
+     *
+     * The handler is called for every `notifications/elicitation/complete` notification. Because the
+     * server only sends this for an out-of-band (URL-mode) interaction, the client must support url-mode
+     * elicitation. The client is responsible for correlating the notification's `elicitationId` with a
+     * pending elicitation, ignoring unknown or already-completed identifiers, and providing a manual way
+     * to continue if a notification never arrives.
+     *
+     * @param handler Invoked with each completion notification.
+     * @throws IllegalStateException if the client does not support url-mode elicitation.
+     */
+    public fun setElicitationCompleteHandler(handler: (ElicitationCompleteNotification) -> Unit) {
+        check(capabilities.elicitation.supportsUrl) {
+            logger.error {
+                "Failed to set elicitation-complete handler: client does not support url-mode elicitation"
+            }
+            "Client does not support url-mode elicitation."
+        }
+        logger.info { "Setting the elicitation-complete handler" }
+
+        setNotificationHandler<ElicitationCompleteNotification>(
+            Method.Defined.NotificationsElicitationComplete,
+        ) { notification ->
+            handler(notification)
+            CompletableDeferred(Unit)
         }
     }
 

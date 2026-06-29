@@ -923,4 +923,24 @@ class CapabilitiesTest {
         assertEquals(EmptyJsonObject, capabilities.tasks?.requests?.sampling?.createMessage)
         assertEquals(EmptyJsonObject, capabilities.tasks?.requests?.elicitation?.create)
     }
+
+    // ── Elicitation supportsUrl predicate ───────────────────────────────
+
+    @Test
+    fun `supportsUrl is false when no elicitation capability is declared`() {
+        val elicitation: ClientCapabilities.Elicitation? = null
+        elicitation.supportsUrl shouldBe false
+    }
+
+    @Test
+    fun `supportsUrl is false for an empty form-only capability`() {
+        ClientCapabilities.Elicitation().supportsUrl shouldBe false
+        ClientCapabilities.Elicitation(form = EmptyJsonObject).supportsUrl shouldBe false
+    }
+
+    @Test
+    fun `supportsUrl is true when url mode is declared`() {
+        ClientCapabilities.Elicitation(url = EmptyJsonObject).supportsUrl shouldBe true
+        ClientCapabilities.Elicitation(form = EmptyJsonObject, url = EmptyJsonObject).supportsUrl shouldBe true
+    }
 }
