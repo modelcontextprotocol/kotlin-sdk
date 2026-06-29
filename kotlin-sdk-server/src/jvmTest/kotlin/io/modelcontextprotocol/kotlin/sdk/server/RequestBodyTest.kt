@@ -89,4 +89,15 @@ class RequestBodyTest {
         response.status shouldBe HttpStatusCode.OK
         response.bodyAsText() shouldBe payload
     }
+
+    @Test
+    fun `body is returned intact when the limit is Long MAX_VALUE`() = testApplication {
+        installEchoEndpoint(maxBytes = Long.MAX_VALUE)
+        val payload = "hello world"
+
+        val response = client.post("/echo") { setBody(payload) }
+
+        response.status shouldBe HttpStatusCode.OK
+        response.bodyAsText() shouldBe payload
+    }
 }

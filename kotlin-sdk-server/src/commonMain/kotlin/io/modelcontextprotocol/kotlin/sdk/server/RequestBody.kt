@@ -24,7 +24,8 @@ internal class RequestBodyTooLargeException(val maxBodySize: Long) :
  */
 internal suspend fun ApplicationCall.receiveTextWithLimit(maxBytes: Long): String {
     val buffer = Buffer()
-    val read = receiveChannel().readRemaining(maxBytes + 1).transferTo(buffer)
+    val readLimit = if (maxBytes == Long.MAX_VALUE) maxBytes else maxBytes + 1
+    val read = receiveChannel().readRemaining(readLimit).transferTo(buffer)
     if (read > maxBytes) {
         buffer.clear()
         throw RequestBodyTooLargeException(maxBytes)
