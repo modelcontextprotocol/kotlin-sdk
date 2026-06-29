@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.internal.IODispatcher
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.ReadBuffer
+import io.modelcontextprotocol.kotlin.sdk.shared.TooLongFrameException
 import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.serializeMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
@@ -207,6 +208,8 @@ public class StdioServerTransport private constructor(
                     val message = try {
                         readBuffer.readMessage()
                     } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: TooLongFrameException) {
                         throw e
                     } catch (e: Throwable) {
                         _onError(e)

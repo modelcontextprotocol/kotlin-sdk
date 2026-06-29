@@ -125,6 +125,12 @@ public final class io/modelcontextprotocol/kotlin/sdk/shared/RequestOptions : io
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class io/modelcontextprotocol/kotlin/sdk/shared/TooLongFrameException : java/io/IOException {
+	public fun <init> (JI)V
+	public final fun getFrameSize ()J
+	public final fun getMaxFrameSize ()I
+}
+
 public abstract interface class io/modelcontextprotocol/kotlin/sdk/shared/Transport {
 	public abstract fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun onClose (Lkotlin/jvm/functions/Function0;)V
@@ -602,6 +608,10 @@ public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/CancelledN
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/CancelledNotificationParams$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/CapabilitiesKt {
+	public static final fun getSupportsUrl (Lio/modelcontextprotocol/kotlin/sdk/types/ClientCapabilities$Elicitation;)Z
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/ClientCapabilities {
@@ -3122,7 +3132,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/Logging_dslKt {
 public abstract interface annotation class io/modelcontextprotocol/kotlin/sdk/types/McpDsl : java/lang/annotation/Annotation {
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/types/McpException : java/lang/Exception {
+public class io/modelcontextprotocol/kotlin/sdk/types/McpException : java/lang/Exception {
 	public fun <init> (I)V
 	public fun <init> (ILjava/lang/String;)V
 	public fun <init> (ILjava/lang/String;Lkotlinx/serialization/json/JsonElement;)V
@@ -3738,6 +3748,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/RPCError$ErrorCode {
 	public static final field PARSE_ERROR I
 	public static final field REQUEST_TIMEOUT I
 	public static final field RESOURCE_NOT_FOUND I
+	public static final field URL_ELICITATION_REQUIRED I
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/ReadResourceRequest : io/modelcontextprotocol/kotlin/sdk/types/ClientRequest {
@@ -5806,6 +5817,39 @@ public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/UntitledSi
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/UntitledSingleSelectEnumSchema$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/UrlElicitationRequiredData {
+	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/UrlElicitationRequiredData$Companion;
+	public fun <init> (Ljava/util/List;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun copy (Ljava/util/List;)Lio/modelcontextprotocol/kotlin/sdk/types/UrlElicitationRequiredData;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/UrlElicitationRequiredData;Ljava/util/List;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/UrlElicitationRequiredData;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getElicitations ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/modelcontextprotocol/kotlin/sdk/types/UrlElicitationRequiredData$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/modelcontextprotocol/kotlin/sdk/types/UrlElicitationRequiredData$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/modelcontextprotocol/kotlin/sdk/types/UrlElicitationRequiredData;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/modelcontextprotocol/kotlin/sdk/types/UrlElicitationRequiredData;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/UrlElicitationRequiredData$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/types/UrlElicitationRequiredException : io/modelcontextprotocol/kotlin/sdk/types/McpException {
+	public fun <init> (Ljava/util/List;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/util/List;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getElicitations ()Ljava/util/List;
 }
 
 public abstract interface class io/modelcontextprotocol/kotlin/sdk/types/WithMeta {

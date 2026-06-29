@@ -303,6 +303,13 @@ class SamplingTest {
     }
 
     @Test
+    fun `SamplingMessage rejects empty content`() {
+        assertFailsWith<IllegalArgumentException> {
+            SamplingMessage(role = Role.User, content = emptyList())
+        }
+    }
+
+    @Test
     fun `SamplingMessage single-element content serialises as single object`() {
         val m = SamplingMessage(role = Role.User, content = listOf(TextContent("hi")))
         val json = McpJson.encodeToString(SamplingMessage.serializer(), m)
@@ -406,6 +413,17 @@ class SamplingTest {
         val decoded = McpJson.decodeFromString(CreateMessageResult.serializer(), json)
         decoded.content.size shouldBe 1
         (decoded.content[0] as TextContent).text shouldBe "hi"
+    }
+
+    @Test
+    fun `CreateMessageResult rejects empty content`() {
+        assertFailsWith<IllegalArgumentException> {
+            CreateMessageResult(
+                role = Role.Assistant,
+                content = emptyList(),
+                model = "test-model",
+            )
+        }
     }
 
     // ============================================================================

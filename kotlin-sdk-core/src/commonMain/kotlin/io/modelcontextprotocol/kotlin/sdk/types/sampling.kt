@@ -91,6 +91,10 @@ public data class SamplingMessage(
     @SerialName("_meta")
     val meta: JsonObject? = null,
 ) {
+    init {
+        require(content.isNotEmpty()) { "content must contain at least one block" }
+    }
+
     /**
      * Convenience constructor for a single-block message. Wraps [content] in a
      * singleton list so call sites can write `SamplingMessage(Role.User, TextContent("hi"))`
@@ -273,6 +277,10 @@ public data class CreateMessageResult(
     @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : ClientResult {
+    init {
+        require(content.isNotEmpty()) { "content must contain at least one block" }
+    }
+
     /**
      * Convenience constructor for a single-block response. Wraps [content] in a
      * singleton list so call sites can write

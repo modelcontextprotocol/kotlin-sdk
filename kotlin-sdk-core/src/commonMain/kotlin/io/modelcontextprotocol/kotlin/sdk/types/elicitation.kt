@@ -133,6 +133,11 @@ public data class ElicitRequestFormParams(
  * Directs the user to an external URL for out-of-band interactions (e.g., OAuth flows,
  * payment processing, or entering sensitive credentials) that must not pass through the MCP client.
  *
+ * Handling the [url] is the responsibility of the host application: it should require HTTPS, clearly
+ * display the target domain, obtain explicit user consent, and open the URL in a secure browser context.
+ * The SDK neither opens, fetches, nor validates the URL. URLs must only appear in URL-mode requests —
+ * never render a URL from a form-mode request as a clickable link.
+ *
  * @property message The message explaining why the interaction is needed.
  * @property elicitationId A unique identifier for this elicitation. The client MUST treat
  *   this ID as an opaque value.

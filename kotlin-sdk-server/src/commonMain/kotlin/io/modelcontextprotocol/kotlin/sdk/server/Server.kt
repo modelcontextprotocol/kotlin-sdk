@@ -46,6 +46,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ToolAnnotations
 import io.modelcontextprotocol.kotlin.sdk.types.ToolExecution
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import io.modelcontextprotocol.kotlin.sdk.types.UnsubscribeRequest
+import io.modelcontextprotocol.kotlin.sdk.types.UrlElicitationRequiredException
 import io.modelcontextprotocol.kotlin.sdk.utils.MatchResult
 import io.modelcontextprotocol.kotlin.sdk.utils.PathSegmentTemplateMatcher
 import io.modelcontextprotocol.kotlin.sdk.utils.ResourceTemplateMatcher
@@ -650,6 +651,9 @@ public open class Server(
                 session.clientConnection.handler(request)
             }
         } catch (e: CancellationException) {
+            throw e
+        } catch (e: UrlElicitationRequiredException) {
+            // Surface a required URL-mode elicitation as a JSON-RPC error (-32042)
             throw e
         } catch (e: Exception) {
             logger.error(e) { "Error executing tool ${requestParams.name}" }
