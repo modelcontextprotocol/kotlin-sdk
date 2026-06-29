@@ -222,8 +222,8 @@ public data class CallToolRequest(override val params: CallToolRequestParams) : 
  * @property name The name of the tool to invoke.
  * @property arguments Arguments to pass to the tool. Keys are argument names, values are the argument values.
  * The structure must match the tool's input schema.
- * @property task If specified, the caller is requesting task-augmented execution. The request
- * will return a [CreateTaskResult] immediately, and the actual result can be retrieved later via `tasks/result`.
+ * @property task If set, requests task-augmented execution. A receiver that supports it returns
+ * a [CreateTaskResult] (result via `tasks/result`); otherwise it returns a [CallToolResult] directly.
  * @property meta Optional metadata for this request. May include a progressToken for
  * out-of-band progress notifications.
  */
