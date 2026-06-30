@@ -33,6 +33,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
@@ -146,7 +147,7 @@ class StreamableHttpServerTransportTest {
     }
 
     @Test
-    fun `second initialization request returns an HTTP error`() = testApplication {
+    fun `second initialization request returns JSON-RPC error with request id`() = testApplication {
         configTestServer()
 
         val client = createTestClient()
@@ -169,13 +170,17 @@ class StreamableHttpServerTransportTest {
 
         firstResponse.status shouldBe HttpStatusCode.OK
 
+        val secondRequest = buildInitializeRequestPayload().copy(id = RequestId("second-init"))
         val secondResponse = client.post(path) {
             addStreamableHeaders()
             header("mcp-session-id", firstResponse.headers[MCP_SESSION_ID_HEADER])
-            setBody(payload)
+            setBody(secondRequest)
         }
 
         secondResponse.status shouldBe HttpStatusCode.BadRequest
+        val error = secondResponse.body<JSONRPCError>()
+        error.id shouldBe secondRequest.id
+        error.error.message shouldBe "Invalid Request: Server already initialized"
     }
 
     @Test
