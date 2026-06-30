@@ -368,6 +368,26 @@ class SamplingTest {
     }
 
     @Test
+    fun `CreateMessageRequestParams task defaults to null and is omitted when encoding`() {
+        val params = CreateMessageRequestParams(maxTokens = 100, messages = emptyList())
+        params.task shouldBe null
+        val encoded = McpJson.encodeToString(CreateMessageRequestParams.serializer(), params)
+        assertEquals(false, "\"task\"" in encoded)
+    }
+
+    @Test
+    fun `CreateMessageRequestParams round-trips task`() {
+        val original = CreateMessageRequestParams(
+            maxTokens = 100,
+            messages = emptyList(),
+            task = TaskMetadata(ttl = 60_000L),
+        )
+        val encoded = McpJson.encodeToString(CreateMessageRequestParams.serializer(), original)
+        val decoded = McpJson.decodeFromString(CreateMessageRequestParams.serializer(), encoded)
+        decoded.task shouldBe TaskMetadata(ttl = 60_000L)
+    }
+
+    @Test
     fun `StopReason ToolUse serialises as toolUse`() {
         StopReason.ToolUse.value shouldBe "toolUse"
     }

@@ -204,6 +204,12 @@ public data class CallToolRequest(override val params: CallToolRequestParams) : 
         get() = params.arguments
 
     /**
+     * Task metadata, if the caller is requesting task-augmented execution.
+     */
+    public val task: TaskMetadata?
+        get() = params.task
+
+    /**
      * Metadata for this request. May include a progressToken for out-of-band progress notifications.
      */
     public val meta: RequestMeta?
@@ -216,6 +222,8 @@ public data class CallToolRequest(override val params: CallToolRequestParams) : 
  * @property name The name of the tool to invoke.
  * @property arguments Arguments to pass to the tool. Keys are argument names, values are the argument values.
  * The structure must match the tool's input schema.
+ * @property task If set, requests task-augmented execution. A receiver that supports it returns
+ * a [CreateTaskResult] (result via `tasks/result`); otherwise it returns a [CallToolResult] directly.
  * @property meta Optional metadata for this request. May include a progressToken for
  * out-of-band progress notifications.
  */
@@ -223,6 +231,7 @@ public data class CallToolRequest(override val params: CallToolRequestParams) : 
 public data class CallToolRequestParams(
     val name: String,
     val arguments: JsonObject? = null,
+    val task: TaskMetadata? = null,
     @SerialName("_meta")
     override val meta: RequestMeta? = null,
 ) : RequestParams

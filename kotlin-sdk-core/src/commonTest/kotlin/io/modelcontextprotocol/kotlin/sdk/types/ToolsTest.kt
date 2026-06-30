@@ -320,6 +320,57 @@ class ToolsTest {
     }
 
     @Test
+    fun `should serialize CallToolRequest with task augmentation`() {
+        val request = CallToolRequest(
+            CallToolRequestParams(
+                name = "long-running",
+                arguments = buildJsonObject { put("query", "MCP protocol") },
+                task = TaskMetadata(ttl = 60_000L),
+            ),
+        )
+
+        verifySerialization(
+            request,
+            McpJson,
+            """
+            {
+              "method": "tools/call",
+              "params": {
+                "name": "long-running",
+                "arguments": {
+                  "query": "MCP protocol"
+                },
+                "task": {
+                  "ttl": 60000
+                }
+              }
+            }
+            """.trimIndent(),
+        )
+
+        assertEquals(TaskMetadata(ttl = 60_000L), request.task)
+    }
+
+    @Test
+    fun `should omit task from CallToolRequest when null`() {
+        val request = CallToolRequest(CallToolRequestParams(name = "plain"))
+
+        assertEquals(null, request.task)
+        verifySerialization(
+            request,
+            McpJson,
+            """
+            {
+              "method": "tools/call",
+              "params": {
+                "name": "plain"
+              }
+            }
+            """.trimIndent(),
+        )
+    }
+
+    @Test
     fun `should serialize CallToolResult with structured content`() {
         val result = CallToolResult(
             content = listOf(
