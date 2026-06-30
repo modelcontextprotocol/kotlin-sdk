@@ -1,11 +1,14 @@
 package io.modelcontextprotocol.kotlin.sdk.shared
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.types.CustomRequest
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
@@ -24,6 +27,7 @@ import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
@@ -127,6 +131,36 @@ class ProtocolTest {
     }
 
     @Test
+    fun `should propagate CancellationException from notification handler without calling onError`() = runTest {
+        protocol.connect(transport)
+
+        protocol.fallbackNotificationHandler = {
+            throw CancellationException("test cancellation")
+        }
+
+        shouldThrow<CancellationException> {
+            transport.deliver(JSONRPCNotification(method = "test/notification"))
+        }
+
+        protocol.errors shouldHaveSize 0
+    }
+
+    @Test
+    fun `should report non-cancellation exception from notification handler via onError`() = runTest {
+        protocol.connect(transport)
+
+        protocol.fallbackNotificationHandler = {
+            throw IllegalStateException("handler failed")
+        }
+
+        // Non-CE exceptions are caught and reported, not propagated
+        transport.deliver(JSONRPCNotification(method = "test/notification"))
+
+        protocol.errors shouldHaveSize 1
+        protocol.errors[0].message shouldBe "handler failed"
+    }
+
+    @Test
     fun `should create params object when request params are null`() = runTest {
         protocol.connect(transport)
         val request = CustomRequest(
@@ -154,6 +188,12 @@ class ProtocolTest {
 }
 
 private class TestProtocol : Protocol(null) {
+    val errors = mutableListOf<Throwable>()
+
+    override fun onError(error: Throwable) {
+        errors.add(error)
+    }
+
     override fun assertCapabilityForMethod(method: Method) {
         // noop
     }

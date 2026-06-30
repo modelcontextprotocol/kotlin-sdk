@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
 plugins {
     id("mcp.multiplatform")
+    id("mcp.detekt")
     id("mcp.publishing")
     id("mcp.dokka")
     alias(libs.plugins.kotlinx.binary.compatibility.validator)
@@ -14,10 +15,8 @@ kotlin {
     iosArm64()
     iosX64()
     iosSimulatorArm64()
-    watchosX64()
     watchosArm64()
     watchosSimulatorArm64()
-    tvosX64()
     tvosArm64()
     tvosSimulatorArm64()
     js {

@@ -8,7 +8,6 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-@Suppress("InjectDispatcher") // this is constant
 private val defaultTestDispatcher: CoroutineContext = Dispatchers.IO.limitedParallelism(100)
 private val defaultTestTimeout: Duration = 5.seconds
 

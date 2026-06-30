@@ -21,7 +21,7 @@ import kotlinx.serialization.json.buildJsonObject
  * val request = buildInitializeRequest {
  *     protocolVersion = "1.0"
  *     capabilities {
- *         sampling(ClientCapabilities.sampling)
+ *         sampling(ClientCapabilities.Sampling())
  *         roots(listChanged = true)
  *         experimental {
  *             put("customFeature", JsonPrimitive(true))
@@ -36,44 +36,31 @@ import kotlinx.serialization.json.buildJsonObject
  */
 @McpDsl
 public class ClientCapabilitiesBuilder @PublishedApi internal constructor() {
-    private var sampling: JsonObject? = null
+    private var sampling: ClientCapabilities.Sampling? = null
     private var roots: ClientCapabilities.Roots? = null
-    private var elicitation: JsonObject? = null
+    private var elicitation: ClientCapabilities.Elicitation? = null
+    private var extensions: Map<String, JsonObject>? = null
     private var experimental: JsonObject? = null
 
     /**
-     * Indicates that the client supports sampling from an LLM.
+     * Sampling capability configuration. See [ClientCapabilities.Sampling].
      *
-     * Use [ClientCapabilities.sampling] for default empty configuration.
+     * Pass `ClientCapabilities.Sampling()` to enable base sampling with no sub-capabilities.
+     * Construct `ClientCapabilities.Sampling(tools = EmptyJsonObject, context = EmptyJsonObject)`
+     * directly to enable tools/context sub-capabilities.
      *
      * Example:
      * ```kotlin
      * capabilities {
-     *     sampling(ClientCapabilities.sampling)
+     *     sampling(ClientCapabilities.Sampling(tools = EmptyJsonObject))
      * }
      * ```
      *
      * @param value The sampling capability configuration
      */
-    public fun sampling(value: JsonObject) {
+    public fun sampling(value: ClientCapabilities.Sampling) {
         this.sampling = value
     }
-
-    /**
-     * Indicates that the client supports sampling from an LLM with custom configuration.
-     *
-     * Example:
-     * ```kotlin
-     * capabilities {
-     *     sampling {
-     *         put("temperature", JsonPrimitive(0.7))
-     *     }
-     * }
-     * ```
-     *
-     * @param block Lambda for building the sampling configuration
-     */
-    public fun sampling(block: JsonObjectBuilder.() -> Unit): Unit = sampling(buildJsonObject(block))
 
     /**
      * Indicates that the client supports listing roots.
@@ -112,25 +99,33 @@ public class ClientCapabilitiesBuilder @PublishedApi internal constructor() {
      *
      * @param value The elicitation capability configuration
      */
-    public fun elicitation(value: JsonObject) {
+    public fun elicitation(value: ClientCapabilities.Elicitation) {
         this.elicitation = value
     }
 
     /**
-     * Indicates that the client supports elicitation from the server with custom configuration.
+     * Defines extensions that the client supports.
+     *
+     * Extension identifiers use the format `{vendor-prefix}/{extension-name}`,
+     * e.g., `"io.modelcontextprotocol/ui"`. Each value is an extension-specific
+     * settings object; an empty [JsonObject] indicates no settings.
      *
      * Example:
      * ```kotlin
      * capabilities {
-     *     elicitation {
-     *         put("mode", JsonPrimitive("interactive"))
-     *     }
+     *     extensions(mapOf(
+     *         "io.modelcontextprotocol/ui" to buildJsonObject {
+     *             put("mimeTypes", JsonArray(listOf(JsonPrimitive("text/html"))))
+     *         }
+     *     ))
      * }
      * ```
      *
-     * @param block Lambda for building the elicitation configuration
+     * @param value The map of extension identifiers to their settings
      */
-    public fun elicitation(block: JsonObjectBuilder.() -> Unit): Unit = elicitation(buildJsonObject(block))
+    public fun extensions(value: Map<String, JsonObject>) {
+        this.extensions = value
+    }
 
     /**
      * Defines experimental, non-standard capabilities that the client supports.
@@ -171,11 +166,13 @@ public class ClientCapabilitiesBuilder @PublishedApi internal constructor() {
      */
     public fun experimental(block: JsonObjectBuilder.() -> Unit): Unit = experimental(buildJsonObject(block))
 
+    /** Constructs the [ClientCapabilities] instance from the current builder state. */
     @PublishedApi
     internal fun build(): ClientCapabilities = ClientCapabilities(
         sampling = sampling,
         roots = roots,
         elicitation = elicitation,
+        extensions = extensions,
         experimental = experimental,
     )
 }

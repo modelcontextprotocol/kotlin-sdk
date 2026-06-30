@@ -13,14 +13,12 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
-  checks: write
-  pull-requests: write # only required if `comment: true` was enabled
+  contents: read
 
 env:
   JAVA_VERSION: 21
   JAVA_DISTRIBUTION: temurin
-  JAVA_OPTS: "-Dfile.encoding=UTF-8 -Djava.awt.headless=true"
-  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dkotlin.compiler.execution.strategy=in-process"
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
 
 jobs:
   build:
@@ -36,21 +34,16 @@ jobs:
         include:
           - os: ubuntu-latest
             job-name: "Linux Tests"
-            gradle-tasks: "build ktlintCheck koverLog koverHtmlReport koverXmlReport publishToMavenLocal -Pversion=1-SNAPSHOT"
-            max-workers: 3
-
-          - os: windows-latest
-            job-name: "Windows Tests"
-            gradle-tasks: "jvmTest -x :integration-test:jvmTest"
+            gradle-tasks: "build"
             max-workers: 3
 
           - os: macos-latest
             job-name: "iOS Simulator tests"
-            gradle-tasks: "linkIosSimulatorArm64 iosSimulatorArm64Test"
+            gradle-tasks: "iosSimulatorArm64Test"
             max-workers: 2
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v5
@@ -70,24 +63,30 @@ jobs:
         run: npm ci
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@v6
         with:
           validate-wrappers: true
           add-job-summary: 'always'
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
-          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
           gradle-home-cache-includes: |
             caches
             notifications
-            sdks
             ../.konan/**
 
       - name: ${{ matrix.job-name }}
         run: |-
-          ./gradlew ${{ matrix.gradle-tasks }} -x :conformance-test:test --max-workers ${{ matrix.max-workers }} --continue --rerun-tasks --configure-on-demand --parallel
+          ./gradlew ${{ matrix.gradle-tasks }} --max-workers ${{ matrix.max-workers }} --continue --rerun-tasks
+
+      - name: Coverage Report
+        if: ${{ success() && matrix.os == 'ubuntu-latest' }}
+        run: ./gradlew koverLog koverHtmlReport koverXmlReport
+
+      - name: Publish to Maven Local
+        if: ${{ success() && matrix.os == 'ubuntu-latest' }}
+        run: ./gradlew publishToMavenLocal -Pversion=1-SNAPSHOT
 
       - name: Upload Reports
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: reports-build-${{ matrix.os }}
@@ -100,34 +99,16 @@ jobs:
         with:
           annotate_only: true
           detailed_summary: true
-          flaky_summary: true
           group_suite: true
           include_empty_in_summary: false
-          include_time_in_summary: true
           report_paths: '**/test-results/**/TEST-*.xml'
           truncate_stack_traces: false
-
-      - name: Upload coverage reports to Codecov
-        if: ${{ !cancelled() && matrix.os == 'ubuntu-latest' }}
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          report_type: coverage
-          directory: ./build/reports/kover
-          files: report.xml
-
-      - name: Upload test results to Codecov
-        if: ${{ !cancelled() && matrix.os == 'ubuntu-latest' }}
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          report_type: test_results
 
 
       - name: Archive Maven Local Repository
         if: ${{ success() && matrix.os == 'ubuntu-latest' }}
         run: |
-          cd ~/.m2/repository && zip -r $GITHUB_WORKSPACE/local-maven-repository.zip .
+          cd ~/.m2/repository/io/modelcontextprotocol && zip -r $GITHUB_WORKSPACE/local-maven-repository.zip .
 
       - name: Upload Maven Local Repository
         if: ${{ success() && matrix.os == 'ubuntu-latest' }}
@@ -145,7 +126,7 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v5
@@ -154,12 +135,11 @@ jobs:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@v6
         with:
           validate-wrappers: true
           add-job-summary: 'always'
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
-          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
           gradle-home-cache-includes: |
             caches
             notifications
@@ -168,12 +148,14 @@ jobs:
 
       - name: Run Knit
         run: |-
-          ./gradlew knit docs:classes docs:knitCheck -x :conformance-test:test --max-workers 3 --continue --rerun-tasks --configure-on-demand --parallel
+          ./gradlew knit docs:classes docs:knitCheck --max-workers 3 --continue --rerun-tasks
 
 
   samples:
     needs: [ build ]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -185,10 +167,8 @@ jobs:
 
     name: "Build Sample: ${{ matrix.sample }}"
     timeout-minutes: 10
-    env:
-      JAVA_OPTS: "-Xmx8g -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Dkotlin.daemon.jvm.options=-Xmx6g"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v5
@@ -197,7 +177,7 @@ jobs:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@v6
         with:
           add-job-summary: 'always'
           cache-read-only: true
@@ -215,8 +195,8 @@ jobs:
 
       - name: Extract Maven Local Repository
         run: |
-          mkdir -p ~/.m2/repository
-          unzip -o local-maven-repository.zip -d ~/.m2/repository
+          mkdir -p ~/.m2/repository/io/modelcontextprotocol
+          unzip -o local-maven-repository.zip -d ~/.m2/repository/io/modelcontextprotocol
 
       - name: "Build Sample: ${{ matrix.sample }}"
         working-directory: ./samples/${{ matrix.sample }}

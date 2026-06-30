@@ -37,20 +37,9 @@ public data class CompleteRequest(override val params: CompleteRequestParams) : 
     public val context: Context?
         get() = params.context
 
+    /** Convenience accessor for [params]'s metadata. */
     public val meta: RequestMeta?
         get() = params.meta
-
-    @Deprecated(
-        message = "Will be removed in a future release.",
-        replaceWith = ReplaceWith(expression = "CompleteRequest(CompleteRequestParams(argument, ref, context, meta))"),
-        level = DeprecationLevel.ERROR,
-    )
-    public constructor(
-        argument: Argument,
-        ref: Reference,
-        context: Context? = null,
-        meta: RequestMeta? = null,
-    ) : this(CompleteRequestParams(argument, ref, context, meta))
 }
 
 /**
@@ -59,6 +48,8 @@ public data class CompleteRequest(override val params: CompleteRequestParams) : 
  * @property argument The argument's information for which completion options are requested.
  * @property ref A reference to either a prompt or resource template to complete within.
  * @property context Additional, optional context for generating completions.
+ * @property meta Optional metadata for this request. May include a progressToken for
+ * out-of-band progress notifications.
  */
 @Serializable
 public data class CompleteRequestParams(

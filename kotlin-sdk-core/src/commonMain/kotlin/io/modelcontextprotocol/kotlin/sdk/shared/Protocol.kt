@@ -33,17 +33,16 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.json.ClassDiscriminatorMode
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 private val logger = KotlinLogging.logger { }
 
+/** Default implementation name used in MCP handshake. */
 public const val IMPLEMENTATION_NAME: String = "mcp-ktor"
 
 /**
@@ -51,39 +50,19 @@ public const val IMPLEMENTATION_NAME: String = "mcp-ktor"
  */
 public typealias ProgressCallback = (Progress) -> Unit
 
-@OptIn(ExperimentalSerializationApi::class)
-@Deprecated(
-    message = "Use McpJson instead",
-    replaceWith = ReplaceWith("McpJson", "io.modelcontextprotocol.kotlin.sdk.types.McpJson"),
-    level = DeprecationLevel.ERROR,
-)
-public val McpJson: Json by lazy {
-    Json {
-        ignoreUnknownKeys = true
-        encodeDefaults = true
-        isLenient = true
-        classDiscriminatorMode = ClassDiscriminatorMode.NONE
-        explicitNulls = false
-    }
-}
-
 /**
  * Additional initialization options.
+ *
+ * @property enforceStrictCapabilities whether to restrict emitted requests to only those that the
+ * remote side has indicated it can handle through its advertised capabilities.
+ * This does NOT affect checking of _local_ side capabilities, as it is considered a logic error
+ * to mis-specify those.
+ * Currently defaults to `false` for backwards compatibility with SDK versions that did not advertise
+ * capabilities correctly; in the future, this will default to `true`.
+ * @property timeout default timeout for outgoing requests
  */
 public open class ProtocolOptions(
-    /**
-     * Whether to restrict emitted requests to only those that the remote side has indicated
-     * that they can handle, through their advertised capabilities.
-     *
-     * Note that this DOES NOT affect checking of _local_ side capabilities, as it is
-     * considered a logic error to mis-specify those.
-     *
-     * Currently, this defaults to false, for backwards compatibility with SDK versions
-     * that did not advertise capabilities correctly.
-     * In the future, this will default to true.
-     */
     public var enforceStrictCapabilities: Boolean = false,
-
     public var timeout: Duration = DEFAULT_REQUEST_TIMEOUT,
 )
 
@@ -95,18 +74,18 @@ public val DEFAULT_REQUEST_TIMEOUT: Duration = 60.seconds
 /**
  * Options that can be given per request.
  *
- * @property relatedRequestId if present,
- * `relatedRequestId` is used to indicate to the transport which incoming request to associate this outgoing message with.
- * @property resumptionToken the resumption token used to continue long-running requests that were interrupted.
- * This allows clients to reconnect and continue from where they left off, if supported by the transport.
- * @property onResumptionToken a callback that is invoked when the resumption token changes, if supported by the transport.
- * This allows clients to persist the latest token for potential reconnection.
+ * @param relatedRequestId if present, used to indicate to the transport which incoming request to
+ * associate this outgoing message with.
+ * @param resumptionToken the resumption token used to continue long-running requests that were interrupted.
+ * Allows clients to reconnect and continue from where they left off, if supported by the transport.
+ * @param onResumptionToken callback invoked when the resumption token changes, if supported by the transport.
+ * Allows clients to persist the latest token for potential reconnection.
  * @property onProgress callback for progress notifications.
- * If set, requests progress notifications from the remote end (if supported).
- * When progress notifications are received, this callback will be invoked.
+ * If set, requests progress notifications from the remote end (if supported);
+ * when progress notifications are received, this callback is invoked.
  * @property timeout a timeout for this request.
- * If exceeded, a McpException with code `RequestTimeout` will be raised from request().
- * If not specified, `DEFAULT_REQUEST_TIMEOUT` will be used as the timeout.
+ * If exceeded, a [McpException] with code `RequestTimeout` is raised from [Protocol.request].
+ * If not specified, [DEFAULT_REQUEST_TIMEOUT] is used.
  */
 public class RequestOptions(
     relatedRequestId: RequestId? = null,
@@ -115,9 +94,13 @@ public class RequestOptions(
     public val onProgress: ProgressCallback? = null,
     public val timeout: Duration = DEFAULT_REQUEST_TIMEOUT,
 ) : TransportSendOptions(relatedRequestId, resumptionToken, onResumptionToken) {
+    /** Destructuring component for [onProgress]. */
     public operator fun component4(): ProgressCallback? = onProgress
+
+    /** Destructuring component for [timeout]. */
     public operator fun component5(): Duration = timeout
 
+    /** Creates a copy of this [RequestOptions] with the specified fields replaced. */
     public fun copy(
         relatedRequestId: RequestId? = this.relatedRequestId,
         resumptionToken: String? = this.resumptionToken,
@@ -157,14 +140,19 @@ internal val COMPLETED = CompletableDeferred(Unit).also { it.complete(Unit) }
 /**
  * Implements MCP protocol framing on top of a pluggable transport, including
  * features like request/response linking, notifications, and progress.
+ *
+ * @property options protocol-level configuration; `null` falls back to defaults
  */
 public abstract class Protocol(@PublishedApi internal val options: ProtocolOptions?) {
+    /** The active transport, or `null` if not connected. */
     public var transport: Transport? = null
         private set
 
     private val _requestHandlers:
         AtomicRef<PersistentMap<String, suspend (JSONRPCRequest, RequestHandlerExtra) -> RequestResult?>> =
         atomic(persistentMapOf())
+
+    /** Registered request handlers keyed by method name. */
     public val requestHandlers: Map<
         String,
         suspend (
@@ -176,17 +164,23 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
 
     private val _notificationHandlers =
         atomic(persistentMapOf<String, suspend (notification: JSONRPCNotification) -> Unit>())
+
+    /** Registered notification handlers keyed by method name. */
     public val notificationHandlers: Map<String, suspend (notification: JSONRPCNotification) -> Unit>
         get() = _notificationHandlers.value
 
     private val _responseHandlers:
         AtomicRef<PersistentMap<RequestId, (response: JSONRPCResponse?, error: Exception?) -> Unit>> =
         atomic(persistentMapOf())
+
+    /** Pending response handlers keyed by request ID. */
     public val responseHandlers: Map<RequestId, (response: JSONRPCResponse?, error: Exception?) -> Unit>
         get() = _responseHandlers.value
 
     private val _progressHandlers: AtomicRef<PersistentMap<ProgressToken, ProgressCallback>> =
         atomic(persistentMapOf())
+
+    /** Registered progress callbacks keyed by progress token. */
     public val progressHandlers: Map<ProgressToken, ProgressCallback>
         get() = _progressHandlers.value
 
@@ -282,6 +276,8 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         }
         try {
             handler(notification)
+        } catch (e: CancellationException) {
+            throw e
         } catch (cause: Throwable) {
             logger.error(cause) { "Error handling notification: ${notification.method}" }
             onError(cause)
@@ -305,6 +301,8 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                         ),
                     ),
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (cause: Throwable) {
                 logger.error(cause) { "Error sending method not found response" }
                 onError(cause)
@@ -322,19 +320,20 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                     result = result ?: EmptyResult(),
                 ),
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (cause: Throwable) {
             logger.error(cause) { "Error handling request: ${request.method} (id: ${request.id})" }
 
             try {
-                transport?.send(
-                    JSONRPCError(
-                        id = request.id,
-                        error = RPCError(
-                            code = RPCError.ErrorCode.INTERNAL_ERROR,
-                            message = cause.message ?: "Internal error",
-                        ),
-                    ),
-                )
+                val rpcError = if (cause is McpException) {
+                    RPCError(code = cause.code, message = cause.message.orEmpty(), data = cause.data)
+                } else {
+                    RPCError(code = RPCError.ErrorCode.INTERNAL_ERROR, message = cause.message ?: "Internal error")
+                }
+                transport?.send(JSONRPCError(id = request.id, error = rpcError))
+            } catch (e: CancellationException) {
+                throw e
             } catch (sendError: Throwable) {
                 logger.error(sendError) {
                     "Failed to send error response for request: ${request.method} (id: ${request.id})"
@@ -393,8 +392,8 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         if (response != null) {
             handler(response, null)
         } else {
-            check(error != null)
-            val mcpException = McpException(
+            checkNotNull(error)
+            val mcpException = McpException.fromError(
                 code = error.error.code,
                 message = error.error.message,
                 data = error.error.data,
@@ -477,8 +476,8 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                 try {
                     @Suppress("UNCHECKED_CAST")
                     result.complete(response!!.result as T)
-                } catch (error: Throwable) {
-                    result.completeExceptionally(error)
+                } catch (e: Throwable) {
+                    result.completeExceptionally(e)
                 }
             }
         }
@@ -554,15 +553,30 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         block: suspend (T, RequestHandlerExtra) -> RequestResult?,
     ) {
         assertRequestHandlerCapability(method)
+        val wrapped = wrapRequestHandler(method, block)
 
         _requestHandlers.update { current ->
             current.put(method.value) { jSONRPCRequest, extraHandler ->
                 val request = jSONRPCRequest.fromJSON()
-                val response = block(request as T, extraHandler)
+                val response = wrapped(request as T, extraHandler)
                 response
             }
         }
     }
+
+    /**
+     * Subclass hook to wrap an incoming-request handler before it is registered.
+     *
+     * Called once by [setRequestHandler] during registration. Subclasses may return a
+     * new function that, when invoked, performs additional checks (capability gates,
+     * schema validation, etc.) before delegating to [block]. The default implementation
+     * is the identity.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    protected open fun <T : Request> wrapRequestHandler(
+        method: Method,
+        block: suspend (T, RequestHandlerExtra) -> RequestResult?,
+    ): suspend (T, RequestHandlerExtra) -> RequestResult? = block
 
     /**
      * Removes the request handler for the given method.

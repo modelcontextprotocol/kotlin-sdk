@@ -8,6 +8,9 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 
+/**
+ * Common interface for resource-like types that share URI, name, and description fields.
+ */
 @Serializable
 public sealed interface ResourceLike : WithMeta
 
@@ -114,15 +117,14 @@ public data class ResourceTemplateReference(val uri: String) : Reference {
 }
 
 /**
- * The contents of a specific resource or sub-resource.
- *
- * @property uri The URI of this resource.
- * @property mimeType The MIME type of this resource, if known.
- * @property meta Optional metadata for this response.
+ * The contents of a specific resource or sub-resource. Carries the optional `_meta` field via [WithMeta].
  */
 @Serializable(with = ResourceContentsPolymorphicSerializer::class)
 public sealed interface ResourceContents : WithMeta {
+    /** The URI of this resource. */
     public val uri: String
+
+    /** The MIME type of this resource, if known. */
     public val mimeType: String?
 }
 
@@ -133,6 +135,7 @@ public sealed interface ResourceContents : WithMeta {
  * This must only be set if the item can actually be represented as text (not binary data).
  * @property uri The URI of this resource.
  * @property mimeType The MIME type of this resource, if known.
+ * @property meta Optional metadata for these contents.
  */
 @Serializable
 public data class TextResourceContents(
@@ -149,6 +152,7 @@ public data class TextResourceContents(
  * @property blob A base64-encoded string representing the binary data of the item.
  * @property uri The URI of this resource.
  * @property mimeType The MIME type of this resource, if known.
+ * @property meta Optional metadata for these contents.
  */
 @Serializable
 public data class BlobResourceContents(
@@ -164,6 +168,7 @@ public data class BlobResourceContents(
  *
  * @property uri The URI of this resource.
  * @property mimeType The MIME type of this resource, if known.
+ * @property meta Optional metadata for these contents.
  */
 @Serializable
 public data class UnknownResourceContents(
@@ -191,26 +196,6 @@ public data class ListResourcesRequest(override val params: PaginatedRequestPara
     PaginatedRequest {
     @EncodeDefault
     override val method: Method = Method.Defined.ResourcesList
-
-    /**
-     * Secondary constructor for creating a [ListResourcesRequest] instance
-     * using optional cursor and metadata parameters.
-     *
-     * This constructor simplifies the creation of the [ListResourcesRequest] by allowing a cursor
-     * and metadata to be provided.
-     *
-     * @param cursor Optional cursor string to specify the starting point of the paginated request.
-     * @param meta Optional metadata associated with the request.
-     */
-    @Deprecated(
-        message = "Use the constructor with PaginatedRequestParams property instead",
-        replaceWith = ReplaceWith("ReadResourceRequest(PaginatedRequestParams(cursor, meta))"),
-        level = DeprecationLevel.ERROR,
-    )
-    public constructor(
-        cursor: String?,
-        meta: RequestMeta? = null,
-    ) : this(paginatedRequestParams(cursor, meta))
 }
 
 /**
@@ -261,16 +246,6 @@ public data class ReadResourceRequest(override val params: ReadResourceRequestPa
      */
     public val meta: RequestMeta?
         get() = params.meta
-
-    @Deprecated(
-        message = "Use the constructor with ReadResourceRequestParams property instead",
-        replaceWith = ReplaceWith("ReadResourceRequest(ReadResourceRequestParams(uri, meta))"),
-        level = DeprecationLevel.ERROR,
-    )
-    public constructor(
-        uri: String,
-        meta: RequestMeta? = null,
-    ) : this(ReadResourceRequestParams(uri, meta))
 }
 
 /**
@@ -337,16 +312,6 @@ public data class SubscribeRequest(override val params: SubscribeRequestParams) 
      */
     public val meta: RequestMeta?
         get() = params.meta
-
-    @Deprecated(
-        message = "Use the constructor with SubscribeRequestParams property instead",
-        replaceWith = ReplaceWith("ReadResourceRequest(SubscribeRequestParams(uri, meta))"),
-        level = DeprecationLevel.ERROR,
-    )
-    public constructor(
-        uri: String,
-        meta: RequestMeta? = null,
-    ) : this(SubscribeRequestParams(uri, meta))
 }
 
 /**
@@ -433,26 +398,6 @@ public data class ListResourceTemplatesRequest(override val params: PaginatedReq
     PaginatedRequest {
     @EncodeDefault
     override val method: Method = Method.Defined.ResourcesTemplatesList
-
-    /**
-     * Secondary constructor for creating a [ListResourceTemplatesRequest] instance
-     * using optional cursor and metadata parameters.
-     *
-     * This constructor simplifies the creation of the [ListResourceTemplatesRequest] by allowing a cursor
-     * and metadata to be provided.
-     *
-     * @param cursor Optional cursor string to specify the starting point of the paginated request.
-     * @param meta Optional metadata associated with the request.
-     */
-    @Deprecated(
-        message = "Use the constructor with PaginatedRequestParams property instead",
-        replaceWith = ReplaceWith("ListResourceTemplatesRequest(PaginatedRequestParams(cursor, meta))"),
-        level = DeprecationLevel.ERROR,
-    )
-    public constructor(
-        cursor: String?,
-        meta: RequestMeta? = null,
-    ) : this(paginatedRequestParams(cursor, meta))
 }
 
 /**

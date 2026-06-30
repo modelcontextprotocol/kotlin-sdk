@@ -42,7 +42,6 @@ import io.ktor.server.sse.SSE as ServerSSE
 /**
  * Base class for MCP authentication integration tests.
  */
-@Suppress("InjectDispatcher")
 abstract class AbstractAuthenticationTest {
 
     protected companion object {

@@ -1,9 +1,9 @@
 [versions]
-kotlin = "2.2.21"
-ktor = "3.2.3"
-mcp-kotlin = "0.8.1"
-slf4j = "2.0.17"
-shadow = "9.2.2"
+kotlin = "2.3.21"
+ktor = "3.3.3"
+mcp-kotlin = "0.13.0"
+slf4j = "2.0.18"
+shadow = "9.4.3"
 
 [libraries]
 ktor-bom = { group = "io.ktor", name = "ktor-bom", version.ref = "ktor" }

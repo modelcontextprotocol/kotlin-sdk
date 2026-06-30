@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable(with = MethodSerializer::class)
 public sealed interface Method {
+    /** The string representation of this method name. */
     public val value: String
 
     /**
@@ -32,6 +33,8 @@ public sealed interface Method {
         NotificationsToolsListChanged("notifications/tools/list_changed"),
         NotificationsRootsListChanged("notifications/roots/list_changed"),
         NotificationsPromptsListChanged("notifications/prompts/list_changed"),
+        NotificationsElicitationComplete("notifications/elicitation/complete"),
+        NotificationsTasksStatus("notifications/tasks/status"),
         ToolsList("tools/list"),
         ToolsCall("tools/call"),
         LoggingSetLevel("logging/setLevel"),
@@ -39,6 +42,10 @@ public sealed interface Method {
         CompletionComplete("completion/complete"),
         RootsList("roots/list"),
         ElicitationCreate("elicitation/create"),
+        TasksGet("tasks/get"),
+        TasksResult("tasks/result"),
+        TasksList("tasks/list"),
+        TasksCancel("tasks/cancel"),
     }
 
     /**

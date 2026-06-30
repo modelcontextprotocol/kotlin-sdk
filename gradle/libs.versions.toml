@@ -1,33 +1,33 @@
 [versions]
 # plugins version
-atomicfu = "0.31.0"
+atomicfu = "0.33.0"
 binaryCompatibilityValidatorPlugin = "0.18.1"
-detekt = "2.0.0-alpha.2"
-dokka = "2.1.0"
-kotlin = "2.2.21"
-kover = "0.9.7"
-ktlint = "14.0.1"
+detekt = "2.0.0-alpha.3"
+dokka = "2.2.0"
+kotlin = "2.3.21"
+kover = "0.9.8"
+ktlint = "14.2.0"
 knit = "0.5.1"
-mavenPublish = "0.36.0"
-netty = "4.2.10.Final"
-openapi-generator = "7.18.0"
+mavenPublish = "0.37.0"
+netty = "4.2.15.Final"
 
 # libraries version
 awaitility = "4.3.0"
-collections-immutable = "0.4.0"
-coroutines = "1.10.2"
-kotest = "6.1.3"
-kotlinx-io = "0.8.2"
-ktor = "3.2.3"
-logging = "7.0.14"
-mockk = "1.14.9"
-mokksy = "0.8.0"
-serialization = "1.9.0"
-slf4j = "2.0.17"
-junit = "5.14.2"
+collections-immutable = "0.5.0"
+coroutines = "1.11.0"
+kotest = "6.2.1"
+kotlinx-io = "0.9.1"
+ktor = "3.4.3"
+logging = "8.0.4"
+mockk = "1.14.11"
+serialization = "1.11.0"
+slf4j = "2.0.18"
+logback = "1.5.37"
+junit = "5.14.4"
 
 [libraries]
 # Plugins
+detekt-gradle = { module = "dev.detekt:detekt-gradle-plugin", version.ref = "detekt" }
 dokka-gradle = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
 kotlin-gradle = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlin-serialization = { module = "org.jetbrains.kotlin:kotlin-serialization", version.ref = "kotlin" }
@@ -64,9 +64,9 @@ kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 ktor-client-mock = { group = "io.ktor", name = "ktor-client-mock", version.ref = "ktor" }
 ktor-server-test-host = { group = "io.ktor", name = "ktor-server-test-host", version.ref = "ktor" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
-mokksy = { group = "dev.mokksy", name = "mokksy", version.ref = "mokksy" }
 netty-bom = { group = "io.netty", name = "netty-bom", version.ref = "netty" }
 slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
+logback-classic = { group = "ch.qos.logback", name = "logback-classic", version.ref = "logback" }
 junit-jupiter-params = { module = "org.junit.jupiter:junit-jupiter-params", version.ref = "junit" }
 
 # Samples
@@ -74,9 +74,7 @@ ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "
 ktor-server-cio = { group = "io.ktor", name = "ktor-server-cio", version.ref = "ktor" }
 
 [plugins]
-detekt = { id = "dev.detekt", version.ref = "detekt" }
 kotlinx-binary-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibilityValidatorPlugin" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
 knit = { id = "org.jetbrains.kotlinx.knit", version.ref = "knit" }
-openapi-generator = { id = "org.openapi.generator", version.ref = "openapi-generator" }

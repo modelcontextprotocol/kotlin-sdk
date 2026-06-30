@@ -6,11 +6,13 @@ import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 /**
- * Implements [onClose], [onError] and [onMessage] functions of [Transport] providing
- * corresponding [_onClose], [_onError] and [_onMessage] properties to use for an implementation.
+ * Base class for [Transport] implementations that handles the bookkeeping for [onClose], [onError]
+ * and [onMessage] callback registration, exposing the composed callbacks to subclasses for invocation.
+ *
+ * The callbacks are composed: each call to [onClose], [onError], or [onMessage] chains the new block
+ * after any previously registered ones.
  */
 @OptIn(ExperimentalAtomicApi::class)
-@Suppress("PropertyName")
 public abstract class AbstractTransport : Transport {
     private val onCloseCalled = AtomicBoolean(false)
     private var _onClose: (() -> Unit) = {}

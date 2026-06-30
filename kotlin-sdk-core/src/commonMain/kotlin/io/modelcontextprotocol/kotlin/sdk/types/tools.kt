@@ -39,12 +39,14 @@ public fun CallToolResult.Companion.error(content: String, meta: JsonObject? = n
  * if both [title] and [annotations].[title] are not provided.
  * @property inputSchema A JSON Schema object defining the expected parameters for the tool.
  * Must be an object type schema. Defines what arguments the tool accepts.
+ * Defaults to the JSON Schema 2020-12 dialect when no explicit `$schema` is provided.
  * @property description A human-readable description of the tool and when to use it.
  * Clients can use this to improve the LLM's understanding of available tools.
  * It can be thought of like a "hint" to the model.
  * @property outputSchema An optional JSON Schema object defining the structure of the tool's output
  * returned in the [structuredContent][CallToolResult.structuredContent] field of a [CallToolResult].
  * Must be an object type schema if provided.
+ * Defaults to the JSON Schema 2020-12 dialect when no explicit `$schema` is provided.
  * @property title Optional human-readable display name for this tool.
  * Intended for UI and end-user contexts, optimized to be easily understood
  * even by those unfamiliar with domain-specific terminology.
@@ -77,19 +79,25 @@ public data class Tool(
  * A JSON Schema for tool input or output parameters.
  *
  * This is a simplified schema structure that must be of type "object".
+ * Defaults to the JSON Schema 2020-12 dialect when no explicit [schema] (`$schema`) is provided.
  *
- * @property type Always "object" for tool schemas.
+ * @property schema Optional URI identifying the JSON Schema dialect (e.g.,
+ *   `https://json-schema.org/draft/2020-12/schema`). Serialized as `$schema`.
+ *   When absent, JSON Schema 2020-12 is assumed by default.
  * @property properties Optional map of property names to their schema definitions.
  * @property required Optional list of property names that are required.
  * @property defs Optional schema definitions available to references in [properties]. Serialized as `$defs`.
  */
 @Serializable
 public data class ToolSchema(
+    @SerialName("\$schema")
+    val schema: String? = null,
     val properties: JsonObject? = null,
     val required: List<String>? = null,
     @SerialName("\$defs")
     val defs: JsonObject? = null,
 ) {
+    /** Always `"object"` for tool schemas. */
     @OptIn(ExperimentalSerializationApi::class)
     @EncodeDefault
     val type: String = "object"
@@ -267,26 +275,6 @@ public data class ListToolsRequest(override val params: PaginatedRequestParams? 
     PaginatedRequest {
     @EncodeDefault
     override val method: Method = Method.Defined.ToolsList
-
-    /**
-     * Secondary constructor for creating a [ListToolsRequest] instance
-     * using optional cursor and metadata parameters.
-     *
-     * This constructor simplifies the creation of the [ListToolsRequest] by allowing a cursor
-     * and metadata to be provided.
-     *
-     * @param cursor Optional cursor string to specify the starting point of the paginated request.
-     * @param meta Optional metadata associated with the request.
-     */
-    @Deprecated(
-        message = "Use the constructor with BaseRequestParams property instead",
-        replaceWith = ReplaceWith("ListToolsRequest(BaseRequestParams(meta))"),
-        level = DeprecationLevel.ERROR,
-    )
-    public constructor(
-        cursor: String?,
-        meta: RequestMeta? = null,
-    ) : this(paginatedRequestParams(cursor, meta))
 }
 
 /**

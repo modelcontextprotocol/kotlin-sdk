@@ -17,10 +17,16 @@ public open class TransportSendOptions(
     public val resumptionToken: String? = null,
     public val onResumptionToken: ((String) -> Unit)? = null,
 ) {
+    /** Destructuring component for [relatedRequestId]. */
     public operator fun component1(): RequestId? = relatedRequestId
+
+    /** Destructuring component for [resumptionToken]. */
     public operator fun component2(): String? = resumptionToken
+
+    /** Destructuring component for [onResumptionToken]. */
     public operator fun component3(): ((String) -> Unit)? = onResumptionToken
 
+    /** Creates a copy of this [TransportSendOptions] with the specified fields replaced. */
     public open fun copy(
         relatedRequestId: RequestId? = this.relatedRequestId,
         resumptionToken: String? = this.resumptionToken,

@@ -25,7 +25,7 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up JDK
         uses: actions/setup-java@v5
@@ -34,7 +34,7 @@ jobs:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@v6
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
@@ -53,7 +53,7 @@ jobs:
           done
 
       - name: Run conformance tests
-        uses: modelcontextprotocol/conformance@v0.1.15
+        uses: modelcontextprotocol/conformance@v0.1.16
         with:
           mode: server
           url: http://localhost:3001/mcp
@@ -76,7 +76,7 @@ jobs:
           - sse-retry
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up JDK
         uses: actions/setup-java@v5
@@ -85,7 +85,7 @@ jobs:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@v6
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
@@ -93,7 +93,7 @@ jobs:
         run: ./gradlew :conformance-test:installDist
 
       - name: Run conformance tests
-        uses: modelcontextprotocol/conformance@v0.1.15
+        uses: modelcontextprotocol/conformance@v0.1.16
         with:
           mode: client
           command: conformance-test/build/install/conformance-test/bin/conformance-client
@@ -107,7 +107,7 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up JDK
         uses: actions/setup-java@v5
@@ -116,7 +116,7 @@ jobs:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@v6
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
@@ -124,7 +124,7 @@ jobs:
         run: ./gradlew :conformance-test:installDist
 
       - name: Run conformance tests
-        uses: modelcontextprotocol/conformance@v0.1.15
+        uses: modelcontextprotocol/conformance@v0.1.16
         with:
           mode: client
           command: conformance-test/build/install/conformance-test/bin/conformance-client
@@ -146,7 +146,7 @@ jobs:
           - auth/cross-app-access-complete-flow
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up JDK
         uses: actions/setup-java@v5
@@ -155,7 +155,7 @@ jobs:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@v6
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
@@ -163,7 +163,7 @@ jobs:
         run: ./gradlew :conformance-test:installDist
 
       - name: Run conformance tests
-        uses: modelcontextprotocol/conformance@v0.1.15
+        uses: modelcontextprotocol/conformance@v0.1.16
         with:
           mode: client
           command: conformance-test/build/install/conformance-test/bin/conformance-client

@@ -8,6 +8,7 @@ repositories {
 }
 
 dependencies {
+    implementation(libs.detekt.gradle)
     implementation(libs.kotlin.gradle)
     implementation(libs.kotlin.serialization)
     implementation(libs.kotlinx.atomicfu.gradle)

@@ -14,7 +14,10 @@ import kotlinx.serialization.json.JsonObject
  */
 @Serializable(with = NotificationPolymorphicSerializer::class)
 public sealed interface Notification {
+    /** The notification method identifier. */
     public val method: Method
+
+    /** Optional notification parameters. */
     public val params: NotificationParams?
 }
 
@@ -31,9 +34,7 @@ public sealed interface ClientNotification : Notification
 public sealed interface ServerNotification : Notification
 
 /**
- * Interface for notification parameter types.
- *
- * @property meta Optional metadata for the notification.
+ * Interface for notification parameter types. Inherits the optional `_meta` field from [WithMeta].
  */
 @Serializable
 public sealed interface NotificationParams : WithMeta
@@ -79,6 +80,7 @@ public data class CustomNotification(override val method: Method, override val p
     ClientNotification,
     ServerNotification {
 
+    /** Convenience accessor for [params]'s metadata. */
     public val meta: JsonObject?
         get() = params?.meta
 }
@@ -331,6 +333,36 @@ public data class RootsListChangedNotification(override val params: BaseNotifica
 }
 
 // ============================================================================
+// Elicitation Complete Notification
+// ============================================================================
+
+/**
+ * An optional notification from the server to the client,
+ * informing it of a completion of an out-of-band elicitation request.
+ *
+ * @property params Parameters identifying which elicitation completed.
+ */
+@Serializable
+public data class ElicitationCompleteNotification(override val params: ElicitationCompleteNotificationParams) :
+    ServerNotification {
+    @EncodeDefault
+    override val method: Method = Method.Defined.NotificationsElicitationComplete
+}
+
+/**
+ * Parameters for a notifications/elicitation/complete notification.
+ *
+ * @property elicitationId The ID of the elicitation that completed.
+ * @property meta Optional metadata for this notification.
+ */
+@Serializable
+public data class ElicitationCompleteNotificationParams(
+    val elicitationId: String,
+    @SerialName("_meta")
+    override val meta: JsonObject? = null,
+) : NotificationParams
+
+// ============================================================================
 // Tools List Changed Notification
 // ============================================================================
 
@@ -348,3 +380,48 @@ public data class ToolListChangedNotification(override val params: BaseNotificat
     @EncodeDefault
     override val method: Method = Method.Defined.NotificationsToolsListChanged
 }
+
+// ============================================================================
+// Task Status Notification
+// ============================================================================
+
+/**
+ * An optional notification from the receiver to the requestor, informing them that a task’s status has changed.
+ * Receivers are not required to send these notifications.
+ *
+ * This notification can be sent by either side (both [ClientNotification] and [ServerNotification]).
+ *
+ * @property params The task status notification parameters containing the current task state.
+ */
+@Serializable
+public data class TaskStatusNotification(override val params: TaskStatusNotificationParams? = null) :
+    ClientNotification,
+    ServerNotification {
+    @EncodeDefault
+    override val method: Method = Method.Defined.NotificationsTasksStatus
+}
+
+/**
+ * Parameters for a notifications/tasks/status notification.
+ *
+ * @property taskId The task identifier.
+ * @property status Current task state.
+ * @property statusMessage Optional human-readable message describing the current task state.
+ * @property createdAt ISO 8601 timestamp when the task was created.
+ * @property lastUpdatedAt ISO 8601 timestamp when the task was last updated.
+ * @property ttl Actual retention duration from creation in milliseconds, null for unlimited.
+ * @property pollInterval Suggested polling interval in milliseconds.
+ * @property meta Optional metadata for this notification.
+ */
+@Serializable
+public data class TaskStatusNotificationParams(
+    override val taskId: String,
+    override val status: TaskStatus,
+    override val statusMessage: String? = null,
+    override val createdAt: String,
+    override val lastUpdatedAt: String,
+    override val ttl: Long?,
+    override val pollInterval: Long? = null,
+    @SerialName("_meta") override val meta: JsonObject? = null,
+) : NotificationParams,
+    TaskFields

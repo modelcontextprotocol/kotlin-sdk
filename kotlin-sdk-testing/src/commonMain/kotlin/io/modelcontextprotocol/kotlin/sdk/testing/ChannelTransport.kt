@@ -27,9 +27,8 @@ import kotlinx.coroutines.yield
  * communication of JSON-RPC messages. This is useful in scenarios where communication is
  * message-based and channels are used as the underlying mechanism for delivery.
  *
- * @constructor Initializes the transport with the specified [SendChannel] and [ReceiveChannel].
- * @property sendChannel The channel used to send JSON-RPC messages.
- * @property receiveChannel The channel used to receive JSON-RPC messages.
+ * @param sendChannel The channel used to send JSON-RPC messages.
+ * @param receiveChannel The channel used to receive JSON-RPC messages.
  * @param dispatcher The coroutine dispatcher for the event loop. Defaults to [Dispatchers.Default].
  */
 @ExperimentalMcpApi
@@ -75,11 +74,19 @@ public class ChannelTransport(
         /**
          * Creates a pair of interconnected [ChannelTransport] objects for bidirectional communication.
          *
-         * This method sets up a client and server transport using Kotlin channels, enabling messages sent
-         * through one transport to be received by the other. It is typically used for testing or in-memory
-         * communication without external networking.
+         * Sets up a client and server transport using Kotlin channels, so that messages sent through one
+         * transport are received by the other. Typically used for testing or in-memory communication
+         * without external networking.
+         *
+         * Example:
+         * ```kotlin
+         * val (clientTransport, serverTransport) = ChannelTransport.createLinkedPair()
+         * server.connect(serverTransport)
+         * client.connect(clientTransport)
+         * ```
          *
          * @param capacity The buffer capacity of the internal channels used for communication. Defaults to 256.
+         * @param dispatcher The coroutine dispatcher for the event loop. Defaults to [Dispatchers.Default].
          * @return A [LinkedTransports] instance containing the client and server transports.
          */
         public fun createLinkedPair(
@@ -106,7 +113,6 @@ public class ChannelTransport(
     override suspend fun initialize() {
         logger.info { "ChannelTransport starting message processing" }
         val started = CompletableDeferred<Unit>()
-        @Suppress("TooGenericExceptionCaught")
         scope.launch(CoroutineName("ChannelTransport#${hashCode()}-event-loop")) {
             try {
                 // Signal that event loop has started, then yield to ensure we're ready

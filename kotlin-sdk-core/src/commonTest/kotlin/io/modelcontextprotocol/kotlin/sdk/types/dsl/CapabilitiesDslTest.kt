@@ -4,8 +4,10 @@ import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
+import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.types.buildInitializeRequest
-import kotlinx.serialization.json.double
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlin.test.Test
@@ -31,6 +33,7 @@ class CapabilitiesDslTest {
             roots.shouldBeNull()
             elicitation.shouldBeNull()
             experimental.shouldBeNull()
+            extensions.shouldBeNull()
         }
     }
 
@@ -39,46 +42,47 @@ class CapabilitiesDslTest {
         val request = buildInitializeRequest {
             protocolVersion = "2024-11-05"
             capabilities {
-                sampling {
-                    put("temperature", 0.7)
-                    put("maxTokens", 1000)
-                    put("topP", 0.95)
-                }
+                sampling(ClientCapabilities.Sampling(tools = EmptyJsonObject))
                 roots(listChanged = true)
-                elicitation {
-                    put("mode", "interactive")
-                    put("timeout", 30)
-                    put("retries", 3)
-                }
+                elicitation(ClientCapabilities.Elicitation(form = EmptyJsonObject, url = EmptyJsonObject))
                 experimental {
                     put("customFeature", true)
                     put("version", "1.0")
                     put("beta", false)
                     put("maxConcurrency", 10)
                 }
+                extensions(
+                    mapOf(
+                        "io.modelcontextprotocol/ui" to buildJsonObject {
+                            put("mimeTypes", "text/html")
+                        },
+                    ),
+                )
             }
             info("Test", "1.0")
         }
 
         request.params.capabilities.shouldNotBeNull {
             sampling shouldNotBeNull {
-                get("temperature")?.jsonPrimitive?.double shouldBe 0.7
-                get("maxTokens")?.jsonPrimitive?.content shouldBe "1000"
-                get("topP")?.jsonPrimitive?.double shouldBe 0.95
+                tools shouldBe EmptyJsonObject
             }
             roots shouldNotBeNull {
                 listChanged shouldBe true
             }
             elicitation shouldNotBeNull {
-                get("mode")?.jsonPrimitive?.content shouldBe "interactive"
-                get("timeout")?.jsonPrimitive?.content shouldBe "30"
-                get("retries")?.jsonPrimitive?.content shouldBe "3"
+                form shouldBe EmptyJsonObject
+                url shouldBe EmptyJsonObject
             }
             experimental shouldNotBeNull {
                 get("customFeature")?.jsonPrimitive?.content shouldBe "true"
                 get("version")?.jsonPrimitive?.content shouldBe "1.0"
                 get("beta")?.jsonPrimitive?.content shouldBe "false"
                 get("maxConcurrency")?.jsonPrimitive?.content shouldBe "10"
+            }
+            extensions shouldNotBeNull {
+                get("io.modelcontextprotocol/ui") shouldNotBeNull {
+                    get("mimeTypes")?.jsonPrimitive?.content shouldBe "text/html"
+                }
             }
         }
     }
@@ -111,12 +115,56 @@ class CapabilitiesDslTest {
     }
 
     @Test
+    fun `capabilities should build with extensions containing empty settings`() {
+        val request = buildInitializeRequest {
+            protocolVersion = "2024-11-05"
+            capabilities {
+                extensions(
+                    mapOf(
+                        "io.modelcontextprotocol/ui" to EmptyJsonObject,
+                        "com.example/custom" to EmptyJsonObject,
+                    ),
+                )
+            }
+            info("Test", "1.0")
+        }
+
+        request.params.capabilities.shouldNotBeNull {
+            extensions shouldNotBeNull {
+                size shouldBe 2
+                get("io.modelcontextprotocol/ui") shouldBe EmptyJsonObject
+                get("com.example/custom") shouldBe EmptyJsonObject
+            }
+        }
+    }
+
+    @Test
+    fun `capabilities should overwrite extensions when set multiple times`() {
+        val request = buildInitializeRequest {
+            protocolVersion = "2024-11-05"
+            capabilities {
+                extensions(mapOf("io.modelcontextprotocol/ui" to EmptyJsonObject))
+                extensions(mapOf("com.example/custom" to EmptyJsonObject)) // Should overwrite
+            }
+            info("Test", "1.0")
+        }
+
+        request.params.capabilities.shouldNotBeNull {
+            extensions shouldNotBeNull {
+                size shouldBe 1
+                get("com.example/custom") shouldBe EmptyJsonObject
+                get("io.modelcontextprotocol/ui").shouldBeNull()
+            }
+        }
+    }
+
+    @Test
     fun `capabilities should overwrite when same field set multiple times`() {
         val request = buildInitializeRequest {
             protocolVersion = "2024-11-05"
             capabilities {
-                sampling { put("temperature", 0.5) }
-                sampling { put("temperature", 0.9) } // Should overwrite
+                sampling(ClientCapabilities.Sampling())
+                sampling(ClientCapabilities.Sampling(tools = EmptyJsonObject)) // Should overwrite
                 experimental { put("feature", "v1") }
                 experimental { put("feature", "v2") } // Should overwrite
             }
@@ -125,7 +173,7 @@ class CapabilitiesDslTest {
 
         request.params.capabilities.shouldNotBeNull {
             sampling shouldNotBeNull {
-                get("temperature")?.jsonPrimitive?.double shouldBe 0.9
+                tools shouldBe EmptyJsonObject
             }
             experimental shouldNotBeNull {
                 get("feature")?.jsonPrimitive?.content shouldBe "v2"

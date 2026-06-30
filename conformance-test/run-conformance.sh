@@ -9,7 +9,7 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" || exit 1; pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." || exit 1; pwd)"
 
-CONFORMANCE_VERSION="0.1.15"
+CONFORMANCE_VERSION="0.1.16"
 PORT="${MCP_PORT:-3001}"
 SERVER_URL="http://localhost:${PORT}/mcp"
 RESULTS_DIR="$SCRIPT_DIR/results"

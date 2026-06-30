@@ -1,5 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.client.sse
 
+import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.ktor.client.HttpClient
@@ -9,6 +10,7 @@ import io.modelcontextprotocol.kotlin.sdk.client.SseClientTransport
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.seconds
 
 class SseClientTransportTest {
 
@@ -84,6 +86,31 @@ class SseClientTransportTest {
         val capturedPosts = engine.capturedPosts
         capturedPosts shouldHaveSize 1
         capturedPosts[0].url.toString() shouldBe "https://example.com/messages?sessionId=abc"
+
+        // Cleanup
+        transport.close()
+        engine.close()
+    }
+
+    @Test
+    fun `onClose callback fires when the SSE stream is disconnected by the server`() = runTest {
+        // Given
+        val sseUrl = "http://example.com/api/mcp/sse"
+
+        // And
+        val engine = CapturingSseClientEngine(endpoint = "/messages?sessionId=abc")
+        val transport = sseTransport(sseUrl, engine)
+        var onCloseFired = false
+        transport.onClose { onCloseFired = true }
+
+        // When
+        transport.start()
+        engine.disconnectSseStream()
+
+        // Then
+        eventually(2.seconds) {
+            onCloseFired shouldBe true
+        }
 
         // Cleanup
         transport.close()

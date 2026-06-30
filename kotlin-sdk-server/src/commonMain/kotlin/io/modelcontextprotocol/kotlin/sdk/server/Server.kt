@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.modelcontextprotocol.kotlin.sdk.server.utils.warnIfInvalidToolName
 import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
@@ -10,6 +11,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageResult
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitResult
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotification
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest
@@ -25,13 +27,16 @@ import io.modelcontextprotocol.kotlin.sdk.types.ListRootsResult
 import io.modelcontextprotocol.kotlin.sdk.types.ListToolsRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification
+import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.Notification
 import io.modelcontextprotocol.kotlin.sdk.types.Prompt
 import io.modelcontextprotocol.kotlin.sdk.types.PromptArgument
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
 import io.modelcontextprotocol.kotlin.sdk.types.Resource
+import io.modelcontextprotocol.kotlin.sdk.types.ResourceTemplate
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.SubscribeRequest
@@ -41,9 +46,17 @@ import io.modelcontextprotocol.kotlin.sdk.types.ToolAnnotations
 import io.modelcontextprotocol.kotlin.sdk.types.ToolExecution
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import io.modelcontextprotocol.kotlin.sdk.types.UnsubscribeRequest
+import io.modelcontextprotocol.kotlin.sdk.types.UrlElicitationRequiredException
+import io.modelcontextprotocol.kotlin.sdk.utils.MatchResult
+import io.modelcontextprotocol.kotlin.sdk.utils.PathSegmentTemplateMatcher
+import io.modelcontextprotocol.kotlin.sdk.utils.ResourceTemplateMatcher
+import io.modelcontextprotocol.kotlin.sdk.utils.ResourceTemplateMatcherFactory
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Deferred
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlin.jvm.JvmOverloads
 import kotlin.time.ExperimentalTime
 
 private val logger = KotlinLogging.logger {}
@@ -52,10 +65,22 @@ private val logger = KotlinLogging.logger {}
  * Configuration options for the MCP server.
  *
  * @property capabilities The capabilities this server supports.
- * @property enforceStrictCapabilities Whether to strictly enforce capabilities when interacting with clients.
+ * @param enforceStrictCapabilities Whether to strictly enforce capabilities when interacting with clients.
+ * Forwarded to [ProtocolOptions.enforceStrictCapabilities].
+ * @property resourceTemplateMatcherFactory The factory used to create [ResourceTemplateMatcher] instances
+ *   for matching resource URIs against registered templates. Defaults to [PathSegmentTemplateMatcher.factory].
  */
-public class ServerOptions(public val capabilities: ServerCapabilities, enforceStrictCapabilities: Boolean = true) :
-    ProtocolOptions(enforceStrictCapabilities = enforceStrictCapabilities)
+public class ServerOptions(
+    public val capabilities: ServerCapabilities,
+    enforceStrictCapabilities: Boolean = true,
+    public val resourceTemplateMatcherFactory: ResourceTemplateMatcherFactory = PathSegmentTemplateMatcher.factory,
+) : ProtocolOptions(enforceStrictCapabilities = enforceStrictCapabilities) {
+    @JvmOverloads
+    public constructor(
+        capabilities: ServerCapabilities,
+        enforceStrictCapabilities: Boolean = true,
+    ) : this(capabilities, enforceStrictCapabilities, PathSegmentTemplateMatcher.factory)
+}
 
 /**
  * An MCP server is responsible for storing features and handling new connections.
@@ -69,13 +94,12 @@ public class ServerOptions(public val capabilities: ServerCapabilities, enforceS
  * Currently, after subscription to a resource, the server will NOT send the subscription confirmation
  * as this response schema is not defined in the protocol.
  *
- * @param serverInfo Information about this server implementation (name, version).
- * @param options Configuration options for the server.
- * @param instructionsProvider Optional provider for instructions from the server to the client about how to use
+ * @property serverInfo Information about this server implementation (name, version).
+ * @property options Configuration options for the server.
+ * @property instructionsProvider Optional provider for instructions from the server to the client about how to use
  * this server. The provider is called each time a new session is started to support dynamic instructions.
  * @param block A block to configure the mcp server.
  */
-@Suppress("TooManyFunctions")
 public open class Server(
     protected val serverInfo: Implementation,
     protected val options: ServerOptions,
@@ -96,8 +120,6 @@ public open class Server(
         instructions: String,
         block: Server.() -> Unit = {},
     ) : this(serverInfo, options, { instructions }, block)
-
-    private var _onInitialized: (() -> Unit) = {}
 
     private var _onConnect: (() -> Unit) = {}
 
@@ -126,6 +148,11 @@ public open class Server(
             addListener(notificationService.resourceUpdatedListener)
         }
     }
+    private val resourceTemplateRegistry = FeatureRegistry<RegisteredResourceTemplate>("ResourceTemplate").apply {
+        if (options.capabilities.resources?.listChanged == true) {
+            addListener(notificationService.resourceListChangedListener)
+        }
+    }
 
     /**
      * Provides a snapshot of all sessions currently registered in the server
@@ -151,10 +178,17 @@ public open class Server(
     public val resources: Map<String, RegisteredResource>
         get() = resourceRegistry.values
 
+    /**
+     * Provides a snapshot of all resource templates currently registered in the server.
+     */
+    public val resourceTemplates: List<ResourceTemplate>
+        get() = resourceTemplateRegistry.values.values.map { it.resourceTemplate }
+
     init {
         block(this)
     }
 
+    /** Closes this server, shutting down the notification service and all active sessions. */
     public suspend fun close() {
         logger.debug { "Closing MCP server" }
         notificationService.close()
@@ -164,20 +198,6 @@ public open class Server(
         }
         _onClose()
     }
-
-    /**
-     * Starts a new server session with the given transport and initializes
-     * internal request handlers based on the server's capabilities.
-     *
-     * @param transport The transport layer to connect the session with.
-     * @return The initialized and connected server session.
-     */
-    @Deprecated(
-        "Use createSession(transport) instead.",
-        ReplaceWith("createSession(transport)"),
-        DeprecationLevel.ERROR,
-    )
-    public suspend fun connect(transport: Transport): ServerSession = createSession(transport)
 
     /**
      * Starts a new server session with the given transport and initializes
@@ -263,22 +283,6 @@ public open class Server(
     }
 
     /**
-     * Registers a callback to be invoked when the server has completed initialization.
-     */
-    @Deprecated(
-        "Initialization moved to ServerSession, use ServerSession.onInitialized instead.",
-        ReplaceWith("ServerSession.onInitialized"),
-        DeprecationLevel.ERROR,
-    )
-    public fun onInitialized(block: () -> Unit) {
-        val old = _onInitialized
-        _onInitialized = {
-            old()
-            block()
-        }
-    }
-
-    /**
      * Registers a callback to be invoked when the server connection is closing.
      */
     public fun onClose(block: () -> Unit) {
@@ -297,11 +301,11 @@ public open class Server(
      * @throws IllegalStateException If the server does not support tools.
      */
     public fun addTool(tool: Tool, handler: suspend ClientConnection.(CallToolRequest) -> CallToolResult) {
-        check(options.capabilities.tools != null) {
+        checkNotNull(options.capabilities.tools) {
             logger.error { "Failed to add tool '${tool.name}': Server does not support tools capability" }
             "Server does not support tools capability. Enable it in ServerOptions."
         }
-
+        warnIfInvalidToolName(tool.name)
         toolRegistry.add(RegisteredTool(tool, handler))
     }
 
@@ -309,9 +313,9 @@ public open class Server(
      * Registers a single tool. The client can then call this tool.
      *
      * @param name The name of the tool.
-     * @param title An optional human-readable name of the tool for display purposes.
      * @param description A human-readable description of what the tool does.
      * @param inputSchema The expected input schema for the tool.
+     * @param title An optional human-readable name of the tool for display purposes.
      * @param outputSchema The optional expected output schema for the tool.
      * @param toolAnnotations Optional additional tool information.
      * @param execution Optional execution-related properties, such as task-augmented execution support.
@@ -319,7 +323,6 @@ public open class Server(
      * @param handler A suspend function that handles executing the tool when called by the client.
      * @throws IllegalStateException If the server does not support tools.
      */
-    @Suppress("LongParameterList")
     public fun addTool(
         name: String,
         description: String,
@@ -351,10 +354,11 @@ public open class Server(
      * @throws IllegalStateException If the server does not support tools.
      */
     public fun addTools(toolsToAdd: List<RegisteredTool>) {
-        check(options.capabilities.tools != null) {
+        checkNotNull(options.capabilities.tools) {
             logger.error { "Failed to add tools: Server does not support tools capability" }
             "Server does not support tools capability."
         }
+        toolsToAdd.forEach { warnIfInvalidToolName(it.tool.name) }
         toolRegistry.addAll(toolsToAdd)
     }
 
@@ -366,7 +370,7 @@ public open class Server(
      * @throws IllegalStateException If the server does not support tools.
      */
     public fun removeTool(name: String): Boolean {
-        check(options.capabilities.tools != null) {
+        checkNotNull(options.capabilities.tools) {
             logger.error { "Failed to remove tool '$name': Server does not support tools capability" }
             "Server does not support tools capability."
         }
@@ -381,7 +385,7 @@ public open class Server(
      * @throws IllegalStateException If the server does not support tools.
      */
     public fun removeTools(toolNames: List<String>): Int {
-        check(options.capabilities.tools != null) {
+        checkNotNull(options.capabilities.tools) {
             logger.error { "Failed to remove tools: Server does not support tools capability" }
             "Server does not support tools capability."
         }
@@ -401,7 +405,7 @@ public open class Server(
         prompt: Prompt,
         promptProvider: suspend ClientConnection.(GetPromptRequest) -> GetPromptResult,
     ) {
-        check(options.capabilities.prompts != null) {
+        checkNotNull(options.capabilities.prompts) {
             logger.error { "Failed to add prompt '${prompt.name}': Server does not support prompts capability" }
             "Server does not support prompts capability."
         }
@@ -434,7 +438,7 @@ public open class Server(
      * @throws IllegalStateException If the server does not support prompts.
      */
     public fun addPrompts(promptsToAdd: List<RegisteredPrompt>) {
-        check(options.capabilities.prompts != null) {
+        checkNotNull(options.capabilities.prompts) {
             logger.error { "Failed to add prompts: Server does not support prompts capability" }
             "Server does not support prompts capability."
         }
@@ -449,7 +453,7 @@ public open class Server(
      * @throws IllegalStateException If the server does not support prompts.
      */
     public fun removePrompt(name: String): Boolean {
-        check(options.capabilities.prompts != null) {
+        checkNotNull(options.capabilities.prompts) {
             logger.error { "Failed to remove prompt '$name': Server does not support prompts capability" }
             "Server does not support prompts capability."
         }
@@ -465,7 +469,7 @@ public open class Server(
      * @throws IllegalStateException If the server does not support prompts.
      */
     public fun removePrompts(promptNames: List<String>): Int {
-        check(options.capabilities.prompts != null) {
+        checkNotNull(options.capabilities.prompts) {
             logger.error { "Failed to remove prompts: Server does not support prompts capability" }
             "Server does not support prompts capability."
         }
@@ -490,7 +494,7 @@ public open class Server(
         mimeType: String = "text/html",
         readHandler: suspend ClientConnection.(ReadResourceRequest) -> ReadResourceResult,
     ) {
-        check(options.capabilities.resources != null) {
+        checkNotNull(options.capabilities.resources) {
             logger.error { "Failed to add resource '$name': Server does not support resources capability" }
             "Server does not support resources capability."
         }
@@ -505,7 +509,7 @@ public open class Server(
      * @throws IllegalStateException If the server does not support resources.
      */
     public fun addResources(resourcesToAdd: List<RegisteredResource>) {
-        check(options.capabilities.resources != null) {
+        checkNotNull(options.capabilities.resources) {
             logger.error { "Failed to add resources: Server does not support resources capability" }
             "Server does not support resources capability."
         }
@@ -520,7 +524,7 @@ public open class Server(
      * @throws IllegalStateException If the server does not support resources.
      */
     public fun removeResource(uri: String): Boolean {
-        check(options.capabilities.resources != null) {
+        checkNotNull(options.capabilities.resources) {
             logger.error { "Failed to remove resource '$uri': Server does not support resources capability" }
             "Server does not support resources capability."
         }
@@ -535,11 +539,72 @@ public open class Server(
      * @throws IllegalStateException If the server does not support resources.
      */
     public fun removeResources(uris: List<String>): Int {
-        check(options.capabilities.resources != null) {
+        checkNotNull(options.capabilities.resources) {
             logger.error { "Failed to remove resources: Server does not support resources capability" }
             "Server does not support resources capability."
         }
         return resourceRegistry.removeAll(uris)
+    }
+
+    /**
+     * Registers a resource template. Clients can discover it via `resources/templates/list`
+     * and read matching URIs via `resources/read`.
+     *
+     * @param template The [ResourceTemplate] describing the URI template pattern.
+     * @param readHandler A suspend function invoked when a client reads a URI that matches
+     *   the template. The second parameter contains the URI variables extracted from the match.
+     * @throws IllegalStateException If the server does not support resources.
+     */
+    public fun addResourceTemplate(
+        template: ResourceTemplate,
+        readHandler: suspend ClientConnection.(ReadResourceRequest, Map<String, String>) -> ReadResourceResult,
+    ) {
+        checkNotNull(options.capabilities.resources) {
+            "Server does not support resources capability."
+        }
+        val matcher = options.resourceTemplateMatcherFactory.create(template)
+        resourceTemplateRegistry.add(
+            RegisteredResourceTemplate(
+                template,
+                matcher,
+                readHandler = readHandler,
+            ),
+        )
+    }
+
+    /**
+     * Registers a resource template by constructing a [ResourceTemplate] from given parameters.
+     *
+     * @param uriTemplate The RFC 6570 URI template string (e.g. `"file:///{path}"`).
+     * @param name A human-readable name for the template.
+     * @param description A human-readable description of the resource template.
+     * @param mimeType The MIME type of resource content served by this template.
+     * @param readHandler A suspend function invoked when a client reads a URI that matches
+     *   the template. The second parameter contains the URI variables extracted from the match.
+     * @throws IllegalStateException If the server does not support resources.
+     */
+    public fun addResourceTemplate(
+        uriTemplate: String,
+        name: String,
+        description: String? = null,
+        mimeType: String? = null,
+        readHandler: suspend ClientConnection.(ReadResourceRequest, Map<String, String>) -> ReadResourceResult,
+    ) {
+        addResourceTemplate(ResourceTemplate(uriTemplate, name, description, mimeType), readHandler)
+    }
+
+    /**
+     * Removes a resource template by its URI template string.
+     *
+     * @param uriTemplate The URI template string identifying the template to remove.
+     * @return True if the template was removed, false if it was not found.
+     * @throws IllegalStateException If the server does not support resources.
+     */
+    public fun removeResourceTemplate(uriTemplate: String): Boolean {
+        checkNotNull(options.capabilities.resources) {
+            "Server does not support resources capability."
+        }
+        return resourceTemplateRegistry.remove(uriTemplate)
     }
 
     // --- Internal Handlers ---
@@ -580,13 +645,15 @@ public open class Server(
         }
 
         // Execute the tool handler and catch any errors
-        @Suppress("TooGenericExceptionCaught")
         return try {
             logger.trace { "Executing tool ${requestParams.name} with input: ${requestParams.arguments}" }
             tool.run {
                 session.clientConnection.handler(request)
             }
         } catch (e: CancellationException) {
+            throw e
+        } catch (e: UrlElicitationRequiredException) {
+            // Surface a required URL-mode elicitation as a JSON-RPC error (-32042)
             throw e
         } catch (e: Exception) {
             logger.error(e) { "Error executing tool ${requestParams.name}" }
@@ -621,25 +688,43 @@ public open class Server(
     }
 
     private suspend fun handleReadResource(session: ServerSession, request: ReadResourceRequest): ReadResourceResult {
-        val requestParams = request.params
-        logger.debug { "Handling read resource request for: ${requestParams.uri}" }
-        val resource = resourceRegistry.get(requestParams.uri)
-            ?: run {
-                logger.error { "Resource not found: ${requestParams.uri}" }
-                throw IllegalArgumentException("Resource not found: ${requestParams.uri}")
-            }
-        return resource.run {
-            session.clientConnection.readHandler(request)
+        val uri = request.params.uri
+        logger.debug { "Handling read resource request for: $uri" }
+
+        // Priority 1: exact URI match
+        resourceRegistry.get(uri)?.let { resource ->
+            return resource.run { session.clientConnection.readHandler(request) }
         }
+
+        // Priority 2: most-specific matching template.
+        // Selection: highest score wins; on tie, fewest variables wins; on tie, registration order wins.
+        val (template, matchResult) = resourceTemplateRegistry.values.values
+            .mapNotNull { tmpl -> tmpl.matcher.match(uri)?.let { tmpl to it } }
+            .maxWithOrNull(
+                compareBy<Pair<RegisteredResourceTemplate, MatchResult>> { (_, result) -> result.score }
+                    .thenByDescending { (_, result) -> result.variables.size },
+            )
+            ?: run {
+                logger.error { "Resource not found: $uri" }
+                throw McpException(
+                    code = RPCError.ErrorCode.RESOURCE_NOT_FOUND,
+                    message = "Resource not found",
+                    data = buildJsonObject { put("uri", uri) },
+                )
+            }
+
+        logger.debug { "Matched resource template '${template.key}' for URI: $uri" }
+        return template.run { session.clientConnection.readHandler(request, matchResult.variables) }
     }
 
     private fun handleListResourceTemplates(): ListResourceTemplatesResult {
-        // If you have resource templates, return them here. For now, return empty.
-        return ListResourceTemplatesResult(listOf())
+        logger.debug { "Handling list resource templates request" }
+        return ListResourceTemplatesResult(resourceTemplateRegistry.values.values.map { it.resourceTemplate })
     }
 
     // Start the ServerSession / ClientConnection redirection section
 
+    /** Returns the [ClientConnection] for the session identified by [sessionId]. */
     public fun clientConnection(sessionId: String): ClientConnection =
         sessionRegistry.getSession(sessionId).clientConnection
 
@@ -701,6 +786,30 @@ public open class Server(
     )
 
     /**
+     * Triggers URL mode [ClientConnection.createElicitation] request for session by provided [sessionId].
+     *
+     * @param sessionId The session ID to create elicitation for.
+     * @param message The message explaining why the interaction is needed.
+     * @param elicitationId A unique identifier for the elicitation.
+     * @param url The URL that the user should navigate to.
+     * @param options Optional request options.
+     * @return The created elicitation result.
+     * @throws IllegalStateException If the server does not support elicitation or if the request fails.
+     */
+    public suspend fun createElicitation(
+        sessionId: String,
+        message: String,
+        elicitationId: String,
+        url: String,
+        options: RequestOptions? = null,
+    ): ElicitResult = clientConnection(sessionId).createElicitation(
+        message = message,
+        elicitationId = elicitationId,
+        url = url,
+        options = options,
+    )
+
+    /**
      * Triggers [ClientConnection.sendLoggingMessage] for session by provided [sessionId].
      *
      * @param sessionId The session ID to send the logging message to.
@@ -746,21 +855,35 @@ public open class Server(
     public suspend fun sendPromptListChanged(sessionId: String) {
         clientConnection(sessionId).sendPromptListChanged()
     }
+
+    /**
+     * Triggers [ClientConnection.sendElicitationComplete] for session by provided [sessionId].
+     *
+     * @param sessionId The session ID to send the elicitation complete notification to.
+     * @param notification Details of the completed elicitation.
+     */
+    public suspend fun sendElicitationComplete(sessionId: String, notification: ElicitationCompleteNotification) {
+        clientConnection(sessionId).sendElicitationComplete(notification)
+    }
     // End the ServerSession / ClientConnection redirection section
 
     // Start the notification handling section
+
+    /** Registers a notification [handler] for the given [method] on all active sessions. */
     public fun <T : Notification> setNotificationHandler(method: Method, handler: (notification: T) -> Deferred<Unit>) {
         sessions.forEach { (_, session) ->
             session.setNotificationHandler(method, handler)
         }
     }
 
+    /** Removes the notification handler for the given [method] from all active sessions. */
     public fun removeNotificationHandler(method: Method) {
         sessions.forEach { (_, session) ->
             session.removeNotificationHandler(method)
         }
     }
 
+    /** Registers a notification [handler] for the given [method] on a specific session. */
     public fun <T : Notification> setNotificationHandler(
         sessionId: String,
         method: Method,
@@ -769,6 +892,7 @@ public open class Server(
         sessionRegistry.getSessionOrNull(sessionId)?.setNotificationHandler(method, handler)
     }
 
+    /** Removes the notification handler for the given [method] from a specific session. */
     public fun removeNotificationHandler(sessionId: String, method: Method) {
         sessionRegistry.getSessionOrNull(sessionId)?.removeNotificationHandler(method)
     }

@@ -6,7 +6,7 @@ import io.ktor.client.plugins.sse.SSE
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
 import io.modelcontextprotocol.kotlin.sdk.client.mcpStreamableHttp
-import io.modelcontextprotocol.kotlin.sdk.integration.typescript.sse.KotlinServerForTsClient
+import io.modelcontextprotocol.kotlin.sdk.integration.typescript.http.KotlinServerForTsClient
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.StdioServerTransport
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-enum class TransportKind { SSE, STDIO }
+enum class TransportKind { HTTP, STDIO }
 
 @Retry(times = 3)
 abstract class TsTestBase {
@@ -43,10 +43,10 @@ abstract class TsTestBase {
         protected val typescriptDir = File(projectRoot, "src/jvmTest/typescript")
 
         @JvmStatic
-        private var sharedSseServer: Process? = null
+        private var sharedHttpServer: Process? = null
 
         @JvmStatic
-        private var sharedSsePort: Int = 0
+        private var sharedHttpPort: Int = 0
 
         init {
             installDependencies(typescriptDir)
@@ -54,23 +54,23 @@ abstract class TsTestBase {
 
         @JvmStatic
         @Synchronized
-        protected fun getSharedSseUrl(): String {
-            if (sharedSseServer == null || !sharedSseServer!!.isAlive) {
-                sharedSsePort = io.modelcontextprotocol.kotlin.test.utils.findFreePort()
+        protected fun getSharedHttpUrl(): String {
+            if (sharedHttpServer == null || !sharedHttpServer!!.isAlive) {
+                sharedHttpPort = io.modelcontextprotocol.kotlin.test.utils.findFreePort()
                 val server = TypeScriptServer(typescriptDir)
-                sharedSseServer = server.startSse(sharedSsePort)
-                println("Shared TypeScript SSE server started on port $sharedSsePort")
+                sharedHttpServer = server.startHttp(sharedHttpPort)
+                println("Shared TypeScript HTTP server started on port $sharedHttpPort")
 
                 Runtime.getRuntime().addShutdownHook(
                     Thread {
-                        sharedSseServer?.let {
-                            println("Stopping shared TypeScript SSE server")
+                        sharedHttpServer?.let {
+                            println("Stopping shared TypeScript HTTP server")
                             io.modelcontextprotocol.kotlin.test.utils.stopProcess(it)
                         }
                     },
                 )
             }
-            return "http://localhost:$sharedSsePort/mcp"
+            return "http://localhost:$sharedHttpPort/mcp"
         }
 
         @JvmStatic
@@ -141,7 +141,7 @@ abstract class TsTestBase {
         println("$name stopped")
     }
 
-    // ===== SSE client helpers =====
+    // ===== HTTP client helpers =====
     protected suspend fun newClient(serverUrl: String): Client =
         HttpClient(CIO) { install(SSE) }.mcpStreamableHttp(serverUrl)
 

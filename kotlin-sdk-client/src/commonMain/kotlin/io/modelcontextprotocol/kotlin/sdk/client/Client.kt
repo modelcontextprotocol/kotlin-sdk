@@ -4,16 +4,22 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.shared.Protocol
 import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions
+import io.modelcontextprotocol.kotlin.sdk.shared.RequestHandlerExtra
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
+import io.modelcontextprotocol.kotlin.sdk.types.BooleanSchema
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.CompleteRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CompleteResult
+import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
+import io.modelcontextprotocol.kotlin.sdk.types.DoubleSchema
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestFormParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitResult
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotification
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult
@@ -22,7 +28,9 @@ import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeResult
 import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
+import io.modelcontextprotocol.kotlin.sdk.types.IntegerSchema
 import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.LegacyTitledEnumSchema
 import io.modelcontextprotocol.kotlin.sdk.types.ListPromptsRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ListPromptsResult
 import io.modelcontextprotocol.kotlin.sdk.types.ListResourceTemplatesRequest
@@ -37,17 +45,26 @@ import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
+import io.modelcontextprotocol.kotlin.sdk.types.PrimitiveSchemaDefinition
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
+import io.modelcontextprotocol.kotlin.sdk.types.Request
 import io.modelcontextprotocol.kotlin.sdk.types.RequestMeta
+import io.modelcontextprotocol.kotlin.sdk.types.RequestResult
 import io.modelcontextprotocol.kotlin.sdk.types.Root
 import io.modelcontextprotocol.kotlin.sdk.types.RootsListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.SetLevelRequest
 import io.modelcontextprotocol.kotlin.sdk.types.SetLevelRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.StringSchema
 import io.modelcontextprotocol.kotlin.sdk.types.SubscribeRequest
+import io.modelcontextprotocol.kotlin.sdk.types.TitledMultiSelectEnumSchema
+import io.modelcontextprotocol.kotlin.sdk.types.TitledSingleSelectEnumSchema
 import io.modelcontextprotocol.kotlin.sdk.types.UnsubscribeRequest
+import io.modelcontextprotocol.kotlin.sdk.types.UntitledMultiSelectEnumSchema
+import io.modelcontextprotocol.kotlin.sdk.types.UntitledSingleSelectEnumSchema
+import io.modelcontextprotocol.kotlin.sdk.types.supportsUrl
 import io.modelcontextprotocol.kotlin.sdk.types.toJson
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.getAndUpdate
@@ -55,8 +72,12 @@ import kotlinx.atomicfu.update
 import kotlinx.collections.immutable.minus
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentSet
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
 import kotlin.coroutines.cancellation.CancellationException
 
 private val logger = KotlinLogging.logger {}
@@ -65,7 +86,7 @@ private val logger = KotlinLogging.logger {}
  * Options for configuring the MCP client.
  *
  * @property capabilities The capabilities this client supports.
- * @property enforceStrictCapabilities Whether to strictly enforce capabilities when interacting with the server.
+ * @param enforceStrictCapabilities Whether to strictly enforce capabilities when interacting with the server.
  */
 public class ClientOptions(
     public val capabilities: ClientCapabilities = ClientCapabilities(),
@@ -107,7 +128,6 @@ public suspend fun mcpClient(
  * @param clientInfo Information about the client implementation (name, version).
  * @param options Configuration options for this client.
  */
-@Suppress("TooManyFunctions")
 public open class Client(private val clientInfo: Implementation, options: ClientOptions = ClientOptions()) :
     Protocol(options) {
 
@@ -157,6 +177,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
             "prompts" -> caps?.prompts != null
             "resources" -> caps?.resources != null
             "tools" -> caps?.tools != null
+            "tasks" -> caps?.tasks != null
             else -> true
         }
 
@@ -221,10 +242,15 @@ public open class Client(private val clientInfo: Implementation, options: Client
 
             Method.Defined.PromptsGet,
             Method.Defined.PromptsList,
-            Method.Defined.CompletionComplete,
             -> {
                 checkNotNull(serverCapabilities?.prompts) {
-                    throw IllegalStateException("Server does not support prompts (required for $method)")
+                    "Server does not support prompts (required for $method)"
+                }
+            }
+
+            Method.Defined.CompletionComplete -> {
+                checkNotNull(serverCapabilities?.completions) {
+                    "Server does not support completions (required for $method)"
                 }
             }
 
@@ -237,10 +263,10 @@ public open class Client(private val clientInfo: Implementation, options: Client
                 val resCaps = serverCapabilities?.resources
                     ?: error("Server does not support resources (required for $method)")
 
-                if (method == Method.Defined.ResourcesSubscribe && resCaps.subscribe != true) {
-                    throw IllegalStateException(
-                        "Server does not support resource subscriptions (required for $method)",
-                    )
+                if (method == Method.Defined.ResourcesSubscribe) {
+                    check(resCaps.subscribe == true) {
+                        "Server does not support resource subscriptions (required for $method)"
+                    }
                 }
             }
 
@@ -249,6 +275,12 @@ public open class Client(private val clientInfo: Implementation, options: Client
                     "Server does not support tools (required for $method)"
                 }
             }
+
+            Method.Defined.TasksGet,
+            Method.Defined.TasksResult,
+            Method.Defined.TasksList,
+            Method.Defined.TasksCancel,
+            -> assertTasksCapabilityForMethod(method)
 
             Method.Defined.Initialize, Method.Defined.Ping -> {
                 // No specific capability required
@@ -260,11 +292,35 @@ public open class Client(private val clientInfo: Implementation, options: Client
         }
     }
 
+    private fun assertTasksCapabilityForMethod(method: Method) {
+        val tasks = serverCapabilities?.tasks
+            ?: error("Server does not support tasks (required for $method)")
+        when (method) {
+            Method.Defined.TasksList -> checkNotNull(tasks.list) {
+                "Server does not support listing tasks (required for $method)"
+            }
+
+            Method.Defined.TasksCancel -> checkNotNull(tasks.cancel) {
+                "Server does not support cancelling tasks (required for $method)"
+            }
+
+            else -> {
+                // TasksGet, TasksResult: base tasks capability suffices.
+            }
+        }
+    }
+
     override fun assertNotificationCapability(method: Method) {
         when (method) {
             Method.Defined.NotificationsRootsListChanged -> {
                 check(capabilities.roots?.listChanged == true) {
                     "Client does not support roots list changed notifications (required for $method)"
+                }
+            }
+
+            Method.Defined.NotificationsTasksStatus -> {
+                checkNotNull(capabilities.tasks) {
+                    "Client does not support tasks (required for $method)"
                 }
             }
 
@@ -310,6 +366,26 @@ public open class Client(private val clientInfo: Implementation, options: Client
     }
 
     /**
+     * Wraps incoming-request handlers with SEP-1577 client-side enforcement.
+     *
+     * For `sampling/createMessage`: if the incoming request carries `tools` or
+     * `toolChoice` but this client did not advertise [ClientCapabilities.Sampling.tools],
+     * the wrapper throws an [McpException] with JSON-RPC error code `InvalidParams`
+     * before the user-supplied handler runs. Matches the TypeScript SDK wrapper in
+     * `Client.setRequestHandler`.
+     */
+    override fun <T : Request> wrapRequestHandler(
+        method: Method,
+        block: suspend (T, RequestHandlerExtra) -> RequestResult?,
+    ): suspend (T, RequestHandlerExtra) -> RequestResult? {
+        if (method != Method.Defined.SamplingCreateMessage) return block
+        return { request, extra ->
+            (request as? CreateMessageRequest)?.let { validateSamplingToolsCapability(it, capabilities) }
+            block(request, extra)
+        }
+    }
+
+    /**
      * Sends a ping request to the server to check connectivity.
      *
      * @param options Optional request options.
@@ -323,7 +399,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
      * @param params The completion request parameters.
      * @param options Optional request options.
      * @return The completion result returned by the server, or `null` if none.
-     * @throws IllegalStateException If the server does not support prompts or completion.
+     * @throws IllegalStateException If the server does not support completions.
      */
     public suspend fun complete(params: CompleteRequest, options: RequestOptions? = null): CompleteResult =
         request(params, options)
@@ -518,9 +594,8 @@ public open class Client(private val clientInfo: Implementation, options: Client
      * @throws IllegalStateException If the client does not support roots.
      */
     public fun removeRoot(uri: String): Boolean {
-        if (capabilities.roots == null) {
-            logger.error { "Failed to remove root '$uri': Client does not support roots capability" }
-            throw IllegalStateException("Client does not support roots capability.")
+        checkNotNull(capabilities.roots) {
+            "Client does not support roots capability."
         }
         logger.info { "Removing root: $uri" }
         val oldMap = roots.getAndUpdate { current -> current.remove(uri) }
@@ -576,6 +651,19 @@ public open class Client(private val clientInfo: Implementation, options: Client
     /**
      * Sets the elicitation handler.
      *
+     * The handler receives both form-mode ([ElicitRequestFormParams]) and URL-mode
+     * ([io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestURLParams]) requests;
+     * branch on `request.params` to tell them apart. For URL mode,
+     * the host application must obtain explicit user consent and display the target domain before
+     * navigating — the SDK never opens or validates the URL — and should return
+     * [ElicitResult.Action.Decline] or [ElicitResult.Action.Cancel] when it cannot or will not proceed.
+     * A URL-mode [ElicitResult.Action.Accept] only signals consent; the outcome arrives out-of-band via
+     * [setElicitationCompleteHandler].
+     *
+     * When a form-mode handler returns [ElicitResult.Action.Accept], any properties missing from
+     * [ElicitResult.content] are automatically populated with default values defined in the
+     * elicitation schema. URL-mode responses carry no content.
+     *
      * @param handler The elicitation handler.
      * @throws IllegalStateException if the client does not support elicitation.
      */
@@ -587,11 +675,87 @@ public open class Client(private val clientInfo: Implementation, options: Client
         logger.info { "Setting the elicitation handler" }
 
         setRequestHandler<ElicitRequest>(Method.Defined.ElicitationCreate) { request, _ ->
-            handler(request)
+            val result = handler(request)
+            applyElicitationDefaults(request, result)
+        }
+    }
+
+    /**
+     * Sets the handler invoked when the server reports that a URL-mode elicitation has completed.
+     *
+     * The handler is called for every `notifications/elicitation/complete` notification. Because the
+     * server only sends this for an out-of-band (URL-mode) interaction, the client must support url-mode
+     * elicitation. The client is responsible for correlating the notification's `elicitationId` with a
+     * pending elicitation, ignoring unknown or already-completed identifiers, and providing a manual way
+     * to continue if a notification never arrives.
+     *
+     * @param handler Invoked with each completion notification.
+     * @throws IllegalStateException if the client does not support url-mode elicitation.
+     */
+    public fun setElicitationCompleteHandler(handler: (ElicitationCompleteNotification) -> Unit) {
+        check(capabilities.elicitation.supportsUrl) {
+            logger.error {
+                "Failed to set elicitation-complete handler: client does not support url-mode elicitation"
+            }
+            "Client does not support url-mode elicitation."
+        }
+        logger.info { "Setting the elicitation-complete handler" }
+
+        setNotificationHandler<ElicitationCompleteNotification>(
+            Method.Defined.NotificationsElicitationComplete,
+        ) { notification ->
+            handler(notification)
+            CompletableDeferred(Unit)
         }
     }
 
     // --- Internal Handlers ---
+
+    private fun applyElicitationDefaults(request: ElicitRequest, result: ElicitResult): ElicitResult {
+        if (result.action != ElicitResult.Action.Accept) return result
+        val formParams = request.params as? ElicitRequestFormParams ?: return result
+        val content = result.content ?: return result
+
+        val merged = buildMap {
+            putAll(content)
+            for ((key, schemaDef) in formParams.requestedSchema.properties) {
+                if (key !in content) {
+                    schemaDef.defaultJsonValue()?.let { put(key, it) }
+                }
+            }
+        }
+
+        return if (merged.size == content.size) {
+            result
+        } else {
+            result.copy(content = JsonObject(merged))
+        }
+    }
+
+    @Suppress("DEPRECATION", "CyclomaticComplexMethod")
+    private fun PrimitiveSchemaDefinition.defaultJsonValue(): JsonElement? = when (this) {
+        is StringSchema -> default?.let { JsonPrimitive(it) }
+
+        is IntegerSchema -> default?.let { JsonPrimitive(it) }
+
+        is DoubleSchema -> default?.let { JsonPrimitive(it) }
+
+        is BooleanSchema -> default?.let { JsonPrimitive(it) }
+
+        is UntitledSingleSelectEnumSchema -> default?.let { JsonPrimitive(it) }
+
+        is TitledSingleSelectEnumSchema -> default?.let { JsonPrimitive(it) }
+
+        is LegacyTitledEnumSchema -> default?.let { JsonPrimitive(it) }
+
+        is UntitledMultiSelectEnumSchema -> default?.let { list ->
+            buildJsonArray { list.forEach { add(JsonPrimitive(it)) } }
+        }
+
+        is TitledMultiSelectEnumSchema -> default?.let { list ->
+            buildJsonArray { list.forEach { add(JsonPrimitive(it)) } }
+        }
+    }
 
     private fun handleListRoots(): ListRootsResult {
         val rootList = roots.value.values.toList()

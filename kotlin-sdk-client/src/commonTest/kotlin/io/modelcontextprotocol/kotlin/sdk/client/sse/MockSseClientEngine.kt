@@ -53,6 +53,14 @@ internal open class MockSseClientEngine(
         job.cancel()
     }
 
+    /**
+     * Closes the SSE byte channel without disposing the engine, simulating a server-side
+     * disconnect of the SSE stream.
+     */
+    fun disconnectSseStream() {
+        channel.close()
+    }
+
     private fun responseContext(): CoroutineContext = dispatcher + Job()
 
     private suspend fun respondWithSseEndpointEvent(data: HttpRequestData): HttpResponseData {

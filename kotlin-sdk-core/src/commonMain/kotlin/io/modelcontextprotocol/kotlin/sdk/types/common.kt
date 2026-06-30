@@ -8,10 +8,13 @@ import kotlinx.serialization.json.JsonObject
 // Protocol Version Constants
 // ============================================================================
 
+/** The latest supported MCP protocol version string. */
 public const val LATEST_PROTOCOL_VERSION: String = "2025-11-25"
 
-public const val DEFAULT_NEGOTIATED_PROTOCOL_VERSION: String = "2025-06-18"
+/** The default protocol version used when negotiation is not performed. */
+public const val DEFAULT_NEGOTIATED_PROTOCOL_VERSION: String = "2025-03-26"
 
+/** All MCP protocol versions supported by this SDK. */
 public val SUPPORTED_PROTOCOL_VERSIONS: List<String> = listOf(
     LATEST_PROTOCOL_VERSION,
     "2025-06-18",
@@ -28,17 +31,9 @@ public val SUPPORTED_PROTOCOL_VERSIONS: List<String> = listOf(
  */
 @Serializable
 public sealed interface WithMeta {
+    /** Optional metadata attached to this entity. */
     @SerialName("_meta")
     public val meta: JsonObject?
-
-    @Deprecated(
-        message = "Use 'meta' instead.",
-        replaceWith = ReplaceWith("meta"),
-        level = DeprecationLevel.ERROR,
-    )
-    @Suppress("PropertyName", "VariableNaming")
-    public val _meta: JsonObject
-        get() = meta ?: EmptyJsonObject
 }
 
 // ============================================================================
@@ -50,8 +45,10 @@ public sealed interface WithMeta {
  */
 public typealias ProgressToken = RequestId
 
+/** Creates a [ProgressToken] from a string value. */
 public fun ProgressToken(value: String): ProgressToken = RequestId(value)
 
+/** Creates a [ProgressToken] from a numeric value. */
 public fun ProgressToken(value: Long): ProgressToken = RequestId(value)
 
 // ============================================================================
@@ -93,9 +90,6 @@ public data class Icon(
 ) {
     /**
      * The theme context for which an icon is designed.
-     *
-     * @property Light Icon designed for use with a light background (typically darker icon).
-     * @property Dark Icon designed for use with a dark background (typically lighter icon).
      */
     @Serializable
     public enum class Theme {
@@ -133,9 +127,15 @@ public enum class Role {
  */
 @Serializable(with = ReferencePolymorphicSerializer::class)
 public sealed interface Reference {
+    /** Discriminator identifying the reference subtype. */
     public val type: ReferenceType
 }
 
+/**
+ * Discriminator for [Reference] subtypes used in completion and other operations.
+ *
+ * @property value serialized string representation of this reference type
+ */
 @Serializable
 public enum class ReferenceType(public val value: String) {
     @SerialName("ref/prompt")

@@ -14,6 +14,7 @@ import kotlin.jvm.JvmOverloads
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
+/** JSON-RPC protocol version used by MCP (`"2.0"`). */
 public const val JSONRPC_VERSION: String = "2.0"
 
 /**
@@ -40,10 +41,20 @@ public fun RequestId(value: Long): RequestId = RequestId.NumberId(value)
 @Serializable(with = RequestIdPolymorphicSerializer::class)
 public sealed interface RequestId {
 
+    /**
+     * A string-based request identifier.
+     *
+     * @property value the string representation of this request ID
+     */
     @JvmInline
     @Serializable
     public value class StringId(public val value: String) : RequestId
 
+    /**
+     * A numeric request identifier.
+     *
+     * @property value the numeric representation of this request ID
+     */
     @JvmInline
     @Serializable
     public value class NumberId(public val value: Long) : RequestId
@@ -96,9 +107,13 @@ internal fun JSONRPCNotification.fromJSON(): Notification =
  */
 @Serializable(with = JSONRPCMessagePolymorphicSerializer::class)
 public sealed interface JSONRPCMessage {
+    /** The JSON-RPC protocol version, always `"2.0"`. */
     public val jsonrpc: String
 }
 
+/**
+ * Represents an empty JSON-RPC message used as a placeholder or no-op response.
+ */
 @Serializable
 public data object JSONRPCEmptyMessage : JSONRPCMessage {
     override val jsonrpc: String = JSONRPC_VERSION
@@ -115,7 +130,6 @@ public data object JSONRPCEmptyMessage : JSONRPCMessage {
  * The server or client (depending on a direction) must respond with either a
  * [JSONRPCResponse] or [JSONRPCError] that has the same [id].
  *
- * @property jsonrpc Always "2.0" to indicate JSON-RPC 2.0 protocol.
  * @property id A unique identifier for this request. The response will include the same ID.
  * Can be a string or number. UUID string is used by default.
  * @property method The name of the method to invoke (e.g., "tools/list", "resources/read").
@@ -128,6 +142,7 @@ public data class JSONRPCRequest @JvmOverloads public constructor(
     val method: String,
     val params: JsonElement? = null,
 ) : JSONRPCMessage {
+    /** Always `"2.0"` to indicate JSON-RPC 2.0 protocol. */
     @EncodeDefault
     override val jsonrpc: String = JSONRPC_VERSION
 
@@ -170,13 +185,13 @@ public data class JSONRPCRequest @JvmOverloads public constructor(
  *
  * Examples: progress updates, resource change notifications, log messages.
  *
- * @property jsonrpc Always "2.0" to indicate JSON-RPC 2.0 protocol.
  * @property method The name of the notification method (e.g., "notifications/progress",
  * "notifications/resources/updated").
  * @property params Optional parameters for the notification. Structure depends on the specific method.
  */
 @Serializable
 public data class JSONRPCNotification(val method: String, val params: JsonElement? = null) : JSONRPCMessage {
+    /** Always `"2.0"` to indicate JSON-RPC 2.0 protocol. */
     @EncodeDefault
     override val jsonrpc: String = JSONRPC_VERSION
 }
@@ -191,12 +206,12 @@ public data class JSONRPCNotification(val method: String, val params: JsonElemen
  * Sent in response to a [JSONRPCRequest] when the method execution succeeds.
  * The [id] must match the [id] of the original request.
  *
- * @property jsonrpc Always "2.0" to indicate JSON-RPC 2.0 protocol.
  * @property id The identifier from the original request. Used to match responses to requests.
  * @property result The result of the method execution. Structure depends on the method that was called.
  */
 @Serializable
 public data class JSONRPCResponse(val id: RequestId, val result: RequestResult = EmptyResult()) : JSONRPCMessage {
+    /** Always `"2.0"` to indicate JSON-RPC 2.0 protocol. */
     @EncodeDefault
     override val jsonrpc: String = JSONRPC_VERSION
 }
@@ -211,12 +226,12 @@ public data class JSONRPCResponse(val id: RequestId, val result: RequestResult =
  * Sent in response to a [JSONRPCRequest] when the method execution fails.
  * The [id] must match the [id] of the original request.
  *
- * @property jsonrpc Always "2.0" to indicate JSON-RPC 2.0 protocol.
  * @property id The identifier from the original request. Used to match error responses to requests.
  * @property error Details about the error that occurred, including error code and message.
  */
 @Serializable
 public data class JSONRPCError(val id: RequestId?, val error: RPCError) : JSONRPCMessage {
+    /** Always `"2.0"` to indicate JSON-RPC 2.0 protocol. */
     @EncodeDefault
     override val jsonrpc: String = JSONRPC_VERSION
 }
@@ -250,6 +265,16 @@ public data class RPCError(val code: Int, val message: String, val data: JsonEle
 
         /** Request timed out */
         public const val REQUEST_TIMEOUT: Int = -32001
+
+        /** Resource not found */
+        public const val RESOURCE_NOT_FOUND: Int = -32002
+
+        /**
+         * A URL-mode elicitation must be completed before the request can be processed.
+         * The error [data][RPCError.data] carries the required URL-mode elicitations
+         * (see [UrlElicitationRequiredException]).
+         */
+        public const val URL_ELICITATION_REQUIRED: Int = -32042
 
         // Standard JSON-RPC 2.0 error codes
 

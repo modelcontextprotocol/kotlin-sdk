@@ -5,9 +5,13 @@ import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageResult
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestFormParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestURLParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitResult
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotification
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
+import io.modelcontextprotocol.kotlin.sdk.types.IncludeContext
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsResult
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
@@ -21,6 +25,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ResourceListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ServerNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ToolListChangedNotification
+import io.modelcontextprotocol.kotlin.sdk.types.supportsUrl
 
 private val logger = KotlinLogging.logger {}
 
@@ -29,7 +34,6 @@ private val logger = KotlinLogging.logger {}
  * communication through notifications, requests, and other operations.
  * This interface defines various methods to facilitate the interaction.
  */
-@Suppress("TooManyFunctions")
 public interface ClientConnection {
 
     /**
@@ -105,6 +109,24 @@ public interface ClientConnection {
     ): ElicitResult
 
     /**
+     * Sends a URL mode elicitation request to the client, directing the user
+     * to an external URL for out-of-band interactions.
+     *
+     * @param message The message explaining why the interaction is needed.
+     * @param elicitationId A unique identifier for the elicitation.
+     * @param url The URL that the user should navigate to.
+     * @param options Optional request options.
+     * @return The result of the elicitation request.
+     * @throws IllegalStateException If the server or client does not support elicitation.
+     */
+    public suspend fun createElicitation(
+        message: String,
+        elicitationId: String,
+        url: String,
+        options: RequestOptions? = null,
+    ): ElicitResult
+
+    /**
      * Sends a message to the client requesting elicitation.
      * This typically results in a form being displayed to the user.
      *
@@ -145,9 +167,15 @@ public interface ClientConnection {
      * Sends a notification to the client indicating that the list of prompts has changed.
      */
     public suspend fun sendPromptListChanged()
+
+    /**
+     * Sends a notification to the client indicating that an out-of-band elicitation has completed.
+     *
+     * @param notification Details of the completed elicitation.
+     */
+    public suspend fun sendElicitationComplete(notification: ElicitationCompleteNotification)
 }
 
-@Suppress("TooManyFunctions")
 internal class ClientConnectionImpl(private val session: ServerSession) : ClientConnection {
 
     override val sessionId: String get() = session.sessionId
@@ -172,12 +200,33 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
     }
 
     override suspend fun createMessage(request: CreateMessageRequest, options: RequestOptions?): CreateMessageResult {
-        with(request.params) {
-            logger.debug {
-                "Creating message with ${messages.size} messages, maxTokens=$maxTokens, " +
-                    "temperature=$temperature, " +
-                    "systemPrompt=${if (systemPrompt != null) "present" else "absent"}"
+        val caps = session.clientCapabilities
+        val params = request.params
+
+        if (params.tools != null || params.toolChoice != null) {
+            requireNotNull(caps?.sampling?.tools) {
+                "Client did not advertise sampling.tools capability; cannot send " +
+                    "tools/toolChoice in sampling/createMessage request."
             }
+        }
+
+        if (params.includeContext != null && params.includeContext != IncludeContext.None) {
+            if (caps?.sampling?.context == null) {
+                logger.warn {
+                    "Client did not advertise sampling.context capability but server requested " +
+                        "includeContext=${params.includeContext}. This is soft-deprecated and may be " +
+                        "rejected by future spec versions."
+                }
+            }
+        }
+
+        validateSamplingMessages(params.messages)
+
+        logger.debug {
+            "Creating message with ${params.messages.size} messages, maxTokens=${params.maxTokens}, " +
+                "temperature=${params.temperature}, " +
+                "systemPrompt=${if (params.systemPrompt != null) "present" else "absent"}, " +
+                "tools=${params.tools?.size ?: 0}, toolChoice=${params.toolChoice?.mode}"
         }
         logger.trace { "Full createMessage params: $request" }
         return request(request, options)
@@ -189,10 +238,21 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
     }
 
     override suspend fun createElicitation(request: ElicitRequest, options: RequestOptions?): ElicitResult {
-        with(request.params) {
-            logger.debug {
-                "Creating elicitation with message length=${message.length}, " +
-                    "schema properties count=${requestedSchema.properties.size}"
+        val params = request.params
+        if (params is ElicitRequestURLParams) {
+            require(session.clientCapabilities?.elicitation.supportsUrl) {
+                "Client did not advertise elicitation.url capability; cannot send a URL-mode elicitation."
+            }
+        }
+        logger.debug {
+            when (params) {
+                is ElicitRequestFormParams ->
+                    "Creating form elicitation with message length=${params.message.length}, " +
+                        "schema properties count=${params.requestedSchema.properties.size}"
+
+                is ElicitRequestURLParams ->
+                    "Creating URL elicitation with message length=${params.message.length}, " +
+                        "elicitationId=${params.elicitationId}"
             }
         }
         logger.trace { "ElicitRequest: $request" }
@@ -204,7 +264,19 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
         requestedSchema: ElicitRequestParams.RequestedSchema,
         options: RequestOptions?,
     ): ElicitResult = createElicitation(
-        request = ElicitRequest(params = ElicitRequestParams(message, requestedSchema)),
+        request = ElicitRequest(params = ElicitRequestFormParams(message = message, requestedSchema = requestedSchema)),
+        options = options,
+    )
+
+    override suspend fun createElicitation(
+        message: String,
+        elicitationId: String,
+        url: String,
+        options: RequestOptions?,
+    ): ElicitResult = createElicitation(
+        request = ElicitRequest(
+            params = ElicitRequestURLParams(message = message, elicitationId = elicitationId, url = url),
+        ),
         options = options,
     )
 
@@ -230,6 +302,14 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
     override suspend fun sendPromptListChanged() {
         logger.debug { "Sending prompt list changed notification" }
         notification(PromptListChangedNotification())
+    }
+
+    override suspend fun sendElicitationComplete(notification: ElicitationCompleteNotification) {
+        require(session.clientCapabilities?.elicitation.supportsUrl) {
+            "Client did not advertise elicitation.url capability; cannot send an elicitation completion notification."
+        }
+        logger.debug { "Sending elicitation complete notification for: ${notification.params.elicitationId}" }
+        notification(notification)
     }
 
     /**

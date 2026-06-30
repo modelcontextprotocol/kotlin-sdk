@@ -2,8 +2,11 @@ package io.modelcontextprotocol.kotlin.sdk.types.dsl
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestFormParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.StringSchema
 import io.modelcontextprotocol.kotlin.sdk.types.buildElicitRequest
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -24,14 +27,15 @@ class ElicitationDslTest {
         }
 
         request.params.message shouldBe "Provide info"
-        request.params.requestedSchema.properties["email"] shouldBe buildJsonObject { put("type", "string") }
-        request.params.requestedSchema.required shouldBe listOf("email")
+        val formParams = request.params.shouldBeInstanceOf<ElicitRequestFormParams>()
+        formParams.requestedSchema.properties["email"].shouldBeInstanceOf<StringSchema>()
+        formParams.requestedSchema.required shouldBe listOf("email")
     }
 
     @Test
     fun `buildElicitRequest should support direct requestedSchema`() {
         val schema = ElicitRequestParams.RequestedSchema(
-            properties = buildJsonObject { put("name", buildJsonObject { put("type", "string") }) },
+            properties = mapOf("name" to StringSchema()),
             required = listOf("name"),
         )
         val request = buildElicitRequest {
@@ -39,19 +43,20 @@ class ElicitationDslTest {
             requestedSchema(schema)
         }
 
-        request.params.requestedSchema shouldBe schema
+        val formParams = request.params.shouldBeInstanceOf<ElicitRequestFormParams>()
+        formParams.requestedSchema shouldBe schema
     }
 
     @Test
     fun `ElicitRequestedSchemaBuilder should support direct properties assignment`() {
-        val props = buildJsonObject { put("key", "value") }
         val request = buildElicitRequest {
             message = "Test"
             requestedSchema {
-                properties(props)
+                properties(buildJsonObject { put("key", buildJsonObject { put("type", "string") }) })
             }
         }
-        request.params.requestedSchema.properties shouldBe props
+        val formParams = request.params.shouldBeInstanceOf<ElicitRequestFormParams>()
+        formParams.requestedSchema.properties["key"].shouldBeInstanceOf<StringSchema>()
     }
 
     @Test

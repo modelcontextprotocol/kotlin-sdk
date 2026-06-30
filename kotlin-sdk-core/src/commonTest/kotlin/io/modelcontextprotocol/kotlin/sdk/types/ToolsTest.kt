@@ -37,7 +37,6 @@ class ToolsTest {
     }
 
     @Test
-    @Suppress("LongMethod")
     fun `should serialize Tool with annotations and schemas`() {
         val inputSchema = ToolSchema(
             properties = buildJsonObject {
@@ -156,6 +155,61 @@ class ToolsTest {
         assertNotNull(properties["text"])
         assertEquals(listOf("text", "targetLanguage"), schema.required)
         assertEquals("language", tool.meta?.get("category")?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun `should serialize ToolSchema with schema field`() {
+        val tool = Tool(
+            name = "typed-tool",
+            inputSchema = ToolSchema(
+                schema = "https://json-schema.org/draft/2020-12/schema",
+                properties = buildJsonObject {
+                    put("name", buildJsonObject { put("type", "string") })
+                },
+            ),
+        )
+
+        verifySerialization(
+            tool,
+            McpJson,
+            $$"""
+            {
+              "name": "typed-tool",
+              "inputSchema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+            """.trimIndent(),
+        )
+    }
+
+    @Test
+    fun `should deserialize ToolSchema with schema field`() {
+        val json = $$"""
+            {
+              "name": "typed-tool",
+              "inputSchema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+        """.trimIndent()
+
+        val tool = verifyDeserialization<Tool>(McpJson, json)
+
+        assertEquals("https://json-schema.org/draft/2020-12/schema", tool.inputSchema.schema)
+        assertNotNull(tool.inputSchema.properties)
     }
 
     @Test

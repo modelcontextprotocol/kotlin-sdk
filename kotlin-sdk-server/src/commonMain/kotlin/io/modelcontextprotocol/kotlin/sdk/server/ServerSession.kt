@@ -9,6 +9,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageResult
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitResult
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotification
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
@@ -20,8 +21,10 @@ import io.modelcontextprotocol.kotlin.sdk.types.ListRootsRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsResult
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification
+import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.Method.Defined
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.RequestMeta
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
@@ -36,15 +39,28 @@ import kotlin.uuid.Uuid
 private val logger = KotlinLogging.logger {}
 
 /**
- * Represents a server session.
+ * Represents an active server-side session in the Model Context Protocol.
+ *
+ * Owns the server side of a single client connection on top of [Protocol]. Drives the
+ * initialize/initialized handshake, tracks the negotiated client capabilities and version,
+ * asserts capability requirements before dispatching requests and notifications, and exposes
+ * server-to-client operations such as sampling, root listing, elicitation, logging, and
+ * list-change notifications.
+ *
+ * Equality and hashing are based on [sessionId], so a session can be used as a key in
+ * routing structures.
+ *
+ * @property serverInfo server name and version reported to the client during initialization
+ * @param options server capabilities and protocol options used by [Protocol]
+ * @property instructions optional human-readable instructions for the client, sent in the initialize result
  */
-@Suppress("TooManyFunctions")
 public open class ServerSession(
     protected val serverInfo: Implementation,
     options: ServerOptions,
     protected val instructions: String?,
 ) : Protocol(options) {
 
+    /** Unique identifier for this session, generated on creation. */
     @OptIn(ExperimentalUuidApi::class)
     public val sessionId: String = Uuid.random().toString()
 
@@ -52,17 +68,14 @@ public open class ServerSession(
 
     private var _onClose: () -> Unit = {}
 
-    /**
-     * The client's reported capabilities after initialization.
-     */
-    public var clientCapabilities: ClientCapabilities? = null
-        private set
+    private val _clientCapabilities: AtomicRef<ClientCapabilities?> = atomic(null)
+    private val _clientVersion: AtomicRef<Implementation?> = atomic(null)
 
-    /**
-     * The client's version information after initialization.
-     */
-    public var clientVersion: Implementation? = null
-        private set
+    /** Capabilities reported by the client during initialization, or `null` before the handshake completes. */
+    public val clientCapabilities: ClientCapabilities? get() = _clientCapabilities.value
+
+    /** Client implementation information reported during initialization, or `null` before the handshake completes. */
+    public val clientVersion: Implementation? get() = _clientVersion.value
 
     /**
      * The capabilities supported by the server, related to the session.
@@ -159,12 +172,40 @@ public open class ServerSession(
                 }
             }
 
+            Defined.TasksGet,
+            Defined.TasksResult,
+            Defined.TasksList,
+            Defined.TasksCancel,
+            -> assertTasksCapabilityForMethod(method)
+
             Defined.Ping -> {
                 // No specific capability required
             }
 
             else -> {
                 // For notifications not specifically listed, no assertion by default
+            }
+        }
+    }
+
+    private fun assertTasksCapabilityForMethod(method: Method) {
+        val tasks = clientCapabilities?.tasks
+            ?: error("Client does not support tasks (required for ${method.value})")
+        when (method) {
+            Defined.TasksList -> {
+                if (tasks.list == null) {
+                    error("Client does not support listing tasks (required for ${method.value})")
+                }
+            }
+
+            Defined.TasksCancel -> {
+                if (tasks.cancel == null) {
+                    error("Client does not support cancelling tasks (required for ${method.value})")
+                }
+            }
+
+            else -> {
+                // TasksGet, TasksResult: base tasks capability suffices.
             }
         }
     }
@@ -209,6 +250,12 @@ public open class ServerSession(
                     error(
                         "Server does not support notifying of prompt list changes (required for ${method.value})",
                     )
+                }
+            }
+
+            Defined.NotificationsTasksStatus -> {
+                if (serverCapabilities.tasks == null) {
+                    error("Server does not support tasks (required for ${method.value})")
                 }
             }
 
@@ -286,9 +333,15 @@ public open class ServerSession(
     }
 
     private fun handleInitialize(request: InitializeRequest): InitializeResult {
+        if (!_clientCapabilities.compareAndSet(null, request.params.capabilities)) {
+            throw McpException(
+                code = RPCError.ErrorCode.INVALID_REQUEST,
+                message = "Server already initialized",
+            )
+        }
+
         logger.debug { "Handling initialization request from client" }
-        clientCapabilities = request.params.capabilities
-        clientVersion = request.params.clientInfo
+        _clientVersion.value = request.params.clientInfo
 
         val requestedVersion = request.params.protocolVersion
         val protocolVersion = if (SUPPORTED_PROTOCOL_VERSIONS.contains(requestedVersion)) {
@@ -374,6 +427,24 @@ public open class ServerSession(
     ): ElicitResult = clientConnection.createElicitation(message, requestedSchema, options)
 
     /**
+     * Sends a URL mode elicitation request to the client, directing the user
+     * to an external URL for out-of-band interactions.
+     *
+     * @param message The message explaining why the interaction is needed.
+     * @param elicitationId A unique identifier for the elicitation.
+     * @param url The URL that the user should navigate to.
+     * @param options Optional request options.
+     * @return The result of the elicitation request.
+     * @throws IllegalStateException If the server or client does not support elicitation.
+     */
+    public suspend fun createElicitation(
+        message: String,
+        elicitationId: String,
+        url: String,
+        options: RequestOptions? = null,
+    ): ElicitResult = clientConnection.createElicitation(message, elicitationId, url, options)
+
+    /**
      * Sends a logging message notification to the client.
      * Messages are filtered based on the current logging level set by the client.
      * If no logging level is set, all messages are sent.
@@ -405,5 +476,13 @@ public open class ServerSession(
      * Sends a notification to the client indicating that the list of prompts has changed.
      */
     public suspend fun sendPromptListChanged(): Unit = clientConnection.sendPromptListChanged()
+
+    /**
+     * Sends a notification to the client indicating that an out-of-band elicitation has completed.
+     *
+     * @param notification Details of the completed elicitation.
+     */
+    public suspend fun sendElicitationComplete(notification: ElicitationCompleteNotification): Unit =
+        clientConnection.sendElicitationComplete(notification)
     // End the ClientConnection redirection section
 }

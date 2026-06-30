@@ -34,6 +34,7 @@ public class io/modelcontextprotocol/kotlin/sdk/client/Client : io/modelcontextp
 	public final fun removeRoot (Ljava/lang/String;)Z
 	public final fun removeRoots (Ljava/util/List;)I
 	public final fun sendRootsListChanged (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun setElicitationCompleteHandler (Lkotlin/jvm/functions/Function1;)V
 	public final fun setElicitationHandler (Lkotlin/jvm/functions/Function1;)V
 	public final fun setLoggingLevel (Lio/modelcontextprotocol/kotlin/sdk/types/LoggingLevel;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun setLoggingLevel$default (Lio/modelcontextprotocol/kotlin/sdk/client/Client;Lio/modelcontextprotocol/kotlin/sdk/types/LoggingLevel;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
@@ -41,6 +42,7 @@ public class io/modelcontextprotocol/kotlin/sdk/client/Client : io/modelcontextp
 	public static synthetic fun subscribeResource$default (Lio/modelcontextprotocol/kotlin/sdk/client/Client;Lio/modelcontextprotocol/kotlin/sdk/types/SubscribeRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public final fun unsubscribeResource (Lio/modelcontextprotocol/kotlin/sdk/types/UnsubscribeRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun unsubscribeResource$default (Lio/modelcontextprotocol/kotlin/sdk/client/Client;Lio/modelcontextprotocol/kotlin/sdk/types/UnsubscribeRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	protected fun wrapRequestHandler (Lio/modelcontextprotocol/kotlin/sdk/types/Method;Lkotlin/jvm/functions/Function3;)Lkotlin/jvm/functions/Function3;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/client/ClientKt {
@@ -100,8 +102,8 @@ public final class io/modelcontextprotocol/kotlin/sdk/client/StdioClientTranspor
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/client/StreamableHttpClientTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractClientTransport {
-	public fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/client/ReconnectionOptions;Lkotlin/jvm/functions/Function1;)V
-	public synthetic fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/client/ReconnectionOptions;Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/client/ReconnectionOptions;ILkotlin/jvm/functions/Function1;)V
+	public synthetic fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Lio/modelcontextprotocol/kotlin/sdk/client/ReconnectionOptions;ILkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public synthetic fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Lkotlin/time/Duration;Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public synthetic fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Lkotlin/time/Duration;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getProtocolVersion ()Ljava/lang/String;

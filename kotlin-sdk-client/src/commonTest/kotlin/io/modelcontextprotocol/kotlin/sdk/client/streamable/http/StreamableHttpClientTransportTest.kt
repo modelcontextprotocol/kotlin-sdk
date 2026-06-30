@@ -19,6 +19,7 @@ import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteReadChannel
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.StreamableHttpClientTransport
+import io.modelcontextprotocol.kotlin.sdk.shared.TooLongFrameException
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
@@ -43,11 +44,15 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class StreamableHttpClientTransportTest {
 
-    private fun createTransport(handler: MockRequestHandler): StreamableHttpClientTransport {
+    private fun createTransport(
+        maxInlineSseEventSize: Int = 16 * 1024 * 1024,
+        handler: MockRequestHandler,
+    ): StreamableHttpClientTransport {
         val mockEngine = MockEngine(handler)
         val httpClient = HttpClient(mockEngine) {
             install(SSE) {
@@ -55,7 +60,11 @@ class StreamableHttpClientTransportTest {
             }
         }
 
-        return StreamableHttpClientTransport(httpClient, url = "http://localhost:8080/mcp")
+        return StreamableHttpClientTransport(
+            httpClient,
+            url = "http://localhost:8080/mcp",
+            maxInlineSseEventSize = maxInlineSseEventSize,
+        )
     }
 
     private fun buildSseMessage(id: String, method: String, params: String): String = buildString {
@@ -148,18 +157,17 @@ class StreamableHttpClientTransportTest {
         )
 
         val transport = createTransport { request ->
-            when (
-                val msg = McpJson.decodeFromString<JSONRPCMessage>(
-                    (request.body as TextContent).text,
-                )
-            ) {
-                is JSONRPCRequest if msg.method == "initialize" -> respond(
+            val msg = McpJson.decodeFromString<JSONRPCMessage>(
+                (request.body as TextContent).text,
+            )
+            when {
+                msg is JSONRPCRequest && msg.method == "initialize" -> respond(
                     content = "",
                     status = HttpStatusCode.OK,
                     headers = headersOf("mcp-session-id", "test-session-id"),
                 )
 
-                is JSONRPCNotification if msg.method == "test" -> {
+                msg is JSONRPCNotification && msg.method == "test" -> {
                     assertEquals("test-session-id", request.headers["mcp-session-id"])
                     respond(
                         content = "",
@@ -246,8 +254,8 @@ class StreamableHttpClientTransportTest {
         var sseStarted = false
 
         val transport = createTransport { request ->
-            when (request.method) {
-                HttpMethod.Post if request.body.toString().contains("notifications/initialized") -> {
+            when {
+                request.method == HttpMethod.Post && request.body.toString().contains("notifications/initialized") -> {
                     respond(
                         content = "",
                         status = HttpStatusCode.Accepted,
@@ -256,7 +264,7 @@ class StreamableHttpClientTransportTest {
                 }
 
                 // Handle SSE connection
-                HttpMethod.Get -> {
+                request.method == HttpMethod.Get -> {
                     sseStarted = true
                     val sseContent = buildString {
                         // Server sends various notifications
@@ -288,7 +296,7 @@ class StreamableHttpClientTransportTest {
                 }
 
                 // Handle regular notifications
-                HttpMethod.Post -> {
+                request.method == HttpMethod.Post -> {
                     respond(
                         content = "",
                         status = HttpStatusCode.Accepted,
@@ -480,6 +488,170 @@ class StreamableHttpClientTransportTest {
     }
 
     @Test
+    fun testSkipEmptySSE() = runTest {
+        val transport = createTransport { request ->
+            if (request.method == HttpMethod.Post) {
+                val sseContent = buildString {
+                    // Event 1: empty data — must be skipped without error
+                    appendLine("id: a")
+                    appendLine("data:")
+                    appendLine()
+                    // Event 2: whitespace-only data — must be skipped without error
+                    appendLine("id: b")
+                    appendLine("data:  \t ")
+                    appendLine()
+                    // Event 3: multi-line data lines that together form a valid JSON-RPC response
+                    appendLine("id: c")
+                    appendLine("event: message")
+                    appendLine("data: {")
+                    appendLine("""data: "jsonrpc":"2.0",""")
+                    appendLine("""data: "id":"test-1",""")
+                    appendLine("""data: "result":{""")
+                    appendLine("""data: "protocolVersion":"2025-06-18",""")
+                    appendLine("""data: "capabilities":{},""")
+                    appendLine("""data: "serverInfo":{"name":"server","version":"1.0.0"}""")
+                    appendLine("data: }")
+                    appendLine("data: }")
+                    appendLine()
+                }
+
+                respond(
+                    content = ByteReadChannel(sseContent),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(
+                        HttpHeaders.ContentType,
+                        ContentType.Text.EventStream.toString(),
+                    ),
+                )
+            } else {
+                respond("", HttpStatusCode.OK)
+            }
+        }
+
+        val receivedMessages = mutableListOf<JSONRPCMessage>()
+        val messageReceived = CompletableDeferred<Unit>()
+
+        transport.onMessage { message ->
+            receivedMessages.add(message)
+            if (!messageReceived.isCompleted) {
+                messageReceived.complete(Unit)
+            }
+        }
+
+        transport.start()
+
+        transport.send(
+            JSONRPCRequest(
+                id = "test-1",
+                method = "initialize",
+                params = buildJsonObject { },
+            ),
+        )
+
+        eventually {
+            messageReceived.await()
+        }
+
+        receivedMessages shouldHaveSize 1
+        val response = receivedMessages[0]
+        response.shouldBeInstanceOf<JSONRPCResponse>()
+        response.id shouldBe RequestId.StringId("test-1")
+
+        transport.close()
+    }
+
+    @Test
+    fun testInlineSseRejectsEventExceedingMaxSize() = runTest {
+        // A malicious server streams an endless single event: many `data:` lines that accumulate
+        // past the cap and never send the blank-line terminator that would flush the buffer.
+        val maxInlineSseEventSize = 64
+        val transport = createTransport(maxInlineSseEventSize) { request ->
+            if (request.method == HttpMethod.Post) {
+                val sseContent = buildString {
+                    appendLine("event: message")
+                    // 20 lines × 16 chars = 320 chars of accumulated data, no terminating blank line.
+                    repeat(20) { appendLine("data: ${"A".repeat(16)}") }
+                }
+                respond(
+                    content = ByteReadChannel(sseContent),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Text.EventStream.toString()),
+                )
+            } else {
+                respond("", HttpStatusCode.OK)
+            }
+        }
+
+        val receivedMessages = mutableListOf<JSONRPCMessage>()
+        val receivedErrors = mutableListOf<Throwable>()
+        transport.onMessage { receivedMessages.add(it) }
+        transport.onError { receivedErrors.add(it) }
+        transport.start()
+
+        val error = assertFailsWith<McpException> {
+            transport.send(JSONRPCRequest(id = "req-1", method = "test", params = buildJsonObject { }))
+        }
+
+        error.cause.shouldBeInstanceOf<TooLongFrameException>()
+        receivedErrors.filterIsInstance<TooLongFrameException>() shouldHaveSize 1
+        receivedMessages shouldHaveSize 0
+        transport.close()
+    }
+
+    @Test
+    fun testInlineSseEventExactlyAtMaxSizeIsAccepted() = runTest {
+        // An event whose assembled data length equals the cap must still be accepted and dispatched:
+        // the guard rejects only sizes strictly greater than the cap (parity with ReadBuffer).
+        val part1 = """{"jsonrpc":"2.0","""
+        val part2 = """"method":"notifications/tools/list_changed"}"""
+        val maxInlineSseEventSize = (part1 + part2).length
+
+        val transport = createTransport(maxInlineSseEventSize) { request ->
+            if (request.method == HttpMethod.Post) {
+                val sseContent = buildString {
+                    appendLine("event: message")
+                    appendLine("data: $part1")
+                    appendLine("data: $part2")
+                    appendLine()
+                }
+                respond(
+                    content = ByteReadChannel(sseContent),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Text.EventStream.toString()),
+                )
+            } else {
+                respond("", HttpStatusCode.OK)
+            }
+        }
+
+        val receivedMessages = mutableListOf<JSONRPCMessage>()
+        val receivedErrors = mutableListOf<Throwable>()
+        val messageReceived = CompletableDeferred<Unit>()
+        transport.onMessage {
+            receivedMessages.add(it)
+            if (!messageReceived.isCompleted) messageReceived.complete(Unit)
+        }
+        transport.onError { receivedErrors.add(it) }
+        transport.start()
+
+        transport.send(JSONRPCRequest(id = "req-1", method = "test", params = buildJsonObject { }))
+
+        eventually { messageReceived.await() }
+
+        receivedMessages shouldHaveSize 1
+        (receivedMessages[0] as JSONRPCNotification).method shouldBe "notifications/tools/list_changed"
+        receivedErrors shouldHaveSize 0
+        transport.close()
+    }
+
+    @Test
+    fun testNonPositiveMaxInlineSseEventSizeThrows() {
+        assertFailsWith<IllegalArgumentException> {
+            createTransport(maxInlineSseEventSize = 0) { respond("", HttpStatusCode.OK) }
+        }
+    }
+
+    @Test
     fun testInlineSSEInResponse() = runTest {
         val transport = createTransport { request ->
             if (request.method == HttpMethod.Post) {
@@ -644,7 +816,7 @@ class StreamableHttpClientTransportTest {
 
         eventually {
             while (receivedMessages.isEmpty()) {
-                delay(10)
+                delay(10.milliseconds)
             }
         }
 
@@ -835,7 +1007,6 @@ class StreamableHttpClientTransportTest {
         transport.close()
     }
 
-    @Suppress("DEPRECATION")
     @Test
     fun testDeprecatedConstructorStillWorks() = runTest {
         val mockEngine = MockEngine { _ ->

@@ -6,20 +6,38 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.long
 import kotlinx.serialization.json.longOrNull
 import kotlin.jvm.JvmInline
 
+/**
+ * Metadata attached to a request's `_meta` field.
+ *
+ * @property json the raw JSON object containing the metadata
+ */
 @JvmInline
 @Serializable
 public value class RequestMeta(public val json: JsonObject) {
+    /** Optional progress token for tracking request progress. */
     public val progressToken: ProgressToken?
         get() = json["progressToken"]?.let { element ->
-            when (element) {
-                is JsonPrimitive if (element.isString) -> ProgressToken(element.content)
-                is JsonPrimitive if (element.longOrNull != null) -> ProgressToken(element.long)
+            when {
+                element is JsonPrimitive && element.isString -> ProgressToken(element.content)
+                element is JsonPrimitive && element.longOrNull != null -> ProgressToken(element.long)
                 else -> null
             }
+        }
+
+    /**
+     * The related task metadata, if this request is associated with a task.
+     *
+     * @see RelatedTaskMetadata
+     * @see RELATED_TASK_META_KEY
+     */
+    public val relatedTask: RelatedTaskMetadata?
+        get() = json[RELATED_TASK_META_KEY]?.let { element ->
+            McpJson.decodeFromJsonElement(element)
         }
 
     /**
@@ -31,6 +49,9 @@ public value class RequestMeta(public val json: JsonObject) {
     public operator fun get(key: String): JsonElement? = json[key]
 }
 
+/**
+ * Base interface for parameters attached to a [Request].
+ */
 @Serializable
 public sealed interface RequestParams {
     /**
@@ -43,6 +64,9 @@ public sealed interface RequestParams {
     public val meta: RequestMeta?
 }
 
+/**
+ * Default [RequestParams] implementation carrying only optional metadata.
+ */
 @Serializable
 public data class BaseRequestParams(@SerialName("_meta") override val meta: RequestMeta? = null) : RequestParams
 
@@ -52,7 +76,10 @@ public data class BaseRequestParams(@SerialName("_meta") override val meta: Requ
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable(with = RequestPolymorphicSerializer::class)
 public sealed interface Request {
+    /** The request method identifier. */
     public val method: Method
+
+    /** Optional request parameters. */
     public val params: RequestParams?
 }
 
@@ -100,16 +127,22 @@ public sealed interface PaginatedRequest : Request {
 @Serializable(with = RequestResultPolymorphicSerializer::class)
 public sealed interface RequestResult : WithMeta
 
+/**
+ * Represents a result returned by the server in response to a [ClientRequest].
+ */
 @Serializable(with = ClientResultPolymorphicSerializer::class)
 public sealed interface ClientResult : RequestResult
 
+/**
+ * Represents a result returned by the client in response to a [ServerRequest].
+ */
 @Serializable(with = ServerResultPolymorphicSerializer::class)
 public sealed interface ServerResult : RequestResult
 
 /**
  * An empty result for a request containing optional metadata.
  *
- * @param meta Additional metadata for the response. Defaults to an empty JSON object.
+ * @property meta Additional metadata for the response. Defaults to an empty JSON object.
  */
 @Serializable
 public data class EmptyResult(@SerialName("_meta") override val meta: JsonObject? = null) :
@@ -117,10 +150,11 @@ public data class EmptyResult(@SerialName("_meta") override val meta: JsonObject
     ServerResult
 
 /**
- * Represents a request supporting pagination.
+ * Represents a paginated result.
  */
 @Serializable
 public sealed interface PaginatedResult : RequestResult {
+    /** Opaque token for retrieving the next page of results, or `null` if no more results. */
     public val nextCursor: String?
 }
 

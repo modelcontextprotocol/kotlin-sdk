@@ -5,6 +5,7 @@ import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.ExplicitApiMode
 import org.jetbrains.kotlin.gradle.dsl.JvmDefaultMode
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 plugins {
     kotlin("multiplatform")
@@ -15,6 +16,8 @@ plugins {
 kotlin {
 
     compilerOptions {
+        languageVersion = KotlinVersion.KOTLIN_2_1
+        apiVersion = KotlinVersion.KOTLIN_2_1
         freeCompilerArgs =
             listOf(
                 "-Wextra",
@@ -39,18 +42,11 @@ kotlin {
             forkEvery = 100
             testLogging {
                 exceptionFormat = TestExceptionFormat.SHORT
-                showStandardStreams = true
                 events("failed")
             }
             systemProperty("kotest.output.ansi", "true")
-            reports {
-                junitXml.required.set(true)
-                junitXml.includeSystemOutLog.set(true)
-                junitXml.includeSystemErrLog.set(true)
-            }
         }
     }
-    macosX64()
     macosArm64()
     linuxX64()
     linuxArm64()
@@ -60,13 +56,4 @@ kotlin {
 
     explicitApi = ExplicitApiMode.Strict
     jvmToolchain(21)
-}
-
-tasks.named("detekt").configure {
-    dependsOn(
-        "detektMainJvm",
-        "detektCommonMainSourceSet",
-        "detektTestJvm",
-        "detektCommonTestSourceSet",
-    )
 }

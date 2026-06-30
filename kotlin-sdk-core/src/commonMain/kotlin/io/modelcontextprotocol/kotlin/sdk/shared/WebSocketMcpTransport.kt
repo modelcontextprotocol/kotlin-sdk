@@ -16,7 +16,9 @@ import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.coroutines.cancellation.CancellationException
 
+/** WebSocket subprotocol identifier for MCP connections. */
 public const val MCP_SUBPROTOCOL: String = "mcp"
 
 private val logger = KotlinLogging.logger {}
@@ -73,6 +75,8 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
                 try {
                     val message = McpJson.decodeFromString<JSONRPCMessage>(message.readText())
                     _onMessage.invoke(message)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     _onError.invoke(e)
                     throw e

@@ -8,6 +8,11 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 
+/**
+ * Discriminator values for the polymorphic [ContentBlock] hierarchy.
+ *
+ * @property value serialized string representation of this content type
+ */
 @Serializable
 public enum class ContentTypes(public val value: String) {
     @SerialName("text")
@@ -24,15 +29,45 @@ public enum class ContentTypes(public val value: String) {
 
     @SerialName("resource")
     EMBEDDED_RESOURCE("resource"),
+
+    @SerialName("tool_use")
+    TOOL_USE("tool_use"),
+
+    @SerialName("tool_result")
+    TOOL_RESULT("tool_result"),
 }
 
+/**
+ * Base interface for all content blocks in the protocol.
+ */
 @Serializable(with = ContentBlockPolymorphicSerializer::class)
 public sealed interface ContentBlock : WithMeta {
+    /** Discriminator identifying the content block subtype. */
     public val type: ContentTypes
 }
 
+/**
+ * Content block that carries media data such as text, images, or audio.
+ *
+ * Every [MediaContent] is also a valid [SamplingMessageContent]; the sampling content
+ * hierarchy additionally admits [ToolUseContent] and [ToolResultContent].
+ */
 @Serializable(with = MediaContentPolymorphicSerializer::class)
-public sealed interface MediaContent : ContentBlock
+public sealed interface MediaContent :
+    ContentBlock,
+    SamplingMessageContent
+
+/**
+ * Content block that can appear inside a [SamplingMessage] or [CreateMessageResult].
+ *
+ * Implemented by [TextContent], [ImageContent], [AudioContent], [ToolUseContent],
+ * and [ToolResultContent].
+ */
+@Serializable(with = SamplingMessageContentPolymorphicSerializer::class)
+public sealed interface SamplingMessageContent : WithMeta {
+    /** discriminator identifying the content block subtype */
+    public val type: ContentTypes
+}
 
 /**
  * Text provided to or from an LLM.
@@ -160,4 +195,51 @@ public data class EmbeddedResource(
 ) : ContentBlock {
     @EncodeDefault
     public override val type: ContentTypes = ContentTypes.EMBEDDED_RESOURCE
+}
+
+/**
+ * A request from the assistant to invoke a tool during sampling.
+ *
+ * @property id Unique identifier for this tool use; matches a subsequent
+ * [ToolResultContent.toolUseId] that reports the result.
+ * @property name The tool name (must match a tool declared in the sampling request's tools list).
+ * @property input The arguments to pass to the tool, conforming to the tool's input schema.
+ * @property meta property/parameter is reserved by MCP to allow clients and servers
+ * to attach additional metadata to their interactions.
+ */
+@Serializable
+public data class ToolUseContent(
+    val id: String,
+    val name: String,
+    val input: JsonObject,
+    @SerialName("_meta")
+    override val meta: JsonObject? = null,
+) : SamplingMessageContent {
+    @EncodeDefault
+    public override val type: ContentTypes = ContentTypes.TOOL_USE
+}
+
+/**
+ * The result of a tool call previously requested via [ToolUseContent], supplied back
+ * to the assistant on the next sampling turn.
+ *
+ * @property toolUseId The id of the [ToolUseContent] this result corresponds to.
+ * @property content The unstructured result, following the same shape as [CallToolResult.content].
+ * @property structuredContent Optional structured result; if the tool declared an output schema,
+ * this SHOULD conform to it.
+ * @property isError Whether the tool call ended in error. Defaults to absent (treated as false).
+ * @property meta property/parameter is reserved by MCP to allow clients and servers
+ * to attach additional metadata to their interactions.
+ */
+@Serializable
+public data class ToolResultContent(
+    val toolUseId: String,
+    val content: List<ContentBlock> = emptyList(),
+    val structuredContent: JsonObject? = null,
+    val isError: Boolean? = null,
+    @SerialName("_meta")
+    override val meta: JsonObject? = null,
+) : SamplingMessageContent {
+    @EncodeDefault
+    public override val type: ContentTypes = ContentTypes.TOOL_RESULT
 }

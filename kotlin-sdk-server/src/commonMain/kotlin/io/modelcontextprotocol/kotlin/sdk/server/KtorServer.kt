@@ -1,15 +1,17 @@
-@file:Suppress("TooManyFunctions")
-
 package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
+import io.ktor.server.application.ApplicationCallPipeline
 import io.ktor.server.application.MissingApplicationPluginException
 import io.ktor.server.application.install
 import io.ktor.server.request.ApplicationRequest
 import io.ktor.server.request.header
+import io.ktor.server.request.httpMethod
+import io.ktor.server.response.header
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.RoutingContext
@@ -35,14 +37,28 @@ private val logger = KotlinLogging.logger {}
  * Use [Application.mcp] if you want SSE to be installed automatically.
  *
  * @param path the URL path to register the SSE endpoint.
+ * @param enableDnsRebindingProtection whether to install [DnsRebindingProtection] on this route. Defaults to `true`.
+ * @param allowedHosts hostnames allowed in the `Host` header. Defaults to `localhost`, `127.0.0.1`, `[::1]`.
+ * @param allowedOrigins origins allowed in the `Origin` header, compared by hostname only
+ *      (scheme and port are ignored). Requests without an `Origin` header are allowed.
+ *      When `null` while the localhost host defaults are in effect (no custom `allowedHosts`),
+ *      the `Origin` header is validated against `localhost`, `127.0.0.1`, `[::1]`.
+ *      With custom `allowedHosts`, `null` skips origin validation.
  * @param block factory block with access to the [ServerSSESession]
  *      that creates and returns the [Server] to handle the connection.
  * @throws IllegalStateException if the [SSE] plugin is not installed.
  */
 @KtorDsl
-public fun Route.mcp(path: String, block: ServerSSESession.() -> Server) {
+@Suppress("LongParameterList")
+public fun Route.mcp(
+    path: String,
+    enableDnsRebindingProtection: Boolean = true,
+    allowedHosts: List<String>? = null,
+    allowedOrigins: List<String>? = null,
+    block: ServerSSESession.() -> Server,
+) {
     route(path) {
-        mcp(block)
+        mcp(enableDnsRebindingProtection, allowedHosts, allowedOrigins, block)
     }
 }
 
@@ -53,12 +69,24 @@ public fun Route.mcp(path: String, block: ServerSSESession.() -> Server) {
  * **Precondition:** the [SSE] plugin must be installed on the application before calling this function.
  * Use [Application.mcp] if you want SSE to be installed automatically.
  *
+ * @param enableDnsRebindingProtection whether to install [DnsRebindingProtection] on this route. Defaults to `true`.
+ * @param allowedHosts hostnames allowed in the `Host` header. Defaults to `localhost`, `127.0.0.1`, `[::1]`.
+ * @param allowedOrigins origins allowed in the `Origin` header, compared by hostname only
+ *      (scheme and port are ignored). Requests without an `Origin` header are allowed.
+ *      When `null` while the localhost host defaults are in effect (no custom `allowedHosts`),
+ *      the `Origin` header is validated against `localhost`, `127.0.0.1`, `[::1]`.
+ *      With custom `allowedHosts`, `null` skips origin validation.
  * @param block factory block with access to the [ServerSSESession]
  *      that creates and returns the [Server] to handle the connection.
  * @throws IllegalStateException if the [SSE] plugin is not installed.
  */
 @KtorDsl
-public fun Route.mcp(block: ServerSSESession.() -> Server) {
+public fun Route.mcp(
+    enableDnsRebindingProtection: Boolean = true,
+    allowedHosts: List<String>? = null,
+    allowedOrigins: List<String>? = null,
+    block: ServerSSESession.() -> Server,
+) {
     try {
         plugin(SSE)
     } catch (e: MissingApplicationPluginException) {
@@ -69,6 +97,8 @@ public fun Route.mcp(block: ServerSSESession.() -> Server) {
             e,
         )
     }
+
+    installDnsRebindingProtection(enableDnsRebindingProtection, allowedHosts, allowedOrigins)
 
     val transportManager = TransportManager<SseServerTransport>()
 
@@ -86,29 +116,62 @@ public fun Route.mcp(block: ServerSSESession.() -> Server) {
  * over [Server-Sent Events (SSE) Transport](https://modelcontextprotocol.io/specification/2024-11-05/basic/transports#http-with-sse)
  * and sets up routing with the provided configuration block.
  *
+ * Automatically installs [ContentNegotiation][io.ktor.server.plugins.contentnegotiation.ContentNegotiation]
+ * with [McpJson][io.modelcontextprotocol.kotlin.sdk.types.McpJson] and [SSE].
+ *
+ * @param enableDnsRebindingProtection whether to install [DnsRebindingProtection] on this route. Defaults to `true`.
+ * @param allowedHosts hostnames allowed in the `Host` header. Defaults to `localhost`, `127.0.0.1`, `[::1]`.
+ * @param allowedOrigins origins allowed in the `Origin` header, compared by hostname only
+ *      (scheme and port are ignored). Requests without an `Origin` header are allowed.
+ *      When `null` while the localhost host defaults are in effect (no custom `allowedHosts`),
+ *      the `Origin` header is validated against `localhost`, `127.0.0.1`, `[::1]`.
+ *      With custom `allowedHosts`, `null` skips origin validation.
  * @param block factory block with access to the [ServerSSESession]
  *      that creates and returns the [Server] to handle the connection.
  */
 @KtorDsl
-public fun Application.mcp(block: ServerSSESession.() -> Server) {
+public fun Application.mcp(
+    enableDnsRebindingProtection: Boolean = true,
+    allowedHosts: List<String>? = null,
+    allowedOrigins: List<String>? = null,
+    block: ServerSSESession.() -> Server,
+) {
+    installMcpContentNegotiation()
     install(SSE)
 
     routing {
-        mcp(block)
+        mcp(enableDnsRebindingProtection, allowedHosts, allowedOrigins, block)
     }
 }
 
+@Suppress("LongParameterList")
 private fun Application.mcpStreamableHttp(
     path: String = "/mcp",
+    enableDnsRebindingProtection: Boolean,
+    allowedHosts: List<String>?,
+    allowedOrigins: List<String>?,
     configuration: StreamableHttpServerTransport.Configuration,
     block: RoutingContext.() -> Server,
 ) {
+    installMcpContentNegotiation()
     install(SSE)
 
     val transportManager = TransportManager<StreamableHttpServerTransport>()
 
     routing {
         route(path) {
+            installDnsRebindingProtection(enableDnsRebindingProtection, allowedHosts, allowedOrigins)
+
+            // Set Mcp-Session-Id on GET responses before Ktor's sse {} commits headers.
+            intercept(ApplicationCallPipeline.Plugins) {
+                if (context.request.httpMethod == HttpMethod.Get) {
+                    val sessionId = context.request.header(MCP_SESSION_ID_HEADER)
+                    if (sessionId != null && transportManager.getTransport(sessionId) != null) {
+                        context.response.header(MCP_SESSION_ID_HEADER, sessionId)
+                    }
+                }
+            }
+
             sse {
                 val transport = existingStreamableTransport(call, transportManager) ?: return@sse
                 transport.handleRequest(this, call)
@@ -139,21 +202,27 @@ private fun Application.mcpStreamableHttp(
  * Sets up SSE, HTTP POST, and DELETE endpoints at the specified [path].
  * Simple request/response pairs are returned as JSON (not SSE streams).
  *
+ * Automatically installs [ContentNegotiation][io.ktor.server.plugins.contentnegotiation.ContentNegotiation]
+ * with [McpJson][io.modelcontextprotocol.kotlin.sdk.types.McpJson] and [SSE].
+ *
  * @param path The base path for the MCP Streamable HTTP endpoint. Defaults to "/mcp".
- * @param enableDnsRebindingProtection Enables DNS rebinding attack protection for the endpoint. Defaults to false.
- * @param allowedHosts A list of hostnames allowed to access the endpoint. If `null`, no restrictions are applied.
- * @param allowedOrigins A list of origins allowed to perform cross-origin requests (CORS).
- *          If `null`, no restrictions are applied.
+ * @param enableDnsRebindingProtection Enables DNS rebinding attack protection for the endpoint. Defaults to `true`.
+ * @param allowedHosts A list of hostnames allowed to access the endpoint.
+ *          If `null` and DNS rebinding protection is enabled, defaults to `localhost`, `127.0.0.1`, `[::1]`.
+ * @param allowedOrigins A list of allowed `Origin` header values, compared by hostname only
+ *          (scheme and port are ignored). Requests without an `Origin` header are allowed.
+ *          When `null` while the localhost host defaults are in effect (no custom `allowedHosts`),
+ *          the `Origin` header is validated against `localhost`, `127.0.0.1`, `[::1]`.
+ *          With custom `allowedHosts`, `null` skips origin validation.
  * @param eventStore An optional [EventStore] instance to enable resumable event stream functionality.
  *          Allows storing and replaying events.
  * @param block factory block with access to the [RoutingContext] (for reading request headers)
  *          that creates and returns the [Server] to handle the connection.
  */
 @KtorDsl
-@Suppress("LongParameterList")
 public fun Application.mcpStreamableHttp(
     path: String = "/mcp",
-    enableDnsRebindingProtection: Boolean = false,
+    enableDnsRebindingProtection: Boolean = true,
     allowedHosts: List<String>? = null,
     allowedOrigins: List<String>? = null,
     eventStore: EventStore? = null,
@@ -161,10 +230,10 @@ public fun Application.mcpStreamableHttp(
 ) {
     mcpStreamableHttp(
         path = path,
+        enableDnsRebindingProtection = enableDnsRebindingProtection,
+        allowedHosts = allowedHosts,
+        allowedOrigins = allowedOrigins,
         configuration = StreamableHttpServerTransport.Configuration(
-            enableDnsRebindingProtection = enableDnsRebindingProtection,
-            allowedHosts = allowedHosts,
-            allowedOrigins = allowedOrigins,
             eventStore = eventStore,
             enableJsonResponse = true,
         ),
@@ -172,15 +241,22 @@ public fun Application.mcpStreamableHttp(
     )
 }
 
+@Suppress("LongParameterList")
 private fun Application.mcpStatelessStreamableHttp(
     path: String = "/mcp",
+    enableDnsRebindingProtection: Boolean,
+    allowedHosts: List<String>?,
+    allowedOrigins: List<String>?,
     configuration: StreamableHttpServerTransport.Configuration,
     block: RoutingContext.() -> Server,
 ) {
+    installMcpContentNegotiation()
     install(SSE)
 
     routing {
         route(path) {
+            installDnsRebindingProtection(enableDnsRebindingProtection, allowedHosts, allowedOrigins)
+
             post {
                 mcpStatelessStreamableHttpEndpoint(
                     configuration = configuration,
@@ -212,19 +288,24 @@ private fun Application.mcpStatelessStreamableHttp(
  * Sets up an HTTP POST endpoint at [path]. GET and DELETE requests return 405 Method Not Allowed.
  * Simple request/response pairs are returned as JSON (not SSE streams).
  *
+ * Automatically installs [ContentNegotiation][io.ktor.server.plugins.contentnegotiation.ContentNegotiation]
+ * with [McpJson][io.modelcontextprotocol.kotlin.sdk.types.McpJson] and [SSE].
+ *
  * @param path The URL path where the server listens for incoming JSON-RPC requests. Defaults to "/mcp".
- * @param enableDnsRebindingProtection Determines whether DNS rebinding protection is enabled. Defaults to `false`.
- * @param allowedHosts A list of allowed hostnames. If null, host filtering is disabled.
- * @param allowedOrigins A list of allowed origins for CORS. If null, origin filtering is disabled.
+ * @param enableDnsRebindingProtection Determines whether DNS rebinding protection is enabled. Defaults to `true`.
+ * @param allowedHosts A list of allowed hostnames. If `null` and DNS rebinding protection is enabled,
+ * defaults to `localhost`, `127.0.0.1`, `[::1]`.
+ * @param allowedOrigins A list of allowed `Origin` header values, compared by hostname only
+ *      (scheme and port are ignored). Requests without an `Origin` header are allowed.
+ *      If `null`, origin validation is disabled.
  * @param eventStore An optional [EventStore] implementation to provide resumability and event replay support.
  * @param block factory block with access to the [RoutingContext] (for reading request headers)
  *          that creates and returns the [Server] to handle the connection.
  */
 @KtorDsl
-@Suppress("LongParameterList")
 public fun Application.mcpStatelessStreamableHttp(
     path: String = "/mcp",
-    enableDnsRebindingProtection: Boolean = false,
+    enableDnsRebindingProtection: Boolean = true,
     allowedHosts: List<String>? = null,
     allowedOrigins: List<String>? = null,
     eventStore: EventStore? = null,
@@ -232,10 +313,10 @@ public fun Application.mcpStatelessStreamableHttp(
 ) {
     mcpStatelessStreamableHttp(
         path = path,
+        enableDnsRebindingProtection = enableDnsRebindingProtection,
+        allowedHosts = allowedHosts,
+        allowedOrigins = allowedOrigins,
         configuration = StreamableHttpServerTransport.Configuration(
-            enableDnsRebindingProtection = enableDnsRebindingProtection,
-            allowedHosts = allowedHosts,
-            allowedOrigins = allowedOrigins,
             eventStore = eventStore,
             enableJsonResponse = true,
         ),
@@ -372,4 +453,15 @@ private suspend fun RoutingContext.streamableTransport(
     server.createSession(transport)
 
     return transport
+}
+
+private fun Route.installDnsRebindingProtection(enabled: Boolean, hosts: List<String>?, origins: List<String>?) {
+    if (!enabled) return
+    install(DnsRebindingProtection) {
+        allowedHosts = hosts ?: LOCALHOST_ALLOWED_HOSTS
+        // Secure-by-default: when relying on the localhost host defaults, validate the Origin
+        // header against localhost too, so a request with a valid Host but a hostile Origin
+        // (e.g. a DNS-rebinding page) is rejected. Callers with custom hosts opt in explicitly.
+        allowedOrigins = origins ?: LOCALHOST_ALLOWED_ORIGINS.takeIf { hosts == null }
+    }
 }

@@ -2,14 +2,12 @@
 
 [![Maven Central](https://img.shields.io/maven-central/v/io.modelcontextprotocol/kotlin-sdk.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/io.modelcontextprotocol/kotlin-sdk)
 [![Build](https://github.com/modelcontextprotocol/kotlin-sdk/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/modelcontextprotocol/kotlin-sdk/actions/workflows/build.yml)
-[![Conformance Tests](https://github.com/modelcontextprotocol/kotlin-sdk/actions/workflows/conformance.yml/badge.svg)](https://github.com/modelcontextprotocol/kotlin-sdk/actions/workflows/conformance.yml)
-[![codecov](https://codecov.io/github/modelcontextprotocol/kotlin-sdk/graph/badge.svg?token=O2CFHNSFYM)](https://codecov.io/github/modelcontextprotocol/kotlin-sdk)
 
 [![Kotlin](https://img.shields.io/badge/kotlin-2.2+-blueviolet.svg?logo=kotlin)](http://kotlinlang.org)
 [![Kotlin Multiplatform](https://img.shields.io/badge/Platforms-%20JVM%20%7C%20Wasm%2FJS%20%7C%20Native%20-blueviolet?logo=kotlin)](https://kotlinlang.org/docs/multiplatform.html)
 [![JVM](https://img.shields.io/badge/JVM-11+-red.svg?logo=jvm)](http://java.com)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/modelcontextprotocol/kotlin-sdk)
+
 
 Kotlin Multiplatform SDK for the [Model Context Protocol](https://modelcontextprotocol.io).
 It enables Kotlin applications targeting JVM, Native, JS, and Wasm to implement MCP clients and servers using a
@@ -21,34 +19,34 @@ standardized protocol interface.
 
 * [Overview](#overview)
 * [Installation](#installation)
-    * [Artifacts](#artifacts)
-    * [Gradle setup (JVM)](#gradle-setup-jvm)
-    * [Multiplatform](#multiplatform)
-    * [Ktor dependencies](#ktor-dependencies)
+  * [Artifacts](#artifacts)
+  * [Gradle setup (JVM)](#gradle-setup-jvm)
+  * [Multiplatform](#multiplatform)
+  * [Ktor dependencies](#ktor-dependencies)
 * [Quickstart](#quickstart)
-    * [Creating a Client](#creating-a-client)
-    * [Creating a Server](#creating-a-server)
+  * [Creating a Client](#creating-a-client)
+  * [Creating a Server](#creating-a-server)
 * [Core Concepts](#core-concepts)
-    * [MCP Primitives](#mcp-primitives)
-    * [Capabilities](#capabilities)
-        * [Server Capabilities](#server-capabilities)
-        * [Client Capabilities](#client-capabilities)
-    * [Server Features](#server-features)
-        * [Prompts](#prompts)
-        * [Resources](#resources)
-        * [Tools](#tools)
-        * [Completion](#completion)
-        * [Logging](#logging)
-        * [Pagination](#pagination)
-    * [Client Features](#client-features)
-        * [Roots](#roots)
-        * [Sampling](#sampling)
+  * [MCP Primitives](#mcp-primitives)
+  * [Capabilities](#capabilities)
+    * [Server Capabilities](#server-capabilities)
+    * [Client Capabilities](#client-capabilities)
+  * [Server Features](#server-features)
+    * [Prompts](#prompts)
+    * [Resources](#resources)
+    * [Tools](#tools)
+    * [Completion](#completion)
+    * [Logging](#logging)
+    * [Pagination](#pagination)
+  * [Client Features](#client-features)
+    * [Roots](#roots)
+    * [Sampling](#sampling)
 * [Transports](#transports)
-    * [STDIO Transport](#stdio-transport)
-    * [Streamable HTTP Transport](#streamable-http-transport)
-    * [SSE Transport](#sse-transport)
-    * [WebSocket Transport](#websocket-transport)
-    * [ChannelTransport (testing)](#channeltransport-testing)
+  * [STDIO Transport](#stdio-transport)
+  * [Streamable HTTP Transport](#streamable-http-transport)
+  * [SSE Transport](#sse-transport)
+  * [WebSocket Transport](#websocket-transport)
+  * [ChannelTransport (testing)](#channeltransport-testing)
 * [Connecting your server](#connecting-your-server)
 * [Examples](#examples)
 * [Documentation](#documentation)
@@ -190,23 +188,18 @@ the [simple-streamable-server](samples/simple-streamable-server) sample.
 <!--- CLEAR -->
 
 ```kotlin
-import io.ktor.serialization.kotlinx.json.json
-import io.ktor.server.application.install
 import io.ktor.server.cio.CIO
 import io.ktor.server.engine.embeddedServer
-import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.mcpStreamableHttp
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
-import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-
 
 fun main(args: Array<String>) {
     val port = args.firstOrNull()?.toIntOrNull() ?: 3000
@@ -233,11 +226,8 @@ fun main(args: Array<String>) {
     ) { request ->
         CallToolResult(content = listOf(TextContent("Hello, world!")))
     }
-
+    
     embeddedServer(CIO, host = "127.0.0.1", port = port) {
-        install(ContentNegotiation) {
-            json(McpJson)
-        }
         mcpStreamableHttp {
             mcpServer
         }
@@ -776,8 +766,10 @@ CLI tooling that spawns a helper process. No networking setup is required.
 
 `StreamableHttpClientTransport` and the Ktor `mcpStreamableHttp()` / `mcpStatelessStreamableHttp()` helpers expose MCP
 over a single HTTP endpoint with optional JSON-only or SSE streaming responses. This is the recommended choice for
-remote deployments and integrates nicely with proxies or service meshes. Both accept a `path` parameter (default:
-`"/mcp"`) to mount the endpoint at any URL:
+remote deployments and integrates nicely with proxies or service meshes.
+
+These helpers automatically install `ContentNegotiation` with `McpJson` — do not install it yourself, or a warning will
+be logged. Both accept a `path` parameter (default: `"/mcp"`) to mount the endpoint at any URL:
 
 <!--- CLEAR -->
 <!--- INCLUDE 
@@ -811,11 +803,30 @@ embeddedServer(CIO, port = 3000) {
 -->
 <!--- KNIT example-server-routes-01.kt -->
 
+**CORS for browser-based clients (e.g. MCP Inspector):** if you connect from a browser-based
+client you need to install the Ktor CORS plugin so that MCP-specific headers are allowed and exposed:
+
+```kotlin
+install(CORS) {
+    anyHost() // restrict to specific origins in production
+    allowMethod(HttpMethod.Options)
+    allowMethod(HttpMethod.Get)
+    allowMethod(HttpMethod.Post)
+    allowMethod(HttpMethod.Delete)
+    allowNonSimpleContentTypes = true
+    allowHeader("Mcp-Session-Id")
+    allowHeader("Mcp-Protocol-Version")
+    exposeHeader("Mcp-Session-Id")
+    exposeHeader("Mcp-Protocol-Version")
+}
+```
+
 ### SSE Transport
 
 Server-Sent Events remain available for backwards compatibility with older MCP clients. Two Ktor helpers are provided:
 
-- **`Application.mcp { }`** — installs the SSE plugin automatically and registers MCP endpoints at `/`.
+- **`Application.mcp { }`** — installs SSE and `ContentNegotiation` with `McpJson` automatically, then registers MCP
+  endpoints at `/`. Do not install `ContentNegotiation` yourself — the SDK handles it.
 - **`Route.mcp { }`** — registers MCP endpoints at the current route path; requires `install(SSE)` in the application
   first. Use this to host MCP alongside other routes or under a path prefix:
 
@@ -899,6 +910,7 @@ MCP server and client implementations with various transports.
 See the [samples overview](./samples/README.md) for a comparison table and detailed descriptions.
 
 ## Documentation
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/modelcontextprotocol/kotlin-sdk)
 
 - [API Reference](https://kotlin.sdk.modelcontextprotocol.io/)
 - [Model Context Protocol documentation](https://modelcontextprotocol.io)
