@@ -13,14 +13,16 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.yield
+import kotlinx.coroutines.withContext
 
 /**
  *  A transport implementation that uses Kotlin Coroutines Channels for asynchronous
@@ -41,6 +43,10 @@ public class ChannelTransport(
     override val logger: KLogger = KotlinLogging.logger {}
 
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
+    private val handlerScope = CoroutineScope(SupervisorJob() + dispatcher)
+    private val eventLoopStarted = CompletableDeferred<Unit>()
+    private val messageProcessingReady = CompletableDeferred<Unit>()
+    private var eventLoopJob: Job? = null
 
     /**
      * Creates a `ChannelTransport` instance using a single channel for both sending and receiving messages.
@@ -112,34 +118,20 @@ public class ChannelTransport(
      */
     override suspend fun initialize() {
         logger.info { "ChannelTransport starting message processing" }
-        val started = CompletableDeferred<Unit>()
-        scope.launch(CoroutineName("ChannelTransport#${hashCode()}-event-loop")) {
+        eventLoopJob = scope.launch(CoroutineName("ChannelTransport#${hashCode()}-event-loop")) {
             try {
-                // Signal that event loop has started, then yield to ensure we're ready
-                started.complete(Unit)
-                yield()
+                eventLoopStarted.complete(Unit)
+                messageProcessingReady.await()
 
                 for (message in receiveChannel) {
                     logger.debug { "Received message: ${message::class.simpleName}" }
-
-                    try {
-                        _onMessage.invoke(message)
-                        logger.trace { "Message processed successfully: ${message::class.simpleName}" }
-                    } catch (e: CancellationException) {
-                        // Let cancellation propagate immediately
-                        logger.debug { "Cancellation requested during message processing" }
-                        throw e
-                    } catch (e: Exception) {
-                        // Report other errors but continue processing
-                        logger.warn(e) { "Error processing message: ${message::class.simpleName}" }
-                        _onError.invoke(e)
-                    }
+                    launchMessageHandler(message)
                 }
                 logger.info { "ChannelTransport stopped: receive channel closed" }
             } catch (e: Exception) {
                 // Only complete exceptionally if not already completed
-                if (!started.isCompleted) {
-                    started.completeExceptionally(e)
+                if (!eventLoopStarted.isCompleted) {
+                    eventLoopStarted.completeExceptionally(e)
                 }
                 throw e
             } finally {
@@ -147,7 +139,12 @@ public class ChannelTransport(
             }
         }
         // Wait for the event loop to start
-        started.await()
+        eventLoopStarted.await()
+    }
+
+    override suspend fun start() {
+        super.start()
+        messageProcessingReady.complete(Unit)
     }
 
     /**
@@ -170,13 +167,35 @@ public class ChannelTransport(
      */
     override suspend fun closeResources() {
         logger.info { "Closing ChannelTransport" }
-        sendChannel.close()
-        if (receiveChannel !== sendChannel) {
-            logger.debug { "Cancelling separate receive channel" }
-            receiveChannel.cancel()
+        val closeCallerJob = currentCoroutineContext()[Job]
+        withContext(NonCancellable) {
+            invokeOnCloseCallback()
+            sendChannel.close()
+            if (receiveChannel !== sendChannel) {
+                logger.debug { "Cancelling separate receive channel" }
+                receiveChannel.cancel()
+            }
+            messageProcessingReady.complete(Unit)
+            if (closeCallerJob == eventLoopJob) {
+                handlerScope.coroutineContext[Job]?.children?.forEach { it.join() }
+            }
+            handlerScope.coroutineContext[Job]?.cancelAndJoin()
         }
-        scope.cancel()
-        scope.coroutineContext[Job]?.join() // Wait for cleanup
         logger.info { "ChannelTransport closed" }
+    }
+
+    private fun launchMessageHandler(message: JSONRPCMessage) {
+        handlerScope.launch(CoroutineName("ChannelTransport#${hashCode()}-message")) {
+            try {
+                _onMessage.invoke(message)
+                logger.trace { "Message processed successfully: ${message::class.simpleName}" }
+            } catch (e: CancellationException) {
+                logger.debug { "Cancellation requested during message processing" }
+                throw e
+            } catch (e: Throwable) {
+                logger.warn(e) { "Error processing message: ${message::class.simpleName}" }
+                _onError.invoke(e)
+            }
+        }
     }
 }

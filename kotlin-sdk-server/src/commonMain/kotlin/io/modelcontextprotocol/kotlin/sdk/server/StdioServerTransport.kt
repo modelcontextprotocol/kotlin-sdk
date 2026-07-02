@@ -215,14 +215,7 @@ public class StdioServerTransport private constructor(
                         _onError(e)
                         null
                     } ?: break
-                    try {
-                        _onMessage(message)
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Throwable) {
-                        logger.error(e) { "Error processing message" }
-                        _onError(e)
-                    }
+                    launchMessageHandler(message)
                 }
             }
         } catch (e: CancellationException) {
@@ -248,6 +241,20 @@ public class StdioServerTransport private constructor(
             _onError(e)
         } finally {
             transitionToStoppedNaturally()
+        }
+    }
+
+    private fun launchMessageHandler(message: JSONRPCMessage) {
+        val s = effectiveScope ?: return
+        s.launch(handlerDispatcher + CoroutineName("StdioServerTransport.message#${hashCode()}")) {
+            try {
+                _onMessage(message)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                logger.error(e) { "Error processing message" }
+                _onError(e)
+            }
         }
     }
 

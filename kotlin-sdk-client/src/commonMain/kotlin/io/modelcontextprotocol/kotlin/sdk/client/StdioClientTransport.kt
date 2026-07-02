@@ -172,7 +172,7 @@ public class StdioClientTransport @JvmOverloads public constructor(
                     .collect { event ->
                         when (event) {
                             is Event.JsonRpc -> {
-                                handleJSONRPCMessage(event.message)
+                                launchMessageHandler(event.message)
                             }
 
                             is Event.StderrEvent -> {
@@ -274,14 +274,16 @@ public class StdioClientTransport @JvmOverloads public constructor(
         }
     }
 
-    private suspend fun handleJSONRPCMessage(msg: JSONRPCMessage) {
-        try {
-            _onMessage.invoke(msg)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Throwable) {
-            logger.error(e) { "Error processing message." }
-            runCatching { _onError.invoke(e) }
+    private fun launchMessageHandler(message: JSONRPCMessage) {
+        scope.launch(CoroutineName("StdioClientTransport.message#${hashCode()}")) {
+            try {
+                _onMessage.invoke(message)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                logger.error(e) { "Error processing message." }
+                runCatching { _onError.invoke(e) }
+            }
         }
     }
 

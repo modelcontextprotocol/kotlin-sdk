@@ -34,6 +34,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
@@ -46,6 +47,9 @@ import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -347,6 +351,239 @@ class StreamableHttpServerTransportTest {
         val secondMeta = (responses[1] as ListResourcesResult).meta
         assertEquals("first", firstMeta?.get("label")?.jsonPrimitive?.content)
         assertEquals("second", secondMeta?.get("label")?.jsonPrimitive?.content)*/
+    }
+
+    @Test
+    fun `batched requests are handled concurrently before replying`() = testApplication {
+        configTestServer()
+
+        val client = createTestClient()
+
+        val transport = StreamableHttpServerTransport(enableJsonResponse = true)
+        val firstRequest = JSONRPCRequest(id = RequestId("first"), method = Method.Defined.ToolsList.value)
+        val secondRequest = JSONRPCRequest(id = RequestId("second"), method = Method.Defined.ResourcesList.value)
+        val firstHandlerStarted = CompletableDeferred<Unit>()
+        val releaseFirstHandler = CompletableDeferred<Unit>()
+        val secondHandlerCompleted = CompletableDeferred<Unit>()
+        val secondResult = ListResourcesResult(resources = emptyList())
+
+        transport.onMessage { message ->
+            if (message is JSONRPCRequest) {
+                when (message.id) {
+                    firstRequest.id -> {
+                        firstHandlerStarted.complete(Unit)
+                        releaseFirstHandler.await()
+                        transport.send(JSONRPCResponse(message.id, EmptyResult()), null)
+                    }
+
+                    secondRequest.id -> {
+                        firstHandlerStarted.await()
+                        transport.send(JSONRPCResponse(message.id, secondResult), null)
+                        secondHandlerCompleted.complete(Unit)
+                    }
+
+                    else -> transport.send(JSONRPCResponse(message.id, EmptyResult()), null)
+                }
+            }
+        }
+
+        configureTransportEndpoint(transport)
+
+        val initResponse = client.post(path) {
+            addStreamableHeaders()
+            setBody(buildInitializeRequestPayload())
+        }
+
+        coroutineScope {
+            val responseDeferred = async {
+                client.post(path) {
+                    addStreamableHeaders()
+                    header(MCP_SESSION_ID_HEADER, initResponse.headers[MCP_SESSION_ID_HEADER])
+                    setBody(encodeMessages(listOf(firstRequest, secondRequest)))
+                }
+            }
+
+            secondHandlerCompleted.await()
+            releaseFirstHandler.complete(Unit)
+
+            val response = responseDeferred.await()
+            response.status shouldBe HttpStatusCode.OK
+            response.body<List<JSONRPCResponse>>() shouldContainAll listOf(
+                JSONRPCResponse(firstRequest.id, EmptyResult()),
+                JSONRPCResponse(secondRequest.id, secondResult),
+            )
+        }
+    }
+
+    @Test
+    fun `batched notifications are handled concurrently`() = testApplication {
+        configTestServer()
+
+        val client = createTestClient()
+
+        val transport = StreamableHttpServerTransport(enableJsonResponse = true)
+        val firstNotification = InitializedNotification().toJSON()
+        val secondNotification = JSONRPCNotification("notifications/test")
+        val firstHandlerStarted = CompletableDeferred<Unit>()
+        val releaseFirstHandler = CompletableDeferred<Unit>()
+        val secondHandlerCompleted = CompletableDeferred<Unit>()
+
+        transport.onMessage { message ->
+            when (message) {
+                is JSONRPCRequest -> transport.send(JSONRPCResponse(message.id, EmptyResult()))
+
+                firstNotification -> {
+                    firstHandlerStarted.complete(Unit)
+                    releaseFirstHandler.await()
+                }
+
+                secondNotification -> {
+                    firstHandlerStarted.await()
+                    secondHandlerCompleted.complete(Unit)
+                }
+
+                else -> Unit
+            }
+        }
+
+        configureTransportEndpoint(transport)
+
+        val initResponse = client.post(path) {
+            addStreamableHeaders()
+            setBody(buildInitializeRequestPayload())
+        }
+
+        coroutineScope {
+            val responseDeferred = async {
+                client.post(path) {
+                    addStreamableHeaders()
+                    header(MCP_SESSION_ID_HEADER, initResponse.headers[MCP_SESSION_ID_HEADER])
+                    setBody(encodeMessages(listOf(firstNotification, secondNotification)))
+                }
+            }
+
+            secondHandlerCompleted.await()
+            releaseFirstHandler.complete(Unit)
+
+            responseDeferred.await().status shouldBe HttpStatusCode.Accepted
+        }
+    }
+
+    @Test
+    fun `batched notifications report handler error after sibling completes`() = testApplication {
+        configTestServer()
+
+        val client = createTestClient()
+
+        val transport = StreamableHttpServerTransport(enableJsonResponse = true)
+        val expected = IllegalStateException("notification failed")
+        val capturedError = CompletableDeferred<Throwable>()
+        val firstNotification = InitializedNotification().toJSON()
+        val secondNotification = JSONRPCNotification("notifications/test")
+        val firstHandlerStarted = CompletableDeferred<Unit>()
+        val releaseFirstHandler = CompletableDeferred<Unit>()
+        val secondHandlerStarted = CompletableDeferred<Unit>()
+
+        transport.onError { capturedError.complete(it) }
+        transport.onMessage { message ->
+            when (message) {
+                is JSONRPCRequest -> transport.send(JSONRPCResponse(message.id, EmptyResult()))
+
+                firstNotification -> {
+                    firstHandlerStarted.complete(Unit)
+                    releaseFirstHandler.await()
+                }
+
+                secondNotification -> {
+                    firstHandlerStarted.await()
+                    secondHandlerStarted.complete(Unit)
+                    throw expected
+                }
+
+                else -> Unit
+            }
+        }
+
+        configureTransportEndpoint(transport)
+
+        val initResponse = client.post(path) {
+            addStreamableHeaders()
+            setBody(buildInitializeRequestPayload())
+        }
+
+        coroutineScope {
+            val responseDeferred = async {
+                client.post(path) {
+                    addStreamableHeaders()
+                    header(MCP_SESSION_ID_HEADER, initResponse.headers[MCP_SESSION_ID_HEADER])
+                    setBody(encodeMessages(listOf(firstNotification, secondNotification)))
+                }
+            }
+
+            secondHandlerStarted.await()
+            releaseFirstHandler.complete(Unit)
+            responseDeferred.await().status shouldBe HttpStatusCode.Accepted
+        }
+
+        capturedError.await() shouldBe expected
+    }
+
+    @Test
+    fun `batch handler error reports onError after response is committed`() = testApplication {
+        configTestServer()
+
+        val client = createTestClient()
+
+        val transport = StreamableHttpServerTransport(enableJsonResponse = true)
+        val expected = IllegalStateException("request failed")
+        val capturedError = CompletableDeferred<Throwable>()
+        val firstRequest = JSONRPCRequest(id = RequestId("first"), method = Method.Defined.ToolsList.value)
+        val notification = JSONRPCNotification("notifications/test")
+        val requestResponseSent = CompletableDeferred<Unit>()
+        val releaseNotificationHandler = CompletableDeferred<Unit>()
+
+        transport.onError { capturedError.complete(it) }
+        transport.onMessage { message ->
+            when (message) {
+                firstRequest -> {
+                    transport.send(JSONRPCResponse(firstRequest.id, EmptyResult()), null)
+                    requestResponseSent.complete(Unit)
+                }
+
+                notification -> {
+                    requestResponseSent.await()
+                    releaseNotificationHandler.await()
+                    throw expected
+                }
+
+                is JSONRPCRequest -> transport.send(JSONRPCResponse(message.id, EmptyResult()), null)
+
+                else -> Unit
+            }
+        }
+
+        configureTransportEndpoint(transport)
+
+        val initResponse = client.post(path) {
+            addStreamableHeaders()
+            setBody(buildInitializeRequestPayload())
+        }
+
+        coroutineScope {
+            val responseDeferred = async {
+                client.post(path) {
+                    addStreamableHeaders()
+                    header(MCP_SESSION_ID_HEADER, initResponse.headers[MCP_SESSION_ID_HEADER])
+                    setBody(encodeMessages(listOf(firstRequest, notification)))
+                }
+            }
+
+            requestResponseSent.await()
+            releaseNotificationHandler.complete(Unit)
+            responseDeferred.await().status shouldBe HttpStatusCode.OK
+        }
+
+        capturedError.await() shouldBe expected
     }
 
     @ParameterizedTest
