@@ -1,6 +1,6 @@
 [versions]
 kotlin = "2.3.21"
-ktor = "3.3.3"
+ktor = "3.5.1"
 junit = "6.1.1"
 mcp-kotlin = "0.13.0"
 slf4j = "2.0.18"
