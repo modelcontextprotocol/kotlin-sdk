@@ -1,7 +1,7 @@
 [versions]
 coroutines = "1.11.0"
 kotlin = "2.3.21"
-ktor = "3.3.3"
+ktor = "3.5.1"
 logging = "8.0.4"
 mcp-kotlin = "0.13.0"
 shadow = "9.4.3"
