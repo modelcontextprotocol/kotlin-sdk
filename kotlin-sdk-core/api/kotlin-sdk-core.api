@@ -415,7 +415,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/CallToolRequestBuild
 	public final fun arguments (Lkotlin/jvm/functions/Function1;)V
 	public final fun arguments (Lkotlinx/serialization/json/JsonObject;)V
 	public fun build ()Lio/modelcontextprotocol/kotlin/sdk/types/CallToolRequest;
-	public synthetic fun build$kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
+	public synthetic fun build$io_modelcontextprotocol_kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
 	public final fun getName ()Ljava/lang/String;
 	public final fun setName (Ljava/lang/String;)V
 }
@@ -954,7 +954,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/CompleteRequestBuild
 	public fun <init> ()V
 	public final fun argument (Ljava/lang/String;Ljava/lang/String;)V
 	public fun build ()Lio/modelcontextprotocol/kotlin/sdk/types/CompleteRequest;
-	public synthetic fun build$kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
+	public synthetic fun build$io_modelcontextprotocol_kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
 	public final fun context (Ljava/util/Map;)V
 	public final fun context (Lkotlin/jvm/functions/Function1;)V
 	public final fun ref (Lio/modelcontextprotocol/kotlin/sdk/types/Reference;)V
@@ -1188,7 +1188,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/CreateMessageRequest
 public final class io/modelcontextprotocol/kotlin/sdk/types/CreateMessageRequestBuilder : io/modelcontextprotocol/kotlin/sdk/types/RequestBuilder {
 	public fun <init> ()V
 	public fun build ()Lio/modelcontextprotocol/kotlin/sdk/types/CreateMessageRequest;
-	public synthetic fun build$kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
+	public synthetic fun build$io_modelcontextprotocol_kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
 	public final fun getContext ()Lio/modelcontextprotocol/kotlin/sdk/types/IncludeContext;
 	public final fun getMaxTokens ()Ljava/lang/Integer;
 	public final fun getStopSequences ()Ljava/util/List;
@@ -1455,7 +1455,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ElicitRequest$Compan
 public final class io/modelcontextprotocol/kotlin/sdk/types/ElicitRequestBuilder : io/modelcontextprotocol/kotlin/sdk/types/RequestBuilder {
 	public fun <init> ()V
 	public fun build ()Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequest;
-	public synthetic fun build$kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
+	public synthetic fun build$io_modelcontextprotocol_kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
 	public final fun getMessage ()Ljava/lang/String;
 	public final fun requestedSchema (Lio/modelcontextprotocol/kotlin/sdk/types/ElicitRequestParams$RequestedSchema;)V
 	public final fun requestedSchema (Lkotlin/jvm/functions/Function1;)V
@@ -1833,7 +1833,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/GetPromptRequest$Com
 public final class io/modelcontextprotocol/kotlin/sdk/types/GetPromptRequestBuilder : io/modelcontextprotocol/kotlin/sdk/types/RequestBuilder {
 	public fun <init> ()V
 	public fun build ()Lio/modelcontextprotocol/kotlin/sdk/types/GetPromptRequest;
-	public synthetic fun build$kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
+	public synthetic fun build$io_modelcontextprotocol_kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
 	public final fun getArguments ()Ljava/util/Map;
 	public final fun getName ()Ljava/lang/String;
 	public final fun setArguments (Ljava/util/Map;)V
@@ -2278,7 +2278,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/InitializeRequest$Co
 public final class io/modelcontextprotocol/kotlin/sdk/types/InitializeRequestBuilder : io/modelcontextprotocol/kotlin/sdk/types/RequestBuilder {
 	public fun <init> ()V
 	public fun build ()Lio/modelcontextprotocol/kotlin/sdk/types/InitializeRequest;
-	public synthetic fun build$kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
+	public synthetic fun build$io_modelcontextprotocol_kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
 	public final fun capabilities (Lio/modelcontextprotocol/kotlin/sdk/types/ClientCapabilities;)V
 	public final fun capabilities (Lkotlin/jvm/functions/Function1;)V
 	public final fun getProtocolVersion ()Ljava/lang/String;
@@ -2668,7 +2668,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ListPromptsRequest$C
 public final class io/modelcontextprotocol/kotlin/sdk/types/ListPromptsRequestBuilder : io/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestBuilder {
 	public fun <init> ()V
 	public fun build ()Lio/modelcontextprotocol/kotlin/sdk/types/ListPromptsRequest;
-	public synthetic fun build$kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
+	public synthetic fun build$io_modelcontextprotocol_kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/ListPromptsResult : io/modelcontextprotocol/kotlin/sdk/types/PaginatedResult, io/modelcontextprotocol/kotlin/sdk/types/ServerResult {
@@ -2739,7 +2739,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ListResourceTemplate
 public final class io/modelcontextprotocol/kotlin/sdk/types/ListResourceTemplatesRequestBuilder : io/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestBuilder {
 	public fun <init> ()V
 	public fun build ()Lio/modelcontextprotocol/kotlin/sdk/types/ListResourceTemplatesRequest;
-	public synthetic fun build$kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
+	public synthetic fun build$io_modelcontextprotocol_kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/ListResourceTemplatesResult : io/modelcontextprotocol/kotlin/sdk/types/PaginatedResult, io/modelcontextprotocol/kotlin/sdk/types/ServerResult {
@@ -2810,7 +2810,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ListResourcesRequest
 public final class io/modelcontextprotocol/kotlin/sdk/types/ListResourcesRequestBuilder : io/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestBuilder {
 	public fun <init> ()V
 	public fun build ()Lio/modelcontextprotocol/kotlin/sdk/types/ListResourcesRequest;
-	public synthetic fun build$kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
+	public synthetic fun build$io_modelcontextprotocol_kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/ListResourcesResult : io/modelcontextprotocol/kotlin/sdk/types/PaginatedResult, io/modelcontextprotocol/kotlin/sdk/types/ServerResult {
@@ -2880,7 +2880,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ListRootsRequest$Com
 public final class io/modelcontextprotocol/kotlin/sdk/types/ListRootsRequestBuilder : io/modelcontextprotocol/kotlin/sdk/types/RequestBuilder {
 	public fun <init> ()V
 	public fun build ()Lio/modelcontextprotocol/kotlin/sdk/types/ListRootsRequest;
-	public synthetic fun build$kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
+	public synthetic fun build$io_modelcontextprotocol_kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/ListRootsResult : io/modelcontextprotocol/kotlin/sdk/types/ClientResult {
@@ -3014,7 +3014,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ListToolsRequest$Com
 public final class io/modelcontextprotocol/kotlin/sdk/types/ListToolsRequestBuilder : io/modelcontextprotocol/kotlin/sdk/types/PaginatedRequestBuilder {
 	public fun <init> ()V
 	public fun build ()Lio/modelcontextprotocol/kotlin/sdk/types/ListToolsRequest;
-	public synthetic fun build$kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
+	public synthetic fun build$io_modelcontextprotocol_kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/ListToolsResult : io/modelcontextprotocol/kotlin/sdk/types/PaginatedResult, io/modelcontextprotocol/kotlin/sdk/types/ServerResult {
@@ -3440,7 +3440,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/PingRequest$Companio
 public final class io/modelcontextprotocol/kotlin/sdk/types/PingRequestBuilder : io/modelcontextprotocol/kotlin/sdk/types/RequestBuilder {
 	public fun <init> ()V
 	public fun build ()Lio/modelcontextprotocol/kotlin/sdk/types/PingRequest;
-	public synthetic fun build$kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
+	public synthetic fun build$io_modelcontextprotocol_kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/PingRequest_dslKt {
@@ -3791,7 +3791,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ReadResourceRequest$
 public final class io/modelcontextprotocol/kotlin/sdk/types/ReadResourceRequestBuilder : io/modelcontextprotocol/kotlin/sdk/types/RequestBuilder {
 	public fun <init> ()V
 	public fun build ()Lio/modelcontextprotocol/kotlin/sdk/types/ReadResourceRequest;
-	public synthetic fun build$kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
+	public synthetic fun build$io_modelcontextprotocol_kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
 	public final fun getUri ()Ljava/lang/String;
 	public final fun setUri (Ljava/lang/String;)V
 }
@@ -4754,7 +4754,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/SetLevelRequest$Comp
 public final class io/modelcontextprotocol/kotlin/sdk/types/SetLevelRequestBuilder : io/modelcontextprotocol/kotlin/sdk/types/RequestBuilder {
 	public fun <init> ()V
 	public fun build ()Lio/modelcontextprotocol/kotlin/sdk/types/SetLevelRequest;
-	public synthetic fun build$kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
+	public synthetic fun build$io_modelcontextprotocol_kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
 	public final fun getLoggingLevel ()Lio/modelcontextprotocol/kotlin/sdk/types/LoggingLevel;
 	public final fun setLoggingLevel (Lio/modelcontextprotocol/kotlin/sdk/types/LoggingLevel;)V
 }
@@ -4920,7 +4920,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/SubscribeRequest$Com
 public final class io/modelcontextprotocol/kotlin/sdk/types/SubscribeRequestBuilder : io/modelcontextprotocol/kotlin/sdk/types/RequestBuilder {
 	public fun <init> ()V
 	public fun build ()Lio/modelcontextprotocol/kotlin/sdk/types/SubscribeRequest;
-	public synthetic fun build$kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
+	public synthetic fun build$io_modelcontextprotocol_kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
 	public final fun getUri ()Ljava/lang/String;
 	public final fun setUri (Ljava/lang/String;)V
 }
@@ -5688,7 +5688,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/UnsubscribeRequest$C
 public final class io/modelcontextprotocol/kotlin/sdk/types/UnsubscribeRequestBuilder : io/modelcontextprotocol/kotlin/sdk/types/RequestBuilder {
 	public fun <init> ()V
 	public fun build ()Lio/modelcontextprotocol/kotlin/sdk/types/UnsubscribeRequest;
-	public synthetic fun build$kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
+	public synthetic fun build$io_modelcontextprotocol_kotlin_sdk_core ()Lio/modelcontextprotocol/kotlin/sdk/types/Request;
 	public final fun getUri ()Ljava/lang/String;
 	public final fun setUri (Ljava/lang/String;)V
 }
