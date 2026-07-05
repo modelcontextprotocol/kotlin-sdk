@@ -32,6 +32,8 @@ import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -483,9 +485,6 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         }
 
         val cancel: suspend (Throwable) -> Unit = { reason: Throwable ->
-            _responseHandlers.update { current -> current.remove(jsonRpcRequestId) }
-            _progressHandlers.update { current -> current.remove(jsonRpcRequestId) }
-
             val notification = CancelledNotification(
                 params = CancelledNotificationParams(
                     requestId = jsonRpcRequestId,
@@ -502,22 +501,29 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
 
         val timeout = options?.timeout ?: DEFAULT_REQUEST_TIMEOUT
         try {
-            withTimeout(timeout) {
+            return withTimeout(timeout) {
                 logger.trace { "Sending request message with id: $jsonRpcRequestId" }
                 this@Protocol.transport?.send(jsonRpcRequest, options)
+                result.await()
             }
-            return result.await()
         } catch (cause: TimeoutCancellationException) {
+            // An enclosing withTimeout cancelling us also surfaces here as a TCE; rethrow instead of converting.
+            currentCoroutineContext().ensureActive()
+
             logger.error { "Request timed out after ${timeout.inWholeMilliseconds}ms: ${request.method}" }
-            cancel(
-                McpException(
-                    code = RPCError.ErrorCode.REQUEST_TIMEOUT,
-                    message = "Request timed out",
-                    data = JsonObject(mutableMapOf("timeout" to JsonPrimitive(timeout.inWholeMilliseconds))),
-                ),
+            val error = McpException(
+                code = RPCError.ErrorCode.REQUEST_TIMEOUT,
+                message = "Request timed out",
+                data = JsonObject(mutableMapOf("timeout" to JsonPrimitive(timeout.inWholeMilliseconds))),
+                cause = cause,
             )
+            cancel(error)
             result.cancel(cause)
-            throw cause
+            throw error
+        } finally {
+            // Centralized cleanup so no exit path leaves this request's handlers registered.
+            _responseHandlers.update { current -> current.remove(jsonRpcRequestId) }
+            _progressHandlers.update { current -> current.remove(jsonRpcRequestId) }
         }
     }
 

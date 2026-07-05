@@ -471,7 +471,7 @@ class StreamableHttpClientTransportTest {
         )
 
         try {
-            // Real time-keeping is needed; otherwise Protocol will always throw TimeoutCancellationException in tests
+            // Real time-keeping is needed; otherwise Protocol will always fail the request with a timeout in tests
             val mcpException = assertFailsWith<McpException>(
                 message = "Expected client.connect to fail on invalid JSON response",
             ) {
