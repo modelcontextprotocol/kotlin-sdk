@@ -285,6 +285,29 @@ class ProtocolTest {
     fun `currentRequestHandlerExtra returns null outside handlers`() = runTest {
         currentRequestHandlerExtra() shouldBe null
     }
+
+    @Test
+    fun `connect while already connected throws IllegalStateException`() = runTest {
+        protocol.connect(transport)
+        shouldThrow<IllegalStateException> {
+            protocol.connect(RecordingTransport())
+        }
+    }
+
+    @Test
+    fun `stale onClose from a previous transport does not tear down the successor connection`() = runTest {
+        protocol.connect(transport)
+        val staleCloseCallback = transport.closeCallback ?: error("onClose not registered")
+
+        protocol.close() // disconnect first transport (fires its own doClose)
+        val second = RecordingTransport()
+        protocol.connect(second) // reconnect
+
+        staleCloseCallback() // late duplicate close signal from transport #1
+
+        // successor connection must still be alive
+        protocol.transport shouldBe second
+    }
 }
 
 private class TestProtocol : Protocol(null) {
@@ -312,6 +335,9 @@ private class RecordingTransport : Transport {
 
     val sentWithOptions = mutableListOf<Pair<JSONRPCMessage, TransportSendOptions?>>()
 
+    var closeCallback: (() -> Unit)? = null
+        private set
+
     override suspend fun start() {
         // noop
     }
@@ -326,6 +352,7 @@ private class RecordingTransport : Transport {
     }
 
     override fun onClose(block: () -> Unit) {
+        closeCallback = block
         onCloseCallback = block
     }
 

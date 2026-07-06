@@ -30,16 +30,23 @@ import kotlinx.atomicfu.update
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineName
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlin.coroutines.AbstractCoroutineContextElement
+import kotlin.coroutines.ContinuationInterceptor
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
@@ -216,9 +223,11 @@ internal val COMPLETED = CompletableDeferred(Unit).also { it.complete(Unit) }
  * @property options protocol-level configuration; `null` falls back to defaults
  */
 public abstract class Protocol(@PublishedApi internal val options: ProtocolOptions?) {
+    private val connectionRef: AtomicRef<Connection?> = atomic(null)
+
     /** The active transport, or `null` if not connected. */
-    public var transport: Transport? = null
-        private set
+    public val transport: Transport?
+        get() = connectionRef.value?.transport
 
     private val _requestHandlers:
         AtomicRef<PersistentMap<String, suspend (JSONRPCRequest, RequestHandlerExtra) -> RequestResult?>> =
@@ -298,12 +307,35 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     /**
      * Attaches to the given transport, starts it, and starts listening for messages.
      *
-     * The Protocol object assumes ownership of the Transport, replacing any callbacks that have already been set, and expects that it is the only user of the Transport instance going forward.
+     * The Protocol object assumes ownership of the Transport, replacing any callbacks that have
+     * already been set, and expects that it is the only user of the Transport instance going forward.
+     *
+     * @throws IllegalStateException if this Protocol is already connected; call [close] first.
      */
     public open suspend fun connect(transport: Transport) {
-        this.transport = transport
+        val handlerContext = (options?.handlerCoroutineContext ?: Dispatchers.Default).minusKey(Job)
+        val interceptor = handlerContext[ContinuationInterceptor]
+        if (interceptor === Dispatchers.Unconfined ||
+            interceptor?.let { it::class.simpleName?.contains("Unconfined") } == true
+        ) {
+            logger.warn {
+                "handlerCoroutineContext uses an unconfined dispatcher ($interceptor); " +
+                    "handler resumptions will run on the transport read loop and may block unrelated messages"
+            }
+        }
+        val connection = Connection(
+            transport = transport,
+            handlerScope = CoroutineScope(SupervisorJob() + handlerContext + CoroutineName("McpProtocol")),
+            executionSemaphore = Semaphore(options?.maxConcurrentHandlers ?: DEFAULT_MAX_CONCURRENT_HANDLERS),
+            maxInFlightHandlers = options?.maxInFlightHandlers ?: DEFAULT_MAX_IN_FLIGHT_HANDLERS,
+        )
+        if (!connectionRef.compareAndSet(null, connection)) {
+            connection.handlerScope.cancel()
+            error("Protocol is already connected; close() the current connection before connecting a new transport")
+        }
+
         transport.onClose {
-            doClose()
+            doClose(connection)
         }
 
         transport.onError {
@@ -311,6 +343,10 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         }
 
         transport.onMessage { message ->
+            if (connectionRef.value !== connection) {
+                logger.trace { "Dropping message received after close: ${message::class.simpleName}" }
+                return@onMessage
+            }
             when (message) {
                 is JSONRPCResponse -> onResponse(message, null)
                 is JSONRPCRequest -> onRequest(message)
@@ -324,11 +360,17 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         transport.start()
     }
 
-    private fun doClose() {
-        val handlersToNotify = _responseHandlers.value.values.toList()
-        _responseHandlers.getAndSet(persistentMapOf())
+    private fun doClose(connection: Connection) {
+        // Generation guard: a stale onClose from a previous transport must not tear down
+        // the successor connection (compare-and-set on the current connection).
+        if (!connectionRef.compareAndSet(connection, null)) {
+            logger.trace { "Ignoring close signal from a stale transport" }
+            return
+        }
+        val handlersToNotify = _responseHandlers.getAndSet(persistentMapOf()).values.toList()
         _progressHandlers.getAndSet(persistentMapOf())
-        transport = null
+        connection.inFlightRequestJobs.getAndSet(persistentMapOf())
+        connection.handlerScope.cancel()
         onClose()
 
         val error = McpException(RPCError.ErrorCode.CONNECTION_CLOSED, "Connection closed")
@@ -693,5 +735,21 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
      */
     public fun removeNotificationHandler(method: Method) {
         _notificationHandlers.update { current -> current.remove(method.value) }
+    }
+
+    private class Connection(
+        val transport: Transport,
+        val handlerScope: CoroutineScope,
+        val executionSemaphore: Semaphore,
+        val maxInFlightHandlers: Int,
+    ) {
+        /** Init gate (spec §5.3): inbound dispatch is inline/serial until this flips. */
+        val concurrentDispatchEnabled = atomic(false)
+
+        /** Admission tier: launched-but-not-completed handler jobs (running + parked). */
+        val inFlightCount = atomic(0)
+
+        /** In-flight request handler jobs, for `notifications/cancelled` (spec §5.5). */
+        val inFlightRequestJobs: AtomicRef<PersistentMap<RequestId, Job>> = atomic(persistentMapOf())
     }
 }
