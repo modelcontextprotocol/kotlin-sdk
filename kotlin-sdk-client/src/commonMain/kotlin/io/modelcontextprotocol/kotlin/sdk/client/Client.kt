@@ -231,6 +231,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
             serverInstructions = result.instructions
 
             notification(InitializedNotification())
+            enableConcurrentDispatch()
         } catch (error: Throwable) {
             logger.error(error) { "Failed to initialize client: ${error.message}" }
             close()

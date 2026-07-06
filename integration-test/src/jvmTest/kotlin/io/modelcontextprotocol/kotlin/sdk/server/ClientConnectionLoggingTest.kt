@@ -1,5 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
+import io.kotest.assertions.nondeterministic.continually
+import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
@@ -17,6 +19,9 @@ import kotlinx.serialization.json.JsonPrimitive
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
+import java.util.concurrent.CopyOnWriteArrayList
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 class ClientConnectionLoggingTest : AbstractServerFeaturesTest() {
 
@@ -56,7 +61,7 @@ class ClientConnectionLoggingTest : AbstractServerFeaturesTest() {
     @ParameterizedTest
     @EnumSource(LoggingLevel::class)
     fun `notification should filter logging messages below level`(minLevel: LoggingLevel): Unit = runBlocking {
-        val receivedMessages = mutableListOf<LoggingMessageNotification>()
+        val receivedMessages = CopyOnWriteArrayList<LoggingMessageNotification>()
         client.setNotificationHandler<LoggingMessageNotification>(Method.Defined.NotificationsMessage) {
             receivedMessages.add(it)
             CompletableDeferred(Unit)
@@ -79,8 +84,11 @@ class ClientConnectionLoggingTest : AbstractServerFeaturesTest() {
 
         client.callTool(CallToolRequest(CallToolRequestParams("test-notification-filtered")))
 
+        // Handlers now run on Dispatchers.Default after the handshake; await the expected count
+        // before asserting order. Arrival order is preserved (one sequential tool handler emits
+        // the notifications and the client-side handlers are suspension-free).
         val expectedLevels = LoggingLevel.entries.filter { it >= minLevel }
-        receivedMessages shouldHaveSize expectedLevels.size
+        eventually(5.seconds) { receivedMessages shouldHaveSize expectedLevels.size }
         receivedMessages.map { it.params.level } shouldBe expectedLevels
     }
 
@@ -115,7 +123,7 @@ class ClientConnectionLoggingTest : AbstractServerFeaturesTest() {
     @ParameterizedTest
     @EnumSource(LoggingLevel::class)
     fun `sendLoggingMessage should filter messages below level`(minLevel: LoggingLevel): Unit = runBlocking {
-        val receivedMessages = mutableListOf<LoggingMessageNotification>()
+        val receivedMessages = CopyOnWriteArrayList<LoggingMessageNotification>()
         client.setNotificationHandler<LoggingMessageNotification>(Method.Defined.NotificationsMessage) {
             receivedMessages.add(it)
             CompletableDeferred(Unit)
@@ -138,14 +146,17 @@ class ClientConnectionLoggingTest : AbstractServerFeaturesTest() {
 
         client.callTool(CallToolRequest(CallToolRequestParams("test-logging-level")))
 
+        // Handlers now run on Dispatchers.Default after the handshake; await the expected count
+        // before asserting order. Arrival order is preserved (one sequential tool handler emits
+        // the notifications and the client-side handlers are suspension-free).
         val expectedLevels = LoggingLevel.entries.filter { it >= minLevel }
-        receivedMessages shouldHaveSize expectedLevels.size
+        eventually(5.seconds) { receivedMessages shouldHaveSize expectedLevels.size }
         receivedMessages.map { it.params.level } shouldBe expectedLevels
     }
 
     @Test
     fun `sendLoggingMessage should send no messages when level is set to highest`(): Unit = runBlocking {
-        val receivedMessages = mutableListOf<LoggingMessageNotification>()
+        val receivedMessages = CopyOnWriteArrayList<LoggingMessageNotification>()
         client.setNotificationHandler<LoggingMessageNotification>(Method.Defined.NotificationsMessage) {
             receivedMessages.add(it)
             CompletableDeferred(Unit)
@@ -167,6 +178,8 @@ class ClientConnectionLoggingTest : AbstractServerFeaturesTest() {
         }
 
         client.callTool(CallToolRequest(CallToolRequestParams("test-logging-highest")))
-        receivedMessages.shouldBeEmpty()
+        // Nothing should ever arrive; verify the list stays empty for a window (handlers dispatch
+        // asynchronously now, so an immediate check would be vacuously true).
+        continually(500.milliseconds) { receivedMessages.shouldBeEmpty() }
     }
 }

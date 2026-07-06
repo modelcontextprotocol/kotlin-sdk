@@ -108,10 +108,19 @@ public open class ServerSession(
         }
     }
 
+    override fun onInitializedNotification() {
+        // Flip BEFORE the notification handler (and therefore before the user's onInitialized
+        // callback) runs; safe because onInitialized callbacks are synchronous.
+        enableConcurrentDispatch()
+    }
+
     internal val clientConnection: ClientConnection = ClientConnectionImpl(this)
 
     /**
      * Registers a callback to be invoked when the server has completed initialization.
+     *
+     * The callback must be synchronous and fast: it runs on the message-dispatch path for
+     * `notifications/initialized`, after concurrent dispatch has been enabled for the session.
      */
     public fun onInitialized(block: () -> Unit) {
         val old = _onInitialized

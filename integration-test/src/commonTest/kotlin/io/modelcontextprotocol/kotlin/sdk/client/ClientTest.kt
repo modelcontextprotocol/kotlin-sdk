@@ -24,6 +24,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeResult
 import io.modelcontextprotocol.kotlin.sdk.types.IntegerSchema
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
@@ -52,6 +53,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.UntitledSingleSelectEnumSchema
 import io.modelcontextprotocol.kotlin.sdk.types.UrlElicitationRequiredException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.joinAll
@@ -71,6 +73,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.test.fail
+import kotlin.time.Duration.Companion.seconds
 
 class ClientTest {
     @Test
@@ -543,6 +546,17 @@ class ClientTest {
 
         val serverSession = serverSessionResult.await()
 
+        // Wire-level tap registered after the session is connected: AbstractTransport chains
+        // onMessage callbacks, so this coexists with the session's own dispatch subscription.
+        // (Registered here, not before createSession, so it does not pre-empt the transport's
+        // message-buffering stub and drop the client's initialize during the handshake race.)
+        val cancelledOnWire = CompletableDeferred<Unit>()
+        serverTransport.onMessage { message ->
+            if (message is JSONRPCNotification && message.method == Method.Defined.NotificationsCancelled.value) {
+                cancelledOnWire.complete(Unit)
+            }
+        }
+
         serverSession.setRequestHandler<ListResourcesRequest>(Method.Defined.ResourcesList) { _, _ ->
             // Simulate delay
             def.complete(Unit)
@@ -568,7 +582,8 @@ class ClientTest {
         def.await()
         runCatching { job.cancel("Cancelled by test") }
         defCancel.await()
-        defTimeOut.await()
+        cancelledOnWire.await() // cancellation now reaches the server over the wire
+        defTimeOut.await() // and cooperatively cancels the in-flight handler
     }
 
     @Test
@@ -606,17 +621,10 @@ class ClientTest {
 
         val serverSession = serverSessionResult.await()
         serverSession.setRequestHandler<ListResourcesRequest>(Method.Defined.ResourcesList) { _, _ ->
-            // Simulate a delayed response
-            // Wait ~100ms unless canceled
-            try {
-                withTimeout(100L) {
-                    // Just delay here, if timeout is 0 on the client side, this won't return in time
-                    delay(100)
-                }
-            } catch (_: Exception) {
-                // If aborted, just rethrow or return early
-            }
-            ListResourcesResult(resources = emptyList())
+            // Park until cancelled: after the handshake the handler runs on a real dispatcher
+            // while the client's timeout runs on the virtual test clock, so a real-time delay
+            // could occasionally beat the 1 ms timeout. Never responding keeps this deterministic.
+            awaitCancellation()
         }
 
         // Request with 1 msec timeout should fail immediately
@@ -895,8 +903,9 @@ class ClientTest {
             ),
         )
 
-        // Track notifications
-        var rootListChangedNotificationReceived = false
+        // Track notifications: the handler now runs on Dispatchers.Default after concurrent
+        // dispatch is enabled, so await the deferred instead of asserting a flag inline.
+        val rootListChangedReceived = CompletableDeferred<Unit>()
 
         val serverSessionResult = CompletableDeferred<ServerSession>()
 
@@ -915,16 +924,13 @@ class ClientTest {
         serverSession.setNotificationHandler<RootsListChangedNotification>(
             Method.Defined.NotificationsRootsListChanged,
         ) {
-            rootListChangedNotificationReceived = true
+            rootListChangedReceived.complete(Unit)
             CompletableDeferred(Unit)
         }
 
         client.sendRootsListChanged()
 
-        assertTrue(
-            rootListChangedNotificationReceived,
-            "Notification should be sent when sendRootsListChanged is called",
-        )
+        withTimeout(5.seconds) { rootListChangedReceived.await() }
     }
 
     @Test

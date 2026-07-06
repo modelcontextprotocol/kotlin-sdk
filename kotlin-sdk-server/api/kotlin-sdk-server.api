@@ -198,6 +198,7 @@ public class io/modelcontextprotocol/kotlin/sdk/server/ServerSession : io/modelc
 	public fun onClose ()V
 	public final fun onClose (Lkotlin/jvm/functions/Function0;)V
 	public final fun onInitialized (Lkotlin/jvm/functions/Function0;)V
+	protected fun onInitializedNotification ()V
 	public final fun ping (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun sendElicitationComplete (Lio/modelcontextprotocol/kotlin/sdk/types/ElicitationCompleteNotification;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun sendLoggingMessage (Lio/modelcontextprotocol/kotlin/sdk/types/LoggingMessageNotification;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
