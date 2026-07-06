@@ -33,10 +33,13 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
+import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
@@ -154,8 +157,55 @@ public class RequestOptions(
 
 /**
  * Extra data given to request handlers.
+ *
+ * One instance exists per in-flight inbound request. It is passed as the second parameter to
+ * low-level handlers registered via [Protocol.setRequestHandler] **and** installed into the
+ * handler coroutine's [CoroutineContext], so code nested anywhere under the handler can reach it
+ * via [currentRequestHandlerExtra] without parameter plumbing.
+ *
+ * @property requestId the JSON-RPC id of the request being handled
+ * @property method the request's method
  */
-public class RequestHandlerExtra
+public class RequestHandlerExtra internal constructor(
+    public val requestId: RequestId,
+    public val method: Method,
+    private val protocol: Protocol,
+    internal val capturedTransport: Transport,
+) : AbstractCoroutineContextElement(Key) {
+
+    /** Context key for retrieving the extra from a handler coroutine's context. */
+    public companion object Key : CoroutineContext.Key<RequestHandlerExtra>
+
+    /**
+     * Sends a notification tagged with `relatedRequestId = `[requestId], letting transports
+     * associate it with the request being handled (e.g. route it onto the request's SSE stream).
+     */
+    public suspend fun sendNotification(notification: Notification) {
+        protocol.notification(notification, relatedRequestId = requestId)
+    }
+
+    /**
+     * Sends a request to the peer tagged with `relatedRequestId = `[requestId].
+     *
+     * Mirrors [Protocol.request]; cancellation of the handler coroutine propagates into this call.
+     */
+    public suspend fun <T : RequestResult> sendRequest(request: Request, options: RequestOptions? = null): T {
+        val base = options ?: RequestOptions()
+        return protocol.request(
+            request,
+            RequestOptions(
+                relatedRequestId = requestId,
+                resumptionToken = base.resumptionToken,
+                onResumptionToken = base.onResumptionToken,
+                onProgress = base.onProgress,
+                timeout = base.timeout,
+            ),
+        )
+    }
+}
+
+/** The [RequestHandlerExtra] of the MCP request being handled by the current coroutine, or `null` outside a handler. */
+public suspend fun currentRequestHandlerExtra(): RequestHandlerExtra? = currentCoroutineContext()[RequestHandlerExtra]
 
 internal val COMPLETED = CompletableDeferred(Unit).also { it.complete(Unit) }
 
@@ -310,11 +360,12 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         logger.trace { "Received request: ${request.method} (id: ${request.id})" }
 
         val handler = requestHandlers[request.method] ?: fallbackRequestHandler
+        val capturedTransport = transport
 
         if (handler === null) {
             logger.trace { "No handler found for request: ${request.method}" }
             try {
-                transport?.send(
+                capturedTransport?.send(
                     JSONRPCError(
                         id = request.id,
                         error = RPCError(
@@ -331,36 +382,52 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             }
             return
         }
+        if (capturedTransport == null) {
+            logger.trace { "Dropping request received while not connected: ${request.method} (id: ${request.id})" }
+            return
+        }
 
-        try {
-            val result = handler(request, RequestHandlerExtra())
-            logger.trace { "Request handled successfully: ${request.method} (id: ${request.id})" }
+        val extra = RequestHandlerExtra(
+            requestId = request.id,
+            method = Method.from(request.method),
+            protocol = this,
+            capturedTransport = capturedTransport,
+        )
 
-            transport?.send(
-                JSONRPCResponse(
-                    id = request.id,
-                    result = result ?: EmptyResult(),
-                ),
-            )
-        } catch (e: CancellationException) {
-            throw e
-        } catch (cause: Throwable) {
-            logger.error(cause) { "Error handling request: ${request.method} (id: ${request.id})" }
-
+        withContext(extra) {
             try {
-                val rpcError = if (cause is McpException) {
-                    RPCError(code = cause.code, message = cause.message.orEmpty(), data = cause.data)
-                } else {
-                    RPCError(code = RPCError.ErrorCode.INTERNAL_ERROR, message = cause.message ?: "Internal error")
-                }
-                transport?.send(JSONRPCError(id = request.id, error = rpcError))
+                val result = handler(request, extra)
+                logger.trace { "Request handled successfully: ${request.method} (id: ${request.id})" }
+
+                capturedTransport.send(
+                    JSONRPCResponse(
+                        id = request.id,
+                        result = result ?: EmptyResult(),
+                    ),
+                )
             } catch (e: CancellationException) {
                 throw e
-            } catch (sendError: Throwable) {
-                logger.error(sendError) {
-                    "Failed to send error response for request: ${request.method} (id: ${request.id})"
+            } catch (cause: Throwable) {
+                logger.error(cause) { "Error handling request: ${request.method} (id: ${request.id})" }
+
+                try {
+                    val rpcError = if (cause is McpException) {
+                        RPCError(code = cause.code, message = cause.message.orEmpty(), data = cause.data)
+                    } else {
+                        RPCError(
+                            code = RPCError.ErrorCode.INTERNAL_ERROR,
+                            message = cause.message ?: "Internal error",
+                        )
+                    }
+                    capturedTransport.send(JSONRPCError(id = request.id, error = rpcError))
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (sendError: Throwable) {
+                    logger.error(sendError) {
+                        "Failed to send error response for request: ${request.method} (id: ${request.id})"
+                    }
+                    // Optionally implement fallback behavior here
                 }
-                // Optionally implement fallback behavior here
             }
         }
     }

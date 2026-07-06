@@ -5,6 +5,7 @@ import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.modelcontextprotocol.kotlin.sdk.types.CustomRequest
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
@@ -13,8 +14,13 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ProgressNotification
+import io.modelcontextprotocol.kotlin.sdk.types.ProgressNotificationParams
+import io.modelcontextprotocol.kotlin.sdk.types.ProgressToken
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.RequestMeta
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
@@ -185,6 +191,65 @@ class ProtocolTest {
         transport.deliver(JSONRPCResponse(sent.id, EmptyResult()))
         inFlight.await()
     }
+
+    @Test
+    fun `request handler receives enriched extra and ambient context element`() = runTest {
+        protocol.connect(transport)
+
+        var seenByParameter: RequestHandlerExtra? = null
+        var seenAmbient: RequestHandlerExtra? = null
+        protocol.fallbackRequestHandler = { _, extra ->
+            seenByParameter = extra
+            seenAmbient = currentRequestHandlerExtra()
+            EmptyResult()
+        }
+
+        transport.deliver(JSONRPCRequest(id = RequestId(7L), method = "custom/echo"))
+
+        seenByParameter shouldNotBe null
+        seenByParameter?.requestId shouldBe RequestId(7L)
+        seenByParameter?.method shouldBe Method.Custom("custom/echo")
+        // the SAME instance flows through both delivery paths
+        seenAmbient shouldBe seenByParameter
+    }
+
+    @Test
+    fun `extra method resolves defined methods to Defined entries`() = runTest {
+        protocol.connect(transport)
+
+        var seenMethod: Method? = null
+        protocol.setRequestHandler<PingRequest>(Method.Defined.Ping) { _, extra ->
+            seenMethod = extra.method
+            EmptyResult()
+        }
+        transport.deliver(JSONRPCRequest(id = RequestId(1L), method = "ping"))
+
+        seenMethod shouldBe Method.Defined.Ping
+    }
+
+    @Test
+    fun `extra sendNotification stamps relatedRequestId`() = runTest {
+        protocol.connect(transport)
+
+        protocol.fallbackRequestHandler = { _, extra ->
+            extra.sendNotification(
+                ProgressNotification(
+                    ProgressNotificationParams(progressToken = ProgressToken(1L), progress = 0.5),
+                ),
+            )
+            EmptyResult()
+        }
+
+        transport.deliver(JSONRPCRequest(id = RequestId(42L), method = "custom/progressing"))
+
+        val sent = transport.sentWithOptions.first { it.first is JSONRPCNotification }
+        sent.second?.relatedRequestId shouldBe RequestId(42L)
+    }
+
+    @Test
+    fun `currentRequestHandlerExtra returns null outside handlers`() = runTest {
+        currentRequestHandlerExtra() shouldBe null
+    }
 }
 
 private class TestProtocol : Protocol(null) {
@@ -210,11 +275,14 @@ private class RecordingTransport : Transport {
     private var onMessageCallback: (suspend (JSONRPCMessage) -> Unit)? = null
     private var onCloseCallback: (() -> Unit)? = null
 
+    val sentWithOptions = mutableListOf<Pair<JSONRPCMessage, TransportSendOptions?>>()
+
     override suspend fun start() {
         // noop
     }
 
     override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
+        sentWithOptions.add(message to options)
         sentMessages.send(message)
     }
 

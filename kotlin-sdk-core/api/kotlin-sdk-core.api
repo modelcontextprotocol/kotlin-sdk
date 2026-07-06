@@ -86,6 +86,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/shared/ProtocolKt {
 	public static final field DEFAULT_MAX_CONCURRENT_HANDLERS I
 	public static final field DEFAULT_MAX_IN_FLIGHT_HANDLERS I
 	public static final field IMPLEMENTATION_NAME Ljava/lang/String;
+	public static final fun currentRequestHandlerExtra (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static final fun getDEFAULT_REQUEST_TIMEOUT ()J
 }
 
@@ -115,8 +116,16 @@ public final class io/modelcontextprotocol/kotlin/sdk/shared/ReadBufferKt {
 	public static final fun serializeMessage (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;)Ljava/lang/String;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/shared/RequestHandlerExtra {
-	public fun <init> ()V
+public final class io/modelcontextprotocol/kotlin/sdk/shared/RequestHandlerExtra : kotlin/coroutines/AbstractCoroutineContextElement {
+	public static final field Key Lio/modelcontextprotocol/kotlin/sdk/shared/RequestHandlerExtra$Key;
+	public final fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
+	public final fun getRequestId ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;
+	public final fun sendNotification (Lio/modelcontextprotocol/kotlin/sdk/types/Notification;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun sendRequest (Lio/modelcontextprotocol/kotlin/sdk/types/Request;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun sendRequest$default (Lio/modelcontextprotocol/kotlin/sdk/shared/RequestHandlerExtra;Lio/modelcontextprotocol/kotlin/sdk/types/Request;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/shared/RequestHandlerExtra$Key : kotlin/coroutines/CoroutineContext$Key {
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/shared/RequestOptions : io/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions {
