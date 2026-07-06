@@ -6,6 +6,7 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.modelcontextprotocol.kotlin.sdk.types.CustomRequest
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
@@ -24,6 +25,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.RequestMeta
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
@@ -36,6 +38,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.seconds
 
 class ProtocolTest {
     private lateinit var protocol: TestProtocol
@@ -244,6 +247,38 @@ class ProtocolTest {
 
         val sent = transport.sentWithOptions.first { it.first is JSONRPCNotification }
         sent.second?.relatedRequestId shouldBe RequestId(42L)
+    }
+
+    @Test
+    fun `extra sendRequest stamps relatedRequestId and preserves caller options`() = runTest {
+        protocol.connect(transport)
+
+        protocol.fallbackRequestHandler = { _, extra ->
+            extra.sendRequest<EmptyResult>(
+                PingRequest(),
+                RequestOptions(resumptionToken = "tok", onProgress = { }, timeout = 30.seconds),
+            )
+            EmptyResult()
+        }
+
+        // The serial phase runs the handler inline inside deliver(), and the handler suspends
+        // awaiting the nested request's response — drive delivery from a child coroutine.
+        val delivery = launch {
+            transport.deliver(JSONRPCRequest(id = RequestId(42L), method = "custom/nested"))
+        }
+
+        val outbound = transport.awaitRequest()
+        val recorded = transport.sentWithOptions
+            .first { (it.first as? JSONRPCRequest)?.id == outbound.id }
+            .second
+        val options = recorded.shouldBeInstanceOf<RequestOptions>()
+        options.relatedRequestId shouldBe RequestId(42L)
+        options.resumptionToken shouldBe "tok"
+        options.timeout shouldBe 30.seconds
+        options.onProgress shouldNotBe null
+
+        transport.deliver(JSONRPCResponse(id = outbound.id, result = EmptyResult()))
+        delivery.join()
     }
 
     @Test
