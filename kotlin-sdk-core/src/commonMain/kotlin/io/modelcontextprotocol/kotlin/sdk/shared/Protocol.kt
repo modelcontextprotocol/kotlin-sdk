@@ -31,11 +31,13 @@ import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
+import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -60,16 +62,36 @@ public typealias ProgressCallback = (Progress) -> Unit
  * Currently defaults to `false` for backwards compatibility with SDK versions that did not advertise
  * capabilities correctly; in the future, this will default to `true`.
  * @property timeout default timeout for outgoing requests
+ * @property handlerCoroutineContext coroutine context used to run inbound request and notification
+ * handlers once the MCP initialization phase has completed. Must contain a real dispatching
+ * [kotlin.coroutines.ContinuationInterceptor]; `Dispatchers.Unconfined` (and unconfined test
+ * dispatchers) are unsupported — handler resumptions would run on the transport read loop and
+ * reintroduce head-of-line blocking. Any [kotlinx.coroutines.Job] in this context is ignored:
+ * the connection's own `SupervisorJob` is authoritative.
+ * @property maxConcurrentHandlers maximum number of inbound handlers executing concurrently per
+ * connection; excess handler coroutines park until a slot frees up.
+ * @property maxInFlightHandlers maximum number of launched-but-not-completed inbound handlers
+ * (running + parked) per connection; beyond it new requests are rejected immediately with a
+ * JSON-RPC error and new notifications are dropped and reported via `onError`.
  */
 public open class ProtocolOptions(
     public var enforceStrictCapabilities: Boolean = false,
     public var timeout: Duration = DEFAULT_REQUEST_TIMEOUT,
+    public var handlerCoroutineContext: CoroutineContext = Dispatchers.Default,
+    public var maxConcurrentHandlers: Int = DEFAULT_MAX_CONCURRENT_HANDLERS,
+    public var maxInFlightHandlers: Int = DEFAULT_MAX_IN_FLIGHT_HANDLERS,
 )
 
 /**
  * The default request timeout.
  */
 public val DEFAULT_REQUEST_TIMEOUT: Duration = 60.seconds
+
+/** Default cap on concurrently executing inbound handlers per connection. */
+public const val DEFAULT_MAX_CONCURRENT_HANDLERS: Int = 64
+
+/** Default cap on launched-but-not-completed inbound handlers per connection. */
+public const val DEFAULT_MAX_IN_FLIGHT_HANDLERS: Int = 256
 
 /**
  * Options that can be given per request.

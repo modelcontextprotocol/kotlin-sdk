@@ -2,6 +2,8 @@ package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.server.utils.warnIfInvalidToolName
+import io.modelcontextprotocol.kotlin.sdk.shared.DEFAULT_MAX_CONCURRENT_HANDLERS
+import io.modelcontextprotocol.kotlin.sdk.shared.DEFAULT_MAX_IN_FLIGHT_HANDLERS
 import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
@@ -53,9 +55,11 @@ import io.modelcontextprotocol.kotlin.sdk.utils.ResourceTemplateMatcher
 import io.modelcontextprotocol.kotlin.sdk.utils.ResourceTemplateMatcherFactory
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlin.coroutines.CoroutineContext
 import kotlin.jvm.JvmOverloads
 import kotlin.time.ExperimentalTime
 
@@ -69,12 +73,23 @@ private val logger = KotlinLogging.logger {}
  * Forwarded to [ProtocolOptions.enforceStrictCapabilities].
  * @property resourceTemplateMatcherFactory The factory used to create [ResourceTemplateMatcher] instances
  *   for matching resource URIs against registered templates. Defaults to [PathSegmentTemplateMatcher.factory].
+ * @param handlerCoroutineContext Coroutine context for inbound handlers; see [ProtocolOptions.handlerCoroutineContext].
+ * @param maxConcurrentHandlers Concurrency cap for inbound handlers; see [ProtocolOptions.maxConcurrentHandlers].
+ * @param maxInFlightHandlers Admission cap for inbound handlers; see [ProtocolOptions.maxInFlightHandlers].
  */
 public class ServerOptions(
     public val capabilities: ServerCapabilities,
     enforceStrictCapabilities: Boolean = true,
     public val resourceTemplateMatcherFactory: ResourceTemplateMatcherFactory = PathSegmentTemplateMatcher.factory,
-) : ProtocolOptions(enforceStrictCapabilities = enforceStrictCapabilities) {
+    handlerCoroutineContext: CoroutineContext = Dispatchers.Default,
+    maxConcurrentHandlers: Int = DEFAULT_MAX_CONCURRENT_HANDLERS,
+    maxInFlightHandlers: Int = DEFAULT_MAX_IN_FLIGHT_HANDLERS,
+) : ProtocolOptions(
+    enforceStrictCapabilities = enforceStrictCapabilities,
+    handlerCoroutineContext = handlerCoroutineContext,
+    maxConcurrentHandlers = maxConcurrentHandlers,
+    maxInFlightHandlers = maxInFlightHandlers,
+) {
     @JvmOverloads
     public constructor(
         capabilities: ServerCapabilities,

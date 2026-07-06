@@ -2,6 +2,8 @@ package io.modelcontextprotocol.kotlin.sdk.client
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
+import io.modelcontextprotocol.kotlin.sdk.shared.DEFAULT_MAX_CONCURRENT_HANDLERS
+import io.modelcontextprotocol.kotlin.sdk.shared.DEFAULT_MAX_IN_FLIGHT_HANDLERS
 import io.modelcontextprotocol.kotlin.sdk.shared.Protocol
 import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestHandlerExtra
@@ -73,11 +75,13 @@ import kotlinx.collections.immutable.minus
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
+import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
 
 private val logger = KotlinLogging.logger {}
@@ -87,11 +91,22 @@ private val logger = KotlinLogging.logger {}
  *
  * @property capabilities The capabilities this client supports.
  * @param enforceStrictCapabilities Whether to strictly enforce capabilities when interacting with the server.
+ * @param handlerCoroutineContext Coroutine context for inbound handlers; see [ProtocolOptions.handlerCoroutineContext].
+ * @param maxConcurrentHandlers Concurrency cap for inbound handlers; see [ProtocolOptions.maxConcurrentHandlers].
+ * @param maxInFlightHandlers Admission cap for inbound handlers; see [ProtocolOptions.maxInFlightHandlers].
  */
 public class ClientOptions(
     public val capabilities: ClientCapabilities = ClientCapabilities(),
     enforceStrictCapabilities: Boolean = true,
-) : ProtocolOptions(enforceStrictCapabilities = enforceStrictCapabilities)
+    handlerCoroutineContext: CoroutineContext = Dispatchers.Default,
+    maxConcurrentHandlers: Int = DEFAULT_MAX_CONCURRENT_HANDLERS,
+    maxInFlightHandlers: Int = DEFAULT_MAX_IN_FLIGHT_HANDLERS,
+) : ProtocolOptions(
+    enforceStrictCapabilities = enforceStrictCapabilities,
+    handlerCoroutineContext = handlerCoroutineContext,
+    maxConcurrentHandlers = maxConcurrentHandlers,
+    maxInFlightHandlers = maxInFlightHandlers,
+)
 
 /**
  * Initializes and connects an MCP client using the provided clientInfo [Implementation], client options,
