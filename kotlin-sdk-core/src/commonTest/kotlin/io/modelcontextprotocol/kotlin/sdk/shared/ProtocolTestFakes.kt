@@ -85,9 +85,10 @@ internal class RecordingTransport : Transport {
     }
 
     suspend fun awaitRequest(): JSONRPCRequest {
-        val message = sentMessages.receive()
-        return message as? JSONRPCRequest
-            ?: error("Expected JSONRPCRequest but received ${message::class.simpleName}")
+        while (true) {
+            val message = sentMessages.receive()
+            if (message is JSONRPCRequest) return message
+        }
     }
 
     /** Cross-thread-safe reader used by real-dispatcher tests; [sentWithOptions] is single-thread only. */

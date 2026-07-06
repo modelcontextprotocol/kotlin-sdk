@@ -45,6 +45,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.JsonObject
@@ -223,6 +224,15 @@ internal val COMPLETED = CompletableDeferred(Unit).also { it.complete(Unit) }
 
 /** Cap on how many recently-cancelled outbound request ids are remembered to quiet late responses/progress. */
 private const val CANCELLED_REQUEST_IDS_REMEMBERED = 256
+
+// Bypass set (spec §5.4): exempt from both bound tiers so the connection cannot self-block.
+// Responses are not listed — they are handled inline before dispatch.
+private val CONTROL_METHODS: Set<String> = setOf(
+    Method.Defined.Ping.value,
+    Method.Defined.NotificationsCancelled.value,
+    Method.Defined.NotificationsProgress.value,
+    Method.Defined.NotificationsInitialized.value,
+)
 
 /**
  * Implements MCP protocol framing on top of a pluggable transport, including
@@ -434,6 +444,11 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             onRequest(request, connection, trackCancellation = false)
             return
         }
+        val bypass = request.method in CONTROL_METHODS
+        if (!bypass && !tryAdmit(connection)) {
+            rejectOverloadedRequest(connection, request)
+            return
+        }
         // UNDISPATCHED: the handler starts synchronously in the delivering coroutine (strict
         // arrival-order start) and moves to handlerCoroutineContext at its first suspension.
         connection.handlerScope.launch(start = CoroutineStart.UNDISPATCHED) {
@@ -442,7 +457,17 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             // loop delivers the next message, so a subsequent `cancelled` is guaranteed to observe
             // the registration.
             registerInFlight(connection, request.id, coroutineContext.job)
-            onRequest(request, connection, trackCancellation = true)
+            try {
+                if (bypass) {
+                    onRequest(request, connection, trackCancellation = true)
+                } else {
+                    connection.executionSemaphore.withPermit {
+                        onRequest(request, connection, trackCancellation = true)
+                    }
+                }
+            } finally {
+                if (!bypass) connection.inFlightCount.decrementAndGet()
+            }
         }
     }
 
@@ -454,8 +479,56 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             onNotification(notification)
             return
         }
+        val bypass = notification.method in CONTROL_METHODS
+        if (!bypass && !tryAdmit(connection)) {
+            val dropped = IllegalStateException(
+                "Dropped notification ${notification.method}: too many in-flight messages",
+            )
+            logger.warn { dropped.message }
+            onError(dropped)
+            return
+        }
         connection.handlerScope.launch(start = CoroutineStart.UNDISPATCHED) {
-            onNotification(notification)
+            try {
+                if (bypass) {
+                    onNotification(notification)
+                } else {
+                    connection.executionSemaphore.withPermit { onNotification(notification) }
+                }
+            } finally {
+                if (!bypass) connection.inFlightCount.decrementAndGet()
+            }
+        }
+    }
+
+    private fun tryAdmit(connection: Connection): Boolean {
+        while (true) {
+            val current = connection.inFlightCount.value
+            if (current >= connection.maxInFlightHandlers) return false
+            if (connection.inFlightCount.compareAndSet(current, current + 1)) return true
+        }
+    }
+
+    private suspend fun rejectOverloadedRequest(connection: Connection, request: JSONRPCRequest) {
+        logger.warn {
+            "Rejecting request ${request.method} (id: ${request.id}): " +
+                "in-flight handler limit (${connection.maxInFlightHandlers}) reached"
+        }
+        try {
+            connection.transport.send(
+                JSONRPCError(
+                    id = request.id,
+                    error = RPCError(
+                        code = RPCError.ErrorCode.INTERNAL_ERROR,
+                        message = "Server is busy: too many in-flight messages",
+                    ),
+                ),
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (cause: Throwable) {
+            logger.error(cause) { "Failed to send busy rejection for request id: ${request.id}" }
+            onError(cause)
         }
     }
 
