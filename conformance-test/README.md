@@ -2,7 +2,7 @@
 
 Conformance tests for the Kotlin MCP SDK. Uses the external
 [`@modelcontextprotocol/conformance`](https://www.npmjs.com/package/@modelcontextprotocol/conformance)
-runner (pinned to **0.1.15**) to validate compliance with the MCP specification.
+runner (pinned to **0.1.16**) to validate compliance with the MCP specification.
 
 ## Prerequisites
 
@@ -38,7 +38,7 @@ Any `[extra-args]` are forwarded to the conformance runner (e.g. `--verbose`).
 
 1. **Builds** the module via `./gradlew :conformance-test:installDist`
 2. For `server` — starts the conformance server on `localhost:3001`, polls until ready
-3. Invokes `npx @modelcontextprotocol/conformance@0.1.15` with the appropriate arguments
+3. Invokes `npx @modelcontextprotocol/conformance@0.1.16` with the appropriate arguments
 4. Saves results to `conformance-test/results/<command>/`
 5. Cleans up the server process on exit
 6. Exits non-zero if any suite fails
