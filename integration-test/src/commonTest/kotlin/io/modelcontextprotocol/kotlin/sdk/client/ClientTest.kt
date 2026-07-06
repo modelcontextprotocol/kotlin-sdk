@@ -903,8 +903,7 @@ class ClientTest {
             ),
         )
 
-        // Track notifications: the handler now runs on Dispatchers.Default after concurrent
-        // dispatch is enabled, so await the deferred instead of asserting a flag inline.
+        // The handler runs on Dispatchers.Default after concurrent dispatch is enabled; await the deferred.
         val rootListChangedReceived = CompletableDeferred<Unit>()
 
         val serverSessionResult = CompletableDeferred<ServerSession>()

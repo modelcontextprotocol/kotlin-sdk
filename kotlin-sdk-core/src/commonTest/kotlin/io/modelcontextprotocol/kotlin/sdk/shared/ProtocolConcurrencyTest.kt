@@ -38,7 +38,6 @@ class ProtocolConcurrencyTest {
     private fun TestScope.newProtocol(): TestProtocol =
         TestProtocol(ProtocolOptions(handlerCoroutineContext = StandardTestDispatcher(testScheduler)))
 
-    // the #176 repro
     @Test
     fun `a suspended slow handler does not block a later fast request`() = runTest {
         val protocol = newProtocol()
@@ -62,7 +61,6 @@ class ProtocolConcurrencyTest {
         responsesOn(transport).map { it.id } shouldBe listOf(RequestId(2L), RequestId(1L))
     }
 
-    // serial until the gate flips
     @Test
     fun `dispatch is serial until concurrent dispatch is enabled`() = runTest {
         val protocol = newProtocol()
@@ -229,7 +227,6 @@ class ProtocolConcurrencyTest {
         protocol.errors shouldBe emptyList()
     }
 
-    // arrival-order start for suspension-free notification handlers
     @Test
     fun `suspension-free notification handlers observe strict arrival order`() = runTest {
         val protocol = newProtocol()
@@ -252,7 +249,6 @@ class ProtocolConcurrencyTest {
         seen shouldBe (0 until 20).toList()
     }
 
-    // reconnect resets the gate and uses a fresh scope
     @Test
     fun `reconnect resets the dispatch gate to serial`() = runTest {
         val protocol = newProtocol()
@@ -315,7 +311,6 @@ class ProtocolConcurrencyTest {
         thrown.code shouldBe RPCError.ErrorCode.CONNECTION_CLOSED
     }
 
-    // post-close dispatch gate
     @Test
     fun `message delivered after close is dropped without crash or response`() = runTest {
         val protocol = newProtocol()
@@ -331,7 +326,6 @@ class ProtocolConcurrencyTest {
         errorsOn(transport) shouldBe emptyList()
     }
 
-    // spec §8 test 6
     @Test
     fun `at most maxConcurrentHandlers handlers run concurrently while control messages bypass`() = runTest {
         val protocol = TestProtocol(
@@ -375,7 +369,6 @@ class ProtocolConcurrencyTest {
         responsesOn(transport) shouldHaveSize 5
     }
 
-    // spec §8 test 18
     @Test
     fun `flood beyond maxInFlightHandlers is rejected fail-fast and the read loop never suspends`() = runTest {
         val protocol = TestProtocol(
@@ -460,7 +453,6 @@ class ProtocolConcurrencyTest {
         advanceUntilIdle()
     }
 
-    // spec §8 test 5
     @Test
     fun `cancelling saturating handlers releases permits and lets parked handlers run`() = runTest {
         val protocol = TestProtocol(

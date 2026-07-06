@@ -225,7 +225,7 @@ internal val COMPLETED = CompletableDeferred(Unit).also { it.complete(Unit) }
 /** Cap on how many recently-cancelled outbound request ids are remembered to quiet late responses/progress. */
 private const val CANCELLED_REQUEST_IDS_REMEMBERED = 256
 
-// Bypass set (spec §5.4): exempt from both bound tiers so the connection cannot self-block.
+// Bypass set: exempt from both bound tiers so the connection cannot self-block.
 // Responses are not listed — they are handled inline before dispatch.
 private val CONTROL_METHODS: Set<String> = setOf(
     Method.Defined.Ping.value,
@@ -449,7 +449,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     private suspend fun dispatchRequest(connection: Connection, request: JSONRPCRequest) {
         if (!connection.concurrentDispatchEnabled.value) {
             // Serial phase (before the peer completes MCP initialization): inline, in arrival
-            // order — the delivering coroutine awaits the handler, exactly as before.
+            // order — the delivering coroutine awaits the handler.
             onRequest(request, connection, trackCancellation = false)
             return
         }
@@ -626,7 +626,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             } catch (e: CancellationException) {
                 // Deliberate, documented exception to the always-rethrow-CE convention, applied
                 // only at this dispatch boundary:
-                if (handlerJob == null) throw e // serial phase: previous inline behavior
+                if (handlerJob == null) throw e // serial phase: rethrow (inline dispatch is not response-suppressed)
                 if (handlerJob.isCancelled) throw e // genuine cancel (peer/close): suppress response
                 // CE escaped the handler while its job is alive (e.g. leaked inner withTimeout):
                 // answer INTERNAL_ERROR so the peer does not hang until its own timeout.
@@ -991,13 +991,13 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         val executionSemaphore: Semaphore,
         val maxInFlightHandlers: Int,
     ) {
-        /** Init gate (spec §5.3): inbound dispatch is inline/serial until this flips. */
+        /** Init gate: inbound dispatch is inline/serial until this flips. */
         val concurrentDispatchEnabled = atomic(false)
 
         /** Admission tier: launched-but-not-completed handler jobs (running + parked). */
         val inFlightCount = atomic(0)
 
-        /** In-flight request handler jobs, for `notifications/cancelled` (spec §5.5). */
+        /** In-flight request handler jobs, for `notifications/cancelled`. */
         val inFlightRequestJobs: AtomicRef<PersistentMap<RequestId, Job>> = atomic(persistentMapOf())
     }
 }
