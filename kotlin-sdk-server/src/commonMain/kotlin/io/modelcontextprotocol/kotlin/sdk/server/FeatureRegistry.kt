@@ -20,9 +20,12 @@ internal interface FeatureListener {
  * A generic registry for managing features of a specified type. This class provides thread-safe
  * operations for adding, removing, and retrieving features from the registry.
  *
+ * Feature keys are unique: [add] and [addAll] reject keys that are already registered.
+ * To replace a feature, [remove] it first and add the new one.
+ *
  * @param T The type of the feature, constrained to implement the [Feature] interface.
  * @param featureType A string description of the type of feature being managed.
- *                    Used primarily for logging purposes.
+ *                    Used for logging and error messages.
  */
 internal class FeatureRegistry<T : Feature>(private val featureType: String) {
 
@@ -55,30 +58,48 @@ internal class FeatureRegistry<T : Feature>(private val featureType: String) {
      * Adds the specified feature to the registry.
      *
      * @param feature The feature to be added to the registry.
+     * @throws IllegalArgumentException If a feature with the same key is already registered.
      */
     internal fun add(feature: T) {
         logger.info { "Adding $featureType: \"${feature.key}\"" }
-        val oldMap = registry.getAndUpdate { current -> current.put(feature.key, feature) }
-        val oldFeature = oldMap[feature.key]
+        registry.update { current ->
+            require(!current.containsKey(feature.key)) {
+                "$featureType \"${feature.key}\" is already registered. Remove it first to replace it."
+            }
+            current.put(feature.key, feature)
+        }
 
         logger.info { "Added $featureType: \"${feature.key}\"" }
-        notifyFeatureUpdated(oldFeature, feature)
+        notifyFeatureUpdated(null, feature)
     }
 
     /**
      * Adds the given list of features to the registry. Each feature is mapped by its key
-     * and added to the current registry.
+     * and added to the current registry. The operation is all-or-nothing: if any key is
+     * rejected, no features are added.
      *
      * @param features The list of features to add to the registry.
+     * @throws IllegalArgumentException If the list contains duplicate keys or a feature with
+     *   the same key is already registered.
      */
     internal fun addAll(features: List<T>) {
         logger.info { "Adding ${featureType}s: ${features.size}" }
-        val oldMap = registry.getAndUpdate { current -> current.putAll(features.associateBy { it.key }) }
+        val newEntries = features.associateBy { it.key }
+        require(newEntries.size == features.size) {
+            val duplicated = features.groupingBy { it.key }.eachCount().filterValues { it > 1 }.keys
+            "Duplicate $featureType keys in batch: $duplicated"
+        }
+        registry.update { current ->
+            val conflicting = newEntries.keys.filter { current.containsKey(it) }
+            require(conflicting.isEmpty()) {
+                "${featureType}s already registered: $conflicting. Remove them first to replace them."
+            }
+            current.putAll(newEntries)
+        }
 
         logger.info { "Added ${featureType}s: ${features.size}" }
         for (feature in features) {
-            val oldFeature = oldMap[feature.key]
-            notifyFeatureUpdated(oldFeature, feature)
+            notifyFeatureUpdated(null, feature)
         }
     }
 
