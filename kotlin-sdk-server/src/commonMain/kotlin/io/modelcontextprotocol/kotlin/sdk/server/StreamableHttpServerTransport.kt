@@ -27,6 +27,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.REQUEST_TIMEOUT
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.job
@@ -175,6 +176,13 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
     private val requestToStreamMapping: ConcurrentMap<RequestId, String> = ConcurrentMap()
     private val requestToResponseMapping: ConcurrentMap<RequestId, JSONRPCMessage> = ConcurrentMap()
 
+    /**
+     * JSON-response mode only: one entry per in-flight POST, completed by [send] with the collected
+     * responses once every request delivered by that POST has been answered. [handlePostRequest]
+     * awaits it so the HTTP exchange stays open while handlers run concurrently.
+     */
+    private val pendingJsonResponses: ConcurrentMap<String, CompletableDeferred<List<JSONRPCMessage>>> = ConcurrentMap()
+
     private val sessionMutex = Mutex()
     private val streamMutex = Mutex()
 
@@ -263,32 +271,33 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         }
 
         requestToResponseMapping[responseRequestId!!] = message
-        val relatedIds = requestToStreamMapping.filterValues { it == streamId }.keys
-
-        if (relatedIds.any { it !in requestToResponseMapping }) return
 
         streamMutex.withLock {
-            if (activeStream == null) error("No connection established for request ID: $routingRequestId")
+            // Recomputed under the lock: handlers may respond concurrently, and the sender that
+            // observes the last response also retires the ids — a losing sender sees an empty set.
+            val relatedIds = requestToStreamMapping.filterValues { it == streamId }.keys
+            if (relatedIds.isEmpty() || relatedIds.any { it !in requestToResponseMapping }) return
 
             if (configuration.enableJsonResponse) {
-                activeStream.call.response.header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-                sessionId?.let { activeStream.call.response.header(MCP_SESSION_ID_HEADER, it) }
+                // Hand the collected responses to the POST call suspended in [handlePostRequest],
+                // which completes the HTTP exchange from its own route coroutine.
+                val pendingPost = pendingJsonResponses.remove(streamId)
+                    ?: error("No connection established for request ID: $routingRequestId")
                 val responses = relatedIds.mapNotNull { requestToResponseMapping[it] }
-                val payload = if (responses.size == 1) {
-                    responses.first()
-                } else {
-                    responses
-                }
-                activeStream.call.respond(payload)
+                cleanUpRequests(relatedIds)
+                pendingPost.complete(responses)
             } else {
+                if (activeStream == null) error("No connection established for request ID: $routingRequestId")
                 activeStream.session?.close()
+                cleanUpRequests(relatedIds)
             }
+        }
+    }
 
-            // Clean up
-            relatedIds.forEach { requestId ->
-                requestToResponseMapping.remove(requestId)
-                requestToStreamMapping.remove(requestId)
-            }
+    private fun cleanUpRequests(ids: Collection<RequestId>) {
+        ids.forEach { requestId ->
+            requestToResponseMapping.remove(requestId)
+            requestToStreamMapping.remove(requestId)
         }
     }
 
@@ -304,6 +313,9 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 streamsMapping.clear()
                 requestToStreamMapping.clear()
                 requestToResponseMapping.clear()
+                // Release any POST calls suspended awaiting JSON responses.
+                pendingJsonResponses.values.forEach { it.cancel() }
+                pendingJsonResponses.clear()
                 invokeOnCloseCallback()
             }
         }
@@ -339,7 +351,12 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
     }
 
     /**
-     * Handles POST requests containing JSON-RPC messages
+     * Handles POST requests containing JSON-RPC messages.
+     *
+     * In JSON-response mode this suspends until a response has been produced for every request in
+     * the POST body, then completes the HTTP exchange with the collected JSON (a single object for
+     * one request, an array for a batch). Bodies without requests are acknowledged with 202
+     * immediately. In SSE mode the responses are emitted onto the per-request SSE stream instead.
      */
     public suspend fun handlePostRequest(session: ServerSSESession?, call: ApplicationCall) {
         try {
@@ -429,13 +446,52 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 maybeSendPrimingEvent(streamId, session, clientProtocolVersion)
             }
 
+            val pendingPost = if (configuration.enableJsonResponse) {
+                CompletableDeferred<List<JSONRPCMessage>>()
+            } else {
+                null
+            }
+
             streamMutex.withLock {
                 streamsMapping[streamId] = SessionContext(session, call)
                 messages.filterIsInstance<JSONRPCRequest>().forEach { requestToStreamMapping[it.id] = streamId }
+                pendingPost?.let { pendingJsonResponses[streamId] = it }
             }
             call.coroutineContext.job.invokeOnCompletion { streamsMapping.remove(streamId) }
 
-            messages.forEach { message -> _onMessage(message) }
+            if (pendingPost == null) {
+                // SSE mode: responses are emitted onto this call's SSE stream by send().
+                messages.forEach { message -> _onMessage(message) }
+                return
+            }
+
+            // JSON-response mode: handlers may run concurrently after initialization, so delivery
+            // returning no longer implies the responses were produced. Suspend until send() has
+            // collected a response for every request in this POST, then complete the exchange from
+            // the route coroutine. The wait is bounded by the peer: a client disconnect (or
+            // transport close) cancels this call and the deferred.
+            try {
+                messages.forEach { message -> _onMessage(message) }
+                val responses = pendingPost.await()
+                call.response.header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                sessionId?.let { call.response.header(MCP_SESSION_ID_HEADER, it) }
+                val payload = if (responses.size == 1) {
+                    responses.first()
+                } else {
+                    responses
+                }
+                call.respond(payload)
+            } finally {
+                // On cancellation or failure, retire this POST's ids so a late response fails
+                // loudly at the send() boundary instead of leaking mappings. Every removal is an
+                // idempotent no-op on the success path (send() already cleaned up).
+                pendingJsonResponses.remove(streamId)
+                pendingPost.cancel()
+                messages.filterIsInstance<JSONRPCRequest>().forEach { request ->
+                    requestToResponseMapping.remove(request.id)
+                    requestToStreamMapping.remove(request.id)
+                }
+            }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

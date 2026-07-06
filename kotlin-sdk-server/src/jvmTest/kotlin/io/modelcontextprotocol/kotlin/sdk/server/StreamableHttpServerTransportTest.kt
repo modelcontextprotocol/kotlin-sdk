@@ -46,6 +46,13 @@ import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -58,6 +65,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.time.Duration.Companion.seconds
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation as ClientContentNegotiation
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation as ServerContentNegotiation
 
@@ -347,6 +355,108 @@ class StreamableHttpServerTransportTest {
         val secondMeta = (responses[1] as ListResourcesResult).meta
         assertEquals("first", firstMeta?.get("label")?.jsonPrimitive?.content)
         assertEquals("second", secondMeta?.get("label")?.jsonPrimitive?.content)*/
+    }
+
+    @Test
+    fun `json response waits for a response produced after message delivery returns`() = testApplication {
+        configTestServer()
+
+        val client = createTestClient()
+
+        val transport = StreamableHttpServerTransport(
+            StreamableHttpServerTransport.Configuration(enableJsonResponse = true),
+        )
+        // Simulates concurrent dispatch: message delivery returns before the handler responds.
+        val handlerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        try {
+            transport.onMessage { message ->
+                if (message is JSONRPCRequest) {
+                    if (message.method == Method.Defined.Initialize.value) {
+                        transport.send(JSONRPCResponse(message.id, EmptyResult()))
+                    } else {
+                        handlerScope.launch {
+                            delay(100)
+                            transport.send(JSONRPCResponse(message.id, EmptyResult()))
+                        }
+                    }
+                }
+            }
+
+            configureTransportEndpoint(transport)
+
+            val initResponse = client.post(path) {
+                addStreamableHeaders()
+                setBody(buildInitializeRequestPayload())
+            }
+            initResponse.status shouldBe HttpStatusCode.OK
+
+            val request = JSONRPCRequest(id = RequestId("async-1"), method = Method.Defined.ToolsList.value)
+            val response = withTimeout(10.seconds) {
+                client.post(path) {
+                    addStreamableHeaders()
+                    header(MCP_SESSION_ID_HEADER, initResponse.headers[MCP_SESSION_ID_HEADER])
+                    setBody(encodeMessages(listOf(request)))
+                }
+            }
+
+            response.status shouldBe HttpStatusCode.OK
+            response.body<JSONRPCResponse>() shouldBe JSONRPCResponse(request.id)
+        } finally {
+            handlerScope.cancel()
+        }
+    }
+
+    @Test
+    fun `json response for a batch waits until every asynchronously produced response is ready`() = testApplication {
+        configTestServer()
+
+        val client = createTestClient()
+
+        val transport = StreamableHttpServerTransport(
+            StreamableHttpServerTransport.Configuration(enableJsonResponse = true),
+        )
+        val firstRequest = JSONRPCRequest(id = RequestId("slow"), method = Method.Defined.ToolsList.value)
+        val secondRequest = JSONRPCRequest(id = RequestId("fast"), method = Method.Defined.ResourcesList.value)
+
+        // Simulates concurrent dispatch with out-of-order completion: the second request responds
+        // first; the POST must stay open until the slower first response settles too.
+        val handlerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        try {
+            transport.onMessage { message ->
+                if (message is JSONRPCRequest) {
+                    if (message.method == Method.Defined.Initialize.value) {
+                        transport.send(JSONRPCResponse(message.id, EmptyResult()))
+                    } else {
+                        handlerScope.launch {
+                            delay(if (message.id == firstRequest.id) 200 else 50)
+                            transport.send(JSONRPCResponse(message.id, EmptyResult()))
+                        }
+                    }
+                }
+            }
+
+            configureTransportEndpoint(transport)
+
+            val initResponse = client.post(path) {
+                addStreamableHeaders()
+                setBody(buildInitializeRequestPayload())
+            }
+            initResponse.status shouldBe HttpStatusCode.OK
+
+            val response = withTimeout(10.seconds) {
+                client.post(path) {
+                    addStreamableHeaders()
+                    header(MCP_SESSION_ID_HEADER, initResponse.headers[MCP_SESSION_ID_HEADER])
+                    setBody(encodeMessages(listOf(firstRequest, secondRequest)))
+                }
+            }
+
+            response.status shouldBe HttpStatusCode.OK
+            val responses = response.body<List<JSONRPCResponse>>()
+            responses.map { it.id }.toSet() shouldBe setOf(firstRequest.id, secondRequest.id)
+        } finally {
+            handlerScope.cancel()
+        }
     }
 
     @ParameterizedTest
