@@ -144,3 +144,96 @@ public final class io/modelcontextprotocol/kotlin/sdk/client/WebSocketMcpKtorCli
 	public static synthetic fun mcpWebSocketTransport$default (Lio/ktor/client/HttpClient;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/client/WebSocketClientTransport;
 }
 
+public final class io/modelcontextprotocol/kotlin/sdk/client/auth/McpOAuthDiscoveryResult {
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/client/auth/OAuthProtectedResourceMetadata;Lio/modelcontextprotocol/kotlin/sdk/client/auth/OAuthAuthorizationServerMetadata;)V
+	public final fun component1 ()Lio/modelcontextprotocol/kotlin/sdk/client/auth/OAuthProtectedResourceMetadata;
+	public final fun component2 ()Lio/modelcontextprotocol/kotlin/sdk/client/auth/OAuthAuthorizationServerMetadata;
+	public final fun copy (Lio/modelcontextprotocol/kotlin/sdk/client/auth/OAuthProtectedResourceMetadata;Lio/modelcontextprotocol/kotlin/sdk/client/auth/OAuthAuthorizationServerMetadata;)Lio/modelcontextprotocol/kotlin/sdk/client/auth/McpOAuthDiscoveryResult;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/client/auth/McpOAuthDiscoveryResult;Lio/modelcontextprotocol/kotlin/sdk/client/auth/OAuthProtectedResourceMetadata;Lio/modelcontextprotocol/kotlin/sdk/client/auth/OAuthAuthorizationServerMetadata;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/client/auth/McpOAuthDiscoveryResult;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAuthorizationServerMetadata ()Lio/modelcontextprotocol/kotlin/sdk/client/auth/OAuthAuthorizationServerMetadata;
+	public final fun getResourceMetadata ()Lio/modelcontextprotocol/kotlin/sdk/client/auth/OAuthProtectedResourceMetadata;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/client/auth/McpOAuthException : java/lang/Exception {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/client/auth/McpOAuthKt {
+	public static final fun discoverMcpAuthorizationServerMetadata (Lio/ktor/client/HttpClient;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun discoverMcpOAuthMetadata (Lio/ktor/client/HttpClient;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun discoverMcpOAuthMetadata$default (Lio/ktor/client/HttpClient;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static final fun discoverMcpProtectedResourceMetadata (Lio/ktor/client/HttpClient;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun discoverMcpProtectedResourceMetadata$default (Lio/ktor/client/HttpClient;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static final fun mcpAuthorizationServerMetadataUrls (Ljava/lang/String;)Ljava/util/List;
+	public static final fun mcpBearerAuth (Ljava/lang/String;)Lkotlin/jvm/functions/Function1;
+	public static final fun mcpOAuthOrigin (Ljava/lang/String;)Ljava/lang/String;
+	public static final fun mcpOAuthStepUpScope (Ljava/lang/String;)Ljava/lang/String;
+	public static final fun mcpProtectedResourceMetadataUrls (Ljava/lang/String;)Ljava/util/List;
+	public static final fun parseWwwAuthenticate (Ljava/lang/String;)Ljava/util/List;
+	public static final fun selectMcpOAuthScope (Ljava/lang/String;Ljava/util/List;)Ljava/lang/String;
+	public static final fun wwwAuthenticateParameter (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+	public static synthetic fun wwwAuthenticateParameter$default (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/client/auth/OAuthAuthorizationServerMetadata {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/Boolean;Lkotlinx/serialization/json/JsonObject;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/Boolean;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/util/List;
+	public final fun component6 ()Ljava/util/List;
+	public final fun component7 ()Ljava/lang/Boolean;
+	public final fun component8 ()Lkotlinx/serialization/json/JsonObject;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/Boolean;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/client/auth/OAuthAuthorizationServerMetadata;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/client/auth/OAuthAuthorizationServerMetadata;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/Boolean;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/client/auth/OAuthAuthorizationServerMetadata;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAuthorizationEndpoint ()Ljava/lang/String;
+	public final fun getClientIdMetadataDocumentSupported ()Ljava/lang/Boolean;
+	public final fun getCodeChallengeMethodsSupported ()Ljava/util/List;
+	public final fun getIssuer ()Ljava/lang/String;
+	public final fun getRaw ()Lkotlinx/serialization/json/JsonObject;
+	public final fun getRegistrationEndpoint ()Ljava/lang/String;
+	public final fun getTokenEndpoint ()Ljava/lang/String;
+	public final fun getTokenEndpointAuthMethodsSupported ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/client/auth/OAuthProtectedResourceMetadata {
+	public fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/util/List;Lkotlinx/serialization/json/JsonObject;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/util/List;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/util/List;
+	public final fun component3 ()Ljava/util/List;
+	public final fun component4 ()Lkotlinx/serialization/json/JsonObject;
+	public final fun copy (Ljava/lang/String;Ljava/util/List;Ljava/util/List;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/client/auth/OAuthProtectedResourceMetadata;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/client/auth/OAuthProtectedResourceMetadata;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/client/auth/OAuthProtectedResourceMetadata;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAuthorizationServers ()Ljava/util/List;
+	public final fun getRaw ()Lkotlinx/serialization/json/JsonObject;
+	public final fun getResource ()Ljava/lang/String;
+	public final fun getScopesSupported ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/client/auth/WwwAuthenticateChallenge {
+	public fun <init> (Ljava/lang/String;Ljava/util/Map;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/util/Map;
+	public final fun copy (Ljava/lang/String;Ljava/util/Map;)Lio/modelcontextprotocol/kotlin/sdk/client/auth/WwwAuthenticateChallenge;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/client/auth/WwwAuthenticateChallenge;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/client/auth/WwwAuthenticateChallenge;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun get (Ljava/lang/String;)Ljava/lang/String;
+	public final fun getParameters ()Ljava/util/Map;
+	public final fun getScheme ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
