@@ -9,7 +9,6 @@ import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.modelcontextprotocol.kotlin.sdk.types.CustomRequest
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
-import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
@@ -24,7 +23,6 @@ import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.RequestMeta
 import kotlinx.coroutines.async
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
@@ -307,72 +305,6 @@ class ProtocolTest {
 
         // successor connection must still be alive
         protocol.transport shouldBe second
-    }
-}
-
-private class TestProtocol : Protocol(null) {
-    val errors = mutableListOf<Throwable>()
-
-    override fun onError(error: Throwable) {
-        errors.add(error)
-    }
-
-    override fun assertCapabilityForMethod(method: Method) {
-        // noop
-    }
-    override fun assertNotificationCapability(method: Method) {
-        // noop
-    }
-    override fun assertRequestHandlerCapability(method: Method) {
-        // noop
-    }
-}
-
-private class RecordingTransport : Transport {
-    private val sentMessages = Channel<JSONRPCMessage>(Channel.UNLIMITED)
-    private var onMessageCallback: (suspend (JSONRPCMessage) -> Unit)? = null
-    private var onCloseCallback: (() -> Unit)? = null
-
-    val sentWithOptions = mutableListOf<Pair<JSONRPCMessage, TransportSendOptions?>>()
-
-    var closeCallback: (() -> Unit)? = null
-        private set
-
-    override suspend fun start() {
-        // noop
-    }
-
-    override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
-        sentWithOptions.add(message to options)
-        sentMessages.send(message)
-    }
-
-    override suspend fun close() {
-        onCloseCallback?.invoke()
-    }
-
-    override fun onClose(block: () -> Unit) {
-        closeCallback = block
-        onCloseCallback = block
-    }
-
-    override fun onError(block: (Throwable) -> Unit) {
-        // noop
-    }
-
-    override fun onMessage(block: suspend (JSONRPCMessage) -> Unit) {
-        onMessageCallback = block
-    }
-
-    suspend fun awaitRequest(): JSONRPCRequest {
-        val message = sentMessages.receive()
-        return message as? JSONRPCRequest
-            ?: error("Expected JSONRPCRequest but received ${message::class.simpleName}")
-    }
-
-    suspend fun deliver(message: JSONRPCMessage) {
-        val callback = onMessageCallback ?: error("onMessage callback not registered")
-        callback(message)
     }
 }
 

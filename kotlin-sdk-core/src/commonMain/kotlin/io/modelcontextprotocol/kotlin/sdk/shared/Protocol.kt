@@ -27,7 +27,9 @@ import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.getAndUpdate
 import kotlinx.atomicfu.update
+import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.PersistentMap
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineName
@@ -35,6 +37,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
@@ -216,6 +219,9 @@ public suspend fun currentRequestHandlerExtra(): RequestHandlerExtra? = currentC
 
 internal val COMPLETED = CompletableDeferred(Unit).also { it.complete(Unit) }
 
+/** Cap on how many recently-cancelled outbound request ids are remembered to quiet late responses/progress. */
+private const val CANCELLED_REQUEST_IDS_REMEMBERED = 256
+
 /**
  * Implements MCP protocol framing on top of a pluggable transport, including
  * features like request/response linking, notifications, and progress.
@@ -264,6 +270,21 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     /** Registered progress callbacks keyed by progress token. */
     public val progressHandlers: Map<ProgressToken, ProgressCallback>
         get() = _progressHandlers.value
+
+    private val recentlyCancelledRequestIds: AtomicRef<PersistentList<RequestId>> =
+        atomic(persistentListOf())
+
+    /** Remembers a locally-cancelled outbound request id so its late response/progress is quieted. */
+    private fun rememberCancelledRequestId(id: RequestId) {
+        recentlyCancelledRequestIds.update { current ->
+            val appended = current.add(id)
+            if (appended.size > CANCELLED_REQUEST_IDS_REMEMBERED) appended.removeAt(0) else appended
+        }
+    }
+
+    /** Whether [id] was recently cancelled locally (see [rememberCancelledRequestId]). */
+    private fun isRecentlyCancelled(id: RequestId?): Boolean =
+        id != null && recentlyCancelledRequestIds.value.contains(id)
 
     /**
      * Callback for when the connection is closed for any reason.
@@ -485,6 +506,10 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
 
         val handler = _progressHandlers.value[progressToken]
         if (handler == null) {
+            if (isRecentlyCancelled(progressToken)) {
+                logger.trace { "Ignoring progress for a locally cancelled request: $progressToken" }
+                return
+            }
             val error = Error(
                 "Received a progress notification for an unknown token: ${McpJson.encodeToString(notification)}",
             )
@@ -512,6 +537,10 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         if (handler != null) {
             messageId?.let { msg -> _progressHandlers.update { it.remove(msg) } }
         } else {
+            if (isRecentlyCancelled(messageId)) {
+                logger.trace { "Ignoring response for a locally cancelled request: $messageId" }
+                return
+            }
             onError(
                 IllegalStateException(
                     "Received a response for an unknown message ID: ${McpJson.encodeToString(error ?: response)}",
@@ -613,41 +642,66 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             }
         }
 
-        val cancel: suspend (Throwable) -> Unit = { reason: Throwable ->
+        val cancelPending: suspend (reason: Throwable, notifyPeer: Boolean) -> Unit = { reason, notifyPeer ->
             _responseHandlers.update { current -> current.remove(jsonRpcRequestId) }
             _progressHandlers.update { current -> current.remove(jsonRpcRequestId) }
+            rememberCancelledRequestId(jsonRpcRequestId)
 
-            val notification = CancelledNotification(
-                params = CancelledNotificationParams(
-                    requestId = jsonRpcRequestId,
-                    reason = reason.message ?: "Unknown",
-                ),
-            )
-
-            val jsonRpcNotification = notification.toJSON()
-
-            transport.send(jsonRpcNotification, options)
+            if (notifyPeer) {
+                val notification = CancelledNotification(
+                    params = CancelledNotificationParams(
+                        requestId = jsonRpcRequestId,
+                        reason = reason.message ?: "Unknown",
+                    ),
+                )
+                transport.send(notification.toJSON(), options)
+            }
 
             result.completeExceptionally(reason)
         }
 
+        // The MCP spec forbids cancelling `initialize`; local cleanup still runs,
+        // but no notifications/cancelled goes on the wire (timeout and cancel paths alike).
+        val notifyPeerOnCancel = request.method != Method.Defined.Initialize
+
         val timeout = options?.timeout ?: DEFAULT_REQUEST_TIMEOUT
         try {
-            withTimeout(timeout) {
+            return withTimeout(timeout) {
                 logger.trace { "Sending request message with id: $jsonRpcRequestId" }
                 this@Protocol.transport?.send(jsonRpcRequest, options)
+                result.await()
             }
-            return result.await()
         } catch (cause: TimeoutCancellationException) {
             logger.error { "Request timed out after ${timeout.inWholeMilliseconds}ms: ${request.method}" }
-            cancel(
-                McpException(
-                    code = RPCError.ErrorCode.REQUEST_TIMEOUT,
-                    message = "Request timed out",
-                    data = JsonObject(mutableMapOf("timeout" to JsonPrimitive(timeout.inWholeMilliseconds))),
-                ),
+            val timeoutError = McpException(
+                code = RPCError.ErrorCode.REQUEST_TIMEOUT,
+                message = "Request timed out",
+                data = JsonObject(mutableMapOf("timeout" to JsonPrimitive(timeout.inWholeMilliseconds))),
+                cause = cause,
             )
+            withContext(NonCancellable) {
+                try {
+                    cancelPending(timeoutError, notifyPeerOnCancel)
+                } catch (e: Throwable) {
+                    logger.warn(e) { "Failed to notify peer about timed-out request" }
+                    onError(e)
+                }
+            }
             result.cancel(cause)
+            throw timeoutError
+        } catch (cause: CancellationException) {
+            // Catch order is load-bearing: TimeoutCancellationException IS a CancellationException.
+            // The timeout branch above stays first; this branch handles only plain caller
+            // cancellation. NonCancellable because the caller's job is already cancelled and the
+            // notification send must still run; a secondary send failure must never replace the CE.
+            withContext(NonCancellable) {
+                try {
+                    cancelPending(cause, notifyPeerOnCancel)
+                } catch (e: Throwable) {
+                    logger.warn(e) { "Failed to notify peer about cancelled request" }
+                    onError(e)
+                }
+            }
             throw cause
         }
     }
