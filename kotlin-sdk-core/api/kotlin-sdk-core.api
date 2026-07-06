@@ -59,6 +59,7 @@ public abstract class io/modelcontextprotocol/kotlin/sdk/shared/Protocol {
 	public abstract fun assertRequestHandlerCapability (Lio/modelcontextprotocol/kotlin/sdk/types/Method;)V
 	public final fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun connect (Lio/modelcontextprotocol/kotlin/sdk/shared/Transport;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	protected final fun enableConcurrentDispatch ()V
 	public final fun getFallbackNotificationHandler ()Lkotlin/jvm/functions/Function2;
 	public final fun getFallbackRequestHandler ()Lkotlin/jvm/functions/Function3;
 	public final fun getNotificationHandlers ()Ljava/util/Map;
@@ -71,6 +72,7 @@ public abstract class io/modelcontextprotocol/kotlin/sdk/shared/Protocol {
 	public static synthetic fun notification$default (Lio/modelcontextprotocol/kotlin/sdk/shared/Protocol;Lio/modelcontextprotocol/kotlin/sdk/types/Notification;Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public fun onClose ()V
 	public fun onError (Ljava/lang/Throwable;)V
+	protected fun onInitializedNotification ()V
 	public final fun removeNotificationHandler (Lio/modelcontextprotocol/kotlin/sdk/types/Method;)V
 	public final fun removeRequestHandler (Lio/modelcontextprotocol/kotlin/sdk/types/Method;)V
 	public final fun request (Lio/modelcontextprotocol/kotlin/sdk/types/Request;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;

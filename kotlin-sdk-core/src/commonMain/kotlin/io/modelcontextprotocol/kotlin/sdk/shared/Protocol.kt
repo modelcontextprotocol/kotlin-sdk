@@ -34,6 +34,7 @@ import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -41,6 +42,8 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.job
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -314,6 +317,11 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     public var fallbackNotificationHandler: (suspend (notification: JSONRPCNotification) -> Unit)? = null
 
     init {
+        setNotificationHandler<CancelledNotification>(Method.Defined.NotificationsCancelled) { notification ->
+            handleCancelledNotification(notification)
+            COMPLETED
+        }
+
         setNotificationHandler<ProgressNotification>(Method.Defined.NotificationsProgress) { notification ->
             onProgress(notification)
             COMPLETED
@@ -323,6 +331,26 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             EmptyResult()
         }
     }
+
+    /**
+     * Enables concurrent dispatch of inbound messages on the current connection.
+     *
+     * Called by subclasses when the MCP initialization phase completes (the client after the
+     * initialize exchange; the server session on receiving `notifications/initialized`). Until
+     * then, inbound messages are handled inline in arrival order. Reset by [connect].
+     */
+    protected fun enableConcurrentDispatch() {
+        val connection = connectionRef.value ?: return
+        connection.concurrentDispatchEnabled.value = true
+    }
+
+    /**
+     * Router hook invoked whenever `notifications/initialized` is received, before handler lookup.
+     *
+     * Runs regardless of which notification handler is registered for the method, so replacing the
+     * handler via [setNotificationHandler] cannot disable subclass initialization logic.
+     */
+    protected open fun onInitializedNotification() {}
 
     /**
      * Attaches to the given transport, starts it, and starts listening for messages.
@@ -369,8 +397,8 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             }
             when (message) {
                 is JSONRPCResponse -> onResponse(message, null)
-                is JSONRPCRequest -> onRequest(message)
-                is JSONRPCNotification -> onNotification(message)
+                is JSONRPCRequest -> dispatchRequest(connection, message)
+                is JSONRPCNotification -> dispatchNotification(connection, message)
                 is JSONRPCError -> onResponse(null, message)
                 is JSONRPCEmptyMessage -> Unit
             }
@@ -399,6 +427,49 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         }
     }
 
+    private suspend fun dispatchRequest(connection: Connection, request: JSONRPCRequest) {
+        if (!connection.concurrentDispatchEnabled.value) {
+            // Serial phase (before the peer completes MCP initialization): inline, in arrival
+            // order — the delivering coroutine awaits the handler, exactly as before.
+            onRequest(request, connection, trackCancellation = false)
+            return
+        }
+        // UNDISPATCHED: the handler starts synchronously in the delivering coroutine (strict
+        // arrival-order start) and moves to handlerCoroutineContext at its first suspension.
+        connection.handlerScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            // Register BEFORE any suspension point: parked handlers must be cancellable via
+            // notifications/cancelled, and on a serial transport this line runs before the read
+            // loop delivers the next message, so a subsequent `cancelled` is guaranteed to observe
+            // the registration.
+            registerInFlight(connection, request.id, coroutineContext.job)
+            onRequest(request, connection, trackCancellation = true)
+        }
+    }
+
+    private suspend fun dispatchNotification(connection: Connection, notification: JSONRPCNotification) {
+        if (notification.method == Method.Defined.NotificationsInitialized.value) {
+            onInitializedNotification()
+        }
+        if (!connection.concurrentDispatchEnabled.value) {
+            onNotification(notification)
+            return
+        }
+        connection.handlerScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            onNotification(notification)
+        }
+    }
+
+    private fun handleCancelledNotification(notification: CancelledNotification) {
+        val connection = connectionRef.value ?: return
+        val requestId = notification.params.requestId
+        val job = connection.inFlightRequestJobs.value[requestId]
+        if (job == null) {
+            logger.trace { "Ignoring cancellation for unknown or already-completed request: $requestId" }
+            return
+        }
+        job.cancel(CancellationException("Cancelled by peer: ${notification.params.reason ?: "unknown"}"))
+    }
+
     private suspend fun onNotification(notification: JSONRPCNotification) {
         logger.trace { "Received notification: ${notification.method}" }
 
@@ -418,16 +489,16 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         }
     }
 
-    private suspend fun onRequest(request: JSONRPCRequest) {
+    private suspend fun onRequest(request: JSONRPCRequest, connection: Connection, trackCancellation: Boolean) {
         logger.trace { "Received request: ${request.method} (id: ${request.id})" }
 
         val handler = requestHandlers[request.method] ?: fallbackRequestHandler
-        val capturedTransport = transport
+        val capturedTransport = connection.transport
 
         if (handler === null) {
             logger.trace { "No handler found for request: ${request.method}" }
             try {
-                capturedTransport?.send(
+                capturedTransport.send(
                     JSONRPCError(
                         id = request.id,
                         error = RPCError(
@@ -444,10 +515,6 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             }
             return
         }
-        if (capturedTransport == null) {
-            logger.trace { "Dropping request received while not connected: ${request.method} (id: ${request.id})" }
-            return
-        }
 
         val extra = RequestHandlerExtra(
             requestId = request.id,
@@ -456,11 +523,18 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             capturedTransport = capturedTransport,
         )
 
+        // Registration in the in-flight registry already happened in dispatchRequest's launch
+        // block (synchronously, pre-suspension). Here we only need the job for suppression checks.
+        val handlerJob = if (trackCancellation) currentCoroutineContext().job else null
+
         withContext(extra) {
             try {
                 val result = handler(request, extra)
                 logger.trace { "Request handled successfully: ${request.method} (id: ${request.id})" }
-
+                if (handlerJob?.isCancelled == true) {
+                    logger.trace { "Suppressing response for request cancelled by peer (id: ${request.id})" }
+                    return@withContext
+                }
                 capturedTransport.send(
                     JSONRPCResponse(
                         id = request.id,
@@ -468,28 +542,50 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                     ),
                 )
             } catch (e: CancellationException) {
-                throw e
+                // Deliberate, documented exception to the always-rethrow-CE convention, applied
+                // only at this dispatch boundary:
+                if (handlerJob == null) throw e // serial phase: previous inline behavior
+                if (handlerJob.isCancelled) throw e // genuine cancel (peer/close): suppress response
+                // CE escaped the handler while its job is alive (e.g. leaked inner withTimeout):
+                // answer INTERNAL_ERROR so the peer does not hang until its own timeout.
+                respondWithError(capturedTransport, request, e)
             } catch (cause: Throwable) {
-                logger.error(cause) { "Error handling request: ${request.method} (id: ${request.id})" }
-
-                try {
-                    val rpcError = if (cause is McpException) {
-                        RPCError(code = cause.code, message = cause.message.orEmpty(), data = cause.data)
-                    } else {
-                        RPCError(
-                            code = RPCError.ErrorCode.INTERNAL_ERROR,
-                            message = cause.message ?: "Internal error",
-                        )
-                    }
-                    capturedTransport.send(JSONRPCError(id = request.id, error = rpcError))
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (sendError: Throwable) {
-                    logger.error(sendError) {
-                        "Failed to send error response for request: ${request.method} (id: ${request.id})"
-                    }
-                    // Optionally implement fallback behavior here
+                if (handlerJob?.isCancelled == true) {
+                    logger.trace { "Suppressing error response for request cancelled by peer (id: ${request.id})" }
+                    return@withContext
                 }
+                respondWithError(capturedTransport, request, cause)
+            }
+        }
+    }
+
+    private fun registerInFlight(connection: Connection, id: RequestId, job: Job) {
+        val previous = connection.inFlightRequestJobs.getAndUpdate { current -> current.put(id, job) }[id]
+        if (previous != null) {
+            logger.warn { "Duplicate in-flight request id $id; replacing the previous handler job" }
+        }
+        job.invokeOnCompletion {
+            // Identity guard: never evict a successor job registered under a reused id.
+            connection.inFlightRequestJobs.update { current ->
+                if (current[id] === job) current.remove(id) else current
+            }
+        }
+    }
+
+    private suspend fun respondWithError(transport: Transport, request: JSONRPCRequest, cause: Throwable) {
+        logger.error(cause) { "Error handling request: ${request.method} (id: ${request.id})" }
+        try {
+            val rpcError = if (cause is McpException) {
+                RPCError(code = cause.code, message = cause.message.orEmpty(), data = cause.data)
+            } else {
+                RPCError(code = RPCError.ErrorCode.INTERNAL_ERROR, message = cause.message ?: "Internal error")
+            }
+            transport.send(JSONRPCError(id = request.id, error = rpcError))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (sendError: Throwable) {
+            logger.error(sendError) {
+                "Failed to send error response for request: ${request.method} (id: ${request.id})"
             }
         }
     }
@@ -726,6 +822,11 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
      * Registers a handler to invoke when this protocol object receives a request with the given method.
      *
      * Note that this will replace any previous request handler for the same method.
+     *
+     * Handlers may run concurrently after initialization and are cancelled cooperatively (always
+     * re-throw [CancellationException]). Replacing a built-in handler for a control method (`ping`,
+     * `notifications/cancelled`, `notifications/progress`, `notifications/initialized`) with slow
+     * code degrades connection liveness.
      */
     public inline fun <reified T : Request> setRequestHandler(
         method: Method,
@@ -777,6 +878,11 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
      * Registers a handler to invoke when this protocol object receives a notification with the given method.
      *
      * Note that this will replace any previous notification handler for the same method.
+     *
+     * Handlers may run concurrently after initialization and are cancelled cooperatively (always
+     * re-throw [CancellationException]). Replacing a built-in handler for a control method (`ping`,
+     * `notifications/cancelled`, `notifications/progress`, `notifications/initialized`) with slow
+     * code degrades connection liveness.
      */
     public fun <T : Notification> setNotificationHandler(method: Method, handler: (notification: T) -> Deferred<Unit>) {
         _notificationHandlers.update { current ->
