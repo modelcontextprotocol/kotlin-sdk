@@ -91,9 +91,9 @@ Known gaps and risks:
 - The latest recorded conformance run is tracked in
   `docs/conformance-status.md`; it must be refreshed after protocol, transport,
   auth, or conformance-runner changes.
-- Client auth now has initial reusable discovery and bearer-header primitives,
-  but the full SDK OAuth flow still needs PKCE, token exchange, refresh, and
-  transport integration.
+- Client auth now has initial reusable discovery, bearer-header, PKCE S256, and
+  authorization request primitives, but the full SDK OAuth flow still needs
+  token exchange, refresh, and transport integration.
 - Feature docs are not yet comprehensive for auth, URL-mode elicitation,
   sampling with tools, transport resumability, and security constraints.
 - Tasks are experimental/extension work and should not block Tier 1 unless the
@@ -121,7 +121,7 @@ Known gaps and risks:
 - Fix every non-experimental conformance failure for `2025-11-25`.
 - Promote auth/OAuth conformance logic into reusable client/server SDK APIs
   where the official spec expects SDK support; continue from client metadata
-  discovery toward complete PKCE and token lifecycle support.
+  discovery and PKCE primitives toward complete token lifecycle support.
 - Audit protocol type parity against the official schema reference.
 - Harden Streamable HTTP against conformance and production edge cases:
   resumability, polling disconnects, standalone GET stream behavior, session
