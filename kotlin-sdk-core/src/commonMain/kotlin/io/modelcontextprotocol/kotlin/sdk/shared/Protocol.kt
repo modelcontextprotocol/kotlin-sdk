@@ -39,12 +39,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
@@ -666,34 +665,38 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
 
         val timeout = options?.timeout ?: DEFAULT_REQUEST_TIMEOUT
         try {
-            return withTimeout(timeout) {
+            val response = withTimeoutOrNull(timeout) {
                 logger.trace { "Sending request message with id: $jsonRpcRequestId" }
                 this@Protocol.transport?.send(jsonRpcRequest, options)
                 result.await()
             }
-        } catch (cause: TimeoutCancellationException) {
-            logger.error { "Request timed out after ${timeout.inWholeMilliseconds}ms: ${request.method}" }
-            val timeoutError = McpException(
-                code = RPCError.ErrorCode.REQUEST_TIMEOUT,
-                message = "Request timed out",
-                data = JsonObject(mutableMapOf("timeout" to JsonPrimitive(timeout.inWholeMilliseconds))),
-                cause = cause,
-            )
-            withContext(NonCancellable) {
-                try {
-                    cancelPending(timeoutError, notifyPeerOnCancel)
-                } catch (e: Throwable) {
-                    logger.warn(e) { "Failed to notify peer about timed-out request" }
-                    onError(e)
+            if (response == null) {
+                // Our own request timeout expired. An outer withTimeout's TimeoutCancellationException
+                // propagates through withTimeoutOrNull instead of returning null, and is handled by the
+                // CancellationException branch below like any other caller cancellation.
+                logger.error { "Request timed out after ${timeout.inWholeMilliseconds}ms: ${request.method}" }
+                val timeoutError = McpException(
+                    code = RPCError.ErrorCode.REQUEST_TIMEOUT,
+                    message = "Request timed out",
+                    data = JsonObject(mutableMapOf("timeout" to JsonPrimitive(timeout.inWholeMilliseconds))),
+                )
+                withContext(NonCancellable) {
+                    try {
+                        cancelPending(timeoutError, notifyPeerOnCancel)
+                    } catch (e: Throwable) {
+                        logger.warn(e) { "Failed to notify peer about timed-out request" }
+                        onError(e)
+                    }
                 }
+                result.cancel()
+                throw timeoutError
             }
-            result.cancel(cause)
-            throw timeoutError
+            return response
         } catch (cause: CancellationException) {
-            // Catch order is load-bearing: TimeoutCancellationException IS a CancellationException.
-            // The timeout branch above stays first; this branch handles only plain caller
-            // cancellation. NonCancellable because the caller's job is already cancelled and the
-            // notification send must still run; a secondary send failure must never replace the CE.
+            // Plain caller cancellation, or an outer withTimeout's TimeoutCancellationException that
+            // propagated through withTimeoutOrNull above (only our own deadline returns null there).
+            // NonCancellable because the caller's job is already cancelled and the notification send
+            // must still run; a secondary send failure must never replace the CE.
             withContext(NonCancellable) {
                 try {
                     cancelPending(cause, notifyPeerOnCancel)

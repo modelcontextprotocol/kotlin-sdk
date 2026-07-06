@@ -21,12 +21,14 @@ import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -63,6 +65,28 @@ class ProtocolOutboundCancellationTest {
         val cancelledParams = McpJson.decodeFromJsonElement<CancelledNotificationParams>(cancelledJson.params!!)
         cancelledParams.requestId shouldBe sent.id
         cancelledParams.reason.shouldNotBeNull() shouldContain "timed out"
+    }
+
+    @Test
+    fun `outer withTimeout around request propagates the original timeout exception and notifies the peer`() = runTest {
+        val protocol = TestProtocol()
+        val transport = RecordingTransport()
+        protocol.connect(transport)
+
+        val inFlight = async {
+            shouldThrow<TimeoutCancellationException> {
+                withTimeout(1.seconds) {
+                    protocol.request<EmptyResult>(PingRequest())
+                }
+            }
+        }
+        transport.awaitRequest() // request is on the wire; peer never responds
+        advanceTimeBy(2.seconds)
+        runCurrent()
+        inFlight.await()
+
+        transport.sentWithOptions.map { it.first }.filterIsInstance<JSONRPCNotification>()
+            .filter { it.method == Method.Defined.NotificationsCancelled.value } shouldHaveSize 1
     }
 
     @Test

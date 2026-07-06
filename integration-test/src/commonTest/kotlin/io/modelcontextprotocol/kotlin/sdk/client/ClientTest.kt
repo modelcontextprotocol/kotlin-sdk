@@ -37,7 +37,6 @@ import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotificationParams
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.Method
-import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.Role
 import io.modelcontextprotocol.kotlin.sdk.types.Root
 import io.modelcontextprotocol.kotlin.sdk.types.RootsListChangedNotification
@@ -52,6 +51,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.UntitledMultiSelectEnumSchema
 import io.modelcontextprotocol.kotlin.sdk.types.UntitledSingleSelectEnumSchema
 import io.modelcontextprotocol.kotlin.sdk.types.UrlElicitationRequiredException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.joinAll
@@ -619,17 +619,13 @@ class ClientTest {
             ListResourcesResult(resources = emptyList())
         }
 
-        // Request with 1 msec timeout should fail immediately.
-        // The 1ms outer withTimeout races Protocol.request()'s own (much longer) internal timeout;
-        // the TimeoutCancellationException that unwinds through request()'s internal withTimeout is
-        // now converted to McpException(REQUEST_TIMEOUT) regardless of which scope's deadline fired
-        // (see Task 5: request() timeout now throws McpException, not TimeoutCancellationException).
-        val ex = assertFailsWith<McpException> {
+        // Request with 1 msec timeout should fail immediately
+        val ex = assertFailsWith<Exception> {
             withTimeout(1) {
                 client.listResources()
             }
         }
-        ex.code shouldBe RPCError.ErrorCode.REQUEST_TIMEOUT
+        assertTrue(ex is TimeoutCancellationException)
     }
 
     @Test
