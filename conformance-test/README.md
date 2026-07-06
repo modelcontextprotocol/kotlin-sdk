@@ -29,7 +29,7 @@ Run **all** suites (server, client core, client auth) from the project root:
 | `list`        | [List scenarios available in MCP Conformance Test Framework][list-scenarios-command] |
 | `server`      | Starts the Ktor conformance server, runs the server test suite against it            |
 | `client`      | Runs the client test suite (`initialize`, `tools_call`, `elicitation`, `sse-retry`)  |
-| `client-auth` | Runs the client auth test suite (20 OAuth scenarios)                                 |
+| `client-auth` | Runs the client auth test suite (17 active auth scenarios with runner 0.1.16)        |
 | `all`         | Runs all three suites sequentially                                                   |
 
 Any `[extra-args]` are forwarded to the conformance runner (e.g. `--verbose`).
@@ -63,7 +63,7 @@ conformance-test/
     ├── ConformancePrompts.kt     # 5 prompt registrations (simple, args, image, embedded, dynamic)
     ├── ConformanceCompletions.kt # completion/complete handler
     ├── InMemoryEventStore.kt     # EventStore impl for SSE resumability (SEP-1699)
-    └── auth/                     # OAuth client for 20 auth scenarios
+    └── auth/                     # OAuth client for active auth scenarios
         ├── registration.kt       # Scenario handler registration
         ├── utils.kt              # Shared utilities: JSON instance, constants, extractOrigin()
         ├── discovery.kt          # Protected Resource Metadata + AS Metadata discovery
@@ -103,7 +103,7 @@ Tests the conformance server against all server scenarios:
 
 ### Client Auth Suite
 
-17 OAuth Authorization Code scenarios + 2 Client Credentials scenarios (`jwt`, `basic`) + 1 Cross-App Access scenario = 20 total.
+14 OAuth Authorization Code scenarios + 2 Client Credentials scenarios (`jwt`, `basic`) + 1 Cross-App Access scenario = 17 total.
 
 > [!NOTE]
 > Auth scenarios are implemented using Ktor's `HttpClient` plugins (`HttpSend` interceptor,

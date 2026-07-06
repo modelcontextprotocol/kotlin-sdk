@@ -88,7 +88,9 @@ Strong signals already present:
 
 Known gaps and risks:
 
-- The current conformance pass rate is not recorded in the repository.
+- The latest recorded conformance run is tracked in
+  `docs/conformance-status.md`; it must be refreshed after protocol, transport,
+  auth, or conformance-runner changes.
 - Client auth conformance is implemented as a standalone harness, not reusable
   SDK auth/OAuth API.
 - Public documentation still has TODO coverage, including elicitation.
@@ -108,9 +110,10 @@ Known gaps and risks:
 ### Phase 1: Establish Evidence
 
 - Run `./conformance-test/run-conformance.sh list` and save the available
-  scenario inventory.
-- Run `./conformance-test/run-conformance.sh all` and record pass/fail evidence.
-- Add a short conformance status document or CI artifact pointer.
+  scenario inventory when the runner version changes.
+- Run `./conformance-test/run-conformance.sh all` and refresh
+  `docs/conformance-status.md` after protocol, transport, auth, or runner
+  changes.
 - Keep `conformance-baseline.yml` empty unless a known limitation is explicitly
   approved and tracked.
 
