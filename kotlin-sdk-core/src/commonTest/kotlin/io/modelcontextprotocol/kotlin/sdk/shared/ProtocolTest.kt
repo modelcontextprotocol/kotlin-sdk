@@ -9,6 +9,7 @@ import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.modelcontextprotocol.kotlin.sdk.types.CustomRequest
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
@@ -305,6 +306,22 @@ class ProtocolTest {
 
         // successor connection must still be alive
         protocol.transport shouldBe second
+    }
+
+    @Test
+    fun `failed transport start rolls back the connection and allows reconnect`() = runTest {
+        val failing = object : Transport {
+            override suspend fun start(): Unit = error("boom")
+            override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {}
+            override suspend fun close() {}
+            override fun onClose(block: () -> Unit) {}
+            override fun onError(block: (Throwable) -> Unit) {}
+            override fun onMessage(block: suspend (JSONRPCMessage) -> Unit) {}
+        }
+        shouldThrow<IllegalStateException> { protocol.connect(failing) }
+        protocol.transport shouldBe null // rolled back
+        protocol.connect(transport) // reconnect succeeds, no "already connected"
+        protocol.transport shouldBe transport
     }
 }
 

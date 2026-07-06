@@ -40,7 +40,6 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
@@ -54,9 +53,10 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * End-to-end tests for concurrent inbound dispatch enabled after the MCP handshake.
  *
- * The deadlock/cascade scenarios run over [ChannelTransport], which has real serial read loops on
- * [kotlinx.coroutines.Dispatchers.Default]; they use [runBlocking] with explicit [withTimeout] guards
- * because a virtual test clock would false-fire timeouts against cross-thread real dispatchers.
+ * All scenarios here exercise handlers dispatched onto a real [kotlinx.coroutines.Dispatchers.Default]
+ * (the deadlock/cascade cases additionally run over [ChannelTransport], which has real serial read
+ * loops on that dispatcher); they use [runBlocking] with explicit [withTimeout] guards because a
+ * virtual test clock would false-fire timeouts against cross-thread real dispatchers.
  */
 @OptIn(ExperimentalMcpApi::class)
 class ProtocolConcurrencyIntegrationTest {
@@ -231,71 +231,72 @@ class ProtocolConcurrencyIntegrationTest {
     // pipelined before notifications/initialized and answered serially in order; after the handshake
     // a high-level addTool handler can observe currentRequestHandlerExtra().
     @Test
-    fun `pipelined initialize and tools list are processed serially then context element is available`() = runTest {
-        val server = toolsServer()
-        server.addTool(name = "ctx-tool", description = "returns its request id") {
-            val extra = currentRequestHandlerExtra()
-            checkNotNull(extra) { "currentRequestHandlerExtra() must be non-null inside a tool handler" }
-            CallToolResult(content = listOf(TextContent(text = extra.requestId.asText())))
-        }
-
-        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-
-        val arrivalOrder = CopyOnWriteArrayList<RequestId>()
-        val pending = ConcurrentHashMap<RequestId, CompletableDeferred<JSONRPCMessage>>()
-        clientTransport.onMessage { message ->
-            val id = when (message) {
-                is JSONRPCResponse -> message.id
-                is JSONRPCError -> message.id
-                else -> null
+    fun `pipelined initialize and tools list are processed serially then context element is available`(): Unit =
+        runBlocking {
+            val server = toolsServer()
+            server.addTool(name = "ctx-tool", description = "returns its request id") {
+                val extra = currentRequestHandlerExtra()
+                checkNotNull(extra) { "currentRequestHandlerExtra() must be non-null inside a tool handler" }
+                CallToolResult(content = listOf(TextContent(text = extra.requestId.asText())))
             }
-            if (id != null) {
-                arrivalOrder.add(id)
-                pending[id]?.complete(message)
+
+            val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
+
+            val arrivalOrder = CopyOnWriteArrayList<RequestId>()
+            val pending = ConcurrentHashMap<RequestId, CompletableDeferred<JSONRPCMessage>>()
+            clientTransport.onMessage { message ->
+                val id = when (message) {
+                    is JSONRPCResponse -> message.id
+                    is JSONRPCError -> message.id
+                    else -> null
+                }
+                if (id != null) {
+                    arrivalOrder.add(id)
+                    pending[id]?.complete(message)
+                }
             }
+
+            // Drive the client side manually over the raw transport.
+            server.createSession(serverTransport)
+
+            val initRequest = InitializeRequest(
+                InitializeRequestParams(
+                    protocolVersion = LATEST_PROTOCOL_VERSION,
+                    capabilities = ClientCapabilities(),
+                    clientInfo = Implementation(name = "raw-client", version = "1.0"),
+                ),
+            ).toJSON()
+            val toolsListRequest = ListToolsRequest().toJSON()
+
+            val initAnswered = pending.expect(initRequest.id)
+            val toolsListAnswered = pending.expect(toolsListRequest.id)
+
+            // Pipelined before notifications/initialized: both handled in the serial dispatch phase.
+            clientTransport.send(initRequest)
+            clientTransport.send(toolsListRequest)
+
+            withTimeout(10.seconds) { initAnswered.await() }
+            withTimeout(10.seconds) { toolsListAnswered.await() }
+
+            // Deterministic serial ordering: initialize answered before tools/list.
+            assertEquals(
+                listOf(initRequest.id, toolsListRequest.id),
+                arrivalOrder.toList(),
+                "pipelined requests must be answered in arrival order",
+            )
+
+            // Complete the handshake, then call the high-level tool.
+            clientTransport.send(InitializedNotification().toJSON())
+
+            val toolCallRequest = CallToolRequest(CallToolRequestParams("ctx-tool")).toJSON()
+            val toolCallAnswered = pending.expect(toolCallRequest.id)
+            clientTransport.send(toolCallRequest)
+
+            val toolCallResponse = withTimeout(10.seconds) { toolCallAnswered.await() } as JSONRPCResponse
+            val text = (toolCallResponse.result as CallToolResult).content.filterIsInstance<TextContent>().single().text
+            // The handler echoed its request id, proving currentRequestHandlerExtra() was available.
+            text shouldBe toolCallRequest.id.asText()
         }
-
-        // Drive the client side manually over the raw transport.
-        server.createSession(serverTransport)
-
-        val initRequest = InitializeRequest(
-            InitializeRequestParams(
-                protocolVersion = LATEST_PROTOCOL_VERSION,
-                capabilities = ClientCapabilities(),
-                clientInfo = Implementation(name = "raw-client", version = "1.0"),
-            ),
-        ).toJSON()
-        val toolsListRequest = ListToolsRequest().toJSON()
-
-        val initAnswered = pending.expect(initRequest.id)
-        val toolsListAnswered = pending.expect(toolsListRequest.id)
-
-        // Pipelined before notifications/initialized: both handled in the serial dispatch phase.
-        clientTransport.send(initRequest)
-        clientTransport.send(toolsListRequest)
-
-        withTimeout(10.seconds) { initAnswered.await() }
-        withTimeout(10.seconds) { toolsListAnswered.await() }
-
-        // Deterministic serial ordering: initialize answered before tools/list.
-        assertEquals(
-            listOf(initRequest.id, toolsListRequest.id),
-            arrivalOrder.toList(),
-            "pipelined requests must be answered in arrival order",
-        )
-
-        // Complete the handshake, then call the high-level tool.
-        clientTransport.send(InitializedNotification().toJSON())
-
-        val toolCallRequest = CallToolRequest(CallToolRequestParams("ctx-tool")).toJSON()
-        val toolCallAnswered = pending.expect(toolCallRequest.id)
-        clientTransport.send(toolCallRequest)
-
-        val toolCallResponse = withTimeout(10.seconds) { toolCallAnswered.await() } as JSONRPCResponse
-        val text = (toolCallResponse.result as CallToolResult).content.filterIsInstance<TextContent>().single().text
-        // The handler echoed its request id, proving currentRequestHandlerExtra() was available.
-        text shouldBe toolCallRequest.id.asText()
-    }
 
     private fun ConcurrentHashMap<RequestId, CompletableDeferred<JSONRPCMessage>>.expect(
         id: RequestId,

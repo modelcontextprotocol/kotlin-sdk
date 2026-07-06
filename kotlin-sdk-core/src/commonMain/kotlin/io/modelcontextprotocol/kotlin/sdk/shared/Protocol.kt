@@ -415,7 +415,16 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         }
 
         logger.info { "Starting transport" }
-        transport.start()
+        try {
+            transport.start()
+        } catch (cause: Throwable) {
+            // Roll back so the Protocol can be reconnected after a failed start; idempotent with
+            // a transport-initiated doClose (both CAS on the same connection).
+            if (connectionRef.compareAndSet(connection, null)) {
+                connection.handlerScope.cancel()
+            }
+            throw cause
+        }
     }
 
     private fun doClose(connection: Connection) {
@@ -660,6 +669,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             logger.error(sendError) {
                 "Failed to send error response for request: ${request.method} (id: ${request.id})"
             }
+            onError(sendError)
         }
     }
 
@@ -955,7 +965,9 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
      * Handlers may run concurrently after initialization and are cancelled cooperatively (always
      * re-throw [CancellationException]). Replacing a built-in handler for a control method (`ping`,
      * `notifications/cancelled`, `notifications/progress`, `notifications/initialized`) with slow
-     * code degrades connection liveness.
+     * code degrades connection liveness — and replacing the built-in `notifications/cancelled`
+     * handler in particular does not merely degrade liveness, it disables inbound request
+     * cancellation entirely, since that handler is what cancels the corresponding handler job.
      */
     public fun <T : Notification> setNotificationHandler(method: Method, handler: (notification: T) -> Deferred<Unit>) {
         _notificationHandlers.update { current ->
