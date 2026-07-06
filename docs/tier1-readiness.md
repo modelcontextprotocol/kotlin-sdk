@@ -93,10 +93,8 @@ Known gaps and risks:
   auth, or conformance-runner changes.
 - Client auth conformance is implemented as a standalone harness, not reusable
   SDK auth/OAuth API.
-- Public documentation still has TODO coverage, including elicitation.
 - Feature docs are not yet comprehensive for auth, URL-mode elicitation,
-  sampling with tools, transport resumability, and
-  security constraints.
+  sampling with tools, transport resumability, and security constraints.
 - Tasks are experimental/extension work and should not block Tier 1 unless the
   SDK explicitly claims production support for the extension.
 - The dependency update policy was not previously published.

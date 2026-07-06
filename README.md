@@ -41,6 +41,7 @@ standardized protocol interface.
   * [Client Features](#client-features)
     * [Roots](#roots)
     * [Sampling](#sampling)
+    * [Elicitation](#elicitation)
 * [Transports](#transports)
   * [STDIO Transport](#stdio-transport)
   * [Streamable HTTP Transport](#streamable-http-transport)
@@ -748,9 +749,65 @@ client.setRequestHandler<CreateMessageRequest>(Method.Defined.SamplingCreateMess
 Inside the handler you can pick any model/provider, require approvals, or reject the request. If you don’t support tool
 use, omit `sampling.tools` from capabilities.
 
-[//]: # (TODO: add elicitation section)
+#### Elicitation
 
-[//]: # (#### Elicitation)
+Elicitation lets a server ask the client to collect user input. Declare the `elicitation` capability and register an
+handler for `elicitation/create`. Form-mode requests carry a restricted schema for non-sensitive data; URL-mode requests
+ask the host application to open an out-of-band URL only after explicit user consent.
+
+<!--- INCLUDE
+import io.modelcontextprotocol.kotlin.sdk.client.Client
+import io.modelcontextprotocol.kotlin.sdk.client.ClientOptions
+import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestFormParams
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestURLParams
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitResult
+import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+
+fun main() {
+-->
+
+```kotlin
+val client = Client(
+    clientInfo = Implementation("demo-client", "1.0.0"),
+    options = ClientOptions(
+        capabilities = ClientCapabilities(
+            elicitation = ClientCapabilities.Elicitation(
+                form = EmptyJsonObject,
+                url = EmptyJsonObject,
+            ),
+        ),
+    ),
+)
+
+client.setElicitationHandler { request ->
+    when (val params = request.params) {
+        is ElicitRequestFormParams -> ElicitResult(
+            action = ElicitResult.Action.Accept,
+            content = buildJsonObject {
+                put("email", "user@example.com")
+            },
+        )
+        is ElicitRequestURLParams -> {
+            // The host application should show params.url and require consent before opening it.
+            ElicitResult(action = ElicitResult.Action.Decline)
+        }
+    }
+}
+```
+
+<!--- SUFFIX
+}
+-->
+
+<!--- KNIT example-client-elicitation-01.kt -->
+
+The SDK applies default values from form-mode schemas when the handler accepts and omits fields that define defaults.
+For URL mode, the immediate response only records consent or refusal; the out-of-band result is reported separately via
+`notifications/elicitation/complete`.
 
 ## Transports
 
