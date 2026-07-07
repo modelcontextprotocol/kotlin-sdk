@@ -19,11 +19,14 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.install
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
+import io.ktor.server.sse.ServerSSESession
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
+import io.ktor.sse.ServerSentEvent
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.readLine
 import io.ktor.utils.io.readUTF8Line
@@ -65,6 +68,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.coroutines.CoroutineContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -608,6 +612,60 @@ class StreamableHttpServerTransportTest {
         }
     }
 
+    @Test
+    fun `sse terminal response is dropped without leaking when the per-request stream is gone`() = testApplication {
+        configTestServer()
+        val client = createTestClient()
+
+        val transport = StreamableHttpServerTransport(
+            StreamableHttpServerTransport.Configuration(enableJsonResponse = false),
+        )
+        transport.setSessionIdGenerator(null) // stateless: accept requests without an init handshake
+        val requestId = RequestId("held-request")
+        val delivered = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        transport.onMessage { message ->
+            if (message is JSONRPCRequest) {
+                delivered.complete(Unit)
+                release.await() // keep the POST and its stream mapping alive until the test releases it
+            }
+        }
+
+        application {
+            routing {
+                post(path) {
+                    transport.handlePostRequest(FakeServerSSESession(call, call.coroutineContext), call)
+                }
+            }
+        }
+
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        try {
+            val post = scope.async {
+                client.post(path) {
+                    addStreamableHeaders()
+                    setBody(
+                        encodeMessages(
+                            listOf(JSONRPCRequest(id = requestId, method = Method.Defined.ToolsList.value)),
+                        ),
+                    )
+                }
+            }
+            withTimeout(5.seconds) { delivered.await() }
+
+            // Drop the per-request SSE stream while the request is still mapped in-flight; the handler's
+            // terminal response is now undeliverable and must be dropped quietly rather than raise
+            // "No connection established" (which would also strand the request mappings).
+            transport.closeSseStream(requestId)
+            transport.send(JSONRPCResponse(requestId, EmptyResult()))
+
+            post.cancel()
+        } finally {
+            release.complete(Unit)
+            scope.cancel()
+        }
+    }
+
     @ParameterizedTest
     @MethodSource("invalidPayloads")
     fun `POST with a null or empty body returns an error`(payload: String?) = testApplication {
@@ -952,4 +1010,13 @@ class StreamableHttpServerTransportTest {
             }
         }
     }
+}
+
+/** No-op [ServerSSESession] double that lets a POST route drive [StreamableHttpServerTransport] in SSE mode. */
+private class FakeServerSSESession(
+    override val call: ApplicationCall,
+    override val coroutineContext: CoroutineContext,
+) : ServerSSESession {
+    override suspend fun send(event: ServerSentEvent) {}
+    override suspend fun close() {}
 }

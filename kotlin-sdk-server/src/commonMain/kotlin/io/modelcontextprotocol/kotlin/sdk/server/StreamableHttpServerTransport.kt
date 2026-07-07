@@ -319,8 +319,9 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 cleanUpRequests(relatedIds)
                 pendingPost.complete(responses)
             } else {
-                if (activeStream == null) error("No connection established for request ID: $routingRequestId")
-                activeStream.session?.close()
+                // A null stream means the per-request SSE connection was closed or disconnected before
+                // the response settled; it is undeliverable, so retire the ids rather than leak them.
+                activeStream?.session?.close()
                 cleanUpRequests(relatedIds)
             }
         }
