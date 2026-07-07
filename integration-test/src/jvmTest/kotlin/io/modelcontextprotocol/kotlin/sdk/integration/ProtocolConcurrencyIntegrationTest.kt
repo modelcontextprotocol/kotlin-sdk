@@ -53,10 +53,9 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * End-to-end tests for concurrent inbound dispatch enabled after the MCP handshake.
  *
- * All scenarios here exercise handlers dispatched onto a real [kotlinx.coroutines.Dispatchers.Default]
- * (the deadlock/cascade cases additionally run over [ChannelTransport], which has real serial read
- * loops on that dispatcher); they use [runBlocking] with explicit [withTimeout] guards because a
- * virtual test clock would false-fire timeouts against cross-thread real dispatchers.
+ * Handlers run on a real [kotlinx.coroutines.Dispatchers.Default], so these use [runBlocking] with
+ * explicit [withTimeout] guards. A virtual test clock would false-fire timeouts against cross-thread
+ * real dispatchers.
  */
 @OptIn(ExperimentalMcpApi::class)
 class ProtocolConcurrencyIntegrationTest {
@@ -75,7 +74,7 @@ class ProtocolConcurrencyIntegrationTest {
         ),
     )
 
-    // THE motivating deadlock, over real serial read loops: a server tool handler makes a
+    // The motivating deadlock over real serial read loops: a server tool handler makes a
     // server-to-client request (roots/list) while still handling the client's tools/call.
     @Test
     fun `server tool handler can call roots list mid-handling without deadlock`() = runBlocking {
@@ -155,8 +154,8 @@ class ProtocolConcurrencyIntegrationTest {
     }
 
     // Nested-cancel cascade: cancelling the client's tools/call must reach the server tool handler
-    // over the wire AND cascade into the handler's nested roots/list request, cancelling the parked
-    // client-side roots handler; no tools/call response is ever sent.
+    // over the wire and cascade into its nested roots/list request, cancelling the parked
+    // client-side roots handler. No tools/call response is ever sent.
     @Test
     fun `cancelling a tool call cascades into its nested roots list request`() = runBlocking {
         val client = rootsClient()
@@ -227,9 +226,9 @@ class ProtocolConcurrencyIntegrationTest {
         server.close()
     }
 
-    // Init gate end-to-end + context element in a high-level handler: initialize and tools/list are
-    // pipelined before notifications/initialized and answered serially in order; after the handshake
-    // a high-level addTool handler can observe currentRequestHandlerExtra().
+    // Init gate plus context element in a high-level handler: initialize and tools/list are
+    // pipelined before notifications/initialized and answered serially in order. After the
+    // handshake a high-level addTool handler can observe currentRequestHandlerExtra().
     @Test
     fun `pipelined initialize and tools list are processed serially then context element is available`(): Unit =
         runBlocking {

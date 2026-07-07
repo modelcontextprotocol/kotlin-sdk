@@ -2,8 +2,6 @@ package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.server.utils.warnIfInvalidToolName
-import io.modelcontextprotocol.kotlin.sdk.shared.DEFAULT_MAX_CONCURRENT_HANDLERS
-import io.modelcontextprotocol.kotlin.sdk.shared.DEFAULT_MAX_IN_FLIGHT_HANDLERS
 import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
@@ -73,22 +71,16 @@ private val logger = KotlinLogging.logger {}
  * Forwarded to [ProtocolOptions.enforceStrictCapabilities].
  * @property resourceTemplateMatcherFactory The factory used to create [ResourceTemplateMatcher] instances
  *   for matching resource URIs against registered templates. Defaults to [PathSegmentTemplateMatcher.factory].
- * @param handlerCoroutineContext Coroutine context for inbound handlers; see [ProtocolOptions.handlerCoroutineContext].
- * @param maxConcurrentHandlers Concurrency cap for inbound handlers; see [ProtocolOptions.maxConcurrentHandlers].
- * @param maxInFlightHandlers Admission cap for inbound handlers; see [ProtocolOptions.maxInFlightHandlers].
+ * @param handlerCoroutineContext Coroutine context for inbound handlers. See [ProtocolOptions.handlerCoroutineContext].
  */
 public class ServerOptions(
     public val capabilities: ServerCapabilities,
     enforceStrictCapabilities: Boolean = true,
     public val resourceTemplateMatcherFactory: ResourceTemplateMatcherFactory = PathSegmentTemplateMatcher.factory,
     handlerCoroutineContext: CoroutineContext = Dispatchers.Default,
-    maxConcurrentHandlers: Int = DEFAULT_MAX_CONCURRENT_HANDLERS,
-    maxInFlightHandlers: Int = DEFAULT_MAX_IN_FLIGHT_HANDLERS,
 ) : ProtocolOptions(
     enforceStrictCapabilities = enforceStrictCapabilities,
     handlerCoroutineContext = handlerCoroutineContext,
-    maxConcurrentHandlers = maxConcurrentHandlers,
-    maxInFlightHandlers = maxInFlightHandlers,
 ) {
     @JvmOverloads
     public constructor(

@@ -109,8 +109,7 @@ public open class ServerSession(
     }
 
     override fun onInitializedNotification() {
-        // Flip BEFORE the notification handler (and therefore before the user's onInitialized
-        // callback) runs; safe because onInitialized callbacks are synchronous.
+        // Enable concurrency before the user's onInitialized callback, which runs synchronously.
         enableConcurrentDispatch()
     }
 

@@ -85,8 +85,6 @@ public abstract class io/modelcontextprotocol/kotlin/sdk/shared/Protocol {
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/shared/ProtocolKt {
-	public static final field DEFAULT_MAX_CONCURRENT_HANDLERS I
-	public static final field DEFAULT_MAX_IN_FLIGHT_HANDLERS I
 	public static final field IMPLEMENTATION_NAME Ljava/lang/String;
 	public static final fun currentRequestHandlerExtra (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static final fun getDEFAULT_REQUEST_TIMEOUT ()J
@@ -97,13 +95,9 @@ public class io/modelcontextprotocol/kotlin/sdk/shared/ProtocolOptions {
 	public synthetic fun <init> (ZJLkotlin/coroutines/CoroutineContext;IILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getEnforceStrictCapabilities ()Z
 	public final fun getHandlerCoroutineContext ()Lkotlin/coroutines/CoroutineContext;
-	public final fun getMaxConcurrentHandlers ()I
-	public final fun getMaxInFlightHandlers ()I
 	public final fun getTimeout-UwyO8pc ()J
 	public final fun setEnforceStrictCapabilities (Z)V
 	public final fun setHandlerCoroutineContext (Lkotlin/coroutines/CoroutineContext;)V
-	public final fun setMaxConcurrentHandlers (I)V
-	public final fun setMaxInFlightHandlers (I)V
 	public final fun setTimeout-LRDsOJo (J)V
 }
 

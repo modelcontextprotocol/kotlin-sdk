@@ -546,10 +546,8 @@ class ClientTest {
 
         val serverSession = serverSessionResult.await()
 
-        // Wire-level tap registered after the session is connected: AbstractTransport chains
-        // onMessage callbacks, so this coexists with the session's own dispatch subscription.
-        // (Registered here, not before createSession, so it does not pre-empt the transport's
-        // message-buffering stub and drop the client's initialize during the handshake race.)
+        // Register the tap after createSession so it chains onto the session's subscription instead
+        // of pre-empting the handshake.
         val cancelledOnWire = CompletableDeferred<Unit>()
         serverTransport.onMessage { message ->
             if (message is JSONRPCNotification && message.method == Method.Defined.NotificationsCancelled.value) {
@@ -582,8 +580,8 @@ class ClientTest {
         def.await()
         runCatching { job.cancel("Cancelled by test") }
         defCancel.await()
-        cancelledOnWire.await() // cancellation now reaches the server over the wire
-        defTimeOut.await() // and cooperatively cancels the in-flight handler
+        cancelledOnWire.await()
+        defTimeOut.await()
     }
 
     @Test
@@ -621,9 +619,8 @@ class ClientTest {
 
         val serverSession = serverSessionResult.await()
         serverSession.setRequestHandler<ListResourcesRequest>(Method.Defined.ResourcesList) { _, _ ->
-            // Park until cancelled: after the handshake the handler runs on a real dispatcher
-            // while the client's timeout runs on the virtual test clock, so a real-time delay
-            // could occasionally beat the 1 ms timeout. Never responding keeps this deterministic.
+            // Never respond: the handler runs on a real dispatcher while the 1 ms timeout runs on the
+            // virtual test clock, so a real-time delay could race it. Parking keeps the test deterministic.
             awaitCancellation()
         }
 

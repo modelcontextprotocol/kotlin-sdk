@@ -71,35 +71,26 @@ public typealias ProgressCallback = (Progress) -> Unit
 /**
  * Additional initialization options.
  *
- * [handlerCoroutineContext], [maxConcurrentHandlers] and [maxInFlightHandlers] are read once when
- * [Protocol.connect] attaches a transport and stay fixed for that connection; changing them
- * afterward takes effect only on the next [Protocol.connect].
+ * [handlerCoroutineContext] is read once when [Protocol.connect] attaches a transport and stays
+ * fixed until the next [Protocol.connect].
  *
- * @property enforceStrictCapabilities whether to restrict emitted requests to only those that the
- * remote side has indicated it can handle through its advertised capabilities.
- * This does NOT affect checking of _local_ side capabilities, as it is considered a logic error
- * to mis-specify those.
- * Currently defaults to `false` for backwards compatibility with SDK versions that did not advertise
- * capabilities correctly; in the future, this will default to `true`.
+ * @property enforceStrictCapabilities whether to restrict emitted requests to only those the remote
+ * side advertised support for. Local-side capability checks are unaffected. Defaults to `false` for
+ * backward compatibility with SDK versions that did not advertise capabilities correctly.
  * @property timeout default timeout for outgoing requests
  * @property handlerCoroutineContext coroutine context used to run inbound request and notification
- * handlers once the MCP initialization phase has completed. Must contain a real dispatching
- * [kotlin.coroutines.ContinuationInterceptor]; `Dispatchers.Unconfined` (and unconfined test
- * dispatchers) are unsupported — handler resumptions would run on the transport read loop and
- * reintroduce head-of-line blocking. Any [kotlinx.coroutines.Job] in this context is ignored:
- * the connection's own `SupervisorJob` is authoritative.
- * @property maxConcurrentHandlers maximum number of inbound handlers executing concurrently per
- * connection; excess handler coroutines park until a slot frees up.
- * @property maxInFlightHandlers maximum number of launched-but-not-completed inbound handlers
- * (running + parked) per connection; beyond it new requests are rejected immediately with a
- * JSON-RPC error and new notifications are dropped and reported via `onError`.
+ * handlers once initialization has completed. Must contain a real dispatching
+ * [kotlin.coroutines.ContinuationInterceptor]. `Dispatchers.Unconfined` and unconfined test
+ * dispatchers are unsupported, since handler resumptions would then run on the transport read loop
+ * and reintroduce head-of-line blocking. Any [kotlinx.coroutines.Job] in this context is ignored.
  */
 public open class ProtocolOptions(
     public var enforceStrictCapabilities: Boolean = false,
     public var timeout: Duration = DEFAULT_REQUEST_TIMEOUT,
     public var handlerCoroutineContext: CoroutineContext = Dispatchers.Default,
-    public var maxConcurrentHandlers: Int = DEFAULT_MAX_CONCURRENT_HANDLERS,
-    public var maxInFlightHandlers: Int = DEFAULT_MAX_IN_FLIGHT_HANDLERS,
+    // Internal handler-concurrency bounds, read once at connect and not part of the public surface.
+    internal var maxConcurrentHandlers: Int = DEFAULT_MAX_CONCURRENT_HANDLERS,
+    internal var maxInFlightHandlers: Int = DEFAULT_MAX_IN_FLIGHT_HANDLERS,
 )
 
 /**
@@ -108,10 +99,10 @@ public open class ProtocolOptions(
 public val DEFAULT_REQUEST_TIMEOUT: Duration = 60.seconds
 
 /** Default cap on concurrently executing inbound handlers per connection. */
-public const val DEFAULT_MAX_CONCURRENT_HANDLERS: Int = 64
+internal const val DEFAULT_MAX_CONCURRENT_HANDLERS: Int = 64
 
 /** Default cap on launched-but-not-completed inbound handlers per connection. */
-public const val DEFAULT_MAX_IN_FLIGHT_HANDLERS: Int = 256
+internal const val DEFAULT_MAX_IN_FLIGHT_HANDLERS: Int = 256
 
 /**
  * Options that can be given per request.
@@ -438,8 +429,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     }
 
     private fun doClose(connection: Connection) {
-        // Generation guard: a stale onClose from a previous transport must not tear down
-        // the successor connection (compare-and-set on the current connection).
+        // A stale onClose from a previous transport must not tear down the successor connection.
         if (!connectionRef.compareAndSet(connection, null)) {
             logger.trace { "Ignoring close signal from a stale transport" }
             return
@@ -468,13 +458,11 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             rejectOverloadedRequest(connection, request)
             return
         }
-        // UNDISPATCHED: the handler starts synchronously in the delivering coroutine (strict
-        // arrival-order start) and moves to handlerCoroutineContext at its first suspension.
+        // UNDISPATCHED starts the handler synchronously in the delivering coroutine, preserving
+        // arrival order, then moves to handlerCoroutineContext at its first suspension.
         connection.handlerScope.launch(start = CoroutineStart.UNDISPATCHED) {
-            // Register BEFORE any suspension point: parked handlers must be cancellable via
-            // notifications/cancelled, and on a serial transport this line runs before the read
-            // loop delivers the next message, so a subsequent `cancelled` is guaranteed to observe
-            // the registration.
+            // Register before any suspension point so a following notifications/cancelled can find
+            // and cancel even a handler still parked on admission.
             registerInFlight(connection, request.id, coroutineContext.job)
             try {
                 if (bypass) {
@@ -634,12 +622,11 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                     ),
                 )
             } catch (e: CancellationException) {
-                // Deliberate, documented exception to the always-rethrow-CE convention, applied
-                // only at this dispatch boundary:
-                if (handlerJob == null) throw e // serial phase: rethrow (inline dispatch is not response-suppressed)
-                if (handlerJob.isCancelled) throw e // genuine cancel (peer/close): suppress response
-                // CE escaped the handler while its job is alive (e.g. leaked inner withTimeout):
-                // answer INTERNAL_ERROR so the peer does not hang until its own timeout.
+                // Intentional exception to the always-rethrow-CE convention, only at this boundary.
+                if (handlerJob == null) throw e // serial phase: inline dispatch is not response-suppressed
+                if (handlerJob.isCancelled) throw e // genuine peer or close cancel: suppress the response
+                // CE escaped a live handler job (e.g. a leaked inner withTimeout). Answer
+                // INTERNAL_ERROR so the peer does not hang until its own timeout.
                 respondWithError(capturedTransport, request, e)
             } catch (cause: Throwable) {
                 if (handlerJob?.isCancelled == true) {
@@ -866,13 +853,12 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         try {
             val response = withTimeoutOrNull(timeout) {
                 logger.trace { "Sending request message with id: $jsonRpcRequestId" }
-                this@Protocol.transport?.send(jsonRpcRequest, options)
+                transport.send(jsonRpcRequest, options)
                 result.await()
             }
             if (response == null) {
-                // Our own request timeout expired. An outer withTimeout's TimeoutCancellationException
-                // propagates through withTimeoutOrNull instead of returning null, and is handled by the
-                // CancellationException branch below like any other caller cancellation.
+                // Our own request timeout expired. An outer withTimeout's cancellation propagates
+                // through withTimeoutOrNull instead of returning null and is handled by the catch below.
                 logger.error { "Request timed out after ${timeout.inWholeMilliseconds}ms: ${request.method}" }
                 val timeoutError = McpException(
                     code = RPCError.ErrorCode.REQUEST_TIMEOUT,
@@ -892,10 +878,10 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             }
             return response
         } catch (cause: CancellationException) {
-            // Plain caller cancellation, or an outer withTimeout's TimeoutCancellationException that
-            // propagated through withTimeoutOrNull above (only our own deadline returns null there).
-            // NonCancellable because the caller's job is already cancelled and the notification send
-            // must still run; a secondary send failure must never replace the CE.
+            // Plain caller cancellation, or an outer withTimeout that propagated through
+            // withTimeoutOrNull (only our own deadline returns null there). NonCancellable so the
+            // cancellation notification still goes out even though the caller's job is cancelled.
+            // A secondary send failure must never replace the original CancellationException.
             withContext(NonCancellable) {
                 try {
                     cancelPending(cause, notifyPeerOnCancel)
@@ -906,8 +892,8 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             }
             throw cause
         } finally {
-            // Runs on every exit path; the success, timeout and cancellation paths already removed
-            // these, so it only bites when the outbound send failed before the request could settle.
+            // Backstop for the failed-send path. The success, timeout and cancellation paths already
+            // removed these handlers, so this only bites when the outbound send failed.
             _responseHandlers.update { it.remove(jsonRpcRequestId) }
             _progressHandlers.update { it.remove(jsonRpcRequestId) }
         }
@@ -931,8 +917,8 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
      *
      * Note that this will replace any previous request handler for the same method.
      *
-     * Handlers may run concurrently after initialization and are cancelled cooperatively (always
-     * re-throw [CancellationException]). Replacing a built-in handler for a control method (`ping`,
+     * Handlers may run concurrently after initialization and are cancelled cooperatively, so always
+     * re-throw [CancellationException]. Replacing a built-in control-method handler (`ping`,
      * `notifications/cancelled`, `notifications/progress`, `notifications/initialized`) with slow
      * code degrades connection liveness.
      */
@@ -987,12 +973,11 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
      *
      * Note that this will replace any previous notification handler for the same method.
      *
-     * Handlers may run concurrently after initialization and are cancelled cooperatively (always
-     * re-throw [CancellationException]). Replacing a built-in handler for a control method (`ping`,
+     * Handlers may run concurrently after initialization and are cancelled cooperatively, so always
+     * re-throw [CancellationException]. Replacing a built-in control-method handler (`ping`,
      * `notifications/cancelled`, `notifications/progress`, `notifications/initialized`) with slow
-     * code degrades connection liveness — and replacing the built-in `notifications/cancelled`
-     * handler in particular does not merely degrade liveness, it disables inbound request
-     * cancellation entirely, since that handler is what cancels the corresponding handler job.
+     * code degrades connection liveness. Replacing `notifications/cancelled` in particular disables
+     * inbound request cancellation entirely, since that handler is what cancels the running job.
      */
     public fun <T : Notification> setNotificationHandler(method: Method, handler: (notification: T) -> Deferred<Unit>) {
         _notificationHandlers.update { current ->

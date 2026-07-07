@@ -2,8 +2,6 @@ package io.modelcontextprotocol.kotlin.sdk.client
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
-import io.modelcontextprotocol.kotlin.sdk.shared.DEFAULT_MAX_CONCURRENT_HANDLERS
-import io.modelcontextprotocol.kotlin.sdk.shared.DEFAULT_MAX_IN_FLIGHT_HANDLERS
 import io.modelcontextprotocol.kotlin.sdk.shared.Protocol
 import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestHandlerExtra
@@ -91,21 +89,15 @@ private val logger = KotlinLogging.logger {}
  *
  * @property capabilities The capabilities this client supports.
  * @param enforceStrictCapabilities Whether to strictly enforce capabilities when interacting with the server.
- * @param handlerCoroutineContext Coroutine context for inbound handlers; see [ProtocolOptions.handlerCoroutineContext].
- * @param maxConcurrentHandlers Concurrency cap for inbound handlers; see [ProtocolOptions.maxConcurrentHandlers].
- * @param maxInFlightHandlers Admission cap for inbound handlers; see [ProtocolOptions.maxInFlightHandlers].
+ * @param handlerCoroutineContext Coroutine context for inbound handlers. See [ProtocolOptions.handlerCoroutineContext].
  */
 public class ClientOptions(
     public val capabilities: ClientCapabilities = ClientCapabilities(),
     enforceStrictCapabilities: Boolean = true,
     handlerCoroutineContext: CoroutineContext = Dispatchers.Default,
-    maxConcurrentHandlers: Int = DEFAULT_MAX_CONCURRENT_HANDLERS,
-    maxInFlightHandlers: Int = DEFAULT_MAX_IN_FLIGHT_HANDLERS,
 ) : ProtocolOptions(
     enforceStrictCapabilities = enforceStrictCapabilities,
     handlerCoroutineContext = handlerCoroutineContext,
-    maxConcurrentHandlers = maxConcurrentHandlers,
-    maxInFlightHandlers = maxInFlightHandlers,
 )
 
 /**
