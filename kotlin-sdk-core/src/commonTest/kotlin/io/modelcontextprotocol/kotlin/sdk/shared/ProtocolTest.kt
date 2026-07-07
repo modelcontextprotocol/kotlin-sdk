@@ -6,6 +6,7 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.modelcontextprotocol.kotlin.sdk.types.CustomRequest
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
@@ -322,6 +323,45 @@ class ProtocolTest {
         protocol.transport shouldBe null // rolled back
         protocol.connect(transport) // reconnect succeeds, no "already connected"
         protocol.transport shouldBe transport
+    }
+
+    @Test
+    fun `request cleans up its handlers when the transport send fails`() = runTest {
+        // Send fails without closing the connection, so the leak is not masked by doClose().
+        val failingSend = object : Transport {
+            override suspend fun start() {}
+            override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?): Unit =
+                throw IllegalStateException("send failed")
+            override suspend fun close() {}
+            override fun onClose(block: () -> Unit) {}
+            override fun onError(block: (Throwable) -> Unit) {}
+            override fun onMessage(block: suspend (JSONRPCMessage) -> Unit) {}
+        }
+        protocol.connect(failingSend)
+
+        shouldThrow<IllegalStateException> {
+            protocol.request<EmptyResult>(PingRequest(), RequestOptions(onProgress = {}))
+        }
+
+        protocol.responseHandlers.size shouldBe 0
+        protocol.progressHandlers.size shouldBe 0
+    }
+
+    @Test
+    fun `connect rejects non-positive maxConcurrentHandlers`() = runTest {
+        val error = shouldThrow<IllegalArgumentException> {
+            TestProtocol(ProtocolOptions(maxConcurrentHandlers = 0)).connect(RecordingTransport())
+        }
+        error.message.shouldNotBeNull() shouldContain "maxConcurrentHandlers"
+    }
+
+    @Test
+    fun `connect rejects maxInFlightHandlers below maxConcurrentHandlers`() = runTest {
+        val error = shouldThrow<IllegalArgumentException> {
+            TestProtocol(ProtocolOptions(maxConcurrentHandlers = 4, maxInFlightHandlers = 0))
+                .connect(RecordingTransport())
+        }
+        error.message.shouldNotBeNull() shouldContain "maxInFlightHandlers"
     }
 }
 

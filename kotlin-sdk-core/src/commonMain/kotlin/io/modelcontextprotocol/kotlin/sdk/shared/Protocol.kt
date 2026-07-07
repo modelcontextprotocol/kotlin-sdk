@@ -71,6 +71,10 @@ public typealias ProgressCallback = (Progress) -> Unit
 /**
  * Additional initialization options.
  *
+ * [handlerCoroutineContext], [maxConcurrentHandlers] and [maxInFlightHandlers] are read once when
+ * [Protocol.connect] attaches a transport and stay fixed for that connection; changing them
+ * afterward takes effect only on the next [Protocol.connect].
+ *
  * @property enforceStrictCapabilities whether to restrict emitted requests to only those that the
  * remote side has indicated it can handle through its advertised capabilities.
  * This does NOT affect checking of _local_ side capabilities, as it is considered a logic error
@@ -371,6 +375,12 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
      * @throws IllegalStateException if this Protocol is already connected; call [close] first.
      */
     public open suspend fun connect(transport: Transport) {
+        val maxConcurrent = options?.maxConcurrentHandlers ?: DEFAULT_MAX_CONCURRENT_HANDLERS
+        val maxInFlight = options?.maxInFlightHandlers ?: DEFAULT_MAX_IN_FLIGHT_HANDLERS
+        require(maxConcurrent > 0) { "maxConcurrentHandlers must be positive, but was $maxConcurrent" }
+        require(maxInFlight >= maxConcurrent) {
+            "maxInFlightHandlers ($maxInFlight) must be >= maxConcurrentHandlers ($maxConcurrent)"
+        }
         val handlerContext = (options?.handlerCoroutineContext ?: Dispatchers.Default).minusKey(Job)
         val interceptor = handlerContext[ContinuationInterceptor]
         if (interceptor === Dispatchers.Unconfined ||
@@ -384,8 +394,8 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         val connection = Connection(
             transport = transport,
             handlerScope = CoroutineScope(SupervisorJob() + handlerContext + CoroutineName("McpProtocol")),
-            executionSemaphore = Semaphore(options?.maxConcurrentHandlers ?: DEFAULT_MAX_CONCURRENT_HANDLERS),
-            maxInFlightHandlers = options?.maxInFlightHandlers ?: DEFAULT_MAX_IN_FLIGHT_HANDLERS,
+            executionSemaphore = Semaphore(maxConcurrent),
+            maxInFlightHandlers = maxInFlight,
         )
         if (!connectionRef.compareAndSet(null, connection)) {
             connection.handlerScope.cancel()
@@ -895,6 +905,11 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                 }
             }
             throw cause
+        } finally {
+            // Runs on every exit path; the success, timeout and cancellation paths already removed
+            // these, so it only bites when the outbound send failed before the request could settle.
+            _responseHandlers.update { it.remove(jsonRpcRequestId) }
+            _progressHandlers.update { it.remove(jsonRpcRequestId) }
         }
     }
 
