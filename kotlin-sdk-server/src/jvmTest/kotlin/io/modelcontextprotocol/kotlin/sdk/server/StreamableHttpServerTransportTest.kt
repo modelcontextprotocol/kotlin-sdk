@@ -56,6 +56,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.buildJsonObject
@@ -588,6 +589,22 @@ class StreamableHttpServerTransportTest {
             responses.map { it.id }.toSet() shouldBe setOf(answeredA.id, answeredB.id)
         } finally {
             handlerScope.cancel()
+        }
+    }
+
+    @Test
+    fun `json response send for a retired request id is dropped without error`() = runTest {
+        val transport = StreamableHttpServerTransport(enableJsonResponse = true)
+        // No stream is mapped for this id (already retired by disconnect/cancellation cleanup);
+        // a late terminal response must be dropped quietly, not raise "No connection established".
+        transport.send(JSONRPCResponse(RequestId("retired"), EmptyResult()))
+    }
+
+    @Test
+    fun `sse response send for an unknown request id still errors`() = runTest {
+        val transport = StreamableHttpServerTransport(enableJsonResponse = false)
+        assertFailsWith<IllegalStateException> {
+            transport.send(JSONRPCResponse(RequestId("unknown"), EmptyResult()))
         }
     }
 

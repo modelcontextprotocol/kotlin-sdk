@@ -258,30 +258,43 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             return
         }
 
+        val isTerminated = message is JSONRPCResponse || message is JSONRPCError
+
+        // JSON mode has no per-request SSE stream: request-related notifications go to the standalone
+        // GET stream and need no streamId. Handle them before the lookup below so a notification for an
+        // already-retired request is routed there rather than turned into a spurious error.
+        if (configuration.enableJsonResponse && !isTerminated) {
+            val standaloneStream = streamsMapping[STANDALONE_SSE_STREAM_ID]
+            standaloneStream?.let { emitOnStream(STANDALONE_SSE_STREAM_ID, it.session, message) }
+            return
+        }
+
         val streamId = requestToStreamMapping[routingRequestId]
-            ?: error("No connection established for request id $routingRequestId")
+        if (streamId == null) {
+            // Request already retired (completed, cancelled, or the JSON POST disconnected). A late
+            // JSON-mode terminal response is undeliverable and dropped; an unknown id in SSE mode
+            // remains a genuine routing error.
+            if (configuration.enableJsonResponse) return
+            error("No connection established for request id $routingRequestId")
+        }
         val activeStream = streamsMapping[streamId]
 
         if (!configuration.enableJsonResponse) {
             activeStream?.let { stream ->
                 emitOnStream(streamId, stream.session, message)
             }
-        }
-
-        val isTerminated = message is JSONRPCResponse || message is JSONRPCError
-        if (!isTerminated) {
-            if (configuration.enableJsonResponse) {
-                // In JSON response mode there is no per-request SSE stream, so route notifications
-                // that are logically associated with a request to the standalone GET SSE stream.
-                val standaloneStream = streamsMapping[STANDALONE_SSE_STREAM_ID]
-                standaloneStream?.let { emitOnStream(STANDALONE_SSE_STREAM_ID, it.session, message) }
-            }
-            return
+            if (!isTerminated) return
         }
 
         requestToResponseMapping[responseRequestId!!] = message
 
         streamMutex.withLock {
+            // The request may have been retired (disconnect/cancellation cleanup) between recording the
+            // response above and acquiring the lock; reclaim the stray mapping and drop it.
+            if (routingRequestId !in requestToStreamMapping) {
+                requestToResponseMapping.remove(routingRequestId)
+                return
+            }
             // Recomputed under the lock: handlers may respond concurrently, and the sender that
             // observes the last settled request also retires the ids — a losing sender sees an empty
             // set. A cancelled request counts as settled even though it produces no response.
