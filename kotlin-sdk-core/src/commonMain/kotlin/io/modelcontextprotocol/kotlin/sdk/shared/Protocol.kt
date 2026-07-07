@@ -821,9 +821,11 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         }
 
         val cancelPending: suspend (reason: Throwable, notifyPeer: Boolean) -> Unit = { reason, notifyPeer ->
+            // Remember before removing: a racing onResponse/onProgress that sees the handler gone
+            // must also see the id, or it reports a late message as unknown. Order is load-bearing.
+            rememberCancelledRequestId(jsonRpcRequestId)
             _responseHandlers.update { current -> current.remove(jsonRpcRequestId) }
             _progressHandlers.update { current -> current.remove(jsonRpcRequestId) }
-            rememberCancelledRequestId(jsonRpcRequestId)
 
             if (notifyPeer) {
                 val notification = CancelledNotification(
