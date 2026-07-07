@@ -776,7 +776,8 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     public suspend fun <T : RequestResult> request(request: Request, options: RequestOptions? = null): T {
         logger.trace { "Sending request: ${request.method}" }
         val result = CompletableDeferred<T>()
-        val transport = transport ?: error("Not connected")
+        val connection = connectionRef.value ?: error("Not connected")
+        val transport = connection.transport
 
         if (this@Protocol.options?.enforceStrictCapabilities == true) {
             assertCapabilityForMethod(request.method)
@@ -818,6 +819,13 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                     result.completeExceptionally(e)
                 }
             }
+        }
+
+        if (connectionRef.value !== connection) {
+            // Connection closed or replaced during registration; nothing would complete this handler.
+            _responseHandlers.update { it.remove(jsonRpcRequestId) }
+            _progressHandlers.update { it.remove(jsonRpcRequestId) }
+            throw McpException(RPCError.ErrorCode.CONNECTION_CLOSED, "Connection closed")
         }
 
         val cancelPending: suspend (reason: Throwable, notifyPeer: Boolean) -> Unit = { reason, notifyPeer ->
