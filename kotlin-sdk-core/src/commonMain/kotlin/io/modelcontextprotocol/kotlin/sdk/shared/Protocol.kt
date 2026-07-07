@@ -154,7 +154,7 @@ public class RequestOptions(
 
     override fun hashCode(): Int {
         var result = super.hashCode()
-        result = 31 * result + (onProgress?.hashCode() ?: 0)
+        result = 31 * result + onProgress.hashCode()
         result = 31 * result + timeout.hashCode()
         return result
     }
@@ -284,8 +284,8 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     /** Remembers a locally-cancelled outbound request id so its late response/progress is quieted. */
     private fun rememberCancelledRequestId(id: RequestId) {
         recentlyCancelledRequestIds.update { current ->
-            val appended = current.add(id)
-            if (appended.size > CANCELLED_REQUEST_IDS_REMEMBERED) appended.removeAt(0) else appended
+            val appended = current.adding(id)
+            if (appended.size > CANCELLED_REQUEST_IDS_REMEMBERED) appended.removingAt(0) else appended
         }
     }
 
@@ -547,7 +547,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             logger.trace { "Ignoring cancellation for unknown or already-completed request: $requestId" }
             return
         }
-        job.cancel(CancellationException("Cancelled by peer: ${notification.params.reason ?: "unknown"}"))
+        job.cancel("Cancelled by peer: ${notification.params.reason ?: "unknown"}")
     }
 
     private suspend fun onNotification(notification: JSONRPCNotification) {
@@ -639,14 +639,14 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     }
 
     private fun registerInFlight(connection: Connection, id: RequestId, job: Job) {
-        val previous = connection.inFlightRequestJobs.getAndUpdate { current -> current.put(id, job) }[id]
+        val previous = connection.inFlightRequestJobs.getAndUpdate { current -> current.putting(id, job) }[id]
         if (previous != null) {
             logger.warn { "Duplicate in-flight request id $id; replacing the previous handler job" }
         }
         job.invokeOnCompletion {
             // Identity guard: never evict a successor job registered under a reused id.
             connection.inFlightRequestJobs.update { current ->
-                if (current[id] === job) current.remove(id) else current
+                if (current[id] === job) current.removing(id) else current
             }
         }
     }
@@ -701,7 +701,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
 
         val oldResponseHandlers = _responseHandlers.getAndUpdate { current ->
             if (messageId != null && messageId in current) {
-                current.remove(messageId)
+                current.removing(messageId)
             } else {
                 current
             }
@@ -710,7 +710,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         val handler = oldResponseHandlers[messageId]
 
         if (handler != null) {
-            messageId?.let { msg -> _progressHandlers.update { it.remove(msg) } }
+            messageId?.let { msg -> _progressHandlers.update { it.removing(msg) } }
         } else {
             if (isRecentlyCancelled(messageId)) {
                 logger.trace { "Ignoring response for a locally cancelled request: $messageId" }
@@ -784,7 +784,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             options?.onProgress?.let { progressHandler ->
                 logger.trace { "Registering progress handler for request id: $id" }
                 _progressHandlers.update { current ->
-                    current.put(id, progressHandler)
+                    current.putting(id, progressHandler)
                 }
 
                 val paramsObject = (this.params as? JsonObject) ?: JsonObject(emptyMap())
@@ -803,10 +803,10 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         val jsonRpcRequestId = jsonRpcRequest.id
 
         _responseHandlers.update { current ->
-            current.put(jsonRpcRequestId) { response, error ->
+            current.putting(jsonRpcRequestId) { response, error ->
                 if (error != null) {
                     result.completeExceptionally(error)
-                    return@put
+                    return@putting
                 }
 
                 try {
@@ -820,8 +820,8 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
 
         if (connectionRef.value !== connection) {
             // Connection closed or replaced during registration; nothing would complete this handler.
-            _responseHandlers.update { it.remove(jsonRpcRequestId) }
-            _progressHandlers.update { it.remove(jsonRpcRequestId) }
+            _responseHandlers.update { it.removing(jsonRpcRequestId) }
+            _progressHandlers.update { it.removing(jsonRpcRequestId) }
             throw McpException(RPCError.ErrorCode.CONNECTION_CLOSED, "Connection closed")
         }
 
@@ -829,8 +829,8 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             // Remember before removing: a racing onResponse/onProgress that sees the handler gone
             // must also see the id, or it reports a late message as unknown. Order is load-bearing.
             rememberCancelledRequestId(jsonRpcRequestId)
-            _responseHandlers.update { current -> current.remove(jsonRpcRequestId) }
-            _progressHandlers.update { current -> current.remove(jsonRpcRequestId) }
+            _responseHandlers.update { current -> current.removing(jsonRpcRequestId) }
+            _progressHandlers.update { current -> current.removing(jsonRpcRequestId) }
 
             if (notifyPeer) {
                 val notification = CancelledNotification(
@@ -894,8 +894,8 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         } finally {
             // Backstop for the failed-send path. The success, timeout and cancellation paths already
             // removed these handlers, so this only bites when the outbound send failed.
-            _responseHandlers.update { it.remove(jsonRpcRequestId) }
-            _progressHandlers.update { it.remove(jsonRpcRequestId) }
+            _responseHandlers.update { it.removing(jsonRpcRequestId) }
+            _progressHandlers.update { it.removing(jsonRpcRequestId) }
         }
     }
 
@@ -939,7 +939,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         val wrapped = wrapRequestHandler(method, block)
 
         _requestHandlers.update { current ->
-            current.put(method.value) { jSONRPCRequest, extraHandler ->
+            current.putting(method.value) { jSONRPCRequest, extraHandler ->
                 val request = jSONRPCRequest.fromJSON()
                 val response = wrapped(request as T, extraHandler)
                 response
@@ -965,7 +965,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
      * Removes the request handler for the given method.
      */
     public fun removeRequestHandler(method: Method) {
-        _requestHandlers.update { current -> current.remove(method.value) }
+        _requestHandlers.update { current -> current.removing(method.value) }
     }
 
     /**
@@ -981,7 +981,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
      */
     public fun <T : Notification> setNotificationHandler(method: Method, handler: (notification: T) -> Deferred<Unit>) {
         _notificationHandlers.update { current ->
-            current.put(method.value) {
+            current.putting(method.value) {
                 @Suppress("UNCHECKED_CAST")
                 handler(it.fromJSON() as T)
             }
@@ -992,7 +992,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
      * Removes the notification handler for the given method.
      */
     public fun removeNotificationHandler(method: Method) {
-        _notificationHandlers.update { current -> current.remove(method.value) }
+        _notificationHandlers.update { current -> current.removing(method.value) }
     }
 
     private class Connection(
