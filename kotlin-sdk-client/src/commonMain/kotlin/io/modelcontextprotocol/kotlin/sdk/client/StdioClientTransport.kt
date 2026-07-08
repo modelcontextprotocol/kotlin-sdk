@@ -244,7 +244,17 @@ public class StdioClientTransport @JvmOverloads public constructor(
     override suspend fun closeResources() {
         withContext(NonCancellable) {
             scope.stopProcessing("Closed")
+            closeReadSources()
             scope.coroutineContext[Job]?.join() // Wait for all coroutines to complete
+        }
+    }
+
+    private fun closeReadSources() {
+        runCatching { input.close() }
+            .onFailure { logger.debug(it) { "Error closing stdin source" } }
+        error?.let { source ->
+            runCatching { source.close() }
+                .onFailure { logger.debug(it) { "Error closing stderr source" } }
         }
     }
 

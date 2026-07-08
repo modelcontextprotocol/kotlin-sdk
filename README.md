@@ -729,7 +729,7 @@ val client = Client(
 )
 
 client.setRequestHandler<CreateMessageRequest>(Method.Defined.SamplingCreateMessage) { request, _ ->
-    val content = request.messages.lastOrNull()?.content
+    val content = request.messages.lastOrNull()?.content?.firstOrNull()
     val prompt = if (content is TextContent) content.text else "your topic"
     CreateMessageResult(
         model = "gpt-4o-mini",

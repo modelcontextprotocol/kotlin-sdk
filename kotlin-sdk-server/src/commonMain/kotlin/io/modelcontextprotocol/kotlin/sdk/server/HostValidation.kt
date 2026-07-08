@@ -20,6 +20,16 @@ import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 internal val LOCALHOST_ALLOWED_HOSTS: List<String> = listOf("localhost", "127.0.0.1", "[::1]")
 
 /**
+ * Default list of `Origin` values allowed for localhost DNS rebinding protection.
+ *
+ * Mirrors [LOCALHOST_ALLOWED_HOSTS] but carries a scheme so the values parse as URLs:
+ * [extractOriginHost] rejects schemeless input. Comparison is hostname-only and
+ * scheme-agnostic, so these entries also match `https://` origins on the same host.
+ */
+internal val LOCALHOST_ALLOWED_ORIGINS: List<String> =
+    listOf("http://localhost", "http://127.0.0.1", "http://[::1]")
+
+/**
  * Characters that are valid in a URL but must not appear in an HTTP `Host` header.
  * Rejecting them prevents the parser from accepting malformed values
  * (e.g. `evil.com@localhost`, `host/path`) that a generic URL parser would silently allow.

@@ -24,6 +24,8 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
+import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.readLine
 import io.ktor.utils.io.readUTF8Line
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
@@ -658,6 +660,34 @@ class StreamableHttpServerTransportTest {
         response.status shouldBe HttpStatusCode.PayloadTooLarge
     }
 
+    @Test
+    fun `POST with oversized chunked body and no Content-Length returns 413`() = testApplication {
+        configTestServer()
+
+        val client = createTestClient()
+
+        val transport = StreamableHttpServerTransport(
+            StreamableHttpServerTransport.Configuration(enableJsonResponse = true, maxRequestBodySize = 1024),
+        )
+        transport.onMessage { message ->
+            if (message is JSONRPCRequest) {
+                transport.send(JSONRPCResponse(message.id, EmptyResult()))
+            }
+        }
+
+        configureTransportEndpoint(transport)
+
+        // Stream the body as a channel so the client uses chunked transfer-encoding with no
+        // Content-Length header: the size limit must hold without trusting the (absent) header.
+        val oversized = ByteReadChannel("x".repeat(4096).encodeToByteArray())
+        val response = client.post(path) {
+            addStreamableHeaders()
+            setBody(oversized)
+        }
+
+        response.status shouldBe HttpStatusCode.PayloadTooLarge
+    }
+
     @ParameterizedTest
     @MethodSource("maxBodySizeTestCases")
     fun `POST with custom max request body size validates payload size`(
@@ -744,7 +774,7 @@ class StreamableHttpServerTransportTest {
 
                 // New stream is alive
                 val secondChannel = secondResponse.bodyAsChannel()
-                val firstLine = secondChannel.readUTF8Line()
+                val firstLine = secondChannel.readLine()
                 firstLine.shouldNotBeNull()
                 secondChannel.isClosedForRead shouldBe false
             }
@@ -783,7 +813,7 @@ class StreamableHttpServerTransportTest {
             header("mcp-protocol-version", LATEST_PROTOCOL_VERSION)
         }.execute { response ->
             response.status shouldBe HttpStatusCode.OK
-            response.bodyAsChannel().readUTF8Line()
+            response.bodyAsChannel().readLine()
         }
 
         // Step 3: Immediately reconnect — the transport should close the stale
@@ -798,7 +828,7 @@ class StreamableHttpServerTransportTest {
             response.headers[MCP_SESSION_ID_HEADER] shouldBe sessionId
 
             val channel = response.bodyAsChannel()
-            val firstLine = channel.readUTF8Line()
+            val firstLine = channel.readLine()
             firstLine.shouldNotBeNull()
             channel.isClosedForRead shouldBe false
         }
@@ -841,7 +871,7 @@ class StreamableHttpServerTransportTest {
 
             // Verify the stream is alive by reading at least one line (flush event)
             val channel = response.bodyAsChannel()
-            val firstLine = channel.readUTF8Line()
+            val firstLine = channel.readLine()
             firstLine.shouldNotBeNull()
             channel.isClosedForRead shouldBe false
         }

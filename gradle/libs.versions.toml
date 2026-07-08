@@ -2,9 +2,9 @@
 # plugins version
 atomicfu = "0.33.0"
 binaryCompatibilityValidatorPlugin = "0.18.1"
-detekt = "2.0.0-alpha.3"
+detekt = "2.0.0-alpha.5"
 dokka = "2.2.0"
-kotlin = "2.3.21"
+kotlin = "2.4.0"
 kover = "0.9.8"
 ktlint = "14.2.0"
 knit = "0.5.1"
@@ -13,16 +13,16 @@ netty = "4.2.15.Final"
 
 # libraries version
 awaitility = "4.3.0"
-collections-immutable = "0.5.0"
+collections-immutable = "0.5.1"
 coroutines = "1.11.0"
 kotest = "6.2.1"
-kotlinx-io = "0.9.0"
-ktor = "3.4.3"
+kotlinx-io = "0.9.1"
+ktor = "3.5.1"
 logging = "8.0.4"
 mockk = "1.14.11"
 serialization = "1.11.0"
 slf4j = "2.0.18"
-logback = "1.5.34"
+logback = "1.5.37"
 junit = "5.14.4"
 
 [libraries]

@@ -41,7 +41,11 @@ private val logger = KotlinLogging.logger {}
  * @param allowedHosts hostnames allowed in the `Host` header. Defaults to `localhost`, `127.0.0.1`, `[::1]`.
  * @param allowedOrigins origins allowed in the `Origin` header, compared by hostname only
  *      (scheme and port are ignored). Requests without an `Origin` header are allowed.
- *      Pass `null` to skip origin validation.
+ *      When `null` while the localhost host defaults are in effect (no custom `allowedHosts`),
+ *      the `Origin` header is validated against `localhost`, `127.0.0.1`, `[::1]`.
+ *      With custom `allowedHosts`, `null` skips origin validation.
+ * @param maxRequestBodySize maximum allowed size, in bytes, of an incoming POST body; larger requests are
+ *      rejected with `413 Payload Too Large`. Defaults to 4 MiB.
  * @param block factory block with access to the [ServerSSESession]
  *      that creates and returns the [Server] to handle the connection.
  * @throws IllegalStateException if the [SSE] plugin is not installed.
@@ -53,10 +57,11 @@ public fun Route.mcp(
     enableDnsRebindingProtection: Boolean = true,
     allowedHosts: List<String>? = null,
     allowedOrigins: List<String>? = null,
+    maxRequestBodySize: Long = DEFAULT_MAX_REQUEST_BODY_SIZE,
     block: ServerSSESession.() -> Server,
 ) {
     route(path) {
-        mcp(enableDnsRebindingProtection, allowedHosts, allowedOrigins, block)
+        mcp(enableDnsRebindingProtection, allowedHosts, allowedOrigins, maxRequestBodySize, block)
     }
 }
 
@@ -71,16 +76,22 @@ public fun Route.mcp(
  * @param allowedHosts hostnames allowed in the `Host` header. Defaults to `localhost`, `127.0.0.1`, `[::1]`.
  * @param allowedOrigins origins allowed in the `Origin` header, compared by hostname only
  *      (scheme and port are ignored). Requests without an `Origin` header are allowed.
- *      Pass `null` to skip origin validation.
+ *      When `null` while the localhost host defaults are in effect (no custom `allowedHosts`),
+ *      the `Origin` header is validated against `localhost`, `127.0.0.1`, `[::1]`.
+ *      With custom `allowedHosts`, `null` skips origin validation.
+ * @param maxRequestBodySize maximum allowed size, in bytes, of an incoming POST body; larger requests are
+ *      rejected with `413 Payload Too Large`. Defaults to 4 MiB.
  * @param block factory block with access to the [ServerSSESession]
  *      that creates and returns the [Server] to handle the connection.
  * @throws IllegalStateException if the [SSE] plugin is not installed.
  */
 @KtorDsl
+@Suppress("LongParameterList")
 public fun Route.mcp(
     enableDnsRebindingProtection: Boolean = true,
     allowedHosts: List<String>? = null,
     allowedOrigins: List<String>? = null,
+    maxRequestBodySize: Long = DEFAULT_MAX_REQUEST_BODY_SIZE,
     block: ServerSSESession.() -> Server,
 ) {
     try {
@@ -99,7 +110,7 @@ public fun Route.mcp(
     val transportManager = TransportManager<SseServerTransport>()
 
     sse {
-        mcpSseEndpoint("", transportManager, block)
+        mcpSseEndpoint("", transportManager, maxRequestBodySize, block)
     }
 
     post {
@@ -119,22 +130,28 @@ public fun Route.mcp(
  * @param allowedHosts hostnames allowed in the `Host` header. Defaults to `localhost`, `127.0.0.1`, `[::1]`.
  * @param allowedOrigins origins allowed in the `Origin` header, compared by hostname only
  *      (scheme and port are ignored). Requests without an `Origin` header are allowed.
- *      Pass `null` to skip origin validation.
+ *      When `null` while the localhost host defaults are in effect (no custom `allowedHosts`),
+ *      the `Origin` header is validated against `localhost`, `127.0.0.1`, `[::1]`.
+ *      With custom `allowedHosts`, `null` skips origin validation.
+ * @param maxRequestBodySize maximum allowed size, in bytes, of an incoming POST body; larger requests are
+ *      rejected with `413 Payload Too Large`. Defaults to 4 MiB.
  * @param block factory block with access to the [ServerSSESession]
  *      that creates and returns the [Server] to handle the connection.
  */
 @KtorDsl
+@Suppress("LongParameterList")
 public fun Application.mcp(
     enableDnsRebindingProtection: Boolean = true,
     allowedHosts: List<String>? = null,
     allowedOrigins: List<String>? = null,
+    maxRequestBodySize: Long = DEFAULT_MAX_REQUEST_BODY_SIZE,
     block: ServerSSESession.() -> Server,
 ) {
     installMcpContentNegotiation()
     install(SSE)
 
     routing {
-        mcp(enableDnsRebindingProtection, allowedHosts, allowedOrigins, block)
+        mcp(enableDnsRebindingProtection, allowedHosts, allowedOrigins, maxRequestBodySize, block)
     }
 }
 
@@ -205,7 +222,9 @@ private fun Application.mcpStreamableHttp(
  *          If `null` and DNS rebinding protection is enabled, defaults to `localhost`, `127.0.0.1`, `[::1]`.
  * @param allowedOrigins A list of allowed `Origin` header values, compared by hostname only
  *          (scheme and port are ignored). Requests without an `Origin` header are allowed.
- *          If `null`, origin validation is disabled.
+ *          When `null` while the localhost host defaults are in effect (no custom `allowedHosts`),
+ *          the `Origin` header is validated against `localhost`, `127.0.0.1`, `[::1]`.
+ *          With custom `allowedHosts`, `null` skips origin validation.
  * @param eventStore An optional [EventStore] instance to enable resumable event stream functionality.
  *          Allows storing and replaying events.
  * @param block factory block with access to the [RoutingContext] (for reading request headers)
@@ -319,9 +338,10 @@ public fun Application.mcpStatelessStreamableHttp(
 private suspend fun ServerSSESession.mcpSseEndpoint(
     postEndpoint: String,
     transportManager: TransportManager<SseServerTransport>,
+    maxRequestBodySize: Long,
     block: ServerSSESession.() -> Server,
 ) {
-    val transport = mcpSseTransport(postEndpoint, transportManager)
+    val transport = mcpSseTransport(postEndpoint, transportManager, maxRequestBodySize)
 
     val server = block()
 
@@ -340,8 +360,9 @@ private suspend fun ServerSSESession.mcpSseEndpoint(
 private fun ServerSSESession.mcpSseTransport(
     postEndpoint: String,
     transportManager: TransportManager<SseServerTransport>,
+    maxRequestBodySize: Long,
 ): SseServerTransport {
-    val transport = SseServerTransport(postEndpoint, this)
+    val transport = SseServerTransport(postEndpoint, this, maxRequestBodySize)
     transportManager.addTransport(transport.sessionId, transport)
     logger.info { "New SSE connection established and stored with sessionId: ${transport.sessionId}" }
 
@@ -451,6 +472,9 @@ private fun Route.installDnsRebindingProtection(enabled: Boolean, hosts: List<St
     if (!enabled) return
     install(DnsRebindingProtection) {
         allowedHosts = hosts ?: LOCALHOST_ALLOWED_HOSTS
-        origins?.let { allowedOrigins = it }
+        // Secure-by-default: when relying on the localhost host defaults, validate the Origin
+        // header against localhost too, so a request with a valid Host but a hostile Origin
+        // (e.g. a DNS-rebinding page) is rejected. Callers with custom hosts opt in explicitly.
+        allowedOrigins = origins ?: LOCALHOST_ALLOWED_ORIGINS.takeIf { hosts == null }
     }
 }

@@ -242,10 +242,15 @@ public open class Client(private val clientInfo: Implementation, options: Client
 
             Method.Defined.PromptsGet,
             Method.Defined.PromptsList,
-            Method.Defined.CompletionComplete,
             -> {
                 checkNotNull(serverCapabilities?.prompts) {
                     "Server does not support prompts (required for $method)"
+                }
+            }
+
+            Method.Defined.CompletionComplete -> {
+                checkNotNull(serverCapabilities?.completions) {
+                    "Server does not support completions (required for $method)"
                 }
             }
 
@@ -394,7 +399,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
      * @param params The completion request parameters.
      * @param options Optional request options.
      * @return The completion result returned by the server, or `null` if none.
-     * @throws IllegalStateException If the server does not support prompts or completion.
+     * @throws IllegalStateException If the server does not support completions.
      */
     public suspend fun complete(params: CompleteRequest, options: RequestOptions? = null): CompleteResult =
         request(params, options)

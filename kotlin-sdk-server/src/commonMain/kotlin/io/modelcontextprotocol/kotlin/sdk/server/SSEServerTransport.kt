@@ -5,7 +5,6 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.encodeURLPath
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.contentType
-import io.ktor.server.request.receiveText
 import io.ktor.server.response.respondText
 import io.ktor.server.sse.ServerSSESession
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
@@ -29,10 +28,19 @@ internal const val SESSION_ID_PARAM = "sessionId"
  *
  * @param endpoint relative or absolute URL the client will POST messages to
  * @param session active SSE session used to deliver server-to-client events
+ * @param maxRequestBodySize maximum allowed size, in bytes, of an incoming POST body; larger requests are
+ *      rejected with `413 Payload Too Large` without being buffered in full. Defaults to 4 MiB.
  */
 @OptIn(ExperimentalAtomicApi::class)
-public class SseServerTransport(private val endpoint: String, private val session: ServerSSESession) :
-    AbstractTransport() {
+public class SseServerTransport(
+    private val endpoint: String,
+    private val session: ServerSSESession,
+    private val maxRequestBodySize: Long = DEFAULT_MAX_REQUEST_BODY_SIZE,
+) : AbstractTransport() {
+    init {
+        require(maxRequestBodySize > 0) { "maxRequestBodySize must be greater than 0" }
+    }
+
     private val initialized: AtomicBoolean = AtomicBoolean(false)
 
     /** Unique identifier for this transport session, generated randomly on creation. */
@@ -77,6 +85,7 @@ public class SseServerTransport(private val endpoint: String, private val sessio
             val message = "SSE connection not established"
             call.respondText(message, status = HttpStatusCode.InternalServerError)
             _onError.invoke(IllegalStateException(message))
+            return
         }
 
         val body = try {
@@ -85,9 +94,13 @@ public class SseServerTransport(private val endpoint: String, private val sessio
                 error("Unsupported content-type: $ct")
             }
 
-            call.receiveText()
+            call.receiveTextWithLimit(maxRequestBodySize)
         } catch (e: CancellationException) {
             throw e
+        } catch (e: RequestBodyTooLargeException) {
+            call.respondText(e.message ?: "Request body too large", status = HttpStatusCode.PayloadTooLarge)
+            _onError.invoke(e)
+            return
         } catch (e: Exception) {
             call.respondText("Invalid message: ${e.message}", status = HttpStatusCode.BadRequest)
             _onError.invoke(e)
