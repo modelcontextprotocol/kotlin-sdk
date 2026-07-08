@@ -37,7 +37,6 @@ import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -74,6 +73,20 @@ class ProtocolConcurrencyIntegrationTest {
         ),
     )
 
+    // ChannelTransport delivers inbound messages as soon as its read loop starts, which is before
+    // start() marks it operational. Creating the session first keeps the client's initialize from
+    // landing on a transport that would reject the session's response.
+    private suspend fun connect(
+        client: Client,
+        clientTransport: ChannelTransport,
+        server: Server,
+        serverTransport: ChannelTransport,
+    ): ServerSession {
+        val serverSession = server.createSession(serverTransport)
+        client.connect(clientTransport)
+        return serverSession
+    }
+
     // The motivating deadlock over real serial read loops: a server tool handler makes a
     // server-to-client request (roots/list) while still handling the client's tools/call.
     @Test
@@ -82,12 +95,7 @@ class ProtocolConcurrencyIntegrationTest {
         val server = toolsServer()
         val (clientTransport, serverTransport) = ChannelTransport.createLinkedPair()
 
-        val serverSessionResult = CompletableDeferred<ServerSession>()
-        listOf(
-            launch { client.connect(clientTransport) },
-            launch { serverSessionResult.complete(server.createSession(serverTransport)) },
-        ).joinAll()
-        val serverSession = serverSessionResult.await()
+        val serverSession = connect(client, clientTransport, server, serverTransport)
 
         // Register the tools/call handler directly on the session so it can call back to the client
         // mid-handling. Before concurrent dispatch this would deadlock: the server read loop is
@@ -129,12 +137,7 @@ class ProtocolConcurrencyIntegrationTest {
             )
         }
 
-        val serverSessionResult = CompletableDeferred<ServerSession>()
-        listOf(
-            launch { client.connect(clientTransport) },
-            launch { serverSessionResult.complete(server.createSession(serverTransport)) },
-        ).joinAll()
-        val serverSession = serverSessionResult.await()
+        val serverSession = connect(client, clientTransport, server, serverTransport)
 
         val result = withTimeout(10.seconds) {
             serverSession.request<CreateMessageResult>(
@@ -177,12 +180,7 @@ class ProtocolConcurrencyIntegrationTest {
             }
         }
 
-        val serverSessionResult = CompletableDeferred<ServerSession>()
-        listOf(
-            launch { client.connect(clientTransport) },
-            launch { serverSessionResult.complete(server.createSession(serverTransport)) },
-        ).joinAll()
-        val serverSession = serverSessionResult.await()
+        val serverSession = connect(client, clientTransport, server, serverTransport)
 
         // Client roots handler parks until cancelled and records the cancellation.
         client.setRequestHandler<ListRootsRequest>(Method.Defined.RootsList) { _, _ ->
