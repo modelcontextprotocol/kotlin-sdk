@@ -6,7 +6,6 @@ import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
-import io.modelcontextprotocol.kotlin.sdk.server.ServerSession
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeResult
@@ -16,9 +15,6 @@ import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesResult
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.Resource
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.joinAll
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 
@@ -43,18 +39,9 @@ class ChannelTransportTest {
             clientInfo = Implementation(name = "test client", version = "1.0"),
         )
 
-        val serverSessionResult = CompletableDeferred<ServerSession>()
+        val serverSession = server.createSession(serverTransport)
+        client.connect(clientTransport)
 
-        listOf(
-            launch {
-                client.connect(clientTransport)
-            },
-            launch {
-                serverSessionResult.complete(server.createSession(serverTransport))
-            },
-        ).joinAll()
-
-        val serverSession = serverSessionResult.await()
         serverSession.setRequestHandler<InitializeRequest>(Method.Defined.Initialize) { _, _ ->
             InitializeResult(
                 protocolVersion = LATEST_PROTOCOL_VERSION,
