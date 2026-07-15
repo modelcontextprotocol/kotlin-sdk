@@ -16,6 +16,7 @@ public sealed interface Method {
     @Serializable
     public enum class Defined(override val value: String) : Method {
         Initialize("initialize"),
+        ServerDiscover("server/discover"),
         Ping("ping"),
         ResourcesList("resources/list"),
         ResourcesTemplatesList("resources/templates/list"),
