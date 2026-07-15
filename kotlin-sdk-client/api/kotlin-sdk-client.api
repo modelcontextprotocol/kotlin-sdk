@@ -52,8 +52,8 @@ public final class io/modelcontextprotocol/kotlin/sdk/client/ClientKt {
 
 public final class io/modelcontextprotocol/kotlin/sdk/client/ClientOptions : io/modelcontextprotocol/kotlin/sdk/shared/ProtocolOptions {
 	public fun <init> ()V
-	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/ClientCapabilities;Z)V
-	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/ClientCapabilities;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/ClientCapabilities;ZLkotlin/coroutines/CoroutineContext;)V
+	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/ClientCapabilities;ZLkotlin/coroutines/CoroutineContext;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getCapabilities ()Lio/modelcontextprotocol/kotlin/sdk/types/ClientCapabilities;
 }
 

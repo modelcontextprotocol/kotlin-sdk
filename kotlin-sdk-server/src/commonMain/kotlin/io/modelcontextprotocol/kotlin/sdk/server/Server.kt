@@ -53,9 +53,11 @@ import io.modelcontextprotocol.kotlin.sdk.utils.ResourceTemplateMatcher
 import io.modelcontextprotocol.kotlin.sdk.utils.ResourceTemplateMatcherFactory
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlin.coroutines.CoroutineContext
 import kotlin.jvm.JvmOverloads
 import kotlin.time.ExperimentalTime
 
@@ -69,12 +71,17 @@ private val logger = KotlinLogging.logger {}
  * Forwarded to [ProtocolOptions.enforceStrictCapabilities].
  * @property resourceTemplateMatcherFactory The factory used to create [ResourceTemplateMatcher] instances
  *   for matching resource URIs against registered templates. Defaults to [PathSegmentTemplateMatcher.factory].
+ * @param handlerCoroutineContext Coroutine context for inbound handlers. See [ProtocolOptions.handlerCoroutineContext].
  */
 public class ServerOptions(
     public val capabilities: ServerCapabilities,
     enforceStrictCapabilities: Boolean = true,
     public val resourceTemplateMatcherFactory: ResourceTemplateMatcherFactory = PathSegmentTemplateMatcher.factory,
-) : ProtocolOptions(enforceStrictCapabilities = enforceStrictCapabilities) {
+    handlerCoroutineContext: CoroutineContext = Dispatchers.Default,
+) : ProtocolOptions(
+    enforceStrictCapabilities = enforceStrictCapabilities,
+    handlerCoroutineContext = handlerCoroutineContext,
+) {
     @JvmOverloads
     public constructor(
         capabilities: ServerCapabilities,

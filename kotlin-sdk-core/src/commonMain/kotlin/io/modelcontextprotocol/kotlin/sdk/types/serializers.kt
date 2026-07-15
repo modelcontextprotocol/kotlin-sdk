@@ -59,18 +59,11 @@ internal object MethodSerializer : KSerializer<Method> {
     override val descriptor: SerialDescriptor =
         PrimitiveSerialDescriptor("io.modelcontextprotocol.kotlin.sdk.types.Method", PrimitiveKind.STRING)
 
-    private val definedMethods: Map<String, Method.Defined> by lazy {
-        Method.Defined.entries.associateBy { it.value }
-    }
-
     override fun serialize(encoder: Encoder, value: Method) {
         encoder.encodeString(value.value)
     }
 
-    override fun deserialize(decoder: Decoder): Method {
-        val decodedString = decoder.decodeString()
-        return definedMethods[decodedString] ?: Method.Custom(decodedString)
-    }
+    override fun deserialize(decoder: Decoder): Method = Method.from(decoder.decodeString())
 }
 
 // ============================================================================
