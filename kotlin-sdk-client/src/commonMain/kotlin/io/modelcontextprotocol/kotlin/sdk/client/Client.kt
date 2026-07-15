@@ -73,11 +73,13 @@ import kotlinx.collections.immutable.minus
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
+import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
 
 private val logger = KotlinLogging.logger {}
@@ -87,11 +89,16 @@ private val logger = KotlinLogging.logger {}
  *
  * @property capabilities The capabilities this client supports.
  * @param enforceStrictCapabilities Whether to strictly enforce capabilities when interacting with the server.
+ * @param handlerCoroutineContext Coroutine context for inbound handlers. See [ProtocolOptions.handlerCoroutineContext].
  */
 public class ClientOptions(
     public val capabilities: ClientCapabilities = ClientCapabilities(),
     enforceStrictCapabilities: Boolean = true,
-) : ProtocolOptions(enforceStrictCapabilities = enforceStrictCapabilities)
+    handlerCoroutineContext: CoroutineContext = Dispatchers.Default,
+) : ProtocolOptions(
+    enforceStrictCapabilities = enforceStrictCapabilities,
+    handlerCoroutineContext = handlerCoroutineContext,
+)
 
 /**
  * Initializes and connects an MCP client using the provided clientInfo [Implementation], client options,
@@ -216,6 +223,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
             serverInstructions = result.instructions
 
             notification(InitializedNotification())
+            enableConcurrentDispatch()
         } catch (error: Throwable) {
             logger.error(error) { "Failed to initialize client: ${error.message}" }
             close()

@@ -59,6 +59,7 @@ public abstract class io/modelcontextprotocol/kotlin/sdk/shared/Protocol {
 	public abstract fun assertRequestHandlerCapability (Lio/modelcontextprotocol/kotlin/sdk/types/Method;)V
 	public final fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun connect (Lio/modelcontextprotocol/kotlin/sdk/shared/Transport;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	protected final fun enableConcurrentDispatch ()V
 	public final fun getFallbackNotificationHandler ()Lkotlin/jvm/functions/Function2;
 	public final fun getFallbackRequestHandler ()Lkotlin/jvm/functions/Function3;
 	public final fun getNotificationHandlers ()Ljava/util/Map;
@@ -71,6 +72,7 @@ public abstract class io/modelcontextprotocol/kotlin/sdk/shared/Protocol {
 	public static synthetic fun notification$default (Lio/modelcontextprotocol/kotlin/sdk/shared/Protocol;Lio/modelcontextprotocol/kotlin/sdk/types/Notification;Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public fun onClose ()V
 	public fun onError (Ljava/lang/Throwable;)V
+	protected fun onInitializedNotification ()V
 	public final fun removeNotificationHandler (Lio/modelcontextprotocol/kotlin/sdk/types/Method;)V
 	public final fun removeRequestHandler (Lio/modelcontextprotocol/kotlin/sdk/types/Method;)V
 	public final fun request (Lio/modelcontextprotocol/kotlin/sdk/types/Request;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -84,15 +86,18 @@ public abstract class io/modelcontextprotocol/kotlin/sdk/shared/Protocol {
 
 public final class io/modelcontextprotocol/kotlin/sdk/shared/ProtocolKt {
 	public static final field IMPLEMENTATION_NAME Ljava/lang/String;
+	public static final fun currentRequestHandlerExtra (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static final fun getDEFAULT_REQUEST_TIMEOUT ()J
 }
 
 public class io/modelcontextprotocol/kotlin/sdk/shared/ProtocolOptions {
-	public synthetic fun <init> (ZJILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public synthetic fun <init> (ZJLkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (ZJLkotlin/coroutines/CoroutineContext;IIILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (ZJLkotlin/coroutines/CoroutineContext;IILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getEnforceStrictCapabilities ()Z
+	public final fun getHandlerCoroutineContext ()Lkotlin/coroutines/CoroutineContext;
 	public final fun getTimeout-UwyO8pc ()J
 	public final fun setEnforceStrictCapabilities (Z)V
+	public final fun setHandlerCoroutineContext (Lkotlin/coroutines/CoroutineContext;)V
 	public final fun setTimeout-LRDsOJo (J)V
 }
 
@@ -107,8 +112,16 @@ public final class io/modelcontextprotocol/kotlin/sdk/shared/ReadBufferKt {
 	public static final fun serializeMessage (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;)Ljava/lang/String;
 }
 
-public final class io/modelcontextprotocol/kotlin/sdk/shared/RequestHandlerExtra {
-	public fun <init> ()V
+public final class io/modelcontextprotocol/kotlin/sdk/shared/RequestHandlerExtra : kotlin/coroutines/AbstractCoroutineContextElement {
+	public static final field Key Lio/modelcontextprotocol/kotlin/sdk/shared/RequestHandlerExtra$Key;
+	public final fun getMethod ()Lio/modelcontextprotocol/kotlin/sdk/types/Method;
+	public final fun getRequestId ()Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;
+	public final fun sendNotification (Lio/modelcontextprotocol/kotlin/sdk/types/Notification;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun sendRequest (Lio/modelcontextprotocol/kotlin/sdk/types/Request;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun sendRequest$default (Lio/modelcontextprotocol/kotlin/sdk/shared/RequestHandlerExtra;Lio/modelcontextprotocol/kotlin/sdk/types/Request;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class io/modelcontextprotocol/kotlin/sdk/shared/RequestHandlerExtra$Key : kotlin/coroutines/CoroutineContext$Key {
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/shared/RequestOptions : io/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions {

@@ -53,4 +53,13 @@ public sealed interface Method {
      */
     @Serializable
     public data class Custom(override val value: String) : Method
+
+    public companion object {
+        private val definedByValue: Map<String, Defined> by lazy {
+            Defined.entries.associateBy { it.value }
+        }
+
+        /** Resolves a wire method string to a [Defined] entry when known, [Custom] otherwise. */
+        internal fun from(value: String): Method = definedByValue[value] ?: Custom(value)
+    }
 }

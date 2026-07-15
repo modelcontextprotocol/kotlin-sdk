@@ -65,6 +65,8 @@ class ServerSessionInitializeTest {
         assertEquals("test-client", session.clientVersion?.name)
     }
 
+    // Both initialize requests arrive before notifications/initialized, in the serial dispatch
+    // phase, so processing and response order stay deterministic.
     @Test
     fun `should reject duplicate initialize request`() = runTest {
         val session = createSession()

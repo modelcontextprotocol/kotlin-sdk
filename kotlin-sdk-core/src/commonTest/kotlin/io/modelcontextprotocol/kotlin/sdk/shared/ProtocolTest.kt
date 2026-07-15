@@ -5,6 +5,9 @@ import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.modelcontextprotocol.kotlin.sdk.types.CustomRequest
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
@@ -13,11 +16,16 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ProgressNotification
+import io.modelcontextprotocol.kotlin.sdk.types.ProgressNotificationParams
+import io.modelcontextprotocol.kotlin.sdk.types.ProgressToken
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.RequestMeta
 import kotlinx.coroutines.async
-import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
@@ -30,6 +38,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.seconds
 
 class ProtocolTest {
     private lateinit var protocol: TestProtocol
@@ -185,64 +194,174 @@ class ProtocolTest {
         transport.deliver(JSONRPCResponse(sent.id, EmptyResult()))
         inFlight.await()
     }
-}
 
-private class TestProtocol : Protocol(null) {
-    val errors = mutableListOf<Throwable>()
+    @Test
+    fun `request handler receives enriched extra and ambient context element`() = runTest {
+        protocol.connect(transport)
 
-    override fun onError(error: Throwable) {
-        errors.add(error)
+        var seenByParameter: RequestHandlerExtra? = null
+        var seenAmbient: RequestHandlerExtra? = null
+        protocol.fallbackRequestHandler = { _, extra ->
+            seenByParameter = extra
+            seenAmbient = currentRequestHandlerExtra()
+            EmptyResult()
+        }
+
+        transport.deliver(JSONRPCRequest(id = RequestId(7L), method = "custom/echo"))
+
+        seenByParameter shouldNotBe null
+        seenByParameter?.requestId shouldBe RequestId(7L)
+        seenByParameter?.method shouldBe Method.Custom("custom/echo")
+        // the SAME instance flows through both delivery paths
+        seenAmbient shouldBe seenByParameter
     }
 
-    override fun assertCapabilityForMethod(method: Method) {
-        // noop
-    }
-    override fun assertNotificationCapability(method: Method) {
-        // noop
-    }
-    override fun assertRequestHandlerCapability(method: Method) {
-        // noop
-    }
-}
+    @Test
+    fun `extra method resolves defined methods to Defined entries`() = runTest {
+        protocol.connect(transport)
 
-private class RecordingTransport : Transport {
-    private val sentMessages = Channel<JSONRPCMessage>(Channel.UNLIMITED)
-    private var onMessageCallback: (suspend (JSONRPCMessage) -> Unit)? = null
-    private var onCloseCallback: (() -> Unit)? = null
+        var seenMethod: Method? = null
+        protocol.setRequestHandler<PingRequest>(Method.Defined.Ping) { _, extra ->
+            seenMethod = extra.method
+            EmptyResult()
+        }
+        transport.deliver(JSONRPCRequest(id = RequestId(1L), method = "ping"))
 
-    override suspend fun start() {
-        // noop
+        seenMethod shouldBe Method.Defined.Ping
     }
 
-    override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
-        sentMessages.send(message)
+    @Test
+    fun `extra sendNotification stamps relatedRequestId`() = runTest {
+        protocol.connect(transport)
+
+        protocol.fallbackRequestHandler = { _, extra ->
+            extra.sendNotification(
+                ProgressNotification(
+                    ProgressNotificationParams(progressToken = ProgressToken(1L), progress = 0.5),
+                ),
+            )
+            EmptyResult()
+        }
+
+        transport.deliver(JSONRPCRequest(id = RequestId(42L), method = "custom/progressing"))
+
+        val sent = transport.sentWithOptions.first { it.first is JSONRPCNotification }
+        sent.second?.relatedRequestId shouldBe RequestId(42L)
     }
 
-    override suspend fun close() {
-        onCloseCallback?.invoke()
+    @Test
+    fun `extra sendRequest stamps relatedRequestId and preserves caller options`() = runTest {
+        protocol.connect(transport)
+
+        protocol.fallbackRequestHandler = { _, extra ->
+            extra.sendRequest<EmptyResult>(
+                PingRequest(),
+                RequestOptions(resumptionToken = "tok", onProgress = { }, timeout = 30.seconds),
+            )
+            EmptyResult()
+        }
+
+        // The serial phase runs the handler inline inside deliver(), and the handler suspends
+        // awaiting the nested request's response — drive delivery from a child coroutine.
+        val delivery = launch {
+            transport.deliver(JSONRPCRequest(id = RequestId(42L), method = "custom/nested"))
+        }
+
+        val outbound = transport.awaitRequest()
+        val recorded = transport.sentWithOptions
+            .first { (it.first as? JSONRPCRequest)?.id == outbound.id }
+            .second
+        val options = recorded.shouldBeInstanceOf<RequestOptions>()
+        options.relatedRequestId shouldBe RequestId(42L)
+        options.resumptionToken shouldBe "tok"
+        options.timeout shouldBe 30.seconds
+        options.onProgress shouldNotBe null
+
+        transport.deliver(JSONRPCResponse(id = outbound.id, result = EmptyResult()))
+        delivery.join()
     }
 
-    override fun onClose(block: () -> Unit) {
-        onCloseCallback = block
+    @Test
+    fun `currentRequestHandlerExtra returns null outside handlers`() = runTest {
+        currentRequestHandlerExtra() shouldBe null
     }
 
-    override fun onError(block: (Throwable) -> Unit) {
-        // noop
+    @Test
+    fun `connect while already connected throws IllegalStateException`() = runTest {
+        protocol.connect(transport)
+        shouldThrow<IllegalStateException> {
+            protocol.connect(RecordingTransport())
+        }
     }
 
-    override fun onMessage(block: suspend (JSONRPCMessage) -> Unit) {
-        onMessageCallback = block
+    @Test
+    fun `stale onClose from a previous transport does not tear down the successor connection`() = runTest {
+        protocol.connect(transport)
+        val staleCloseCallback = transport.closeCallback ?: error("onClose not registered")
+
+        protocol.close() // disconnect first transport (fires its own doClose)
+        val second = RecordingTransport()
+        protocol.connect(second) // reconnect
+
+        staleCloseCallback() // late duplicate close signal from transport #1
+
+        // successor connection must still be alive
+        protocol.transport shouldBe second
     }
 
-    suspend fun awaitRequest(): JSONRPCRequest {
-        val message = sentMessages.receive()
-        return message as? JSONRPCRequest
-            ?: error("Expected JSONRPCRequest but received ${message::class.simpleName}")
+    @Test
+    fun `failed transport start rolls back the connection and allows reconnect`() = runTest {
+        val failing = object : Transport {
+            override suspend fun start(): Unit = error("boom")
+            override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {}
+            override suspend fun close() {}
+            override fun onClose(block: () -> Unit) {}
+            override fun onError(block: (Throwable) -> Unit) {}
+            override fun onMessage(block: suspend (JSONRPCMessage) -> Unit) {}
+        }
+        shouldThrow<IllegalStateException> { protocol.connect(failing) }
+        protocol.transport shouldBe null // rolled back
+        protocol.connect(transport) // reconnect succeeds, no "already connected"
+        protocol.transport shouldBe transport
     }
 
-    suspend fun deliver(message: JSONRPCMessage) {
-        val callback = onMessageCallback ?: error("onMessage callback not registered")
-        callback(message)
+    @Test
+    fun `request cleans up its handlers when the transport send fails`() = runTest {
+        // Send fails without closing the connection, so the leak is not masked by doClose().
+        val failingSend = object : Transport {
+            override suspend fun start() {}
+            override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?): Unit =
+                throw IllegalStateException("send failed")
+            override suspend fun close() {}
+            override fun onClose(block: () -> Unit) {}
+            override fun onError(block: (Throwable) -> Unit) {}
+            override fun onMessage(block: suspend (JSONRPCMessage) -> Unit) {}
+        }
+        protocol.connect(failingSend)
+
+        shouldThrow<IllegalStateException> {
+            protocol.request<EmptyResult>(PingRequest(), RequestOptions(onProgress = {}))
+        }
+
+        protocol.responseHandlers.size shouldBe 0
+        protocol.progressHandlers.size shouldBe 0
+    }
+
+    @Test
+    fun `connect rejects non-positive maxConcurrentHandlers`() = runTest {
+        val error = shouldThrow<IllegalArgumentException> {
+            TestProtocol(ProtocolOptions(maxConcurrentHandlers = 0)).connect(RecordingTransport())
+        }
+        error.message.shouldNotBeNull() shouldContain "maxConcurrentHandlers"
+    }
+
+    @Test
+    fun `connect rejects maxInFlightHandlers below maxConcurrentHandlers`() = runTest {
+        val error = shouldThrow<IllegalArgumentException> {
+            TestProtocol(ProtocolOptions(maxConcurrentHandlers = 4, maxInFlightHandlers = 0))
+                .connect(RecordingTransport())
+        }
+        error.message.shouldNotBeNull() shouldContain "maxInFlightHandlers"
     }
 }
 
