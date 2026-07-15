@@ -9,7 +9,7 @@ kover = "0.9.8"
 ktlint = "14.2.0"
 knit = "0.5.1"
 mavenPublish = "0.37.0"
-netty = "4.2.15.Final"
+netty = "4.2.16.Final"
 
 # libraries version
 awaitility = "4.3.0"
