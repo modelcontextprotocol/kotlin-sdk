@@ -15,10 +15,12 @@ import io.ktor.server.sse.ServerSSESession
 import io.ktor.util.collections.ConcurrentMap
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
+import io.modelcontextprotocol.kotlin.sdk.types.CancelledNotificationParams
 import io.modelcontextprotocol.kotlin.sdk.types.DEFAULT_NEGOTIATED_PROTOCOL_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCEmptyMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
@@ -27,6 +29,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.REQUEST_TIMEOUT
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.job
@@ -175,6 +178,20 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
     private val requestToStreamMapping: ConcurrentMap<RequestId, String> = ConcurrentMap()
     private val requestToResponseMapping: ConcurrentMap<RequestId, JSONRPCMessage> = ConcurrentMap()
 
+    /**
+     * JSON-response mode only: one entry per in-flight POST, completed by [send] with the collected
+     * responses once every request delivered by that POST has been answered. [handlePostRequest]
+     * awaits it so the HTTP exchange stays open while handlers run concurrently.
+     */
+    private val pendingJsonResponses: ConcurrentMap<String, CompletableDeferred<List<JSONRPCMessage>>> = ConcurrentMap()
+
+    /**
+     * JSON-response mode only: request ids retired by an inbound cancellation while their POST is
+     * still awaiting. Treated as settled-without-response so the POST's "a response for every id"
+     * completion condition is not blocked by a request that will never be answered.
+     */
+    private val cancelledRequestIds: ConcurrentMap<RequestId, Unit> = ConcurrentMap()
+
     private val sessionMutex = Mutex()
     private val streamMutex = Mutex()
 
@@ -241,54 +258,117 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             return
         }
 
+        val isTerminated = message is JSONRPCResponse || message is JSONRPCError
+
+        // In JSON mode request-related notifications have no per-request SSE stream. Route them to the
+        // standalone GET stream before the lookup below, so a notification for an already-retired
+        // request is delivered there instead of becoming a spurious error.
+        if (configuration.enableJsonResponse && !isTerminated) {
+            val standaloneStream = streamsMapping[STANDALONE_SSE_STREAM_ID]
+            standaloneStream?.let { emitOnStream(STANDALONE_SSE_STREAM_ID, it.session, message) }
+            return
+        }
+
         val streamId = requestToStreamMapping[routingRequestId]
-            ?: error("No connection established for request id $routingRequestId")
+        if (streamId == null) {
+            // Request already retired (completed, cancelled, or the JSON POST disconnected). In JSON
+            // mode a late terminal response is undeliverable and dropped. In SSE mode an unknown id
+            // is a real routing error.
+            if (configuration.enableJsonResponse) return
+            error("No connection established for request id $routingRequestId")
+        }
         val activeStream = streamsMapping[streamId]
 
         if (!configuration.enableJsonResponse) {
             activeStream?.let { stream ->
                 emitOnStream(streamId, stream.session, message)
             }
-        }
-
-        val isTerminated = message is JSONRPCResponse || message is JSONRPCError
-        if (!isTerminated) {
-            if (configuration.enableJsonResponse) {
-                // In JSON response mode there is no per-request SSE stream, so route notifications
-                // that are logically associated with a request to the standalone GET SSE stream.
-                val standaloneStream = streamsMapping[STANDALONE_SSE_STREAM_ID]
-                standaloneStream?.let { emitOnStream(STANDALONE_SSE_STREAM_ID, it.session, message) }
-            }
-            return
+            if (!isTerminated) return
         }
 
         requestToResponseMapping[responseRequestId!!] = message
-        val relatedIds = requestToStreamMapping.filterValues { it == streamId }.keys
-
-        if (relatedIds.any { it !in requestToResponseMapping }) return
 
         streamMutex.withLock {
-            if (activeStream == null) error("No connection established for request ID: $routingRequestId")
+            // The request may have been retired (disconnect or cancellation cleanup) between recording
+            // the response above and acquiring the lock. Reclaim the stray mapping and drop it.
+            if (routingRequestId !in requestToStreamMapping) {
+                requestToResponseMapping.remove(routingRequestId)
+                return
+            }
+            // Recomputed under the lock. Handlers may respond concurrently, and the sender that
+            // observes the last settled request also retires the ids, so a losing sender sees an
+            // empty set. A cancelled request counts as settled even though it produces no response.
+            val relatedIds = requestToStreamMapping.filterValues { it == streamId }.keys
+            if (relatedIds.isEmpty() ||
+                relatedIds.any { it !in requestToResponseMapping && it !in cancelledRequestIds }
+            ) {
+                return
+            }
 
             if (configuration.enableJsonResponse) {
-                activeStream.call.response.header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-                sessionId?.let { activeStream.call.response.header(MCP_SESSION_ID_HEADER, it) }
-                val responses = relatedIds.mapNotNull { requestToResponseMapping[it] }
-                val payload = if (responses.size == 1) {
-                    responses.first()
-                } else {
-                    responses
+                // Hand the collected responses to the POST suspended in [handlePostRequest], which
+                // completes the HTTP exchange. A null pendingPost means the POST was already retired
+                // (disconnect or cancellation), so the responses are undeliverable and dropped quietly.
+                val pendingPost = pendingJsonResponses.remove(streamId)
+                if (pendingPost == null) {
+                    cleanUpRequests(relatedIds)
+                    return
                 }
-                activeStream.call.respond(payload)
+                val responses = relatedIds.mapNotNull { requestToResponseMapping[it] }
+                cleanUpRequests(relatedIds)
+                pendingPost.complete(responses)
             } else {
-                activeStream.session?.close()
+                // A null stream means the per-request SSE connection closed before the response
+                // settled, so the ids are retired rather than leaked.
+                activeStream?.session?.close()
+                cleanUpRequests(relatedIds)
             }
+        }
+    }
 
-            // Clean up
-            relatedIds.forEach { requestId ->
-                requestToResponseMapping.remove(requestId)
-                requestToStreamMapping.remove(requestId)
+    private fun cleanUpRequests(ids: Collection<RequestId>) {
+        ids.forEach { requestId ->
+            requestToResponseMapping.remove(requestId)
+            requestToStreamMapping.remove(requestId)
+            cancelledRequestIds.remove(requestId)
+        }
+    }
+
+    /**
+     * Scans a delivered POST body for `notifications/cancelled` and retires each referenced request
+     * that is awaiting on a JSON-mode POST. No-op unless [Configuration.enableJsonResponse].
+     */
+    private suspend fun retireCancelledJsonRequests(messages: List<JSONRPCMessage>) {
+        if (!configuration.enableJsonResponse) return
+        val cancelledIds = messages.asSequence()
+            .filterIsInstance<JSONRPCNotification>()
+            .filter { it.method == Method.Defined.NotificationsCancelled.value }
+            .mapNotNull { notification ->
+                val params = notification.params ?: return@mapNotNull null
+                runCatching {
+                    McpJson.decodeFromJsonElement<CancelledNotificationParams>(params).requestId
+                }.getOrNull()
             }
+            .toList()
+        cancelledIds.forEach { retireCancelledJsonRequest(it) }
+    }
+
+    /**
+     * Marks a request cancelled by the peer as settled without a response and completes its POST once
+     * every request that POST delivered is settled (answered or cancelled). Without this, a cancelled
+     * request leaves the POST awaiting a response that, by design, is never sent.
+     */
+    private suspend fun retireCancelledJsonRequest(requestId: RequestId) {
+        streamMutex.withLock {
+            val streamId = requestToStreamMapping[requestId] ?: return
+            cancelledRequestIds[requestId] = Unit
+            val relatedIds = requestToStreamMapping.filterValues { it == streamId }.keys
+            val allSettled = relatedIds.all { it in requestToResponseMapping || it in cancelledRequestIds }
+            if (!allSettled) return
+            val pendingPost = pendingJsonResponses.remove(streamId) ?: return
+            val responses = relatedIds.mapNotNull { requestToResponseMapping[it] }
+            cleanUpRequests(relatedIds)
+            pendingPost.complete(responses)
         }
     }
 
@@ -304,6 +384,10 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 streamsMapping.clear()
                 requestToStreamMapping.clear()
                 requestToResponseMapping.clear()
+                cancelledRequestIds.clear()
+                // Release any POST calls suspended awaiting JSON responses.
+                pendingJsonResponses.values.forEach { it.cancel() }
+                pendingJsonResponses.clear()
                 invokeOnCloseCallback()
             }
         }
@@ -339,7 +423,12 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
     }
 
     /**
-     * Handles POST requests containing JSON-RPC messages
+     * Handles POST requests containing JSON-RPC messages.
+     *
+     * In JSON-response mode this suspends until a response has been produced for every request in
+     * the POST body, then completes the HTTP exchange with the collected JSON (a single object for
+     * one request, an array for a batch). Bodies without requests are acknowledged with 202
+     * immediately. In SSE mode the responses are emitted onto the per-request SSE stream instead.
      */
     public suspend fun handlePostRequest(session: ServerSSESession?, call: ApplicationCall) {
         try {
@@ -407,6 +496,9 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             if (!hasRequest) {
                 call.respondNullable(status = HttpStatusCode.Accepted, message = null)
                 messages.forEach { message -> _onMessage(message) }
+                // A cancellation may target a request still awaiting delivery on a JSON-mode POST;
+                // retire it so that POST completes instead of waiting for a response that never comes.
+                retireCancelledJsonRequests(messages)
                 return
             }
 
@@ -429,13 +521,50 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 maybeSendPrimingEvent(streamId, session, clientProtocolVersion)
             }
 
+            val pendingPost = if (configuration.enableJsonResponse) {
+                CompletableDeferred<List<JSONRPCMessage>>()
+            } else {
+                null
+            }
+
             streamMutex.withLock {
                 streamsMapping[streamId] = SessionContext(session, call)
                 messages.filterIsInstance<JSONRPCRequest>().forEach { requestToStreamMapping[it.id] = streamId }
+                pendingPost?.let { pendingJsonResponses[streamId] = it }
             }
             call.coroutineContext.job.invokeOnCompletion { streamsMapping.remove(streamId) }
 
-            messages.forEach { message -> _onMessage(message) }
+            if (pendingPost == null) {
+                // SSE mode: responses are emitted onto this call's SSE stream by send().
+                messages.forEach { message -> _onMessage(message) }
+                return
+            }
+
+            // JSON-response mode. Handlers may run concurrently, so returning from delivery no longer
+            // implies the responses were produced. Suspend until send() has collected a response for
+            // every request in this POST. A client disconnect or transport close cancels this call.
+            try {
+                messages.forEach { message -> _onMessage(message) }
+                retireCancelledJsonRequests(messages)
+                val responses = pendingPost.await()
+                sessionId?.let { call.response.header(MCP_SESSION_ID_HEADER, it) }
+                if (responses.isEmpty()) {
+                    // Every request in this POST was cancelled before producing a response; there is
+                    // nothing to return, so acknowledge with 202 rather than an empty JSON body.
+                    call.respondNullable(status = HttpStatusCode.Accepted, message = null)
+                } else {
+                    call.response.header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                    val payload = if (responses.size == 1) responses.first() else responses
+                    call.respond(payload)
+                }
+            } finally {
+                // On cancellation or failure, retire this POST's ids so a late response is dropped
+                // quietly at the send() boundary instead of leaking mappings. Idempotent no-ops on
+                // the success path (send() or retirement already cleaned up).
+                pendingJsonResponses.remove(streamId)
+                pendingPost.cancel()
+                cleanUpRequests(messages.filterIsInstance<JSONRPCRequest>().map { it.id })
+            }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

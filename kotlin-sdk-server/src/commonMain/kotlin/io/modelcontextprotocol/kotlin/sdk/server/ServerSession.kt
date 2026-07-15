@@ -108,10 +108,18 @@ public open class ServerSession(
         }
     }
 
+    override fun onInitializedNotification() {
+        // Enable concurrency before the user's onInitialized callback, which runs synchronously.
+        enableConcurrentDispatch()
+    }
+
     internal val clientConnection: ClientConnection = ClientConnectionImpl(this)
 
     /**
      * Registers a callback to be invoked when the server has completed initialization.
+     *
+     * The callback must be synchronous and fast: it runs on the message-dispatch path for
+     * `notifications/initialized`, after concurrent dispatch has been enabled for the session.
      */
     public fun onInitialized(block: () -> Unit) {
         val old = _onInitialized
