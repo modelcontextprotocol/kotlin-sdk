@@ -69,6 +69,10 @@ public value class RequestMeta(public val json: JsonObject) {
     /**
      * Information about the client making this request, or `null` when absent.
      *
+     * Request-scoped clients should include this field unless specifically configured not to do
+     * so. The self-reported value is intended for display, logging, and debugging; servers should
+     * not use it to change behavior or rely on it for security decisions.
+     *
      * @throws SerializationException if the field is present but is not a valid [Implementation]
      */
     @ExperimentalMcpApi

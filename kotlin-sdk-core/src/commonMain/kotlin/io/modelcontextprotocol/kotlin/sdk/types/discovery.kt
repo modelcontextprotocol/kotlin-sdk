@@ -3,9 +3,34 @@ package io.modelcontextprotocol.kotlin.sdk.types
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.Required
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonObject
+
+/**
+ * Parameters for a `server/discover` request.
+ *
+ * Discovery belongs to the request-scoped lifecycle and therefore requires a protocol version and
+ * client capabilities in [meta]. Client information is recommended by the protocol but optional.
+ * Unknown metadata entries are preserved by [RequestMeta].
+ *
+ * @property meta request-scoped protocol and client metadata
+ * @throws IllegalArgumentException if required request-scoped metadata is absent
+ * @throws SerializationException if required metadata is malformed
+ */
+@Serializable
+@ExperimentalMcpApi
+public data class DiscoverRequestParams(
+    @SerialName("_meta")
+    override val meta: RequestMeta,
+) : RequestParams {
+    init {
+        requireNotNull(meta.protocolVersion) { "${RequestMetaKeys.PROTOCOL_VERSION} is required" }
+        requireNotNull(meta.clientCapabilities) { "${RequestMetaKeys.CLIENT_CAPABILITIES} is required" }
+    }
+}
 
 /**
  * Requests the protocol versions, capabilities, and metadata advertised by a server.
@@ -14,13 +39,13 @@ import kotlinx.serialization.json.JsonObject
  */
 @Serializable
 @ExperimentalMcpApi
-public data class DiscoverRequest(override val params: BaseRequestParams) : ClientRequest {
+public data class DiscoverRequest(override val params: DiscoverRequestParams) : ClientRequest {
     @OptIn(ExperimentalSerializationApi::class)
     @EncodeDefault
     override val method: Method = Method.Defined.ServerDiscover
 
     /** Metadata for this request. */
-    public val meta: RequestMeta?
+    public val meta: RequestMeta
         get() = params.meta
 }
 
@@ -42,12 +67,11 @@ public enum class CacheScope {
  *
  * @property supportedVersions protocol versions supported by the server
  * @property capabilities capabilities advertised by the server
- * @property serverInfo information about the server implementation
  * @property instructions optional guidance for clients using the server
  * @property resultType discriminator for the result representation
  * @property ttlMs number of milliseconds clients may treat this result as fresh
  * @property cacheScope authorization boundary within which the result may be reused
- * @property meta optional response metadata
+ * @property meta optional response metadata, including optional server information
  * @throws IllegalArgumentException if [ttlMs] is negative
  */
 @Serializable
@@ -55,13 +79,12 @@ public enum class CacheScope {
 public data class DiscoverResult(
     val supportedVersions: List<String>,
     val capabilities: ServerCapabilities,
-    val serverInfo: Implementation,
     val instructions: String? = null,
     @EncodeDefault
     val resultType: String = COMPLETE_RESULT_TYPE,
-    @EncodeDefault
+    @Required
     val ttlMs: Long = 0,
-    @EncodeDefault
+    @Required
     val cacheScope: CacheScope = CacheScope.Private,
     @SerialName("_meta")
     override val meta: JsonObject? = null,

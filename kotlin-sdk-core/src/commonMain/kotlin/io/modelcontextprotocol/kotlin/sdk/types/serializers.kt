@@ -423,8 +423,13 @@ private fun selectClientResultDeserializer(element: JsonElement): Deserializatio
 @OptIn(ExperimentalMcpApi::class)
 private fun selectServerResultDeserializer(element: JsonElement): DeserializationStrategy<ServerResult>? {
     val jsonObject = element.jsonObject
+    val isDiscoverResult =
+        "supportedVersions" in jsonObject &&
+            "capabilities" in jsonObject &&
+            "ttlMs" in jsonObject &&
+            "cacheScope" in jsonObject
     return when {
-        "supportedVersions" in jsonObject && "serverInfo" in jsonObject -> DiscoverResult.serializer()
+        isDiscoverResult -> DiscoverResult.serializer()
         "protocolVersion" in jsonObject && "capabilities" in jsonObject -> InitializeResult.serializer()
         "completion" in jsonObject -> CompleteResult.serializer()
         "tools" in jsonObject -> ListToolsResult.serializer()
