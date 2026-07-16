@@ -306,8 +306,6 @@ public open class Server(
      * @param tool A [Tool] object describing the tool.
      * @param handler A suspend function that handles executing the tool when called by the client.
      * @throws IllegalStateException If the server does not support tools.
-     * @throws IllegalArgumentException If a tool with the same name is already registered.
-     *   Use [removeTool] first to replace it.
      */
     public fun addTool(tool: Tool, handler: suspend ClientConnection.(CallToolRequest) -> CallToolResult) {
         checkNotNull(options.capabilities.tools) {
@@ -331,8 +329,6 @@ public open class Server(
      * @param meta Optional metadata as a [JsonObject].
      * @param handler A suspend function that handles executing the tool when called by the client.
      * @throws IllegalStateException If the server does not support tools.
-     * @throws IllegalArgumentException If a tool with the same name is already registered.
-     *   Use [removeTool] first to replace it.
      */
     public fun addTool(
         name: String,
@@ -363,8 +359,6 @@ public open class Server(
      *
      * @param toolsToAdd A list of [RegisteredTool] objects representing the tools to register.
      * @throws IllegalStateException If the server does not support tools.
-     * @throws IllegalArgumentException If [toolsToAdd] contains duplicate names or a tool with
-     *   the same name is already registered. No tools are registered in that case.
      */
     public fun addTools(toolsToAdd: List<RegisteredTool>) {
         checkNotNull(options.capabilities.tools) {
@@ -413,8 +407,6 @@ public open class Server(
      * @param prompt A [Prompt] object describing the prompt.
      * @param promptProvider A suspend function that returns the prompt content when requested by the client.
      * @throws IllegalStateException If the server does not support prompts.
-     * @throws IllegalArgumentException If a prompt with the same name is already registered.
-     *   Use [removePrompt] first to replace it.
      */
     public fun addPrompt(
         prompt: Prompt,
@@ -435,8 +427,6 @@ public open class Server(
      * @param arguments An optional list of [PromptArgument] that the prompt accepts.
      * @param promptProvider A suspend function that returns the prompt content when requested.
      * @throws IllegalStateException If the server does not support prompts.
-     * @throws IllegalArgumentException If a prompt with the same name is already registered.
-     *   Use [removePrompt] first to replace it.
      */
     public fun addPrompt(
         name: String,
@@ -453,8 +443,6 @@ public open class Server(
      *
      * @param promptsToAdd A list of [RegisteredPrompt] objects representing the prompts to register.
      * @throws IllegalStateException If the server does not support prompts.
-     * @throws IllegalArgumentException If [promptsToAdd] contains duplicate names or a prompt with
-     *   the same name is already registered. No prompts are registered in that case.
      */
     public fun addPrompts(promptsToAdd: List<RegisteredPrompt>) {
         checkNotNull(options.capabilities.prompts) {
@@ -505,8 +493,6 @@ public open class Server(
      * @param mimeType The MIME type of the resource content.
      * @param readHandler A suspend function that returns the resource content when read by the client.
      * @throws IllegalStateException If the server does not support resources.
-     * @throws IllegalArgumentException If a resource with the same URI is already registered.
-     *   Use [removeResource] first to replace it.
      */
     public fun addResource(
         uri: String,
@@ -528,8 +514,6 @@ public open class Server(
      *
      * @param resourcesToAdd A list of [RegisteredResource] objects representing the resources to register.
      * @throws IllegalStateException If the server does not support resources.
-     * @throws IllegalArgumentException If [resourcesToAdd] contains duplicate URIs or a resource with
-     *   the same URI is already registered. No resources are registered in that case.
      */
     public fun addResources(resourcesToAdd: List<RegisteredResource>) {
         checkNotNull(options.capabilities.resources) {
@@ -577,8 +561,6 @@ public open class Server(
      * @param readHandler A suspend function invoked when a client reads a URI that matches
      *   the template. The second parameter contains the URI variables extracted from the match.
      * @throws IllegalStateException If the server does not support resources.
-     * @throws IllegalArgumentException If a template with the same URI template is already registered.
-     *   Use [removeResourceTemplate] first to replace it.
      */
     public fun addResourceTemplate(
         template: ResourceTemplate,
@@ -607,8 +589,6 @@ public open class Server(
      * @param readHandler A suspend function invoked when a client reads a URI that matches
      *   the template. The second parameter contains the URI variables extracted from the match.
      * @throws IllegalStateException If the server does not support resources.
-     * @throws IllegalArgumentException If a template with the same URI template is already registered.
-     *   Use [removeResourceTemplate] first to replace it.
      */
     public fun addResourceTemplate(
         uriTemplate: String,

@@ -47,18 +47,17 @@ internal class FeatureRegistry<T : Feature>(private val featureType: String) {
     private val listeners = atomic(persistentListOf<FeatureListener>())
 
     internal fun addListener(listener: FeatureListener) {
-        listeners.update { it.add(listener) }
+        listeners.update { it.adding(listener) }
     }
 
     internal fun removeListener(listener: FeatureListener) {
-        listeners.update { it.remove(listener) }
+        listeners.update { it.removing(listener) }
     }
 
     /**
      * Adds the specified feature to the registry.
      *
      * @param feature The feature to be added to the registry.
-     * @throws IllegalArgumentException If a feature with the same key is already registered.
      */
     internal fun add(feature: T) {
         logger.info { "Adding $featureType: \"${feature.key}\"" }
@@ -66,7 +65,7 @@ internal class FeatureRegistry<T : Feature>(private val featureType: String) {
             require(!current.containsKey(feature.key)) {
                 "$featureType \"${feature.key}\" is already registered. Remove it first to replace it."
             }
-            current.put(feature.key, feature)
+            current.putting(feature.key, feature)
         }
 
         logger.info { "Added $featureType: \"${feature.key}\"" }
@@ -79,8 +78,6 @@ internal class FeatureRegistry<T : Feature>(private val featureType: String) {
      * rejected, no features are added.
      *
      * @param features The list of features to add to the registry.
-     * @throws IllegalArgumentException If the list contains duplicate keys or a feature with
-     *   the same key is already registered.
      */
     internal fun addAll(features: List<T>) {
         logger.info { "Adding ${featureType}s: ${features.size}" }
@@ -94,7 +91,7 @@ internal class FeatureRegistry<T : Feature>(private val featureType: String) {
             require(conflicting.isEmpty()) {
                 "${featureType}s already registered: $conflicting. Remove them first to replace them."
             }
-            current.putAll(newEntries)
+            current.puttingAll(newEntries)
         }
 
         logger.info { "Added ${featureType}s: ${features.size}" }
@@ -111,7 +108,7 @@ internal class FeatureRegistry<T : Feature>(private val featureType: String) {
      */
     internal fun remove(key: FeatureKey): Boolean {
         logger.info { "Removing $featureType: \"$key\"" }
-        val oldMap = registry.getAndUpdate { current -> current.remove(key) }
+        val oldMap = registry.getAndUpdate { current -> current.removing(key) }
 
         val removedFeature = oldMap[key]
         val removed = removedFeature != null
