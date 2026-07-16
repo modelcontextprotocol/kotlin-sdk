@@ -43,6 +43,8 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlin.math.pow
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -51,6 +53,8 @@ import kotlin.time.Duration.Companion.seconds
 private const val MCP_SESSION_ID_HEADER = "mcp-session-id"
 private const val MCP_PROTOCOL_VERSION_HEADER = "mcp-protocol-version"
 private const val MCP_RESUMPTION_TOKEN_HEADER = "Last-Event-ID"
+private const val MCP_METHOD_HEADER = "Mcp-Method"
+private const val MCP_NAME_HEADER = "Mcp-Name"
 
 /**
  * Default maximum size, in characters, of a single inline SSE event assembled from a POST response.
@@ -167,6 +171,7 @@ public class StreamableHttpClientTransport(
         val jsonBody = McpJson.encodeToString(message)
         val response = client.post(url) {
             applyCommonHeaders(this)
+            applyStandardPostHeaders(this, message)
             headers.append(HttpHeaders.Accept, "${ContentType.Application.Json}, ${ContentType.Text.EventStream}")
             contentType(ContentType.Application.Json)
             setBody(jsonBody)
@@ -389,6 +394,25 @@ public class StreamableHttpClientTransport(
             protocolVersion?.let { append(MCP_PROTOCOL_VERSION_HEADER, it) }
         }
     }
+
+    private fun applyStandardPostHeaders(builder: HttpRequestBuilder, message: JSONRPCMessage) {
+        val (method, params) = when (message) {
+            is JSONRPCRequest -> message.method to message.params
+            is JSONRPCNotification -> message.method to message.params
+            else -> return
+        }
+
+        builder.headers {
+            append(MCP_METHOD_HEADER, method)
+
+            val paramsObject = params as? JsonObject ?: return@headers
+            val mcpName = paramsObject.stringValue("name") ?: paramsObject.stringValue("uri")
+            mcpName?.let { append(MCP_NAME_HEADER, it) }
+        }
+    }
+
+    private fun JsonObject.stringValue(key: String): String? =
+        (get(key) as? JsonPrimitive)?.takeIf { it.isString }?.content
 
     private suspend fun collectSse(
         session: ClientSSESession,

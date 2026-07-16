@@ -246,6 +246,73 @@ class StreamableHttpClientTransportTest {
         transport.close()
     }
 
+    @Test
+    fun `should send MCP method and name headers from name`() = runTest {
+        val transport = createTransport { request ->
+            assertEquals("tools/call", request.headers["Mcp-Method"])
+            assertEquals("read_file", request.headers["Mcp-Name"])
+            respond(content = "", status = HttpStatusCode.Accepted)
+        }
+
+        transport.start()
+        transport.send(
+            JSONRPCRequest(
+                id = "test-id",
+                method = "tools/call",
+                params = buildJsonObject {
+                    put("name", JsonPrimitive("read_file"))
+                    put("arguments", buildJsonObject { put("path", JsonPrimitive("README.md")) })
+                },
+            ),
+        )
+        transport.close()
+    }
+
+    @Test
+    fun `should send MCP name header from URI`() = runTest {
+        val transport = createTransport { request ->
+            assertEquals("resources/read", request.headers["Mcp-Method"])
+            assertEquals("file:///README.md", request.headers["Mcp-Name"])
+            respond(content = "", status = HttpStatusCode.Accepted)
+        }
+
+        transport.start()
+        transport.send(
+            JSONRPCRequest(
+                id = "test-id",
+                method = "resources/read",
+                params = buildJsonObject { put("uri", JsonPrimitive("file:///README.md")) },
+            ),
+        )
+        transport.close()
+    }
+
+    @Test
+    fun `should send MCP method header for notifications`() = runTest {
+        val transport = createTransport { request ->
+            assertEquals("notifications/tools/list_changed", request.headers["Mcp-Method"])
+            assertNull(request.headers["Mcp-Name"])
+            respond(content = "", status = HttpStatusCode.Accepted)
+        }
+
+        transport.start()
+        transport.send(JSONRPCNotification(method = "notifications/tools/list_changed"))
+        transport.close()
+    }
+
+    @Test
+    fun `should omit MCP standard headers for responses`() = runTest {
+        val transport = createTransport { request ->
+            assertNull(request.headers["Mcp-Method"])
+            assertNull(request.headers["Mcp-Name"])
+            respond(content = "", status = HttpStatusCode.Accepted)
+        }
+
+        transport.start()
+        transport.send(JSONRPCResponse(id = RequestId.StringId("test-id")))
+        transport.close()
+    }
+
     // Engine doesn't support SSECapability: https://youtrack.jetbrains.com/issue/KTOR-8177/MockEngine-Add-SSE-support
     @Ignore
     @Test
