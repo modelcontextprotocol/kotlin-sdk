@@ -421,12 +421,17 @@ public open class ServerSession(
      * Sends a message to the client requesting an elicitation.
      * This typically results in a form being displayed to the end user.
      *
+     * Accepted content is validated against [requestedSchema]. If content is absent, an empty
+     * object is used for validation only, so declared `required` properties still apply. The
+     * returned [ElicitResult] is not modified.
+     *
      * @param message The message for the elicitation to display.
-     * @param requestedSchema The schema requested by the client for the elicitation result.
+     * @param requestedSchema The schema the server requests for the elicitation result.
      * Influences the form displayed to the user.
      * @param options Optional request options.
      * @return The result of the elicitation request.
      * @throws IllegalStateException If the server or client does not support elicitation.
+     * @throws McpException If an accepted response does not match [requestedSchema].
      */
     public suspend fun createElicitation(
         message: String,
