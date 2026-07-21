@@ -288,6 +288,33 @@ class StreamableHttpClientTransportTest {
     }
 
     @Test
+    fun `should encode MCP name header values when required`() = runTest {
+        val cases = listOf(
+            "Hello, 世界" to "=?base64?SGVsbG8sIOS4lueVjA==?=",
+            " padded " to "=?base64?IHBhZGRlZCA=?=",
+            "line1\nline2" to "=?base64?bGluZTEKbGluZTI=?=",
+            "=?base64?literal?=" to "=?base64?PT9iYXNlNjQ/bGl0ZXJhbD89?=",
+        )
+
+        cases.forEachIndexed { index, (name, expectedHeader) ->
+            val transport = createTransport { request ->
+                assertEquals(expectedHeader, request.headers["Mcp-Name"])
+                respond(content = "", status = HttpStatusCode.Accepted)
+            }
+
+            transport.start()
+            transport.send(
+                JSONRPCRequest(
+                    id = "test-id-$index",
+                    method = "tools/call",
+                    params = buildJsonObject { put("name", JsonPrimitive(name)) },
+                ),
+            )
+            transport.close()
+        }
+    }
+
+    @Test
     fun `should send MCP method header for notifications`() = runTest {
         val transport = createTransport { request ->
             assertEquals("notifications/tools/list_changed", request.headers["Mcp-Method"])
