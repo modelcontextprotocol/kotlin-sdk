@@ -1,6 +1,6 @@
 [versions]
 anthropic = "2.48.0"
-kotlin = "2.4.0"
+kotlin = "2.4.10"
 ktor = "3.5.1"
 mcp-kotlin = "0.14.0"
 shadow = "9.5.1"
