@@ -47,6 +47,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesResult
 import io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
@@ -223,6 +224,36 @@ class StreamableHttpServerTransportTest {
 
         initResponse.status shouldBe HttpStatusCode.BadRequest
         initResponse.headers[MCP_SESSION_ID_HEADER] shouldBe null
+    }
+
+    @Test
+    fun `malformed initialize params return invalid params over streamable http`() = testApplication {
+        val mcpPath = "/mcp"
+
+        application {
+            mcpStreamableHttp(mcpPath, enableDnsRebindingProtection = false) {
+                Server(
+                    Implementation("test-server", "1.0.0"),
+                    ServerOptions(capabilities = ServerCapabilities()),
+                )
+            }
+        }
+
+        val client = createTestClient()
+
+        val response = client.post(mcpPath) {
+            addStreamableHeaders()
+            setBody(
+                """
+                {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{},"clientInfo":{"name":"repro","version":"0.1.0"}}}
+                """.trimIndent(),
+            )
+        }
+
+        response.status shouldBe HttpStatusCode.OK
+        val error = response.body<JSONRPCError>()
+        error.error.code shouldBe RPCError.ErrorCode.INVALID_PARAMS
+        error.error.message.contains("kotlinx.serialization") shouldBe false
     }
 
     @Test
