@@ -9,6 +9,7 @@ import io.ktor.client.call.body
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.prepareGet
@@ -21,6 +22,7 @@ import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.install
+import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import io.ktor.server.sse.ServerSSESession
@@ -75,6 +77,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation as ClientContentNegotiation
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation as ServerContentNegotiation
@@ -98,6 +101,26 @@ class StreamableHttpServerTransportTest {
             Arguments.of(sizeTestPayload.length.toLong() - 1, HttpStatusCode.PayloadTooLarge),
             Arguments.of(sizeTestPayload.length.toLong(), HttpStatusCode.BadRequest),
             Arguments.of(sizeTestPayload.length.toLong() + 1, HttpStatusCode.BadRequest),
+        )
+
+        @JvmStatic
+        fun postAcceptHeaderCases(): List<Arguments> = listOf(
+            Arguments.of("application/json, text/event-stream", HttpStatusCode.OK),
+            Arguments.of("Application/JSON;q=0.9, TEXT/Event-Stream;charset=utf-8", HttpStatusCode.OK),
+            Arguments.of("*/*", HttpStatusCode.OK),
+            Arguments.of("application/*, text/*", HttpStatusCode.OK),
+            Arguments.of(null, HttpStatusCode.OK),
+            Arguments.of("application/json", HttpStatusCode.NotAcceptable),
+            Arguments.of("text/event-stream", HttpStatusCode.NotAcceptable),
+            Arguments.of("application/jsonp, text/event-stream-bogus", HttpStatusCode.NotAcceptable),
+            Arguments.of("application/json, text/event-stream;q=0", HttpStatusCode.NotAcceptable),
+        )
+
+        @JvmStatic
+        fun getAcceptHeaderCases() = listOf(
+            "application/json",
+            "text/event-stream-bogus",
+            "text/event-stream;q=0",
         )
     }
 
@@ -127,6 +150,90 @@ class StreamableHttpServerTransportTest {
 
         assertEquals(HttpStatusCode.NotAcceptable, response.status)
         assertFalse(onMessageCalled.get(), "Transport should not deliver messages when headers are invalid")
+    }
+
+    @ParameterizedTest
+    @MethodSource("postAcceptHeaderCases")
+    fun `POST Accept header is matched as media ranges`(acceptHeader: String?, expectedStatus: HttpStatusCode) =
+        testApplication {
+            configTestServer()
+
+            // Bare client: the ContentNegotiation plugin would supply an Accept header of its own,
+            // leaving the absent-header case untestable.
+            val client = createClient {}
+
+            val transport = StreamableHttpServerTransport(enableJsonResponse = true)
+            val onMessageCalled = AtomicBoolean(false)
+            transport.onMessage { message ->
+                onMessageCalled.set(true)
+                if (message is JSONRPCRequest) {
+                    transport.send(JSONRPCResponse(message.id, EmptyResult()))
+                }
+            }
+
+            configureTransportEndpoint(transport)
+
+            val response = client.post(path) {
+                contentType(ContentType.Application.Json)
+                acceptHeader?.let { header(HttpHeaders.Accept, it) }
+                setBody(McpJson.encodeToString(JSONRPCMessage.serializer(), buildInitializeRequestPayload()))
+            }
+
+            assertEquals(expectedStatus, response.status)
+            assertEquals(
+                expectedStatus == HttpStatusCode.OK,
+                onMessageCalled.get(),
+                "Only a request that clears the Accept gate may reach the transport",
+            )
+        }
+
+    @Test
+    fun `POST with an unparsable Accept header is rejected without failing the request`() = testApplication {
+        configTestServer()
+
+        val client = createClient {}
+
+        val transport = StreamableHttpServerTransport(enableJsonResponse = true)
+        val onMessageCalled = AtomicBoolean(false)
+        transport.onMessage {
+            onMessageCalled.set(true)
+        }
+
+        configureTransportEndpoint(transport)
+
+        val response = client.post(path) {
+            contentType(ContentType.Application.Json)
+            header(HttpHeaders.Accept, "not-a-media-type")
+            setBody(McpJson.encodeToString(JSONRPCMessage.serializer(), buildInitializeRequestPayload()))
+        }
+
+        // The exact code is decided by content negotiation once the transport has rejected the request.
+        assertTrue(response.status.value in 400..499, "Expected a client error, got ${response.status}")
+        assertFalse(onMessageCalled.get(), "Transport should not deliver messages when headers are invalid")
+    }
+
+    @ParameterizedTest
+    @MethodSource("getAcceptHeaderCases")
+    fun `GET whose Accept header admits no event-stream range is rejected`(acceptHeader: String) = testApplication {
+        configTestServer()
+
+        val client = createClient {}
+
+        val transport = StreamableHttpServerTransport(enableJsonResponse = true)
+
+        application {
+            routing {
+                get(path) {
+                    transport.handleGetRequest(FakeServerSSESession(call, call.coroutineContext), call)
+                }
+            }
+        }
+
+        val response = client.get(path) {
+            header(HttpHeaders.Accept, acceptHeader)
+        }
+
+        assertEquals(HttpStatusCode.NotAcceptable, response.status)
     }
 
     @Test
