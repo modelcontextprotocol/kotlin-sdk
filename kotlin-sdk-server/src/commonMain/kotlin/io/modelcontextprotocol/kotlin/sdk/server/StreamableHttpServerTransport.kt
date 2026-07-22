@@ -474,12 +474,13 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                     )
                     return
                 }
-                if (!validateProtocolVersion(call)) return
+                if (!validateProtocolVersion(call, initializationRequest.id)) return
                 if (messages.size > 1) {
                     call.reject(
                         HttpStatusCode.BadRequest,
                         RPCError.ErrorCode.INVALID_REQUEST,
                         "Invalid Request: Only one initialization request is allowed",
+                        initializationRequest.id,
                     )
                     return
                 }
@@ -491,7 +492,8 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                     sessionId?.let { onSessionInitialized?.invoke(it) }
                 }
             } else {
-                if (!validateSession(call) || !validateProtocolVersion(call)) return
+                val requestId = messages.filterIsInstance<JSONRPCRequest>().firstOrNull()?.id
+                if (!validateSession(call, requestId) || !validateProtocolVersion(call, requestId)) return
             }
 
             val hasRequest = messages.any { it is JSONRPCRequest }
@@ -734,7 +736,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         }
     }
 
-    private suspend fun validateSession(call: ApplicationCall): Boolean {
+    private suspend fun validateSession(call: ApplicationCall, id: RequestId? = null): Boolean {
         if (sessionIdGenerator == null) return true
 
         if (!initialized.load()) {
@@ -742,6 +744,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 HttpStatusCode.BadRequest,
                 RPCError.ErrorCode.CONNECTION_CLOSED,
                 "Bad Request: Server not initialized",
+                id,
             )
             return false
         }
@@ -753,6 +756,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 HttpStatusCode.BadRequest,
                 RPCError.ErrorCode.CONNECTION_CLOSED,
                 "Bad Request: Mcp-Session-Id header is required",
+                id,
             )
             return false
         }
@@ -765,13 +769,14 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                     HttpStatusCode.NotFound,
                     REQUEST_TIMEOUT,
                     "Session not found",
+                    id,
                 )
                 false
             }
         }
     }
 
-    private suspend fun validateProtocolVersion(call: ApplicationCall): Boolean {
+    private suspend fun validateProtocolVersion(call: ApplicationCall, id: RequestId? = null): Boolean {
         val version = call.request.headers[MCP_PROTOCOL_VERSION_HEADER] ?: return true
 
         return when (version) {
@@ -784,6 +789,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                             ", ",
                         )
                     })",
+                    id,
                 )
                 false
             }
