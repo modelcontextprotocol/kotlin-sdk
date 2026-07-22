@@ -1,5 +1,8 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
+import io.kotest.matchers.string.shouldContain
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.Method
@@ -106,6 +109,42 @@ class ServerToolsTest : AbstractServerFeaturesTest() {
 
         val result = server.removeTool("my invalid tool!")
         assertTrue(result, "Tool with non-conforming name should have been registered and removable")
+    }
+
+    @Test
+    fun `addTool should throw when tool with same name is already registered`() = runTest {
+        server.addTool("test-tool", "Original Tool") {
+            CallToolResult(listOf(TextContent("Original result")))
+        }
+
+        val exception = assertThrows<IllegalArgumentException> {
+            server.addTool("test-tool", "Duplicate Tool") {
+                CallToolResult(listOf(TextContent("Duplicate result")))
+            }
+        }
+        exception.message.orEmpty() shouldContain "Tool \"test-tool\" is already registered"
+
+        // The original registration is intact
+        val tools = client.listTools().tools
+        assertEquals(1, tools.size, "Only the original tool should be registered")
+        val result = client.callTool(CallToolRequest(CallToolRequestParams("test-tool")))
+        assertEquals("Original result", (result.content.single() as TextContent).text)
+    }
+
+    @Test
+    fun `addTool should succeed after removing existing tool`() = runTest {
+        server.addTool("test-tool", "Original Tool") {
+            CallToolResult(listOf(TextContent("Original result")))
+        }
+
+        server.removeTool("test-tool")
+        server.addTool("test-tool", "Replacement Tool") {
+            CallToolResult(listOf(TextContent("Replacement result")))
+        }
+
+        assertEquals(1, client.listTools().tools.size, "Re-adding after removal should not duplicate the tool")
+        val result = client.callTool(CallToolRequest(CallToolRequestParams("test-tool")))
+        assertEquals("Replacement result", (result.content.single() as TextContent).text)
     }
 
     @Test

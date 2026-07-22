@@ -48,6 +48,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
@@ -436,6 +437,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         }
         val handlersToNotify = _responseHandlers.getAndSet(persistentMapOf()).values.toList()
         _progressHandlers.getAndSet(persistentMapOf())
+        recentlyCancelledRequestIds.getAndSet(persistentListOf())
         connection.inFlightRequestJobs.getAndSet(persistentMapOf())
         connection.handlerScope.cancel()
         onClose()
@@ -940,7 +942,15 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
 
         _requestHandlers.update { current ->
             current.putting(method.value) { jSONRPCRequest, extraHandler ->
-                val request = jSONRPCRequest.fromJSON()
+                val request = try {
+                    jSONRPCRequest.fromJSON()
+                } catch (cause: SerializationException) {
+                    throw McpException(
+                        code = RPCError.ErrorCode.INVALID_PARAMS,
+                        message = "Invalid params",
+                        cause = cause,
+                    )
+                }
                 val response = wrapped(request as T, extraHandler)
                 response
             }
