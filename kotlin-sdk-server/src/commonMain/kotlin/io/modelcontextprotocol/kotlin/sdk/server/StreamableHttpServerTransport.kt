@@ -459,9 +459,10 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             }
 
             val messages = parseBody(call) ?: return
-            val isInitializationRequest = messages.any {
-                it is JSONRPCRequest && it.method == Method.Defined.Initialize.value
+            val initializationRequest = messages.filterIsInstance<JSONRPCRequest>().firstOrNull {
+                it.method == Method.Defined.Initialize.value
             }
+            val isInitializationRequest = initializationRequest != null
 
             if (isInitializationRequest) {
                 if (initialized.load() && sessionId != null) {
@@ -469,6 +470,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                         HttpStatusCode.BadRequest,
                         RPCError.ErrorCode.INVALID_REQUEST,
                         "Invalid Request: Server already initialized",
+                        initializationRequest.id,
                     )
                     return
                 }
@@ -506,8 +508,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             // For initialize requests, get from request params.
             // For other requests, get from header (already validated).
             val clientProtocolVersion = if (isInitializationRequest) {
-                val initRequest = messages.first() as JSONRPCRequest
-                (initRequest.params as? JsonObject)?.get("protocolVersion")
+                (initializationRequest.params as? JsonObject)?.get("protocolVersion")
                     ?.let { McpJson.decodeFromJsonElement<String>(it) }
                     ?: DEFAULT_NEGOTIATED_PROTOCOL_VERSION
             } else {
@@ -913,7 +914,12 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
     }
 }
 
-internal suspend fun ApplicationCall.reject(status: HttpStatusCode, code: Int, message: String) {
+internal suspend fun ApplicationCall.reject(
+    status: HttpStatusCode,
+    code: Int,
+    message: String,
+    id: RequestId? = null,
+) {
     this.response.status(status)
-    this.respond(JSONRPCError(id = null, error = RPCError(code = code, message = message)))
+    this.respond(JSONRPCError(id = id, error = RPCError(code = code, message = message)))
 }
