@@ -380,11 +380,17 @@ private suspend fun RoutingContext.mcpStatelessStreamableHttpEndpoint(
     logger.info { "New stateless StreamableHttp connection established without sessionId" }
 
     val server = block()
-    server.onClose { logger.info { "Server connection closed without sessionId" } }
-    server.createSession(transport)
+    val session = server.createSession(transport)
 
-    transport.handleRequest(null, this.call)
-    logger.debug { "Server connected to transport without sessionId" }
+    try {
+        transport.handleRequest(null, this.call)
+        logger.debug { "Server connected to transport without sessionId" }
+    } finally {
+        // A stateless session serves exactly one request: close it so the server's
+        // session registry and notification subscriptions do not grow unboundedly.
+        session.close()
+        logger.debug { "Stateless session closed after request completion" }
+    }
 }
 
 private suspend fun RoutingContext.mcpPostEndpoint(transportManager: TransportManager<SseServerTransport>) {

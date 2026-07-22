@@ -437,6 +437,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         }
         val handlersToNotify = _responseHandlers.getAndSet(persistentMapOf()).values.toList()
         _progressHandlers.getAndSet(persistentMapOf())
+        recentlyCancelledRequestIds.getAndSet(persistentListOf())
         connection.inFlightRequestJobs.getAndSet(persistentMapOf())
         connection.handlerScope.cancel()
         onClose()

@@ -1,5 +1,8 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
+import io.kotest.matchers.string.shouldContain
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.Method
@@ -108,6 +111,26 @@ class ServerPromptsTest : AbstractServerFeaturesTest() {
         // Verify the result
         assertFalse(result, "Removing non-existent prompt should return false")
         assertFalse(promptListChangedNotificationReceived, "No notification should be sent when prompt doesn't exist")
+    }
+
+    @Test
+    fun `addPrompt should throw when prompt with same name is already registered`() = runTest {
+        server.addPrompt(Prompt("test-prompt", "Original Prompt", null)) {
+            GetPromptResult(description = "original", messages = emptyList())
+        }
+
+        val exception = assertThrows<IllegalArgumentException> {
+            server.addPrompt(Prompt("test-prompt", "Duplicate Prompt", null)) {
+                GetPromptResult(description = "duplicate", messages = emptyList())
+            }
+        }
+        exception.message.orEmpty() shouldContain "Prompt \"test-prompt\" is already registered"
+
+        // The original registration is intact
+        val prompts = client.listPrompts().prompts
+        assertEquals(1, prompts.size, "Only the original prompt should be registered")
+        val result = client.getPrompt(GetPromptRequest(GetPromptRequestParams("test-prompt")))
+        assertEquals("original", result.description)
     }
 
     @Test
