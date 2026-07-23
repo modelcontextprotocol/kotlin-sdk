@@ -1,9 +1,11 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
+import io.ktor.http.BadContentTypeFormatException
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.parseHeaderValue
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.contentType
 import io.ktor.server.request.header
@@ -858,8 +860,24 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         }
     }
 
-    private fun String?.accepts(mime: ContentType): Boolean =
-        this?.lowercase()?.contains(mime.toString().lowercase()) == true
+    /**
+     * Reports whether the `Accept` header admits [mime].
+     *
+     * Comparison is over parsed media ranges rather than raw substrings, so wildcards are honored
+     * and a near miss such as `application/jsonp` no longer passes as `application/json`. An absent
+     * header states no preference and admits any type.
+     */
+    private fun String?.accepts(mime: ContentType): Boolean {
+        if (this == null) return true
+        return parseHeaderValue(this).any { range ->
+            if (range.quality <= 0.0) return@any false
+            try {
+                mime.match(ContentType.parse(range.value))
+            } catch (_: BadContentTypeFormatException) {
+                false
+            }
+        }
+    }
 
     private suspend fun emitOnStream(streamId: String, session: ServerSSESession?, message: JSONRPCMessage) {
         val eventId = configuration.eventStore?.storeEvent(streamId, message)
