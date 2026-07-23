@@ -3,6 +3,7 @@ package io.modelcontextprotocol.kotlin.sdk.integration.streamablehttp
 import io.ktor.server.cio.CIOApplicationEngine
 import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
+import io.ktor.server.sse.Heartbeat
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.mcpStreamableHttp
@@ -17,7 +18,10 @@ import io.ktor.server.cio.CIO as ServerCIO
 
 open class AbstractStreamableHttpIntegrationTest {
 
-    suspend fun initTestServer(name: String? = null): StreamableHttpTestServer {
+    suspend fun initTestServer(
+        name: String? = null,
+        sseHeartbeatConfig: (Heartbeat.() -> Unit)? = null,
+    ): StreamableHttpTestServer {
         val mcpServer = Server(
             Implementation(name = name ?: DEFAULT_SERVER_NAME, version = VERSION),
             ServerOptions(
@@ -52,7 +56,7 @@ open class AbstractStreamableHttpIntegrationTest {
             host = URL,
             port = PORT,
         ) {
-            mcpStreamableHttp { mcpServer }
+            mcpStreamableHttp(sseHeartbeatConfig = sseHeartbeatConfig) { mcpServer }
         }
 
         return StreamableHttpTestServer(
