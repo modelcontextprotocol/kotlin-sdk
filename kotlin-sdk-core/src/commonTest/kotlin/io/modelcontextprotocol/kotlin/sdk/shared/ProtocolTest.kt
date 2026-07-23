@@ -8,8 +8,17 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.types.CancelTaskRequest
+import io.modelcontextprotocol.kotlin.sdk.types.CancelTaskRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.CustomRequest
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
+import io.modelcontextprotocol.kotlin.sdk.types.GetTaskPayloadRequest
+import io.modelcontextprotocol.kotlin.sdk.types.GetTaskPayloadRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.GetTaskPayloadResult
+import io.modelcontextprotocol.kotlin.sdk.types.GetTaskRequest
+import io.modelcontextprotocol.kotlin.sdk.types.GetTaskRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.GetTaskResult
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
@@ -24,13 +33,17 @@ import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.RequestMeta
+import io.modelcontextprotocol.kotlin.sdk.types.TaskStatus
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonObject
@@ -193,6 +206,110 @@ class ProtocolTest {
 
         transport.deliver(JSONRPCResponse(sent.id, EmptyResult()))
         inFlight.await()
+    }
+
+    @Test
+    fun `tasks result preserves payloads that overlap known result shapes`() = runTest {
+        protocol.connect(transport)
+        val payload = buildJsonObject {
+            put("content", JsonArray(emptyList()))
+            put("isError", JsonPrimitive(false))
+            put("extension", JsonPrimitive("preserved"))
+        }
+
+        val inFlight = async {
+            protocol.request<GetTaskPayloadResult>(
+                CustomRequest(method = Method.Custom(Method.Defined.TasksResult.value), params = null),
+            )
+        }
+
+        val sent = transport.awaitRequest()
+        transport.deliver(decodeResponse(sent.id, payload))
+
+        inFlight.await().json shouldBe payload
+    }
+
+    @Test
+    fun `tasks result preserves payloads that resemble task state`() = runTest {
+        protocol.connect(transport)
+        val payload = McpJson.encodeToJsonElement(completedTask("nested-task")).jsonObject
+
+        val inFlight = async {
+            protocol.request<GetTaskPayloadResult>(
+                GetTaskPayloadRequest(GetTaskPayloadRequestParams("task-1")),
+            )
+        }
+
+        val sent = transport.awaitRequest()
+        transport.deliver(decodeResponse(sent.id, payload))
+
+        inFlight.await().json shouldBe payload
+    }
+
+    @Test
+    fun `tasks result preserves otherwise unknown payloads`() = runTest {
+        protocol.connect(transport)
+        val payload = buildJsonObject {
+            put("extension", JsonPrimitive("preserved"))
+        }
+
+        val inFlight = async {
+            protocol.request<GetTaskPayloadResult>(
+                GetTaskPayloadRequest(GetTaskPayloadRequestParams("task-1")),
+            )
+        }
+
+        val sent = transport.awaitRequest()
+        transport.deliver(decodeResponse(sent.id, payload))
+
+        inFlight.await().json shouldBe payload
+    }
+
+    @Test
+    fun `tasks result adapts directly constructed transport responses`() = runTest {
+        protocol.connect(transport)
+        val responseResult = CallToolResult(content = emptyList(), isError = false)
+
+        val inFlight = async {
+            protocol.request<GetTaskPayloadResult>(
+                GetTaskPayloadRequest(GetTaskPayloadRequestParams("task-1")),
+            )
+        }
+
+        val sent = transport.awaitRequest()
+        transport.deliver(JSONRPCResponse(sent.id, responseResult))
+
+        inFlight.await().json shouldBe McpJson.encodeToJsonElement(responseResult).jsonObject
+    }
+
+    @Test
+    fun `tasks get preserves typed task state responses`() = runTest {
+        protocol.connect(transport)
+        val expected = completedTask("task-1")
+
+        val inFlight = async {
+            protocol.request<GetTaskResult>(GetTaskRequest(GetTaskRequestParams("task-1")))
+        }
+
+        val sent = transport.awaitRequest()
+        transport.deliver(decodeResponse(sent.id, McpJson.encodeToJsonElement(expected)))
+
+        inFlight.await() shouldBe expected
+    }
+
+    @Test
+    fun `tasks cancel preserves typed task state responses`() = runTest {
+        protocol.connect(transport)
+        val expected = completedTask("task-1").copy(status = TaskStatus.Cancelled)
+
+        val inFlight = async {
+            protocol.request<GetTaskResult>(CancelTaskRequest(CancelTaskRequestParams("task-1")))
+        }
+
+        val sent = transport.awaitRequest()
+        transport.deliver(decodeResponse(sent.id, McpJson.encodeToJsonElement(expected)))
+
+        inFlight.await() shouldBe expected
     }
 
     @Test
@@ -368,3 +485,19 @@ class ProtocolTest {
 private fun metaOf(builderAction: JsonObjectBuilder.() -> Unit): RequestMeta = RequestMeta(metaJson(builderAction))
 
 private fun metaJson(builderAction: JsonObjectBuilder.() -> Unit): JsonObject = buildJsonObject(builderAction)
+
+private fun decodeResponse(id: RequestId, result: JsonElement): JSONRPCMessage = McpJson.decodeFromJsonElement(
+    buildJsonObject {
+        put("jsonrpc", JsonPrimitive("2.0"))
+        put("id", McpJson.encodeToJsonElement(id))
+        put("result", result)
+    },
+)
+
+private fun completedTask(taskId: String): GetTaskResult = GetTaskResult(
+    taskId = taskId,
+    status = TaskStatus.Completed,
+    createdAt = "2026-07-23T00:00:00Z",
+    lastUpdatedAt = "2026-07-23T00:00:01Z",
+    ttl = null,
+)

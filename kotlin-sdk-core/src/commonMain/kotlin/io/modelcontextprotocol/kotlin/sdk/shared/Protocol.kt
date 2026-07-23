@@ -4,6 +4,8 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.types.CancelledNotification
 import io.modelcontextprotocol.kotlin.sdk.types.CancelledNotificationParams
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
+import io.modelcontextprotocol.kotlin.sdk.types.GetTaskPayloadResult
+import io.modelcontextprotocol.kotlin.sdk.types.GetTaskResult
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCEmptyMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
@@ -51,7 +53,9 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.jsonObject
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.ContinuationInterceptor
 import kotlin.coroutines.CoroutineContext
@@ -813,7 +817,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
 
                 try {
                     @Suppress("UNCHECKED_CAST")
-                    result.complete(response!!.result as T)
+                    result.complete(response!!.resultForRequest(request) as T)
                 } catch (e: Throwable) {
                     result.completeExceptionally(e)
                 }
@@ -898,6 +902,20 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             // removed these handlers, so this only bites when the outbound send failed.
             _responseHandlers.update { it.removing(jsonRpcRequestId) }
             _progressHandlers.update { it.removing(jsonRpcRequestId) }
+        }
+    }
+
+    private fun JSONRPCResponse.resultForRequest(request: Request): RequestResult {
+        val rawResult = rawResultOrNull() ?: McpJson.encodeToJsonElement(result)
+        return when (request.method.value) {
+            Method.Defined.TasksGet.value,
+            Method.Defined.TasksCancel.value,
+            -> McpJson.decodeFromJsonElement<GetTaskResult>(rawResult)
+
+            Method.Defined.TasksResult.value,
+            -> GetTaskPayloadResult(rawResult.jsonObject)
+
+            else -> result
         }
     }
 

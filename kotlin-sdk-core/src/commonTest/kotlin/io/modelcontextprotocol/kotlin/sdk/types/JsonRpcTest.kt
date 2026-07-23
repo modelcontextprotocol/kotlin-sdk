@@ -436,6 +436,25 @@ class JsonRpcTest {
     }
 
     @Test
+    fun `should round trip every JSONRPCMessage subtype polymorphically`() {
+        val messages = listOf<JSONRPCMessage>(
+            JSONRPCRequest(id = "request-1", method = "tools/list"),
+            JSONRPCNotification(method = "notifications/log"),
+            JSONRPCResponse(id = RequestId("response-1"), result = EmptyResult()),
+            JSONRPCError(
+                id = RequestId("error-1"),
+                error = RPCError(RPCError.ErrorCode.INTERNAL_ERROR, "Internal error"),
+            ),
+            JSONRPCEmptyMessage,
+        )
+
+        messages.forEach { message ->
+            val encoded = McpJson.encodeToString<JSONRPCMessage>(message)
+            McpJson.decodeFromString<JSONRPCMessage>(encoded) shouldBe message
+        }
+    }
+
+    @Test
     fun `should create JSONRPCRequest with string ID`() {
         val params = buildJsonObject {
             put("foo", "bar")
