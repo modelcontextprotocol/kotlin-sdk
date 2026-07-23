@@ -18,6 +18,7 @@ import kotlinx.serialization.json.JsonEncoder
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
@@ -444,11 +445,14 @@ private fun selectServerResultDeserializer(element: JsonElement): Deserializatio
 internal object RequestResultPolymorphicSerializer :
     JsonContentPolymorphicSerializer<RequestResult>(RequestResult::class) {
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<RequestResult> =
-        selectClientResultDeserializer(element)
-            ?: selectServerResultDeserializer(element)
-            ?: selectEmptyResult(element)
+        selectRequestResultDeserializer(element)
             ?: throw SerializationException("Cannot determine RequestResult type from JSON: ${element.jsonObject.keys}")
 }
+
+private fun selectRequestResultDeserializer(element: JsonElement): DeserializationStrategy<RequestResult>? =
+    selectClientResultDeserializer(element)
+        ?: selectServerResultDeserializer(element)
+        ?: selectEmptyResult(element)
 
 /**
  * Polymorphic serializer for [ClientResult] types.
@@ -487,19 +491,63 @@ internal object ServerResultPolymorphicSerializer :
  * - "method" + "id" -> JSONRPCRequest
  * - "method" -> JSONRPCNotification
  */
-internal object JSONRPCMessagePolymorphicSerializer :
-    JsonContentPolymorphicSerializer<JSONRPCMessage>(JSONRPCMessage::class) {
-    override fun selectDeserializer(element: JsonElement): DeserializationStrategy<JSONRPCMessage> {
+internal object JSONRPCMessagePolymorphicSerializer : KSerializer<JSONRPCMessage> {
+    override val descriptor: SerialDescriptor = JSONRPCResponse.serializer().descriptor
+
+    override fun serialize(encoder: Encoder, value: JSONRPCMessage) {
+        when (value) {
+            is JSONRPCResponse -> encoder.encodeSerializableValue(JSONRPCResponse.serializer(), value)
+
+            is JSONRPCError -> encoder.encodeSerializableValue(JSONRPCError.serializer(), value)
+
+            is JSONRPCRequest -> encoder.encodeSerializableValue(JSONRPCRequest.serializer(), value)
+
+            is JSONRPCNotification -> encoder.encodeSerializableValue(JSONRPCNotification.serializer(), value)
+
+            JSONRPCEmptyMessage -> encoder.encodeSerializableValue(
+                JSONRPCEmptyMessage.serializer(),
+                JSONRPCEmptyMessage,
+            )
+        }
+    }
+
+    override fun deserialize(decoder: Decoder): JSONRPCMessage {
+        val jsonDecoder = decoder as? JsonDecoder
+            ?: throw SerializationException("JSONRPCMessagePolymorphicSerializer requires a Json decoder")
+        val element = jsonDecoder.decodeJsonElement()
         val jsonObj = element.jsonObject
         return when {
-            "error" in jsonObj -> JSONRPCError.serializer()
-            "result" in jsonObj && "id" in jsonObj -> JSONRPCResponse.serializer()
-            "result" in jsonObj && jsonObj["result"]?.jsonObject?.isEmpty() == true -> JSONRPCEmptyMessage.serializer()
-            "method" in jsonObj && "id" in jsonObj -> JSONRPCRequest.serializer()
-            "method" in jsonObj -> JSONRPCNotification.serializer()
-            jsonObj.isEmpty() || jsonObj.keys == setOf("jsonrpc") -> JSONRPCEmptyMessage.serializer()
+            "error" in jsonObj -> jsonDecoder.json.decodeFromJsonElement(JSONRPCError.serializer(), element)
+
+            "result" in jsonObj && "id" in jsonObj -> decodeResponse(jsonDecoder, element)
+
+            "result" in jsonObj && jsonObj["result"]?.jsonObject?.isEmpty() == true ->
+                jsonDecoder.json.decodeFromJsonElement(JSONRPCEmptyMessage.serializer(), element)
+
+            "method" in jsonObj && "id" in jsonObj ->
+                jsonDecoder.json.decodeFromJsonElement(JSONRPCRequest.serializer(), element)
+
+            "method" in jsonObj -> jsonDecoder.json.decodeFromJsonElement(JSONRPCNotification.serializer(), element)
+
+            jsonObj.isEmpty() || jsonObj.keys == setOf("jsonrpc") ->
+                jsonDecoder.json.decodeFromJsonElement(JSONRPCEmptyMessage.serializer(), element)
+
             else -> throw SerializationException("Invalid JSONRPCMessage type: ${jsonObj.keys}")
         }
+    }
+
+    private fun decodeResponse(jsonDecoder: JsonDecoder, element: JsonElement): JSONRPCResponse {
+        val jsonObject = element.jsonObject
+        val rawResult = jsonObject.getValue("result")
+        val response = if (rawResult is JsonObject && selectRequestResultDeserializer(rawResult) == null) {
+            JSONRPCResponse(
+                id = jsonDecoder.json.decodeFromJsonElement(jsonObject.getValue("id")),
+                result = GetTaskPayloadResult(rawResult),
+            )
+        } else {
+            jsonDecoder.json.decodeFromJsonElement(JSONRPCResponse.serializer(), element)
+        }
+        return response.withRawResult(rawResult)
     }
 }
 
