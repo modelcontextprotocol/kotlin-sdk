@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
@@ -282,18 +283,10 @@ private fun Application.mcpStatelessStreamableHttp(
                 )
             }
             get {
-                call.reject(
-                    HttpStatusCode.MethodNotAllowed,
-                    RPCError.ErrorCode.CONNECTION_CLOSED,
-                    "Method not allowed.",
-                )
+                call.rejectUnsupportedMethod()
             }
             delete {
-                call.reject(
-                    HttpStatusCode.MethodNotAllowed,
-                    RPCError.ErrorCode.CONNECTION_CLOSED,
-                    "Method not allowed.",
-                )
+                call.rejectUnsupportedMethod()
             }
         }
     }
@@ -417,6 +410,16 @@ private suspend fun RoutingContext.mcpPostEndpoint(transportManager: TransportMa
 
     transport.handlePostMessage(call)
     logger.trace { "Message handled for sessionId: $sessionId" }
+}
+
+/** A stateless endpoint serves POST only, offering neither an SSE stream to open nor a session to delete. */
+private suspend fun ApplicationCall.rejectUnsupportedMethod() {
+    response.header(HttpHeaders.Allow, HttpMethod.Post.value)
+    reject(
+        HttpStatusCode.MethodNotAllowed,
+        RPCError.ErrorCode.CONNECTION_CLOSED,
+        "Method not allowed.",
+    )
 }
 
 private fun ApplicationRequest.sessionId(): String? = header(MCP_SESSION_ID_HEADER)

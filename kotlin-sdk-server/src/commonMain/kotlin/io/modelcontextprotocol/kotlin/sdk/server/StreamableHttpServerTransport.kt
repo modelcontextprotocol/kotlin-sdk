@@ -10,7 +10,7 @@ import io.ktor.server.request.header
 import io.ktor.server.request.httpMethod
 import io.ktor.server.response.header
 import io.ktor.server.response.respond
-import io.ktor.server.response.respondNullable
+import io.ktor.server.response.respondText
 import io.ktor.server.sse.ServerSSESession
 import io.ktor.util.collections.ConcurrentMap
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
@@ -474,12 +474,13 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                     )
                     return
                 }
-                if (!validateProtocolVersion(call)) return
+                if (!validateProtocolVersion(call, initializationRequest.id)) return
                 if (messages.size > 1) {
                     call.reject(
                         HttpStatusCode.BadRequest,
                         RPCError.ErrorCode.INVALID_REQUEST,
                         "Invalid Request: Only one initialization request is allowed",
+                        initializationRequest.id,
                     )
                     return
                 }
@@ -491,12 +492,13 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                     sessionId?.let { onSessionInitialized?.invoke(it) }
                 }
             } else {
-                if (!validateSession(call) || !validateProtocolVersion(call)) return
+                val requestId = messages.filterIsInstance<JSONRPCRequest>().firstOrNull()?.id
+                if (!validateSession(call, requestId) || !validateProtocolVersion(call, requestId)) return
             }
 
             val hasRequest = messages.any { it is JSONRPCRequest }
             if (!hasRequest) {
-                call.respondNullable(status = HttpStatusCode.Accepted, message = null)
+                call.respond(HttpStatusCode.Accepted)
                 messages.forEach { message -> _onMessage(message) }
                 // A cancellation may target a request still awaiting delivery on a JSON-mode POST;
                 // retire it so that POST completes instead of waiting for a response that never comes.
@@ -552,7 +554,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 if (responses.isEmpty()) {
                     // Every request in this POST was cancelled before producing a response; there is
                     // nothing to return, so acknowledge with 202 rather than an empty JSON body.
-                    call.respondNullable(status = HttpStatusCode.Accepted, message = null)
+                    call.respond(HttpStatusCode.Accepted)
                 } else {
                     call.response.header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                     val payload = if (responses.size == 1) responses.first() else responses
@@ -645,7 +647,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         if (!validateSession(call) || !validateProtocolVersion(call)) return
         sessionId?.let { onSessionClosed?.invoke(it) }
         close()
-        call.respondNullable(status = HttpStatusCode.OK, message = null)
+        call.respond(HttpStatusCode.OK)
     }
 
     /**
@@ -734,7 +736,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         }
     }
 
-    private suspend fun validateSession(call: ApplicationCall): Boolean {
+    private suspend fun validateSession(call: ApplicationCall, id: RequestId? = null): Boolean {
         if (sessionIdGenerator == null) return true
 
         if (!initialized.load()) {
@@ -742,6 +744,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 HttpStatusCode.BadRequest,
                 RPCError.ErrorCode.CONNECTION_CLOSED,
                 "Bad Request: Server not initialized",
+                id,
             )
             return false
         }
@@ -753,6 +756,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 HttpStatusCode.BadRequest,
                 RPCError.ErrorCode.CONNECTION_CLOSED,
                 "Bad Request: Mcp-Session-Id header is required",
+                id,
             )
             return false
         }
@@ -765,13 +769,14 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                     HttpStatusCode.NotFound,
                     REQUEST_TIMEOUT,
                     "Session not found",
+                    id,
                 )
                 false
             }
         }
     }
 
-    private suspend fun validateProtocolVersion(call: ApplicationCall): Boolean {
+    private suspend fun validateProtocolVersion(call: ApplicationCall, id: RequestId? = null): Boolean {
         val version = call.request.headers[MCP_PROTOCOL_VERSION_HEADER] ?: return true
 
         return when (version) {
@@ -784,6 +789,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                             ", ",
                         )
                     })",
+                    id,
                 )
                 false
             }
@@ -914,12 +920,13 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
     }
 }
 
+/** Writes an already serialized body so a client accepting only `text/event-stream` still receives [status]. */
 internal suspend fun ApplicationCall.reject(
     status: HttpStatusCode,
     code: Int,
     message: String,
     id: RequestId? = null,
 ) {
-    this.response.status(status)
-    this.respond(JSONRPCError(id = id, error = RPCError(code = code, message = message)))
+    val error = JSONRPCError(id = id, error = RPCError(code = code, message = message))
+    respondText(McpJson.encodeToString(error), ContentType.Application.Json, status)
 }

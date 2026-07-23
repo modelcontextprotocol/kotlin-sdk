@@ -216,14 +216,16 @@ class StreamableHttpServerTransportTest {
 
         configureTransportEndpoint(transport)
 
+        val payload = buildInitializeRequestPayload()
         val initResponse = client.post(path) {
             addStreamableHeaders()
             header("mcp-protocol-version", "1900-01-01")
-            setBody(buildInitializeRequestPayload())
+            setBody(payload)
         }
 
         initResponse.status shouldBe HttpStatusCode.BadRequest
         initResponse.headers[MCP_SESSION_ID_HEADER] shouldBe null
+        initResponse.body<JSONRPCError>().id shouldBe payload.id
     }
 
     @Test
@@ -297,6 +299,65 @@ class StreamableHttpServerTransportTest {
         }
 
         response.status shouldBe HttpStatusCode.BadRequest
+        response.body<JSONRPCError>().id shouldBe RequestId("test-1")
+    }
+
+    @Test
+    fun `batch with an initialization request echoes the initialize id when rejected`() = testApplication {
+        configTestServer()
+
+        val client = createTestClient()
+
+        val transport = StreamableHttpServerTransport(enableJsonResponse = true)
+        transport.onMessage { }
+
+        configureTransportEndpoint(transport)
+
+        val initPayload = buildInitializeRequestPayload()
+        val response = client.post(path) {
+            addStreamableHeaders()
+            setBody(
+                encodeMessages(
+                    listOf(
+                        initPayload,
+                        JSONRPCRequest(id = RequestId("extra"), method = Method.Defined.ToolsList.value),
+                    ),
+                ),
+            )
+        }
+
+        response.status shouldBe HttpStatusCode.BadRequest
+        val error = response.body<JSONRPCError>()
+        error.error.message shouldBe "Invalid Request: Only one initialization request is allowed"
+        error.id shouldBe initPayload.id
+    }
+
+    @Test
+    fun `non-init request before initialization echoes the request id`() = testApplication {
+        configTestServer()
+
+        val client = createTestClient()
+
+        val transport = StreamableHttpServerTransport(enableJsonResponse = true)
+        transport.onMessage { }
+
+        configureTransportEndpoint(transport)
+
+        val response = client.post(path) {
+            addStreamableHeaders()
+            setBody(
+                encodeMessages(
+                    listOf(
+                        JSONRPCRequest(id = RequestId("before-init"), method = Method.Defined.ToolsList.value),
+                    ),
+                ),
+            )
+        }
+
+        response.status shouldBe HttpStatusCode.BadRequest
+        val error = response.body<JSONRPCError>()
+        error.error.message shouldBe "Bad Request: Server not initialized"
+        error.id shouldBe RequestId("before-init")
     }
 
     @Test
