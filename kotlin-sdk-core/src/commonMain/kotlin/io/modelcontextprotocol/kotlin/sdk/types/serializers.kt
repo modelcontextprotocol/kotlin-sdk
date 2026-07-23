@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
@@ -238,9 +239,11 @@ internal object ResourceContentsPolymorphicSerializer :
 // Request Serializers
 // ============================================================================
 
+@OptIn(ExperimentalMcpApi::class)
 private val clientRequestDeserializers: Map<String, DeserializationStrategy<ClientRequest>> by lazy {
     mapOf(
         Method.Defined.CompletionComplete.value to CompleteRequest.serializer(),
+        Method.Defined.ServerDiscover.value to DiscoverRequest.serializer(),
         Method.Defined.Initialize.value to InitializeRequest.serializer(),
         Method.Defined.Ping.value to PingRequest.serializer(),
         Method.Defined.LoggingSetLevel.value to SetLevelRequest.serializer(),
@@ -417,9 +420,16 @@ private fun selectClientResultDeserializer(element: JsonElement): Deserializatio
  * Selects the appropriate deserializer for server results based on JSON content.
  * Returns null if the structure doesn't match any known server result type.
  */
+@OptIn(ExperimentalMcpApi::class)
 private fun selectServerResultDeserializer(element: JsonElement): DeserializationStrategy<ServerResult>? {
     val jsonObject = element.jsonObject
+    val isDiscoverResult =
+        "supportedVersions" in jsonObject &&
+            "capabilities" in jsonObject &&
+            "ttlMs" in jsonObject &&
+            "cacheScope" in jsonObject
     return when {
+        isDiscoverResult -> DiscoverResult.serializer()
         "protocolVersion" in jsonObject && "capabilities" in jsonObject -> InitializeResult.serializer()
         "completion" in jsonObject -> CompleteResult.serializer()
         "tools" in jsonObject -> ListToolsResult.serializer()

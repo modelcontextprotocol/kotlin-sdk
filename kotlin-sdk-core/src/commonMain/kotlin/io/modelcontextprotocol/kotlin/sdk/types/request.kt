@@ -1,8 +1,10 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
+import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -10,6 +12,13 @@ import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.long
 import kotlinx.serialization.json.longOrNull
 import kotlin.jvm.JvmInline
+
+internal object RequestMetaKeys {
+    const val PROTOCOL_VERSION: String = "io.modelcontextprotocol/protocolVersion"
+    const val CLIENT_INFO: String = "io.modelcontextprotocol/clientInfo"
+    const val CLIENT_CAPABILITIES: String = "io.modelcontextprotocol/clientCapabilities"
+    const val LOG_LEVEL: String = "io.modelcontextprotocol/logLevel"
+}
 
 /**
  * Metadata attached to a request's `_meta` field.
@@ -38,6 +47,88 @@ public value class RequestMeta(public val json: JsonObject) {
     public val relatedTask: RelatedTaskMetadata?
         get() = json[RELATED_TASK_META_KEY]?.let { element ->
             McpJson.decodeFromJsonElement(element)
+        }
+
+    /**
+     * The MCP protocol version selected for this request, or `null` when absent.
+     *
+     * This field is required by the request-scoped lifecycle introduced in protocol version
+     * `2026-07-28`, but remains optional here so older requests retain their wire shape.
+     *
+     * @throws SerializationException if the field is present but is not a string
+     */
+    @ExperimentalMcpApi
+    public val protocolVersion: String?
+        get() = json[RequestMetaKeys.PROTOCOL_VERSION]?.let { element ->
+            if (element !is JsonPrimitive || !element.isString) {
+                throw SerializationException("${RequestMetaKeys.PROTOCOL_VERSION} must be a JSON string")
+            }
+            element.content
+        }
+
+    /**
+     * Information about the client making this request, or `null` when absent.
+     *
+     * Request-scoped clients should include this field unless specifically configured not to do
+     * so. The self-reported value is intended for display, logging, and debugging; servers should
+     * not use it to change behavior or rely on it for security decisions.
+     *
+     * @throws SerializationException if the field is present but is not a valid [Implementation]
+     */
+    @ExperimentalMcpApi
+    public val clientInfo: Implementation?
+        get() = json[RequestMetaKeys.CLIENT_INFO]?.let { element ->
+            try {
+                McpJson.decodeFromJsonElement<Implementation>(element)
+            } catch (cause: SerializationException) {
+                throw SerializationException(
+                    "${RequestMetaKeys.CLIENT_INFO} must be a valid client implementation",
+                    cause,
+                )
+            }
+        }
+
+    /**
+     * Capabilities declared by the client for this request, or `null` when absent.
+     *
+     * Servers using the request-scoped lifecycle must not infer capabilities from an earlier
+     * request. An empty object means the client supports no optional capabilities.
+     *
+     * @throws SerializationException if the field is present but is not valid [ClientCapabilities]
+     */
+    @ExperimentalMcpApi
+    public val clientCapabilities: ClientCapabilities?
+        get() = json[RequestMetaKeys.CLIENT_CAPABILITIES]?.let { element ->
+            try {
+                McpJson.decodeFromJsonElement<ClientCapabilities>(element)
+            } catch (cause: SerializationException) {
+                throw SerializationException(
+                    "${RequestMetaKeys.CLIENT_CAPABILITIES} must be a valid client capabilities object",
+                    cause,
+                )
+            }
+        }
+
+    /**
+     * Minimum severity of request-associated log notifications, or `null` when absent.
+     *
+     * In the request-scoped lifecycle, absence means that the server must not emit log
+     * notifications for this request.
+     *
+     * @throws SerializationException if the field is present but is not a valid [LoggingLevel]
+     */
+    @Deprecated("Per-request log levels are deprecated as of MCP protocol version 2026-07-28 (SEP-2577).")
+    @ExperimentalMcpApi
+    public val logLevel: LoggingLevel?
+        get() = json[RequestMetaKeys.LOG_LEVEL]?.let { element ->
+            try {
+                McpJson.decodeFromJsonElement<LoggingLevel>(element)
+            } catch (cause: SerializationException) {
+                throw SerializationException(
+                    "${RequestMetaKeys.LOG_LEVEL} must be a valid logging level",
+                    cause,
+                )
+            }
         }
 
     /**
