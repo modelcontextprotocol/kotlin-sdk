@@ -7,9 +7,11 @@ import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
+import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import kotlinx.coroutines.CompletableDeferred
@@ -18,9 +20,13 @@ import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonObject
 import org.junit.jupiter.api.Test
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -39,6 +45,18 @@ class ServerSessionInitializeTest {
             capabilities = ClientCapabilities(),
             clientInfo = Implementation(name = clientName, version = "1.0"),
         ),
+    )
+
+    private fun createMalformedInitializeRequest(): JSONRPCRequest = JSONRPCRequest(
+        id = RequestId(1),
+        method = "initialize",
+        params = buildJsonObject {
+            putJsonObject("capabilities") {}
+            putJsonObject("clientInfo") {
+                put("name", "repro")
+                put("version", "0.1.0")
+            }
+        },
     )
 
     @Test
@@ -67,6 +85,28 @@ class ServerSessionInitializeTest {
 
     // Both initialize requests arrive before notifications/initialized, in the serial dispatch
     // phase, so processing and response order stay deterministic.
+    @Test
+    fun `should classify malformed initialize params as invalid params`() = runTest {
+        val session = createSession()
+        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
+
+        val responseDone = CompletableDeferred<JSONRPCError>()
+        clientTransport.onMessage { message ->
+            if (message is JSONRPCError) {
+                responseDone.complete(message)
+            }
+        }
+
+        session.connect(serverTransport)
+        clientTransport.send(createMalformedInitializeRequest())
+
+        val response = responseDone.await()
+        assertEquals(RPCError.ErrorCode.INVALID_PARAMS, response.error.code)
+        assertFalse(response.error.message.contains("kotlinx.serialization"))
+        assertNull(session.clientCapabilities)
+        assertNull(session.clientVersion)
+    }
+
     @Test
     fun `should reject duplicate initialize request`() = runTest {
         val session = createSession()

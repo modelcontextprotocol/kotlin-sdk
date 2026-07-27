@@ -1,7 +1,10 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
+import io.kotest.matchers.string.shouldContain
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
@@ -113,6 +116,24 @@ class ServerResourcesTest : AbstractServerFeaturesTest() {
             resourceListChangedNotificationReceived,
             "No notification should be sent when resource doesn't exist",
         )
+    }
+
+    @Test
+    fun `addResource should throw when resource with same uri is already registered`() = runTest {
+        server.addResource("test://resource", "Original", "Original resource") {
+            ReadResourceResult(listOf(TextResourceContents(text = "original", uri = "test://resource")))
+        }
+
+        val exception = assertThrows<IllegalArgumentException> {
+            server.addResource("test://resource", "Duplicate", "Duplicate resource") {
+                ReadResourceResult(listOf(TextResourceContents(text = "duplicate", uri = "test://resource")))
+            }
+        }
+        exception.message.orEmpty() shouldContain "Resource \"test://resource\" is already registered"
+
+        // The original registration is intact
+        val result = client.readResource(ReadResourceRequest(ReadResourceRequestParams("test://resource")))
+        assertEquals("original", (result.contents.single() as TextResourceContents).text)
     }
 
     @Test

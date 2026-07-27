@@ -38,6 +38,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
@@ -46,6 +47,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesResult
 import io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
@@ -163,7 +165,7 @@ class StreamableHttpServerTransportTest {
     }
 
     @Test
-    fun `second initialization request returns an HTTP error`() = testApplication {
+    fun `second initialization request returns JSON-RPC error with request id`() = testApplication {
         configTestServer()
 
         val client = createTestClient()
@@ -186,13 +188,17 @@ class StreamableHttpServerTransportTest {
 
         firstResponse.status shouldBe HttpStatusCode.OK
 
+        val secondRequest = buildInitializeRequestPayload().copy(id = RequestId("second-init"))
         val secondResponse = client.post(path) {
             addStreamableHeaders()
             header("mcp-session-id", firstResponse.headers[MCP_SESSION_ID_HEADER])
-            setBody(payload)
+            setBody(secondRequest)
         }
 
         secondResponse.status shouldBe HttpStatusCode.BadRequest
+        val error = secondResponse.body<JSONRPCError>()
+        error.id shouldBe secondRequest.id
+        error.error.message shouldBe "Invalid Request: Server already initialized"
     }
 
     @Test
@@ -210,14 +216,46 @@ class StreamableHttpServerTransportTest {
 
         configureTransportEndpoint(transport)
 
+        val payload = buildInitializeRequestPayload()
         val initResponse = client.post(path) {
             addStreamableHeaders()
             header("mcp-protocol-version", "1900-01-01")
-            setBody(buildInitializeRequestPayload())
+            setBody(payload)
         }
 
         initResponse.status shouldBe HttpStatusCode.BadRequest
         initResponse.headers[MCP_SESSION_ID_HEADER] shouldBe null
+        initResponse.body<JSONRPCError>().id shouldBe payload.id
+    }
+
+    @Test
+    fun `malformed initialize params return invalid params over streamable http`() = testApplication {
+        val mcpPath = "/mcp"
+
+        application {
+            mcpStreamableHttp(mcpPath, enableDnsRebindingProtection = false) {
+                Server(
+                    Implementation("test-server", "1.0.0"),
+                    ServerOptions(capabilities = ServerCapabilities()),
+                )
+            }
+        }
+
+        val client = createTestClient()
+
+        val response = client.post(mcpPath) {
+            addStreamableHeaders()
+            setBody(
+                """
+                {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{},"clientInfo":{"name":"repro","version":"0.1.0"}}}
+                """.trimIndent(),
+            )
+        }
+
+        response.status shouldBe HttpStatusCode.OK
+        val error = response.body<JSONRPCError>()
+        error.error.code shouldBe RPCError.ErrorCode.INVALID_PARAMS
+        error.error.message.contains("kotlinx.serialization") shouldBe false
     }
 
     @Test
@@ -261,6 +299,65 @@ class StreamableHttpServerTransportTest {
         }
 
         response.status shouldBe HttpStatusCode.BadRequest
+        response.body<JSONRPCError>().id shouldBe RequestId("test-1")
+    }
+
+    @Test
+    fun `batch with an initialization request echoes the initialize id when rejected`() = testApplication {
+        configTestServer()
+
+        val client = createTestClient()
+
+        val transport = StreamableHttpServerTransport(enableJsonResponse = true)
+        transport.onMessage { }
+
+        configureTransportEndpoint(transport)
+
+        val initPayload = buildInitializeRequestPayload()
+        val response = client.post(path) {
+            addStreamableHeaders()
+            setBody(
+                encodeMessages(
+                    listOf(
+                        initPayload,
+                        JSONRPCRequest(id = RequestId("extra"), method = Method.Defined.ToolsList.value),
+                    ),
+                ),
+            )
+        }
+
+        response.status shouldBe HttpStatusCode.BadRequest
+        val error = response.body<JSONRPCError>()
+        error.error.message shouldBe "Invalid Request: Only one initialization request is allowed"
+        error.id shouldBe initPayload.id
+    }
+
+    @Test
+    fun `non-init request before initialization echoes the request id`() = testApplication {
+        configTestServer()
+
+        val client = createTestClient()
+
+        val transport = StreamableHttpServerTransport(enableJsonResponse = true)
+        transport.onMessage { }
+
+        configureTransportEndpoint(transport)
+
+        val response = client.post(path) {
+            addStreamableHeaders()
+            setBody(
+                encodeMessages(
+                    listOf(
+                        JSONRPCRequest(id = RequestId("before-init"), method = Method.Defined.ToolsList.value),
+                    ),
+                ),
+            )
+        }
+
+        response.status shouldBe HttpStatusCode.BadRequest
+        val error = response.body<JSONRPCError>()
+        error.error.message shouldBe "Bad Request: Server not initialized"
+        error.id shouldBe RequestId("before-init")
     }
 
     @Test

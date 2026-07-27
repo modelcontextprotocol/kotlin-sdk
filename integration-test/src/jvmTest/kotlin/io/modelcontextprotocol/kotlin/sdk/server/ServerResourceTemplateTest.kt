@@ -5,6 +5,7 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.maps.shouldContainKey
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.ListResourceTemplatesRequest
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
@@ -160,6 +161,24 @@ class ServerResourceTemplateTest : AbstractServerFeaturesTest() {
         val removed = server.removeResourceTemplate("test://nonexistent/{id}")
 
         removed shouldBe false
+    }
+
+    @Test
+    fun `addResourceTemplate should throw when template with same uriTemplate is already registered`() {
+        server.addResourceTemplate("test://items/{id}", "Item") { _, _ ->
+            ReadResourceResult(emptyList())
+        }
+
+        val exception = assertThrows<IllegalArgumentException> {
+            server.addResourceTemplate("test://items/{id}", "Duplicate Item") { _, _ ->
+                ReadResourceResult(emptyList())
+            }
+        }
+        exception.message.orEmpty() shouldContain "ResourceTemplate \"test://items/{id}\" is already registered"
+
+        // The original registration is intact
+        server.resourceTemplates shouldHaveSize 1
+        server.resourceTemplates[0].name shouldBe "Item"
     }
 
     @Test

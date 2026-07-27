@@ -78,23 +78,6 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
         }
 
         server.addResource(
-            uri = testResourceUri,
-            name = testResourceName,
-            description = testResourceDescription,
-            mimeType = "text/plain",
-        ) { request ->
-            ReadResourceResult(
-                contents = listOf(
-                    TextResourceContents(
-                        text = testResourceContent,
-                        uri = request.params.uri,
-                        mimeType = "text/plain",
-                    ),
-                ),
-            )
-        }
-
-        server.addResource(
             uri = binaryResourceUri,
             name = binaryResourceName,
             description = binaryResourceDescription,

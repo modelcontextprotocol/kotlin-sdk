@@ -11,6 +11,7 @@ import kotlinx.coroutines.test.runTest
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -79,6 +80,27 @@ class ServerToolsNotificationTest : AbstractServerFeaturesTest() {
                 "Two notifications should be sent when tools are added and two when removed",
             )
         }
+    }
+
+    @Test
+    fun `addTool should not send notification when duplicate is rejected`() = runTest {
+        // Track notifications
+        val notifications = mutableListOf<ToolListChangedNotification>()
+        client.setNotificationHandler<ToolListChangedNotification>(
+            Method.Defined.NotificationsToolsListChanged,
+        ) { notification ->
+            notifications.add(notification)
+            CompletableDeferred(Unit)
+        }
+
+        server.addTool("test-tool", "Test Tool") { CallToolResult(emptyList()) }
+        assertThrows<IllegalArgumentException> {
+            server.addTool("test-tool", "Duplicate Tool") { CallToolResult(emptyList()) }
+        }
+        // Close the server to stop processing further events and flush notifications
+        server.close()
+
+        assertEquals(1, notifications.size, "Only the first registration should send a notification")
     }
 
     @Test

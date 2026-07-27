@@ -1,5 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.collections.shouldHaveSize
@@ -57,6 +58,39 @@ class ServerBulkFeaturesTest : AbstractServerFeaturesTest() {
         tools.map { it.name } shouldContainExactlyInAnyOrder listOf("existing", "new-a", "new-b")
     }
 
+    @Test
+    fun `addTools should throw and register nothing when a tool is already registered`() = runTest {
+        server.addTool("existing", "Existing") { CallToolResult(emptyList()) }
+
+        shouldThrow<IllegalArgumentException> {
+            server.addTools(
+                listOf(
+                    RegisteredTool(Tool("new-a", ToolSchema())) { CallToolResult(emptyList()) },
+                    RegisteredTool(Tool("existing", ToolSchema())) { CallToolResult(emptyList()) },
+                ),
+            )
+        }
+
+        val tools = client.listTools().tools
+
+        tools shouldHaveSize 1
+        tools.map { it.name } shouldContainExactlyInAnyOrder listOf("existing")
+    }
+
+    @Test
+    fun `addTools should throw when batch contains duplicate names`() = runTest {
+        shouldThrow<IllegalArgumentException> {
+            server.addTools(
+                listOf(
+                    RegisteredTool(Tool("dup", ToolSchema())) { CallToolResult(emptyList()) },
+                    RegisteredTool(Tool("dup", ToolSchema())) { CallToolResult(emptyList()) },
+                ),
+            )
+        }
+
+        client.listTools().tools.shouldBeEmpty()
+    }
+
     // ── addPrompts ─────────────────────────────────────────────────────────────
 
     @Test
@@ -87,6 +121,25 @@ class ServerBulkFeaturesTest : AbstractServerFeaturesTest() {
 
         prompts shouldHaveSize 2
         prompts.map { it.name } shouldContainExactlyInAnyOrder listOf("existing-prompt", "new-p")
+    }
+
+    @Test
+    fun `addPrompts should throw and register nothing when a prompt is already registered`() = runTest {
+        server.addPrompt("existing-prompt", "Existing") { GetPromptResult(messages = emptyList()) }
+
+        shouldThrow<IllegalArgumentException> {
+            server.addPrompts(
+                listOf(
+                    RegisteredPrompt(Prompt("new-p")) { GetPromptResult(messages = emptyList()) },
+                    RegisteredPrompt(Prompt("existing-prompt")) { GetPromptResult(messages = emptyList()) },
+                ),
+            )
+        }
+
+        val prompts = client.listPrompts().prompts
+
+        prompts shouldHaveSize 1
+        prompts.map { it.name } shouldContainExactlyInAnyOrder listOf("existing-prompt")
     }
 
     // ── addResources ───────────────────────────────────────────────────────────
@@ -121,6 +174,27 @@ class ServerBulkFeaturesTest : AbstractServerFeaturesTest() {
 
         resources shouldHaveSize 2
         resources.map { it.uri } shouldContainExactlyInAnyOrder listOf("test://existing-res", "test://new-res")
+    }
+
+    @Test
+    fun `addResources should throw and register nothing when a resource is already registered`() = runTest {
+        server.addResource("test://existing-res", "Existing", "Existing resource") {
+            ReadResourceResult(emptyList())
+        }
+
+        shouldThrow<IllegalArgumentException> {
+            server.addResources(
+                listOf(
+                    RegisteredResource(Resource("test://new-res", "New")) { ReadResourceResult(emptyList()) },
+                    RegisteredResource(Resource("test://existing-res", "Dup")) { ReadResourceResult(emptyList()) },
+                ),
+            )
+        }
+
+        val resources = client.listResources().resources
+
+        resources shouldHaveSize 1
+        resources.map { it.uri } shouldContainExactlyInAnyOrder listOf("test://existing-res")
     }
 
     // ── Partial-batch remove ───────────────────────────────────────────────────

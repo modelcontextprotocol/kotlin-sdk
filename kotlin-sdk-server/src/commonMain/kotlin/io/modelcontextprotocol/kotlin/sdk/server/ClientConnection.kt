@@ -10,12 +10,14 @@ import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestURLParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitResult
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotification
+import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.IncludeContext
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsResult
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification
+import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.types.PromptListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.Request
@@ -95,12 +97,17 @@ public interface ClientConnection {
      * Sends a message to the client requesting elicitation.
      * This typically results in a form being displayed to the end user.
      *
+     * Accepted content is validated against [requestedSchema]. If content is absent, an empty
+     * object is used for validation only, so declared `required` properties still apply. The
+     * returned [ElicitResult] is not modified.
+     *
      * @param message The message for the elicitation to display.
-     * @param requestedSchema The schema requested by the client for the elicitation result.
+     * @param requestedSchema The schema the server requests for the elicitation result.
      * Influences the form displayed to the user.
      * @param options Optional request options.
      * @return The result of the elicitation request.
      * @throws IllegalStateException If the server or client does not support elicitation.
+     * @throws McpException If an accepted response does not match [requestedSchema].
      */
     public suspend fun createElicitation(
         message: String,
@@ -130,10 +137,15 @@ public interface ClientConnection {
      * Sends a message to the client requesting elicitation.
      * This typically results in a form being displayed to the user.
      *
+     * For form-mode requests, accepted content is validated against the requested schema. If
+     * content is absent, an empty object is used for validation only, so declared `required`
+     * properties still apply. The returned [ElicitResult] is not modified.
+     *
      * @param request The elicitation request parameters.
      * @param options Optional request options.
      * @return The result of the elicitation request.
      * @throws IllegalStateException If the server or client does not support elicitation.
+     * @throws McpException If an accepted form-mode response does not match its requested schema.
      */
     public suspend fun createElicitation(request: ElicitRequest, options: RequestOptions? = null): ElicitResult
 
@@ -256,7 +268,13 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
             }
         }
         logger.trace { "ElicitRequest: $request" }
-        return request(request, options)
+        val result: ElicitResult = request(request, options)
+        if (params is ElicitRequestFormParams && result.action == ElicitResult.Action.Accept) {
+            // Peer-response backstop: accepted form content is client-supplied. Absent content is
+            // validated as an empty object so declared `required` properties still apply.
+            validateElicitationContent(params.requestedSchema, result.content ?: EmptyJsonObject)
+        }
+        return result
     }
 
     override suspend fun createElicitation(

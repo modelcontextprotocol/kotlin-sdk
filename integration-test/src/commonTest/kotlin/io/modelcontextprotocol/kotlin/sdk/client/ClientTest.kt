@@ -1125,6 +1125,103 @@ class ClientTest {
     }
 
     @Test
+    fun `should reject accepted elicitation content that does not match requested schema`() = runTest {
+        val requestedSchema = ElicitRequestParams.RequestedSchema(
+            properties = mapOf("name" to StringSchema()),
+            required = listOf("name"),
+        )
+        val (client, serverSession) = setupElicitationPair {
+            ElicitResult(action = ElicitResult.Action.Accept, content = buildJsonObject { put("name", 42) })
+        }
+
+        val exception = assertFailsWith<McpException> {
+            serverSession.createElicitation(message = "mismatch", requestedSchema = requestedSchema)
+        }
+        assertTrue(
+            exception.message.orEmpty()
+                .startsWith("Elicitation response content does not match requested schema: "),
+            "Unexpected message: ${exception.message}",
+        )
+        assertTrue("'name' must be string" in exception.message.orEmpty(), "Unexpected message: ${exception.message}")
+
+        client.close()
+    }
+
+    @Test
+    fun `should reject accepted elicitation without content when schema has required properties`() = runTest {
+        val requestedSchema = ElicitRequestParams.RequestedSchema(
+            properties = mapOf("name" to StringSchema()),
+            required = listOf("name"),
+        )
+        val (client, serverSession) = setupElicitationPair {
+            ElicitResult(action = ElicitResult.Action.Accept, content = null)
+        }
+
+        val exception = assertFailsWith<McpException> {
+            serverSession.createElicitation(message = "no content", requestedSchema = requestedSchema)
+        }
+        assertTrue(
+            "must have required property 'name'" in exception.message.orEmpty(),
+            "Unexpected message: ${exception.message}",
+        )
+
+        client.close()
+    }
+
+    @Test
+    fun `should accept elicitation without content when schema has no required properties`() = runTest {
+        val requestedSchema = ElicitRequestParams.RequestedSchema(
+            properties = mapOf("name" to StringSchema()),
+        )
+        val (client, serverSession) = setupElicitationPair {
+            ElicitResult(action = ElicitResult.Action.Accept, content = null)
+        }
+
+        val result = serverSession.createElicitation(message = "no required", requestedSchema = requestedSchema)
+
+        assertEquals(ElicitResult.Action.Accept, result.action)
+        assertNull(result.content)
+
+        client.close()
+    }
+
+    @Test
+    fun `should pass through declined elicitation without validation`() = runTest {
+        val requestedSchema = ElicitRequestParams.RequestedSchema(
+            properties = mapOf("name" to StringSchema()),
+            required = listOf("name"),
+        )
+        val (client, serverSession) = setupElicitationPair {
+            ElicitResult(action = ElicitResult.Action.Decline)
+        }
+
+        val result = serverSession.createElicitation(message = "decline", requestedSchema = requestedSchema)
+
+        assertEquals(ElicitResult.Action.Decline, result.action)
+        assertNull(result.content)
+
+        client.close()
+    }
+
+    @Test
+    fun `should pass through cancelled elicitation without validation`() = runTest {
+        val requestedSchema = ElicitRequestParams.RequestedSchema(
+            properties = mapOf("name" to StringSchema()),
+            required = listOf("name"),
+        )
+        val (client, serverSession) = setupElicitationPair {
+            ElicitResult(action = ElicitResult.Action.Cancel)
+        }
+
+        val result = serverSession.createElicitation(message = "cancel", requestedSchema = requestedSchema)
+
+        assertEquals(ElicitResult.Action.Cancel, result.action)
+        assertNull(result.content)
+
+        client.close()
+    }
+
+    @Test
     fun `should apply elicitation defaults for missing fields in empty content`() = runTest {
         val schema = defaultsTestSchema()
         val (client, serverSession) = setupElicitationPair {
