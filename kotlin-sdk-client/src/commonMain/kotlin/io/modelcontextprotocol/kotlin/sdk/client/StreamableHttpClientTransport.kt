@@ -43,6 +43,10 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.math.pow
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -51,6 +55,10 @@ import kotlin.time.Duration.Companion.seconds
 private const val MCP_SESSION_ID_HEADER = "mcp-session-id"
 private const val MCP_PROTOCOL_VERSION_HEADER = "mcp-protocol-version"
 private const val MCP_RESUMPTION_TOKEN_HEADER = "Last-Event-ID"
+private const val MCP_METHOD_HEADER = "Mcp-Method"
+private const val MCP_NAME_HEADER = "Mcp-Name"
+private const val MCP_BASE64_PREFIX = "=?base64?"
+private const val MCP_BASE64_SUFFIX = "?="
 
 /**
  * Default maximum size, in characters, of a single inline SSE event assembled from a POST response.
@@ -167,6 +175,7 @@ public class StreamableHttpClientTransport(
         val jsonBody = McpJson.encodeToString(message)
         val response = client.post(url) {
             applyCommonHeaders(this)
+            applyStandardPostHeaders(this, message)
             headers.append(HttpHeaders.Accept, "${ContentType.Application.Json}, ${ContentType.Text.EventStream}")
             contentType(ContentType.Application.Json)
             setBody(jsonBody)
@@ -388,6 +397,36 @@ public class StreamableHttpClientTransport(
             sessionId?.let { append(MCP_SESSION_ID_HEADER, it) }
             protocolVersion?.let { append(MCP_PROTOCOL_VERSION_HEADER, it) }
         }
+    }
+
+    private fun applyStandardPostHeaders(builder: HttpRequestBuilder, message: JSONRPCMessage) {
+        val (method, params) = when (message) {
+            is JSONRPCRequest -> message.method to message.params
+            is JSONRPCNotification -> message.method to message.params
+            else -> return
+        }
+
+        builder.headers {
+            append(MCP_METHOD_HEADER, method)
+
+            val paramsObject = params as? JsonObject ?: return@headers
+            val mcpName = paramsObject.stringValue("name") ?: paramsObject.stringValue("uri")
+            mcpName?.let { append(MCP_NAME_HEADER, it.encodeMcpHeaderValue()) }
+        }
+    }
+
+    private fun JsonObject.stringValue(key: String): String? =
+        (get(key) as? JsonPrimitive)?.takeIf { it.isString }?.content
+
+    @OptIn(ExperimentalEncodingApi::class)
+    private fun String.encodeMcpHeaderValue(): String {
+        val containsUnsafeCharacters = any { it != '\t' && it.code !in 0x20..0x7e }
+        val hasEdgeWhitespace = firstOrNull()?.isWhitespace() == true || lastOrNull()?.isWhitespace() == true
+        val matchesBase64Sentinel = startsWith(MCP_BASE64_PREFIX) && endsWith(MCP_BASE64_SUFFIX)
+
+        if (!containsUnsafeCharacters && !hasEdgeWhitespace && !matchesBase64Sentinel) return this
+
+        return "$MCP_BASE64_PREFIX${Base64.Default.encode(encodeToByteArray())}$MCP_BASE64_SUFFIX"
     }
 
     private suspend fun collectSse(
