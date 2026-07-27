@@ -2,6 +2,11 @@ package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
 import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
+import kotlinx.schema.json.ArrayPropertyDefinition
+import kotlinx.schema.json.NumericPropertyDefinition
+import kotlinx.schema.json.ObjectPropertyDefinition
+import kotlinx.schema.json.ReferencePropertyDefinition
+import kotlinx.schema.json.StringPropertyDefinition
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.int
@@ -19,7 +24,7 @@ class ToolsTest {
     fun `should serialize Tool with minimal fields`() {
         val tool = Tool(
             name = "search",
-            inputSchema = ToolSchema(),
+            inputSchema = ObjectPropertyDefinition(),
         )
 
         verifySerialization(
@@ -38,27 +43,16 @@ class ToolsTest {
 
     @Test
     fun `should serialize Tool with annotations and schemas`() {
-        val inputSchema = ToolSchema(
-            properties = buildJsonObject {
-                put(
-                    "query",
-                    buildJsonObject {
-                        put("type", "string")
-                        put("description", "Search query")
-                    },
-                )
-            },
+        val inputSchema = ObjectPropertyDefinition(
+            properties = mapOf(
+                "query" to StringPropertyDefinition(description = "Search query"),
+            ),
             required = listOf("query"),
         )
-        val outputSchema = ToolSchema(
-            properties = buildJsonObject {
-                put(
-                    "results",
-                    buildJsonObject {
-                        put("type", "array")
-                    },
-                )
-            },
+        val outputSchema = ObjectPropertyDefinition(
+            properties = mapOf(
+                "results" to ArrayPropertyDefinition(),
+            ),
         )
         val tool = Tool(
             name = "web-search",
@@ -158,69 +152,14 @@ class ToolsTest {
     }
 
     @Test
-    fun `should serialize ToolSchema with schema field`() {
-        val tool = Tool(
-            name = "typed-tool",
-            inputSchema = ToolSchema(
-                schema = "https://json-schema.org/draft/2020-12/schema",
-                properties = buildJsonObject {
-                    put("name", buildJsonObject { put("type", "string") })
-                },
-            ),
-        )
-
-        verifySerialization(
-            tool,
-            McpJson,
-            $$"""
-            {
-              "name": "typed-tool",
-              "inputSchema": {
-                "$schema": "https://json-schema.org/draft/2020-12/schema",
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should deserialize ToolSchema with schema field`() {
-        val json = $$"""
-            {
-              "name": "typed-tool",
-              "inputSchema": {
-                "$schema": "https://json-schema.org/draft/2020-12/schema",
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-        """.trimIndent()
-
-        val tool = verifyDeserialization<Tool>(McpJson, json)
-
-        assertEquals("https://json-schema.org/draft/2020-12/schema", tool.inputSchema.schema)
-        assertNotNull(tool.inputSchema.properties)
-    }
-
-    @Test
-    fun `should serialize ToolSchema with defs`() {
+    fun `should serialize ObjectPropertyDefinition with defs`() {
         val tool = toolWithDefs()
 
         verifySerialization(tool, McpJson, toolWithDefsJson())
     }
 
     @Test
-    fun `should deserialize ToolSchema with defs`() {
+    fun `should deserialize ObjectPropertyDefinition with defs`() {
         val json = $$"""
             {
               "name": "create-page",
@@ -251,12 +190,12 @@ class ToolsTest {
         val schema = tool.inputSchema
         val defs = schema.defs
         assertNotNull(defs)
-        val parentRequest = defs["parentRequest"]?.jsonObject
-        assertNotNull(parentRequest)
-        assertEquals("object", parentRequest["type"]?.jsonPrimitive?.content)
+        val parentRequest = assertIs<ObjectPropertyDefinition>(defs["parentRequest"])
+        assertEquals(listOf("object"), parentRequest.type)
+        val parent = assertIs<ReferencePropertyDefinition>(schema.properties?.get("parent"))
         assertEquals(
             $$"#/$defs/parentRequest",
-            schema.properties?.get("parent")?.jsonObject?.get($$"$ref")?.jsonPrimitive?.content,
+            parent.ref,
         )
         assertEquals(listOf("parent"), schema.required)
     }
@@ -487,8 +426,8 @@ class ToolsTest {
     fun `should serialize ListToolsResult`() {
         val result = ListToolsResult(
             tools = listOf(
-                Tool(name = "search", inputSchema = ToolSchema()),
-                Tool(name = "summarize", inputSchema = ToolSchema()),
+                Tool(name = "search", inputSchema = ObjectPropertyDefinition()),
+                Tool(name = "summarize", inputSchema = ObjectPropertyDefinition()),
             ),
             nextCursor = "cursor-2",
             meta = buildJsonObject { put("page", 1) },
@@ -550,7 +489,7 @@ class ToolsTest {
         val tool = tools.first()
         assertEquals("search", tool.name)
         assertEquals("Search the workspace", tool.description)
-        assertEquals("object", tool.inputSchema.type)
+        assertEquals(listOf("object"), tool.inputSchema.type)
         assertEquals(3, result.meta?.get("page")?.jsonPrimitive?.int)
     }
 
@@ -632,7 +571,7 @@ class ToolsTest {
     fun `should serialize Tool with execution`() {
         val tool = Tool(
             name = "long-running-task",
-            inputSchema = ToolSchema(),
+            inputSchema = ObjectPropertyDefinition(),
             description = "A tool that supports task-augmented execution",
             execution = ToolExecution(taskSupport = TaskSupport.Required),
         )
@@ -707,42 +646,28 @@ class ToolsTest {
         name = "get_weather",
         title = "Get weather",
         description = "Get the current weather in a given location",
-        inputSchema = ToolSchema(
-            properties = buildJsonObject {
-                put(
-                    "location",
-                    buildJsonObject {
-                        put("type", "string")
-                        put("description", "The city and state, e.g. San Francisco, CA")
-                    },
-                )
-            },
+        inputSchema = ObjectPropertyDefinition(
+            properties = mapOf(
+                "location" to StringPropertyDefinition(
+                    description = "The city and state, e.g. San Francisco, CA",
+                ),
+            ),
             required = listOf("location"),
         ),
-        outputSchema = ToolSchema(
-            properties = buildJsonObject {
-                put(
-                    "temperature",
-                    buildJsonObject {
-                        put("type", "number")
-                        put("description", "Temperature in celsius")
-                    },
-                )
-                put(
-                    "conditions",
-                    buildJsonObject {
-                        put("type", "string")
-                        put("description", "Weather conditions description")
-                    },
-                )
-                put(
-                    "humidity",
-                    buildJsonObject {
-                        put("type", "number")
-                        put("description", "Humidity percentage")
-                    },
-                )
-            },
+        outputSchema = ObjectPropertyDefinition(
+            properties = mapOf(
+                "temperature" to NumericPropertyDefinition(
+                    type = listOf("number"),
+                    description = "Temperature in celsius",
+                ),
+                "conditions" to StringPropertyDefinition(
+                    description = "Weather conditions description",
+                ),
+                "humidity" to NumericPropertyDefinition(
+                    type = listOf("number"),
+                    description = "Humidity percentage",
+                ),
+            ),
             required = listOf("temperature", "conditions", "humidity"),
         ),
         meta = buildJsonObject { put("_for_test_only", true) },
@@ -792,35 +717,18 @@ class ToolsTest {
         inputSchema = toolSchemaWithDefs(),
     )
 
-    private fun toolSchemaWithDefs(): ToolSchema = ToolSchema(
-        properties = buildJsonObject {
-            put(
-                "parent",
-                buildJsonObject {
-                    put($$"$ref", $$"#/$defs/parentRequest")
-                },
-            )
-        },
+    private fun toolSchemaWithDefs(): ObjectPropertyDefinition = ObjectPropertyDefinition(
+        properties = mapOf(
+            "parent" to ReferencePropertyDefinition(ref = $$"#/$defs/parentRequest"),
+        ),
         required = listOf("parent"),
-        defs = buildJsonObject {
-            put(
-                "parentRequest",
-                buildJsonObject {
-                    put("type", "object")
-                    put(
-                        "properties",
-                        buildJsonObject {
-                            put(
-                                "page_id",
-                                buildJsonObject {
-                                    put("type", "string")
-                                },
-                            )
-                        },
-                    )
-                },
-            )
-        },
+        defs = mapOf(
+            "parentRequest" to ObjectPropertyDefinition(
+                properties = mapOf(
+                    "page_id" to StringPropertyDefinition(),
+                ),
+            ),
+        ),
     )
 
     private fun toolWithDefsJson(): String = $$"""

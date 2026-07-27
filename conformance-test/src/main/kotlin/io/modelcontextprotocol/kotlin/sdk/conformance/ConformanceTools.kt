@@ -26,12 +26,13 @@ import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
 import io.modelcontextprotocol.kotlin.sdk.types.TitledMultiSelectEnumSchema
 import io.modelcontextprotocol.kotlin.sdk.types.TitledSingleSelectEnumSchema
-import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import io.modelcontextprotocol.kotlin.sdk.types.UntitledMultiSelectEnumSchema
 import io.modelcontextprotocol.kotlin.sdk.types.UntitledSingleSelectEnumSchema
 import kotlinx.coroutines.delay
+import kotlinx.schema.json.NumericPropertyDefinition
+import kotlinx.schema.json.ObjectPropertyDefinition
+import kotlinx.schema.json.StringPropertyDefinition
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.double
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.time.Duration.Companion.milliseconds
@@ -163,10 +164,8 @@ fun Server.registerConformanceTools() {
     addTool(
         name = "test_sampling",
         description = "test_sampling",
-        inputSchema = ToolSchema(
-            properties = buildJsonObject {
-                put("prompt", buildJsonObject { put("type", JsonPrimitive("string")) })
-            },
+        inputSchema = ObjectPropertyDefinition(
+            properties = mapOf("prompt" to StringPropertyDefinition()),
             required = listOf("prompt"),
         ),
     ) { request ->
@@ -192,10 +191,8 @@ fun Server.registerConformanceTools() {
     addTool(
         name = "test_elicitation",
         description = "test_elicitation",
-        inputSchema = ToolSchema(
-            properties = buildJsonObject {
-                put("message", buildJsonObject { put("type", JsonPrimitive("string")) })
-            },
+        inputSchema = ObjectPropertyDefinition(
+            properties = mapOf("message" to StringPropertyDefinition()),
             required = listOf("message"),
         ),
     ) { request ->
@@ -352,11 +349,11 @@ fun Server.registerConformanceTools() {
     addTool(
         name = "add_numbers",
         description = "Adds two numbers together",
-        inputSchema = ToolSchema(
-            properties = buildJsonObject {
-                put("a", buildJsonObject { put("type", JsonPrimitive("number")) })
-                put("b", buildJsonObject { put("type", JsonPrimitive("number")) })
-            },
+        inputSchema = ObjectPropertyDefinition(
+            properties = mapOf(
+                "a" to NumericPropertyDefinition(type = listOf("number")),
+                "b" to NumericPropertyDefinition(type = listOf("number")),
+            ),
             required = listOf("a", "b"),
         ),
     ) { request ->
@@ -389,28 +386,16 @@ fun Server.registerConformanceTools() {
     addTool(
         name = "json_schema_2020_12_tool",
         description = "Tool with JSON Schema 2020-12 features for conformance testing (SEP-1613)",
-        inputSchema = ToolSchema(
-            properties = buildJsonObject {
-                put(
-                    "name",
-                    buildJsonObject {
-                        put("type", JsonPrimitive("string"))
-                    },
-                )
-                put(
-                    "address",
-                    buildJsonObject {
-                        put("type", JsonPrimitive("object"))
-                        put(
-                            "properties",
-                            buildJsonObject {
-                                put("street", buildJsonObject { put("type", JsonPrimitive("string")) })
-                                put("city", buildJsonObject { put("type", JsonPrimitive("string")) })
-                            },
-                        )
-                    },
-                )
-            },
+        inputSchema = ObjectPropertyDefinition(
+            properties = mapOf(
+                "name" to StringPropertyDefinition(),
+                "address" to ObjectPropertyDefinition(
+                    properties = mapOf(
+                        "street" to StringPropertyDefinition(),
+                        "city" to StringPropertyDefinition(),
+                    ),
+                ),
+            ),
         ),
     ) { request ->
         CallToolResult(

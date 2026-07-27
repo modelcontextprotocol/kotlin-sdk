@@ -40,13 +40,11 @@ import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
 import io.modelcontextprotocol.kotlin.sdk.types.ToolAnnotations
-import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.coroutines.delay
+import kotlinx.schema.json.ObjectPropertyDefinition
+import kotlinx.schema.json.StringPropertyDefinition
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.put
-import kotlinx.serialization.json.putJsonObject
 import kotlin.time.Duration.Companion.milliseconds
 
 private const val MCP_SESSION_ID_HEADER = "mcp-session-id"
@@ -193,13 +191,8 @@ private fun createMcpServer(): Server {
     server.addTool(
         name = "greet",
         description = "A simple greeting tool",
-        inputSchema = ToolSchema(
-            properties = buildJsonObject {
-                putJsonObject("name") {
-                    put("type", "string")
-                    put("description", "Name to greet")
-                }
-            },
+        inputSchema = ObjectPropertyDefinition(
+            properties = mapOf("name" to StringPropertyDefinition(description = "Name to greet")),
             required = listOf("name"),
         ),
     ) { request ->
@@ -211,13 +204,8 @@ private fun createMcpServer(): Server {
     server.addTool(
         name = "multi-greet",
         description = "A tool that sends different greetings with delays between them",
-        inputSchema = ToolSchema(
-            properties = buildJsonObject {
-                putJsonObject("name") {
-                    put("type", "string")
-                    put("description", "Name to greet")
-                }
-            },
+        inputSchema = ObjectPropertyDefinition(
+            properties = mapOf("name" to StringPropertyDefinition(description = "Name to greet")),
             required = listOf("name"),
         ),
         toolAnnotations = ToolAnnotations(readOnlyHint = true, openWorldHint = false),

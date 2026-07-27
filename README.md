@@ -197,9 +197,8 @@ import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
-import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
+import kotlinx.schema.json.ObjectPropertyDefinition
+import kotlinx.schema.json.StringPropertyDefinition
 
 fun main(args: Array<String>) {
     val port = args.firstOrNull()?.toIntOrNull() ?: 3000
@@ -218,10 +217,8 @@ fun main(args: Array<String>) {
     mcpServer.addTool(
         name = "example-tool",
         description = "An example tool",
-        inputSchema = ToolSchema(
-            properties = buildJsonObject {
-                put("input", buildJsonObject { put("type", "string") })
-            }
+        inputSchema = ObjectPropertyDefinition(
+            properties = mapOf("input" to StringPropertyDefinition())
         )
     ) { request ->
         CallToolResult(content = listOf(TextContent("Hello, world!")))

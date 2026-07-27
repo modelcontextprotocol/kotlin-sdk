@@ -47,7 +47,6 @@ import io.modelcontextprotocol.kotlin.sdk.types.StringSchema
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.TitledMultiSelectEnumSchema
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
-import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import io.modelcontextprotocol.kotlin.sdk.types.UntitledMultiSelectEnumSchema
 import io.modelcontextprotocol.kotlin.sdk.types.UntitledSingleSelectEnumSchema
 import io.modelcontextprotocol.kotlin.sdk.types.UrlElicitationRequiredException
@@ -60,6 +59,7 @@ import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
+import kotlinx.schema.json.ObjectPropertyDefinition
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -719,7 +719,7 @@ class ClientTest {
                     title = "testTool title",
                     description = "testTool description",
                     annotations = null,
-                    inputSchema = ToolSchema(),
+                    inputSchema = ObjectPropertyDefinition(),
                     outputSchema = null,
                 ),
             ),

@@ -44,7 +44,6 @@ import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
 import io.modelcontextprotocol.kotlin.sdk.types.ToolAnnotations
 import io.modelcontextprotocol.kotlin.sdk.types.ToolExecution
-import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import io.modelcontextprotocol.kotlin.sdk.types.UnsubscribeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.UrlElicitationRequiredException
 import io.modelcontextprotocol.kotlin.sdk.utils.MatchResult
@@ -54,6 +53,7 @@ import io.modelcontextprotocol.kotlin.sdk.utils.ResourceTemplateMatcherFactory
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.schema.json.ObjectPropertyDefinition
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -333,9 +333,9 @@ public open class Server(
     public fun addTool(
         name: String,
         description: String,
-        inputSchema: ToolSchema = ToolSchema(),
+        inputSchema: ObjectPropertyDefinition = ObjectPropertyDefinition(),
         title: String? = null,
-        outputSchema: ToolSchema? = null,
+        outputSchema: ObjectPropertyDefinition? = null,
         toolAnnotations: ToolAnnotations? = null,
         execution: ToolExecution? = null,
         meta: JsonObject? = null,

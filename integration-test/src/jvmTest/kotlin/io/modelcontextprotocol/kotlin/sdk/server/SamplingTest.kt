@@ -19,11 +19,12 @@ import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
 import io.modelcontextprotocol.kotlin.sdk.types.ToolChoice
 import io.modelcontextprotocol.kotlin.sdk.types.ToolResultContent
-import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import io.modelcontextprotocol.kotlin.sdk.types.ToolUseContent
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.schema.json.ObjectPropertyDefinition
+import kotlinx.schema.json.StringPropertyDefinition
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -35,16 +36,14 @@ class SamplingTest {
 
     private val dummyTool = Tool(
         name = "t",
-        inputSchema = ToolSchema(properties = buildJsonObject { }, required = emptyList()),
+        inputSchema = ObjectPropertyDefinition(properties = emptyMap(), required = emptyList()),
     )
 
     private val weatherTool = Tool(
         name = "get_weather",
         description = "Return the current temperature in Celsius.",
-        inputSchema = ToolSchema(
-            properties = buildJsonObject {
-                put("location", buildJsonObject { put("type", JsonPrimitive("string")) })
-            },
+        inputSchema = ObjectPropertyDefinition(
+            properties = mapOf("location" to StringPropertyDefinition()),
             required = listOf("location"),
         ),
     )

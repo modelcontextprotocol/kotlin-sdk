@@ -12,8 +12,8 @@ import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
 import io.modelcontextprotocol.kotlin.sdk.types.Resource
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
-import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.coroutines.test.runTest
+import kotlinx.schema.json.ObjectPropertyDefinition
 import org.junit.jupiter.api.Test
 
 class ServerBulkFeaturesTest : AbstractServerFeaturesTest() {
@@ -30,9 +30,9 @@ class ServerBulkFeaturesTest : AbstractServerFeaturesTest() {
     fun `addTools should register all provided tools`() = runTest {
         server.addTools(
             listOf(
-                RegisteredTool(Tool("bulk-a", ToolSchema(), "Tool A")) { CallToolResult(emptyList()) },
-                RegisteredTool(Tool("bulk-b", ToolSchema(), "Tool B")) { CallToolResult(emptyList()) },
-                RegisteredTool(Tool("bulk-c", ToolSchema(), "Tool C")) { CallToolResult(emptyList()) },
+                RegisteredTool(Tool("bulk-a", ObjectPropertyDefinition(), "Tool A")) { CallToolResult(emptyList()) },
+                RegisteredTool(Tool("bulk-b", ObjectPropertyDefinition(), "Tool B")) { CallToolResult(emptyList()) },
+                RegisteredTool(Tool("bulk-c", ObjectPropertyDefinition(), "Tool C")) { CallToolResult(emptyList()) },
             ),
         )
 
@@ -47,8 +47,8 @@ class ServerBulkFeaturesTest : AbstractServerFeaturesTest() {
         server.addTool("existing", "Existing") { CallToolResult(emptyList()) }
         server.addTools(
             listOf(
-                RegisteredTool(Tool("new-a", ToolSchema())) { CallToolResult(emptyList()) },
-                RegisteredTool(Tool("new-b", ToolSchema())) { CallToolResult(emptyList()) },
+                RegisteredTool(Tool("new-a", ObjectPropertyDefinition())) { CallToolResult(emptyList()) },
+                RegisteredTool(Tool("new-b", ObjectPropertyDefinition())) { CallToolResult(emptyList()) },
             ),
         )
 
@@ -65,8 +65,8 @@ class ServerBulkFeaturesTest : AbstractServerFeaturesTest() {
         shouldThrow<IllegalArgumentException> {
             server.addTools(
                 listOf(
-                    RegisteredTool(Tool("new-a", ToolSchema())) { CallToolResult(emptyList()) },
-                    RegisteredTool(Tool("existing", ToolSchema())) { CallToolResult(emptyList()) },
+                    RegisteredTool(Tool("new-a", ObjectPropertyDefinition())) { CallToolResult(emptyList()) },
+                    RegisteredTool(Tool("existing", ObjectPropertyDefinition())) { CallToolResult(emptyList()) },
                 ),
             )
         }
@@ -82,8 +82,8 @@ class ServerBulkFeaturesTest : AbstractServerFeaturesTest() {
         shouldThrow<IllegalArgumentException> {
             server.addTools(
                 listOf(
-                    RegisteredTool(Tool("dup", ToolSchema())) { CallToolResult(emptyList()) },
-                    RegisteredTool(Tool("dup", ToolSchema())) { CallToolResult(emptyList()) },
+                    RegisteredTool(Tool("dup", ObjectPropertyDefinition())) { CallToolResult(emptyList()) },
+                    RegisteredTool(Tool("dup", ObjectPropertyDefinition())) { CallToolResult(emptyList()) },
                 ),
             )
         }

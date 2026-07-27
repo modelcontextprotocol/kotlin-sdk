@@ -8,6 +8,8 @@ import io.ktor.serialization.kotlinx.json.*
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.types.*
+import kotlinx.schema.json.ObjectPropertyDefinition
+import kotlinx.schema.json.StringPropertyDefinition
 import kotlinx.serialization.json.*
 import org.kotlinlang.mcp.algolia.AlgoliaClient
 import org.kotlinlang.mcp.cache.TtlCache
@@ -54,17 +56,13 @@ internal class KotlinlangServer(config: ServerConfig) : Closeable {
                 "other topic covered in the official Kotlin documentation. Returns up to 5 results with page " +
                 "titles, paths, and text snippets. To get the full content of a specific page, use the " +
                 "get_kotlinlang_page tool with the page path from the search results.",
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    putJsonObject("query") {
-                        put("type", "string")
-                        put(
-                            "description",
-                            "A search query to find relevant Kotlin documentation pages " +
-                                "(e.g. 'coroutines', 'sealed classes', 'multiplatform setup')",
-                        )
-                    }
-                },
+            inputSchema = ObjectPropertyDefinition(
+                properties = mapOf(
+                    "query" to StringPropertyDefinition(
+                        description = "A search query to find relevant Kotlin documentation pages " +
+                            "(e.g. 'coroutines', 'sealed classes', 'multiplatform setup')",
+                    ),
+                ),
                 required = listOf("query"),
             ),
             toolAnnotations = ToolAnnotations(readOnlyHint = true, openWorldHint = true),
@@ -85,19 +83,15 @@ internal class KotlinlangServer(config: ServerConfig) : Closeable {
                 "page path (e.g., from search results) and need the complete content of that page rather " +
                 "than just a snippet. If the page is not found, use search_kotlinlang to discover the " +
                 "correct path.",
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    putJsonObject("path") {
-                        put("type", "string")
-                        put(
-                            "description",
-                            "Page path relative to /docs/, without extension. Use the page paths " +
-                                "returned from search_kotlinlang results " +
-                                "(e.g. 'coroutines-overview', " +
-                                "'multiplatform/compose-multiplatform-and-jetpack-compose')",
-                        )
-                    }
-                },
+            inputSchema = ObjectPropertyDefinition(
+                properties = mapOf(
+                    "path" to StringPropertyDefinition(
+                        description = "Page path relative to /docs/, without extension. Use the page paths " +
+                            "returned from search_kotlinlang results " +
+                            "(e.g. 'coroutines-overview', " +
+                            "'multiplatform/compose-multiplatform-and-jetpack-compose')",
+                    ),
+                ),
                 required = listOf("path"),
             ),
             toolAnnotations = ToolAnnotations(readOnlyHint = true, openWorldHint = true),

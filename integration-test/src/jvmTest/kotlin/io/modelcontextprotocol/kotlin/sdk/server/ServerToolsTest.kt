@@ -9,9 +9,9 @@ import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.ToolListChangedNotification
-import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
+import kotlinx.schema.json.ObjectPropertyDefinition
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
@@ -34,7 +34,7 @@ class ServerToolsTest : AbstractServerFeaturesTest() {
         }
 
         // Add a tool
-        server.addTool("test-tool", "Test Tool", ToolSchema()) {
+        server.addTool("test-tool", "Test Tool", ObjectPropertyDefinition()) {
             CallToolResult(listOf(TextContent("Test result")))
         }
 
@@ -103,7 +103,7 @@ class ServerToolsTest : AbstractServerFeaturesTest() {
 
     @Test
     fun `addTool should succeed with non-conforming tool name`() = runTest {
-        server.addTool("my invalid tool!", "Tool with non-conforming name", ToolSchema()) {
+        server.addTool("my invalid tool!", "Tool with non-conforming name", ObjectPropertyDefinition()) {
             CallToolResult(listOf(TextContent("It works")))
         }
 

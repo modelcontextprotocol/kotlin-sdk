@@ -15,12 +15,16 @@ import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
-import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.schema.json.ArrayPropertyDefinition
+import kotlinx.schema.json.BooleanPropertyDefinition
+import kotlinx.schema.json.NumericPropertyDefinition
+import kotlinx.schema.json.ObjectPropertyDefinition
+import kotlinx.schema.json.StringPropertyDefinition
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
@@ -78,16 +82,10 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
         server.addTool(
             name = testToolName,
             description = testToolDescription,
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    put(
-                        "text",
-                        buildJsonObject {
-                            put("type", "string")
-                            put("description", "The text to echo back")
-                        },
-                    )
-                },
+            inputSchema = ObjectPropertyDefinition(
+                properties = mapOf(
+                    "text" to StringPropertyDefinition(description = "The text to echo back"),
+                ),
                 required = listOf("text"),
             ),
         ) { request ->
@@ -106,16 +104,10 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
         server.addTool(
             name = basicToolName,
             description = basicToolDescription,
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    put(
-                        "text",
-                        buildJsonObject {
-                            put("type", "string")
-                            put("description", "The text to echo back")
-                        },
-                    )
-                },
+            inputSchema = ObjectPropertyDefinition(
+                properties = mapOf(
+                    "text" to StringPropertyDefinition(description = "The text to echo back"),
+                ),
                 required = listOf("text"),
             ),
         ) { request ->
@@ -132,16 +124,10 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
         server.addTool(
             name = specialCharsToolName,
             description = specialCharsToolDescription,
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    put(
-                        "special",
-                        buildJsonObject {
-                            put("type", "string")
-                            put("description", "Special characters to process")
-                        },
-                    )
-                },
+            inputSchema = ObjectPropertyDefinition(
+                properties = mapOf(
+                    "special" to StringPropertyDefinition(description = "Special characters to process"),
+                ),
             ),
         ) { request ->
             val special = (request.params.arguments?.get("special") as? JsonPrimitive)?.content ?: specialCharsContent
@@ -158,16 +144,13 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
         server.addTool(
             name = slowToolName,
             description = slowToolDescription,
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    put(
-                        "delay",
-                        buildJsonObject {
-                            put("type", "integer")
-                            put("description", "Delay in milliseconds")
-                        },
-                    )
-                },
+            inputSchema = ObjectPropertyDefinition(
+                properties = mapOf(
+                    "delay" to NumericPropertyDefinition(
+                        type = listOf("integer"),
+                        description = "Delay in milliseconds",
+                    ),
+                ),
             ),
         ) { request ->
             val delay = (request.params.arguments?.get("delay") as? JsonPrimitive)?.content?.toIntOrNull() ?: 1000
@@ -188,16 +171,13 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
         server.addTool(
             name = largeToolName,
             description = largeToolDescription,
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    put(
-                        "size",
-                        buildJsonObject {
-                            put("type", "integer")
-                            put("description", "Size multiplier")
-                        },
-                    )
-                },
+            inputSchema = ObjectPropertyDefinition(
+                properties = mapOf(
+                    "size" to NumericPropertyDefinition(
+                        type = listOf("integer"),
+                        description = "Size multiplier",
+                    ),
+                ),
             ),
         ) { request ->
             val size = (request.params.arguments?.get("size") as? JsonPrimitive)?.content?.toIntOrNull() ?: 1
@@ -214,68 +194,34 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
         server.addTool(
             name = complexToolName,
             description = complexToolDescription,
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    put(
-                        "operation",
-                        buildJsonObject {
-                            put("type", "string")
-                            put("description", "The operation to perform (add, subtract, multiply, divide)")
-                            put(
-                                "enum",
-                                buildJsonArray {
-                                    add("add")
-                                    add("subtract")
-                                    add("multiply")
-                                    add("divide")
-                                },
-                            )
-                        },
-                    )
-                    put(
-                        "a",
-                        buildJsonObject {
-                            put("type", "number")
-                            put("description", "First operand")
-                        },
-                    )
-                    put(
-                        "b",
-                        buildJsonObject {
-                            put("type", "number")
-                            put("description", "Second operand")
-                        },
-                    )
-                    put(
-                        "precision",
-                        buildJsonObject {
-                            put("type", "integer")
-                            put("description", "Number of decimal places (optional)")
-                            put("default", 2)
-                        },
-                    )
-                    put(
-                        "showSteps",
-                        buildJsonObject {
-                            put("type", "boolean")
-                            put("description", "Whether to show calculation steps")
-                            put("default", false)
-                        },
-                    )
-                    put(
-                        "tags",
-                        buildJsonObject {
-                            put("type", "array")
-                            put("description", "Optional tags for the calculation")
-                            put(
-                                "items",
-                                buildJsonObject {
-                                    put("type", "string")
-                                },
-                            )
-                        },
-                    )
-                },
+            inputSchema = ObjectPropertyDefinition(
+                properties = mapOf(
+                    "operation" to StringPropertyDefinition(
+                        description = "The operation to perform (add, subtract, multiply, divide)",
+                        enum = listOf("add", "subtract", "multiply", "divide"),
+                    ),
+                    "a" to NumericPropertyDefinition(
+                        type = listOf("number"),
+                        description = "First operand",
+                    ),
+                    "b" to NumericPropertyDefinition(
+                        type = listOf("number"),
+                        description = "Second operand",
+                    ),
+                    "precision" to NumericPropertyDefinition(
+                        type = listOf("integer"),
+                        description = "Number of decimal places (optional)",
+                        default = JsonPrimitive(2),
+                    ),
+                    "showSteps" to BooleanPropertyDefinition(
+                        description = "Whether to show calculation steps",
+                        default = JsonPrimitive(false),
+                    ),
+                    "tags" to ArrayPropertyDefinition(
+                        description = "Optional tags for the calculation",
+                        items = StringPropertyDefinition(),
+                    ),
+                ),
                 required = listOf("operation", "a", "b"),
             ),
         ) { request ->
@@ -329,32 +275,17 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
         server.addTool(
             name = errorToolName,
             description = errorToolDescription,
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    put(
-                        "errorType",
-                        buildJsonObject {
-                            put("type", "string")
-                            put("description", "Type of error to simulate (none, exception, error)")
-                            put(
-                                "enum",
-                                buildJsonArray {
-                                    add("none")
-                                    add("exception")
-                                    add("error")
-                                },
-                            )
-                        },
-                    )
-                    put(
-                        "message",
-                        buildJsonObject {
-                            put("type", "string")
-                            put("description", "Custom error message")
-                            put("default", "An error occurred")
-                        },
-                    )
-                },
+            inputSchema = ObjectPropertyDefinition(
+                properties = mapOf(
+                    "errorType" to StringPropertyDefinition(
+                        description = "Type of error to simulate (none, exception, error)",
+                        enum = listOf("none", "exception", "error"),
+                    ),
+                    "message" to StringPropertyDefinition(
+                        description = "Custom error message",
+                        default = JsonPrimitive("An error occurred"),
+                    ),
+                ),
                 required = listOf("errorType"),
             ),
         ) { request ->
@@ -387,24 +318,14 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
         server.addTool(
             name = multiContentToolName,
             description = multiContentToolDescription,
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    put(
-                        "text",
-                        buildJsonObject {
-                            put("type", "string")
-                            put("description", "Text to include in the response")
-                        },
-                    )
-                    put(
-                        "includeImage",
-                        buildJsonObject {
-                            put("type", "boolean")
-                            put("description", "Whether to include an image in the response")
-                            put("default", true)
-                        },
-                    )
-                },
+            inputSchema = ObjectPropertyDefinition(
+                properties = mapOf(
+                    "text" to StringPropertyDefinition(description = "Text to include in the response"),
+                    "includeImage" to BooleanPropertyDefinition(
+                        description = "Whether to include an image in the response",
+                        default = JsonPrimitive(true),
+                    ),
+                ),
                 required = listOf("text"),
             ),
         ) { request ->
@@ -805,14 +726,14 @@ abstract class AbstractToolIntegrationTest : KotlinTestBase() {
     fun testListToolsPagination() = runBlocking(Dispatchers.IO) {
         val receivedCursors = CopyOnWriteArrayList<String?>()
         val page1 = listOf(
-            Tool(name = "t-1", inputSchema = ToolSchema()),
-            Tool(name = "t-2", inputSchema = ToolSchema()),
+            Tool(name = "t-1", inputSchema = ObjectPropertyDefinition()),
+            Tool(name = "t-2", inputSchema = ObjectPropertyDefinition()),
         )
         val page2 = listOf(
-            Tool(name = "t-3", inputSchema = ToolSchema()),
-            Tool(name = "t-4", inputSchema = ToolSchema()),
+            Tool(name = "t-3", inputSchema = ObjectPropertyDefinition()),
+            Tool(name = "t-4", inputSchema = ObjectPropertyDefinition()),
         )
-        val page3 = listOf(Tool(name = "t-5", inputSchema = ToolSchema()))
+        val page3 = listOf(Tool(name = "t-5", inputSchema = ObjectPropertyDefinition()))
 
         server.sessions.forEach { (_, session) ->
             session.setRequestHandler<ListToolsRequest>(Method.Defined.ToolsList) { request, _ ->

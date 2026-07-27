@@ -51,7 +51,6 @@ import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
-import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -63,6 +62,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
+import kotlinx.schema.json.ObjectPropertyDefinition
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -349,7 +349,7 @@ class StreamableHttpServerTransportTest {
 
         val firstResult = ListToolsResult(
             tools = listOf(
-                Tool(name = "tool-1", inputSchema = ToolSchema()),
+                Tool(name = "tool-1", inputSchema = ObjectPropertyDefinition()),
             ),
             meta = buildJsonObject { put("label", "first") },
         )

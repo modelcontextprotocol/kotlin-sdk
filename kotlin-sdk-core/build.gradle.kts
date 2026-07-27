@@ -57,6 +57,7 @@ kotlin {
                 api(libs.kotlinx.coroutines.core)
                 api(libs.kotlinx.io.core)
                 api(libs.kotlinx.collections.immutable)
+                api(libs.kotlinx.schema.json)
                 implementation(libs.ktor.server.websockets)
                 implementation(libs.kotlin.logging)
             }
