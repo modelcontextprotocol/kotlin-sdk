@@ -34,6 +34,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.job
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -375,9 +376,13 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
     }
 
     override suspend fun close() {
+        val currentJob = currentCoroutineContext().job
         withContext(NonCancellable) {
             streamMutex.withLock {
                 streamsMapping.values.forEach {
+                    if (it.call.coroutineContext.job !== currentJob) {
+                        it.call.coroutineContext.job.cancel()
+                    }
                     try {
                         it.session?.close()
                     } catch (_: Exception) {
@@ -611,12 +616,16 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         // SSE headers (Content-Type, Cache-Control, Connection) are already set by the framework's SSE handler
         flushSse(sseSession)
         val newContext = SessionContext(sseSession, call)
+        val currentJob = currentCoroutineContext().job
         streamMutex.withLock {
             streamsMapping[STANDALONE_SSE_STREAM_ID]?.let { existingContext ->
                 // Close the previous SSE session. If alive, this cancels the old
                 // coroutine (which will hit its identity-guarded finally — that finally
                 // won't double-remove, since we replace the mapping below).
                 try {
+                    if (existingContext.call.coroutineContext.job !== currentJob) {
+                        existingContext.call.coroutineContext.job.cancel()
+                    }
                     existingContext.session?.close()
                 } catch (e: CancellationException) {
                     throw e
@@ -660,9 +669,13 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         if (configuration.enableJsonResponse) return
         val streamId = requestToStreamMapping[requestId] ?: return
         val sessionContext = streamsMapping[streamId] ?: return
+        val currentJob = currentCoroutineContext().job
 
         withContext(NonCancellable) {
             try {
+                if (sessionContext.call.coroutineContext.job !== currentJob) {
+                    sessionContext.call.coroutineContext.job.cancel()
+                }
                 sessionContext.session?.close()
             } catch (e: Exception) {
                 _onError(e)

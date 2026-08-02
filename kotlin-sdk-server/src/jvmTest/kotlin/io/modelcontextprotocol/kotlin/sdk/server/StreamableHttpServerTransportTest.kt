@@ -16,12 +16,14 @@ import io.ktor.client.request.prepareGet
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.ContentType
+import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.install
+import io.ktor.server.request.ApplicationRequest
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
@@ -32,6 +34,8 @@ import io.ktor.sse.ServerSentEvent
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.readLine
 import io.ktor.utils.io.readUTF8Line
+import io.mockk.every
+import io.mockk.mockk
 import io.modelcontextprotocol.kotlin.sdk.types.CancelledNotification
 import io.modelcontextprotocol.kotlin.sdk.types.CancelledNotificationParams
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
@@ -64,6 +68,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.buildJsonObject
@@ -1062,6 +1067,64 @@ class StreamableHttpServerTransportTest {
                 firstLine.shouldNotBeNull()
                 secondChannel.isClosedForRead shouldBe false
             }
+        }
+    }
+
+    @Test
+    fun `closing transport cancels standalone GET SSE request`() = runTest {
+        val callJob = SupervisorJob()
+        val callContext = callJob + Dispatchers.Default
+        val call = mockk<ApplicationCall>(relaxed = true)
+        val request = mockk<ApplicationRequest>(relaxed = true)
+        val requestHeaders = Headers.build {
+            append(HttpHeaders.Accept, ContentType.Text.EventStream.toString())
+            append("mcp-protocol-version", LATEST_PROTOCOL_VERSION)
+        }
+        every { call.coroutineContext } returns callContext
+        every { call.request } returns request
+        every { request.headers } returns requestHeaders
+
+        val mappingRegistered = CompletableDeferred<Unit>()
+        val session = FakeServerSSESession(call, callContext)
+        val transport = StreamableHttpServerTransport(
+            StreamableHttpServerTransport.Configuration(
+                eventStore = object : EventStore {
+                    override suspend fun storeEvent(streamId: String, message: JSONRPCMessage): String {
+                        mappingRegistered.complete(Unit)
+                        return "priming-event"
+                    }
+
+                    override suspend fun replayEventsAfter(
+                        lastEventId: String,
+                        sender: suspend (eventId: String, message: JSONRPCMessage) -> Unit,
+                    ): String = "standalone-stream"
+
+                    override suspend fun getStreamIdForEventId(eventId: String): String? = null
+                },
+            ),
+        )
+        transport.setSessionIdGenerator(null)
+
+        val handler = CoroutineScope(callContext).launch {
+            transport.handleGetRequest(session, call)
+        }
+
+        try {
+            withContext(Dispatchers.Default) {
+                withTimeout(5.seconds) { mappingRegistered.await() }
+            }
+
+            transport.close()
+            assertTrue(callJob.isCancelled)
+
+            withContext(Dispatchers.Default) {
+                withTimeout(5.seconds) { handler.join() }
+            }
+            assertFalse(handler.isActive)
+        } finally {
+            callJob.cancel()
+            handler.cancel()
+            transport.close()
         }
     }
 
