@@ -27,7 +27,7 @@ jobs:
     name: Mark/unmark stale PRs and issues
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/stale@v10
+    - uses: actions/stale@v11
       with:
         debug-only: ${{ env.DRY_RUN }}
         exempt-draft-pr: true
@@ -66,7 +66,7 @@ jobs:
     name: Close stale PRs and issues
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/stale@v10
+    - uses: actions/stale@v11
       with:
         debug-only: ${{ env.DRY_RUN }}
         only-labels: 'stale'
