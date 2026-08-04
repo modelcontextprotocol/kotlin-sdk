@@ -30,7 +30,7 @@ jobs:
           node-version: '22' # increase only after https://github.com/nodejs/node/issues/56645 will be fixed
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6
+        uses: gradle/actions/setup-gradle@v6.2.0
 
       - name: Check
         run: ./gradlew check --no-configuration-cache
