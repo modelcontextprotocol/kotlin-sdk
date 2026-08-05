@@ -269,6 +269,9 @@ public data class RPCError(val code: Int, val message: String, val data: JsonEle
         /** Resource not found */
         public const val RESOURCE_NOT_FOUND: Int = -32002
 
+        /** The request selected a protocol version that the receiver does not support. */
+        public const val UNSUPPORTED_PROTOCOL_VERSION: Int = -32022
+
         /**
          * A URL-mode elicitation must be completed before the request can be processed.
          * The error [data][RPCError.data] carries the required URL-mode elicitations
