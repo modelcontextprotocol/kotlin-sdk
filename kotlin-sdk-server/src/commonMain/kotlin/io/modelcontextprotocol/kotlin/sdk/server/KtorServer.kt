@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
@@ -269,7 +270,6 @@ private fun Application.mcpStatelessStreamableHttp(
     block: RoutingContext.() -> Server,
 ) {
     installMcpContentNegotiation()
-    install(SSE)
 
     routing {
         route(path) {
@@ -282,18 +282,10 @@ private fun Application.mcpStatelessStreamableHttp(
                 )
             }
             get {
-                call.reject(
-                    HttpStatusCode.MethodNotAllowed,
-                    RPCError.ErrorCode.CONNECTION_CLOSED,
-                    "Method not allowed.",
-                )
+                call.rejectUnsupportedMethod()
             }
             delete {
-                call.reject(
-                    HttpStatusCode.MethodNotAllowed,
-                    RPCError.ErrorCode.CONNECTION_CLOSED,
-                    "Method not allowed.",
-                )
+                call.rejectUnsupportedMethod()
             }
         }
     }
@@ -304,10 +296,11 @@ private fun Application.mcpStatelessStreamableHttp(
  * over _stateless_ [Streamable HTTP Transport](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#streamable-http)
  *
  * Sets up an HTTP POST endpoint at [path]. GET and DELETE requests return 405 Method Not Allowed.
- * Simple request/response pairs are returned as JSON (not SSE streams).
+ * Every request/response pair is returned as JSON, so this endpoint opens no SSE stream and
+ * offers no resumability. Use [mcpStreamableHttp] when either is required.
  *
  * Automatically installs [ContentNegotiation][io.ktor.server.plugins.contentnegotiation.ContentNegotiation]
- * with [McpJson][io.modelcontextprotocol.kotlin.sdk.types.McpJson] and [SSE].
+ * with [McpJson][io.modelcontextprotocol.kotlin.sdk.types.McpJson].
  *
  * @param path The URL path where the server listens for incoming JSON-RPC requests. Defaults to "/mcp".
  * @param enableDnsRebindingProtection Determines whether DNS rebinding protection is enabled. Defaults to `true`.
@@ -316,7 +309,6 @@ private fun Application.mcpStatelessStreamableHttp(
  * @param allowedOrigins A list of allowed `Origin` header values, compared by hostname only
  *      (scheme and port are ignored). Requests without an `Origin` header are allowed.
  *      If `null`, origin validation is disabled.
- * @param eventStore An optional [EventStore] implementation to provide resumability and event replay support.
  * @param block factory block with access to the [RoutingContext] (for reading request headers)
  *          that creates and returns the [Server] to handle the connection.
  */
@@ -326,7 +318,6 @@ public fun Application.mcpStatelessStreamableHttp(
     enableDnsRebindingProtection: Boolean = true,
     allowedHosts: List<String>? = null,
     allowedOrigins: List<String>? = null,
-    eventStore: EventStore? = null,
     block: RoutingContext.() -> Server,
 ) {
     mcpStatelessStreamableHttp(
@@ -335,9 +326,38 @@ public fun Application.mcpStatelessStreamableHttp(
         allowedHosts = allowedHosts,
         allowedOrigins = allowedOrigins,
         configuration = StreamableHttpServerTransport.Configuration(
-            eventStore = eventStore,
             enableJsonResponse = true,
         ),
+        block = block,
+    )
+}
+
+/**
+ * Retained only so that existing call sites get a migration hint instead of an unresolved parameter name.
+ *
+ * @param eventStore never consulted by a stateless endpoint. Resumption is driven by a `GET` carrying
+ *          `Last-Event-ID`, and this endpoint answers `GET` with `405 Method Not Allowed`, so no stream
+ *          exists to store events on or replay them to. Use [mcpStreamableHttp] when you need resumability.
+ */
+@Deprecated(
+    "Use mcpStatelessStreamableHttp without eventStore.",
+    ReplaceWith("mcpStatelessStreamableHttp(path, enableDnsRebindingProtection, allowedHosts, allowedOrigins, block)"),
+    DeprecationLevel.ERROR,
+)
+@Suppress("UnusedParameter")
+public fun Application.mcpStatelessStreamableHttp(
+    path: String = "/mcp",
+    enableDnsRebindingProtection: Boolean = true,
+    allowedHosts: List<String>? = null,
+    allowedOrigins: List<String>? = null,
+    eventStore: EventStore?,
+    block: RoutingContext.() -> Server,
+) {
+    mcpStatelessStreamableHttp(
+        path = path,
+        enableDnsRebindingProtection = enableDnsRebindingProtection,
+        allowedHosts = allowedHosts,
+        allowedOrigins = allowedOrigins,
         block = block,
     )
 }
@@ -417,6 +437,16 @@ private suspend fun RoutingContext.mcpPostEndpoint(transportManager: TransportMa
 
     transport.handlePostMessage(call)
     logger.trace { "Message handled for sessionId: $sessionId" }
+}
+
+/** A stateless endpoint serves POST only, offering neither an SSE stream to open nor a session to delete. */
+private suspend fun ApplicationCall.rejectUnsupportedMethod() {
+    response.header(HttpHeaders.Allow, HttpMethod.Post.value)
+    reject(
+        HttpStatusCode.MethodNotAllowed,
+        RPCError.ErrorCode.CONNECTION_CLOSED,
+        "Method not allowed.",
+    )
 }
 
 private fun ApplicationRequest.sessionId(): String? = header(MCP_SESSION_ID_HEADER)
