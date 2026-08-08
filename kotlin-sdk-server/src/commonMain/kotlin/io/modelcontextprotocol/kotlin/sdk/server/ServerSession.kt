@@ -38,6 +38,11 @@ import kotlin.uuid.Uuid
 
 private val logger = KotlinLogging.logger {}
 
+private sealed interface InitializationState {
+    data class Pending(val callbacks: List<() -> Unit>) : InitializationState
+    data object Completed : InitializationState
+}
+
 /**
  * Represents an active server-side session in the Model Context Protocol.
  *
@@ -64,7 +69,7 @@ public open class ServerSession(
     @OptIn(ExperimentalUuidApi::class)
     public val sessionId: String = Uuid.random().toString()
 
-    private var _onInitialized: (() -> Unit) = {}
+    private val initializationState = atomic<InitializationState>(InitializationState.Pending(emptyList()))
 
     private var _onClose: () -> Unit = {}
 
@@ -94,7 +99,7 @@ public open class ServerSession(
             handleInitialize(request)
         }
         setNotificationHandler<InitializedNotification>(Defined.NotificationsInitialized) {
-            _onInitialized()
+            completeInitialization()
             CompletableDeferred(Unit)
         }
 
@@ -119,13 +124,37 @@ public open class ServerSession(
      * Registers a callback to be invoked when the server has completed initialization.
      *
      * The callback must be synchronous and fast: it runs on the message-dispatch path for
-     * `notifications/initialized`, after concurrent dispatch has been enabled for the session.
+     * `notifications/initialized`, after concurrent dispatch has been enabled for the session,
+     * or immediately when registered after initialization has completed.
      */
     public fun onInitialized(block: () -> Unit) {
-        val old = _onInitialized
-        _onInitialized = {
-            old()
-            block()
+        while (true) {
+            when (val state = initializationState.value) {
+                InitializationState.Completed -> {
+                    block()
+                    return
+                }
+
+                is InitializationState.Pending -> {
+                    val nextState = state.copy(callbacks = state.callbacks + block)
+                    if (initializationState.compareAndSet(state, nextState)) return
+                }
+            }
+        }
+    }
+
+    private fun completeInitialization() {
+        while (true) {
+            when (val state = initializationState.value) {
+                InitializationState.Completed -> return
+
+                is InitializationState.Pending -> {
+                    if (initializationState.compareAndSet(state, InitializationState.Completed)) {
+                        state.callbacks.forEach { it() }
+                        return
+                    }
+                }
+            }
         }
     }
 
