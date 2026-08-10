@@ -1,7 +1,7 @@
 [versions]
 anthropic = "2.52.0"
 kotlin = "2.4.10"
-ktor = "3.5.1"
+ktor = "3.5.2"
 mcp-kotlin = "0.15.0"
 shadow = "9.6.1"
 slf4j = "2.0.18"
