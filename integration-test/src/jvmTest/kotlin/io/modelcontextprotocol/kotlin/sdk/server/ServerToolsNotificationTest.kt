@@ -5,9 +5,9 @@ import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.ToolListChangedNotification
-import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
+import kotlinx.schema.json.ObjectPropertyDefinition
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.Test
@@ -32,7 +32,7 @@ class ServerToolsNotificationTest : AbstractServerFeaturesTest() {
         }
 
         // Add a tool
-        server.addTool("test-tool", "Test Tool", ToolSchema()) {
+        server.addTool("test-tool", "Test Tool", ObjectPropertyDefinition()) {
             CallToolResult(listOf(TextContent("Test result")))
         }
 

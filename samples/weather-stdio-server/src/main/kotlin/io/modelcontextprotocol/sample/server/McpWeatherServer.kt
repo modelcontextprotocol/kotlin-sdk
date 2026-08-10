@@ -17,17 +17,16 @@ import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.ToolAnnotations
-import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.runBlocking
 import kotlinx.io.asSink
 import kotlinx.io.buffered
+import kotlinx.schema.json.NumericPropertyDefinition
+import kotlinx.schema.json.ObjectPropertyDefinition
+import kotlinx.schema.json.StringPropertyDefinition
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.put
-import kotlinx.serialization.json.putJsonObject
 
 /**
  * Starts an MCP server that provides weather-related tools for fetching active
@@ -87,13 +86,10 @@ private fun Server.registerTools(httpClient: HttpClient) {
     addTool(
         name = "get_alerts",
         description = "Get weather alerts for a US state. Input is a two-letter US state code (e.g. CA, NY)",
-        inputSchema = ToolSchema(
-            properties = buildJsonObject {
-                putJsonObject("state") {
-                    put("type", "string")
-                    put("description", "Two-letter US state code (e.g. CA, NY)")
-                }
-            },
+        inputSchema = ObjectPropertyDefinition(
+            properties = mapOf(
+                "state" to StringPropertyDefinition(description = "Two-letter US state code (e.g. CA, NY)"),
+            ),
             required = listOf("state"),
         ),
         toolAnnotations = ToolAnnotations(readOnlyHint = true, openWorldHint = true),
@@ -134,21 +130,21 @@ private fun Server.registerTools(httpClient: HttpClient) {
     addTool(
         name = "get_forecast",
         description = "Get weather forecast for a location. Note: only US locations are supported by the NWS API.",
-        inputSchema = ToolSchema(
-            properties = buildJsonObject {
-                putJsonObject("latitude") {
-                    put("type", "number")
-                    put("description", "Latitude of the location")
-                    put("minimum", -90)
-                    put("maximum", 90)
-                }
-                putJsonObject("longitude") {
-                    put("type", "number")
-                    put("description", "Longitude of the location")
-                    put("minimum", -180)
-                    put("maximum", 180)
-                }
-            },
+        inputSchema = ObjectPropertyDefinition(
+            properties = mapOf(
+                "latitude" to NumericPropertyDefinition(
+                    type = listOf("number"),
+                    description = "Latitude of the location",
+                    minimum = -90.0,
+                    maximum = 90.0,
+                ),
+                "longitude" to NumericPropertyDefinition(
+                    type = listOf("number"),
+                    description = "Longitude of the location",
+                    minimum = -180.0,
+                    maximum = 180.0,
+                ),
+            ),
             required = listOf("latitude", "longitude"),
         ),
         toolAnnotations = ToolAnnotations(readOnlyHint = true, openWorldHint = true),

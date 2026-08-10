@@ -24,18 +24,17 @@ import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
-import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import io.modelcontextprotocol.kotlin.test.utils.actualPort
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.schema.json.NumericPropertyDefinition
+import kotlinx.schema.json.ObjectPropertyDefinition
+import kotlinx.schema.json.StringPropertyDefinition
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.put
-import kotlinx.serialization.json.putJsonObject
 import kotlin.test.Test
 import io.ktor.client.engine.cio.CIO as ClientCIO
 import io.ktor.server.cio.CIO as ServerCIO
@@ -113,22 +112,19 @@ internal class StreamableHttpClientTransportIntegrationTest {
                 name = "get_weather",
                 title = "Weather Information Provider",
                 description = "Get current weather information for a location",
-                inputSchema = ToolSchema(
-                    properties = buildJsonObject {
-                        putJsonObject("location") {
-                            put("type", "string")
-                            put("description", "City name or zip code")
-                        }
-                    },
+                inputSchema = ObjectPropertyDefinition(
+                    properties = mapOf(
+                        "location" to StringPropertyDefinition(description = "City name or zip code"),
+                    ),
                     required = listOf("location"),
                 ),
-                outputSchema = ToolSchema(
-                    properties = buildJsonObject {
-                        putJsonObject("temperature") {
-                            put("type", "number")
-                            put("description", "Temperature, Celsius")
-                        }
-                    },
+                outputSchema = ObjectPropertyDefinition(
+                    properties = mapOf(
+                        "temperature" to NumericPropertyDefinition(
+                            type = listOf("number"),
+                            description = "Temperature, Celsius",
+                        ),
+                    ),
                     required = listOf("temperature"),
                 ),
                 annotations = null,

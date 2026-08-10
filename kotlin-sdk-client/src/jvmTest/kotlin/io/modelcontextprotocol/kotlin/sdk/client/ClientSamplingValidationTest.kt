@@ -11,8 +11,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.SamplingMessage
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
 import io.modelcontextprotocol.kotlin.sdk.types.ToolChoice
-import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
-import kotlinx.serialization.json.buildJsonObject
+import kotlinx.schema.json.ObjectPropertyDefinition
 import org.junit.jupiter.api.assertDoesNotThrow
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -22,7 +21,7 @@ class ClientSamplingValidationTest {
 
     private val dummyTool = Tool(
         name = "t",
-        inputSchema = ToolSchema(properties = buildJsonObject { }, required = emptyList()),
+        inputSchema = ObjectPropertyDefinition(properties = emptyMap(), required = emptyList()),
     )
 
     private val minimalMessages = listOf(SamplingMessage(Role.User, TextContent("hi")))

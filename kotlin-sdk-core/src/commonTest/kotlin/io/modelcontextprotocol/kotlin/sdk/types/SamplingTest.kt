@@ -4,6 +4,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
 import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
+import kotlinx.schema.json.ObjectPropertyDefinition
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonObject
@@ -29,8 +30,8 @@ class SamplingTest {
     private val dummyTool = Tool(
         name = "get_weather",
         description = "returns weather",
-        inputSchema = ToolSchema(
-            properties = buildJsonObject { },
+        inputSchema = ObjectPropertyDefinition(
+            properties = emptyMap(),
             required = emptyList(),
         ),
     )

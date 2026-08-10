@@ -17,6 +17,7 @@ collections-immutable = "0.5.1"
 coroutines = "1.11.0"
 kotest = "6.2.3"
 kotlinx-io = "0.9.1"
+kotlinx-schema = "0.5.0"
 ktor = "3.5.1"
 logging = "8.0.4"
 mockk = "1.14.11"
@@ -40,6 +41,7 @@ kotlinx-collections-immutable = { group = "org.jetbrains.kotlinx", name = "kotli
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-core-wasm = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core-wasm-js", version.ref = "coroutines" }
 kotlinx-io-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-io-core", version.ref = "kotlinx-io" }
+kotlinx-schema-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-schema-json", version.ref = "kotlinx-schema" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 
 # Ktor

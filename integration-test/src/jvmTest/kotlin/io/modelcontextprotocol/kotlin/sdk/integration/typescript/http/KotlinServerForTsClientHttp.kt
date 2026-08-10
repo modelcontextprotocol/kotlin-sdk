@@ -39,13 +39,14 @@ import io.modelcontextprotocol.kotlin.sdk.types.Role
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
-import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.schema.json.ObjectPropertyDefinition
+import kotlinx.schema.json.StringPropertyDefinition
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -213,16 +214,10 @@ class KotlinServerForTsClient {
         server.addTool(
             name = "greet",
             description = "A simple greeting tool",
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    put(
-                        "name",
-                        buildJsonObject {
-                            put("type", JsonPrimitive("string"))
-                            put("description", JsonPrimitive("Name to greet"))
-                        },
-                    )
-                },
+            inputSchema = ObjectPropertyDefinition(
+                properties = mapOf(
+                    "name" to StringPropertyDefinition(description = "Name to greet"),
+                ),
                 required = listOf("name"),
             ),
         ) { request ->
@@ -238,16 +233,10 @@ class KotlinServerForTsClient {
         server.addTool(
             name = "multi-greet",
             description = "A greeting tool that sends multiple notifications",
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    put(
-                        "name",
-                        buildJsonObject {
-                            put("type", JsonPrimitive("string"))
-                            put("description", JsonPrimitive("Name to greet"))
-                        },
-                    )
-                },
+            inputSchema = ObjectPropertyDefinition(
+                properties = mapOf(
+                    "name" to StringPropertyDefinition(description = "Name to greet"),
+                ),
                 required = listOf("name"),
             ),
         ) { request ->
