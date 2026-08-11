@@ -27,6 +27,7 @@ import io.ktor.server.sse.ServerSSESession
 import io.ktor.server.sse.heartbeat
 import io.ktor.server.sse.sse
 import io.ktor.utils.io.KtorDsl
+import io.modelcontextprotocol.kotlin.sdk.shared.Transport
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import kotlinx.coroutines.awaitCancellation
 
@@ -63,8 +64,52 @@ public fun Route.mcp(
     maxRequestBodySize: Long = DEFAULT_MAX_REQUEST_BODY_SIZE,
     block: ServerSSESession.() -> Server,
 ) {
+    mcp(
+        path = path,
+        enableDnsRebindingProtection = enableDnsRebindingProtection,
+        allowedHosts = allowedHosts,
+        allowedOrigins = allowedOrigins,
+        maxRequestBodySize = maxRequestBodySize,
+        transportDecorator = { it },
+        block = block,
+    )
+}
+
+/**
+ * Registers MCP over SSE at [path], decorating each transport before it is connected to its [Server].
+ *
+ * The returned [Transport] must delegate lifecycle methods and callback registration to the supplied
+ * [SseServerTransport] so that Ktor request handling and the MCP session remain connected.
+ *
+ * @param path the URL path to register the SSE endpoint.
+ * @param enableDnsRebindingProtection whether to install [DnsRebindingProtection] on this route.
+ * @param allowedHosts hostnames allowed in the `Host` header.
+ * @param allowedOrigins origins allowed in the `Origin` header, compared by hostname only.
+ * @param maxRequestBodySize maximum allowed size, in bytes, of an incoming POST body.
+ * @param transportDecorator transforms each SDK-created transport before [Server.createSession] receives it.
+ * @param block factory block that creates the [Server] for the connection.
+ * @throws IllegalStateException if the [SSE] plugin is not installed.
+ */
+@KtorDsl
+@Suppress("LongParameterList")
+public fun Route.mcp(
+    path: String,
+    enableDnsRebindingProtection: Boolean = true,
+    allowedHosts: List<String>? = null,
+    allowedOrigins: List<String>? = null,
+    maxRequestBodySize: Long = DEFAULT_MAX_REQUEST_BODY_SIZE,
+    transportDecorator: (SseServerTransport) -> Transport,
+    block: ServerSSESession.() -> Server,
+) {
     route(path) {
-        mcp(enableDnsRebindingProtection, allowedHosts, allowedOrigins, maxRequestBodySize, block)
+        mcp(
+            enableDnsRebindingProtection = enableDnsRebindingProtection,
+            allowedHosts = allowedHosts,
+            allowedOrigins = allowedOrigins,
+            maxRequestBodySize = maxRequestBodySize,
+            transportDecorator = transportDecorator,
+            block = block,
+        )
     }
 }
 
@@ -97,6 +142,40 @@ public fun Route.mcp(
     maxRequestBodySize: Long = DEFAULT_MAX_REQUEST_BODY_SIZE,
     block: ServerSSESession.() -> Server,
 ) {
+    mcp(
+        enableDnsRebindingProtection = enableDnsRebindingProtection,
+        allowedHosts = allowedHosts,
+        allowedOrigins = allowedOrigins,
+        maxRequestBodySize = maxRequestBodySize,
+        transportDecorator = { it },
+        block = block,
+    )
+}
+
+/**
+ * Registers MCP over SSE, decorating each transport before it is connected to its [Server].
+ *
+ * The returned [Transport] must delegate lifecycle methods and callback registration to the supplied
+ * [SseServerTransport] so that Ktor request handling and the MCP session remain connected.
+ *
+ * @param enableDnsRebindingProtection whether to install [DnsRebindingProtection] on this route.
+ * @param allowedHosts hostnames allowed in the `Host` header.
+ * @param allowedOrigins origins allowed in the `Origin` header, compared by hostname only.
+ * @param maxRequestBodySize maximum allowed size, in bytes, of an incoming POST body.
+ * @param transportDecorator transforms each SDK-created transport before [Server.createSession] receives it.
+ * @param block factory block that creates the [Server] for the connection.
+ * @throws IllegalStateException if the [SSE] plugin is not installed.
+ */
+@KtorDsl
+@Suppress("LongParameterList")
+public fun Route.mcp(
+    enableDnsRebindingProtection: Boolean = true,
+    allowedHosts: List<String>? = null,
+    allowedOrigins: List<String>? = null,
+    maxRequestBodySize: Long = DEFAULT_MAX_REQUEST_BODY_SIZE,
+    transportDecorator: (SseServerTransport) -> Transport,
+    block: ServerSSESession.() -> Server,
+) {
     try {
         plugin(SSE)
     } catch (e: MissingApplicationPluginException) {
@@ -113,7 +192,7 @@ public fun Route.mcp(
     val transportManager = TransportManager<SseServerTransport>()
 
     sse {
-        mcpSseEndpoint("", transportManager, maxRequestBodySize, block)
+        mcpSseEndpoint("", transportManager, maxRequestBodySize, transportDecorator, block)
     }
 
     post {
@@ -150,11 +229,51 @@ public fun Application.mcp(
     maxRequestBodySize: Long = DEFAULT_MAX_REQUEST_BODY_SIZE,
     block: ServerSSESession.() -> Server,
 ) {
+    mcp(
+        enableDnsRebindingProtection = enableDnsRebindingProtection,
+        allowedHosts = allowedHosts,
+        allowedOrigins = allowedOrigins,
+        maxRequestBodySize = maxRequestBodySize,
+        transportDecorator = { it },
+        block = block,
+    )
+}
+
+/**
+ * Configures MCP over SSE, decorating each transport before it is connected to its [Server].
+ *
+ * The returned [Transport] must delegate lifecycle methods and callback registration to the supplied
+ * [SseServerTransport] so that Ktor request handling and the MCP session remain connected.
+ *
+ * @param enableDnsRebindingProtection whether to install [DnsRebindingProtection] on this route.
+ * @param allowedHosts hostnames allowed in the `Host` header.
+ * @param allowedOrigins origins allowed in the `Origin` header, compared by hostname only.
+ * @param maxRequestBodySize maximum allowed size, in bytes, of an incoming POST body.
+ * @param transportDecorator transforms each SDK-created transport before [Server.createSession] receives it.
+ * @param block factory block that creates the [Server] for the connection.
+ */
+@KtorDsl
+@Suppress("LongParameterList")
+public fun Application.mcp(
+    enableDnsRebindingProtection: Boolean = true,
+    allowedHosts: List<String>? = null,
+    allowedOrigins: List<String>? = null,
+    maxRequestBodySize: Long = DEFAULT_MAX_REQUEST_BODY_SIZE,
+    transportDecorator: (SseServerTransport) -> Transport,
+    block: ServerSSESession.() -> Server,
+) {
     installMcpContentNegotiation()
     install(SSE)
 
     routing {
-        mcp(enableDnsRebindingProtection, allowedHosts, allowedOrigins, maxRequestBodySize, block)
+        mcp(
+            enableDnsRebindingProtection = enableDnsRebindingProtection,
+            allowedHosts = allowedHosts,
+            allowedOrigins = allowedOrigins,
+            maxRequestBodySize = maxRequestBodySize,
+            transportDecorator = transportDecorator,
+            block = block,
+        )
     }
 }
 
@@ -166,6 +285,7 @@ private fun Application.mcpStreamableHttp(
     allowedOrigins: List<String>?,
     configuration: StreamableHttpServerTransport.Configuration,
     sseHeartbeatConfig: (Heartbeat.() -> Unit)?,
+    transportDecorator: (StreamableHttpServerTransport) -> Transport,
     block: RoutingContext.() -> Server,
 ) {
     installMcpContentNegotiation()
@@ -197,6 +317,7 @@ private fun Application.mcpStreamableHttp(
                 val transport = streamableTransport(
                     transportManager = transportManager,
                     configuration = configuration,
+                    transportDecorator = transportDecorator,
                     block = block,
                 ) ?: return@post
 
@@ -251,11 +372,51 @@ public fun Application.mcpStreamableHttp(
         enableDnsRebindingProtection = enableDnsRebindingProtection,
         allowedHosts = allowedHosts,
         allowedOrigins = allowedOrigins,
+        eventStore = eventStore,
+        sseHeartbeatConfig = sseHeartbeatConfig,
+        transportDecorator = { it },
+        block = block,
+    )
+}
+
+/**
+ * Configures MCP over Streamable HTTP, decorating each transport before it is connected to its [Server].
+ *
+ * The returned [Transport] must delegate lifecycle methods and callback registration to the supplied
+ * [StreamableHttpServerTransport] so that Ktor request handling and the MCP session remain connected.
+ *
+ * @param path the base path for the MCP Streamable HTTP endpoint.
+ * @param enableDnsRebindingProtection whether DNS rebinding protection is enabled.
+ * @param allowedHosts hostnames allowed in the `Host` header.
+ * @param allowedOrigins origins allowed in the `Origin` header, compared by hostname only.
+ * @param eventStore optional storage for resumable event streams.
+ * @param sseHeartbeatConfig optional heartbeat configuration for SSE connections.
+ * @param transportDecorator transforms each SDK-created transport before [Server.createSession] receives it.
+ * @param block factory block that creates the [Server] for the connection.
+ */
+@KtorDsl
+@Suppress("LongParameterList")
+public fun Application.mcpStreamableHttp(
+    path: String = "/mcp",
+    enableDnsRebindingProtection: Boolean = true,
+    allowedHosts: List<String>? = null,
+    allowedOrigins: List<String>? = null,
+    eventStore: EventStore? = null,
+    sseHeartbeatConfig: (Heartbeat.() -> Unit)? = null,
+    transportDecorator: (StreamableHttpServerTransport) -> Transport,
+    block: RoutingContext.() -> Server,
+) {
+    mcpStreamableHttp(
+        path = path,
+        enableDnsRebindingProtection = enableDnsRebindingProtection,
+        allowedHosts = allowedHosts,
+        allowedOrigins = allowedOrigins,
         configuration = StreamableHttpServerTransport.Configuration(
             eventStore = eventStore,
             enableJsonResponse = true,
         ),
         sseHeartbeatConfig = sseHeartbeatConfig,
+        transportDecorator = transportDecorator,
         block = block,
     )
 }
@@ -366,6 +527,7 @@ private suspend fun ServerSSESession.mcpSseEndpoint(
     postEndpoint: String,
     transportManager: TransportManager<SseServerTransport>,
     maxRequestBodySize: Long,
+    transportDecorator: (SseServerTransport) -> Transport,
     block: ServerSSESession.() -> Server,
 ) {
     val transport = mcpSseTransport(postEndpoint, transportManager, maxRequestBodySize)
@@ -377,7 +539,7 @@ private suspend fun ServerSSESession.mcpSseEndpoint(
         transportManager.removeTransport(transport.sessionId)
     }
 
-    server.createSession(transport)
+    server.createSession(transportDecorator(transport))
 
     logger.debug { "Server connected to transport for sessionId: ${transport.sessionId}" }
 
@@ -481,6 +643,7 @@ private suspend fun existingStreamableTransport(
 private suspend fun RoutingContext.streamableTransport(
     transportManager: TransportManager<StreamableHttpServerTransport>,
     configuration: StreamableHttpServerTransport.Configuration,
+    transportDecorator: (StreamableHttpServerTransport) -> Transport,
     block: RoutingContext.() -> Server,
 ): StreamableHttpServerTransport? {
     val sessionId = call.request.sessionId()
@@ -506,7 +669,7 @@ private suspend fun RoutingContext.streamableTransport(
         transport.sessionId?.let { transportManager.removeTransport(it) }
         logger.info { "Server connection closed for sessionId: ${transport.sessionId}" }
     }
-    server.createSession(transport)
+    server.createSession(transportDecorator(transport))
 
     return transport
 }
