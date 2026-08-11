@@ -2,7 +2,7 @@
 # plugins version
 atomicfu = "0.33.0"
 binaryCompatibilityValidatorPlugin = "0.18.1"
-detekt = "2.0.0-alpha.5"
+detekt = "2.0.0-alpha.6"
 dokka = "2.2.0"
 kotlin = "2.4.10"
 kover = "0.9.9"
