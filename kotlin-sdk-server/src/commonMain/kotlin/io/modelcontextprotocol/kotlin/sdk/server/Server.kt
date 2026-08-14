@@ -682,7 +682,10 @@ public open class Server(
         val prompt = promptRegistry.get(requestParams.name)
             ?: run {
                 logger.error { "Prompt not found: ${requestParams.name}" }
-                throw IllegalArgumentException("Prompt not found: ${requestParams.name}")
+                throw McpException(
+                    code = RPCError.ErrorCode.INVALID_PARAMS,
+                    message = "Prompt not found: ${requestParams.name}",
+                )
             }
         return prompt.run {
             session.clientConnection.messageProvider(request)
