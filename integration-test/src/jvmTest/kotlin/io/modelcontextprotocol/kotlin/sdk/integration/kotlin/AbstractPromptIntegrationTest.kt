@@ -698,8 +698,8 @@ abstract class AbstractPromptIntegrationTest : KotlinTestBase() {
 
         val expectedMessage = "Prompt not found: non-existent-prompt"
 
-        withClue("Exception code should be INTERNAL_ERROR: -32603") {
-            exception.code shouldBe -32603
+        withClue("Exception code should be INVALID_PARAMS: ${RPCError.ErrorCode.INVALID_PARAMS}") {
+            exception.code shouldBe RPCError.ErrorCode.INVALID_PARAMS
         }
         withClue("Unexpected error message for non-existent prompt") {
             exception.message shouldBe expectedMessage
