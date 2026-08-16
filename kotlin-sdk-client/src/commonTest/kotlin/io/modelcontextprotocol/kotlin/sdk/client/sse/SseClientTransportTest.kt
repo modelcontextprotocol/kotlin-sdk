@@ -10,6 +10,7 @@ import io.modelcontextprotocol.kotlin.sdk.client.SseClientTransport
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertFailsWith
 import kotlin.time.Duration.Companion.seconds
 
 class SseClientTransportTest {
@@ -67,12 +68,38 @@ class SseClientTransportTest {
     }
 
     @Test
-    fun `full url endpoint is used as-is`() = runTest {
+    fun `full url endpoint with a different origin is rejected`() = runTest {
         // Given
         val sseUrl = "http://example.com/api/mcp/sse"
 
         // And
-        val endpointEvent = "https://example.com/messages?sessionId=abc"
+        val endpointEvent = "https://evil.example.com/messages?sessionId=abc"
+
+        // And
+        val engine = CapturingSseClientEngine(endpoint = endpointEvent)
+        val transport = sseTransport(sseUrl, engine)
+
+        // When
+        val exception = assertFailsWith<IllegalArgumentException> {
+            transport.start()
+        }
+
+        // Then
+        exception.message shouldBe "Endpoint origin https://evil.example.com does not match connection origin http://example.com"
+        engine.capturedPosts shouldHaveSize 0
+
+        // Cleanup
+        transport.close()
+        engine.close()
+    }
+
+    @Test
+    fun `full url endpoint with the same origin is used as-is`() = runTest {
+        // Given
+        val sseUrl = "http://example.com/api/mcp/sse"
+
+        // And
+        val endpointEvent = "http://example.com/messages?sessionId=abc"
 
         // And
         val engine = CapturingSseClientEngine(endpoint = endpointEvent)
@@ -85,7 +112,7 @@ class SseClientTransportTest {
         // Then
         val capturedPosts = engine.capturedPosts
         capturedPosts shouldHaveSize 1
-        capturedPosts[0].url.toString() shouldBe "https://example.com/messages?sessionId=abc"
+        capturedPosts[0].url.toString() shouldBe "http://example.com/messages?sessionId=abc"
 
         // Cleanup
         transport.close()
