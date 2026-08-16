@@ -1,6 +1,5 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
-import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.equals.shouldBeEqual
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -45,15 +44,11 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
-import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesResult
-import io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
-import io.modelcontextprotocol.kotlin.sdk.types.Tool
-import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -66,8 +61,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.builtins.ListSerializer
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
@@ -506,68 +499,35 @@ class StreamableHttpServerTransportTest {
     }
 
     @Test
-    fun `batched requests wait for all responses before replying`() = testApplication {
+    fun `batch request body is rejected with Bad Request`() = testApplication {
         configTestServer()
 
-        val client = createTestClient(logging = true)
+        val client = createTestClient()
 
         val transport = StreamableHttpServerTransport(enableJsonResponse = true)
-        val firstRequest = JSONRPCRequest(id = RequestId("first"), method = Method.Defined.ToolsList.value)
-        val secondRequest = JSONRPCRequest(id = RequestId("second"), method = Method.Defined.ResourcesList.value)
-
-        val firstResult = ListToolsResult(
-            tools = listOf(
-                Tool(name = "tool-1", inputSchema = ToolSchema()),
-            ),
-            meta = buildJsonObject { put("label", "first") },
-        )
-        val secondResult = ListResourcesResult(
-            resources = emptyList(),
-            meta = buildJsonObject { put("label", "second") },
-        )
-
         transport.onMessage { message ->
             if (message is JSONRPCRequest) {
-                val result = when (message.id) {
-                    firstRequest.id -> firstResult
-                    secondRequest.id -> secondResult
-                    else -> EmptyResult()
-                }
-                transport.send(JSONRPCResponse(message.id, result), null)
+                transport.send(JSONRPCResponse(message.id, EmptyResult()))
             }
         }
 
         configureTransportEndpoint(transport)
 
-        val initRequest = buildInitializeRequestPayload()
-
-        val responseInit = client.post(path) {
-            addStreamableHeaders()
-            setBody(initRequest)
-        }
-
-        val payload = encodeMessages(listOf(firstRequest, secondRequest))
+        val payload = encodeMessages(
+            listOf(
+                JSONRPCRequest(id = RequestId("first"), method = Method.Defined.ToolsList.value),
+                JSONRPCRequest(id = RequestId("second"), method = Method.Defined.ResourcesList.value),
+            ),
+        )
 
         val response = client.post(path) {
             addStreamableHeaders()
-            header("mcp-session-id", responseInit.headers[MCP_SESSION_ID_HEADER])
             setBody(payload)
         }
 
-        assertEquals(HttpStatusCode.OK, response.status)
-
-        val responses = response.body<List<JSONRPCResponse>>()
-        val results = responses.map { it.result }
-        results.shouldContainAll(firstResult, secondResult)
-
-        // Check responses' order
-
-        // TODO Uncomment when fixed https://github.com/modelcontextprotocol/kotlin-sdk/issues/548
-        /*assertEquals(listOf(firstRequest.id, secondRequest.id), responses.map { it.id })
-        val firstMeta = (responses[0] as ListToolsResult).meta
-        val secondMeta = (responses[1] as ListResourcesResult).meta
-        assertEquals("first", firstMeta?.get("label")?.jsonPrimitive?.content)
-        assertEquals("second", secondMeta?.get("label")?.jsonPrimitive?.content)*/
+        response.status shouldBe HttpStatusCode.BadRequest
+        val error = response.body<JSONRPCError>()
+        error.error.message shouldBe "Invalid Request: JSON-RPC batch requests are not supported"
     }
 
     @Test
@@ -614,59 +574,6 @@ class StreamableHttpServerTransportTest {
 
             response.status shouldBe HttpStatusCode.OK
             response.body<JSONRPCResponse>() shouldBe JSONRPCResponse(request.id)
-        } finally {
-            handlerScope.cancel()
-        }
-    }
-
-    @Test
-    fun `json response for a batch waits until every asynchronously produced response is ready`() = testApplication {
-        configTestServer()
-
-        val client = createTestClient()
-
-        val transport = StreamableHttpServerTransport(
-            StreamableHttpServerTransport.Configuration(enableJsonResponse = true),
-        )
-        val firstRequest = JSONRPCRequest(id = RequestId("slow"), method = Method.Defined.ToolsList.value)
-        val secondRequest = JSONRPCRequest(id = RequestId("fast"), method = Method.Defined.ResourcesList.value)
-
-        // Simulates concurrent dispatch with out-of-order completion: the second request responds
-        // first; the POST must stay open until the slower first response settles too.
-        val handlerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        try {
-            transport.onMessage { message ->
-                if (message is JSONRPCRequest) {
-                    if (message.method == Method.Defined.Initialize.value) {
-                        transport.send(JSONRPCResponse(message.id, EmptyResult()))
-                    } else {
-                        handlerScope.launch {
-                            delay(if (message.id == firstRequest.id) 200 else 50)
-                            transport.send(JSONRPCResponse(message.id, EmptyResult()))
-                        }
-                    }
-                }
-            }
-
-            configureTransportEndpoint(transport)
-
-            val initResponse = client.post(path) {
-                addStreamableHeaders()
-                setBody(buildInitializeRequestPayload())
-            }
-            initResponse.status shouldBe HttpStatusCode.OK
-
-            val response = withTimeout(10.seconds) {
-                client.post(path) {
-                    addStreamableHeaders()
-                    header(MCP_SESSION_ID_HEADER, initResponse.headers[MCP_SESSION_ID_HEADER])
-                    setBody(encodeMessages(listOf(firstRequest, secondRequest)))
-                }
-            }
-
-            response.status shouldBe HttpStatusCode.OK
-            val responses = response.body<List<JSONRPCResponse>>()
-            responses.map { it.id }.toSet() shouldBe setOf(firstRequest.id, secondRequest.id)
         } finally {
             handlerScope.cancel()
         }
