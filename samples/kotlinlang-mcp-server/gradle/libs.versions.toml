@@ -4,7 +4,7 @@ ktor = "3.5.2"
 mcp-kotlin = "0.15.0"
 serialization = "1.11.0"
 coroutines = "1.11.0"
-logback = "1.6.1"
+logback = "1.6.2"
 shadow = "9.6.1"
 
 [libraries]
