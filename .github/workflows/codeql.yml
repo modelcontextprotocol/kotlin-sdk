@@ -34,7 +34,7 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4.37.6
+        uses: github/codeql-action/init@v4.37.7
         with:
           languages: java-kotlin
           build-mode: manual
@@ -52,6 +52,6 @@ jobs:
             --no-daemon --rerun-tasks --stacktrace
 
       - name: Analyze
-        uses: github/codeql-action/analyze@v4.37.6
+        uses: github/codeql-action/analyze@v4.37.7
         with:
           category: '/language:java-kotlin'
