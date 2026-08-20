@@ -315,7 +315,7 @@ class ProtocolTest {
             override suspend fun start(): Unit = error("boom")
             override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {}
             override suspend fun close() {}
-            override fun onClose(block: () -> Unit) {}
+            override fun onClose(block: suspend () -> Unit) {}
             override fun onError(block: (Throwable) -> Unit) {}
             override fun onMessage(block: suspend (JSONRPCMessage) -> Unit) {}
         }
@@ -333,7 +333,7 @@ class ProtocolTest {
             override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?): Unit =
                 throw IllegalStateException("send failed")
             override suspend fun close() {}
-            override fun onClose(block: () -> Unit) {}
+            override fun onClose(block: suspend () -> Unit) {}
             override fun onError(block: (Throwable) -> Unit) {}
             override fun onMessage(block: suspend (JSONRPCMessage) -> Unit) {}
         }

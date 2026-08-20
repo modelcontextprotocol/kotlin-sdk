@@ -35,9 +35,13 @@ public interface Transport {
     /**
      * Callback for when the connection is closed for any reason.
      *
-     * This should be invoked when close() is called as well.
+     * This should be invoked and awaited when [close] is called as well. The callback may suspend
+     * to finish asynchronous resource cleanup before the transport completes its close path.
+     * Multiple callbacks are invoked in registration order.
+     *
+     * @param block suspending cleanup to invoke when the connection closes
      */
-    public fun onClose(block: () -> Unit)
+    public fun onClose(block: suspend () -> Unit)
 
     /**
      * Callback for when an error occurs.

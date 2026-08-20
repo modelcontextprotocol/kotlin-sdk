@@ -51,11 +51,11 @@ internal class TestProtocol(options: ProtocolOptions? = null) : Protocol(options
 internal class RecordingTransport : Transport {
     val sentMessages = Channel<JSONRPCMessage>(Channel.UNLIMITED)
     private var onMessageCallback: (suspend (JSONRPCMessage) -> Unit)? = null
-    private var onCloseCallback: (() -> Unit)? = null
+    private var onCloseCallback: (suspend () -> Unit)? = null
 
     val sentWithOptions = mutableListOf<Pair<JSONRPCMessage, TransportSendOptions?>>()
 
-    var closeCallback: (() -> Unit)? = null
+    var closeCallback: (suspend () -> Unit)? = null
         private set
 
     override suspend fun start() {
@@ -71,7 +71,7 @@ internal class RecordingTransport : Transport {
         onCloseCallback?.invoke()
     }
 
-    override fun onClose(block: () -> Unit) {
+    override fun onClose(block: suspend () -> Unit) {
         closeCallback = block
         onCloseCallback = block
     }

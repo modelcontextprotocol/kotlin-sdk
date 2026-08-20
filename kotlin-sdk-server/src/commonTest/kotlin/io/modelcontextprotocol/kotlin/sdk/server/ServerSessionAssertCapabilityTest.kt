@@ -115,7 +115,7 @@ class ServerSessionAssertCapabilityTest {
      */
     private class InitializeReplayTransport(private val clientCapabilities: ClientCapabilities) : Transport {
         private var onMessageBlock: (suspend (JSONRPCMessage) -> Unit)? = null
-        private var onCloseBlock: (() -> Unit)? = null
+        private var onCloseBlock: (suspend () -> Unit)? = null
 
         override suspend fun start() {
             val initializeRequest = InitializeRequest(
@@ -138,7 +138,7 @@ class ServerSessionAssertCapabilityTest {
             onMessageBlock = block
         }
 
-        override fun onClose(block: () -> Unit) {
+        override fun onClose(block: suspend () -> Unit) {
             onCloseBlock = block
         }
 

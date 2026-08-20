@@ -331,7 +331,7 @@ public class StdioServerTransport private constructor(
         }
     }
 
-    private fun transitionToStoppedNaturally() {
+    private suspend fun transitionToStoppedNaturally() {
         if (!state.compareAndSet(State.Operational, State.Stopped)) return
         runCatching { input.close() }
             .onFailure { logger.warn(it) { "Failed to close input source" } }

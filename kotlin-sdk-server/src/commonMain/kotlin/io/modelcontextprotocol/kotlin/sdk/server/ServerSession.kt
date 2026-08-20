@@ -66,7 +66,7 @@ public open class ServerSession(
 
     private var _onInitialized: (() -> Unit) = {}
 
-    private var _onClose: () -> Unit = {}
+    private var _onClose: suspend () -> Unit = {}
 
     private val _clientCapabilities: AtomicRef<ClientCapabilities?> = atomic(null)
     private val _clientVersion: AtomicRef<Implementation?> = atomic(null)
@@ -130,10 +130,15 @@ public open class ServerSession(
     }
 
     /**
-     * Registers a callback to be invoked when the server session is closing.
+     * Registers a callback to be invoked and awaited when the server session is closing.
+     *
+     * Multiple callbacks are invoked in registration order. A callback may suspend while it
+     * finishes asynchronous cleanup.
+     *
+     * @param block suspending cleanup to invoke when the session closes
      */
-    public fun onClose(block: () -> Unit) {
-        val old = _onClose
+    public fun onClose(block: suspend () -> Unit) {
+        val old: suspend () -> Unit = _onClose
         _onClose = {
             old()
             block()
@@ -141,9 +146,9 @@ public open class ServerSession(
     }
 
     /**
-     * Called when the server session is closing.
+     * Called and awaited when the server session is closing.
      */
-    override fun onClose() {
+    override suspend fun onClose() {
         logger.debug { "Server connection closing" }
         _onClose()
     }

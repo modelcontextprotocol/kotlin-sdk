@@ -130,7 +130,7 @@ public open class Server(
 
     private var _onConnect: (() -> Unit) = {}
 
-    private var _onClose: () -> Unit = {}
+    private var _onClose: suspend () -> Unit = {}
 
     @OptIn(ExperimentalTime::class)
     private val notificationService = FeatureNotificationService()
@@ -195,7 +195,10 @@ public open class Server(
         block(this)
     }
 
-    /** Closes this server, shutting down the notification service and all active sessions. */
+    /**
+     * Closes this server, shutting down the notification service and all active sessions before
+     * awaiting callbacks registered with [onClose].
+     */
     public suspend fun close() {
         logger.debug { "Closing MCP server" }
         notificationService.close()
@@ -290,10 +293,15 @@ public open class Server(
     }
 
     /**
-     * Registers a callback to be invoked when the server connection is closing.
+     * Registers a callback to be invoked and awaited when the server is closing.
+     *
+     * Multiple callbacks are invoked in registration order. A callback may suspend while it
+     * finishes asynchronous cleanup.
+     *
+     * @param block suspending cleanup to invoke when the server closes
      */
-    public fun onClose(block: () -> Unit) {
-        val old = _onClose
+    public fun onClose(block: suspend () -> Unit) {
+        val old: suspend () -> Unit = _onClose
         _onClose = {
             old()
             block()

@@ -297,9 +297,10 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     /**
      * Callback for when the connection is closed for any reason.
      *
-     * This is invoked when close() is called as well.
+     * This suspending hook is invoked and awaited when [close] is called as well. Subclasses may
+     * override it to finish asynchronous cleanup before the close path completes.
      */
-    public open fun onClose() {}
+    public open suspend fun onClose() {}
 
     /**
      * Callback for when an error occurs.
@@ -429,7 +430,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         }
     }
 
-    private fun doClose(connection: Connection) {
+    private suspend fun doClose(connection: Connection) {
         // A stale onClose from a previous transport must not tear down the successor connection.
         if (!connectionRef.compareAndSet(connection, null)) {
             logger.trace { "Ignoring close signal from a stale transport" }
