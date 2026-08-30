@@ -62,6 +62,15 @@ import kotlin.jvm.JvmOverloads
 import kotlin.time.ExperimentalTime
 
 private val logger = KotlinLogging.logger {}
+private const val STANDARD_RESOURCE_NOT_FOUND_PROTOCOL_VERSION = "2026-07-28"
+
+internal fun resourceNotFoundErrorCode(protocolVersion: String?): Int =
+    // MCP protocol versions use ISO YYYY-MM-DD, so lexical and chronological ordering match.
+    if (protocolVersion != null && protocolVersion >= STANDARD_RESOURCE_NOT_FOUND_PROTOCOL_VERSION) {
+        RPCError.ErrorCode.INVALID_PARAMS
+    } else {
+        RPCError.ErrorCode.RESOURCE_NOT_FOUND
+    }
 
 /**
  * Configuration options for the MCP server.
@@ -714,7 +723,7 @@ public open class Server(
             ?: run {
                 logger.error { "Resource not found: $uri" }
                 throw McpException(
-                    code = RPCError.ErrorCode.RESOURCE_NOT_FOUND,
+                    code = resourceNotFoundErrorCode(session.negotiatedProtocolVersion),
                     message = "Resource not found",
                     data = buildJsonObject { put("uri", uri) },
                 )
