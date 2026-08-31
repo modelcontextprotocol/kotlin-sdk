@@ -1,28 +1,49 @@
 package io.modelcontextprotocol.kotlin.sdk.shared
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
+import io.modelcontextprotocol.kotlin.sdk.InternalMcpApi
+import io.modelcontextprotocol.kotlin.sdk.types.COMPLETE_RESULT_TYPE
 import io.modelcontextprotocol.kotlin.sdk.types.CancelledNotification
 import io.modelcontextprotocol.kotlin.sdk.types.CancelledNotificationParams
+import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.DEFAULT_NEGOTIATED_PROTOCOL_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCEmptyMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
+import io.modelcontextprotocol.kotlin.sdk.types.LATEST_MODERN_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.MODERN_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.Notification
+import io.modelcontextprotocol.kotlin.sdk.types.PROTOCOL_VERSION_META_KEY
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.types.Progress
 import io.modelcontextprotocol.kotlin.sdk.types.ProgressNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ProgressToken
+import io.modelcontextprotocol.kotlin.sdk.types.ProtocolEra
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.Request
+import io.modelcontextprotocol.kotlin.sdk.types.RequestEnvelope
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
+import io.modelcontextprotocol.kotlin.sdk.types.RequestMeta
 import io.modelcontextprotocol.kotlin.sdk.types.RequestResult
+import io.modelcontextprotocol.kotlin.sdk.types.UnsupportedProtocolVersionData
+import io.modelcontextprotocol.kotlin.sdk.types.WireResult
+import io.modelcontextprotocol.kotlin.sdk.types.checkInboundResult
+import io.modelcontextprotocol.kotlin.sdk.types.encodeOutboundResult
 import io.modelcontextprotocol.kotlin.sdk.types.fromJSON
+import io.modelcontextprotocol.kotlin.sdk.types.isAvailableIn
+import io.modelcontextprotocol.kotlin.sdk.types.isModernProtocolVersion
+import io.modelcontextprotocol.kotlin.sdk.types.outboundErrorCode
+import io.modelcontextprotocol.kotlin.sdk.types.toEnvelopeLenient
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
+import io.modelcontextprotocol.kotlin.sdk.types.validateEnvelope
 import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.getAndUpdate
@@ -51,7 +72,9 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.jsonObject
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.ContinuationInterceptor
 import kotlin.coroutines.CoroutineContext
@@ -172,15 +195,66 @@ public class RequestOptions(
  * handler coroutine's [CoroutineContext], so code nested anywhere under the handler can reach it
  * via [currentRequestHandlerExtra] without parameter plumbing.
  *
+ * [protocolVersion], [clientCapabilities] and [clientInfo] are always populated, whichever protocol
+ * lifecycle the request arrived under, so a handler needs no branch on it. [envelope] is there for
+ * code that does need to tell the two apart.
+ *
  * @property requestId the JSON-RPC id of the request being handled
  * @property method the request's method
+ * @property meta the `_meta` of the request being handled, exactly as received
  */
 public class RequestHandlerExtra internal constructor(
     public val requestId: RequestId,
     public val method: Method,
     private val protocol: Protocol,
     internal val capturedTransport: Transport,
+    internal val era: ProtocolEra = ProtocolEra.Legacy,
+    public val meta: RequestMeta? = null,
+    envelope: RequestEnvelope? = null,
+    handshakeProtocolVersion: String? = null,
+    handshakeClientCapabilities: ClientCapabilities? = null,
+    handshakeClientInfo: Implementation? = null,
 ) : AbstractCoroutineContextElement(Key) {
+
+    /**
+     * The per-request protocol envelope, or `null` on a request served under the connection-scoped
+     * lifecycle.
+     *
+     * The envelope's keys also stay in [meta], which reports `_meta` exactly as it arrived.
+     */
+    @ExperimentalMcpApi
+    public val envelope: RequestEnvelope? = envelope
+
+    /**
+     * The protocol version governing this request.
+     *
+     * Comes from the envelope on the request-scoped lifecycle and from the `initialize` handshake on
+     * the connection-scoped one, so it is never `null`.
+     */
+    public val protocolVersion: String = envelope?.protocolVersion
+        ?: handshakeProtocolVersion.takeIf { era == ProtocolEra.Legacy }
+        ?: DEFAULT_NEGOTIATED_PROTOCOL_VERSION
+
+    /**
+     * The capabilities the client declared for this request.
+     *
+     * On the request-scoped lifecycle these come from the request's own envelope, and never from
+     * any other request: a request whose envelope did not reach here declares nothing, rather than
+     * borrowing an earlier declaration. On the connection-scoped lifecycle they come from the
+     * `initialize` handshake, and are empty when there was none.
+     */
+    public val clientCapabilities: ClientCapabilities = envelope?.clientCapabilities
+        ?: handshakeClientCapabilities.takeIf { era == ProtocolEra.Legacy }
+        ?: ClientCapabilities()
+
+    /**
+     * The client identity, when the peer reported one.
+     *
+     * Self-reported and unverified, so confine it to display, logging and debugging rather than
+     * behavior or security decisions. Scoped to the request as [clientCapabilities] is.
+     */
+    public val clientInfo: Implementation? = envelope?.clientInfo
+        ?: handshakeClientInfo.takeIf { era == ProtocolEra.Legacy }
 
     /** Context key for retrieving the extra from a handler coroutine's context. */
     public companion object Key : CoroutineContext.Key<RequestHandlerExtra>
@@ -215,6 +289,22 @@ public class RequestHandlerExtra internal constructor(
 
 /** The [RequestHandlerExtra] of the MCP request being handled by the current coroutine, or `null` outside a handler. */
 public suspend fun currentRequestHandlerExtra(): RequestHandlerExtra? = currentCoroutineContext()[RequestHandlerExtra]
+
+/** The `_meta` this request carries, or `null` when it carries none. */
+private fun JSONRPCRequest.requestMeta(): RequestMeta? =
+    ((params as? JsonObject)?.get("_meta") as? JsonObject)?.let(::RequestMeta)
+
+/**
+ * The lifecycle [meta] asks to be served under.
+ *
+ * A request claims the request-scoped lifecycle if and only if its `_meta` carries
+ * [PROTOCOL_VERSION_META_KEY]. Presence of the key is the claim, not the shape of its value, so a
+ * malformed claim is reported rather than falling back to the connection-scoped lifecycle. Nothing
+ * an earlier request established participates, so one connection may interleave both.
+ */
+@OptIn(ExperimentalMcpApi::class)
+private fun eraOf(meta: RequestMeta?): ProtocolEra =
+    if (meta?.get(PROTOCOL_VERSION_META_KEY) != null) ProtocolEra.Modern else ProtocolEra.Legacy
 
 internal val COMPLETED = CompletableDeferred(Unit).also { it.complete(Unit) }
 
@@ -359,6 +449,14 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     protected open fun onInitializedNotification() {}
 
     /**
+     * Router hook invoked for every inbound notification, before handler lookup.
+     *
+     * Runs whether or not a handler is registered for the method, and in addition to it, so that
+     * subclass bookkeeping cannot be disabled by replacing or omitting the handler.
+     */
+    protected open suspend fun onNotificationRouted(notification: JSONRPCNotification) {}
+
+    /**
      * Attaches to the given transport, starts it, and starts listening for messages.
      *
      * The Protocol object assumes ownership of the Transport, replacing any callbacks that have
@@ -484,6 +582,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         if (notification.method == Method.Defined.NotificationsInitialized.value) {
             onInitializedNotification()
         }
+        onNotificationRouted(notification)
         if (!connection.concurrentDispatchEnabled.value) {
             onNotification(notification)
             return
@@ -574,35 +673,41 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     private suspend fun onRequest(request: JSONRPCRequest, connection: Connection, trackCancellation: Boolean) {
         logger.trace { "Received request: ${request.method} (id: ${request.id})" }
 
-        val handler = requestHandlers[request.method] ?: fallbackRequestHandler
         val capturedTransport = connection.transport
+        val meta = request.requestMeta()
+        val era = eraOf(meta)
+        val method = Method.from(request.method)
 
+        admissionError(era, method, meta)?.let { error ->
+            sendError(capturedTransport, request.id, error)
+            return
+        }
+
+        val handler = requestHandlers[request.method] ?: fallbackRequestHandler
         if (handler === null) {
             logger.trace { "No handler found for request: ${request.method}" }
-            try {
-                capturedTransport.send(
-                    JSONRPCError(
-                        id = request.id,
-                        error = RPCError(
-                            code = RPCError.ErrorCode.METHOD_NOT_FOUND,
-                            message = "Server does not support ${request.method}",
-                        ),
-                    ),
-                )
-            } catch (e: CancellationException) {
-                throw e
-            } catch (cause: Throwable) {
-                logger.error(cause) { "Error sending method not found response" }
-                onError(cause)
-            }
+            sendError(
+                capturedTransport,
+                request.id,
+                RPCError(
+                    code = RPCError.ErrorCode.METHOD_NOT_FOUND,
+                    message = "Server does not support ${request.method}",
+                ),
+            )
             return
         }
 
         val extra = RequestHandlerExtra(
             requestId = request.id,
-            method = Method.from(request.method),
+            method = method,
             protocol = this,
             capturedTransport = capturedTransport,
+            era = era,
+            meta = meta,
+            envelope = if (era == ProtocolEra.Modern) meta?.toEnvelopeLenient() else null,
+            handshakeProtocolVersion = negotiatedProtocolVersion,
+            handshakeClientCapabilities = declaredClientCapabilities,
+            handshakeClientInfo = declaredClientInfo,
         )
 
         // Registration in the in-flight registry already happened in dispatchRequest's launch
@@ -620,7 +725,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                 capturedTransport.send(
                     JSONRPCResponse(
                         id = request.id,
-                        result = result ?: EmptyResult(),
+                        result = encodeResultForEra(era, result),
                     ),
                 )
             } catch (e: CancellationException) {
@@ -629,14 +734,164 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                 if (handlerJob.isCancelled) throw e // genuine peer or close cancel: suppress the response
                 // CE escaped a live handler job (e.g. a leaked inner withTimeout). Answer
                 // INTERNAL_ERROR so the peer does not hang until its own timeout.
-                respondWithError(capturedTransport, request, e)
+                respondWithError(capturedTransport, request, e, era)
             } catch (cause: Throwable) {
                 if (handlerJob?.isCancelled == true) {
                     logger.trace { "Suppressing error response for request cancelled by peer (id: ${request.id})" }
                     return@withContext
                 }
-                respondWithError(capturedTransport, request, cause)
+                respondWithError(capturedTransport, request, cause, era)
             }
+        }
+    }
+
+    /**
+     * The identity to stamp into outgoing results, or `null` to stamp none.
+     *
+     * Only servers report one, and only under the request-scoped lifecycle.
+     */
+    protected open val outboundServerInfo: Implementation? get() = null
+
+    /**
+     * The protocol version this connection settled on, or `null` before it has settled on one.
+     *
+     * Settled by the `initialize` handshake or by `server/discover`, whichever the peer turned out
+     * to speak. It decides the lifecycle of everything this peer sends.
+     */
+    protected open val negotiatedProtocolVersion: String? get() = null
+
+    /**
+     * The capabilities the peer declared for this connection, or `null` when it declared none.
+     *
+     * Only the connection-scoped lifecycle has such a declaration.
+     */
+    protected open val declaredClientCapabilities: ClientCapabilities? get() = null
+
+    /** The identity the peer reported for this connection, or `null` when it reported none. */
+    protected open val declaredClientInfo: Implementation? get() = null
+
+    /**
+     * The lifecycle this connection sends under, decided by what it settled on rather than by
+     * whatever it happens to be answering.
+     */
+    private val outboundEra: ProtocolEra
+        get() = if (negotiatedProtocolVersion?.let(::isModernProtocolVersion) == true) {
+            ProtocolEra.Modern
+        } else {
+            ProtocolEra.Legacy
+        }
+
+    /**
+     * Last chance to rewrite an outbound request before it is sent; a client attaches its
+     * per-request protocol envelope here. The default returns [request] untouched.
+     */
+    protected open fun decorateOutboundRequest(request: JSONRPCRequest): JSONRPCRequest = request
+
+    /**
+     * The first rung of the inbound validation ladder [request] fails, or `null` when it passes all
+     * of them.
+     *
+     * Order is the precedence, and a request failing several rungs is answered by the earliest:
+     *
+     * 1. the envelope behind a present claim is intact — `-32602`, naming every offending key at
+     *    once so a peer is not corrected one round trip at a time;
+     * 2. the claimed version is one this SDK serves — `-32022`, naming the ones it does;
+     * 3. the method exists in the lifecycle being served — `-32601`, **even where a handler is
+     *    registered**, because a revision that removes a method removes it structurally.
+     *
+     * Rung 1 covers a non-string version too: that is a defect of shape rather than an outcome of
+     * negotiation, and the distinction matters, because a negotiating client falls back from
+     * `-32602` but not from `-32022`.
+     *
+     * Transports that carry headers add their own rungs in front of this one; nothing here depends
+     * on having them.
+     */
+    @OptIn(ExperimentalMcpApi::class)
+    private fun admissionError(era: ProtocolEra, method: Method, meta: RequestMeta?): RPCError? {
+        if (era == ProtocolEra.Modern) {
+            val issues = validateEnvelope(checkNotNull(meta) { "a modern claim implies request metadata" })
+            if (issues.isNotEmpty()) {
+                return RPCError(
+                    code = RPCError.ErrorCode.INVALID_PARAMS,
+                    message = "Invalid request envelope: " +
+                        issues.joinToString(", ") { "${it.key} ${it.problem}" },
+                )
+            }
+            val claimed = checkNotNull(meta.claimedProtocolVersion) { "an intact envelope implies a string version" }
+            if (claimed !in MODERN_PROTOCOL_VERSIONS) {
+                return RPCError(
+                    code = RPCError.ErrorCode.UNSUPPORTED_PROTOCOL_VERSION,
+                    message = "Unsupported protocol version: $claimed",
+                    data = McpJson.encodeToJsonElement(
+                        UnsupportedProtocolVersionData(supported = MODERN_PROTOCOL_VERSIONS, requested = claimed),
+                    ),
+                )
+            }
+        }
+        if (!method.isAvailableIn(era)) {
+            return RPCError(
+                code = RPCError.ErrorCode.METHOD_NOT_FOUND,
+                message = "Method ${method.value} does not exist in protocol version " +
+                    "${negotiatedVersionFor(era, meta)}",
+            )
+        }
+        return null
+    }
+
+    /** The version to name when telling a peer a method does not exist in the lifecycle it asked under. */
+    @OptIn(ExperimentalMcpApi::class)
+    private fun negotiatedVersionFor(era: ProtocolEra, meta: RequestMeta?): String = when (era) {
+        ProtocolEra.Modern -> meta?.claimedProtocolVersion ?: LATEST_MODERN_VERSION
+        ProtocolEra.Legacy -> negotiatedProtocolVersion ?: DEFAULT_NEGOTIATED_PROTOCOL_VERSION
+    }
+
+    /**
+     * Renders [result] for the wire, applying everything that differs between the two lifecycles.
+     *
+     * A handler returning `null` means "nothing to report", which is an empty result — spelled with
+     * an explicit `resultType` on the request-scoped lifecycle and as a bare `{}` on the one that
+     * predates the field.
+     */
+    @OptIn(InternalMcpApi::class)
+    private fun encodeResultForEra(era: ProtocolEra, result: RequestResult?): RequestResult {
+        val payload = result ?: EmptyResult(
+            resultType = COMPLETE_RESULT_TYPE.takeIf { era == ProtocolEra.Modern },
+        )
+        val json = McpJson.encodeToJsonElement<RequestResult>(payload).jsonObject
+        return WireResult(encodeOutboundResult(era, json, outboundServerInfo))
+    }
+
+    /**
+     * Reads an inbound response back into a typed result.
+     *
+     * A transport that serializes has already done this. One that does not — an in-memory transport
+     * — hands over whatever object the peer passed to `send`, which may be a [WireResult] holding
+     * rendered JSON; reading it here makes both kinds of transport behave the same.
+     */
+    @OptIn(InternalMcpApi::class)
+    private fun decodeInboundResponse(response: JSONRPCResponse): JSONRPCResponse {
+        val result = response.result
+        val decoded = if (result is WireResult) {
+            response.copy(result = McpJson.decodeFromJsonElement<RequestResult>(result.json))
+        } else {
+            response
+        }
+        checkInboundResult(outboundEra, decoded.result)
+        return decoded
+    }
+
+    /**
+     * Answers [id] with [error]. A send failure is reported to [onError] rather than thrown: a peer
+     * that cannot be told why its request was refused is already unreachable.
+     */
+    private suspend fun sendError(transport: Transport, id: RequestId, error: RPCError) {
+        try {
+            transport.send(JSONRPCError(id = id, error = error))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (cause: Throwable) {
+            logger.error(cause) { "Error sending error response for request id: $id" }
+            onError(cause)
         }
     }
 
@@ -653,11 +908,20 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         }
     }
 
-    private suspend fun respondWithError(transport: Transport, request: JSONRPCRequest, cause: Throwable) {
+    private suspend fun respondWithError(
+        transport: Transport,
+        request: JSONRPCRequest,
+        cause: Throwable,
+        era: ProtocolEra,
+    ) {
         logger.error(cause) { "Error handling request: ${request.method} (id: ${request.id})" }
         try {
             val rpcError = if (cause is McpException) {
-                RPCError(code = cause.code, message = cause.message.orEmpty(), data = cause.data)
+                RPCError(
+                    code = outboundErrorCode(era, cause.code),
+                    message = cause.message.orEmpty(),
+                    data = cause.data,
+                )
             } else {
                 RPCError(code = RPCError.ErrorCode.INTERNAL_ERROR, message = cause.message ?: "Internal error")
             }
@@ -727,7 +991,15 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         }
 
         if (response != null) {
-            handler(response, null)
+            val decoded = try {
+                decodeInboundResponse(response)
+            } catch (cause: McpException) {
+                // A result this SDK cannot interpret is not an answer: failing the caller beats
+                // handing it a partial result as though it were the whole one.
+                handler(null, cause)
+                return
+            }
+            handler(decoded, null)
         } else {
             checkNotNull(error)
             val mcpException = McpException.fromError(
@@ -782,7 +1054,18 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             assertCapabilityForMethod(request.method)
         }
 
-        val jsonRpcRequest = request.toJSON().run {
+        if (!request.method.isAvailableIn(outboundEra)) {
+            // Refused here rather than on the wire: a method the negotiated revision removed has no
+            // answer a peer could give, so failing locally reports the real cause instead of a
+            // method-not-found the caller has to interpret.
+            throw McpException(
+                code = RPCError.ErrorCode.METHOD_NOT_FOUND,
+                message = "Method ${request.method.value} does not exist in protocol version " +
+                    "${negotiatedProtocolVersion ?: DEFAULT_NEGOTIATED_PROTOCOL_VERSION}",
+            )
+        }
+
+        val withProgressToken = request.toJSON().run {
             options?.onProgress?.let { progressHandler ->
                 logger.trace { "Registering progress handler for request id: $id" }
                 _progressHandlers.update { current ->
@@ -802,6 +1085,9 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                 this.copy(params = updatedParams)
             } ?: this
         }
+        // Decorated after the progress token is in place so a peer attaching a protocol envelope
+        // merges onto the final `_meta` rather than one that is about to be replaced.
+        val jsonRpcRequest = decorateOutboundRequest(withProgressToken)
         val jsonRpcRequestId = jsonRpcRequest.id
 
         _responseHandlers.update { current ->

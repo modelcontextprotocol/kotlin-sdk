@@ -1,5 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
+import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.ClientOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.InMemoryTransport
@@ -10,7 +11,11 @@ import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageResult
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.IncludeContext
+import io.modelcontextprotocol.kotlin.sdk.types.McpException
+import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.MissingRequiredClientCapabilityData
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.Role
 import io.modelcontextprotocol.kotlin.sdk.types.SamplingMessage
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
@@ -26,11 +31,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
 import org.junit.jupiter.api.assertDoesNotThrow
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
+@OptIn(ExperimentalMcpApi::class)
 class SamplingTest {
 
     private val dummyTool = Tool(
@@ -103,7 +110,7 @@ class SamplingTest {
     @Test
     fun `tools field rejected when client has no sampling tools capability`() {
         val (server, sessionId) = buildPair()
-        assertFailsWith<IllegalArgumentException> {
+        val error = assertFailsWith<McpException> {
             runBlocking {
                 server.createMessage(
                     sessionId = sessionId,
@@ -117,12 +124,18 @@ class SamplingTest {
                 )
             }
         }
+
+        assertEquals(RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY, error.code)
+        assertEquals(
+            ClientCapabilities(sampling = ClientCapabilities.Sampling(tools = EmptyJsonObject)),
+            error.missingCapabilities(),
+        )
     }
 
     @Test
     fun `toolChoice field rejected when client has no sampling tools capability`() {
         val (server, sessionId) = buildPair()
-        assertFailsWith<IllegalArgumentException> {
+        val error = assertFailsWith<McpException> {
             runBlocking {
                 server.createMessage(
                     sessionId = sessionId,
@@ -136,7 +149,17 @@ class SamplingTest {
                 )
             }
         }
+
+        assertEquals(RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY, error.code)
+        assertEquals(
+            ClientCapabilities(sampling = ClientCapabilities.Sampling(tools = EmptyJsonObject)),
+            error.missingCapabilities(),
+        )
     }
+
+    /** The capabilities a [RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY] error reports as missing. */
+    private fun McpException.missingCapabilities(): ClientCapabilities =
+        McpJson.decodeFromJsonElement<MissingRequiredClientCapabilityData>(checkNotNull(data)).requiredCapabilities
 
     @Test
     fun `includeContext with no sampling context capability succeeds with a warning`() {

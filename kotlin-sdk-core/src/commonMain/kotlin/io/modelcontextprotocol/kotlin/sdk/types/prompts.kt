@@ -2,6 +2,7 @@
 
 package io.modelcontextprotocol.kotlin.sdk.types
 
+import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
@@ -159,14 +160,16 @@ public data class GetPromptRequestParams(
  * @property messages The list of messages that make up this prompt.
  *                   Each message has a role (e.g., "user", "assistant") and content.
  * @property description An optional description for the prompt, explaining its purpose or usage.
+ * @property resultType Discriminator for the result representation.
  * @property meta Optional metadata for this response.
  */
 @Serializable
 public data class GetPromptResult(
     val messages: List<PromptMessage>,
     val description: String? = null,
+    val resultType: String = COMPLETE_RESULT_TYPE,
     @SerialName("_meta")
-    override val meta: JsonObject? = null,
+    override val meta: ResultMeta? = null,
 ) : ServerResult
 
 // ============================================================================
@@ -200,13 +203,26 @@ public data class ListPromptsRequest(override val params: PaginatedRequestParams
  * @property nextCursor An opaque token representing the pagination position after the last returned result.
  *                     If present, there may be more results available. The client can pass this token
  *                     in a subsequent request to fetch the next page.
+ * @property resultType Discriminator for the result representation.
+ * @property ttlMs number of milliseconds clients may treat this result as fresh
+ * @property cacheScope authorization boundary within which the result may be reused
  * @property meta Optional metadata for this response.
+ * @throws IllegalArgumentException if [ttlMs] is negative
  */
 @Serializable
+@OptIn(ExperimentalMcpApi::class)
 public data class ListPromptsResult(
     val prompts: List<Prompt>,
     override val nextCursor: String? = null,
+    val resultType: String = COMPLETE_RESULT_TYPE,
+    override val ttlMs: Long = 0,
+    override val cacheScope: CacheScope = CacheScope.Private,
     @SerialName("_meta")
-    override val meta: JsonObject? = null,
+    override val meta: ResultMeta? = null,
 ) : ServerResult,
-    PaginatedResult
+    PaginatedResult,
+    CacheableResult {
+    init {
+        require(ttlMs >= 0) { "ttlMs must be non-negative, but was $ttlMs" }
+    }
+}

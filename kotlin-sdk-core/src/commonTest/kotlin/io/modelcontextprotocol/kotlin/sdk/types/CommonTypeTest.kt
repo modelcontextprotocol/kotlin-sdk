@@ -14,13 +14,17 @@ class CommonTypeTest {
 
     @Test
     fun `should have correct latest protocol version`() {
-        LATEST_PROTOCOL_VERSION shouldBe "2025-11-25"
+        LATEST_PROTOCOL_VERSION shouldBe "2026-07-28"
+        LATEST_HANDSHAKE_VERSION shouldBe "2025-11-25"
+        LATEST_MODERN_VERSION shouldBe "2026-07-28"
     }
 
     @Test
     fun `should have correct supported protocol versions`() {
+        @Suppress("DEPRECATION")
         SUPPORTED_PROTOCOL_VERSIONS shouldContainExactlyInAnyOrder listOf(
-            LATEST_PROTOCOL_VERSION,
+            "2026-07-28",
+            "2025-11-25",
             "2025-06-18",
             "2025-03-26",
             "2024-11-05",

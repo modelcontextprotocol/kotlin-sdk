@@ -381,7 +381,7 @@ class ToolsTest {
                 put("count", 3)
                 put("items", buildJsonObject { put("first", "doc.md") })
             },
-            meta = buildJsonObject { put("elapsedMs", 1200) },
+            meta = ResultMeta(buildJsonObject { put("elapsedMs", 1200) }),
         )
 
         verifySerialization(
@@ -391,8 +391,8 @@ class ToolsTest {
             {
               "content": [
                 {
-                  "type": "text",
-                  "text": "Found 3 relevant documents."
+                  "text": "Found 3 relevant documents.",
+                  "type": "text"
                 }
               ],
               "isError": false,
@@ -402,6 +402,7 @@ class ToolsTest {
                   "first": "doc.md"
                 }
               },
+              "resultType": "complete",
               "_meta": {
                 "elapsedMs": 1200
               }
@@ -416,8 +417,8 @@ class ToolsTest {
             {
               "content": [
                 {
-                  "type": "text",
-                  "text": "Unable to reach server."
+                  "text": "Unable to reach server.",
+                  "type": "text"
                 }
               ],
               "isError": true,
@@ -425,6 +426,7 @@ class ToolsTest {
                 "errorCode": "NETWORK",
                 "retryable": true
               },
+              "resultType": "complete",
               "_meta": {
                 "requestId": "req-9"
               }
@@ -491,7 +493,7 @@ class ToolsTest {
                 Tool(name = "summarize", inputSchema = ToolSchema()),
             ),
             nextCursor = "cursor-2",
-            meta = buildJsonObject { put("page", 1) },
+            meta = ResultMeta(buildJsonObject { put("page", 1) }),
         )
 
         verifySerialization(
@@ -514,6 +516,9 @@ class ToolsTest {
                 }
               ],
               "nextCursor": "cursor-2",
+              "resultType": "complete",
+              "ttlMs": 0,
+              "cacheScope": "private",
               "_meta": {
                 "page": 1
               }
@@ -536,6 +541,9 @@ class ToolsTest {
                 }
               ],
               "nextCursor": "cursor-next",
+              "resultType": "complete",
+              "ttlMs": 0,
+              "cacheScope": "private",
               "_meta": {
                 "page": 3
               }
@@ -556,7 +564,7 @@ class ToolsTest {
 
     @Test
     fun `should build success CallToolResult with text content`() {
-        val meta = buildJsonObject { put("source", "toolkit") }
+        val meta = ResultMeta(buildJsonObject { put("source", "toolkit") })
 
         val result = CallToolResult.success("Operation complete", meta)
 
@@ -569,7 +577,7 @@ class ToolsTest {
 
     @Test
     fun `should build error CallToolResult with text content`() {
-        val meta = buildJsonObject { put("code", "ERR42") }
+        val meta = ResultMeta(buildJsonObject { put("code", "ERR42") })
 
         val result = CallToolResult.error("Failed to connect", meta)
 

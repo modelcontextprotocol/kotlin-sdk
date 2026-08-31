@@ -171,10 +171,13 @@ public final class io/modelcontextprotocol/kotlin/sdk/server/ServerOptions : io/
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/ServerCapabilities;)V
 	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/ServerCapabilities;Z)V
 	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/ServerCapabilities;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/ServerCapabilities;ZLio/modelcontextprotocol/kotlin/sdk/utils/ResourceTemplateMatcherFactory;Lkotlin/coroutines/CoroutineContext;)V
-	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/ServerCapabilities;ZLio/modelcontextprotocol/kotlin/sdk/utils/ResourceTemplateMatcherFactory;Lkotlin/coroutines/CoroutineContext;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/ServerCapabilities;ZLio/modelcontextprotocol/kotlin/sdk/utils/ResourceTemplateMatcherFactory;Lkotlin/coroutines/CoroutineContext;ZJLio/modelcontextprotocol/kotlin/sdk/types/CacheScope;)V
+	public synthetic fun <init> (Lio/modelcontextprotocol/kotlin/sdk/types/ServerCapabilities;ZLio/modelcontextprotocol/kotlin/sdk/utils/ResourceTemplateMatcherFactory;Lkotlin/coroutines/CoroutineContext;ZJLio/modelcontextprotocol/kotlin/sdk/types/CacheScope;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getCapabilities ()Lio/modelcontextprotocol/kotlin/sdk/types/ServerCapabilities;
+	public final fun getDiscoverCacheScope ()Lio/modelcontextprotocol/kotlin/sdk/types/CacheScope;
+	public final fun getDiscoverTtlMs ()J
 	public final fun getResourceTemplateMatcherFactory ()Lio/modelcontextprotocol/kotlin/sdk/utils/ResourceTemplateMatcherFactory;
+	public final fun getSendServerInfo ()Z
 }
 
 public class io/modelcontextprotocol/kotlin/sdk/server/ServerSession : io/modelcontextprotocol/kotlin/sdk/shared/Protocol {
@@ -191,7 +194,12 @@ public class io/modelcontextprotocol/kotlin/sdk/server/ServerSession : io/modelc
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getClientCapabilities ()Lio/modelcontextprotocol/kotlin/sdk/types/ClientCapabilities;
 	public final fun getClientVersion ()Lio/modelcontextprotocol/kotlin/sdk/types/Implementation;
+	protected final fun getDeclaredClientCapabilities ()Lio/modelcontextprotocol/kotlin/sdk/types/ClientCapabilities;
+	protected final fun getDeclaredClientInfo ()Lio/modelcontextprotocol/kotlin/sdk/types/Implementation;
 	protected final fun getInstructions ()Ljava/lang/String;
+	protected final fun getNegotiatedProtocolVersion ()Ljava/lang/String;
+	protected final fun getOutboundServerInfo ()Lio/modelcontextprotocol/kotlin/sdk/types/Implementation;
+	public final fun getProtocolVersion ()Ljava/lang/String;
 	protected final fun getServerInfo ()Lio/modelcontextprotocol/kotlin/sdk/types/Implementation;
 	public final fun getSessionId ()Ljava/lang/String;
 	public fun hashCode ()I

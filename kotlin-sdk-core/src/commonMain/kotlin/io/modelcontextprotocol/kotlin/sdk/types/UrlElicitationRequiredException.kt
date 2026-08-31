@@ -40,6 +40,9 @@ public data class UrlElicitationRequiredData(val elicitations: List<ElicitReques
  *
  * @property elicitations The required URL-mode elicitations (always non-empty).
  */
+// The error code it carries is deprecated, but the exception stays: 2026-07-28 removed
+// URL-elicitation completion, and this type is how a legacy peer still reports it.
+@Suppress("DEPRECATION")
 public class UrlElicitationRequiredException(
     public val elicitations: List<ElicitRequestURLParams>,
     message: String = defaultMessage(elicitations),

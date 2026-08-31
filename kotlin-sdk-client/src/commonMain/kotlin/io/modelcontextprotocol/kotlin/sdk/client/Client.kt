@@ -8,6 +8,8 @@ import io.modelcontextprotocol.kotlin.sdk.shared.RequestHandlerExtra
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
 import io.modelcontextprotocol.kotlin.sdk.types.BooleanSchema
+import io.modelcontextprotocol.kotlin.sdk.types.CacheScope
+import io.modelcontextprotocol.kotlin.sdk.types.CacheableResult
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
@@ -15,6 +17,9 @@ import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.CompleteRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CompleteResult
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
+import io.modelcontextprotocol.kotlin.sdk.types.DiscoverRequest
+import io.modelcontextprotocol.kotlin.sdk.types.DiscoverRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.DiscoverResult
 import io.modelcontextprotocol.kotlin.sdk.types.DoubleSchema
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestFormParams
@@ -23,13 +28,17 @@ import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotification
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult
+import io.modelcontextprotocol.kotlin.sdk.types.HANDSHAKE_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeResult
 import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.IntegerSchema
-import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
+import io.modelcontextprotocol.kotlin.sdk.types.LATEST_HANDSHAKE_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.LATEST_MODERN_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.LegacyTitledEnumSchema
 import io.modelcontextprotocol.kotlin.sdk.types.ListPromptsRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ListPromptsResult
@@ -42,18 +51,21 @@ import io.modelcontextprotocol.kotlin.sdk.types.ListRootsResult
 import io.modelcontextprotocol.kotlin.sdk.types.ListToolsRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
+import io.modelcontextprotocol.kotlin.sdk.types.MODERN_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
+import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.types.PrimitiveSchemaDefinition
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
 import io.modelcontextprotocol.kotlin.sdk.types.Request
+import io.modelcontextprotocol.kotlin.sdk.types.RequestEnvelope
 import io.modelcontextprotocol.kotlin.sdk.types.RequestMeta
 import io.modelcontextprotocol.kotlin.sdk.types.RequestResult
 import io.modelcontextprotocol.kotlin.sdk.types.Root
 import io.modelcontextprotocol.kotlin.sdk.types.RootsListChangedNotification
-import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.SetLevelRequest
 import io.modelcontextprotocol.kotlin.sdk.types.SetLevelRequestParams
@@ -64,8 +76,12 @@ import io.modelcontextprotocol.kotlin.sdk.types.TitledSingleSelectEnumSchema
 import io.modelcontextprotocol.kotlin.sdk.types.UnsubscribeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.UntitledMultiSelectEnumSchema
 import io.modelcontextprotocol.kotlin.sdk.types.UntitledSingleSelectEnumSchema
+import io.modelcontextprotocol.kotlin.sdk.types.isModernProtocolVersion
+import io.modelcontextprotocol.kotlin.sdk.types.serverInfo
 import io.modelcontextprotocol.kotlin.sdk.types.supportsUrl
 import io.modelcontextprotocol.kotlin.sdk.types.toJson
+import io.modelcontextprotocol.kotlin.sdk.types.toMeta
+import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.getAndUpdate
 import kotlinx.atomicfu.update
@@ -79,8 +95,12 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.jsonObject
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 private val logger = KotlinLogging.logger {}
 
@@ -90,11 +110,33 @@ private val logger = KotlinLogging.logger {}
  * @property capabilities The capabilities this client supports.
  * @param enforceStrictCapabilities Whether to strictly enforce capabilities when interacting with the server.
  * @param handlerCoroutineContext Coroutine context for inbound handlers. See [ProtocolOptions.handlerCoroutineContext].
+ * @property versionNegotiation How [Client.connect] settles which protocol lifecycle to speak.
+ *   Defaults to the `initialize` handshake, the only lifecycle offering sampling, elicitation,
+ *   roots, `ping`, `logging/setLevel` and resource subscriptions. Set [VersionNegotiationMode.Auto]
+ *   to probe `server/discover` and adopt the request-scoped lifecycle where the server offers it.
+ * @property logLevel Minimum severity of `notifications/message` a server may emit while serving
+ *   this client's requests, on the request-scoped lifecycle only, where a server emits nothing for
+ *   a request that did not ask. Ignored on the handshake lifecycle, where [Client.setLoggingLevel]
+ *   applies instead.
+ * @property responseCache Where to keep results a server marked reusable. Off by default;
+ *   [InMemoryResponseCacheStore] caches for the lifetime of this client. Consulted only on the
+ *   request-scoped lifecycle, the only one whose results carry caching directives.
+ * @property cachePartition The authorization context this client fetches under, which
+ *   [CacheScope.Private] entries are confined to. Only meaningful for a store shared across
+ *   principals; the default scopes such entries to this client instance.
  */
 public class ClientOptions(
     public val capabilities: ClientCapabilities = ClientCapabilities(),
     enforceStrictCapabilities: Boolean = true,
     handlerCoroutineContext: CoroutineContext = Dispatchers.Default,
+    @property:ExperimentalMcpApi
+    public val versionNegotiation: VersionNegotiationMode = VersionNegotiationMode.Legacy,
+    @property:ExperimentalMcpApi
+    public val logLevel: LoggingLevel? = null,
+    @property:ExperimentalMcpApi
+    public val responseCache: ResponseCacheStore? = null,
+    @property:ExperimentalMcpApi
+    public val cachePartition: String = "",
 ) : ProtocolOptions(
     enforceStrictCapabilities = enforceStrictCapabilities,
     handlerCoroutineContext = handlerCoroutineContext,
@@ -164,7 +206,50 @@ public open class Client(private val clientInfo: Implementation, options: Client
 
     private val capabilities: ClientCapabilities = options.capabilities
 
+    @OptIn(ExperimentalMcpApi::class)
+    private val versionNegotiation: VersionNegotiationMode = options.versionNegotiation
+
+    @OptIn(ExperimentalMcpApi::class)
+    private val logLevel: LoggingLevel? = options.logLevel
+
+    @OptIn(ExperimentalMcpApi::class)
+    private val responseCache: ResponseCacheStore? = options.responseCache
+
+    @OptIn(ExperimentalMcpApi::class)
+    private val cachePartition: String = options.cachePartition
+
     private val roots = atomic(persistentMapOf<String, Root>())
+
+    private val _protocolVersion: AtomicRef<String?> = atomic(null)
+
+    private val _discovered: AtomicRef<DiscoverResult?> = atomic(null)
+
+    /**
+     * The protocol version this connection settled on, or `null` before [connect] completes.
+     *
+     * Settled by the `initialize` handshake or by `server/discover`, depending on what the server
+     * turned out to speak; [serverCapabilities], [serverVersion] and [serverInstructions] mean the
+     * same thing either way.
+     */
+    public val protocolVersion: String? get() = _protocolVersion.value
+
+    final override val negotiatedProtocolVersion: String? get() = _protocolVersion.value
+
+    /**
+     * Attaches this client's protocol envelope to every request sent on a request-scoped connection.
+     *
+     * Entries the caller put in `_meta` win over the envelope's own, and unrelated entries such as
+     * `progressToken` survive untouched. On a connection settled by the handshake this returns
+     * [request] unchanged.
+     */
+    @OptIn(ExperimentalMcpApi::class)
+    final override fun decorateOutboundRequest(request: JSONRPCRequest): JSONRPCRequest {
+        val version = _protocolVersion.value?.takeIf(::isModernProtocolVersion) ?: return request
+        val params = (request.params as? JsonObject).orEmpty()
+        val supplied = (params["_meta"] as? JsonObject).orEmpty()
+        val meta = JsonObject(McpJson.encodeToJsonElement(envelope(version)).jsonObject + supplied)
+        return request.copy(params = JsonObject(params + ("_meta" to meta)))
+    }
 
     init {
         logger.debug { "Initializing MCP client with capabilities: $capabilities" }
@@ -199,30 +284,14 @@ public open class Client(private val clientInfo: Implementation, options: Client
      * @param transport The transport to use for communication with the server.
      * @throws IllegalStateException If the server's protocol version is not supported.
      */
+    @OptIn(ExperimentalMcpApi::class)
     override suspend fun connect(transport: Transport) {
         super.connect(transport)
 
         try {
-            val message = InitializeRequest(
-                InitializeRequestParams(
-                    protocolVersion = LATEST_PROTOCOL_VERSION,
-                    capabilities = capabilities,
-                    clientInfo = clientInfo,
-                ),
-            )
-            val result = request<InitializeResult>(message)
-
-            if (!SUPPORTED_PROTOCOL_VERSIONS.contains(result.protocolVersion)) {
-                error(
-                    "Server's protocol version is not supported: ${result.protocolVersion}",
-                )
+            if (!negotiateRequestScoped(transport)) {
+                handshake(transport)
             }
-
-            serverCapabilities = result.capabilities
-            serverVersion = result.serverInfo
-            serverInstructions = result.instructions
-
-            notification(InitializedNotification())
             enableConcurrentDispatch()
         } catch (error: Throwable) {
             logger.error(error) { "Failed to initialize client: ${error.message}" }
@@ -239,6 +308,213 @@ public open class Client(private val clientInfo: Implementation, options: Client
             }
         }
     }
+
+    /** The plain `initialize` handshake, unchanged from a client built without version negotiation. */
+    private suspend fun handshake(transport: Transport) {
+        val message = InitializeRequest(
+            InitializeRequestParams(
+                protocolVersion = LATEST_HANDSHAKE_VERSION,
+                capabilities = capabilities,
+                clientInfo = clientInfo,
+            ),
+        )
+        val result = request<InitializeResult>(message)
+
+        if (!HANDSHAKE_PROTOCOL_VERSIONS.contains(result.protocolVersion)) {
+            error(
+                "Server's protocol version is not supported: ${result.protocolVersion}",
+            )
+        }
+
+        serverCapabilities = result.capabilities
+        serverVersion = result.serverInfo
+        serverInstructions = result.instructions
+        settle(result.protocolVersion, transport)
+
+        notification(InitializedNotification())
+    }
+
+    /**
+     * Probes `server/discover` and adopts the request-scoped lifecycle when the answer says to.
+     *
+     * @return `true` when the connection settled on that lifecycle, `false` when the caller should
+     * run the handshake instead
+     */
+    @OptIn(ExperimentalMcpApi::class)
+    private suspend fun negotiateRequestScoped(transport: Transport): Boolean {
+        val mode = versionNegotiation
+        if (mode == VersionNegotiationMode.Legacy) return false
+
+        val offered = if (mode is VersionNegotiationMode.Pin) listOf(mode.version) else MODERN_PROTOCOL_VERSIONS
+        val fallbackAvailable = mode !is VersionNegotiationMode.Pin
+        var version = offered.first()
+        var corrected = false
+
+        while (true) {
+            val outcome = probeDiscovery(version, transport)
+            val verdict = classifyProbeOutcome(
+                outcome = outcome,
+                clientModernVersions = offered,
+                fallbackAvailable = fallbackAvailable,
+                overStdio = transport is StdioClientTransport,
+            )
+            when (verdict) {
+                is ProbeVerdict.Modern -> {
+                    adopt(verdict.version, verdict.discover, transport)
+                    return true
+                }
+
+                is ProbeVerdict.Corrective -> {
+                    // The revision mandates one corrective continuation. A server that rejects the
+                    // version it just named is not negotiating, so the second rejection is reported.
+                    if (corrected) throw (outcome as ProbeOutcome.Refused).error
+                    corrected = true
+                    version = verdict.version
+                }
+
+                ProbeVerdict.Legacy -> return false
+
+                is ProbeVerdict.Failed -> throw verdict.cause
+            }
+        }
+    }
+
+    /**
+     * Sends one `server/discover` probe at [version].
+     *
+     * The probe rides the ordinary request path, so it consumes a request id and honours the
+     * configured timeout. [version] is settled for the duration of the probe — it is what admits a
+     * request-scoped method, attaches the envelope and sets the `MCP-Protocol-Version` header — and
+     * withdrawn afterwards, so a fallback handshake carries none of the three.
+     */
+    @OptIn(ExperimentalMcpApi::class)
+    private suspend fun probeDiscovery(version: String, transport: Transport): ProbeOutcome {
+        settle(version, transport)
+        return try {
+            ProbeOutcome.Answered(
+                request<DiscoverResult>(DiscoverRequest(DiscoverRequestParams(meta = envelope(version).toMeta()))),
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: McpException) {
+            // Silence and a peer that went away instead of answering are the same signal; on stdio
+            // both mean a server that predates discovery, and the classifier decides what to do.
+            if (e.code == RPCError.ErrorCode.REQUEST_TIMEOUT || e.code == RPCError.ErrorCode.CONNECTION_CLOSED) {
+                ProbeOutcome.Silent
+            } else {
+                ProbeOutcome.Refused(e)
+            }
+        } catch (_: SerializationException) {
+            ProbeOutcome.Answered(null)
+        } catch (_: ClassCastException) {
+            // The peer answered something that parsed as a different result type.
+            ProbeOutcome.Answered(null)
+        } finally {
+            withdraw(transport)
+        }
+    }
+
+    /** Undoes [settle], leaving the connection unsettled again. */
+    private fun withdraw(transport: Transport) {
+        _protocolVersion.value = null
+        if (transport is StreamableHttpClientTransport) {
+            transport.protocolVersion = null
+        }
+    }
+
+    /** Adopts a discovery result as this connection's settled state. */
+    @OptIn(ExperimentalMcpApi::class)
+    private fun adopt(version: String, discover: DiscoverResult, transport: Transport) {
+        serverCapabilities = discover.capabilities
+        serverVersion = runCatching<Implementation?> { discover.meta?.serverInfo }.getOrNull()
+        serverInstructions = discover.instructions
+        _discovered.value = discover
+        settle(version, transport)
+    }
+
+    /**
+     * Records [version] as settled and pushes it onto [transport], which needs it for the
+     * `MCP-Protocol-Version` header both lifecycles require.
+     */
+    private fun settle(version: String, transport: Transport) {
+        _protocolVersion.value = version
+        if (transport is StreamableHttpClientTransport) {
+            transport.protocolVersion = version
+        }
+    }
+
+    /**
+     * The protocol versions, capabilities and instructions this server advertises.
+     *
+     * Answered from the result [connect] adopted when it settled the connection by discovery, so
+     * asking again costs no round trip.
+     *
+     * @throws McpException with [RPCError.ErrorCode.METHOD_NOT_FOUND] on a connection settled by the
+     * `initialize` handshake, which has no `server/discover`
+     */
+    @ExperimentalMcpApi
+    public suspend fun discover(): DiscoverResult {
+        _discovered.value?.let { return it }
+        val version = _protocolVersion.value ?: LATEST_MODERN_VERSION
+        return request<DiscoverResult>(DiscoverRequest(DiscoverRequestParams(meta = envelope(version).toMeta())))
+            .also { _discovered.value = it }
+    }
+
+    /**
+     * Serves [method] from the response cache when it holds a fresh entry, and files what [fetch]
+     * answers when it does not.
+     *
+     * Only the request-scoped lifecycle caches, being the only one whose results carry caching
+     * directives. A result that is not [CacheableResult] is passed through untouched.
+     */
+    @OptIn(ExperimentalMcpApi::class, ExperimentalTime::class)
+    private suspend fun <T : RequestResult> cached(
+        method: String,
+        paramsKey: String,
+        mode: CacheMode,
+        fetch: suspend () -> T,
+    ): T {
+        val store = responseCache
+        if (store == null ||
+            mode == CacheMode.Bypass ||
+            _protocolVersion.value?.let(::isModernProtocolVersion) != true
+        ) {
+            return fetch()
+        }
+        val key = CacheKey(method = method, paramsKey = paramsKey, partition = cachePartition)
+        if (mode == CacheMode.Use) {
+            store.get(key)?.takeIf { Clock.System.now() < it.expiresAt }?.let {
+                @Suppress("UNCHECKED_CAST")
+                return it.result as T
+            }
+        }
+        val fresh = fetch()
+        if (fresh is CacheableResult) {
+            store.put(key, CacheEntry(result = fresh, expiresAt = fresh.expiryFrom(), cacheScope = fresh.cacheScope))
+        }
+        return fresh
+    }
+
+    /**
+     * Drops every cached result this notification stales.
+     *
+     * Runs at the router rather than in a handler, so a stale listing is dropped whether or not the
+     * application registered a handler for the notification.
+     */
+    @OptIn(ExperimentalMcpApi::class)
+    final override suspend fun onNotificationRouted(notification: JSONRPCNotification) {
+        val store = responseCache ?: return
+        CACHE_INVALIDATING_NOTIFICATIONS[notification.method]?.forEach { store.invalidate(it) }
+    }
+
+    /** This client's protocol envelope for a request made under [version]. */
+    @OptIn(ExperimentalMcpApi::class)
+    private fun envelope(version: String): RequestEnvelope = RequestEnvelope(
+        protocolVersion = version,
+        clientCapabilities = capabilities,
+        clientInfo = clientInfo,
+        logLevel = logLevel,
+    )
 
     override fun assertCapabilityForMethod(method: Method) {
         when (method) {
@@ -444,7 +720,8 @@ public open class Client(private val clientInfo: Implementation, options: Client
     public suspend fun listPrompts(
         request: ListPromptsRequest = ListPromptsRequest(),
         options: RequestOptions? = null,
-    ): ListPromptsResult = request(request, options)
+        cacheMode: CacheMode = CacheMode.Use,
+    ): ListPromptsResult = cached(request.method.value, "", cacheMode) { request(request, options) }
 
     /**
      * Lists all available resources from the server.
@@ -457,7 +734,8 @@ public open class Client(private val clientInfo: Implementation, options: Client
     public suspend fun listResources(
         request: ListResourcesRequest = ListResourcesRequest(),
         options: RequestOptions? = null,
-    ): ListResourcesResult = request(request, options)
+        cacheMode: CacheMode = CacheMode.Use,
+    ): ListResourcesResult = cached(request.method.value, "", cacheMode) { request(request, options) }
 
     /**
      * Lists resource templates available on the server.
@@ -470,7 +748,8 @@ public open class Client(private val clientInfo: Implementation, options: Client
     public suspend fun listResourceTemplates(
         request: ListResourceTemplatesRequest,
         options: RequestOptions? = null,
-    ): ListResourceTemplatesResult = request(request, options)
+        cacheMode: CacheMode = CacheMode.Use,
+    ): ListResourceTemplatesResult = cached(request.method.value, "", cacheMode) { request(request, options) }
 
     /**
      * Reads a resource from the server by its URI.
@@ -483,7 +762,8 @@ public open class Client(private val clientInfo: Implementation, options: Client
     public suspend fun readResource(
         request: ReadResourceRequest,
         options: RequestOptions? = null,
-    ): ReadResourceResult = request(request, options)
+        cacheMode: CacheMode = CacheMode.Use,
+    ): ReadResourceResult = cached(request.method.value, request.params.uri, cacheMode) { request(request, options) }
 
     /**
      * Subscribes to resource changes on the server.
@@ -561,7 +841,8 @@ public open class Client(private val clientInfo: Implementation, options: Client
     public suspend fun listTools(
         request: ListToolsRequest = ListToolsRequest(),
         options: RequestOptions? = null,
-    ): ListToolsResult = request(request, options)
+        cacheMode: CacheMode = CacheMode.Use,
+    ): ListToolsResult = cached(request.method.value, "", cacheMode) { request(request, options) }
 
     /**
      * Registers a single root.
@@ -576,7 +857,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
             "Client does not support roots capability."
         }
         logger.info { "Adding root: $name ($uri)" }
-        roots.update { current -> current.put(uri, Root(uri, name)) }
+        roots.update { current -> current.putting(uri, Root(uri, name)) }
     }
 
     /**
@@ -591,7 +872,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
             "Client does not support roots capability."
         }
         logger.info { "Adding ${rootsToAdd.size} roots" }
-        roots.update { current -> current.putAll(rootsToAdd.associateBy { it.uri }) }
+        roots.update { current -> current.puttingAll(rootsToAdd.associateBy { it.uri }) }
     }
 
     /**
@@ -606,7 +887,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
             "Client does not support roots capability."
         }
         logger.info { "Removing root: $uri" }
-        val oldMap = roots.getAndUpdate { current -> current.remove(uri) }
+        val oldMap = roots.getAndUpdate { current -> current.removing(uri) }
         val removed = uri in oldMap
         logger.debug {
             if (removed) {

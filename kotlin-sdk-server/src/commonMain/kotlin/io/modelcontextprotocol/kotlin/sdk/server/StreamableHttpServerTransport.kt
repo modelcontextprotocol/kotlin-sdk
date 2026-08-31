@@ -14,11 +14,13 @@ import io.ktor.server.response.header
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import io.ktor.server.sse.ServerSSESession
+import io.ktor.util.AttributeKey
 import io.ktor.util.collections.ConcurrentMap
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
 import io.modelcontextprotocol.kotlin.sdk.types.CancelledNotificationParams
 import io.modelcontextprotocol.kotlin.sdk.types.DEFAULT_NEGOTIATED_PROTOCOL_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.HANDSHAKE_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCEmptyMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
@@ -30,7 +32,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.REQUEST_TIMEOUT
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
-import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
+import io.modelcontextprotocol.kotlin.sdk.types.isVersionAtLeast
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
@@ -50,6 +52,9 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 internal const val MCP_SESSION_ID_HEADER = "mcp-session-id"
+
+/** The request body, already read by an entry that had to classify it before routing. */
+internal val PRE_READ_BODY: AttributeKey<String> = AttributeKey("mcp-pre-read-body")
 private const val MCP_PROTOCOL_VERSION_HEADER = "mcp-protocol-version"
 private const val MCP_RESUMPTION_TOKEN_HEADER = "Last-Event-ID"
 private const val MIN_PRIMING_EVENT_PROTOCOL_VERSION = "2025-11-25"
@@ -782,12 +787,12 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         val version = call.request.headers[MCP_PROTOCOL_VERSION_HEADER] ?: return true
 
         return when (version) {
-            !in SUPPORTED_PROTOCOL_VERSIONS -> {
+            !in HANDSHAKE_PROTOCOL_VERSIONS -> {
                 call.reject(
                     HttpStatusCode.BadRequest,
                     RPCError.ErrorCode.CONNECTION_CLOSED,
                     "Bad Request: Unsupported protocol version (supported versions: ${
-                        SUPPORTED_PROTOCOL_VERSIONS.joinToString(
+                        HANDSHAKE_PROTOCOL_VERSIONS.joinToString(
                             ", ",
                         )
                     })",
@@ -840,7 +845,9 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
 
     private suspend fun parseBody(call: ApplicationCall): List<JSONRPCMessage>? {
         val body = try {
-            call.receiveTextWithLimit(configuration.maxRequestBodySize)
+            // A dual-era entry has already read the body to classify it; Ktor's request channel is
+            // single-use, so it hands the text over rather than letting this read it again.
+            call.attributes.getOrNull(PRE_READ_BODY) ?: call.receiveTextWithLimit(configuration.maxRequestBodySize)
         } catch (e: RequestBodyTooLargeException) {
             call.reject(
                 HttpStatusCode.PayloadTooLarge,
@@ -914,7 +921,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         // Priming events have empty data which older clients cannot handle.
         // Only send priming events to clients with protocol version >= 2025-11-25
         // which includes the fix for handling empty SSE data.
-        if (clientProtocolVersion < MIN_PRIMING_EVENT_PROTOCOL_VERSION) return
+        if (!isVersionAtLeast(clientProtocolVersion, MIN_PRIMING_EVENT_PROTOCOL_VERSION)) return
         try {
             val primingEventId = store.storeEvent(streamId, JSONRPCEmptyMessage)
             session.send(

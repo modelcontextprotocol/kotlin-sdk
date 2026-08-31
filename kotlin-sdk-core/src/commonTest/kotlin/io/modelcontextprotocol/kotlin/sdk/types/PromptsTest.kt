@@ -296,7 +296,7 @@ class PromptsTest {
                 ),
             ),
             description = "Executive summary response template.",
-            meta = buildJsonObject { put("generatedAt", "2025-01-12T15:00:58Z") },
+            meta = ResultMeta(buildJsonObject { put("generatedAt", "2025-01-12T15:00:58Z") }),
         )
 
         verifySerialization(
@@ -308,19 +308,20 @@ class PromptsTest {
                 {
                   "role": "user",
                   "content": {
-                    "type": "text",
-                    "text": "Use concise language suitable for executives."
+                    "text": "Use concise language suitable for executives.",
+                    "type": "text"
                   }
                 },
                 {
                   "role": "assistant",
                   "content": {
-                    "type": "text",
-                    "text": "Here is the summary you requested."
+                    "text": "Here is the summary you requested.",
+                    "type": "text"
                   }
                 }
               ],
               "description": "Executive summary response template.",
+              "resultType": "complete",
               "_meta": {
                 "generatedAt": "2025-01-12T15:00:58Z"
               }
@@ -337,12 +338,13 @@ class PromptsTest {
                 {
                   "role": "user",
                   "content": {
-                    "type": "text",
-                    "text": "Summarize today's standup."
+                    "text": "Summarize today's standup.",
+                    "type": "text"
                   }
                 }
               ],
-              "description": "Collect information from the team."
+              "description": "Collect information from the team.",
+              "resultType": "complete"
             }
         """.trimIndent()
 
@@ -408,7 +410,7 @@ class PromptsTest {
                 Prompt(name = "incident-response"),
             ),
             nextCursor = "cursor-2",
-            meta = buildJsonObject { put("page", 1) },
+            meta = ResultMeta(buildJsonObject { put("page", 1) }),
         )
 
         verifySerialization(
@@ -421,6 +423,9 @@ class PromptsTest {
                 {"name": "incident-response"}
               ],
               "nextCursor": "cursor-2",
+              "resultType": "complete",
+              "ttlMs": 0,
+              "cacheScope": "private",
               "_meta": {
                 "page": 1
               }
@@ -446,6 +451,9 @@ class PromptsTest {
                 }
               ],
               "nextCursor": "cursor-next",
+              "resultType": "complete",
+              "ttlMs": 0,
+              "cacheScope": "private",
               "_meta": {
                 "page": 2,
                 "latencyMs": 12.5

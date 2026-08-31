@@ -1,5 +1,8 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
+import io.modelcontextprotocol.kotlin.sdk.types.ProtocolEra.Companion.BOTH
+import io.modelcontextprotocol.kotlin.sdk.types.ProtocolEra.Companion.LEGACY_ONLY
+import io.modelcontextprotocol.kotlin.sdk.types.ProtocolEra.Companion.MODERN_ONLY
 import kotlinx.serialization.Serializable
 
 /**
@@ -12,41 +15,57 @@ public sealed interface Method {
 
     /**
      * Enum of predefined methods supported by the protocol.
+     *
+     * Each constant declares the protocol lifecycles it exists in, so the set of methods a revision
+     * removed is a property of the table rather than a list kept somewhere else: a constant cannot
+     * be added without deciding where it is reachable. Read it through
+     * [isAvailableIn][io.modelcontextprotocol.kotlin.sdk.types.isAvailableIn].
+     *
+     * Direction is not expressible here and is enforced at the transport instead. On the
+     * request-scoped lifecycle `notifications/cancelled` travels only over stdio — over HTTP,
+     * closing the response stream *is* cancellation — while `notifications/progress` and
+     * `notifications/message` flow server-to-client on the originating request's response stream
+     * only. The three `list_changed` notifications keep their types but have no request-scoped
+     * delivery channel until `subscriptions/listen` lands, so a request-scoped server emits none.
      */
     @Serializable
-    public enum class Defined(override val value: String) : Method {
-        Initialize("initialize"),
-        ServerDiscover("server/discover"),
-        Ping("ping"),
-        ResourcesList("resources/list"),
-        ResourcesTemplatesList("resources/templates/list"),
-        ResourcesRead("resources/read"),
-        ResourcesSubscribe("resources/subscribe"),
-        ResourcesUnsubscribe("resources/unsubscribe"),
-        PromptsList("prompts/list"),
-        PromptsGet("prompts/get"),
-        NotificationsCancelled("notifications/cancelled"),
-        NotificationsInitialized("notifications/initialized"),
-        NotificationsProgress("notifications/progress"),
-        NotificationsMessage("notifications/message"),
-        NotificationsResourcesUpdated("notifications/resources/updated"),
-        NotificationsResourcesListChanged("notifications/resources/list_changed"),
-        NotificationsToolsListChanged("notifications/tools/list_changed"),
-        NotificationsRootsListChanged("notifications/roots/list_changed"),
-        NotificationsPromptsListChanged("notifications/prompts/list_changed"),
-        NotificationsElicitationComplete("notifications/elicitation/complete"),
-        NotificationsTasksStatus("notifications/tasks/status"),
-        ToolsList("tools/list"),
-        ToolsCall("tools/call"),
-        LoggingSetLevel("logging/setLevel"),
-        SamplingCreateMessage("sampling/createMessage"),
-        CompletionComplete("completion/complete"),
-        RootsList("roots/list"),
-        ElicitationCreate("elicitation/create"),
-        TasksGet("tasks/get"),
-        TasksResult("tasks/result"),
-        TasksList("tasks/list"),
-        TasksCancel("tasks/cancel"),
+    public enum class Defined(override val value: String, internal val eras: Set<ProtocolEra>) : Method {
+        Initialize("initialize", LEGACY_ONLY),
+        ServerDiscover("server/discover", MODERN_ONLY),
+        Ping("ping", LEGACY_ONLY),
+        ResourcesList("resources/list", BOTH),
+        ResourcesTemplatesList("resources/templates/list", BOTH),
+        ResourcesRead("resources/read", BOTH),
+        ResourcesSubscribe("resources/subscribe", LEGACY_ONLY),
+        ResourcesUnsubscribe("resources/unsubscribe", LEGACY_ONLY),
+        PromptsList("prompts/list", BOTH),
+        PromptsGet("prompts/get", BOTH),
+        NotificationsCancelled("notifications/cancelled", BOTH),
+        NotificationsInitialized("notifications/initialized", LEGACY_ONLY),
+        NotificationsProgress("notifications/progress", BOTH),
+        NotificationsMessage("notifications/message", BOTH),
+        NotificationsResourcesUpdated("notifications/resources/updated", LEGACY_ONLY),
+        NotificationsResourcesListChanged("notifications/resources/list_changed", BOTH),
+        NotificationsToolsListChanged("notifications/tools/list_changed", BOTH),
+        NotificationsRootsListChanged("notifications/roots/list_changed", LEGACY_ONLY),
+        NotificationsPromptsListChanged("notifications/prompts/list_changed", BOTH),
+        NotificationsElicitationComplete("notifications/elicitation/complete", LEGACY_ONLY),
+
+        // Tasks moved out of core into an extension, which needs the extensions capability map.
+        NotificationsTasksStatus("notifications/tasks/status", LEGACY_ONLY),
+        ToolsList("tools/list", BOTH),
+        ToolsCall("tools/call", BOTH),
+        LoggingSetLevel("logging/setLevel", LEGACY_ONLY),
+
+        // Server-to-client requests, replaced wholesale by multi-round-trip requests.
+        SamplingCreateMessage("sampling/createMessage", LEGACY_ONLY),
+        CompletionComplete("completion/complete", BOTH),
+        RootsList("roots/list", LEGACY_ONLY),
+        ElicitationCreate("elicitation/create", LEGACY_ONLY),
+        TasksGet("tasks/get", LEGACY_ONLY),
+        TasksResult("tasks/result", LEGACY_ONLY),
+        TasksList("tasks/list", LEGACY_ONLY),
+        TasksCancel("tasks/cancel", LEGACY_ONLY),
     }
 
     /**

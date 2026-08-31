@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
 import io.kotest.matchers.shouldBe
+import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.ServerSession
@@ -19,6 +20,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ElicitResult
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotificationParams
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
+import io.modelcontextprotocol.kotlin.sdk.types.HANDSHAKE_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeResult
@@ -27,7 +29,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
-import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.LATEST_HANDSHAKE_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesResult
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsRequest
@@ -37,11 +39,14 @@ import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotificationParams
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
+import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.MissingRequiredClientCapabilityData
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError
+import io.modelcontextprotocol.kotlin.sdk.types.RequestResult
 import io.modelcontextprotocol.kotlin.sdk.types.Role
 import io.modelcontextprotocol.kotlin.sdk.types.Root
 import io.modelcontextprotocol.kotlin.sdk.types.RootsListChangedNotification
-import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.StringSchema
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
@@ -63,6 +68,8 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlin.coroutines.cancellation.CancellationException
@@ -86,7 +93,7 @@ class ClientTest {
                 if (message !is JSONRPCRequest) return
                 initialised = true
                 val result = InitializeResult(
-                    protocolVersion = LATEST_PROTOCOL_VERSION,
+                    protocolVersion = LATEST_HANDSHAKE_VERSION,
                     capabilities = ServerCapabilities(),
                     serverInfo = Implementation(
                         name = "test",
@@ -124,7 +131,7 @@ class ClientTest {
 
     @Test
     fun `should initialize with supported older protocol version`() = runTest {
-        val oldVersion = SUPPORTED_PROTOCOL_VERSIONS[1]
+        val oldVersion = HANDSHAKE_PROTOCOL_VERSIONS.first()
         val clientTransport = object : AbstractTransport() {
             override suspend fun start() {}
 
@@ -364,7 +371,7 @@ class ClientTest {
         val serverSession = serverSessionResult.await()
         serverSession.setRequestHandler<InitializeRequest>(Method.Defined.Initialize) { _, _ ->
             InitializeResult(
-                protocolVersion = LATEST_PROTOCOL_VERSION,
+                protocolVersion = LATEST_HANDSHAKE_VERSION,
                 capabilities = ServerCapabilities(
                     resources = ServerCapabilities.Resources(null, null),
                     tools = ServerCapabilities.Tools(null),
@@ -703,7 +710,7 @@ class ClientTest {
 
         serverSession.setRequestHandler<InitializeRequest>(Method.Defined.Initialize) { _, _ ->
             InitializeResult(
-                protocolVersion = LATEST_PROTOCOL_VERSION,
+                protocolVersion = LATEST_HANDSHAKE_VERSION,
                 capabilities = ServerCapabilities(
                     resources = ServerCapabilities.Resources(null, null),
                     tools = ServerCapabilities.Tools(null),
@@ -742,7 +749,7 @@ class ClientTest {
         val receivedAsResponse = receivedMessage as JSONRPCResponse
         assertEquals(request.id, receivedAsResponse.id)
         assertEquals(request.jsonrpc, receivedAsResponse.jsonrpc)
-        assertEquals(serverListToolsResult, receivedAsResponse.result)
+        assertEquals(serverListToolsResult, receivedAsResponse.result.readBack())
     }
 
     @Test
@@ -962,8 +969,7 @@ class ClientTest {
 
         val serverSession = serverSessionResult.await()
 
-        // Verify that creating an elicitation throws an exception
-        val exception = assertFailsWith<IllegalStateException> {
+        val exception = assertFailsWith<McpException> {
             serverSession.createElicitation(
                 message = "Please provide your GitHub username",
                 requestedSchema = ElicitRequestParams.RequestedSchema(
@@ -972,11 +978,17 @@ class ClientTest {
                 ),
             )
         }
+        assertEquals(RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY, exception.code)
         assertEquals(
-            "Client does not support elicitation (required for elicitation/create)",
-            exception.message,
+            ClientCapabilities(elicitation = ClientCapabilities.Elicitation(form = EmptyJsonObject)),
+            exception.missingCapabilities(),
         )
     }
+
+    /** The capabilities a [RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY] error reports as missing. */
+    @OptIn(ExperimentalMcpApi::class)
+    private fun McpException.missingCapabilities(): ClientCapabilities =
+        McpJson.decodeFromJsonElement<MissingRequiredClientCapabilityData>(checkNotNull(data)).requiredCapabilities
 
     @Test
     fun `should handle logging setLevel request`() = runTest {
@@ -1408,14 +1420,18 @@ class ClientTest {
             ElicitResult(action = ElicitResult.Action.Accept)
         }
 
-        val exception = assertFailsWith<IllegalArgumentException> {
+        val exception = assertFailsWith<McpException> {
             serverSession.createElicitation(
                 message = "Authorize",
                 elicitationId = "id-1",
                 url = "https://example.com/auth",
             )
         }
-        assertTrue(exception.message!!.contains("elicitation.url"))
+        assertEquals(RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY, exception.code)
+        assertEquals(
+            ClientCapabilities(elicitation = ClientCapabilities.Elicitation(url = EmptyJsonObject)),
+            exception.missingCapabilities(),
+        )
 
         client.close()
     }
@@ -1575,3 +1591,7 @@ class ClientTest {
         client to serverSessionResult.await()
     }
 }
+
+/** The result as a peer on a serializing transport would decode it. */
+private fun RequestResult.readBack(): RequestResult =
+    McpJson.decodeFromJsonElement(McpJson.encodeToJsonElement<RequestResult>(this))

@@ -1,14 +1,18 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.server.utils.warnIfInvalidToolName
 import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
+import io.modelcontextprotocol.kotlin.sdk.types.CacheScope
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageResult
+import io.modelcontextprotocol.kotlin.sdk.types.DiscoverRequest
+import io.modelcontextprotocol.kotlin.sdk.types.DiscoverResult
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitResult
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotification
@@ -27,6 +31,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ListRootsResult
 import io.modelcontextprotocol.kotlin.sdk.types.ListToolsRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification
+import io.modelcontextprotocol.kotlin.sdk.types.MODERN_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.Notification
@@ -72,16 +77,33 @@ private val logger = KotlinLogging.logger {}
  * @property resourceTemplateMatcherFactory The factory used to create [ResourceTemplateMatcher] instances
  *   for matching resource URIs against registered templates. Defaults to [PathSegmentTemplateMatcher.factory].
  * @param handlerCoroutineContext Coroutine context for inbound handlers. See [ProtocolOptions.handlerCoroutineContext].
+ * @property sendServerInfo Whether results served under the request-scoped lifecycle identify this
+ *   server in their `_meta`. Results served under the handshake lifecycle are never stamped,
+ *   whatever this says.
+ * @property discoverTtlMs How long, in milliseconds, clients may treat this server's `server/discover`
+ *   result as fresh. `0`, the default, is immediately stale.
+ * @property discoverCacheScope Whether shared caches may serve this server's `server/discover` result
+ *   to principals other than the one that fetched it. Private by default.
+ * @throws IllegalArgumentException if [discoverTtlMs] is negative
  */
 public class ServerOptions(
     public val capabilities: ServerCapabilities,
     enforceStrictCapabilities: Boolean = true,
     public val resourceTemplateMatcherFactory: ResourceTemplateMatcherFactory = PathSegmentTemplateMatcher.factory,
     handlerCoroutineContext: CoroutineContext = Dispatchers.Default,
+    public val sendServerInfo: Boolean = true,
+    public val discoverTtlMs: Long = 0,
+    public val discoverCacheScope: CacheScope = CacheScope.Private,
 ) : ProtocolOptions(
     enforceStrictCapabilities = enforceStrictCapabilities,
     handlerCoroutineContext = handlerCoroutineContext,
 ) {
+    init {
+        // Checked here rather than where the result is built, so a misconfigured server fails at
+        // startup instead of on the first request that would have carried the hint.
+        require(discoverTtlMs >= 0) { "discoverTtlMs must be non-negative, but was $discoverTtlMs" }
+    }
+
     @JvmOverloads
     public constructor(
         capabilities: ServerCapabilities,
@@ -213,8 +235,22 @@ public open class Server(
      * @param transport The transport layer to connect the session with.
      * @return The initialized and connected server session.
      */
+    @OptIn(ExperimentalMcpApi::class)
     public suspend fun createSession(transport: Transport): ServerSession {
-        val session = ServerSession(serverInfo, options, instructionsProvider?.invoke())
+        val instructions = instructionsProvider?.invoke()
+        val session = ServerSession(serverInfo, options, instructions)
+
+        // Discovery is what replaces the initialize handshake, so every server answers it — there is
+        // no capability to gate it on, and a server that did not would be undiscoverable.
+        session.setRequestHandler<DiscoverRequest>(Method.Defined.ServerDiscover) { _, _ ->
+            DiscoverResult(
+                supportedVersions = MODERN_PROTOCOL_VERSIONS,
+                capabilities = options.capabilities,
+                instructions = instructions,
+                ttlMs = options.discoverTtlMs,
+                cacheScope = options.discoverCacheScope,
+            )
+        }
 
         // Internal handlers for tools
         if (options.capabilities.tools != null) {
@@ -662,6 +698,16 @@ public open class Server(
         } catch (e: UrlElicitationRequiredException) {
             // Surface a required URL-mode elicitation as a JSON-RPC error (-32042)
             throw e
+        } catch (e: McpException) {
+            // A tool that fails is a result marked isError, but a capability the client never
+            // declared is a defect of the request rather than of the run — the revision answers
+            // that as a JSON-RPC error, and on HTTP it is the one in-band code that is not 200.
+            if (e.code == RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY) throw e
+            logger.error(e) { "Error executing tool ${requestParams.name}" }
+            CallToolResult(
+                content = listOf(TextContent(text = "Error executing tool ${requestParams.name}: ${e.message}")),
+                isError = true,
+            )
         } catch (e: Exception) {
             logger.error(e) { "Error executing tool ${requestParams.name}" }
             CallToolResult(
@@ -713,8 +759,11 @@ public open class Server(
             )
             ?: run {
                 logger.error { "Resource not found: $uri" }
+                // Reported as INVALID_PARAMS rather than the retired RESOURCE_NOT_FOUND (-32002),
+                // which 2026-07-28 removed and which the reference SDKs stopped emitting on both
+                // eras. The offending URI stays in the error data either way.
                 throw McpException(
-                    code = RPCError.ErrorCode.RESOURCE_NOT_FOUND,
+                    code = RPCError.ErrorCode.INVALID_PARAMS,
                     message = "Resource not found",
                     data = buildJsonObject { put("uri", uri) },
                 )

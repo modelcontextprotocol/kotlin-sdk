@@ -149,7 +149,7 @@ class InitializeTest {
                 websiteUrl = "https://example.com/server",
             ),
             instructions = "Call the `read` tool to fetch files.",
-            meta = buildJsonObject { put("issuedAt", "2025-01-12T15:00:58Z") },
+            meta = ResultMeta(buildJsonObject { put("issuedAt", "2025-01-12T15:00:58Z") }),
         )
 
         verifySerialization(
@@ -180,6 +180,7 @@ class InitializeTest {
                 "websiteUrl": "https://example.com/server"
               },
               "instructions": "Call the `read` tool to fetch files.",
+              "resultType": "complete",
               "_meta": {
                 "issuedAt": "2025-01-12T15:00:58Z"
               }
@@ -210,7 +211,8 @@ class InitializeTest {
               "serverInfo": {
                 "name": "test-server",
                 "version": "1.0.0"
-              }
+              },
+              "resultType": "complete"
             }
             """.trimIndent(),
         )
@@ -230,7 +232,8 @@ class InitializeTest {
               "serverInfo": {
                 "name": "result-server",
                 "version": "4.0.0"
-              }
+              },
+              "resultType": "complete"
             }
         """.trimIndent()
 
