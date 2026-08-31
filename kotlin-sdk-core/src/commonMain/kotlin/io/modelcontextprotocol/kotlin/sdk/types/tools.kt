@@ -2,6 +2,7 @@
 
 package io.modelcontextprotocol.kotlin.sdk.types
 
+import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
@@ -11,7 +12,7 @@ import kotlinx.serialization.json.JsonObject
 /**
  * Creates a [CallToolResult] with single [TextContent] and [meta].
  */
-public fun CallToolResult.Companion.success(content: String, meta: JsonObject? = null): CallToolResult = CallToolResult(
+public fun CallToolResult.Companion.success(content: String, meta: ResultMeta? = null): CallToolResult = CallToolResult(
     content = listOf(TextContent(content)),
     isError = false,
     meta = meta,
@@ -20,7 +21,7 @@ public fun CallToolResult.Companion.success(content: String, meta: JsonObject? =
 /**
  * Creates a [CallToolResult] with single [TextContent] and [meta], with `isError` being true.
  */
-public fun CallToolResult.Companion.error(content: String, meta: JsonObject? = null): CallToolResult = CallToolResult(
+public fun CallToolResult.Companion.error(content: String, meta: ResultMeta? = null): CallToolResult = CallToolResult(
     content = listOf(TextContent(content)),
     isError = true,
     meta = meta,
@@ -255,6 +256,7 @@ public data class CallToolRequestParams(
  * When true, the [content] should describe the error that occurred.
  * @property structuredContent An optional JSON object that represents the structured result of the tool call.
  * Provides machine-readable output in addition to the human-readable [content].
+ * @property resultType Discriminator for the result representation.
  * @property meta Optional metadata for this response.
  */
 @Serializable
@@ -262,8 +264,9 @@ public data class CallToolResult(
     val content: List<ContentBlock>,
     val isError: Boolean? = null,
     val structuredContent: JsonObject? = null,
+    val resultType: String = COMPLETE_RESULT_TYPE,
     @SerialName("_meta")
-    override val meta: JsonObject? = null,
+    override val meta: ResultMeta? = null,
 ) : ServerResult
 
 // ============================================================================
@@ -296,13 +299,26 @@ public data class ListToolsRequest(override val params: PaginatedRequestParams? 
  * @property nextCursor An opaque token representing the pagination position after the last returned result.
  * If present, there may be more results available. The client can pass this token
  * in a subsequent request to fetch the next page.
+ * @property resultType Discriminator for the result representation.
+ * @property ttlMs number of milliseconds clients may treat this result as fresh
+ * @property cacheScope authorization boundary within which the result may be reused
  * @property meta Optional metadata for this response.
+ * @throws IllegalArgumentException if [ttlMs] is negative
  */
 @Serializable
+@OptIn(ExperimentalMcpApi::class)
 public data class ListToolsResult(
     val tools: List<Tool>,
     override val nextCursor: String? = null,
+    val resultType: String = COMPLETE_RESULT_TYPE,
+    override val ttlMs: Long = 0,
+    override val cacheScope: CacheScope = CacheScope.Private,
     @SerialName("_meta")
-    override val meta: JsonObject? = null,
+    override val meta: ResultMeta? = null,
 ) : ServerResult,
-    PaginatedResult
+    PaginatedResult,
+    CacheableResult {
+    init {
+        require(ttlMs >= 0) { "ttlMs must be non-negative, but was $ttlMs" }
+    }
+}

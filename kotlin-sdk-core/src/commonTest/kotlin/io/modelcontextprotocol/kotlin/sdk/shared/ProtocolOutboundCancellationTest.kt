@@ -12,7 +12,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
-import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.LATEST_HANDSHAKE_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ProgressNotification
@@ -107,7 +107,7 @@ class ProtocolOutboundCancellationTest {
             protocol.request<EmptyResult>(
                 InitializeRequest(
                     InitializeRequestParams(
-                        protocolVersion = LATEST_PROTOCOL_VERSION,
+                        protocolVersion = LATEST_HANDSHAKE_VERSION,
                         capabilities = ClientCapabilities(),
                         clientInfo = Implementation(name = "t", version = "1"),
                     ),

@@ -249,10 +249,10 @@ class StreamableHttpClientTransportTest {
     }
 
     @Test
-    fun `should send only the MCP method header for notifications without params`() = runTest {
+    fun `should omit MCP standard headers for notifications`() = runTest {
         val headers = postHeaders(JSONRPCNotification(method = "notifications/tools/list_changed"))
 
-        headers["Mcp-Method"] shouldBe "notifications/tools/list_changed"
+        headers["Mcp-Method"].shouldBeNull()
         headers["Mcp-Name"].shouldBeNull()
     }
 

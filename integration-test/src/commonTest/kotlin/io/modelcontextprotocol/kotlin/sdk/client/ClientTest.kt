@@ -9,6 +9,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldStartWith
 import io.kotest.matchers.types.shouldBeInstanceOf
+import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.ServerSession
@@ -29,6 +30,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotificationParams
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.types.EnumOption
+import io.modelcontextprotocol.kotlin.sdk.types.HANDSHAKE_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeResult
 import io.modelcontextprotocol.kotlin.sdk.types.IntegerSchema
@@ -41,11 +43,13 @@ import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotificationParams
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
+import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.MissingRequiredClientCapabilityData
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.Role
 import io.modelcontextprotocol.kotlin.sdk.types.Root
 import io.modelcontextprotocol.kotlin.sdk.types.RootsListChangedNotification
-import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.StringSchema
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
@@ -59,6 +63,7 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlin.test.Test
@@ -69,7 +74,7 @@ class ClientTest {
     fun `should initialize with supported older protocol version`() = runTest {
         val client = newClient()
 
-        client.connect(InitializeTransport { initializeResult(SUPPORTED_PROTOCOL_VERSIONS[1]) })
+        client.connect(InitializeTransport { initializeResult(HANDSHAKE_PROTOCOL_VERSIONS.first()) })
 
         client.serverVersion shouldBe Implementation(name = "test server", version = "1.0")
     }
@@ -235,9 +240,13 @@ class ClientTest {
     fun `should reject server elicitation when elicitation capability is not supported`() = runTest {
         val session = connect(newClient())
 
-        shouldThrow<IllegalStateException> {
+        val exception = shouldThrow<McpException> {
             session.createElicitation(message = "Provide your name", requestedSchema = nameSchema(required = true))
-        }.message shouldBe "Client does not support elicitation (required for elicitation/create)"
+        }
+
+        exception.code shouldBe RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY
+        exception.missingCapabilities() shouldBe
+            ClientCapabilities(elicitation = ClientCapabilities.Elicitation(form = EmptyJsonObject))
     }
 
     @Test
@@ -335,9 +344,13 @@ class ClientTest {
     fun `should reject URL mode elicitation when client supports only form mode`() = runTest {
         val session = connect(newClient(ClientCapabilities(elicitation = ClientCapabilities.Elicitation())))
 
-        shouldThrow<IllegalArgumentException> {
+        val exception = shouldThrow<McpException> {
             session.createElicitation(message = "Authorize", elicitationId = "id-1", url = "https://example.com/auth")
-        }.message shouldBe "Client did not advertise elicitation.url capability; cannot send a URL-mode elicitation."
+        }
+
+        exception.code shouldBe RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY
+        exception.missingCapabilities() shouldBe
+            ClientCapabilities(elicitation = ClientCapabilities.Elicitation(url = EmptyJsonObject))
     }
 
     @Test
@@ -443,6 +456,11 @@ class ClientTest {
 
     private fun elicitationComplete(elicitationId: String) =
         ElicitationCompleteNotification(ElicitationCompleteNotificationParams(elicitationId = elicitationId))
+
+    /** The capabilities a [RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY] error reports as missing. */
+    @OptIn(ExperimentalMcpApi::class)
+    private fun McpException.missingCapabilities(): ClientCapabilities =
+        McpJson.decodeFromJsonElement<MissingRequiredClientCapabilityData>(checkNotNull(data)).requiredCapabilities
 
     private fun nameSchema(required: Boolean) = ElicitRequestParams.RequestedSchema(
         properties = mapOf("name" to StringSchema()),

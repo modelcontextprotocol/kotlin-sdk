@@ -3,6 +3,7 @@ package io.modelcontextprotocol.kotlin.sdk.server
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
+import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.ClientOptions
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
@@ -12,7 +13,11 @@ import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageResult
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.IncludeContext
+import io.modelcontextprotocol.kotlin.sdk.types.McpException
+import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.MissingRequiredClientCapabilityData
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.Role
 import io.modelcontextprotocol.kotlin.sdk.types.SamplingMessage
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
@@ -26,8 +31,10 @@ import io.modelcontextprotocol.kotlin.sdk.types.ToolUseContent
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlin.test.Test
 
+@OptIn(ExperimentalMcpApi::class)
 class SamplingTest {
 
     private val weatherTool = Tool(
@@ -56,13 +63,20 @@ class SamplingTest {
 
         for ((field, params) in requests) {
             withClue(field) {
-                shouldThrow<IllegalArgumentException> {
+                val error = shouldThrow<McpException> {
                     server.createMessage(sessionId = sessionId, params = CreateMessageRequest(params))
-                }.message shouldBe "Client did not advertise sampling.tools capability; cannot send " +
-                    "tools/toolChoice in sampling/createMessage request."
+                }
+
+                error.code shouldBe RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY
+                error.missingCapabilities() shouldBe
+                    ClientCapabilities(sampling = ClientCapabilities.Sampling(tools = EmptyJsonObject))
             }
         }
     }
+
+    /** The capabilities a [RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY] error reports as missing. */
+    private fun McpException.missingCapabilities(): ClientCapabilities =
+        McpJson.decodeFromJsonElement<MissingRequiredClientCapabilityData>(checkNotNull(data)).requiredCapabilities
 
     @Test
     fun `includeContext should be sent even without sampling context capability`(): Unit = runBlocking {

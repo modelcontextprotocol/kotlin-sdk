@@ -104,7 +104,7 @@ class ResourcesTest {
                 Resource(uri = "file:///workspace/CONTRIBUTING.md", name = "CONTRIBUTING"),
             ),
             nextCursor = "cursor-2",
-            meta = buildJsonObject { put("page", 1) },
+            meta = ResultMeta(buildJsonObject { put("page", 1) }),
         )
 
         verifySerialization<ServerResult>(
@@ -117,6 +117,9 @@ class ResourcesTest {
                 {"uri": "file:///workspace/CONTRIBUTING.md", "name": "CONTRIBUTING"}
               ],
               "nextCursor": "cursor-2",
+              "resultType": "complete",
+              "ttlMs": 0,
+              "cacheScope": "private",
               "_meta": {
                 "page": 1
               }
@@ -159,7 +162,7 @@ class ResourcesTest {
                 ResourceTemplate(uriTemplate = "file:///workspace/{path}", name = "workspace-file"),
             ),
             nextCursor = "cursor-templates-2",
-            meta = buildJsonObject { put("page", 3) },
+            meta = ResultMeta(buildJsonObject { put("page", 3) }),
         )
 
         verifySerialization<ServerResult>(
@@ -174,6 +177,9 @@ class ResourcesTest {
                 }
               ],
               "nextCursor": "cursor-templates-2",
+              "resultType": "complete",
+              "ttlMs": 0,
+              "cacheScope": "private",
               "_meta": {
                 "page": 3
               }
