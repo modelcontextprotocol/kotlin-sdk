@@ -145,7 +145,7 @@ class JsonRpcTest {
         val response = JSONRPCResponse(
             id = RequestId("call-1"),
             result = EmptyResult(
-                meta = buildJsonObject { put("durationMs", 15) },
+                meta = ResultMeta(buildJsonObject { put("durationMs", 15) }),
             ),
         )
 

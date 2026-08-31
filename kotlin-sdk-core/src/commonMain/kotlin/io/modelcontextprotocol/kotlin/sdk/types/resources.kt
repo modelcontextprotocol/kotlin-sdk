@@ -2,6 +2,7 @@
 
 package io.modelcontextprotocol.kotlin.sdk.types
 
+import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
@@ -208,16 +209,29 @@ public data class ListResourcesRequest(override val params: PaginatedRequestPara
  * @property nextCursor An opaque token representing the pagination position after the last returned result.
  * If present, there may be more results available. The client can pass this token
  * in a subsequent request to fetch the next page.
+ * @property resultType Discriminator for the result representation.
+ * @property ttlMs number of milliseconds clients may treat this result as fresh
+ * @property cacheScope authorization boundary within which the result may be reused
  * @property meta Optional metadata for this response.
+ * @throws IllegalArgumentException if [ttlMs] is negative
  */
 @Serializable
+@OptIn(ExperimentalMcpApi::class)
 public data class ListResourcesResult(
     val resources: List<Resource>,
     override val nextCursor: String? = null,
+    val resultType: String = COMPLETE_RESULT_TYPE,
+    override val ttlMs: Long = 0,
+    override val cacheScope: CacheScope = CacheScope.Private,
     @SerialName("_meta")
-    override val meta: JsonObject? = null,
+    override val meta: ResultMeta? = null,
 ) : ServerResult,
-    PaginatedResult
+    PaginatedResult,
+    CacheableResult {
+    init {
+        require(ttlMs >= 0) { "ttlMs must be non-negative, but was $ttlMs" }
+    }
+}
 
 // ============================================================================
 // resources/read
@@ -273,14 +287,27 @@ public data class ReadResourceRequestParams(
  * @property contents The contents of the resource. Can include text content (with MIME type and text data)
  * or binary/blob content (with MIME type and Base64-encoded data).
  * Multiple content blocks can be returned for resources with multiple parts.
+ * @property resultType Discriminator for the result representation.
+ * @property ttlMs number of milliseconds clients may treat this result as fresh
+ * @property cacheScope authorization boundary within which the result may be reused
  * @property meta Optional metadata for this response.
+ * @throws IllegalArgumentException if [ttlMs] is negative
  */
 @Serializable
+@OptIn(ExperimentalMcpApi::class)
 public data class ReadResourceResult(
     val contents: List<ResourceContents>,
+    val resultType: String = COMPLETE_RESULT_TYPE,
+    override val ttlMs: Long = 0,
+    override val cacheScope: CacheScope = CacheScope.Private,
     @SerialName("_meta")
-    override val meta: JsonObject? = null,
-) : ServerResult
+    override val meta: ResultMeta? = null,
+) : ServerResult,
+    CacheableResult {
+    init {
+        require(ttlMs >= 0) { "ttlMs must be non-negative, but was $ttlMs" }
+    }
+}
 
 // ============================================================================
 // resources/subscribe
@@ -411,13 +438,26 @@ public data class ListResourceTemplatesRequest(override val params: PaginatedReq
  * @property nextCursor An opaque token representing the pagination position after the last returned result.
  * If present, there may be more results available. The client can pass this token
  * in a subsequent request to fetch the next page.
+ * @property resultType Discriminator for the result representation.
+ * @property ttlMs number of milliseconds clients may treat this result as fresh
+ * @property cacheScope authorization boundary within which the result may be reused
  * @property meta Optional metadata for this response.
+ * @throws IllegalArgumentException if [ttlMs] is negative
  */
 @Serializable
+@OptIn(ExperimentalMcpApi::class)
 public data class ListResourceTemplatesResult(
     val resourceTemplates: List<ResourceTemplate>,
     override val nextCursor: String? = null,
+    val resultType: String = COMPLETE_RESULT_TYPE,
+    override val ttlMs: Long = 0,
+    override val cacheScope: CacheScope = CacheScope.Private,
     @SerialName("_meta")
-    override val meta: JsonObject? = null,
+    override val meta: ResultMeta? = null,
 ) : ServerResult,
-    PaginatedResult
+    PaginatedResult,
+    CacheableResult {
+    init {
+        require(ttlMs >= 0) { "ttlMs must be non-negative, but was $ttlMs" }
+    }
+}

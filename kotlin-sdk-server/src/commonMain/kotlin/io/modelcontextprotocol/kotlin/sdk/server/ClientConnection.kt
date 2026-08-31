@@ -1,7 +1,10 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
+import io.modelcontextprotocol.kotlin.sdk.shared.currentRequestHandlerExtra
+import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageResult
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequest
@@ -18,8 +21,12 @@ import io.modelcontextprotocol.kotlin.sdk.types.ListRootsResult
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
+import io.modelcontextprotocol.kotlin.sdk.types.McpJson
+import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.MissingRequiredClientCapabilityData
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.types.PromptListChangedNotification
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.Request
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.RequestResult
@@ -27,7 +34,10 @@ import io.modelcontextprotocol.kotlin.sdk.types.ResourceListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ServerNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ToolListChangedNotification
+import io.modelcontextprotocol.kotlin.sdk.types.isModernProtocolVersion
+import io.modelcontextprotocol.kotlin.sdk.types.missingIn
 import io.modelcontextprotocol.kotlin.sdk.types.supportsUrl
+import kotlinx.serialization.json.encodeToJsonElement
 
 private val logger = KotlinLogging.logger {}
 
@@ -70,7 +80,8 @@ public interface ClientConnection {
      * @param request The parameters for creating a message.
      * @param options Optional request options.
      * @return The created message result.
-     * @throws IllegalStateException If the server does not support sampling or if the request fails.
+     * @throws McpException with [RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY] if the
+     * client did not declare the sampling capability this request needs.
      */
     public suspend fun createMessage(
         request: CreateMessageRequest,
@@ -86,7 +97,8 @@ public interface ClientConnection {
      * @param request Optional request parameters containing metadata for the list roots operation.
      * @param options Optional request options, such as timeout or progress callback settings.
      * @return The list of roots.
-     * @throws IllegalStateException If the server or client does not support roots.
+     * @throws McpException with [RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY] if the
+     * client did not declare the roots capability.
      */
     public suspend fun listRoots(
         request: ListRootsRequest = ListRootsRequest(),
@@ -106,8 +118,9 @@ public interface ClientConnection {
      * Influences the form displayed to the user.
      * @param options Optional request options.
      * @return The result of the elicitation request.
-     * @throws IllegalStateException If the server or client does not support elicitation.
-     * @throws McpException If an accepted response does not match [requestedSchema].
+     * @throws McpException with [RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY] if the
+     * client did not declare the elicitation mode this request needs, or if an accepted response
+     * does not match [requestedSchema].
      */
     public suspend fun createElicitation(
         message: String,
@@ -124,7 +137,8 @@ public interface ClientConnection {
      * @param url The URL that the user should navigate to.
      * @param options Optional request options.
      * @return The result of the elicitation request.
-     * @throws IllegalStateException If the server or client does not support elicitation.
+     * @throws McpException with [RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY] if the
+     * client did not declare the elicitation mode this request needs.
      */
     public suspend fun createElicitation(
         message: String,
@@ -144,8 +158,9 @@ public interface ClientConnection {
      * @param request The elicitation request parameters.
      * @param options Optional request options.
      * @return The result of the elicitation request.
-     * @throws IllegalStateException If the server or client does not support elicitation.
-     * @throws McpException If an accepted form-mode response does not match its requested schema.
+     * @throws McpException with [RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY] if the
+     * client did not declare the elicitation mode this request needs, or if an accepted form-mode
+     * response does not match its requested schema.
      */
     public suspend fun createElicitation(request: ElicitRequest, options: RequestOptions? = null): ElicitResult
 
@@ -188,6 +203,7 @@ public interface ClientConnection {
     public suspend fun sendElicitationComplete(notification: ElicitationCompleteNotification)
 }
 
+@OptIn(ExperimentalMcpApi::class)
 internal class ClientConnectionImpl(private val session: ServerSession) : ClientConnection {
 
     override val sessionId: String get() = session.sessionId
@@ -212,16 +228,17 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
     }
 
     override suspend fun createMessage(request: CreateMessageRequest, options: RequestOptions?): CreateMessageResult {
-        val caps = session.clientCapabilities
         val params = request.params
 
-        if (params.tools != null || params.toolChoice != null) {
-            requireNotNull(caps?.sampling?.tools) {
-                "Client did not advertise sampling.tools capability; cannot send " +
-                    "tools/toolChoice in sampling/createMessage request."
-            }
-        }
+        val needsTools = params.tools != null || params.toolChoice != null
+        requireClientCapabilities(
+            ClientCapabilities(
+                sampling = ClientCapabilities.Sampling(tools = EmptyJsonObject.takeIf { needsTools }),
+            ),
+        )
+        requireBackChannel(Method.Defined.SamplingCreateMessage)
 
+        val caps = governingClientCapabilities()
         if (params.includeContext != null && params.includeContext != IncludeContext.None) {
             if (caps?.sampling?.context == null) {
                 logger.warn {
@@ -245,17 +262,23 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
     }
 
     override suspend fun listRoots(request: ListRootsRequest, options: RequestOptions?): ListRootsResult {
+        requireClientCapabilities(ClientCapabilities(roots = ClientCapabilities.Roots()))
+        requireBackChannel(Method.Defined.RootsList)
         logger.debug { "Listing roots" }
         return request(request, options)
     }
 
     override suspend fun createElicitation(request: ElicitRequest, options: RequestOptions?): ElicitResult {
         val params = request.params
-        if (params is ElicitRequestURLParams) {
-            require(session.clientCapabilities?.elicitation.supportsUrl) {
-                "Client did not advertise elicitation.url capability; cannot send a URL-mode elicitation."
-            }
-        }
+        requireClientCapabilities(
+            ClientCapabilities(
+                elicitation = when (params) {
+                    is ElicitRequestURLParams -> ClientCapabilities.Elicitation(url = EmptyJsonObject)
+                    is ElicitRequestFormParams -> ClientCapabilities.Elicitation(form = EmptyJsonObject)
+                },
+            ),
+        )
+        requireBackChannel(Method.Defined.ElicitationCreate)
         logger.debug {
             when (params) {
                 is ElicitRequestFormParams ->
@@ -339,9 +362,62 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
      *         the current session's logging level), or if no current logging
      *         level is set. Otherwise, false.
      */
-    private fun isMessageAccepted(level: LoggingLevel): Boolean {
+    private suspend fun isMessageAccepted(level: LoggingLevel): Boolean {
+        val extra = currentRequestHandlerExtra()
+            // Outside a handler there is no request to have opted in, so nothing is deliverable on
+            // the request-scoped lifecycle and the connection-scoped filter applies on the other.
+            ?: return session.protocolVersion?.let { isModernProtocolVersion(it) } != true &&
+                acceptedByLevelSetting(level)
+        if (level !in allowedLogLevels(extra.protocolVersion, extra.meta)) return false
+        return acceptedByLevelSetting(level)
+    }
+
+    /** Whether a `logging/setLevel` the client issued on this connection admits [level]. */
+    private fun acceptedByLevelSetting(level: LoggingLevel): Boolean {
         val current = session.currentLoggingLevel.value ?: return true // If no level is set, don't filter
 
         return level >= current
+    }
+
+    /**
+     * The capabilities governing the request being served, or the connection's declaration outside
+     * a handler.
+     *
+     * Under the request-scoped lifecycle every request carries its own declaration; reading the
+     * connection's would let one request borrow another's.
+     */
+    private suspend fun governingClientCapabilities(): ClientCapabilities? =
+        currentRequestHandlerExtra()?.clientCapabilities ?: session.clientCapabilities
+
+    /**
+     * Refuses a server-initiated request on a connection whose revision has none.
+     *
+     * Protocol revision `2026-07-28` removed sampling, elicitation and roots as server-initiated
+     * requests. A server that needs them must be reached over `2025-11-25` or earlier.
+     */
+    private suspend fun requireBackChannel(method: Method) {
+        val extra = currentRequestHandlerExtra() ?: return
+        if (extra.envelope == null) return
+        throw McpException(
+            code = RPCError.ErrorCode.METHOD_NOT_FOUND,
+            message = "${method.value} was removed in protocol version ${extra.protocolVersion}: " +
+                "server-initiated requests are replaced by multi-round-trip requests, which this " +
+                "SDK does not implement yet. Serve peers that need it over 2025-11-25 or earlier.",
+        )
+    }
+
+    /**
+     * Demands [required] of the client governing this request.
+     *
+     * @throws McpException [RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY], carrying the
+     * capabilities the declaration did not cover, when it does not cover them all
+     */
+    private suspend fun requireClientCapabilities(required: ClientCapabilities) {
+        val missing = required.missingIn(governingClientCapabilities()) ?: return
+        throw McpException(
+            code = RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY,
+            message = "Client did not declare the capabilities required to serve this request",
+            data = McpJson.encodeToJsonElement(MissingRequiredClientCapabilityData(missing)),
+        )
     }
 }
