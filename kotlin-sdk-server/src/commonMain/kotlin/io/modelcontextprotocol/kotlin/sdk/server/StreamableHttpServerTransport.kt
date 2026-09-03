@@ -853,7 +853,14 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         return when (val element = McpJson.parseToJsonElement(body)) {
             is JsonObject -> listOf(McpJson.decodeFromJsonElement(element))
 
-            is JsonArray -> McpJson.decodeFromJsonElement<List<JSONRPCMessage>>(element)
+            is JsonArray -> {
+                call.reject(
+                    HttpStatusCode.BadRequest,
+                    RPCError.ErrorCode.INVALID_REQUEST,
+                    "Invalid Request: JSON-RPC batch requests are not supported",
+                )
+                null
+            }
 
             else -> {
                 call.reject(
