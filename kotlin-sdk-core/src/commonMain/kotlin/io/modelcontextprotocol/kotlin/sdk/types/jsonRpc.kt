@@ -5,6 +5,7 @@ package io.modelcontextprotocol.kotlin.sdk.types
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
@@ -214,6 +215,15 @@ public data class JSONRPCResponse(val id: RequestId, val result: RequestResult =
     /** Always `"2.0"` to indicate JSON-RPC 2.0 protocol. */
     @EncodeDefault
     override val jsonrpc: String = JSONRPC_VERSION
+
+    @Transient
+    private var rawResult: JsonElement? = null
+
+    internal fun withRawResult(result: JsonElement): JSONRPCResponse = apply {
+        rawResult = result
+    }
+
+    internal fun rawResultOrNull(): JsonElement? = rawResult
 }
 
 // ============================================================================
