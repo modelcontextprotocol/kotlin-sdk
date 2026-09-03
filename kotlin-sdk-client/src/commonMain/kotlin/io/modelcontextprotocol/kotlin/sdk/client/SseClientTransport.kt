@@ -11,6 +11,7 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.Url
 import io.ktor.http.append
 import io.ktor.http.isSuccess
 import io.ktor.http.protocolWithAuthority
@@ -142,12 +143,21 @@ public class SseClientTransport(
 
     /**
      * Resolves and completes [endpoint] based on [eventData].
-     * Uses full URLs as-is, treats absolute paths as origin-relative,
-     * and relative paths as relative to [baseUrl].
+     * Uses full URLs as-is, but rejects those whose origin differs from the SSE connection origin,
+     * treats absolute paths as origin-relative, and relative paths as relative to [baseUrl].
      */
     private fun handleEndpoint(eventData: String) {
         try {
             val endpointUrl = if (eventData.startsWith("http://") || eventData.startsWith("https://")) {
+                val endpointOrigin = Url(eventData)
+                if (!endpointOrigin.hasSameOrigin()) {
+                    val error = IllegalArgumentException(
+                        "Endpoint origin ${endpointOrigin.protocolWithAuthority} does not match connection origin $origin",
+                    )
+                    _onError(error)
+                    endpoint.completeExceptionally(error)
+                    return
+                }
                 eventData
             } else if (eventData.startsWith("/")) {
                 origin + eventData
@@ -162,6 +172,13 @@ public class SseClientTransport(
             throw e
         }
     }
+
+    /**
+     * Returns true when [this]'s origin (scheme, host, and port) matches the SSE connection's origin.
+     * The comparison uses the authority string, so default ports are ignored (e.g. `http://host:80`
+     * and `http://host` are considered the same origin).
+     */
+    private fun Url.hasSameOrigin(): Boolean = protocolWithAuthority == origin
 
     private suspend fun handleMessage(data: String) {
         try {
