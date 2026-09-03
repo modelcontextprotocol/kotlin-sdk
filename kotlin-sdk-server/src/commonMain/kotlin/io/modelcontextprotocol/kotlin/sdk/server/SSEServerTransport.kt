@@ -11,8 +11,16 @@ import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
-import kotlinx.coroutines.InternalCoroutinesApi
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineName
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.job
+import kotlinx.coroutines.launch
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.cancellation.CancellationException
@@ -42,6 +50,10 @@ public class SseServerTransport(
     }
 
     private val initialized: AtomicBoolean = AtomicBoolean(false)
+    private val closeWatcherScope: CoroutineScope by lazy {
+        CoroutineScope(session.coroutineContext + SupervisorJob())
+    }
+    private var closeWatcherJob: Job? = null
 
     /** Unique identifier for this transport session, generated randomly on creation. */
     @OptIn(ExperimentalUuidApi::class)
@@ -65,12 +77,21 @@ public class SseServerTransport(
             data = "${endpoint.encodeURLPath()}?$SESSION_ID_PARAM=$sessionId",
         )
 
-        @OptIn(InternalCoroutinesApi::class)
-        session.coroutineContext.job.invokeOnCompletion {
-            if (it != null && it !is CancellationException) {
-                _onError.invoke(it)
-            } else {
-                invokeOnCloseCallback()
+        val sessionCompletion = CompletableDeferred<Throwable?>()
+        session.coroutineContext.job.invokeOnCompletion { sessionCompletion.complete(it) }
+        closeWatcherJob = closeWatcherScope.launch(
+            context = CoroutineName("SseServerTransport.close#$sessionId"),
+            start = CoroutineStart.UNDISPATCHED,
+        ) {
+            try {
+                val cause = sessionCompletion.await()
+                if (cause != null && cause !is CancellationException) {
+                    _onError.invoke(cause)
+                } else {
+                    invokeOnCloseCallback()
+                }
+            } finally {
+                closeWatcherScope.cancel()
             }
         }
     }
@@ -137,6 +158,7 @@ public class SseServerTransport(
 
     override suspend fun close() {
         session.close()
+        closeWatcherJob?.cancelAndJoin()
         invokeOnCloseCallback()
     }
 

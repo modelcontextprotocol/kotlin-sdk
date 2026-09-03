@@ -258,7 +258,7 @@ public class StdioClientTransport @JvmOverloads public constructor(
         }
     }
 
-    private fun sendOutboundMessage(message: JSONRPCMessage, sink: Sink, mainScope: CoroutineScope) {
+    private suspend fun sendOutboundMessage(message: JSONRPCMessage, sink: Sink, mainScope: CoroutineScope) {
         try {
             val json = serializeMessage(message)
             sink.writeString(json)
@@ -285,7 +285,7 @@ public class StdioClientTransport @JvmOverloads public constructor(
         }
     }
 
-    private fun CoroutineScope.stopProcessing(reason: String, cause: Throwable? = null) {
+    private suspend fun CoroutineScope.stopProcessing(reason: String, cause: Throwable? = null) {
         sendChannel.close() // Stop accepting new messages
         invokeOnCloseCallback()
         cancel(reason, cause) // cancel current coroutine context

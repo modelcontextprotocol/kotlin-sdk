@@ -7,10 +7,13 @@ import io.ktor.websocket.close
 import io.ktor.websocket.readText
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.InternalCoroutinesApi
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
@@ -34,6 +37,7 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
     }
 
     private val initialized: AtomicBoolean = AtomicBoolean(false)
+    private var closeWatcherJob: Job? = null
 
     /**
      * The WebSocket session used for communication.
@@ -84,12 +88,21 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
             }
         }
 
-        @OptIn(InternalCoroutinesApi::class)
-        session.coroutineContext.job.invokeOnCompletion {
-            if (it != null) {
-                _onError.invoke(it)
-            } else {
-                invokeOnCloseCallback()
+        val sessionCompletion = CompletableDeferred<Throwable?>()
+        session.coroutineContext.job.invokeOnCompletion { sessionCompletion.complete(it) }
+        closeWatcherJob = scope.launch(
+            context = CoroutineName("WebSocketMcpTransport.close#${hashCode()}"),
+            start = CoroutineStart.UNDISPATCHED,
+        ) {
+            try {
+                val cause = sessionCompletion.await()
+                if (cause != null) {
+                    _onError.invoke(cause)
+                } else {
+                    invokeOnCloseCallback()
+                }
+            } finally {
+                scope.cancel()
             }
         }
     }
@@ -111,5 +124,6 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
         logger.debug { "Closing websocket session" }
         session.close()
         session.coroutineContext.job.join()
+        closeWatcherJob?.join()
     }
 }

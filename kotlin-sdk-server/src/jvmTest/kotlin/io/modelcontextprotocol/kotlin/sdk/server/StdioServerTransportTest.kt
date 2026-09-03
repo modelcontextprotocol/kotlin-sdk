@@ -1,6 +1,5 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
-import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldContain
@@ -110,6 +109,41 @@ class StdioServerTransportTest {
     }
 
     @Test
+    fun `should await suspending onClose callbacks in registration order exactly once`() = runIntegrationTest {
+        val server = StdioServerTransport(input = bufferedInput, output = printOutput)
+        val firstCallbackStarted = CompletableDeferred<Unit>()
+        val releaseFirstCallback = CompletableDeferred<Unit>()
+        val events = mutableListOf<String>()
+
+        server.onError { throw it }
+        server.onMessage {}
+        server.onClose {
+            events += "first-started"
+            firstCallbackStarted.complete(Unit)
+            releaseFirstCallback.await()
+            events += "first-finished"
+        }
+        server.onClose {
+            delay(1.milliseconds)
+            events += "second"
+        }
+
+        server.start()
+        val closeJob = launch { server.close() }
+
+        firstCallbackStarted.await()
+        closeJob.isActive shouldBe true
+        events shouldBe listOf("first-started")
+
+        releaseFirstCallback.complete(Unit)
+        closeJob.join()
+        events shouldBe listOf("first-started", "first-finished", "second")
+
+        server.close()
+        events shouldBe listOf("first-started", "first-finished", "second")
+    }
+
+    @Test
     fun `should not read until started`() = runIntegrationTest {
         val server = StdioServerTransport(input = bufferedInput, output = printOutput)
         server.onError { error ->
@@ -208,15 +242,16 @@ class StdioServerTransportTest {
         val server = StdioServerTransport(input = bufferedInput, output = printOutput)
         val didClose = CompletableDeferred<Unit>()
         server.onError { throw it }
-        server.onClose { didClose.complete(Unit) }
+        server.onClose {
+            delay(1.milliseconds)
+            didClose.complete(Unit)
+        }
         server.onMessage {}
 
         server.start()
         inputWriter.close() // signal EOF to the reading loop
 
-        eventually(2.seconds) {
-            didClose.isCompleted shouldBe true
-        }
+        didClose.await()
     }
 
     @Test

@@ -21,7 +21,7 @@ class MockTransport : Transport {
     suspend fun getReceivedMessages() = mutex.withLock { _receivedMessages.toList() }
 
     private var onMessageBlock: (suspend (JSONRPCMessage) -> Unit)? = null
-    private var onCloseBlock: (() -> Unit)? = null
+    private var onCloseBlock: (suspend () -> Unit)? = null
     private var onErrorBlock: ((Throwable) -> Unit)? = null
 
     override suspend fun start() = Unit
@@ -81,7 +81,7 @@ class MockTransport : Transport {
         }
     }
 
-    override fun onClose(block: () -> Unit) {
+    override fun onClose(block: suspend () -> Unit) {
         onCloseBlock = block
     }
 

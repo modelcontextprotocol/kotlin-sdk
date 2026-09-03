@@ -33,8 +33,8 @@ public abstract class io/modelcontextprotocol/kotlin/sdk/shared/AbstractTranspor
 	public fun <init> ()V
 	protected final fun get_onError ()Lkotlin/jvm/functions/Function1;
 	protected final fun get_onMessage ()Lkotlin/jvm/functions/Function2;
-	protected final fun invokeOnCloseCallback ()V
-	public fun onClose (Lkotlin/jvm/functions/Function0;)V
+	protected final fun invokeOnCloseCallback (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun onClose (Lkotlin/jvm/functions/Function1;)V
 	public fun onError (Lkotlin/jvm/functions/Function1;)V
 	public fun onMessage (Lkotlin/jvm/functions/Function2;)V
 }
@@ -70,7 +70,7 @@ public abstract class io/modelcontextprotocol/kotlin/sdk/shared/Protocol {
 	public final fun getTransport ()Lio/modelcontextprotocol/kotlin/sdk/shared/Transport;
 	public final fun notification (Lio/modelcontextprotocol/kotlin/sdk/types/Notification;Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun notification$default (Lio/modelcontextprotocol/kotlin/sdk/shared/Protocol;Lio/modelcontextprotocol/kotlin/sdk/types/Notification;Lio/modelcontextprotocol/kotlin/sdk/types/RequestId;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
-	public fun onClose ()V
+	public fun onClose (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun onError (Ljava/lang/Throwable;)V
 	protected fun onInitializedNotification ()V
 	public final fun removeNotificationHandler (Lio/modelcontextprotocol/kotlin/sdk/types/Method;)V
@@ -146,7 +146,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/shared/TooLongFrameExcepti
 
 public abstract interface class io/modelcontextprotocol/kotlin/sdk/shared/Transport {
 	public abstract fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public abstract fun onClose (Lkotlin/jvm/functions/Function0;)V
+	public abstract fun onClose (Lkotlin/jvm/functions/Function1;)V
 	public abstract fun onError (Lkotlin/jvm/functions/Function1;)V
 	public abstract fun onMessage (Lkotlin/jvm/functions/Function2;)V
 	public abstract fun send (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;

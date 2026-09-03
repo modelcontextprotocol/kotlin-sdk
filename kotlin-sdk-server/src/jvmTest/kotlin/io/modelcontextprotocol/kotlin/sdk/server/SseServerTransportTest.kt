@@ -16,11 +16,40 @@ import io.ktor.server.sse.SSE
 import io.ktor.server.sse.ServerSSESession
 import io.ktor.server.testing.testApplication
 import io.ktor.utils.io.readLine
+import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.seconds
 
 class SseServerTransportTest : AbstractKtorExtensionsTest() {
+
+    @Test
+    fun `close awaits suspending callback without waiting for the session job`() = runTest {
+        val session = mockk<ServerSSESession>(relaxed = true)
+        every { session.coroutineContext } returns currentCoroutineContext()
+        val transport = SseServerTransport("/messages", session)
+        val callbackStarted = CompletableDeferred<Unit>()
+        val releaseCallback = CompletableDeferred<Unit>()
+
+        transport.onClose {
+            callbackStarted.complete(Unit)
+            releaseCallback.await()
+        }
+        transport.start()
+
+        val closeJob = launch { transport.close() }
+        withTimeout(1.seconds) { callbackStarted.await() }
+        closeJob.isActive shouldBe true
+
+        releaseCallback.complete(Unit)
+        closeJob.join()
+    }
 
     @Test
     fun `handlePostMessage on a not-started transport does not deliver the message`() = testApplication {

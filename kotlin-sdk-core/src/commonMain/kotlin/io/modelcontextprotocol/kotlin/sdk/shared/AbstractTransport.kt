@@ -2,6 +2,8 @@ package io.modelcontextprotocol.kotlin.sdk.shared
 
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
@@ -15,7 +17,7 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 @OptIn(ExperimentalAtomicApi::class)
 public abstract class AbstractTransport : Transport {
     private val onCloseCalled = AtomicBoolean(false)
-    private var _onClose: (() -> Unit) = {}
+    private var _onClose: suspend () -> Unit = {}
     protected var _onError: ((Throwable) -> Unit) = {}
         private set
 
@@ -27,8 +29,8 @@ public abstract class AbstractTransport : Transport {
     }
         private set
 
-    override fun onClose(block: () -> Unit) {
-        val old = _onClose
+    override fun onClose(block: suspend () -> Unit) {
+        val old: suspend () -> Unit = _onClose
         _onClose = {
             old()
             block()
@@ -60,14 +62,17 @@ public abstract class AbstractTransport : Transport {
     /**
      * Invokes the `_onClose` callback if it has not been already triggered.
      *
-     * This method ensures the `_onClose` callback is executed only once by utilizing
+     * This suspending method ensures the `_onClose` callback is awaited and executed only once by utilizing
      * an atomic flag (`onCloseCalled`). If the callback has already been executed,
-     * the method does nothing. Any exceptions thrown during the execution of the
-     * `_onClose` callback are caught and suppressed.
+     * the method does nothing. The callback runs in [NonCancellable] so suspending cleanup can
+     * finish after its owning transport scope has stopped. Any exceptions thrown during the
+     * execution of the `_onClose` callback are caught and suppressed.
      */
-    protected fun invokeOnCloseCallback() {
+    protected suspend fun invokeOnCloseCallback() {
         if (onCloseCalled.compareAndSet(expectedValue = false, newValue = true)) {
-            runCatching { _onClose() }
+            withContext(NonCancellable) {
+                runCatching { _onClose() }
+            }
         }
     }
 }
