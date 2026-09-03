@@ -72,6 +72,7 @@ This Kotlin SDK implements the MCP specification, making it easy to:
 ### Artifacts
 
 - `io.modelcontextprotocol:kotlin-sdk` – umbrella SDK (client + server APIs)
+- `io.modelcontextprotocol:kotlin-sdk-bom` – version alignment for the core, client, and server artifacts
 - `io.modelcontextprotocol:kotlin-sdk-client` – client-only APIs
 - `io.modelcontextprotocol:kotlin-sdk-server` – server-only APIs
 
@@ -96,6 +97,17 @@ Use _kotlin-sdk-client_ or _kotlin-sdk-server_ if you only need one side of the 
 dependencies {
     implementation("io.modelcontextprotocol:kotlin-sdk-client:$mcpVersion")
     implementation("io.modelcontextprotocol:kotlin-sdk-server:$mcpVersion")
+}
+```
+
+To keep the core, client, and server artifacts on the same version, import the BOM and omit versions from the
+individual SDK dependencies:
+
+```kotlin
+dependencies {
+    implementation(platform("io.modelcontextprotocol:kotlin-sdk-bom:$mcpVersion"))
+    implementation("io.modelcontextprotocol:kotlin-sdk-client")
+    implementation("io.modelcontextprotocol:kotlin-sdk-server")
 }
 ```
 
