@@ -5,6 +5,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
@@ -190,5 +191,37 @@ class ServerSessionInitializeTest {
         errors.forEach { error ->
             assertEquals(RPCError.ErrorCode.INVALID_REQUEST, error.error.code)
         }
+    }
+
+    @Test
+    fun `should replay initialized callbacks registered after the handshake`() = runTest {
+        val session = createSession()
+        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
+        val callbackOrder = mutableListOf<String>()
+        val initialized = CompletableDeferred<Unit>()
+        val responseDone = CompletableDeferred<JSONRPCResponse>()
+
+        session.onInitialized {
+            callbackOrder += "before-first"
+        }
+        session.onInitialized {
+            callbackOrder += "before-second"
+            initialized.complete(Unit)
+        }
+
+        clientTransport.onMessage { message ->
+            if (message is JSONRPCResponse) responseDone.complete(message)
+        }
+        session.connect(serverTransport)
+        clientTransport.send(createInitializeRequest().toJSON())
+        responseDone.await()
+        clientTransport.send(InitializedNotification().toJSON())
+        initialized.await()
+
+        session.onInitialized {
+            callbackOrder += "after"
+        }
+
+        assertEquals(listOf("before-first", "before-second", "after"), callbackOrder)
     }
 }
