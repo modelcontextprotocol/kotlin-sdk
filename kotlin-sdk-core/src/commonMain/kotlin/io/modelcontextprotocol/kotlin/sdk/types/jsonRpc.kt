@@ -266,7 +266,11 @@ public data class RPCError(val code: Int, val message: String, val data: JsonEle
         /** Request timed out */
         public const val REQUEST_TIMEOUT: Int = -32001
 
-        /** Resource not found */
+        /**
+         * Legacy resource-not-found code used by MCP 2025-11-25 and earlier.
+         *
+         * MCP 2026-07-28 and later use [INVALID_PARAMS] for missing resources.
+         */
         public const val RESOURCE_NOT_FOUND: Int = -32002
 
         /** The request selected a protocol version that the receiver does not support. */
