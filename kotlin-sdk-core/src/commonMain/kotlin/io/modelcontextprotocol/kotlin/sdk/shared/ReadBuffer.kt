@@ -128,7 +128,8 @@ public class TooLongFrameException(public val frameSize: Long, public val maxFra
             "before a newline terminator (observed $frameSize bytes).",
     )
 
-internal fun deserializeMessage(line: String): JSONRPCMessage = McpJson.decodeFromString<JSONRPCMessage>(line)
+internal fun deserializeMessage(line: String): JSONRPCMessage =
+    McpJson.decodeFromString<JSONRPCMessage>(line.trimStart('\uFEFF'))
 
 /** Serializes a [JSONRPCMessage] to its JSON string representation with a trailing newline. */
 public fun serializeMessage(message: JSONRPCMessage): String = McpJson.encodeToString(message) + "\n"
