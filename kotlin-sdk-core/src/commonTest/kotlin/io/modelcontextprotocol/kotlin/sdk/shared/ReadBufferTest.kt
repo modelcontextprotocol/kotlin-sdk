@@ -108,4 +108,10 @@ class ReadBufferTest {
         readBuffer.append(serializeMessage(testMessage).encodeToByteArray())
         assertEquals(testMessage, readBuffer.readMessage())
     }
+
+    @Test
+    fun `should deserialize message with leading UTF-8 BOM`() {
+        val messageJson = "\uFEFF${json.encodeToString(testMessage)}"
+        assertEquals(testMessage, deserializeMessage(messageJson))
+    }
 }
