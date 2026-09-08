@@ -56,11 +56,16 @@ private fun JsonObject.withServerInfoStamp(serverInfo: Implementation?): JsonObj
  * The error code to put on the wire for a locally raised [code].
  *
  * Retired codes are never emitted: `-32002` (resource not found) travels as invalid params under
- * either lifecycle, and `-32042` survives only where URL elicitation does.
+ * either lifecycle, and `-32042` survives only where URL elicitation does. Local-only codes are
+ * never emitted either: a timeout or connection failure of this side's own nested call must not
+ * read to the peer as its counterparty's verdict.
  */
 @Suppress("DEPRECATION")
 internal fun outboundErrorCode(era: ProtocolEra, code: Int): Int = when {
     code == RPCError.ErrorCode.RESOURCE_NOT_FOUND -> RPCError.ErrorCode.INVALID_PARAMS
+
+    code == RPCError.ErrorCode.REQUEST_TIMEOUT || code == RPCError.ErrorCode.CONNECTION_CLOSED ->
+        RPCError.ErrorCode.INTERNAL_ERROR
 
     era == ProtocolEra.Modern && code == RPCError.ErrorCode.URL_ELICITATION_REQUIRED ->
         RPCError.ErrorCode.INTERNAL_ERROR

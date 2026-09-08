@@ -36,7 +36,6 @@ import io.modelcontextprotocol.kotlin.sdk.types.ServerNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ToolListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.isModernProtocolVersion
 import io.modelcontextprotocol.kotlin.sdk.types.missingIn
-import io.modelcontextprotocol.kotlin.sdk.types.supportsUrl
 import kotlinx.serialization.json.encodeToJsonElement
 
 private val logger = KotlinLogging.logger {}
@@ -199,6 +198,10 @@ public interface ClientConnection {
      * Sends a notification to the client indicating that an out-of-band elicitation has completed.
      *
      * @param notification Details of the completed elicitation.
+     * @throws McpException [RPCError.ErrorCode.METHOD_NOT_FOUND] on a request-scoped request —
+     * protocol revision `2026-07-28` removed URL-elicitation completion — or
+     * [RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY] when the governing client
+     * declaration does not cover `elicitation.url`
      */
     public suspend fun sendElicitationComplete(notification: ElicitationCompleteNotification)
 }
@@ -346,9 +349,10 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
     }
 
     override suspend fun sendElicitationComplete(notification: ElicitationCompleteNotification) {
-        require(session.clientCapabilities?.elicitation.supportsUrl) {
-            "Client did not advertise elicitation.url capability; cannot send an elicitation completion notification."
-        }
+        requireLegacyNotification(Method.Defined.NotificationsElicitationComplete)
+        requireClientCapabilities(
+            ClientCapabilities(elicitation = ClientCapabilities.Elicitation(url = EmptyJsonObject)),
+        )
         logger.debug { "Sending elicitation complete notification for: ${notification.params.elicitationId}" }
         notification(notification)
     }
@@ -403,6 +407,23 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
             message = "${method.value} was removed in protocol version ${extra.protocolVersion}: " +
                 "server-initiated requests are replaced by multi-round-trip requests, which this " +
                 "SDK does not implement yet. Serve peers that need it over 2025-11-25 or earlier.",
+        )
+    }
+
+    /**
+     * Refuses a legacy-only notification on a request whose revision removed it.
+     *
+     * Protocol revision `2026-07-28` removed URL-elicitation completion along with the
+     * `elicitationId` it references, so the refusal fires before anything reaches the transport.
+     */
+    private suspend fun requireLegacyNotification(method: Method) {
+        val extra = currentRequestHandlerExtra() ?: return
+        if (extra.envelope == null) return
+        throw McpException(
+            code = RPCError.ErrorCode.METHOD_NOT_FOUND,
+            message = "${method.value} was removed in protocol version ${extra.protocolVersion}: " +
+                "URL-elicitation completion and its elicitationId do not exist on this revision. " +
+                "Serve peers that need it over 2025-11-25 or earlier.",
         )
     }
 

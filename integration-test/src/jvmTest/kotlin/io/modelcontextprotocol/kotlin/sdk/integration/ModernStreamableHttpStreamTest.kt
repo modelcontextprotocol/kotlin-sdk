@@ -27,7 +27,9 @@ import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotificationParams
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
@@ -108,9 +110,137 @@ class ModernStreamableHttpStreamTest {
             }
         }
 
-    private fun callEcho(): String = """
+    @Test
+    fun `a burst of notifications outrunning the reader is delivered in full, never dropped`(): Unit =
+        runBlocking(Dispatchers.IO) {
+            val burst = 200 // well past the channel's buffer, where trySend would have dropped
+            val server = embeddedServer(CIO, port = 0) {
+                mcpStatelessStreamableHttp {
+                    Server(
+                        Implementation("stream-server", "1.0"),
+                        ServerOptions(
+                            capabilities = ServerCapabilities(
+                                tools = ServerCapabilities.Tools(null),
+                                logging = EmptyJsonObject,
+                            ),
+                        ),
+                    ).apply {
+                        addTool(
+                            name = "flood",
+                            description = "emits many notifications",
+                            inputSchema = ToolSchema(properties = EmptyJsonObject, required = null),
+                        ) {
+                            repeat(burst) { i ->
+                                sendLoggingMessage(
+                                    LoggingMessageNotification(
+                                        LoggingMessageNotificationParams(
+                                            level = LoggingLevel.Warning,
+                                            data = JsonPrimitive("n-$i"),
+                                        ),
+                                    ),
+                                )
+                            }
+                            CallToolResult(content = listOf(TextContent("flooded")))
+                        }
+                    }
+                }
+            }.start(wait = false)
+
+            val client = HttpClient(ClientCIO)
+            try {
+                val port = server.engine.resolvedConnectors().first().port
+                client.preparePost("http://localhost:$port/mcp") {
+                    header(HttpHeaders.Host, "localhost")
+                    header(HttpHeaders.Accept, "${ContentType.Application.Json}, ${ContentType.Text.EventStream}")
+                    header("MCP-Protocol-Version", LATEST_MODERN_VERSION)
+                    header("Mcp-Method", "tools/call")
+                    header("Mcp-Name", "flood")
+                    contentType(ContentType.Application.Json)
+                    setBody(callTool("flood"))
+                }.execute { response ->
+                    val body = response.bodyAsText()
+                    val delivered = (0 until burst).count { body.contains("\"n-$it\"") }
+                    delivered shouldBe burst
+                    body shouldContain "flooded"
+                }
+            } finally {
+                client.close()
+                server.stop(1000, 2000)
+            }
+        }
+
+    @Test
+    fun `a request-scoped stream carries none of the server's broadcast notifications`(): Unit =
+        runBlocking(Dispatchers.IO) {
+            val started = CompletableDeferred<Unit>()
+            val proceed = CompletableDeferred<Unit>()
+            val mcpServer = Server(
+                Implementation("stream-server", "1.0"),
+                ServerOptions(
+                    capabilities = ServerCapabilities(
+                        tools = ServerCapabilities.Tools(listChanged = true),
+                        logging = EmptyJsonObject,
+                    ),
+                ),
+            ).apply {
+                addTool(
+                    name = "wait",
+                    description = "waits, then answers",
+                    inputSchema = ToolSchema(properties = EmptyJsonObject, required = null),
+                ) {
+                    started.complete(Unit)
+                    proceed.await()
+                    sendLoggingMessage(
+                        LoggingMessageNotification(
+                            LoggingMessageNotificationParams(level = LoggingLevel.Warning, data = JsonPrimitive("own")),
+                        ),
+                    )
+                    CallToolResult(content = listOf(TextContent("answered")))
+                }
+            }
+            val server = embeddedServer(CIO, port = 0) { mcpStatelessStreamableHttp { mcpServer } }.start(wait = false)
+
+            val client = HttpClient(ClientCIO)
+            try {
+                val port = server.engine.resolvedConnectors().first().port
+                // Broadcast a catalogue change while the request is parked, before it has emitted
+                // anything: a subscribed session would stream it (and commit SSE early); a
+                // request-scoped one must not. Runs off the request coroutine so the parked handler
+                // is what gates it, not the response.
+                launch {
+                    started.await()
+                    mcpServer.addTool(
+                        name = "added-mid-flight",
+                        description = "announces a change to every subscribed session",
+                        inputSchema = ToolSchema(properties = EmptyJsonObject, required = null),
+                    ) { error("registered only to broadcast") }
+                    proceed.complete(Unit)
+                }
+                client.preparePost("http://localhost:$port/mcp") {
+                    header(HttpHeaders.Host, "localhost")
+                    header(HttpHeaders.Accept, "${ContentType.Application.Json}, ${ContentType.Text.EventStream}")
+                    header("MCP-Protocol-Version", LATEST_MODERN_VERSION)
+                    header("Mcp-Method", "tools/call")
+                    header("Mcp-Name", "wait")
+                    contentType(ContentType.Application.Json)
+                    setBody(callTool("wait"))
+                }.execute { response ->
+                    val body = response.bodyAsText()
+                    body shouldContain "answered"
+                    body shouldContain "\"own\""
+                    (body.contains("list_changed")) shouldBe false
+                }
+            } finally {
+                client.close()
+                server.stop(1000, 2000)
+            }
+        }
+
+    private fun callEcho(): String = callTool("echo")
+
+    private fun callTool(name: String): String = """
         {"jsonrpc":"2.0","id":1,"method":"tools/call",
-         "params":{"name":"echo","arguments":{},
+         "params":{"name":"$name","arguments":{},
                    "_meta":{"io.modelcontextprotocol/protocolVersion":"$LATEST_MODERN_VERSION",
                             "io.modelcontextprotocol/clientCapabilities":{},
                             "io.modelcontextprotocol/logLevel":"warning"}}}

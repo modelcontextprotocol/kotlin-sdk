@@ -369,10 +369,13 @@ class ClientTest {
     fun `should reject elicitation complete when client supports only form mode`() = runTest {
         val session = connect(newClient(ClientCapabilities(elicitation = ClientCapabilities.Elicitation())))
 
-        shouldThrow<IllegalArgumentException> {
+        val exception = shouldThrow<McpException> {
             session.sendElicitationComplete(elicitationComplete("id-1"))
-        }.message shouldBe
-            "Client did not advertise elicitation.url capability; cannot send an elicitation completion notification."
+        }
+
+        exception.code shouldBe RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY
+        exception.missingCapabilities() shouldBe
+            ClientCapabilities(elicitation = ClientCapabilities.Elicitation(url = EmptyJsonObject))
     }
 
     @Test
