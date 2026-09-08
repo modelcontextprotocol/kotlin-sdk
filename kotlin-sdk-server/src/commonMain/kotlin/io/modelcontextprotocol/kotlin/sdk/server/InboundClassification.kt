@@ -18,6 +18,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.RequestMeta
 import io.modelcontextprotocol.kotlin.sdk.types.UnsupportedProtocolVersionData
 import io.modelcontextprotocol.kotlin.sdk.types.decodeMcpHeaderValue
 import io.modelcontextprotocol.kotlin.sdk.types.validateEnvelope
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -57,15 +58,18 @@ internal sealed interface InboundOutcome {
 /**
  * Classifies one inbound HTTP body, body-primary, and runs the ladder rungs an HTTP entry owns.
  *
- * A body **claims** the request-scoped lifecycle if and only if its `params._meta` carries
- * [PROTOCOL_VERSION_META_KEY]. Nothing else counts as a claim, and no connection state
- * participates, so one endpoint can serve both lifecycles interleaved.
+ * An id-bearing body **claims** the request-scoped lifecycle if and only if its `params._meta`
+ * carries [PROTOCOL_VERSION_META_KEY]. Nothing else counts as a claim, and no connection state
+ * participates, so one endpoint can serve both lifecycles interleaved. An id-less body — a
+ * notification — carries no claim at this revision and is routed by the version header alone;
+ * see [classifyNotification].
  *
  * The rungs, in precedence order, each answering the earliest failure:
  *
- * 1. **jsonrpc-shape** — a batch containing a claim, and a body that is neither request nor
- *    notification, are refused [RPCError.ErrorCode.INVALID_REQUEST]. An all-handshake batch and a
- *    posted response stay handshake traffic.
+ * 1. **jsonrpc-shape** — a batch containing a claim, a body that is neither request nor
+ *    notification, and an `id` that is not a string or an integer are refused
+ *    [RPCError.ErrorCode.INVALID_REQUEST]. An all-handshake batch and a posted response stay
+ *    handshake traffic.
  * 2. **headers** — on requests only, [MCP_PROTOCOL_VERSION_HEADER] and [MCP_METHOD_HEADER] must be
  *    present and agree with the body, and [MCP_NAME_HEADER] must agree for the methods that mirror
  *    a param, else [RPCError.ErrorCode.HEADER_MISMATCH]. Ahead of the version rung, so a client
@@ -106,7 +110,12 @@ internal fun classifyInboundRequest(body: JsonElement, headers: Headers): Inboun
         )
     }
 
-    val meta = claimOf(body) ?: return noClaim(body, headers)
+    val idElement = body["id"]
+    val id = idElement?.toRequestIdOrNull()
+    if (idElement != null && id == null) return invalidIdReject()
+    if (id == null) return classifyNotification(body, headers)
+
+    val meta = claimOf(body) ?: return noClaim(id, body, headers)
     val method = body.stringOf("method")
         // A claim on something that is not a request or a notification: no method to route it by.
         ?: return InboundOutcome.Reject(
@@ -117,12 +126,9 @@ internal fun classifyInboundRequest(body: JsonElement, headers: Headers): Inboun
             status = HttpStatusCode.BadRequest,
             id = null,
         )
-    val id = body["id"]?.let { McpJson.decodeFromJsonElement(RequestId.serializer(), it) }
 
-    if (id != null) {
-        headerMismatch(body, method, meta, headers)?.let {
-            return InboundOutcome.Reject(it, HttpStatusCode.BadRequest, id)
-        }
+    headerMismatch(body, method, meta, headers)?.let {
+        return InboundOutcome.Reject(it, HttpStatusCode.BadRequest, id)
     }
 
     val issues = validateEnvelope(meta)
@@ -152,22 +158,48 @@ internal fun classifyInboundRequest(body: JsonElement, headers: Headers): Inboun
         )
     }
 
-    return if (id == null) {
-        InboundOutcome.ModernNotification(method)
-    } else {
-        InboundOutcome.Modern(method = method, id = id, protocolVersion = claimed)
-    }
+    return InboundOutcome.Modern(method = method, id = id, protocolVersion = claimed)
 }
 
 /**
- * What a body making no claim is.
+ * An id-less body, routed by [MCP_PROTOCOL_VERSION_HEADER] alone: notifications carry no body
+ * claim at this revision, so the header is determinative for them (as in the reference SDKs). A
+ * served modern version routes the notification to the `202` acknowledgement; anything else stays
+ * handshake traffic. Header presence is not required for notifications, but a present
+ * [MCP_METHOD_HEADER] must still agree with the body.
+ */
+private fun classifyNotification(body: JsonObject, headers: Headers): InboundOutcome {
+    val version = headers[MCP_PROTOCOL_VERSION_HEADER]
+    if (version == null || version !in MODERN_PROTOCOL_VERSIONS) return InboundOutcome.Legacy("notification")
+    val method = body.stringOf("method")
+        ?: return InboundOutcome.Reject(
+            error = RPCError(
+                code = RPCError.ErrorCode.INVALID_REQUEST,
+                message = "Body must be a single JSON-RPC request or notification object",
+            ),
+            status = HttpStatusCode.BadRequest,
+            id = null,
+        )
+    val methodHeader = headers[MCP_METHOD_HEADER]
+    if (methodHeader != null && methodHeader != method) {
+        return InboundOutcome.Reject(
+            error = mismatch("$MCP_METHOD_HEADER does not match the notification body's method"),
+            status = HttpStatusCode.BadRequest,
+            id = null,
+        )
+    }
+    return InboundOutcome.ModernNotification(method)
+}
+
+/**
+ * What an id-bearing body making no claim is.
  *
  * Handshake traffic, unless [MCP_PROTOCOL_VERSION_HEADER] names a request-scoped revision. The
  * header never upgrades a classification, so that case is a rejection naming the envelope keys the
  * body is missing, rather than a route into request-scoped serving.
  */
 @OptIn(ExperimentalMcpApi::class, InternalMcpApi::class)
-private fun noClaim(body: JsonObject, headers: Headers): InboundOutcome {
+private fun noClaim(id: RequestId, body: JsonObject, headers: Headers): InboundOutcome {
     val version = headers[MCP_PROTOCOL_VERSION_HEADER]
     if (version == null || version !in MODERN_PROTOCOL_VERSIONS) return InboundOutcome.Legacy("no-claim")
     val present = (body["params"] as? JsonObject)?.get("_meta") as? JsonObject
@@ -179,9 +211,29 @@ private fun noClaim(body: JsonObject, headers: Headers): InboundOutcome {
             message = "Invalid request envelope: " + missing.joinToString(", ") { "$it missing" },
         ),
         status = HttpStatusCode.BadRequest,
-        id = body["id"]?.let { McpJson.decodeFromJsonElement(RequestId.serializer(), it) },
+        id = id,
     )
 }
+
+/**
+ * [this] as a [RequestId], or `null` for any shape the JSON-RPC id grammar does not admit —
+ * `null`, booleans, fractional numbers, objects, arrays. The classifier answers those `-32600`
+ * rather than letting the serializer's exception escape the route as an HTTP 500.
+ */
+private fun JsonElement.toRequestIdOrNull(): RequestId? = try {
+    McpJson.decodeFromJsonElement(RequestId.serializer(), this)
+} catch (_: SerializationException) {
+    null
+}
+
+private fun invalidIdReject(): InboundOutcome.Reject = InboundOutcome.Reject(
+    error = RPCError(
+        code = RPCError.ErrorCode.INVALID_REQUEST,
+        message = "Invalid Request: id must be a string or an integer",
+    ),
+    status = HttpStatusCode.BadRequest,
+    id = null,
+)
 
 /** The request metadata carrying a request-scoped claim, or `null` when this body makes none. */
 @OptIn(ExperimentalMcpApi::class)

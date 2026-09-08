@@ -5,10 +5,14 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
+import io.ktor.server.http.HttpRequestCloseHandlerKey
+import io.ktor.server.request.ApplicationRequest
+import io.ktor.server.request.httpVersion
 import io.ktor.server.response.header
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondBytesWriter
 import io.ktor.server.response.respondText
+import io.ktor.utils.io.InternalAPI
 import io.ktor.utils.io.writeString
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
@@ -19,13 +23,19 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.concurrent.Volatile
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -42,19 +52,74 @@ private val SSE_PING_INTERVAL: Duration = 15.seconds
 /** Serves one request-scoped POST end to end, and answers with JSON or SSE as the handler dictates. */
 internal suspend fun ApplicationCall.serveModernRequest(request: JSONRPCRequest, server: Server) {
     val transport = SingleExchangeTransport(request.id)
-    val session = server.createSession(transport)
+    // A request-scoped session serves one exchange and emits nothing that is not its own answer, so
+    // it stays off the feature-notification bus (§10: notifications on a response stream must relate
+    // to its originating request).
+    val session = server.createSession(transport, subscribeToFeatureNotifications = false)
+    val clientGone = DisconnectSignal()
     try {
         coroutineScope {
+            val exchange = this
+            // Closing the response stream is this wire's only cancellation channel, and nothing is
+            // written to the socket during the deferral window — the engine's close signal is the
+            // one place a disconnect shows up before a write fails.
+            onClientDisconnect {
+                clientGone.fired = true
+                exchange.cancel("The client closed the response stream")
+            }
             // Delivery blocks until the handler answers, so it gets its own coroutine: the deferral
             // below has to watch the handler rather than wait behind it. Closing the response
             // cancels this scope, which cancels the handler — on this wire that *is* cancellation.
             val delivery = launch { transport.deliver(request) }
             respondModern(transport, delivery)
         }
+    } catch (e: CancellationException) {
+        // Only the disconnect watch's own cancellation ends here; server shutdown and any outer
+        // cancellation must keep unwinding.
+        if (!clientGone.fired) throw e
+        logger.debug { "Abandoned exchange ${request.id}: the client closed the response stream" }
     } finally {
         // One request, one session: nothing here outlives the exchange, and the revision forbids
-        // treating anything about it as continuity for the next one.
-        session.close()
+        // treating anything about it as continuity for the next one. NonCancellable because this
+        // cleanup is what un-registers the session, disconnect or not.
+        withContext(NonCancellable) { session.close() }
+    }
+}
+
+/**
+ * Runs [block] when the engine learns the client closed this call's connection mid-request.
+ *
+ * The signal rides the per-call callback Ktor's `HttpRequestLifecycle` plugin consumes. CIO also
+ * fires it — falsely, for this purpose — the moment it knows a request is the last one on its
+ * connection, so an `HTTP/1.0` or `Connection: close` request would read as an instant disconnect;
+ * those requests keep write-failure detection instead, which is what every request got before this
+ * watch existed. So do engines that never fire the callback (Jetty, the test host).
+ */
+@OptIn(InternalAPI::class)
+private fun ApplicationCall.onClientDisconnect(block: () -> Unit) {
+    if (request.closesConnection()) return
+    val previous = attributes.getOrNull(HttpRequestCloseHandlerKey)
+    attributes.put(HttpRequestCloseHandlerKey) {
+        previous?.invoke()
+        block()
+    }
+}
+
+/** Set from the engine's close callback, read after cancellation — visibility, not contention. */
+private class DisconnectSignal {
+    @Volatile
+    var fired: Boolean = false
+}
+
+/** Whether this request itself asks the server to close the connection after answering. */
+private fun ApplicationRequest.closesConnection(): Boolean {
+    val options = headers.getAll(HttpHeaders.Connection).orEmpty()
+        .flatMap { it.split(',') }
+        .map { it.trim().lowercase() }
+    return when {
+        "keep-alive" in options -> false
+        "close" in options -> true
+        else -> httpVersion != "HTTP/1.1"
     }
 }
 
@@ -217,7 +282,12 @@ private class SingleExchangeTransport(val requestId: RequestId) : AbstractTransp
             outcome.complete(message)
             return
         }
-        if (notifications.trySend(message).isFailure) {
+        try {
+            // Suspends rather than drops when the buffer fills: on this wire a notification the
+            // handler emitted is part of the response, so backpressure into the handler is correct
+            // where silent loss is not. Only a genuinely closed stream drops, and says so honestly.
+            notifications.send(message)
+        } catch (_: ClosedSendChannelException) {
             logger.debug { "Dropped a notification: the response stream is closed" }
         }
     }

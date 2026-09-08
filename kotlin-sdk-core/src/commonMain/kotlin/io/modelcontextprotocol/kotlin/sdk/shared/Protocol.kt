@@ -233,7 +233,11 @@ public class RequestHandlerExtra internal constructor(
      */
     public val protocolVersion: String = envelope?.protocolVersion
         ?: handshakeProtocolVersion.takeIf { era == ProtocolEra.Legacy }
-        ?: DEFAULT_NEGOTIATED_PROTOCOL_VERSION
+        // A request-scoped request whose envelope went missing must still read as request-scoped:
+        // a handshake-era string here would widen allowedLogLevels from "emit nothing" to every
+        // level. Unreachable while the admission gate and the envelope reader agree (§4.2), which
+        // is exactly the agreement this guards against losing.
+        ?: if (era == ProtocolEra.Modern) LATEST_MODERN_VERSION else DEFAULT_NEGOTIATED_PROTOCOL_VERSION
 
     /**
      * The capabilities the client declared for this request.
@@ -993,10 +997,24 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         if (response != null) {
             val decoded = try {
                 decodeInboundResponse(response)
+            } catch (cause: CancellationException) {
+                throw cause
             } catch (cause: McpException) {
                 // A result this SDK cannot interpret is not an answer: failing the caller beats
                 // handing it a partial result as though it were the whole one.
                 handler(null, cause)
+                return
+            } catch (cause: Exception) {
+                // The handler is already off the map, so anything escaping here would leave the
+                // caller waiting out its full timeout with no answer at all.
+                handler(
+                    null,
+                    McpException(
+                        code = RPCError.ErrorCode.INVALID_PARAMS,
+                        message = "Failed to decode the result: ${cause.message}",
+                        cause = cause,
+                    ),
+                )
                 return
             }
             handler(decoded, null)

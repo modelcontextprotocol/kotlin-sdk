@@ -235,8 +235,18 @@ public open class Server(
      * @param transport The transport layer to connect the session with.
      * @return The initialized and connected server session.
      */
+    public suspend fun createSession(transport: Transport): ServerSession =
+        createSession(transport, subscribeToFeatureNotifications = true)
+
+    /**
+     * @param subscribeToFeatureNotifications whether the session joins the shared bus that fans
+     *   `list_changed` / `resources/updated` out to every connection. A request-scoped session must
+     *   not: the request-scoped wire requires every notification on a response stream to relate to
+     *   its originating request, and one arriving unrelated would also commit the SSE stream early
+     *   and lock its status. Such a session is unsubscribed and emits none.
+     */
     @OptIn(ExperimentalMcpApi::class)
-    public suspend fun createSession(transport: Transport): ServerSession {
+    internal suspend fun createSession(transport: Transport, subscribeToFeatureNotifications: Boolean): ServerSession {
         val instructions = instructionsProvider?.invoke()
         val session = ServerSession(serverInfo, options, instructions)
 
@@ -300,7 +310,7 @@ public open class Server(
         // Register cleanup handler to remove session from list when it closes
         session.onClose {
             logger.debug { "Removing closed session from active sessions list" }
-            notificationService.unsubscribeSession(session)
+            if (subscribeToFeatureNotifications) notificationService.unsubscribeSession(session)
             sessionRegistry.removeSession(session.sessionId)
         }
 
@@ -308,7 +318,7 @@ public open class Server(
         session.connect(transport)
         logger.debug { "Server session successfully connected to transport" }
         sessionRegistry.addSession(session)
-        notificationService.subscribeSession(session)
+        if (subscribeToFeatureNotifications) notificationService.subscribeSession(session)
 
         _onConnect()
         return session

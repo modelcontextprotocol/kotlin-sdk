@@ -151,6 +151,16 @@ class WireTest {
     }
 
     @Test
+    fun `a local-only error code should never reach the wire`() {
+        // A timeout or connection failure is this side's own verdict on its own nested call; a peer
+        // reading it as the counterparty's answer would be misled.
+        ProtocolEra.entries.forEach { era ->
+            outboundErrorCode(era, RPCError.ErrorCode.REQUEST_TIMEOUT) shouldBe RPCError.ErrorCode.INTERNAL_ERROR
+            outboundErrorCode(era, RPCError.ErrorCode.CONNECTION_CLOSED) shouldBe RPCError.ErrorCode.INTERNAL_ERROR
+        }
+    }
+
+    @Test
     fun `every other error code should pass through unchanged`() {
         val untouched = listOf(
             RPCError.ErrorCode.INVALID_PARAMS,
@@ -159,7 +169,6 @@ class WireTest {
             RPCError.ErrorCode.HEADER_MISMATCH,
             RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY,
             RPCError.ErrorCode.UNSUPPORTED_PROTOCOL_VERSION,
-            RPCError.ErrorCode.CONNECTION_CLOSED,
         )
 
         ProtocolEra.entries.forEach { era ->

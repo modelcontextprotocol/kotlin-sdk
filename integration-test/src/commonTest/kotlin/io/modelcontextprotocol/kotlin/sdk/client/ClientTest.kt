@@ -1479,12 +1479,16 @@ class ClientTest {
             ElicitResult(action = ElicitResult.Action.Accept)
         }
 
-        val exception = assertFailsWith<IllegalArgumentException> {
+        val exception = assertFailsWith<McpException> {
             serverSession.sendElicitationComplete(
                 ElicitationCompleteNotification(ElicitationCompleteNotificationParams(elicitationId = "id-1")),
             )
         }
-        assertTrue(exception.message!!.contains("elicitation.url"))
+        assertEquals(RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY, exception.code)
+        assertEquals(
+            ClientCapabilities(elicitation = ClientCapabilities.Elicitation(url = EmptyJsonObject)),
+            exception.missingCapabilities(),
+        )
 
         client.close()
     }

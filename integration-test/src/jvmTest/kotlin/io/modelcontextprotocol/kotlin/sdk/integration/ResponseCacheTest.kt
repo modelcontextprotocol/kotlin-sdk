@@ -16,6 +16,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.ListToolsRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult
 import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.PaginatedRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
 import io.modelcontextprotocol.kotlin.sdk.types.ToolListChangedNotification
@@ -99,6 +100,60 @@ class ResponseCacheTest {
 
         fixture.listCalls.get() shouldBe 2
         fixture.client.close()
+    }
+
+    @Test
+    fun `a continuation page is never served from or filed under the cursorless entry`() = runBlocking {
+        val listCalls = AtomicInteger()
+        val server = Server(
+            serverInfo = Implementation("cache-server", "1.0"),
+            options = ServerOptions(
+                capabilities = ServerCapabilities(tools = ServerCapabilities.Tools(listChanged = true)),
+            ),
+        )
+        val client = Client(
+            clientInfo = Implementation("cache-client", "1.0"),
+            options = ClientOptions(
+                versionNegotiation = VersionNegotiationMode.Auto,
+                responseCache = InMemoryResponseCacheStore(),
+            ),
+        )
+        val (clientTransport, serverTransport) = ChannelTransport.createLinkedPair()
+        runBlocking {
+            launch {
+                val session = server.createSession(serverTransport)
+                session.setRequestHandler<ListToolsRequest>(Method.Defined.ToolsList) { request, _ ->
+                    listCalls.incrementAndGet()
+                    // The first page names a cursor; a page-2 result is deliberately distinguishable.
+                    val page = if (request.params?.cursor == null) "page-1" else "page-2"
+                    ListToolsResult(
+                        tools = listOf(
+                            Tool(
+                                name = page,
+                                description = "the $page tool",
+                                inputSchema = ToolSchema(properties = EmptyJsonObject, required = null),
+                            ),
+                        ),
+                        nextCursor = "p2".takeIf { request.params?.cursor == null },
+                        ttlMs = 60_000,
+                        cacheScope = CacheScope.Private,
+                    )
+                }
+            }
+            launch { client.connect(clientTransport) }
+        }
+
+        client.listTools() // page 1, cached under the cursorless key
+        val secondPage = client.listTools(ListToolsRequest(PaginatedRequestParams(cursor = "p2")))
+        val secondPageAgain = client.listTools(ListToolsRequest(PaginatedRequestParams(cursor = "p2")))
+        val firstPageAgain = client.listTools() // must still be the cached page 1, not page 2
+
+        // Every cursor-bearing call round-trips; only the first cursorless call did.
+        listCalls.get() shouldBe 3
+        secondPage.tools.single().name shouldBe "page-2"
+        secondPageAgain.tools.single().name shouldBe "page-2"
+        firstPageAgain.tools.single().name shouldBe "page-1"
+        client.close()
     }
 
     @Test

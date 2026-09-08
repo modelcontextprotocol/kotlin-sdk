@@ -466,16 +466,22 @@ public open class Client(private val clientInfo: Implementation, options: Client
      *
      * Only the request-scoped lifecycle caches, being the only one whose results carry caching
      * directives. A result that is not [CacheableResult] is passed through untouched.
+     *
+     * @param cacheable `false` for a continuation page: a cursor makes the result a slice, not the
+     *   listing the cursor-less key names, so serving it from — or filing it under — that key would
+     *   return one page as the whole list. Such calls neither read nor write the cache.
      */
     @OptIn(ExperimentalMcpApi::class, ExperimentalTime::class)
     private suspend fun <T : RequestResult> cached(
         method: String,
         paramsKey: String,
         mode: CacheMode,
+        cacheable: Boolean = true,
         fetch: suspend () -> T,
     ): T {
         val store = responseCache
         if (store == null ||
+            !cacheable ||
             mode == CacheMode.Bypass ||
             _protocolVersion.value?.let(::isModernProtocolVersion) != true
         ) {
@@ -714,6 +720,8 @@ public open class Client(private val clientInfo: Implementation, options: Client
      *
      * @param request A request object for listing prompts (usually empty).
      * @param options Optional request options.
+     * @param cacheMode How the response cache participates; effective only on the request-scoped
+     *   lifecycle with [ClientOptions.responseCache] set, and never for a request carrying a cursor.
      * @return The list of available prompts, or `null` if none.
      * @throws IllegalStateException If the server does not support prompts.
      */
@@ -721,13 +729,17 @@ public open class Client(private val clientInfo: Implementation, options: Client
         request: ListPromptsRequest = ListPromptsRequest(),
         options: RequestOptions? = null,
         cacheMode: CacheMode = CacheMode.Use,
-    ): ListPromptsResult = cached(request.method.value, "", cacheMode) { request(request, options) }
+    ): ListPromptsResult = cached(request.method.value, "", cacheMode, cacheable = request.params?.cursor == null) {
+        request(request, options)
+    }
 
     /**
      * Lists all available resources from the server.
      *
      * @param request A request object for listing resources (usually empty).
      * @param options Optional request options.
+     * @param cacheMode How the response cache participates; effective only on the request-scoped
+     *   lifecycle with [ClientOptions.responseCache] set, and never for a request carrying a cursor.
      * @return The list of resources, or `null` if none.
      * @throws IllegalStateException If the server does not support resources.
      */
@@ -735,13 +747,17 @@ public open class Client(private val clientInfo: Implementation, options: Client
         request: ListResourcesRequest = ListResourcesRequest(),
         options: RequestOptions? = null,
         cacheMode: CacheMode = CacheMode.Use,
-    ): ListResourcesResult = cached(request.method.value, "", cacheMode) { request(request, options) }
+    ): ListResourcesResult = cached(request.method.value, "", cacheMode, cacheable = request.params?.cursor == null) {
+        request(request, options)
+    }
 
     /**
      * Lists resource templates available on the server.
      *
      * @param request The request object for listing resource templates.
      * @param options Optional request options.
+     * @param cacheMode How the response cache participates; effective only on the request-scoped
+     *   lifecycle with [ClientOptions.responseCache] set, and never for a request carrying a cursor.
      * @return The list of resource templates, or `null` if none.
      * @throws IllegalStateException If the server does not support resources.
      */
@@ -749,13 +765,18 @@ public open class Client(private val clientInfo: Implementation, options: Client
         request: ListResourceTemplatesRequest,
         options: RequestOptions? = null,
         cacheMode: CacheMode = CacheMode.Use,
-    ): ListResourceTemplatesResult = cached(request.method.value, "", cacheMode) { request(request, options) }
+    ): ListResourceTemplatesResult =
+        cached(request.method.value, "", cacheMode, cacheable = request.params?.cursor == null) {
+            request(request, options)
+        }
 
     /**
      * Reads a resource from the server by its URI.
      *
      * @param request The request object containing the resource URI.
      * @param options Optional request options.
+     * @param cacheMode How the response cache participates; effective only on the request-scoped
+     *   lifecycle with [ClientOptions.responseCache] set.
      * @return The resource content, or `null` if the resource is not found.
      * @throws IllegalStateException If the server does not support resources.
      */
@@ -835,6 +856,8 @@ public open class Client(private val clientInfo: Implementation, options: Client
      *
      * @param request A request object for listing tools (usually empty).
      * @param options Optional request options.
+     * @param cacheMode How the response cache participates; effective only on the request-scoped
+     *   lifecycle with [ClientOptions.responseCache] set, and never for a request carrying a cursor.
      * @return The list of available tools, or `null` if none.
      * @throws IllegalStateException If the server does not support tools.
      */
@@ -842,7 +865,9 @@ public open class Client(private val clientInfo: Implementation, options: Client
         request: ListToolsRequest = ListToolsRequest(),
         options: RequestOptions? = null,
         cacheMode: CacheMode = CacheMode.Use,
-    ): ListToolsResult = cached(request.method.value, "", cacheMode) { request(request, options) }
+    ): ListToolsResult = cached(request.method.value, "", cacheMode, cacheable = request.params?.cursor == null) {
+        request(request, options)
+    }
 
     /**
      * Registers a single root.
