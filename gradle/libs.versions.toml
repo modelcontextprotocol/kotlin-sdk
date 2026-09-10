@@ -13,7 +13,7 @@ netty = "4.2.16.Final"
 
 # libraries version
 awaitility = "4.3.0"
-collections-immutable = "0.5.1"
+collections-immutable = "0.5.2"
 coroutines = "1.11.0"
 kotest = "6.2.4"
 kotlinx-io = "0.9.1"
