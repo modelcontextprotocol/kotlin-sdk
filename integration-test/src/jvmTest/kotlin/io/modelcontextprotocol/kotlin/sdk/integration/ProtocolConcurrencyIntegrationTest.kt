@@ -24,13 +24,15 @@ import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
-import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.LATEST_HANDSHAKE_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsResult
 import io.modelcontextprotocol.kotlin.sdk.types.ListToolsRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult
+import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
+import io.modelcontextprotocol.kotlin.sdk.types.RequestResult
 import io.modelcontextprotocol.kotlin.sdk.types.Role
 import io.modelcontextprotocol.kotlin.sdk.types.SamplingMessage
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
@@ -40,6 +42,8 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.encodeToJsonElement
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicReference
@@ -258,7 +262,7 @@ class ProtocolConcurrencyIntegrationTest {
 
             val initRequest = InitializeRequest(
                 InitializeRequestParams(
-                    protocolVersion = LATEST_PROTOCOL_VERSION,
+                    protocolVersion = LATEST_HANDSHAKE_VERSION,
                     capabilities = ClientCapabilities(),
                     clientInfo = Implementation(name = "raw-client", version = "1.0"),
                 ),
@@ -290,7 +294,10 @@ class ProtocolConcurrencyIntegrationTest {
             clientTransport.send(toolCallRequest)
 
             val toolCallResponse = withTimeout(10.seconds) { toolCallAnswered.await() } as JSONRPCResponse
-            val text = (toolCallResponse.result as CallToolResult).content.filterIsInstance<TextContent>().single().text
+            val toolCallResult = McpJson.decodeFromJsonElement<RequestResult>(
+                McpJson.encodeToJsonElement(toolCallResponse.result),
+            )
+            val text = (toolCallResult as CallToolResult).content.filterIsInstance<TextContent>().single().text
             // The handler echoed its request id, proving currentRequestHandlerExtra() was available.
             text shouldBe toolCallRequest.id.asText()
         }

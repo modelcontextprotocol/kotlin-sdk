@@ -2,6 +2,7 @@ package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.kotest.assertions.json.shouldEqualJson
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlin.test.Test
@@ -38,9 +39,9 @@ class DiscoveryTest {
 
         val discover = assertIs<DiscoverRequest>(request)
         assertEquals(Method.Defined.ServerDiscover, discover.method)
-        assertEquals("2026-07-28", discover.meta.protocolVersion)
-        assertEquals("test-client", discover.meta.clientInfo?.name)
-        assertEquals(ClientCapabilities(), discover.meta.clientCapabilities)
+        assertEquals("2026-07-28", discover.params.meta.toEnvelope().protocolVersion)
+        assertEquals("test-client", discover.params.meta.toEnvelope().clientInfo?.name)
+        assertEquals(ClientCapabilities(), discover.params.meta.toEnvelope().clientCapabilities)
     }
 
     @Test
@@ -61,10 +62,10 @@ class DiscoveryTest {
         )
 
         val discover = assertIs<DiscoverRequest>(request)
-        assertEquals("2026-07-28", discover.meta.protocolVersion)
-        assertEquals(ClientCapabilities(), discover.meta.clientCapabilities)
-        assertNull(discover.meta.clientInfo)
-        assertNotNull(discover.meta["com.example/traceId"])
+        assertEquals("2026-07-28", discover.params.meta.toEnvelope().protocolVersion)
+        assertEquals(ClientCapabilities(), discover.params.meta.toEnvelope().clientCapabilities)
+        assertNull(discover.params.meta.toEnvelope().clientInfo)
+        assertNotNull(discover.params.meta["com.example/traceId"])
         McpJson.encodeToString<Request>(discover) shouldEqualJson """
             {
               "method": "server/discover",
@@ -80,30 +81,40 @@ class DiscoveryTest {
     }
 
     @Test
-    fun `should reject discovery requests without required request metadata`() {
-        val invalidParams = listOf(
-            "{}" to "_meta",
-            """{"_meta": {}}""" to RequestMetaKeys.PROTOCOL_VERSION,
+    fun `should reject discovery requests without request metadata`() {
+        val failure = assertFails {
+            McpJson.decodeFromString<Request>("""{"method": "server/discover", "params": {}}""")
+        }
+
+        assertTrue(
+            failure.message.orEmpty().contains("_meta"),
+            "Expected failure to identify the missing _meta, but was: $failure",
+        )
+    }
+
+    @Test
+    fun `should decode a discovery request whose envelope is incomplete and report it on read`() {
+        val incompleteEnvelopes = listOf(
+            "{}" to PROTOCOL_VERSION_META_KEY,
             """
                 {
-                  "_meta": {
-                    "${RequestMetaKeys.PROTOCOL_VERSION}": "2026-07-28",
-                    "${RequestMetaKeys.CLIENT_INFO}": {
-                      "name": "test-client",
-                      "version": "1.0.0"
-                    }
+                  "$PROTOCOL_VERSION_META_KEY": "2026-07-28",
+                  "$CLIENT_INFO_META_KEY": {
+                    "name": "test-client",
+                    "version": "1.0.0"
                   }
                 }
-            """.trimIndent() to RequestMetaKeys.CLIENT_CAPABILITIES,
+            """.trimIndent() to CLIENT_CAPABILITIES_META_KEY,
         )
 
-        invalidParams.forEach { (params, missingField) ->
-            val failure = assertFails {
-                McpJson.decodeFromString<Request>(
-                    """{"method": "server/discover", "params": $params}""",
-                )
-            }
+        incompleteEnvelopes.forEach { (meta, missingField) ->
+            val request = McpJson.decodeFromString<Request>(
+                """{"method": "server/discover", "params": {"_meta": $meta}}""",
+            )
 
+            val discover = assertIs<DiscoverRequest>(request)
+            assertNull(discover.params.meta.toEnvelopeOrNull())
+            val failure = assertFailsWith<SerializationException> { discover.params.meta.toEnvelope() }
             assertTrue(
                 failure.message.orEmpty().contains(missingField),
                 "Expected failure to identify missing field $missingField, but was: $failure",
@@ -150,7 +161,7 @@ class DiscoveryTest {
                   "com.example/source": "edge"
                 }
                 """.trimIndent(),
-            ).jsonObject,
+            ).jsonObject.let(::ResultMeta),
         )
 
         McpJson.encodeToString<ServerResult>(result) shouldEqualJson """
@@ -176,26 +187,11 @@ class DiscoveryTest {
     }
 
     @Test
-    fun `should encode required defaults independently of McpJson`() {
-        val result = DiscoverResult(
-            supportedVersions = listOf("2026-07-28"),
-            capabilities = ServerCapabilities(),
-        )
-
-        Json.encodeToString(result) shouldEqualJson """
-            {
-              "supportedVersions": ["2026-07-28"],
-              "capabilities": {},
-              "resultType": "complete",
-              "ttlMs": 0,
-              "cacheScope": "private"
-            }
-        """.trimIndent()
-    }
-
-    @Test
-    fun `should reject discovery results without required cache fields`() {
-        val invalidResults = listOf(
+    fun `should read absent cache fields as the conservative defaults`() {
+        // The cache hints and resultType carry construction defaults, so a receiver has to tolerate
+        // a peer that omits them rather than rejecting the whole result: the default reading —
+        // immediately stale, private, complete — is the safe one either way.
+        val terse = listOf(
             """
             {
               "supportedVersions": ["2026-07-28"],
@@ -210,28 +206,21 @@ class DiscoveryTest {
               "ttlMs": 0
             }
             """.trimIndent(),
-        )
-
-        invalidResults.forEach { wire ->
-            assertFails { McpJson.decodeFromString<DiscoverResult>(wire) }
-            assertFails { McpJson.decodeFromString<ServerResult>(wire) }
-        }
-    }
-
-    @Test
-    fun `should use complete when a discovery result omits resultType`() {
-        val result = McpJson.decodeFromString<ServerResult>(
             """
             {
               "supportedVersions": ["2026-07-28"],
-              "capabilities": {},
-              "ttlMs": 0,
-              "cacheScope": "private"
+              "capabilities": {}
             }
             """.trimIndent(),
         )
 
-        assertEquals(COMPLETE_RESULT_TYPE, assertIs<DiscoverResult>(result).resultType)
+        terse.forEach { wire ->
+            val result = assertIs<DiscoverResult>(McpJson.decodeFromString<ServerResult>(wire))
+
+            assertEquals(0, result.ttlMs)
+            assertEquals(CacheScope.Private, result.cacheScope)
+            assertEquals(COMPLETE_RESULT_TYPE, result.resultType)
+        }
     }
 
     @Test

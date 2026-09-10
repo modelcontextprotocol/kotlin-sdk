@@ -119,12 +119,12 @@ class ServerResourceTemplateTest : AbstractServerFeaturesTest() {
     }
 
     @Test
-    fun `readResource should return RESOURCE_NOT_FOUND error when no match`() = runTest {
+    fun `readResource should return INVALID_PARAMS error when no match`() = runTest {
         val exception = assertThrows<McpException> {
             client.readResource(ReadResourceRequest(ReadResourceRequestParams("test://nonexistent/uri")))
         }
 
-        exception.code shouldBe RPCError.ErrorCode.RESOURCE_NOT_FOUND
+        exception.code shouldBe RPCError.ErrorCode.INVALID_PARAMS
     }
 
     @Test

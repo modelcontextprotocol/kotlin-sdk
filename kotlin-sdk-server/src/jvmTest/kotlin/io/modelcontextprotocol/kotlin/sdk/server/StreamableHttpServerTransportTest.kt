@@ -44,13 +44,14 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
-import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.LATEST_HANDSHAKE_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesResult
 import io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
+import io.modelcontextprotocol.kotlin.sdk.types.ResultMeta
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
@@ -519,11 +520,11 @@ class StreamableHttpServerTransportTest {
             tools = listOf(
                 Tool(name = "tool-1", inputSchema = ToolSchema()),
             ),
-            meta = buildJsonObject { put("label", "first") },
+            meta = ResultMeta(buildJsonObject { put("label", "first") }),
         )
         val secondResult = ListResourcesResult(
             resources = emptyList(),
-            meta = buildJsonObject { put("label", "second") },
+            meta = ResultMeta(buildJsonObject { put("label", "second") }),
         )
 
         transport.onMessage { message ->
@@ -1040,7 +1041,7 @@ class StreamableHttpServerTransportTest {
             header(HttpHeaders.Host, "localhost")
             header(HttpHeaders.Accept, ContentType.Text.EventStream.toString())
             header(MCP_SESSION_ID_HEADER, sessionId)
-            header("mcp-protocol-version", LATEST_PROTOCOL_VERSION)
+            header("mcp-protocol-version", LATEST_HANDSHAKE_VERSION)
         }.execute { firstResponse ->
             firstResponse.status shouldBe HttpStatusCode.OK
             firstResponse.bodyAsChannel().readUTF8Line()
@@ -1051,7 +1052,7 @@ class StreamableHttpServerTransportTest {
                 header(HttpHeaders.Host, "localhost")
                 header(HttpHeaders.Accept, ContentType.Text.EventStream.toString())
                 header(MCP_SESSION_ID_HEADER, sessionId)
-                header("mcp-protocol-version", LATEST_PROTOCOL_VERSION)
+                header("mcp-protocol-version", LATEST_HANDSHAKE_VERSION)
             }.execute { secondResponse ->
                 secondResponse.status shouldBe HttpStatusCode.OK
                 secondResponse.headers[MCP_SESSION_ID_HEADER] shouldBe sessionId
@@ -1094,7 +1095,7 @@ class StreamableHttpServerTransportTest {
             header(HttpHeaders.Host, "localhost")
             header(HttpHeaders.Accept, ContentType.Text.EventStream.toString())
             header(MCP_SESSION_ID_HEADER, sessionId)
-            header("mcp-protocol-version", LATEST_PROTOCOL_VERSION)
+            header("mcp-protocol-version", LATEST_HANDSHAKE_VERSION)
         }.execute { response ->
             response.status shouldBe HttpStatusCode.OK
             response.bodyAsChannel().readLine()
@@ -1106,7 +1107,7 @@ class StreamableHttpServerTransportTest {
             header(HttpHeaders.Host, "localhost")
             header(HttpHeaders.Accept, ContentType.Text.EventStream.toString())
             header(MCP_SESSION_ID_HEADER, sessionId)
-            header("mcp-protocol-version", LATEST_PROTOCOL_VERSION)
+            header("mcp-protocol-version", LATEST_HANDSHAKE_VERSION)
         }.execute { response ->
             response.status shouldBe HttpStatusCode.OK
             response.headers[MCP_SESSION_ID_HEADER] shouldBe sessionId
@@ -1147,7 +1148,7 @@ class StreamableHttpServerTransportTest {
             header(HttpHeaders.Host, "localhost")
             header(HttpHeaders.Accept, ContentType.Text.EventStream.toString())
             header(MCP_SESSION_ID_HEADER, sessionId)
-            header("mcp-protocol-version", LATEST_PROTOCOL_VERSION)
+            header("mcp-protocol-version", LATEST_HANDSHAKE_VERSION)
         }.execute { response ->
             // Verify Mcp-Session-Id is present on the SSE response
             response.status shouldBe HttpStatusCode.OK
@@ -1184,7 +1185,7 @@ class StreamableHttpServerTransportTest {
     private fun buildInitializeRequestPayload(): JSONRPCRequest {
         val request = InitializeRequest(
             InitializeRequestParams(
-                protocolVersion = LATEST_PROTOCOL_VERSION,
+                protocolVersion = LATEST_HANDSHAKE_VERSION,
                 capabilities = ClientCapabilities(),
                 clientInfo = Implementation(name = "test-client", version = "1.0.0"),
             ),

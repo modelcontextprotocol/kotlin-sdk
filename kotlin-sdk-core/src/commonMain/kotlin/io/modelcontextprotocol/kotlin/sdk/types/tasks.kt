@@ -108,13 +108,15 @@ public data class RelatedTaskMetadata(val taskId: String)
  * A response to a task-augmented request.
  *
  * @property task The task data associated with the response.
+ * @property resultType Discriminator for the result representation.
  * @property meta Optional metadata for this response.
  */
 @Serializable
 public data class CreateTaskResult(
     val task: Task,
+    val resultType: String = COMPLETE_RESULT_TYPE,
     @SerialName("_meta")
-    override val meta: JsonObject? = null,
+    override val meta: ResultMeta? = null,
 ) : ClientResult,
     ServerResult
 
@@ -174,6 +176,7 @@ public data class GetTaskRequestParams(
  * @property lastUpdatedAt ISO 8601 timestamp when the task was last updated.
  * @property ttl Actual retention duration from creation in milliseconds, null for unlimited.
  * @property pollInterval Suggested polling interval in milliseconds.
+ * @property resultType Discriminator for the result representation.
  * @property meta Optional metadata for this response.
  */
 @Serializable
@@ -185,8 +188,9 @@ public data class GetTaskResult(
     override val lastUpdatedAt: String,
     override val ttl: Long?,
     override val pollInterval: Long? = null,
+    val resultType: String = COMPLETE_RESULT_TYPE,
     @SerialName("_meta")
-    override val meta: JsonObject? = null,
+    override val meta: ResultMeta? = null,
 ) : ClientResult,
     ServerResult,
     TaskFields
@@ -249,8 +253,8 @@ public value class GetTaskPayloadResult(public val json: JsonObject) :
     ClientResult,
     ServerResult {
     /** Optional metadata for this response, extracted from the `_meta` field of [json]. */
-    override val meta: JsonObject?
-        get() = json["_meta"]?.takeIf { it is JsonObject } as? JsonObject
+    override val meta: ResultMeta?
+        get() = (json["_meta"] as? JsonObject)?.let(::ResultMeta)
 
     /**
      * Retrieves the value associated with the specified key from the result payload.
@@ -288,14 +292,16 @@ public data class ListTasksRequest(override val params: PaginatedRequestParams? 
  * @property tasks The list of tasks.
  * @property nextCursor An opaque token representing the pagination position after the last returned result.
  * If present, there may be more results available.
+ * @property resultType Discriminator for the result representation.
  * @property meta Optional metadata for this response.
  */
 @Serializable
 public data class ListTasksResult(
     val tasks: List<Task>,
     override val nextCursor: String? = null,
+    val resultType: String = COMPLETE_RESULT_TYPE,
     @SerialName("_meta")
-    override val meta: JsonObject? = null,
+    override val meta: ResultMeta? = null,
 ) : ClientResult,
     ServerResult,
     PaginatedResult
