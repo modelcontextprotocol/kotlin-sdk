@@ -11,14 +11,14 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
     "express": "^5.2.1",
-    "zod": "^4.5.2"
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
-    "@types/node": "^26.4.0",
+    "@types/node": "^26.4.1",
     "cors": "^2.8.6",
-    "tsx": "^4.23.12",
+    "tsx": "^4.23.13",
     "typescript": "^7.0.2"
   }
 }
