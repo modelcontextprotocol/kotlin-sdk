@@ -14,6 +14,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 
@@ -153,10 +154,9 @@ class ChannelTransportTest {
 
         transport.start()
 
-        var errorCaught = false
+        val errorCaught = CompletableDeferred<Throwable>()
         transport.onError {
-            it.shouldBeInstanceOf<ClosedSendChannelException>()
-            errorCaught = true
+            errorCaught.complete(it)
         }
         sendChannel.close()
 
@@ -167,8 +167,8 @@ class ChannelTransportTest {
             e.shouldBeInstanceOf<io.modelcontextprotocol.kotlin.sdk.types.McpException>()
         }
 
-        eventually(2.seconds) {
-            errorCaught shouldBe true
+        withTimeout(2.seconds) {
+            errorCaught.await().shouldBeInstanceOf<ClosedSendChannelException>()
         }
     }
 
