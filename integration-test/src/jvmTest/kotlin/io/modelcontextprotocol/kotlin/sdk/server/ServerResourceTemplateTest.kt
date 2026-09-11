@@ -18,6 +18,8 @@ import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
@@ -119,12 +121,15 @@ class ServerResourceTemplateTest : AbstractServerFeaturesTest() {
     }
 
     @Test
-    fun `readResource should return RESOURCE_NOT_FOUND error when no match`() = runTest {
+    fun `readResource should return legacy error with URI for current protocol`() = runTest {
+        val uri = "test://nonexistent/uri"
         val exception = assertThrows<McpException> {
-            client.readResource(ReadResourceRequest(ReadResourceRequestParams("test://nonexistent/uri")))
+            client.readResource(ReadResourceRequest(ReadResourceRequestParams(uri)))
         }
 
         exception.code shouldBe RPCError.ErrorCode.RESOURCE_NOT_FOUND
+        exception.message shouldBe "Resource not found"
+        exception.data shouldBe buildJsonObject { put("uri", uri) }
     }
 
     @Test
