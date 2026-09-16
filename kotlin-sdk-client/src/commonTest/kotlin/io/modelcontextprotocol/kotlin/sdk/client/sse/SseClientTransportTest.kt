@@ -85,7 +85,8 @@ class SseClientTransportTest {
         }
 
         // Then
-        exception.message shouldBe "Endpoint origin https://evil.example.com does not match connection origin http://example.com"
+        exception.message shouldBe
+            "Endpoint origin https://evil.example.com does not match connection origin http://example.com"
         engine.capturedPosts shouldHaveSize 0
 
         // Cleanup
