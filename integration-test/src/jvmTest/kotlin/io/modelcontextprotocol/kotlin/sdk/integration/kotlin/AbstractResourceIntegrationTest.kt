@@ -21,6 +21,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.util.concurrent.CopyOnWriteArrayList
@@ -208,6 +210,8 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
             exception.code,
             "Exception code should be RESOURCE_NOT_FOUND: ${RPCError.ErrorCode.RESOURCE_NOT_FOUND}",
         )
+        assertEquals("Resource not found", exception.message)
+        assertEquals(buildJsonObject { put("uri", invalidUri) }, exception.data)
     }
 
     @Test
