@@ -1,10 +1,10 @@
 [versions]
-anthropic = "2.60.0"
+anthropic = "2.62.0"
 kotlin = "2.4.20"
 ktor = "3.5.2"
 mcp-kotlin = "0.15.0"
 shadow = "9.6.1"
-slf4j = "2.0.18"
+slf4j = "2.0.19"
 
 [libraries]
 anthropic-java = { group = "com.anthropic", name = "anthropic-java", version.ref = "anthropic" }
