@@ -664,6 +664,8 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         withContext(NonCancellable) {
             try {
                 sessionContext.session?.close()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _onError(e)
             } finally {
@@ -729,7 +731,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
 
             session.coroutineContext.job.invokeOnCompletion { throwable ->
                 streamsMapping.remove(streamId)
-                throwable?.let { _onError(it) }
+                if (throwable != null && throwable !is CancellationException) _onError(throwable)
             }
         } catch (e: CancellationException) {
             throw e

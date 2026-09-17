@@ -86,7 +86,7 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
 
         @OptIn(InternalCoroutinesApi::class)
         session.coroutineContext.job.invokeOnCompletion {
-            if (it != null) {
+            if (it != null && it !is CancellationException) {
                 _onError.invoke(it)
             } else {
                 invokeOnCloseCallback()

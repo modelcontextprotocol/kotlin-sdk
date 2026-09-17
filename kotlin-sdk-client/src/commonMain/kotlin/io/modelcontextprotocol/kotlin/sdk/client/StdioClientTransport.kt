@@ -179,11 +179,9 @@ public class StdioClientTransport @JvmOverloads public constructor(
                                 val errorSeverity = classifyStderr(event.message)
                                 when (errorSeverity) {
                                     FATAL -> {
-                                        runCatching {
-                                            _onError(
-                                                McpException(INTERNAL_ERROR, "Message in StdErr: ${event.message}"),
-                                            )
-                                        }
+                                        invokeOnErrorCallback(
+                                            McpException(INTERNAL_ERROR, "Message in StdErr: ${event.message}"),
+                                        )
                                         stopProcessing("Fatal STDERR message received")
                                     }
 
@@ -212,7 +210,7 @@ public class StdioClientTransport @JvmOverloads public constructor(
                             }
 
                             is Event.IOErrorEvent -> {
-                                runCatching { _onError(event.cause) }
+                                invokeOnErrorCallback(event.cause)
                                 stopProcessing("IO Error", event.cause)
                             }
                         }
@@ -265,11 +263,11 @@ public class StdioClientTransport @JvmOverloads public constructor(
             sink.flush()
         } catch (e: SerializationException) {
             logger.warn(e) { "Can't serialize message" }
-            runCatching { _onError(McpException(INTERNAL_ERROR, "Serialization error")) }
+            invokeOnErrorCallback(McpException(INTERNAL_ERROR, "Serialization error"))
             mainScope.stopProcessing("Can't serialize message", e)
         } catch (e: IOException) {
             logger.warn(e) { "Can't send message" }
-            runCatching { _onError(McpException(CONNECTION_CLOSED, "Can't send message. Connection closed")) }
+            invokeOnErrorCallback(McpException(CONNECTION_CLOSED, "Can't send message. Connection closed"))
             mainScope.stopProcessing("Write I/O failed", e)
         }
     }
@@ -281,7 +279,7 @@ public class StdioClientTransport @JvmOverloads public constructor(
             throw e
         } catch (e: Throwable) {
             logger.error(e) { "Error processing message." }
-            runCatching { _onError.invoke(e) }
+            invokeOnErrorCallback(e)
         }
     }
 
