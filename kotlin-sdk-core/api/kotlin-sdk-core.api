@@ -34,6 +34,7 @@ public abstract class io/modelcontextprotocol/kotlin/sdk/shared/AbstractTranspor
 	protected final fun get_onError ()Lkotlin/jvm/functions/Function1;
 	protected final fun get_onMessage ()Lkotlin/jvm/functions/Function2;
 	protected final fun invokeOnCloseCallback ()V
+	protected final fun invokeOnErrorCallback (Ljava/lang/Throwable;)V
 	public fun onClose (Lkotlin/jvm/functions/Function0;)V
 	public fun onError (Lkotlin/jvm/functions/Function1;)V
 	public fun onMessage (Lkotlin/jvm/functions/Function2;)V
