@@ -5,6 +5,7 @@ package io.modelcontextprotocol.kotlin.sdk.types
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
@@ -214,6 +215,18 @@ public data class JSONRPCResponse(val id: RequestId, val result: RequestResult =
     /** Always `"2.0"` to indicate JSON-RPC 2.0 protocol. */
     @EncodeDefault
     override val jsonrpc: String = JSONRPC_VERSION
+
+    /**
+     * The raw JSON of [result] exactly as received on the wire, captured when this response is
+     * decoded as part of a [JSONRPCMessage]. `null` for programmatically constructed responses.
+     *
+     * The shape-decoded [result] is only a heuristic: distinct result types can share a JSON
+     * shape (e.g. a `tasks/result` payload vs. [CallToolResult]). The request/response
+     * correlation point re-decodes [rawResult] with the result type declared by the original
+     * request's method (see https://github.com/modelcontextprotocol/kotlin-sdk/issues/601).
+     */
+    @Transient
+    internal var rawResult: JsonElement? = null
 }
 
 // ============================================================================
