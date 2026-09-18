@@ -199,7 +199,8 @@ class TasksTest {
                 "status": "working",
                 "createdAt": "2025-01-01T00:00:00Z",
                 "lastUpdatedAt": "2025-01-01T00:00:00Z"
-              }
+              },
+              "resultType": "complete"
             }
             """.trimIndent(),
         )
@@ -215,7 +216,7 @@ class TasksTest {
                 lastUpdatedAt = "2025-01-01T00:00:00Z",
                 ttl = 60000,
             ),
-            meta = buildJsonObject { put("trace", "abc") },
+            meta = ResultMeta(buildJsonObject { put("trace", "abc") }),
         )
 
         verifySerialization(
@@ -230,6 +231,7 @@ class TasksTest {
                 "lastUpdatedAt": "2025-01-01T00:00:00Z",
                 "ttl": 60000
               },
+              "resultType": "complete",
               "_meta": {
                 "trace": "abc"
               }
@@ -249,7 +251,8 @@ class TasksTest {
                 "createdAt": "2025-01-01T00:00:00Z",
                 "lastUpdatedAt": "2025-01-01T00:01:00Z",
                 "pollInterval": 2000
-              }
+              },
+              "resultType": "complete"
             }
         """.trimIndent()
 
@@ -345,7 +348,7 @@ class TasksTest {
             lastUpdatedAt = "2025-01-01T00:05:00Z",
             ttl = 300000,
             pollInterval = 10000,
-            meta = buildJsonObject { put("server", "main") },
+            meta = ResultMeta(buildJsonObject { put("server", "main") }),
         )
 
         verifySerialization(
@@ -360,6 +363,7 @@ class TasksTest {
               "lastUpdatedAt": "2025-01-01T00:05:00Z",
               "ttl": 300000,
               "pollInterval": 10000,
+              "resultType": "complete",
               "_meta": {
                 "server": "main"
               }
@@ -375,7 +379,8 @@ class TasksTest {
               "taskId": "task-21",
               "status": "working",
               "createdAt": "2025-01-01T00:00:00Z",
-              "lastUpdatedAt": "2025-01-01T00:00:30Z"
+              "lastUpdatedAt": "2025-01-01T00:00:30Z",
+              "resultType": "complete"
             }
         """.trimIndent()
 
@@ -554,7 +559,8 @@ class TasksTest {
             McpJson,
             """
             {
-              "tasks": []
+              "tasks": [],
+              "resultType": "complete"
             }
             """.trimIndent(),
         )
@@ -602,7 +608,8 @@ class TasksTest {
                   "ttl": 60000
                 }
               ],
-              "nextCursor": "cursor-abc"
+              "nextCursor": "cursor-abc",
+              "resultType": "complete"
             }
             """.trimIndent(),
         )
@@ -620,7 +627,8 @@ class TasksTest {
                   "createdAt": "2025-01-01T00:00:00Z",
                   "lastUpdatedAt": "2025-01-01T00:03:00Z"
                 }
-              ]
+              ],
+              "resultType": "complete"
             }
         """.trimIndent()
 
@@ -698,7 +706,8 @@ class TasksTest {
               "status": "cancelled",
               "statusMessage": "Cancelled by user",
               "createdAt": "2025-01-01T00:00:00Z",
-              "lastUpdatedAt": "2025-01-01T00:02:00Z"
+              "lastUpdatedAt": "2025-01-01T00:02:00Z",
+              "resultType": "complete"
             }
             """.trimIndent(),
         )
@@ -713,7 +722,8 @@ class TasksTest {
               "createdAt": "2025-01-01T00:00:00Z",
               "lastUpdatedAt": "2025-01-01T00:04:00Z",
               "ttl": 120000,
-              "pollInterval": 3000
+              "pollInterval": 3000,
+              "resultType": "complete"
             }
         """.trimIndent()
 

@@ -149,9 +149,11 @@ class CompletionTest {
                 total = 25,
                 hasMore = true,
             ),
-            meta = buildJsonObject {
-                put("source", "cache")
-            },
+            meta = ResultMeta(
+                buildJsonObject {
+                    put("source", "cache")
+                },
+            ),
         )
 
         verifySerialization(
@@ -167,6 +169,7 @@ class CompletionTest {
                 "total": 25,
                 "hasMore": true
               },
+              "resultType": "complete",
               "_meta": {
                 "source": "cache"
               }
@@ -184,6 +187,7 @@ class CompletionTest {
                 "total": 2,
                 "hasMore": false
               },
+              "resultType": "complete",
               "_meta": {
                 "fetchedAt": "2025-01-12T15:00:58Z"
               }
@@ -213,7 +217,8 @@ class CompletionTest {
             {
               "completion": {
                 "values": ["foo"]
-              }
+              },
+              "resultType": "complete"
             }
         """.trimIndent()
 

@@ -27,6 +27,9 @@ public open class McpException @JvmOverloads public constructor(
          * otherwise returns a plain [McpException]. Never throws — a malformed payload simply
          * degrades to a plain [McpException].
          */
+        // Accepts the deprecated code: it is removed from what this SDK emits, not from what
+        // a peer predating the removal may send.
+        @Suppress("DEPRECATION")
         fun fromError(code: Int, message: String, data: JsonElement?): McpException {
             if (code == RPCError.ErrorCode.URL_ELICITATION_REQUIRED && data != null) {
                 UrlElicitationRequiredException.fromDataOrNull(message, data)?.let { return it }

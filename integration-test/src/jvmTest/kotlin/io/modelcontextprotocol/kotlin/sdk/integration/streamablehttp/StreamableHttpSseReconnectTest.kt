@@ -19,7 +19,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
-import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.LATEST_HANDSHAKE_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import io.modelcontextprotocol.kotlin.test.utils.actualPort
 import kotlinx.coroutines.Dispatchers
@@ -74,7 +74,7 @@ class StreamableHttpSseReconnectTest : AbstractStreamableHttpIntegrationTest() {
             httpClient.prepareGet(mcpUrl) {
                 header(HttpHeaders.Accept, ContentType.Text.EventStream.toString())
                 header(SESSION_ID_HEADER, sessionId)
-                header(PROTOCOL_VERSION_HEADER, LATEST_PROTOCOL_VERSION)
+                header(PROTOCOL_VERSION_HEADER, LATEST_HANDSHAKE_VERSION)
             }.execute { response ->
                 response.status shouldBe HttpStatusCode.OK
                 response.bodyAsChannel().readUTF8Line()
@@ -86,7 +86,7 @@ class StreamableHttpSseReconnectTest : AbstractStreamableHttpIntegrationTest() {
             httpClient.prepareGet(mcpUrl) {
                 header(HttpHeaders.Accept, ContentType.Text.EventStream.toString())
                 header(SESSION_ID_HEADER, sessionId)
-                header(PROTOCOL_VERSION_HEADER, LATEST_PROTOCOL_VERSION)
+                header(PROTOCOL_VERSION_HEADER, LATEST_HANDSHAKE_VERSION)
             }.execute { response ->
                 response.status shouldBe HttpStatusCode.OK
                 response.headers[SESSION_ID_HEADER] shouldBe sessionId
@@ -134,7 +134,7 @@ class StreamableHttpSseReconnectTest : AbstractStreamableHttpIntegrationTest() {
             httpClient.prepareGet(mcpUrl) {
                 header(HttpHeaders.Accept, ContentType.Text.EventStream.toString())
                 header(SESSION_ID_HEADER, sessionId)
-                header(PROTOCOL_VERSION_HEADER, LATEST_PROTOCOL_VERSION)
+                header(PROTOCOL_VERSION_HEADER, LATEST_HANDSHAKE_VERSION)
             }.execute { firstResponse ->
                 firstResponse.status shouldBe HttpStatusCode.OK
                 firstResponse.bodyAsChannel().readUTF8Line()
@@ -143,7 +143,7 @@ class StreamableHttpSseReconnectTest : AbstractStreamableHttpIntegrationTest() {
                 httpClient.prepareGet(mcpUrl) {
                     header(HttpHeaders.Accept, ContentType.Text.EventStream.toString())
                     header(SESSION_ID_HEADER, sessionId)
-                    header(PROTOCOL_VERSION_HEADER, LATEST_PROTOCOL_VERSION)
+                    header(PROTOCOL_VERSION_HEADER, LATEST_HANDSHAKE_VERSION)
                 }.execute { secondResponse ->
                     secondResponse.status shouldBe HttpStatusCode.OK
                     secondResponse.headers[SESSION_ID_HEADER] shouldBe sessionId
@@ -163,7 +163,7 @@ class StreamableHttpSseReconnectTest : AbstractStreamableHttpIntegrationTest() {
 
     private fun buildInitPayload(): JSONRPCRequest = InitializeRequest(
         InitializeRequestParams(
-            protocolVersion = LATEST_PROTOCOL_VERSION,
+            protocolVersion = LATEST_HANDSHAKE_VERSION,
             capabilities = ClientCapabilities(),
             clientInfo = Implementation(name = "reconnect-test-client", version = "1.0.0"),
         ),

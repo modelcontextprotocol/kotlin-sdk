@@ -215,9 +215,11 @@ class ElicitationTest {
                 put("stars", 128)
                 put("private", false)
             },
-            meta = buildJsonObject {
-                put("submittedAt", "2025-01-12T15:00:58Z")
-            },
+            meta = ResultMeta(
+                buildJsonObject {
+                    put("submittedAt", "2025-01-12T15:00:58Z")
+                },
+            ),
         )
 
         val json = McpJson.encodeToString(result)
@@ -230,6 +232,7 @@ class ElicitationTest {
                 "stars": 128,
                 "private": false
               },
+              "resultType": "complete",
               "_meta": {
                 "submittedAt": "2025-01-12T15:00:58Z"
               }
@@ -253,6 +256,7 @@ class ElicitationTest {
         val json = """
             {
               "action": "decline",
+              "resultType": "complete",
               "_meta": {
                 "reason": "User skipped"
               }

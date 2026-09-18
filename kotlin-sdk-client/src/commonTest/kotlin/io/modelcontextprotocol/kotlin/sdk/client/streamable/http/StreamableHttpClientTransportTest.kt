@@ -315,9 +315,9 @@ class StreamableHttpClientTransportTest {
     }
 
     @Test
-    fun `should send MCP method header for notifications`() = runTest {
+    fun `should omit MCP standard headers for notifications`() = runTest {
         val transport = createTransport { request ->
-            assertEquals("notifications/tools/list_changed", request.headers["Mcp-Method"])
+            assertNull(request.headers["Mcp-Method"])
             assertNull(request.headers["Mcp-Name"])
             respond(content = "", status = HttpStatusCode.Accepted)
         }
