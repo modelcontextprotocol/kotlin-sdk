@@ -156,6 +156,8 @@ public class SseClientTransport(
             }
             endpoint.complete(endpointUrl)
             logger.debug { "Client connected to endpoint: $endpointUrl" }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Throwable) {
             _onError(e)
             endpoint.completeExceptionally(e)
@@ -179,6 +181,8 @@ public class SseClientTransport(
                 if (::session.isInitialized) session.cancel()
                 if (::scope.isInitialized) scope.cancel()
                 endpoint.cancel()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Throwable) {
                 _onError(e)
             }
