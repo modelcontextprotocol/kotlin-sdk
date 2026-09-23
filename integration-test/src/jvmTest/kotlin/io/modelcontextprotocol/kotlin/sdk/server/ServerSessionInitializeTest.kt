@@ -5,6 +5,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
@@ -25,6 +26,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 import org.junit.jupiter.api.Test
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -190,5 +192,50 @@ class ServerSessionInitializeTest {
         errors.forEach { error ->
             assertEquals(RPCError.ErrorCode.INVALID_REQUEST, error.error.code)
         }
+    }
+
+    private suspend fun completeHandshake(session: ServerSession) {
+        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
+        val responseDone = CompletableDeferred<JSONRPCResponse>()
+        clientTransport.onMessage { message ->
+            if (message is JSONRPCResponse) responseDone.complete(message)
+        }
+
+        session.connect(serverTransport)
+        clientTransport.send(createInitializeRequest().toJSON())
+        responseDone.await()
+        clientTransport.send(InitializedNotification().toJSON())
+    }
+
+    @Test
+    fun `should run onInitialized callback registered after initialization`() = runTest {
+        val session = createSession()
+        val calls = CopyOnWriteArrayList<String>()
+        val initialized = CompletableDeferred<Unit>()
+
+        session.onInitialized { calls.add("early") }
+        session.onInitialized { initialized.complete(Unit) }
+
+        completeHandshake(session)
+        initialized.await()
+
+        session.onInitialized { calls.add("late") }
+
+        assertEquals(listOf("early", "late"), calls)
+    }
+
+    @Test
+    fun `should run every onInitialized callback registered concurrently`() = runTest {
+        val session = createSession()
+        val counters = List(200) { AtomicInteger() }
+
+        withContext(Dispatchers.Default) {
+            counters.map { counter ->
+                launch { session.onInitialized { counter.incrementAndGet() } }
+            }.joinAll()
+        }
+        completeHandshake(session)
+
+        assertEquals(List(counters.size) { 1 }, counters.map { it.get() })
     }
 }
