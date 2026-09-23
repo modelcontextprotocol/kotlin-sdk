@@ -45,6 +45,8 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.encodeToJsonElement
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.math.pow
@@ -418,6 +420,24 @@ public class StreamableHttpClientTransport(
     private fun JsonObject.stringValue(key: String): String? =
         (get(key) as? JsonPrimitive)?.takeIf { it.isString }?.content
 
+    /**
+     * Decodes an incoming message, rewriting a response's id to [replayMessageId] when set.
+     *
+     * The id is rewritten in the raw JSON before decoding rather than via `JSONRPCResponse.copy`:
+     * decoding captures the raw result JSON, and a data-class copy would silently drop it, forcing
+     * Protocol to fall back to shape-based result decoding
+     * (see https://github.com/modelcontextprotocol/kotlin-sdk/issues/601).
+     */
+    private fun decodeIncomingMessage(json: String, replayMessageId: RequestId?): JSONRPCMessage {
+        val element = McpJson.parseToJsonElement(json)
+        val jsonObject = element as? JsonObject
+        if (replayMessageId == null || jsonObject == null || "result" !in jsonObject || "id" !in jsonObject) {
+            return McpJson.decodeFromJsonElement<JSONRPCMessage>(element)
+        }
+        val rewritten = JsonObject(jsonObject + ("id" to McpJson.encodeToJsonElement(replayMessageId)))
+        return McpJson.decodeFromJsonElement<JSONRPCMessage>(rewritten)
+    }
+
     @OptIn(ExperimentalEncodingApi::class)
     private fun String.encodeMcpHeaderValue(): String {
         val containsUnsafeCharacters = any { it != '\t' && it.code !in 0x20..0x7e }
@@ -450,14 +470,10 @@ public class StreamableHttpClientTransport(
                 when (event.event) {
                     null, "message" ->
                         event.data?.takeIf { it.isNotEmpty() }?.let { json ->
-                            runCatching { McpJson.decodeFromString<JSONRPCMessage>(json) }
+                            runCatching { decodeIncomingMessage(json, replayMessageId) }
                                 .onSuccess { msg ->
                                     if (msg is JSONRPCResponse) receivedResponse = true
-                                    if (replayMessageId != null && msg is JSONRPCResponse) {
-                                        _onMessage(msg.copy(id = replayMessageId))
-                                    } else {
-                                        _onMessage(msg)
-                                    }
+                                    _onMessage(msg)
                                 }
                                 .onFailure(_onError)
                         }
@@ -499,14 +515,10 @@ public class StreamableHttpClientTransport(
                 return
             }
             if (eventName == null || eventName == "message") {
-                runCatching { McpJson.decodeFromString<JSONRPCMessage>(data) }
+                runCatching { decodeIncomingMessage(data, replayMessageId) }
                     .onSuccess { msg ->
                         if (msg is JSONRPCResponse) receivedResponse = true
-                        if (replayMessageId != null && msg is JSONRPCResponse) {
-                            _onMessage(msg.copy(id = replayMessageId))
-                        } else {
-                            _onMessage(msg)
-                        }
+                        _onMessage(msg)
                     }
                     .onFailure {
                         _onError(it)
