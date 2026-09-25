@@ -31,6 +31,9 @@ import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.types.SetLevelRequest
 import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
+import kotlinx.atomicfu.getAndUpdate
+import kotlinx.collections.immutable.PersistentList
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.serialization.json.JsonObject
 import kotlin.uuid.ExperimentalUuidApi
@@ -64,7 +67,12 @@ public open class ServerSession(
     @OptIn(ExperimentalUuidApi::class)
     public val sessionId: String = Uuid.random().toString()
 
-    private var _onInitialized: (() -> Unit) = {}
+    /**
+     * Callbacks waiting for `notifications/initialized`, or `null` once it has been received.
+     * A callback registered after that point runs immediately instead of being stored.
+     */
+    private val pendingInitializedCallbacks: AtomicRef<PersistentList<() -> Unit>?> =
+        atomic(persistentListOf())
 
     private var _onClose: () -> Unit = {}
 
@@ -94,7 +102,7 @@ public open class ServerSession(
             handleInitialize(request)
         }
         setNotificationHandler<InitializedNotification>(Defined.NotificationsInitialized) {
-            _onInitialized()
+            pendingInitializedCallbacks.getAndSet(null)?.forEach { callback -> callback() }
             CompletableDeferred(Unit)
         }
 
@@ -120,13 +128,13 @@ public open class ServerSession(
      *
      * The callback must be synchronous and fast: it runs on the message-dispatch path for
      * `notifications/initialized`, after concurrent dispatch has been enabled for the session.
+     *
+     * If initialization has already completed, [block] runs immediately on the calling thread.
+     * Otherwise it runs when `notifications/initialized` is received, after the callbacks
+     * registered before it. Each callback runs at most once.
      */
     public fun onInitialized(block: () -> Unit) {
-        val old = _onInitialized
-        _onInitialized = {
-            old()
-            block()
-        }
+        if (pendingInitializedCallbacks.getAndUpdate { it?.adding(block) } == null) block()
     }
 
     /**
