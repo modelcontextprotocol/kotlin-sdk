@@ -75,11 +75,13 @@ public data class ListRootsRequest(override val params: BaseRequestParams? = nul
  * @property roots The list of root URIs that the server can access.
  *                Each root represents a top-level directory, file, or other location
  *                that the server has permission to work with.
+ * @property resultType Discriminator for the result representation.
  * @property meta Optional metadata for this response.
  */
 @Serializable
 public data class ListRootsResult(
     val roots: List<Root>,
+    val resultType: String = COMPLETE_RESULT_TYPE,
     @SerialName("_meta")
-    override val meta: JsonObject? = null,
+    override val meta: ResultMeta? = null,
 ) : ClientResult

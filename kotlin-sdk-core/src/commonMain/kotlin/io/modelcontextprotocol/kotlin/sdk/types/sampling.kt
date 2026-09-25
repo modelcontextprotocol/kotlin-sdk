@@ -274,6 +274,7 @@ public enum class IncludeContext {
  * @property stopReason The reason why sampling stopped, if known.
  * Common values: [StopReason.EndTurn], [StopReason.StopSequence], [StopReason.MaxTokens],
  * [StopReason.ToolUse].
+ * @property resultType Discriminator for the result representation.
  * @property meta Optional metadata for this response.
  */
 @Serializable
@@ -283,8 +284,9 @@ public data class CreateMessageResult(
     val content: List<SamplingMessageContent>,
     val model: String,
     val stopReason: StopReason? = null,
+    val resultType: String = COMPLETE_RESULT_TYPE,
     @SerialName("_meta")
-    override val meta: JsonObject? = null,
+    override val meta: ResultMeta? = null,
 ) : ClientResult {
     init {
         require(content.isNotEmpty()) { "content must contain at least one block" }
@@ -301,8 +303,8 @@ public data class CreateMessageResult(
         content: SamplingMessageContent,
         model: String,
         stopReason: StopReason? = null,
-        meta: JsonObject? = null,
-    ) : this(role, listOf(content), model, stopReason, meta)
+        meta: ResultMeta? = null,
+    ) : this(role, listOf(content), model, stopReason, meta = meta)
 }
 
 /**

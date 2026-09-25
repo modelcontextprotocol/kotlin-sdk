@@ -117,7 +117,7 @@ class RootsTest {
                 Root(uri = "file:///workspace/project", name = "Project"),
                 Root(uri = "file:///workspace/docs", name = "Docs"),
             ),
-            meta = buildJsonObject { put("issuedAt", "2025-01-12T15:00:58Z") },
+            meta = ResultMeta(buildJsonObject { put("issuedAt", "2025-01-12T15:00:58Z") }),
         )
 
         verifySerialization(
@@ -129,6 +129,7 @@ class RootsTest {
                 {"uri": "file:///workspace/project", "name": "Project"},
                 {"uri": "file:///workspace/docs", "name": "Docs"}
               ],
+              "resultType": "complete",
               "_meta": {
                 "issuedAt": "2025-01-12T15:00:58Z"
               }
@@ -147,6 +148,7 @@ class RootsTest {
                   "name": "Code"
                 }
               ],
+              "resultType": "complete",
               "_meta": {
                 "updatedBy": "client-1"
               }

@@ -9,7 +9,7 @@ import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeResult
-import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.LATEST_HANDSHAKE_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesResult
 import io.modelcontextprotocol.kotlin.sdk.types.Method
@@ -44,7 +44,7 @@ class ChannelTransportTest {
 
         serverSession.setRequestHandler<InitializeRequest>(Method.Defined.Initialize) { _, _ ->
             InitializeResult(
-                protocolVersion = LATEST_PROTOCOL_VERSION,
+                protocolVersion = LATEST_HANDSHAKE_VERSION,
                 capabilities = ServerCapabilities(
                     resources = ServerCapabilities.Resources(null, null),
                     tools = ServerCapabilities.Tools(null),
