@@ -1,12 +1,13 @@
 package io.modelcontextprotocol.kotlin.sdk.testing
 
-import io.kotest.assertions.nondeterministic.eventually
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
+import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.cancelAndJoin
@@ -15,7 +16,6 @@ import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalMcpApi::class)
 class ChannelTransportTest {
@@ -141,9 +141,7 @@ class ChannelTransportTest {
         transport.send(message)
         messageProcessed.await()
 
-        eventually(2.seconds) {
-            received.shouldContainExactly(message)
-        }
+        received.shouldContainExactly(message)
     }
 
     @Test
@@ -153,23 +151,17 @@ class ChannelTransportTest {
 
         transport.start()
 
-        var errorCaught = false
-        transport.onError {
-            it.shouldBeInstanceOf<ClosedSendChannelException>()
-            errorCaught = true
-        }
+        var reportedError: Throwable? = null
+        transport.onError { reportedError = it }
         sendChannel.close()
 
-        try {
+        // send() wraps ClosedSendChannelException in McpException
+        shouldThrow<McpException> {
             transport.send(JSONRPCRequest(RequestId.NumberId(1), "method"))
-        } catch (e: Exception) {
-            // send() wraps ClosedSendChannelException in McpException
-            e.shouldBeInstanceOf<io.modelcontextprotocol.kotlin.sdk.types.McpException>()
         }
 
-        eventually(2.seconds) {
-            errorCaught shouldBe true
-        }
+        // send() reports the failure to onError before throwing, so there is nothing to wait for
+        reportedError.shouldBeInstanceOf<ClosedSendChannelException>()
     }
 
     @Test
