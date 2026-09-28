@@ -16,13 +16,9 @@ plugins {
 kotlin {
 
     compilerOptions {
-        languageVersion = KotlinVersion.KOTLIN_2_1
-        apiVersion = KotlinVersion.KOTLIN_2_1
-        freeCompilerArgs =
-            listOf(
-                "-Wextra",
-                "-Xmulti-dollar-interpolation",
-            )
+        languageVersion = KotlinVersion.KOTLIN_2_2
+        apiVersion = KotlinVersion.KOTLIN_2_2
+        freeCompilerArgs = listOf("-Wextra")
     }
     jvm {
         compilerOptions {
