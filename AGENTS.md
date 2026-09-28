@@ -12,8 +12,8 @@ Kotlin Multiplatform SDK for the [Model Context Protocol (MCP)](https://modelcon
 ./gradlew ktlintCheck                # Lint check
 ./gradlew detekt                     # Static analysis
 ./gradlew ktlintFormat               # Auto-fix lint issues
-./gradlew apiCheck                   # Check public API compatibility (run before committing)
-./gradlew apiDump                    # Update API dump after intentional API changes
+./gradlew checkKotlinAbi             # Check public API compatibility (run before committing)
+./gradlew updateKotlinAbi            # Update API dump after intentional API changes
 ./gradlew koverLog                   # Print coverage summary
 ./gradlew koverXmlReport            # Generate XML coverage report
 ```

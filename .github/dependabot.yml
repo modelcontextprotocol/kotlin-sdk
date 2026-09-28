@@ -46,7 +46,6 @@ updates:
           - "org.jetbrains.kotlinx.kover"
           - "org.jlleitschuh.gradle.ktlint"
           - "org.jetbrains.kotlinx.knit"
-          - "org.jetbrains.kotlinx.binary-compatibility-validator"
           - "org.openapi.generator"
           - "org.jetbrains.dokka:*"
           - "com.vanniktech:*"

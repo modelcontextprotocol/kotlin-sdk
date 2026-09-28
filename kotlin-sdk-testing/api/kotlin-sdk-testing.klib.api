@@ -1,0 +1,32 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64, iosX64, js, linuxArm64, linuxX64, macosArm64, mingwX64, tvosArm64, tvosSimulatorArm64, wasmJs, watchosArm64, watchosSimulatorArm64]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <io.modelcontextprotocol:kotlin-sdk-testing>
+final class io.modelcontextprotocol.kotlin.sdk.testing/ChannelTransport : io.modelcontextprotocol.kotlin.sdk.shared/AbstractClientTransport { // io.modelcontextprotocol.kotlin.sdk.testing/ChannelTransport|null[0]
+    constructor <init>(kotlinx.coroutines.channels/Channel<io.modelcontextprotocol.kotlin.sdk.types/JSONRPCMessage> = ..., kotlinx.coroutines/CoroutineDispatcher = ...) // io.modelcontextprotocol.kotlin.sdk.testing/ChannelTransport.<init>|<init>(kotlinx.coroutines.channels.Channel<io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage>;kotlinx.coroutines.CoroutineDispatcher){}[0]
+    constructor <init>(kotlinx.coroutines.channels/SendChannel<io.modelcontextprotocol.kotlin.sdk.types/JSONRPCMessage>, kotlinx.coroutines.channels/ReceiveChannel<io.modelcontextprotocol.kotlin.sdk.types/JSONRPCMessage>, kotlinx.coroutines/CoroutineDispatcher = ...) // io.modelcontextprotocol.kotlin.sdk.testing/ChannelTransport.<init>|<init>(kotlinx.coroutines.channels.SendChannel<io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage>;kotlinx.coroutines.channels.ReceiveChannel<io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage>;kotlinx.coroutines.CoroutineDispatcher){}[0]
+
+    final class LinkedTransports { // io.modelcontextprotocol.kotlin.sdk.testing/ChannelTransport.LinkedTransports|null[0]
+        constructor <init>(io.modelcontextprotocol.kotlin.sdk.testing/ChannelTransport, io.modelcontextprotocol.kotlin.sdk.testing/ChannelTransport) // io.modelcontextprotocol.kotlin.sdk.testing/ChannelTransport.LinkedTransports.<init>|<init>(io.modelcontextprotocol.kotlin.sdk.testing.ChannelTransport;io.modelcontextprotocol.kotlin.sdk.testing.ChannelTransport){}[0]
+
+        final val clientTransport // io.modelcontextprotocol.kotlin.sdk.testing/ChannelTransport.LinkedTransports.clientTransport|{}clientTransport[0]
+            final fun <get-clientTransport>(): io.modelcontextprotocol.kotlin.sdk.testing/ChannelTransport // io.modelcontextprotocol.kotlin.sdk.testing/ChannelTransport.LinkedTransports.clientTransport.<get-clientTransport>|<get-clientTransport>(){}[0]
+        final val serverTransport // io.modelcontextprotocol.kotlin.sdk.testing/ChannelTransport.LinkedTransports.serverTransport|{}serverTransport[0]
+            final fun <get-serverTransport>(): io.modelcontextprotocol.kotlin.sdk.testing/ChannelTransport // io.modelcontextprotocol.kotlin.sdk.testing/ChannelTransport.LinkedTransports.serverTransport.<get-serverTransport>|<get-serverTransport>(){}[0]
+
+        final fun component1(): io.modelcontextprotocol.kotlin.sdk.testing/ChannelTransport // io.modelcontextprotocol.kotlin.sdk.testing/ChannelTransport.LinkedTransports.component1|component1(){}[0]
+        final fun component2(): io.modelcontextprotocol.kotlin.sdk.testing/ChannelTransport // io.modelcontextprotocol.kotlin.sdk.testing/ChannelTransport.LinkedTransports.component2|component2(){}[0]
+        final fun copy(io.modelcontextprotocol.kotlin.sdk.testing/ChannelTransport = ..., io.modelcontextprotocol.kotlin.sdk.testing/ChannelTransport = ...): io.modelcontextprotocol.kotlin.sdk.testing/ChannelTransport.LinkedTransports // io.modelcontextprotocol.kotlin.sdk.testing/ChannelTransport.LinkedTransports.copy|copy(io.modelcontextprotocol.kotlin.sdk.testing.ChannelTransport;io.modelcontextprotocol.kotlin.sdk.testing.ChannelTransport){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.modelcontextprotocol.kotlin.sdk.testing/ChannelTransport.LinkedTransports.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.modelcontextprotocol.kotlin.sdk.testing/ChannelTransport.LinkedTransports.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.testing/ChannelTransport.LinkedTransports.toString|toString(){}[0]
+    }
+
+    final object Companion { // io.modelcontextprotocol.kotlin.sdk.testing/ChannelTransport.Companion|null[0]
+        final fun createLinkedPair(kotlin/Int = ..., kotlinx.coroutines/CoroutineDispatcher = ...): io.modelcontextprotocol.kotlin.sdk.testing/ChannelTransport.LinkedTransports // io.modelcontextprotocol.kotlin.sdk.testing/ChannelTransport.Companion.createLinkedPair|createLinkedPair(kotlin.Int;kotlinx.coroutines.CoroutineDispatcher){}[0]
+    }
+}
