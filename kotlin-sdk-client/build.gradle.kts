@@ -7,7 +7,7 @@ plugins {
     id("mcp.detekt")
     id("mcp.publishing")
     id("mcp.dokka")
-    alias(libs.plugins.kotlinx.binary.compatibility.validator)
+    id("mcp.abi-validation")
     `netty-convention`
 }
 

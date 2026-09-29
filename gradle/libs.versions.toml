@@ -1,7 +1,6 @@
 [versions]
 # plugins version
 atomicfu = "0.33.0"
-binaryCompatibilityValidatorPlugin = "0.18.2"
 detekt = "2.0.0-alpha.6"
 dokka = "2.2.0"
 kotlin = "2.4.10"
@@ -74,7 +73,6 @@ ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "
 ktor-server-cio = { group = "io.ktor", name = "ktor-server-cio", version.ref = "ktor" }
 
 [plugins]
-kotlinx-binary-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibilityValidatorPlugin" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
 knit = { id = "org.jetbrains.kotlinx.knit", version.ref = "knit" }
