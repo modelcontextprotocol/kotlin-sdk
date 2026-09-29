@@ -476,4 +476,10 @@ class JsonRpcTest {
         val message = McpJson.decodeFromString<JSONRPCMessage>(json)
         message shouldBeSameInstanceAs JSONRPCEmptyMessage
     }
+
+    @Test
+    fun `should expose legacy and standard resource not found error codes`() {
+        assertEquals(-32002, RPCError.ErrorCode.RESOURCE_NOT_FOUND)
+        assertEquals(-32602, RPCError.ErrorCode.INVALID_PARAMS)
+    }
 }

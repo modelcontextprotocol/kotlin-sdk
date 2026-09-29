@@ -70,12 +70,16 @@ public open class ServerSession(
 
     private val _clientCapabilities: AtomicRef<ClientCapabilities?> = atomic(null)
     private val _clientVersion: AtomicRef<Implementation?> = atomic(null)
+    private val _negotiatedProtocolVersion: AtomicRef<String?> = atomic(null)
 
     /** Capabilities reported by the client during initialization, or `null` before the handshake completes. */
     public val clientCapabilities: ClientCapabilities? get() = _clientCapabilities.value
 
     /** Client implementation information reported during initialization, or `null` before the handshake completes. */
     public val clientVersion: Implementation? get() = _clientVersion.value
+
+    /** Protocol version selected during initialization, or `null` before the handshake completes. */
+    internal val negotiatedProtocolVersion: String? get() = _negotiatedProtocolVersion.value
 
     /**
      * The capabilities supported by the server, related to the session.
@@ -361,6 +365,7 @@ public open class ServerSession(
             }
             LATEST_PROTOCOL_VERSION
         }
+        _negotiatedProtocolVersion.value = protocolVersion
 
         return InitializeResult(
             protocolVersion = protocolVersion,

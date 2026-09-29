@@ -15,6 +15,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 /**
@@ -79,7 +80,24 @@ class ServerSessionAssertCapabilityTest {
         ex.message.orEmpty() shouldContain "Server does not support tasks"
     }
 
+    @Test
+    fun `server retains the negotiated protocol version`() = runTest {
+        val protocolVersion = "2025-03-26"
+
+        val session = newTestServerSession(protocolVersion = protocolVersion)
+
+        assertEquals(protocolVersion, session.negotiatedProtocolVersion)
+    }
+
+    @Test
+    fun `server retains the fallback for an unsupported protocol version`() = runTest {
+        val session = newTestServerSession(protocolVersion = "2099-01-01")
+
+        assertEquals(LATEST_PROTOCOL_VERSION, session.negotiatedProtocolVersion)
+    }
+
     private suspend fun newTestServerSession(
+        protocolVersion: String = LATEST_PROTOCOL_VERSION,
         clientCapabilities: ClientCapabilities = ClientCapabilities(),
         serverCapabilities: ServerCapabilities = ServerCapabilities(),
     ): TestServerSession {
@@ -88,7 +106,7 @@ class ServerSessionAssertCapabilityTest {
             options = ServerOptions(capabilities = serverCapabilities),
             instructions = null,
         )
-        val transport = InitializeReplayTransport(clientCapabilities)
+        val transport = InitializeReplayTransport(protocolVersion, clientCapabilities)
         session.connect(transport)
         return session
     }
@@ -113,14 +131,17 @@ class ServerSessionAssertCapabilityTest {
      * [ServerSession.clientCapabilities] before [start] returns. Other JSON-RPC
      * traffic the session subsequently emits is silently consumed.
      */
-    private class InitializeReplayTransport(private val clientCapabilities: ClientCapabilities) : Transport {
+    private class InitializeReplayTransport(
+        private val protocolVersion: String,
+        private val clientCapabilities: ClientCapabilities,
+    ) : Transport {
         private var onMessageBlock: (suspend (JSONRPCMessage) -> Unit)? = null
         private var onCloseBlock: (() -> Unit)? = null
 
         override suspend fun start() {
             val initializeRequest = InitializeRequest(
                 params = InitializeRequestParams(
-                    protocolVersion = LATEST_PROTOCOL_VERSION,
+                    protocolVersion = protocolVersion,
                     capabilities = clientCapabilities,
                     clientInfo = Implementation("mock-client", "1.0.0"),
                 ),
