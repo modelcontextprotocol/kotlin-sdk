@@ -259,17 +259,51 @@ public data class RPCError(val code: Int, val message: String, val data: JsonEle
      * Standard JSON-RPC 2.0 and MCP SDK error codes.
      */
     public object ErrorCode {
-        // SDK-specific error codes
+        // SDK-specific codes in the grandfathered -32000..-32019 range. The protocol reserves
+        // -32020..-32099 for itself, so nothing new may be allocated here.
+
         /** Connection was closed */
         public const val CONNECTION_CLOSED: Int = -32000
 
-        /** Request timed out */
+        /**
+         * A request the SDK gave up waiting for.
+         *
+         * Raised locally and never sent on the wire: a timeout is this peer's own decision, and the
+         * protocol requires that a local failure not be mistakable for one the other side reported.
+         */
         public const val REQUEST_TIMEOUT: Int = -32001
 
         /** Resource not found */
+        @Deprecated(
+            "Removed as of MCP protocol version 2026-07-28; resource-not-found is reported as " +
+                "INVALID_PARAMS (-32602). Still accepted from peers that predate the removal.",
+            ReplaceWith("INVALID_PARAMS"),
+            DeprecationLevel.WARNING,
+        )
         public const val RESOURCE_NOT_FOUND: Int = -32002
 
-        /** The request selected a protocol version that the receiver does not support. */
+        // -32020..-32099 is reserved for the MCP specification.
+
+        /**
+         * A standard MCP header disagrees with the request body, or a required one is absent.
+         *
+         * Headers restate what the body already says so that an intermediary can route on them
+         * without parsing; a disagreement means one of the two is wrong and neither can be trusted.
+         */
+        public const val HEADER_MISMATCH: Int = -32020
+
+        /**
+         * Serving the request needs a client capability the request did not declare.
+         * The error [data][RPCError.data] carries the missing capabilities
+         * (see [MissingRequiredClientCapabilityData]).
+         */
+        public const val MISSING_REQUIRED_CLIENT_CAPABILITY: Int = -32021
+
+        /**
+         * The request selected a protocol version that the receiver does not support.
+         * The error [data][RPCError.data] names the versions it does support
+         * (see [UnsupportedProtocolVersionData]).
+         */
         public const val UNSUPPORTED_PROTOCOL_VERSION: Int = -32022
 
         /**
@@ -277,6 +311,11 @@ public data class RPCError(val code: Int, val message: String, val data: JsonEle
          * The error [data][RPCError.data] carries the required URL-mode elicitations
          * (see [UrlElicitationRequiredException]).
          */
+        @Deprecated(
+            "Removed as of MCP protocol version 2026-07-28 along with URL-elicitation completion. " +
+                "Still accepted from peers that predate the removal.",
+            level = DeprecationLevel.WARNING,
+        )
         public const val URL_ELICITATION_REQUIRED: Int = -32042
 
         // Standard JSON-RPC 2.0 error codes

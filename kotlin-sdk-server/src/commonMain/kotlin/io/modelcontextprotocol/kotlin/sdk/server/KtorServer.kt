@@ -27,8 +27,11 @@ import io.ktor.server.sse.ServerSSESession
 import io.ktor.server.sse.heartbeat
 import io.ktor.server.sse.sse
 import io.ktor.utils.io.KtorDsl
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
+import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.serialization.SerializationException
 
 private val logger = KotlinLogging.logger {}
 
@@ -276,7 +279,7 @@ private fun Application.mcpStatelessStreamableHttp(
             installDnsRebindingProtection(enableDnsRebindingProtection, allowedHosts, allowedOrigins)
 
             post {
-                mcpStatelessStreamableHttpEndpoint(
+                mcpDualEraStreamableHttpEndpoint(
                     configuration = configuration,
                     block = block,
                 )
@@ -394,6 +397,58 @@ private fun ServerSSESession.mcpSseTransport(
     logger.info { "New SSE connection established and stored with sessionId: ${transport.sessionId}" }
 
     return transport
+}
+
+/**
+ * Routes one POST to the lifecycle its body asks for, then serves it.
+ *
+ * Body-primary and stateless, so a single endpoint serves both lifecycles interleaved, exactly as
+ * the reference SDKs do. The body is read once here — Ktor's request channel is single-use — and
+ * handed to whichever leg serves it.
+ */
+private suspend fun RoutingContext.mcpDualEraStreamableHttpEndpoint(
+    configuration: StreamableHttpServerTransport.Configuration,
+    block: RoutingContext.() -> Server,
+) {
+    val body = try {
+        call.receiveTextWithLimit(configuration.maxRequestBodySize)
+    } catch (e: RequestBodyTooLargeException) {
+        call.respondJsonRpcError(
+            error = RPCError(
+                code = RPCError.ErrorCode.INVALID_REQUEST,
+                message = "Invalid Request: message size exceeds maximum of ${e.maxBodySize} bytes",
+            ),
+            status = HttpStatusCode.PayloadTooLarge,
+            id = null,
+        )
+        return
+    }
+    call.attributes.put(PRE_READ_BODY, body)
+
+    val parsed = try {
+        McpJson.parseToJsonElement(body)
+    } catch (e: SerializationException) {
+        logger.debug(e) { "Rejected an unparseable request body" }
+        call.respondJsonRpcError(
+            error = RPCError(code = RPCError.ErrorCode.PARSE_ERROR, message = "Parse error"),
+            status = HttpStatusCode.BadRequest,
+            id = null,
+        )
+        return
+    }
+
+    when (val outcome = classifyInboundRequest(parsed, call.request.headers)) {
+        is InboundOutcome.Legacy -> mcpStatelessStreamableHttpEndpoint(configuration, block)
+
+        is InboundOutcome.Reject -> call.respondJsonRpcError(outcome.error, outcome.status, outcome.id)
+
+        is InboundOutcome.ModernNotification -> call.acknowledgeModernNotification(outcome.method)
+
+        is InboundOutcome.Modern -> call.serveModernRequest(
+            request = McpJson.decodeFromJsonElement(JSONRPCRequest.serializer(), parsed),
+            server = block(),
+        )
+    }
 }
 
 private suspend fun RoutingContext.mcpStatelessStreamableHttpEndpoint(

@@ -168,14 +168,16 @@ public data class ElicitRequestURLParams(
  * @property content The submitted form data, only present when [action] is [Action.Accept]
  *   and mode was form. Contains values matching the requested schema. Omitted for
  *   URL mode responses.
+ * @property resultType Discriminator for the result representation.
  * @property meta Optional metadata for this response.
  */
 @Serializable
 public data class ElicitResult(
     val action: Action,
     val content: JsonObject? = null,
+    val resultType: String = COMPLETE_RESULT_TYPE,
     @SerialName("_meta")
-    override val meta: JsonObject? = null,
+    override val meta: ResultMeta? = null,
 ) : ClientResult {
 
     init {

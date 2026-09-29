@@ -8,7 +8,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
-import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.LATEST_HANDSHAKE_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
@@ -120,7 +120,7 @@ class ServerSessionAssertCapabilityTest {
         override suspend fun start() {
             val initializeRequest = InitializeRequest(
                 params = InitializeRequestParams(
-                    protocolVersion = LATEST_PROTOCOL_VERSION,
+                    protocolVersion = LATEST_HANDSHAKE_VERSION,
                     capabilities = clientCapabilities,
                     clientInfo = Implementation("mock-client", "1.0.0"),
                 ),

@@ -12,11 +12,12 @@ import io.modelcontextprotocol.kotlin.sdk.types.ElicitResult
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotification
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
+import io.modelcontextprotocol.kotlin.sdk.types.HANDSHAKE_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeResult
 import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
-import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.LATEST_HANDSHAKE_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsResult
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
@@ -27,7 +28,6 @@ import io.modelcontextprotocol.kotlin.sdk.types.Method.Defined
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.RequestMeta
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceUpdatedNotification
-import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.types.SetLevelRequest
 import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
@@ -70,6 +70,7 @@ public open class ServerSession(
 
     private val _clientCapabilities: AtomicRef<ClientCapabilities?> = atomic(null)
     private val _clientVersion: AtomicRef<Implementation?> = atomic(null)
+    private val _negotiatedProtocolVersion: AtomicRef<String?> = atomic(null)
 
     /** Capabilities reported by the client during initialization, or `null` before the handshake completes. */
     public val clientCapabilities: ClientCapabilities? get() = _clientCapabilities.value
@@ -78,9 +79,32 @@ public open class ServerSession(
     public val clientVersion: Implementation? get() = _clientVersion.value
 
     /**
+     * The protocol version agreed during initialization, or `null` before the handshake completes.
+     *
+     * Describes only requests served under the handshake lifecycle. A request carrying its own
+     * protocol envelope reports its version through
+     * [RequestHandlerExtra.protocolVersion][io.modelcontextprotocol.kotlin.sdk.shared.RequestHandlerExtra.protocolVersion].
+     */
+    public val protocolVersion: String? get() = _negotiatedProtocolVersion.value
+
+    final override val negotiatedProtocolVersion: String? get() = _negotiatedProtocolVersion.value
+
+    final override val declaredClientCapabilities: ClientCapabilities? get() = _clientCapabilities.value
+
+    final override val declaredClientInfo: Implementation? get() = _clientVersion.value
+
+    /**
+     * The identity stamped into every result served under the request-scoped lifecycle, unless
+     * [ServerOptions.sendServerInfo] turns it off. Handshake-era results are untouched either way.
+     */
+    final override val outboundServerInfo: Implementation? get() = serverInfo.takeIf { sendServerInfo }
+
+    /**
      * The capabilities supported by the server, related to the session.
      */
     private val serverCapabilities = options.capabilities
+
+    private val sendServerInfo = options.sendServerInfo
 
     /**
      * The current logging level set by the client.
@@ -352,15 +376,16 @@ public open class ServerSession(
         _clientVersion.value = request.params.clientInfo
 
         val requestedVersion = request.params.protocolVersion
-        val protocolVersion = if (SUPPORTED_PROTOCOL_VERSIONS.contains(requestedVersion)) {
+        val protocolVersion = if (HANDSHAKE_PROTOCOL_VERSIONS.contains(requestedVersion)) {
             requestedVersion
         } else {
             logger.warn {
                 "Client requested unsupported protocol version $requestedVersion, " +
-                    "falling back to $LATEST_PROTOCOL_VERSION"
+                    "falling back to $LATEST_HANDSHAKE_VERSION"
             }
-            LATEST_PROTOCOL_VERSION
+            LATEST_HANDSHAKE_VERSION
         }
+        _negotiatedProtocolVersion.value = protocolVersion
 
         return InitializeResult(
             protocolVersion = protocolVersion,

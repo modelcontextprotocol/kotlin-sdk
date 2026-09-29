@@ -311,7 +311,7 @@ class ResourcesTest {
                 Resource(uri = "file:///workspace/CONTRIBUTING.md", name = "CONTRIBUTING"),
             ),
             nextCursor = "cursor-2",
-            meta = buildJsonObject { put("page", 1) },
+            meta = ResultMeta(buildJsonObject { put("page", 1) }),
         )
 
         verifySerialization(
@@ -324,6 +324,9 @@ class ResourcesTest {
                 {"uri": "file:///workspace/CONTRIBUTING.md", "name": "CONTRIBUTING"}
               ],
               "nextCursor": "cursor-2",
+              "resultType": "complete",
+              "ttlMs": 0,
+              "cacheScope": "private",
               "_meta": {
                 "page": 1
               }
@@ -344,6 +347,9 @@ class ResourcesTest {
                 }
               ],
               "nextCursor": "cursor-next",
+              "resultType": "complete",
+              "ttlMs": 0,
+              "cacheScope": "private",
               "_meta": {
                 "page": 2
               }
@@ -404,6 +410,9 @@ class ResourcesTest {
                   "mimeType": "image/png"
                 }
               ],
+              "resultType": "complete",
+              "ttlMs": 0,
+              "cacheScope": "private",
               "_meta": {
                 "generatedAt": "2025-01-12T15:00:58Z"
               }
@@ -506,7 +515,7 @@ class ResourcesTest {
                 ResourceTemplate(uriTemplate = "file:///workspace/{path}", name = "workspace-file"),
             ),
             nextCursor = "cursor-templates-2",
-            meta = buildJsonObject { put("page", 3) },
+            meta = ResultMeta(buildJsonObject { put("page", 3) }),
         )
 
         verifySerialization(
@@ -521,6 +530,9 @@ class ResourcesTest {
                 }
               ],
               "nextCursor": "cursor-templates-2",
+              "resultType": "complete",
+              "ttlMs": 0,
+              "cacheScope": "private",
               "_meta": {
                 "page": 3
               }
@@ -544,6 +556,9 @@ class ResourcesTest {
                 }
               ],
               "nextCursor": "cursor-next",
+              "resultType": "complete",
+              "ttlMs": 0,
+              "cacheScope": "private",
               "_meta": {
                 "page": 1
               }

@@ -4,7 +4,6 @@ import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonObject
 
 /**
  * This request is sent from the client to the server when it first connects,
@@ -85,14 +84,16 @@ public data class InitializeRequestParams(
  * tools, resources, etc. It can be thought of as a "hint" to the model.
  * For example, this information MAY be added to the system prompt to help
  * the LLM make better use of the server's capabilities.
+ * @property resultType Discriminator for the result representation.
  * @property meta Optional metadata for this response.
  */
 @Serializable
 public data class InitializeResult(
-    val protocolVersion: String = LATEST_PROTOCOL_VERSION,
+    val protocolVersion: String = LATEST_HANDSHAKE_VERSION,
     val capabilities: ServerCapabilities,
     val serverInfo: Implementation,
     val instructions: String? = null,
+    val resultType: String = COMPLETE_RESULT_TYPE,
     @SerialName("_meta")
-    override val meta: JsonObject? = null,
+    override val meta: ResultMeta? = null,
 ) : ServerResult

@@ -4,7 +4,6 @@ import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -12,13 +11,6 @@ import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.long
 import kotlinx.serialization.json.longOrNull
 import kotlin.jvm.JvmInline
-
-internal object RequestMetaKeys {
-    const val PROTOCOL_VERSION: String = "io.modelcontextprotocol/protocolVersion"
-    const val CLIENT_INFO: String = "io.modelcontextprotocol/clientInfo"
-    const val CLIENT_CAPABILITIES: String = "io.modelcontextprotocol/clientCapabilities"
-    const val LOG_LEVEL: String = "io.modelcontextprotocol/logLevel"
-}
 
 /**
  * Metadata attached to a request's `_meta` field.
@@ -50,86 +42,17 @@ public value class RequestMeta(public val json: JsonObject) {
         }
 
     /**
-     * The MCP protocol version selected for this request, or `null` when absent.
+     * The protocol version this request claims to be made under, or `null` when it claims none.
      *
-     * This field is required by the request-scoped lifecycle introduced in protocol version
-     * `2026-07-28`, but remains optional here so older requests retain their wire shape.
+     * Never throws: the claim decides which protocol era a request is served on, and that decision
+     * is made before the envelope is validated. A claim carrying a non-string value therefore reads
+     * as absent here and surfaces later, from [toEnvelope].
      *
-     * @throws SerializationException if the field is present but is not a string
+     * @see PROTOCOL_VERSION_META_KEY
      */
     @ExperimentalMcpApi
-    public val protocolVersion: String?
-        get() = json[RequestMetaKeys.PROTOCOL_VERSION]?.let { element ->
-            if (element !is JsonPrimitive || !element.isString) {
-                throw SerializationException("${RequestMetaKeys.PROTOCOL_VERSION} must be a JSON string")
-            }
-            element.content
-        }
-
-    /**
-     * Information about the client making this request, or `null` when absent.
-     *
-     * Request-scoped clients should include this field unless specifically configured not to do
-     * so. The self-reported value is intended for display, logging, and debugging; servers should
-     * not use it to change behavior or rely on it for security decisions.
-     *
-     * @throws SerializationException if the field is present but is not a valid [Implementation]
-     */
-    @ExperimentalMcpApi
-    public val clientInfo: Implementation?
-        get() = json[RequestMetaKeys.CLIENT_INFO]?.let { element ->
-            try {
-                McpJson.decodeFromJsonElement<Implementation>(element)
-            } catch (cause: SerializationException) {
-                throw SerializationException(
-                    "${RequestMetaKeys.CLIENT_INFO} must be a valid client implementation",
-                    cause,
-                )
-            }
-        }
-
-    /**
-     * Capabilities declared by the client for this request, or `null` when absent.
-     *
-     * Servers using the request-scoped lifecycle must not infer capabilities from an earlier
-     * request. An empty object means the client supports no optional capabilities.
-     *
-     * @throws SerializationException if the field is present but is not valid [ClientCapabilities]
-     */
-    @ExperimentalMcpApi
-    public val clientCapabilities: ClientCapabilities?
-        get() = json[RequestMetaKeys.CLIENT_CAPABILITIES]?.let { element ->
-            try {
-                McpJson.decodeFromJsonElement<ClientCapabilities>(element)
-            } catch (cause: SerializationException) {
-                throw SerializationException(
-                    "${RequestMetaKeys.CLIENT_CAPABILITIES} must be a valid client capabilities object",
-                    cause,
-                )
-            }
-        }
-
-    /**
-     * Minimum severity of request-associated log notifications, or `null` when absent.
-     *
-     * In the request-scoped lifecycle, absence means that the server must not emit log
-     * notifications for this request.
-     *
-     * @throws SerializationException if the field is present but is not a valid [LoggingLevel]
-     */
-    @Deprecated("Per-request log levels are deprecated as of MCP protocol version 2026-07-28 (SEP-2577).")
-    @ExperimentalMcpApi
-    public val logLevel: LoggingLevel?
-        get() = json[RequestMetaKeys.LOG_LEVEL]?.let { element ->
-            try {
-                McpJson.decodeFromJsonElement<LoggingLevel>(element)
-            } catch (cause: SerializationException) {
-                throw SerializationException(
-                    "${RequestMetaKeys.LOG_LEVEL} must be a valid logging level",
-                    cause,
-                )
-            }
-        }
+    public val claimedProtocolVersion: String?
+        get() = (json[PROTOCOL_VERSION_META_KEY] as? JsonPrimitive)?.takeIf { it.isString }?.content
 
     /**
      * Retrieves the value associated with the specified key from the JSON object.
@@ -213,10 +136,23 @@ public sealed interface PaginatedRequest : Request {
 }
 
 /**
+ * The `resultType` of a result that carries the request's outcome.
+ *
+ * Every result declares this, and a receiver must read an absent `resultType` as this value: peers
+ * that predate the field send nothing at all. It is declared per concrete result rather than on
+ * [RequestResult] because [EmptyResult] has to be able to omit it.
+ */
+public const val COMPLETE_RESULT_TYPE: String = "complete"
+
+/**
  * Represents the result of a request, including additional metadata.
  */
 @Serializable(with = RequestResultPolymorphicSerializer::class)
-public sealed interface RequestResult : WithMeta
+public sealed interface RequestResult {
+    /** Optional metadata attached to this result. */
+    @SerialName("_meta")
+    public val meta: ResultMeta?
+}
 
 /**
  * Represents a result returned by the server in response to a [ClientRequest].
@@ -233,11 +169,17 @@ public sealed interface ServerResult : RequestResult
 /**
  * An empty result for a request containing optional metadata.
  *
+ * @property resultType Discriminator for the result representation. Unlike every other result this
+ * defaults to `null`, which keeps the encoded form `{}`: deployed peers validate empty results
+ * strictly and reject unknown keys, so an unconditional [COMPLETE_RESULT_TYPE] would break them.
+ * A request-scoped connection answering an empty result passes it explicitly.
  * @property meta Additional metadata for the response. Defaults to an empty JSON object.
  */
 @Serializable
-public data class EmptyResult(@SerialName("_meta") override val meta: JsonObject? = null) :
-    ClientResult,
+public data class EmptyResult(
+    val resultType: String? = null,
+    @SerialName("_meta") override val meta: ResultMeta? = null,
+) : ClientResult,
     ServerResult
 
 /**

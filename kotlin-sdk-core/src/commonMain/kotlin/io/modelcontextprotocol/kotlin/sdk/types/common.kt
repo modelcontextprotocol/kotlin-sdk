@@ -2,25 +2,99 @@ package io.modelcontextprotocol.kotlin.sdk.types
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlin.jvm.JvmInline
 
 // ============================================================================
 // Protocol Version Constants
 // ============================================================================
 
-/** The latest supported MCP protocol version string. */
-public const val LATEST_PROTOCOL_VERSION: String = "2025-11-25"
+/**
+ * Every released MCP protocol revision, ordered oldest to newest.
+ *
+ * Position in this list is the ordering [isVersionAtLeast] uses; revision identifiers are never
+ * compared as strings.
+ */
+public val KNOWN_PROTOCOL_VERSIONS: List<String> = listOf(
+    "2024-11-05",
+    "2025-03-26",
+    "2025-06-18",
+    "2025-11-25",
+    "2026-07-28",
+)
+
+/**
+ * The revisions reachable through the `initialize` handshake.
+ *
+ * A peer speaking one of these establishes its version, capabilities and identity once, and every
+ * later request on the connection inherits them.
+ */
+public val HANDSHAKE_PROTOCOL_VERSIONS: List<String> = listOf(
+    "2024-11-05",
+    "2025-03-26",
+    "2025-06-18",
+    "2025-11-25",
+)
+
+/**
+ * The revisions that carry the per-request `_meta` envelope.
+ *
+ * These have no handshake: every request states its own version, capabilities and identity, so a
+ * receiver serves it without consulting anything an earlier request established.
+ */
+public val MODERN_PROTOCOL_VERSIONS: List<String> = listOf("2026-07-28")
+
+/** The newest protocol revision this SDK speaks, in either lifecycle. */
+public const val LATEST_PROTOCOL_VERSION: String = "2026-07-28"
+
+/**
+ * The newest revision reachable through `initialize`.
+ *
+ * This is what a client offers in the handshake, and what a server counter-offers when it cannot
+ * meet the requested version.
+ */
+public const val LATEST_HANDSHAKE_VERSION: String = "2025-11-25"
+
+/** The newest envelope revision; the version a `server/discover` probe asks for first. */
+public const val LATEST_MODERN_VERSION: String = "2026-07-28"
 
 /** The default protocol version used when negotiation is not performed. */
 public const val DEFAULT_NEGOTIATED_PROTOCOL_VERSION: String = "2025-03-26"
 
 /** All MCP protocol versions supported by this SDK. */
-public val SUPPORTED_PROTOCOL_VERSIONS: List<String> = listOf(
-    LATEST_PROTOCOL_VERSION,
-    "2025-06-18",
-    "2025-03-26",
-    "2024-11-05",
+@Deprecated(
+    "Prefer HANDSHAKE_PROTOCOL_VERSIONS or MODERN_PROTOCOL_VERSIONS. " +
+        "This union cannot express which lifecycle a version belongs to.",
+    ReplaceWith("HANDSHAKE_PROTOCOL_VERSIONS"),
+    DeprecationLevel.WARNING,
 )
+public val SUPPORTED_PROTOCOL_VERSIONS: List<String> =
+    HANDSHAKE_PROTOCOL_VERSIONS + MODERN_PROTOCOL_VERSIONS
+
+/**
+ * Whether [version] is a known revision at least as new as [minimum].
+ *
+ * Ordering is by position in [KNOWN_PROTOCOL_VERSIONS], never lexicographic: revision identifiers
+ * are not guaranteed to stay date-shaped, and an unrecognized peer string has to compare
+ * conservatively rather than accidentally — `"zzz" > "2025-11-25"` holds for strings and is wrong
+ * for protocol versions. An unknown [version] therefore returns `false`.
+ *
+ * @throws IllegalArgumentException if [minimum] is not a known revision
+ */
+public fun isVersionAtLeast(version: String, minimum: String): Boolean {
+    val minimumIndex = KNOWN_PROTOCOL_VERSIONS.indexOf(minimum)
+    require(minimumIndex >= 0) { "Unknown protocol version: $minimum" }
+    return KNOWN_PROTOCOL_VERSIONS.indexOf(version) >= minimumIndex
+}
+
+/**
+ * Whether [version] carries the per-request `_meta` envelope.
+ *
+ * Membership, not a range test: a revision belongs to a lifecycle by declaration, and a future
+ * revision that returns to the handshake must not be classified by being newer than this one.
+ */
+public fun isModernProtocolVersion(version: String): Boolean = version in MODERN_PROTOCOL_VERSIONS
 
 // ============================================================================
 // Base Interfaces
@@ -34,6 +108,26 @@ public sealed interface WithMeta {
     /** Optional metadata attached to this entity. */
     @SerialName("_meta")
     public val meta: JsonObject?
+}
+
+/**
+ * Metadata attached to a result's `_meta` field.
+ *
+ * Counterpart of [RequestMeta] on the response side. Reserved protocol keys are read through
+ * dedicated accessors; everything else stays reachable via [get] and [json].
+ *
+ * @property json the raw JSON object containing the metadata
+ */
+@JvmInline
+@Serializable
+public value class ResultMeta(public val json: JsonObject) {
+    /**
+     * Retrieves the value associated with the specified key from the JSON object.
+     *
+     * @param key the key whose corresponding value is to be returned
+     * @return the JsonElement associated with the specified key, or null if the key does not exist
+     */
+    public operator fun get(key: String): JsonElement? = json[key]
 }
 
 // ============================================================================

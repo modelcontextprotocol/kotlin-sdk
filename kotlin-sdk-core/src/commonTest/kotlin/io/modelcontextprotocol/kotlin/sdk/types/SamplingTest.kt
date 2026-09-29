@@ -236,7 +236,7 @@ class SamplingTest {
             content = TextContent(text = "Here is the requested update."),
             model = "claude-3-5-sonnet",
             stopReason = StopReason.MaxTokens,
-            meta = buildJsonObject { put("latencyMs", 850) },
+            meta = ResultMeta(buildJsonObject { put("latencyMs", 850) }),
         )
 
         verifySerialization(
@@ -246,11 +246,12 @@ class SamplingTest {
             {
               "role": "assistant",
               "content": {
-                "type": "text",
-                "text": "Here is the requested update."
+                "text": "Here is the requested update.",
+                "type": "text"
               },
               "model": "claude-3-5-sonnet",
               "stopReason": "maxTokens",
+              "resultType": "complete",
               "_meta": {
                 "latencyMs": 850
               }
@@ -265,11 +266,12 @@ class SamplingTest {
             {
               "role": "assistant",
               "content": {
-                "type": "text",
-                "text": "Summary complete."
+                "text": "Summary complete.",
+                "type": "text"
               },
               "model": "gpt-4o",
               "stopReason": "stopSequence",
+              "resultType": "complete",
               "_meta": {
                 "latencyMs": 1200.5
               }

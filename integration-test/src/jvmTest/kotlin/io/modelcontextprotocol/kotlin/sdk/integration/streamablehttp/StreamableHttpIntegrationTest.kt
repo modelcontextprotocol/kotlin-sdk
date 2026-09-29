@@ -7,7 +7,7 @@ import io.modelcontextprotocol.kotlin.sdk.client.StreamableHttpClientTransport
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
-import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.LATEST_HANDSHAKE_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.test.utils.actualPort
 import kotlinx.coroutines.Dispatchers
@@ -34,7 +34,7 @@ class StreamableHttpIntegrationTest : AbstractStreamableHttpIntegrationTest() {
                     client = httpClient,
                     url = "http://$URL:$port/mcp",
                 ).apply {
-                    protocolVersion = LATEST_PROTOCOL_VERSION
+                    protocolVersion = LATEST_HANDSHAKE_VERSION
                 }
 
                 client = Client(Implementation("streamable-http-client", VERSION))

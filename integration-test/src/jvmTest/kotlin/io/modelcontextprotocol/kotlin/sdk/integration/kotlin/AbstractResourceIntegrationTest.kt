@@ -204,9 +204,10 @@ abstract class AbstractResourceIntegrationTest : KotlinTestBase() {
         }
 
         assertEquals(
-            RPCError.ErrorCode.RESOURCE_NOT_FOUND,
+            RPCError.ErrorCode.INVALID_PARAMS,
             exception.code,
-            "Exception code should be RESOURCE_NOT_FOUND: ${RPCError.ErrorCode.RESOURCE_NOT_FOUND}",
+            "A resource that does not exist is an invalid-params rejection; the retired " +
+                "RESOURCE_NOT_FOUND (-32002) is no longer emitted on either era",
         )
     }
 
