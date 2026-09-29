@@ -11,7 +11,9 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.Url
 import io.ktor.http.append
+import io.ktor.http.hostWithPortIfSpecified
 import io.ktor.http.isSuccess
 import io.ktor.http.protocolWithAuthority
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractClientTransport
@@ -80,6 +82,18 @@ public class SseClientTransport(
             reconnectionTime = reconnectionTime,
             block = requestBuilder,
         )
+
+        // Endpoints are validated against the origin of the SSE request, so that request must not
+        // have been redirected away from the origin the transport was configured with.
+        val requestedUrl = urlString?.let { Url(it) }?.takeIf { it.host.isNotEmpty() }
+        val connectionUrl = session.call.request.url
+        if (requestedUrl != null) {
+            check(requestedUrl.hasSameOrigin(connectionUrl)) {
+                "SSE request to ${requestedUrl.safeOrigin} was redirected to a different origin " +
+                    connectionUrl.safeOrigin
+            }
+        }
+
         scope = CoroutineScope(session.coroutineContext + SupervisorJob())
 
         job = scope.launch(CoroutineName("SseMcpClientTransport.connect#${hashCode()}")) {
@@ -142,12 +156,22 @@ public class SseClientTransport(
 
     /**
      * Resolves and completes [endpoint] based on [eventData].
-     * Uses full URLs as-is, treats absolute paths as origin-relative,
-     * and relative paths as relative to [baseUrl].
+     * Uses full URLs as-is, but rejects those whose origin differs from the SSE connection origin,
+     * treats absolute paths as origin-relative, and relative paths as relative to [baseUrl].
      */
     private fun handleEndpoint(eventData: String) {
         try {
             val endpointUrl = if (eventData.startsWith("http://") || eventData.startsWith("https://")) {
+                val url = Url(eventData)
+                val connectionUrl = session.call.request.url
+                if (!url.hasSameOrigin(connectionUrl)) {
+                    val error = IllegalArgumentException(
+                        "Endpoint origin ${url.safeOrigin} does not match connection origin ${connectionUrl.safeOrigin}",
+                    )
+                    _onError(error)
+                    endpoint.completeExceptionally(error)
+                    return
+                }
                 eventData
             } else if (eventData.startsWith("/")) {
                 origin + eventData
@@ -189,3 +213,14 @@ public class SseClientTransport(
         }
     }
 }
+
+/**
+ * Compares origins as scheme, host (case-insensitive) and effective port, so an explicit default port
+ * matches an omitted one. User info is not part of the origin.
+ */
+private fun Url.hasSameOrigin(other: Url): Boolean =
+    protocol.name == other.protocol.name && host.equals(other.host, ignoreCase = true) && port == other.port
+
+/** Scheme, host and non-default port, without user info, so it is safe to put into error messages. */
+private val Url.safeOrigin: String
+    get() = "${protocol.name}://$hostWithPortIfSpecified"
