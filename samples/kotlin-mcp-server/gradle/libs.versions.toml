@@ -1,6 +1,6 @@
 [versions]
 kotlin = "2.4.20"
-ktor = "3.5.2"
+ktor = "3.6.0"
 mcp-kotlin = "0.15.0"
 slf4j = "2.0.19"
 shadow = "9.6.1"
