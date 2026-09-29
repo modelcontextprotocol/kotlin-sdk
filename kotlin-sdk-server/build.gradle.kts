@@ -40,7 +40,7 @@ kotlin {
                 implementation(libs.ktor.server.content.negotiation)
                 implementation(libs.ktor.server.test.host)
 
-                implementation(libs.logback.classic)
+                runtimeOnly(libs.slf4j.simple)
             }
         }
     }
