@@ -21,7 +21,6 @@ logging = "8.0.4"
 mockk = "1.14.11"
 serialization = "1.11.0"
 slf4j = "2.0.19"
-logback = "1.6.3"
 junit = "5.14.4"
 
 [libraries]
@@ -65,7 +64,6 @@ ktor-server-test-host = { group = "io.ktor", name = "ktor-server-test-host", ver
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 netty-bom = { group = "io.netty", name = "netty-bom", version.ref = "netty" }
 slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
-logback-classic = { group = "ch.qos.logback", name = "logback-classic", version.ref = "logback" }
 junit-jupiter-params = { module = "org.junit.jupiter:junit-jupiter-params", version.ref = "junit" }
 
 # Samples
