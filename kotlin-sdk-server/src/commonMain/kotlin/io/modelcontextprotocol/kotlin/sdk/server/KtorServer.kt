@@ -201,7 +201,8 @@ private fun Application.mcpStreamableHttp(
             intercept(ApplicationCallPipeline.Plugins) {
                 if (context.request.httpMethod != HttpMethod.Get || context.isHandled) return@intercept
                 val sessionId = context.sessionIdOrReject() ?: return@intercept finish()
-                if (sessionId !in sessions) {
+                // Touched, not just looked up, so that the session cannot expire before sse {} runs.
+                if (sessions.touch(sessionId) == null) {
                     context.rejectSessionNotFound()
                     return@intercept finish()
                 }
