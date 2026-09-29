@@ -33,11 +33,11 @@ import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.job
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -46,6 +46,7 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -54,12 +55,25 @@ private const val MCP_PROTOCOL_VERSION_HEADER = "mcp-protocol-version"
 private const val MCP_RESUMPTION_TOKEN_HEADER = "Last-Event-ID"
 private const val MIN_PRIMING_EVENT_PROTOCOL_VERSION = "2025-11-25"
 
+/** How long closing an SSE session may wait on a slow client before giving up. */
+private val SSE_SESSION_CLOSE_TIMEOUT: Duration = 1.seconds
+
 /**
  * A holder for an active request call.
  * If [StreamableHttpServerTransport.Configuration.enableJsonResponse] is true, the session is null.
  * Otherwise, the session is not null.
  */
-private data class SessionContext(val session: ServerSSESession?, val call: ApplicationCall)
+private class SessionContext(val session: ServerSSESession?, val call: ApplicationCall) {
+    /** Completed when the transport drops this stream; the GET handler waits on it. */
+    val released: CompletableDeferred<Unit> = CompletableDeferred()
+}
+
+/** Why a POST was not registered. */
+private sealed interface PostRefusal {
+    data object TransportClosed : PostRefusal
+
+    class ReusedId(val id: RequestId) : PostRefusal
+}
 
 /**
  * Server transport for Streamable HTTP: this implements the MCP Streamable HTTP transport specification.
@@ -197,6 +211,9 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
     private val sessionMutex = Mutex()
     private val streamMutex = Mutex()
 
+    /** Set by [close]; later requests are refused. */
+    private val closed: AtomicBoolean = AtomicBoolean(false)
+
     private companion object {
         const val STANDALONE_SSE_STREAM_ID = "_GET_stream"
     }
@@ -313,26 +330,27 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 // (disconnect or cancellation), so the responses are undeliverable and dropped quietly.
                 val pendingPost = pendingJsonResponses.remove(streamId)
                 if (pendingPost == null) {
-                    cleanUpRequests(relatedIds)
+                    cleanUpRequests(relatedIds, streamId)
                     return
                 }
                 val responses = relatedIds.mapNotNull { requestToResponseMapping[it] }
-                cleanUpRequests(relatedIds)
+                cleanUpRequests(relatedIds, streamId)
                 pendingPost.complete(responses)
             } else {
-                // A null stream means the per-request SSE connection closed before the response
-                // settled, so the ids are retired rather than leaked.
-                activeStream?.session?.close()
-                cleanUpRequests(relatedIds)
+                cleanUpRequests(relatedIds, streamId)
             }
         }
+        // Every response is out, so end the stream; outside the lock, as closing can wait on a slow client.
+        if (!configuration.enableJsonResponse) activeStream?.session?.closeQuietly()
     }
 
-    private fun cleanUpRequests(ids: Collection<RequestId>) {
+    /** Retires [ids] that are still routed to [streamId], leaving any later request that reused an id alone. */
+    private fun cleanUpRequests(ids: Collection<RequestId>, streamId: String) {
         ids.forEach { requestId ->
-            requestToResponseMapping.remove(requestId)
-            requestToStreamMapping.remove(requestId)
-            cancelledRequestIds.remove(requestId)
+            if (requestToStreamMapping.remove(requestId, streamId)) {
+                requestToResponseMapping.remove(requestId)
+                cancelledRequestIds.remove(requestId)
+            }
         }
     }
 
@@ -369,20 +387,16 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             if (!allSettled) return
             val pendingPost = pendingJsonResponses.remove(streamId) ?: return
             val responses = relatedIds.mapNotNull { requestToResponseMapping[it] }
-            cleanUpRequests(relatedIds)
+            cleanUpRequests(relatedIds, streamId)
             pendingPost.complete(responses)
         }
     }
 
     override suspend fun close() {
         withContext(NonCancellable) {
-            streamMutex.withLock {
-                streamsMapping.values.forEach {
-                    try {
-                        it.session?.close()
-                    } catch (_: Exception) {
-                    }
-                }
+            val streams = streamMutex.withLock {
+                closed.store(true)
+                val contexts = streamsMapping.values.toList()
                 streamsMapping.clear()
                 requestToStreamMapping.clear()
                 requestToResponseMapping.clear()
@@ -390,8 +404,13 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 // Release any POST calls suspended awaiting JSON responses.
                 pendingJsonResponses.values.forEach { it.cancel() }
                 pendingJsonResponses.clear()
-                invokeOnCloseCallback()
+                contexts
             }
+            // Closing an SSE session can wait on a slow client, so it happens outside the lock, bounded, and after
+            // the close callbacks, which cancel the server's own pending sends.
+            streams.forEach { it.released.complete(Unit) }
+            invokeOnCloseCallback()
+            streams.forEach { it.session?.closeQuietly() }
         }
     }
 
@@ -532,10 +551,33 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 null
             }
 
-            streamMutex.withLock {
+            val requestIds = messages.filterIsInstance<JSONRPCRequest>().map { it.id }
+            val refusal = streamMutex.withLock {
+                // close() may have run since validateSession.
+                if (closed.load()) return@withLock PostRefusal.TransportClosed
+                // MCP forbids reusing a request id in a session: a reused in-flight id would take its response.
+                val seen = HashSet<RequestId>()
+                val reusedId = requestIds.firstOrNull { !seen.add(it) || it in requestToStreamMapping }
+                if (reusedId != null) return@withLock PostRefusal.ReusedId(reusedId)
                 streamsMapping[streamId] = SessionContext(session, call)
-                messages.filterIsInstance<JSONRPCRequest>().forEach { requestToStreamMapping[it.id] = streamId }
+                requestIds.forEach { requestToStreamMapping[it] = streamId }
                 pendingPost?.let { pendingJsonResponses[streamId] = it }
+                null
+            }
+            if (refusal != null) {
+                // An SSE response has already started, so only a JSON one can still carry the error.
+                if (pendingPost == null) return
+                when (refusal) {
+                    PostRefusal.TransportClosed -> call.rejectSessionNotFound(requestIds.firstOrNull())
+
+                    is PostRefusal.ReusedId -> call.reject(
+                        HttpStatusCode.BadRequest,
+                        RPCError.ErrorCode.INVALID_REQUEST,
+                        "Invalid Request: Request id is already in use",
+                        refusal.id,
+                    )
+                }
+                return
             }
             call.coroutineContext.job.invokeOnCompletion { streamsMapping.remove(streamId) }
 
@@ -568,7 +610,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 // the success path (send() or retirement already cleaned up).
                 pendingJsonResponses.remove(streamId)
                 pendingPost.cancel()
-                cleanUpRequests(messages.filterIsInstance<JSONRPCRequest>().map { it.id })
+                cleanUpRequests(requestIds, streamId)
             }
         } catch (e: CancellationException) {
             throw e
@@ -612,32 +654,16 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         flushSse(sseSession)
         val newContext = SessionContext(sseSession, call)
         streamMutex.withLock {
-            streamsMapping[STANDALONE_SSE_STREAM_ID]?.let { existingContext ->
-                // Close the previous SSE session. If alive, this cancels the old
-                // coroutine (which will hit its identity-guarded finally — that finally
-                // won't double-remove, since we replace the mapping below).
-                try {
-                    existingContext.session?.close()
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (_: Exception) {
-                    // Ignore — the old stream may already be closed.
-                }
-                // Evict the stale mapping — the old session is closed either way.
-                streamsMapping.remove(STANDALONE_SSE_STREAM_ID)
-            }
-            streamsMapping[STANDALONE_SSE_STREAM_ID] = newContext
+            if (closed.load()) return
+            // Release the stream this one replaces; its own handler then returns and closes it.
+            streamsMapping.put(STANDALONE_SSE_STREAM_ID, newContext)?.released?.complete(Unit)
         }
         val clientProtocolVersion =
             call.request.header(MCP_PROTOCOL_VERSION_HEADER) ?: DEFAULT_NEGOTIATED_PROTOCOL_VERSION
         maybeSendPrimingEvent(STANDALONE_SSE_STREAM_ID, sseSession, clientProtocolVersion)
-        // Keep the SSE connection open until the client disconnects or the transport is closed.
-        // Cleanup uses try/finally (runs during cancellation propagation) instead of
-        // invokeOnCompletion (runs after job completion) to minimize the window between
-        // disconnect and mapping removal. Identity check ensures only this stream's entry
-        // is removed — not a replacement that arrived in the meantime.
+        // Keep the stream open until the client leaves, a newer GET replaces it, or the transport closes.
         try {
-            awaitCancellation()
+            newContext.released.await()
         } finally {
             // Atomic compare-and-remove — only evict our own entry, not a replacement's.
             streamsMapping.remove(STANDALONE_SSE_STREAM_ID, newContext)
@@ -765,19 +791,12 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             return false
         }
 
-        return when (headerId) {
-            sessionId -> true
-
-            else -> {
-                call.reject(
-                    HttpStatusCode.NotFound,
-                    REQUEST_TIMEOUT,
-                    "Session not found",
-                    id,
-                )
-                false
-            }
+        // A closed transport's session has ended, and the spec requires 404 for it.
+        if (headerId != sessionId || closed.load()) {
+            call.rejectSessionNotFound(id)
+            return false
         }
+        return true
     }
 
     private suspend fun validateProtocolVersion(call: ApplicationCall, id: RequestId? = null): Boolean {
@@ -892,17 +911,20 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         try {
             session?.send(event = "message", id = eventId, data = McpJson.encodeToString(message))
         } catch (e: CancellationException) {
-            // Atomic compare-and-remove — only evict this stream's entry, not a replacement's.
-            val current = streamsMapping[streamId]
-            if (current != null && current.session === session) {
-                streamsMapping.remove(streamId, current)
-            }
+            releaseStream(streamId, session)
             throw e
         } catch (_: Exception) {
-            val current = streamsMapping[streamId]
-            if (current != null && current.session === session) {
-                streamsMapping.remove(streamId, current)
-            }
+            releaseStream(streamId, session)
+        }
+    }
+
+    /** Evicts the stream [streamId] if [session] still serves it, and releases a GET handler waiting on it. */
+    private fun releaseStream(streamId: String, session: ServerSSESession?) {
+        // Atomic compare-and-remove — only evict this stream's entry, not a replacement's.
+        val current = streamsMapping[streamId]
+        if (current != null && current.session === session) {
+            streamsMapping.remove(streamId, current)
+            current.released.complete(Unit)
         }
     }
 
@@ -949,4 +971,20 @@ internal suspend fun ApplicationCall.reject(
 ) {
     val error = JSONRPCError(id = id, error = RPCError(code = code, message = message))
     respondText(McpJson.encodeToString(error), ContentType.Application.Json, status)
+}
+
+/** Answers a request for a session that does not exist or has ended. */
+internal suspend fun ApplicationCall.rejectSessionNotFound(id: RequestId? = null) {
+    reject(HttpStatusCode.NotFound, REQUEST_TIMEOUT, "Session not found", id)
+}
+
+/** Closes this session, ignoring failures and giving up after [SSE_SESSION_CLOSE_TIMEOUT]. */
+private suspend fun ServerSSESession.closeQuietly() {
+    try {
+        withTimeoutOrNull(SSE_SESSION_CLOSE_TIMEOUT) { close() }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        // Ignore — the stream may already be closed.
+    }
 }

@@ -9,6 +9,8 @@ import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.ApplicationCallPipeline
 import io.ktor.server.application.MissingApplicationPluginException
 import io.ktor.server.application.install
+import io.ktor.server.application.isHandled
+import io.ktor.server.http.HttpRequestLifecycle
 import io.ktor.server.request.ApplicationRequest
 import io.ktor.server.request.header
 import io.ktor.server.request.httpMethod
@@ -28,7 +30,10 @@ import io.ktor.server.sse.heartbeat
 import io.ktor.server.sse.sse
 import io.ktor.utils.io.KtorDsl
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
-import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineName
+import kotlinx.coroutines.launch
+import kotlin.time.Duration
 
 private val logger = KotlinLogging.logger {}
 
@@ -38,6 +43,9 @@ private val logger = KotlinLogging.logger {}
  *
  * **Precondition:** the [SSE] plugin must be installed on the application before calling this function.
  * Use [Application.mcp] if you want SSE to be installed automatically.
+ *
+ * Installs [HttpRequestLifecycle] with `cancelCallOnClose` on this route, unless it is already installed here,
+ * on a parent route, or on the application, so that an SSE session ends when its client disconnects.
  *
  * @param path the URL path to register the SSE endpoint.
  * @param enableDnsRebindingProtection whether to install [DnsRebindingProtection] on this route. Defaults to `true`.
@@ -75,6 +83,9 @@ public fun Route.mcp(
  * **Precondition:** the [SSE] plugin must be installed on the application before calling this function.
  * Use [Application.mcp] if you want SSE to be installed automatically.
  *
+ * Installs [HttpRequestLifecycle] with `cancelCallOnClose` on this route, unless it is already installed here,
+ * on a parent route, or on the application, so that an SSE session ends when its client disconnects.
+ *
  * @param enableDnsRebindingProtection whether to install [DnsRebindingProtection] on this route. Defaults to `true`.
  * @param allowedHosts hostnames allowed in the `Host` header. Defaults to `localhost`, `127.0.0.1`, `[::1]`.
  * @param allowedOrigins origins allowed in the `Origin` header, compared by hostname only
@@ -109,6 +120,7 @@ public fun Route.mcp(
     }
 
     installDnsRebindingProtection(enableDnsRebindingProtection, allowedHosts, allowedOrigins)
+    installCancelCallOnClose()
 
     val transportManager = TransportManager<SseServerTransport>()
 
@@ -127,7 +139,8 @@ public fun Route.mcp(
  * and sets up routing with the provided configuration block.
  *
  * Automatically installs [ContentNegotiation][io.ktor.server.plugins.contentnegotiation.ContentNegotiation]
- * with [McpJson][io.modelcontextprotocol.kotlin.sdk.types.McpJson] and [SSE].
+ * with [McpJson][io.modelcontextprotocol.kotlin.sdk.types.McpJson] and [SSE], and, like [Route.mcp],
+ * [HttpRequestLifecycle] on the routing root.
  *
  * @param enableDnsRebindingProtection whether to install [DnsRebindingProtection] on this route. Defaults to `true`.
  * @param allowedHosts hostnames allowed in the `Host` header. Defaults to `localhost`, `127.0.0.1`, `[::1]`.
@@ -166,46 +179,52 @@ private fun Application.mcpStreamableHttp(
     allowedOrigins: List<String>?,
     configuration: StreamableHttpServerTransport.Configuration,
     sseHeartbeatConfig: (Heartbeat.() -> Unit)?,
+    sessions: StreamableHttpSessionManager<StreamableHttpServerTransport>,
     block: RoutingContext.() -> Server,
 ) {
     installMcpContentNegotiation()
     install(SSE)
 
-    val transportManager = TransportManager<StreamableHttpServerTransport>()
+    if (sessions.expires) {
+        // The application scope is cancelled when the application stops, which ends this loop.
+        launch(CoroutineName("mcp-session-expiry")) { sessions.closeExpiredSessionsPeriodically() }
+    }
 
     routing {
         route(path) {
             installDnsRebindingProtection(enableDnsRebindingProtection, allowedHosts, allowedOrigins)
+            installCancelCallOnClose()
 
-            // Set Mcp-Session-Id on GET responses before Ktor's sse {} commits headers.
+            // Ktor's sse {} commits a 200 before its handler runs. A GET for a missing, expired, or deleted
+            // session is therefore rejected here, while its status can still be set: the spec requires 404
+            // for a terminated session. A GET that goes through gets Mcp-Session-Id.
             intercept(ApplicationCallPipeline.Plugins) {
-                if (context.request.httpMethod == HttpMethod.Get) {
-                    val sessionId = context.request.header(MCP_SESSION_ID_HEADER)
-                    if (sessionId != null && transportManager.getTransport(sessionId) != null) {
-                        context.response.header(MCP_SESSION_ID_HEADER, sessionId)
-                    }
+                if (context.request.httpMethod != HttpMethod.Get || context.isHandled) return@intercept
+                val sessionId = context.sessionIdOrReject() ?: return@intercept finish()
+                if (sessionId !in sessions) {
+                    context.rejectSessionNotFound()
+                    return@intercept finish()
                 }
+                context.response.header(MCP_SESSION_ID_HEADER, sessionId)
             }
 
             sse {
-                val transport = existingStreamableTransport(call, transportManager) ?: return@sse
+                // Validated by the interceptor above; an open stream does not keep the session alive.
+                val transport = call.request.sessionId()?.let { sessions.touch(it) } ?: return@sse
                 sseHeartbeatConfig?.let { config -> heartbeat(config) }
                 transport.handleRequest(this, call)
             }
 
             post {
-                val transport = streamableTransport(
-                    transportManager = transportManager,
-                    configuration = configuration,
-                    block = block,
-                ) ?: return@post
-
-                transport.handleRequest(null, call)
+                if (call.request.sessionId() == null) {
+                    openStreamableSession(sessions, configuration, block)
+                } else {
+                    call.withStreamableSession(sessions) { transport -> transport.handleRequest(null, call) }
+                }
             }
 
             delete {
-                val transport = existingStreamableTransport(call, transportManager) ?: return@delete
-                transport.handleRequest(null, call)
+                call.withStreamableSession(sessions) { transport -> transport.handleRequest(null, call) }
             }
         }
     }
@@ -221,6 +240,12 @@ private fun Application.mcpStreamableHttp(
  * Automatically installs [ContentNegotiation][io.ktor.server.plugins.contentnegotiation.ContentNegotiation]
  * with [McpJson][io.modelcontextprotocol.kotlin.sdk.types.McpJson] and [SSE].
  *
+ * A session expires after [sessionIdleTimeout] without requests (an open GET stream does not count), after which
+ * its id answers `404 Not Found`. At most [maxSessions] sessions are open at once; beyond that, a new session is
+ * refused with `503 Service Unavailable`.
+ *
+ * Also installs [HttpRequestLifecycle] with `cancelCallOnClose` on the route, unless it is already installed.
+ *
  * @param path The base path for the MCP Streamable HTTP endpoint. Defaults to "/mcp".
  * @param enableDnsRebindingProtection Enables DNS rebinding attack protection for the endpoint. Defaults to `true`.
  * @param allowedHosts A list of hostnames allowed to access the endpoint.
@@ -233,8 +258,14 @@ private fun Application.mcpStreamableHttp(
  * @param eventStore An optional [EventStore] instance to enable resumable event stream functionality.
  *          Allows storing and replaying events.
  * @param sseHeartbeatConfig The heartbeat configuration option for SSE connections. `null` means no heartbeat is sent.
+ * @param sessionIdleTimeout How long a session may go without activity before it is closed. Defaults to 30 minutes.
+ *          Expiry is checked every few seconds, so a session can outlive this by up to 5 seconds.
+ *          [Duration.INFINITE] disables expiry, so abandoned sessions pile up until [maxSessions] is reached.
+ * @param maxSessions The maximum number of sessions open at once, counting those still initializing.
+ *          Defaults to 10,000.
  * @param block factory block with access to the [RoutingContext] (for reading request headers)
  *          that creates and returns the [Server] to handle the connection.
+ * @throws IllegalArgumentException if [sessionIdleTimeout] or [maxSessions] is not positive.
  */
 @KtorDsl
 public fun Application.mcpStreamableHttp(
@@ -244,6 +275,8 @@ public fun Application.mcpStreamableHttp(
     allowedOrigins: List<String>? = null,
     eventStore: EventStore? = null,
     sseHeartbeatConfig: (Heartbeat.() -> Unit)? = null,
+    sessionIdleTimeout: Duration = DEFAULT_SESSION_IDLE_TIMEOUT,
+    maxSessions: Int = DEFAULT_MAX_SESSIONS,
     block: RoutingContext.() -> Server,
 ) {
     mcpStreamableHttp(
@@ -256,6 +289,7 @@ public fun Application.mcpStreamableHttp(
             enableJsonResponse = true,
         ),
         sseHeartbeatConfig = sseHeartbeatConfig,
+        sessions = StreamableHttpSessionManager(idleTimeout = sessionIdleTimeout, maxSessions = maxSessions),
         block = block,
     )
 }
@@ -369,19 +403,24 @@ private suspend fun ServerSSESession.mcpSseEndpoint(
     block: ServerSSESession.() -> Server,
 ) {
     val transport = mcpSseTransport(postEndpoint, transportManager, maxRequestBodySize)
-
-    val server = block()
-
-    server.onClose {
+    val transportClosed = CompletableDeferred<Unit>()
+    // Registered before the session starts, so a close right after it starts is not missed.
+    transport.onClose {
         logger.info { "Server connection closed for sessionId: ${transport.sessionId}" }
-        transportManager.removeTransport(transport.sessionId)
+        transportClosed.complete(Unit)
     }
 
-    server.createSession(transport)
+    try {
+        block().createSession(transport)
+        logger.debug { "Server connected to transport for sessionId: ${transport.sessionId}" }
 
-    logger.debug { "Server connected to transport for sessionId: ${transport.sessionId}" }
-
-    awaitCancellation()
+        // The connection lasts until the server closes the session, or until the client goes away, which
+        // cancels this call (see installCancelCallOnClose).
+        transportClosed.await()
+    } finally {
+        // Without its SSE connection the transport can no longer answer, so stop routing POSTs to it.
+        transportManager.removeTransport(transport.sessionId)
+    }
 }
 
 private fun ServerSSESession.mcpSseTransport(
@@ -451,64 +490,99 @@ private suspend fun ApplicationCall.rejectUnsupportedMethod() {
 
 private fun ApplicationRequest.sessionId(): String? = header(MCP_SESSION_ID_HEADER)
 
-private suspend fun existingStreamableTransport(
-    call: ApplicationCall,
-    transportManager: TransportManager<StreamableHttpServerTransport>,
-): StreamableHttpServerTransport? {
-    val sessionId = call.request.sessionId()
+/**
+ * Runs [block] with the transport of the session named by the `Mcp-Session-Id` header, keeping that session from
+ * expiring until [block] returns. Rejects the call when the header is missing or names no open session.
+ */
+private suspend fun ApplicationCall.withStreamableSession(
+    sessions: StreamableHttpSessionManager<StreamableHttpServerTransport>,
+    block: suspend (StreamableHttpServerTransport) -> Unit,
+) {
+    val sessionId = sessionIdOrReject() ?: return
+    if (!sessions.withSession(sessionId, block)) rejectSessionNotFound()
+}
+
+/** Returns the `Mcp-Session-Id` header, or answers `400 Bad Request` and returns `null` when it is missing. */
+private suspend fun ApplicationCall.sessionIdOrReject(): String? {
+    val sessionId = request.sessionId()
     if (sessionId.isNullOrEmpty()) {
-        call.reject(
+        reject(
             HttpStatusCode.BadRequest,
             RPCError.ErrorCode.CONNECTION_CLOSED,
             "Bad Request: No valid session ID provided",
         )
         return null
     }
-
-    val transport = transportManager.getTransport(sessionId)
-    return if (transport == null) {
-        call.reject(
-            HttpStatusCode.NotFound,
-            RPCError.ErrorCode.CONNECTION_CLOSED,
-            "Session not found",
-        )
-        null
-    } else {
-        transport
-    }
+    return sessionId
 }
 
-private suspend fun RoutingContext.streamableTransport(
-    transportManager: TransportManager<StreamableHttpServerTransport>,
+/**
+ * Serves a POST that carries no `Mcp-Session-Id` on a new session. The session is kept only if the POST
+ * initializes it; otherwise it is closed once the POST completes.
+ */
+private suspend fun RoutingContext.openStreamableSession(
+    sessions: StreamableHttpSessionManager<StreamableHttpServerTransport>,
     configuration: StreamableHttpServerTransport.Configuration,
     block: RoutingContext.() -> Server,
-): StreamableHttpServerTransport? {
-    val sessionId = call.request.sessionId()
-    if (sessionId != null) {
-        val transport = transportManager.getTransport(sessionId)
-        return transport ?: existingStreamableTransport(call, transportManager)
+) {
+    if (!sessions.tryReserve()) {
+        logger.warn { "Rejecting a new StreamableHttp session: ${sessions.maxSessions} sessions are already open" }
+        call.reject(
+            HttpStatusCode.ServiceUnavailable,
+            RPCError.ErrorCode.INTERNAL_ERROR,
+            "Service Unavailable: Too many open sessions",
+        )
+        return
     }
 
     val transport = StreamableHttpServerTransport(configuration)
 
     transport.setOnSessionInitialized { initializedSessionId ->
-        transportManager.addTransport(initializedSessionId, transport)
+        sessions.register(initializedSessionId, transport)
         logger.info { "New StreamableHttp connection established and stored with sessionId: $initializedSessionId" }
     }
 
     transport.setOnSessionClosed { closedSession ->
-        transportManager.removeTransport(closedSession)
+        sessions.remove(closedSession, transport)
         logger.info { "Closed StreamableHttp connection and removed sessionId: $closedSession" }
     }
 
-    val server = block()
-    server.onClose {
-        transport.sessionId?.let { transportManager.removeTransport(it) }
-        logger.info { "Server connection closed for sessionId: ${transport.sessionId}" }
+    try {
+        val session = block().createSession(transport)
+        // Registered on the session rather than on the Server, which may be shared by every session.
+        session.onClose {
+            transport.sessionId?.let { sessionId ->
+                sessions.remove(sessionId, transport)
+                logger.debug { "Server connection closed for sessionId: $sessionId" }
+            }
+        }
+        transport.handleRequest(null, call)
+    } finally {
+        // The transport gets its session id when it initializes, which is also when the session is registered.
+        val sessionId = transport.sessionId
+        if (sessionId != null) {
+            sessions.release(sessionId, transport)
+        } else {
+            sessions.cancelReservation()
+            // No request can reach a transport that never initialized. Close it so that a Server shared
+            // across sessions drops the session created for it.
+            transport.close()
+        }
     }
-    server.createSession(transport)
+}
 
-    return transport
+/**
+ * Has the engine cancel a call once its client disconnects. Otherwise a handler that only waits, like the one
+ * holding an SSE connection open, keeps running after its client is gone, and so does its session. Only the CIO
+ * and Netty engines support this; others notice a gone client only when writing to it. An [HttpRequestLifecycle]
+ * already installed on this route, a parent route, or the application is kept as it is.
+ */
+private fun Route.installCancelCallOnClose() {
+    try {
+        plugin(HttpRequestLifecycle)
+    } catch (_: MissingApplicationPluginException) {
+        install(HttpRequestLifecycle) { cancelCallOnClose = true }
+    }
 }
 
 private fun Route.installDnsRebindingProtection(enabled: Boolean, hosts: List<String>?, origins: List<String>?) {

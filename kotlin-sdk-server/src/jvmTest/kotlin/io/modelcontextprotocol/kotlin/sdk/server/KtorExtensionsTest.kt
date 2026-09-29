@@ -2,7 +2,9 @@ package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.kotest.assertions.ktor.client.shouldHaveContentType
 import io.kotest.assertions.ktor.client.shouldHaveStatus
+import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.matchers.maps.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.string.shouldContain
 import io.ktor.client.HttpClient
@@ -10,6 +12,7 @@ import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.prepareGet
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
@@ -19,6 +22,7 @@ import io.ktor.server.routing.routing
 import io.ktor.server.sse.SSE
 import io.ktor.server.testing.testApplication
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.seconds
 
 class KtorExtensionsTest {
 
@@ -66,6 +70,32 @@ class KtorExtensionsTest {
         client.post("/api").shouldHaveStatus(HttpStatusCode.NotFound)
     }
 
+    /**
+     * Verifies that a closed session stops receiving POSTs and is not retained until the
+     * [Server] itself closes, even while its SSE connection is still open.
+     */
+    @Test
+    fun `Route mcp stops routing POSTs to a session once it closes`() = testApplication {
+        val server = testServer()
+        application {
+            install(SSE)
+            routing {
+                mcp(enableDnsRebindingProtection = false) { server }
+            }
+        }
+
+        client.prepareGet("/").execute { response ->
+            val sessionId = response.readSseSessionId().shouldNotBeNull()
+            client.postPing("/", sessionId).shouldHaveStatus(HttpStatusCode.Accepted)
+            // The session registers with the Server just after the endpoint event goes out.
+            eventually(5.seconds) { server.sessions shouldHaveSize 1 }
+
+            server.sessions.values.single().close()
+
+            client.postPing("/", sessionId).shouldHaveStatus(HttpStatusCode.NotFound)
+        }
+    }
+
     @Test
     fun `Application mcp should install SSE and register endpoints at the root`() = testApplication {
         application {
@@ -85,12 +115,16 @@ class KtorExtensionsTest {
             response.shouldHaveContentType(ContentType.Text.EventStream)
             val sessionId = response.readSseSessionId().shouldNotBeNull()
 
-            post("$path?sessionId=$sessionId") {
-                contentType(ContentType.Application.Json)
-                setBody("""{"jsonrpc":"2.0","id":1,"method":"ping"}""")
-            }.shouldHaveStatus(HttpStatusCode.Accepted)
+            postPing(path, sessionId).shouldHaveStatus(HttpStatusCode.Accepted)
         }
 
         post(path).shouldHaveStatus(HttpStatusCode.BadRequest)
     }
+
+    /** POSTs a JSON-RPC ping to the session [sessionId] of the SSE endpoint at [path]. */
+    private suspend fun HttpClient.postPing(path: String, sessionId: String): HttpResponse =
+        post("$path?sessionId=$sessionId") {
+            contentType(ContentType.Application.Json)
+            setBody("""{"jsonrpc":"2.0","id":1,"method":"ping"}""")
+        }
 }
