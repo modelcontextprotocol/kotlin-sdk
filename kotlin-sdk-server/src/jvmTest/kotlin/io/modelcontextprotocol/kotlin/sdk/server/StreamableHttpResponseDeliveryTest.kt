@@ -2,6 +2,7 @@ package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.kotest.matchers.shouldBe
 import io.ktor.client.request.delete
+import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.statement.HttpResponse
@@ -57,6 +58,34 @@ class StreamableHttpResponseDeliveryTest {
 
         response.status shouldBe HttpStatusCode.NotFound
         response.decodeError().error.message shouldBe "Session not found"
+    }
+
+    @Test
+    fun `stateful GET for an unknown session returns 404`() = testApplication {
+        application { mcpStreamableHttp { testServer() } }
+
+        val response = client.get("/mcp") {
+            header(HttpHeaders.Host, "localhost")
+            header(HttpHeaders.Accept, eventStream)
+            header(MCP_SESSION_ID_HEADER, "unknown-session")
+        }
+
+        response.status shouldBe HttpStatusCode.NotFound
+        val error = response.decodeError().error
+        error.message shouldBe "Session not found"
+        error.code shouldBe -32001
+    }
+
+    @Test
+    fun `stateful GET without a session id returns 400`() = testApplication {
+        application { mcpStreamableHttp { testServer() } }
+
+        val response = client.get("/mcp") {
+            header(HttpHeaders.Host, "localhost")
+            header(HttpHeaders.Accept, eventStream)
+        }
+
+        response.status shouldBe HttpStatusCode.BadRequest
     }
 
     private suspend fun HttpResponse.decodeError(): JSONRPCError = McpJson.decodeFromString(bodyAsText())
