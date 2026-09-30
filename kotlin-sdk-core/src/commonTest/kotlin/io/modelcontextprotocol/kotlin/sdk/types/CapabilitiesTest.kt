@@ -1,319 +1,54 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
-import io.kotest.assertions.json.shouldEqualJson
 import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
 import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
-import io.modelcontextprotocol.kotlin.test.utils.verifySerializationRoundTrip
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 class CapabilitiesTest {
 
     @Test
-    fun `should serialize Implementation with minimal fields`() {
-        val implementation = Implementation(
-            name = "test-server",
-            version = "1.0.0",
-        )
-        verifySerialization(
-            implementation,
-            McpJson,
-            """
-            {
-              "name": "test-server",
-              "version": "1.0.0"
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should serialize Implementation with all fields`() {
-        val implementation = Implementation(
-            name = "test-server",
-            version = "1.0.0",
-            title = "Test Server",
-            websiteUrl = "https://example.com",
-            icons = listOf(
-                Icon(src = "https://example.com/icon.png"),
-            ),
-        )
-        verifySerialization(
-            implementation,
-            McpJson,
-            """
-            {
-              "name": "test-server",
-              "version": "1.0.0",
-              "title": "Test Server",
-              "websiteUrl": "https://example.com",
-              "icons": [
-                {"src": "https://example.com/icon.png"}
-              ]
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should deserialize Implementation from JSON`() {
-        val json = """
-            {
-              "name": "test-server",
-              "version": "2.1.3-beta",
-              "title": "Test Server",
-              "websiteUrl": "https://example.com"
-            }
-        """.trimIndent()
-
-        val implementation = verifyDeserialization<Implementation>(McpJson, json)
-
-        assertEquals("test-server", implementation.name)
-        assertEquals("2.1.3-beta", implementation.version)
-        assertEquals("Test Server", implementation.title)
-        assertEquals("https://example.com", implementation.websiteUrl)
-    }
-
-    @Test
-    fun `should deserialize Implementation with minimal fields from JSON`() {
-        val json = """
-            {
-              "name": "minimal-server",
-              "version": "0.1.0"
-            }
-        """.trimIndent()
-
-        val implementation = verifyDeserialization<Implementation>(McpJson, json)
-
-        assertEquals("minimal-server", implementation.name)
-        assertEquals("0.1.0", implementation.version)
-        assertNull(implementation.title)
-        assertNull(implementation.websiteUrl)
-        assertNull(implementation.icons)
-    }
-
-    @Test
-    fun `should serialize and deserialize Implementation round trip`() {
-        val original = Implementation(
-            name = "round-trip-test",
-            version = "1.2.3",
-            title = "Round Trip Test",
-            websiteUrl = "https://test.com",
-        )
-
-        verifySerializationRoundTrip(original, McpJson)
-    }
-
-    // ClientCapabilities tests
-    @Test
-    fun `should serialize empty ClientCapabilities`() {
-        val capabilities = ClientCapabilities()
-        val json = McpJson.encodeToString(capabilities)
-
-        json shouldEqualJson "{}"
-    }
-
-    @Test
-    fun `should serialize ClientCapabilities with sampling`() {
-        val capabilities = ClientCapabilities(
-            sampling = ClientCapabilities.Sampling(),
-        )
-        verifySerialization(
-            capabilities,
-            McpJson,
-            """
-            {
-              "sampling": {}
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should serialize ClientCapabilities with roots without listChanged`() {
-        val capabilities = ClientCapabilities(
-            roots = ClientCapabilities.Roots(),
-        )
-        verifySerialization(
-            capabilities,
-            McpJson,
-            """
-            {
-              "roots": {}
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should serialize ClientCapabilities with roots with listChanged`() {
-        val capabilities = ClientCapabilities(
-            roots = ClientCapabilities.Roots(listChanged = true),
-        )
-        verifySerialization(
-            capabilities,
-            McpJson,
-            """
-            {
-              "roots": {
-                "listChanged": true
-              }
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should serialize ClientCapabilities with elicitation`() {
-        val capabilities = ClientCapabilities(
-            elicitation = ClientCapabilities.elicitation,
-        )
-        verifySerialization(
-            capabilities,
-            McpJson,
-            """
-            {
-              "elicitation": {}
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should serialize ClientCapabilities with extensions`() {
-        val extensions = mapOf(
-            "io.modelcontextprotocol/ui" to buildJsonObject {
-                put("mimeTypes", buildJsonObject { put("text/html", true) })
-            },
-        )
-        val capabilities = ClientCapabilities(
-            extensions = extensions,
-        )
-        verifySerialization(
-            capabilities,
-            McpJson,
-            """
-            {
-              "extensions": {
-                "io.modelcontextprotocol/ui": {
-                  "mimeTypes": {
-                    "text/html": true
-                  }
-                }
-              }
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should serialize ClientCapabilities with empty extensions settings`() {
-        val capabilities = ClientCapabilities(
-            extensions = mapOf(
-                "io.modelcontextprotocol/ui" to EmptyJsonObject,
-            ),
-        )
-        verifySerialization(
-            capabilities,
-            McpJson,
-            """
-            {
-              "extensions": {
-                "io.modelcontextprotocol/ui": {}
-              }
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should serialize ClientCapabilities with experimental`() {
-        val experimental = buildJsonObject {
-            put(
-                "customFeature",
-                buildJsonObject {
-                    put("enabled", true)
-                },
-            )
-        }
-        val capabilities = ClientCapabilities(
-            experimental = experimental,
-        )
-        verifySerialization(
-            capabilities,
-            McpJson,
-            """
-            {
-              "experimental": {
-                "customFeature": {
-                  "enabled": true
-                }
-              }
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
     fun `should serialize ClientCapabilities with all fields`() {
-        val experimental = buildJsonObject {
-            put("feature1", buildJsonObject { put("enabled", true) })
-        }
-        val extensions = mapOf(
-            "io.modelcontextprotocol/ui" to EmptyJsonObject,
-        )
         val capabilities = ClientCapabilities(
-            sampling = ClientCapabilities.Sampling(),
+            sampling = ClientCapabilities.Sampling(context = EmptyJsonObject, tools = EmptyJsonObject),
             roots = ClientCapabilities.Roots(listChanged = true),
-            elicitation = ClientCapabilities.elicitation,
-            experimental = experimental,
-            extensions = extensions,
+            elicitation = ClientCapabilities.Elicitation(form = EmptyJsonObject, url = EmptyJsonObject),
+            tasks = ClientCapabilities.Tasks(
+                list = EmptyJsonObject,
+                cancel = EmptyJsonObject,
+                requests = ClientCapabilities.Tasks.Requests(
+                    sampling = ClientCapabilities.Tasks.Requests.Sampling(createMessage = EmptyJsonObject),
+                    elicitation = ClientCapabilities.Tasks.Requests.Elicitation(create = EmptyJsonObject),
+                ),
+            ),
+            experimental = buildJsonObject { put("feature1", buildJsonObject { put("enabled", true) }) },
+            extensions = mapOf("io.modelcontextprotocol/ui" to EmptyJsonObject),
         )
         verifySerialization(
             capabilities,
             McpJson,
             """
             {
-              "sampling": {},
-              "roots": {
-                "listChanged": true
-              },
-              "elicitation": {},
-              "experimental": {
-                "feature1": {
-                  "enabled": true
+              "sampling": {"context": {}, "tools": {}},
+              "roots": {"listChanged": true},
+              "elicitation": {"form": {}, "url": {}},
+              "tasks": {
+                "list": {},
+                "cancel": {},
+                "requests": {
+                  "sampling": {"createMessage": {}},
+                  "elicitation": {"create": {}}
                 }
               },
-              "extensions": {
-                "io.modelcontextprotocol/ui": {}
-              }
+              "experimental": {"feature1": {"enabled": true}},
+              "extensions": {"io.modelcontextprotocol/ui": {}}
             }
             """.trimIndent(),
         )
-    }
-
-    @Test
-    fun `should deserialize ClientCapabilities from JSON`() {
-        val json = """
-            {
-              "sampling": {},
-              "roots": {
-                "listChanged": true
-              },
-              "elicitation": {}
-            }
-        """.trimIndent()
-
-        val capabilities = verifyDeserialization<ClientCapabilities>(McpJson, json)
-
-        assertEquals(ClientCapabilities.Sampling(), capabilities.sampling)
-        assertEquals(true, capabilities.roots?.listChanged)
-        assertEquals(ClientCapabilities.Elicitation(), capabilities.elicitation)
     }
 
     @Test
@@ -330,335 +65,43 @@ class CapabilitiesTest {
     }
 
     @Test
-    fun `should serialize and deserialize ClientCapabilities round trip`() {
-        val original = ClientCapabilities(
-            sampling = ClientCapabilities.Sampling(),
-            roots = ClientCapabilities.Roots(listChanged = false),
-            elicitation = ClientCapabilities.elicitation,
-            extensions = mapOf(
-                "io.modelcontextprotocol/ui" to buildJsonObject {
-                    put("mimeTypes", buildJsonObject { put("text/html", true) })
-                },
-            ),
-        )
-
-        verifySerializationRoundTrip(original, McpJson)
-    }
-
-    // ServerCapabilities tests
-    @Test
-    fun `should serialize empty ServerCapabilities`() {
-        val capabilities = ServerCapabilities()
-        val json = McpJson.encodeToString(capabilities)
-
-        json shouldEqualJson "{}"
-    }
-
-    @Test
-    fun `should serialize ServerCapabilities with tools without listChanged`() {
-        val capabilities = ServerCapabilities(
-            tools = ServerCapabilities.Tools(),
-        )
-        verifySerialization(
-            capabilities,
-            McpJson,
-            """
-            {
-              "tools": {}
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should serialize ServerCapabilities with tools with listChanged`() {
-        val capabilities = ServerCapabilities(
-            tools = ServerCapabilities.Tools(listChanged = true),
-        )
-        verifySerialization(
-            capabilities,
-            McpJson,
-            """
-            {
-              "tools": {
-                "listChanged": true
-              }
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should serialize ServerCapabilities with resources without options`() {
-        val capabilities = ServerCapabilities(
-            resources = ServerCapabilities.Resources(),
-        )
-        verifySerialization(
-            capabilities,
-            McpJson,
-            """
-            {
-              "resources": {}
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should serialize ServerCapabilities with resources with listChanged`() {
-        val capabilities = ServerCapabilities(
-            resources = ServerCapabilities.Resources(listChanged = true),
-        )
-        verifySerialization(
-            capabilities,
-            McpJson,
-            """
-            {
-              "resources": {
-                "listChanged": true
-              }
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should serialize ServerCapabilities with resources with subscribe`() {
-        val capabilities = ServerCapabilities(
-            resources = ServerCapabilities.Resources(subscribe = true),
-        )
-        verifySerialization(
-            capabilities,
-            McpJson,
-            """
-            {
-              "resources": {
-                "subscribe": true
-              }
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should serialize ServerCapabilities with resources with both options`() {
-        val capabilities = ServerCapabilities(
-            resources = ServerCapabilities.Resources(
-                listChanged = true,
-                subscribe = false,
-            ),
-        )
-        verifySerialization(
-            capabilities,
-            McpJson,
-            """
-            {
-              "resources": {
-                "listChanged": true,
-                "subscribe": false
-              }
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should serialize ServerCapabilities with prompts without listChanged`() {
-        val capabilities = ServerCapabilities(
-            prompts = ServerCapabilities.Prompts(),
-        )
-        verifySerialization(
-            capabilities,
-            McpJson,
-            """
-            {
-              "prompts": {}
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should serialize ServerCapabilities with prompts with listChanged`() {
-        val capabilities = ServerCapabilities(
-            prompts = ServerCapabilities.Prompts(listChanged = false),
-        )
-        verifySerialization(
-            capabilities,
-            McpJson,
-            """
-            {
-              "prompts": {
-                "listChanged": false
-              }
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should serialize ServerCapabilities with logging`() {
-        val capabilities = ServerCapabilities(
-            logging = ServerCapabilities.Logging,
-        )
-        verifySerialization(
-            capabilities,
-            McpJson,
-            """
-            {
-              "logging": {}
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should serialize ServerCapabilities with completions`() {
-        val capabilities = ServerCapabilities(
-            completions = ServerCapabilities.Completions,
-        )
-        verifySerialization(
-            capabilities,
-            McpJson,
-            """
-            {
-              "completions": {}
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should serialize ServerCapabilities with extensions`() {
-        val capabilities = ServerCapabilities(
-            extensions = mapOf(
-                "io.modelcontextprotocol/ui" to EmptyJsonObject,
-                "com.example/custom" to buildJsonObject {
-                    put("setting", "value")
-                },
-            ),
-        )
-        verifySerialization(
-            capabilities,
-            McpJson,
-            """
-            {
-              "extensions": {
-                "io.modelcontextprotocol/ui": {},
-                "com.example/custom": {
-                  "setting": "value"
-                }
-              }
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should serialize ServerCapabilities with experimental`() {
-        val experimental = buildJsonObject {
-            put(
-                "customCapability",
-                buildJsonObject {
-                    put("version", "1.0")
-                },
-            )
-        }
-        val capabilities = ServerCapabilities(
-            experimental = experimental,
-        )
-        verifySerialization(
-            capabilities,
-            McpJson,
-            """
-            {
-              "experimental": {
-                "customCapability": {
-                  "version": "1.0"
-                }
-              }
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
     fun `should serialize ServerCapabilities with all fields`() {
-        val experimental = buildJsonObject {
-            put("feature1", buildJsonObject { put("enabled", true) })
-        }
-        val extensions = mapOf(
-            "io.modelcontextprotocol/ui" to EmptyJsonObject,
-        )
         val capabilities = ServerCapabilities(
             tools = ServerCapabilities.Tools(listChanged = true),
-            resources = ServerCapabilities.Resources(
-                listChanged = true,
-                subscribe = true,
-            ),
+            resources = ServerCapabilities.Resources(listChanged = true, subscribe = true),
             prompts = ServerCapabilities.Prompts(listChanged = false),
             logging = ServerCapabilities.Logging,
             completions = ServerCapabilities.Completions,
-            experimental = experimental,
-            extensions = extensions,
+            tasks = ServerCapabilities.Tasks(
+                list = EmptyJsonObject,
+                cancel = EmptyJsonObject,
+                requests = ServerCapabilities.Tasks.Requests(
+                    tools = ServerCapabilities.Tasks.Requests.Tools(call = EmptyJsonObject),
+                ),
+            ),
+            experimental = buildJsonObject { put("feature1", buildJsonObject { put("enabled", true) }) },
+            extensions = mapOf("io.modelcontextprotocol/ui" to EmptyJsonObject),
         )
         verifySerialization(
             capabilities,
             McpJson,
             """
             {
-              "tools": {
-                "listChanged": true
-              },
-              "resources": {
-                "listChanged": true,
-                "subscribe": true
-              },
-              "prompts": {
-                "listChanged": false
-              },
+              "tools": {"listChanged": true},
+              "resources": {"listChanged": true, "subscribe": true},
+              "prompts": {"listChanged": false},
               "logging": {},
               "completions": {},
-              "experimental": {
-                "feature1": {
-                  "enabled": true
-                }
+              "tasks": {
+                "list": {},
+                "cancel": {},
+                "requests": {"tools": {"call": {}}}
               },
-              "extensions": {
-                "io.modelcontextprotocol/ui": {}
-              }
+              "experimental": {"feature1": {"enabled": true}},
+              "extensions": {"io.modelcontextprotocol/ui": {}}
             }
             """.trimIndent(),
         )
-    }
-
-    @Test
-    fun `should deserialize ServerCapabilities from JSON`() {
-        val json = """
-            {
-              "tools": {
-                "listChanged": true
-              },
-              "resources": {
-                "listChanged": false,
-                "subscribe": true
-              },
-              "prompts": {
-                "listChanged": true
-              },
-              "logging": {},
-              "completions": {}
-            }
-        """.trimIndent()
-
-        val capabilities = verifyDeserialization<ServerCapabilities>(McpJson, json)
-
-        assertEquals(true, capabilities.tools?.listChanged)
-        assertEquals(false, capabilities.resources?.listChanged)
-        assertEquals(true, capabilities.resources?.subscribe)
-        assertEquals(true, capabilities.prompts?.listChanged)
-        assertEquals(EmptyJsonObject, capabilities.logging)
-        assertEquals(EmptyJsonObject, capabilities.completions)
     }
 
     @Test
@@ -674,38 +117,6 @@ class CapabilitiesTest {
         assertNull(capabilities.completions)
         assertNull(capabilities.experimental)
         assertNull(capabilities.extensions)
-    }
-
-    @Test
-    fun `should serialize and deserialize ServerCapabilities round trip`() {
-        val original = ServerCapabilities(
-            tools = ServerCapabilities.Tools(listChanged = true),
-            resources = ServerCapabilities.Resources(
-                listChanged = false,
-                subscribe = true,
-            ),
-            prompts = ServerCapabilities.Prompts(listChanged = true),
-            logging = ServerCapabilities.Logging,
-            extensions = mapOf(
-                "io.modelcontextprotocol/ui" to EmptyJsonObject,
-            ),
-        )
-
-        verifySerializationRoundTrip(original, McpJson)
-    }
-
-    // Additional nested type tests
-    @Test
-    fun `should deserialize ClientCapabilities Roots with null listChanged`() {
-        val json = """
-            {
-              "roots": {}
-            }
-        """.trimIndent()
-
-        val capabilities = verifyDeserialization<ClientCapabilities>(McpJson, json)
-
-        assertNull(capabilities.roots?.listChanged)
     }
 
     @Test
@@ -744,202 +155,12 @@ class CapabilitiesTest {
     }
 
     @Test
-    fun `should handle ServerCapabilities with additionalProperties in logging`() {
-        val json = """
-            {
-              "logging": {
-                "level": "debug"
-              }
-            }
-        """.trimIndent()
+    fun `supportsUrl should be true only when url mode is declared`() {
+        val undeclared: ClientCapabilities.Elicitation? = null
 
-        val capabilities = verifyDeserialization<ServerCapabilities>(McpJson, json)
-
-        // Should not fail - additionalProperties are allowed
-        assertEquals("debug", capabilities.logging?.get("level")?.toString()?.trim('"'))
-    }
-
-    // ============================================================================
-    // ClientCapabilities.Sampling sub-capabilities (SEP-1577)
-    // ============================================================================
-
-    @Test
-    fun `empty sampling serialises as empty object`() {
-        val caps = ClientCapabilities(sampling = ClientCapabilities.Sampling())
-        val json = McpJson.encodeToString(ClientCapabilities.serializer(), caps)
-        check("\"sampling\":{}" in json) { json }
-    }
-
-    @Test
-    fun `sampling with tools sub-capability serialises tools`() {
-        val caps = ClientCapabilities(sampling = ClientCapabilities.Sampling(tools = EmptyJsonObject))
-        val json = McpJson.encodeToString(ClientCapabilities.serializer(), caps)
-        check("\"tools\":{}" in json) { json }
-    }
-
-    @Test
-    fun `sampling with context sub-capability serialises context`() {
-        val caps = ClientCapabilities(sampling = ClientCapabilities.Sampling(context = EmptyJsonObject))
-        val json = McpJson.encodeToString(ClientCapabilities.serializer(), caps)
-        check("\"context\":{}" in json) { json }
-    }
-
-    @Test
-    fun `sampling with combined tools and context round-trips`() {
-        val original = ClientCapabilities(
-            sampling = ClientCapabilities.Sampling(
-                context = EmptyJsonObject,
-                tools = EmptyJsonObject,
-            ),
-        )
-        val json = McpJson.encodeToString(ClientCapabilities.serializer(), original)
-        val decoded = McpJson.decodeFromString(ClientCapabilities.serializer(), json)
-        decoded shouldBe original
-        decoded.sampling?.tools shouldBe EmptyJsonObject
-        decoded.sampling?.context shouldBe EmptyJsonObject
-    }
-
-    @Test
-    fun `absent sampling means unsupported`() {
-        val caps = ClientCapabilities()
-        caps.sampling shouldBe null
-    }
-
-    @Test
-    fun `should serialize ServerCapabilities with tasks`() {
-        val capabilities = ServerCapabilities(
-            tasks = ServerCapabilities.Tasks(
-                list = EmptyJsonObject,
-                cancel = EmptyJsonObject,
-                requests = ServerCapabilities.Tasks.Requests(
-                    tools = ServerCapabilities.Tasks.Requests.Tools(call = EmptyJsonObject),
-                ),
-            ),
-        )
-        verifySerialization(
-            capabilities,
-            McpJson,
-            """
-            {
-              "tasks": {
-                "list": {},
-                "cancel": {},
-                "requests": {
-                  "tools": {
-                    "call": {}
-                  }
-                }
-              }
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should deserialize ServerCapabilities with tasks`() {
-        val json = """
-            {
-              "tasks": {
-                "list": {},
-                "requests": {"tools": {"call": {}}}
-              }
-            }
-        """.trimIndent()
-        val capabilities = verifyDeserialization<ServerCapabilities>(McpJson, json)
-        assertEquals(EmptyJsonObject, capabilities.tasks?.list)
-        assertNull(capabilities.tasks?.cancel)
-        assertEquals(EmptyJsonObject, capabilities.tasks?.requests?.tools?.call)
-    }
-
-    @Test
-    fun `should serialize ClientCapabilities with tasks`() {
-        val capabilities = ClientCapabilities(
-            tasks = ClientCapabilities.Tasks(
-                list = EmptyJsonObject,
-                cancel = EmptyJsonObject,
-                requests = ClientCapabilities.Tasks.Requests(
-                    sampling = ClientCapabilities.Tasks.Requests.Sampling(createMessage = EmptyJsonObject),
-                    elicitation = ClientCapabilities.Tasks.Requests.Elicitation(create = EmptyJsonObject),
-                ),
-            ),
-        )
-        verifySerialization(
-            capabilities,
-            McpJson,
-            """
-            {
-              "tasks": {
-                "list": {},
-                "cancel": {},
-                "requests": {
-                  "sampling": {"createMessage": {}},
-                  "elicitation": {"create": {}}
-                }
-              }
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should serialize ClientCapabilities with structured elicitation form and url`() {
-        val capabilities = ClientCapabilities(
-            elicitation = ClientCapabilities.Elicitation(form = EmptyJsonObject, url = EmptyJsonObject),
-        )
-        verifySerialization(
-            capabilities,
-            McpJson,
-            """
-            {
-              "elicitation": {
-                "form": {},
-                "url": {}
-              }
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should deserialize ClientCapabilities with elicitation and tasks`() {
-        val json = """
-            {
-              "elicitation": {"form": {}, "url": {}},
-              "tasks": {
-                "list": {},
-                "cancel": {},
-                "requests": {
-                  "sampling": {"createMessage": {}},
-                  "elicitation": {"create": {}}
-                }
-              }
-            }
-        """.trimIndent()
-        val capabilities = verifyDeserialization<ClientCapabilities>(McpJson, json)
-        assertEquals(EmptyJsonObject, capabilities.elicitation?.form)
-        assertEquals(EmptyJsonObject, capabilities.elicitation?.url)
-        assertEquals(EmptyJsonObject, capabilities.tasks?.list)
-        assertEquals(EmptyJsonObject, capabilities.tasks?.cancel)
-        assertEquals(EmptyJsonObject, capabilities.tasks?.requests?.sampling?.createMessage)
-        assertEquals(EmptyJsonObject, capabilities.tasks?.requests?.elicitation?.create)
-    }
-
-    // ── Elicitation supportsUrl predicate ───────────────────────────────
-
-    @Test
-    fun `supportsUrl is false when no elicitation capability is declared`() {
-        val elicitation: ClientCapabilities.Elicitation? = null
-        elicitation.supportsUrl shouldBe false
-    }
-
-    @Test
-    fun `supportsUrl is false for an empty form-only capability`() {
+        undeclared.supportsUrl shouldBe false
         ClientCapabilities.Elicitation().supportsUrl shouldBe false
         ClientCapabilities.Elicitation(form = EmptyJsonObject).supportsUrl shouldBe false
-    }
-
-    @Test
-    fun `supportsUrl is true when url mode is declared`() {
         ClientCapabilities.Elicitation(url = EmptyJsonObject).supportsUrl shouldBe true
         ClientCapabilities.Elicitation(form = EmptyJsonObject, url = EmptyJsonObject).supportsUrl shouldBe true
     }

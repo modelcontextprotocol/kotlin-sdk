@@ -1,8 +1,8 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import kotlin.test.Test
-import kotlin.test.assertFailsWith
 
 private data class TestFeature(override val key: FeatureKey, val payload: String = "") : Feature
 
@@ -34,43 +34,35 @@ class FeatureRegistryTest {
     }
 
     @Test
-    fun `add should throw when key is already registered`() {
-        registry.add(TestFeature("a"))
+    fun `add should reject a duplicate key without replacing or notifying`() {
+        val original = TestFeature("a", payload = "original")
+        registry.add(original)
 
-        val exception = assertFailsWith<IllegalArgumentException> {
+        val exception = shouldThrow<IllegalArgumentException> {
             registry.add(TestFeature("a", payload = "override"))
         }
 
         exception.message shouldBe "Tool \"a\" is already registered. Remove it first to replace it."
-    }
-
-    @Test
-    fun `add should keep original feature and not notify when duplicate is rejected`() {
-        val original = TestFeature("a", payload = "original")
-        registry.add(original)
-
-        assertFailsWith<IllegalArgumentException> {
-            registry.add(TestFeature("a", payload = "override"))
-        }
-
         registry.values shouldBe mapOf("a" to original)
         listener.updatedKeys shouldBe listOf("a")
     }
 
     @Test
-    fun `addAll should register all features and notify per feature`() {
+    fun `addAll should append features to existing ones and notify per feature`() {
+        val existing = TestFeature("existing")
+        registry.add(existing)
         val a = TestFeature("a")
         val b = TestFeature("b")
 
         registry.addAll(listOf(a, b))
 
-        registry.values shouldBe mapOf("a" to a, "b" to b)
-        listener.updatedKeys shouldBe listOf("a", "b")
+        registry.values shouldBe mapOf("existing" to existing, "a" to a, "b" to b)
+        listener.updatedKeys shouldBe listOf("existing", "a", "b")
     }
 
     @Test
     fun `addAll should throw on duplicate keys within batch and register nothing`() {
-        val exception = assertFailsWith<IllegalArgumentException> {
+        val exception = shouldThrow<IllegalArgumentException> {
             registry.addAll(listOf(TestFeature("a"), TestFeature("b"), TestFeature("a")))
         }
 
@@ -84,7 +76,7 @@ class FeatureRegistryTest {
         val existing = TestFeature("existing")
         registry.add(existing)
 
-        val exception = assertFailsWith<IllegalArgumentException> {
+        val exception = shouldThrow<IllegalArgumentException> {
             registry.addAll(listOf(TestFeature("new"), TestFeature("existing", payload = "override")))
         }
 
@@ -102,5 +94,16 @@ class FeatureRegistryTest {
 
         registry.values shouldBe mapOf("a" to TestFeature("a", payload = "replacement"))
         listener.updatedKeys shouldBe listOf("a", "a", "a")
+    }
+
+    @Test
+    fun `removeAll should remove only the present keys and return their count`() {
+        val kept = TestFeature("kept")
+        registry.addAll(listOf(TestFeature("a"), TestFeature("b"), kept))
+
+        registry.removeAll(listOf("a", "absent", "b")) shouldBe 2
+
+        registry.values shouldBe mapOf("kept" to kept)
+        listener.updatedKeys shouldBe listOf("a", "b", "kept", "a", "b")
     }
 }

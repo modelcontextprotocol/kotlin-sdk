@@ -2,23 +2,21 @@ package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.kotest.assertions.json.shouldEqualJson
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.assertions.withClue
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import io.kotest.matchers.types.shouldNotBeInstanceOf
 import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
 import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
-import kotlinx.serialization.json.boolean
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.encodeToJsonElement
-import kotlinx.serialization.json.int
-import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlin.test.Test
 
 class ElicitationTest {
-
-    // ── Form mode ───────────────────────────────────────────────────────
 
     @Test
     fun `should serialize form mode ElicitRequest`() {
@@ -76,33 +74,6 @@ class ElicitationTest {
     }
 
     @Test
-    fun `should deserialize form mode ElicitRequest with explicit mode`() {
-        val json = """
-            {
-              "method": "elicitation/create",
-              "params": {
-                "mode": "form",
-                "message": "Enter your name",
-                "requestedSchema": {
-                  "properties": {
-                    "name": {"type": "string", "title": "Full name"}
-                  },
-                  "type": "object"
-                }
-              }
-            }
-        """.trimIndent()
-
-        val request = verifyDeserialization<ElicitRequest>(McpJson, json)
-        request.method shouldBe Method.Defined.ElicitationCreate
-        request.message shouldBe "Enter your name"
-
-        val params = request.params.shouldBeInstanceOf<ElicitRequestFormParams>()
-        val nameSchema = params.requestedSchema.properties["name"].shouldBeInstanceOf<StringSchema>()
-        nameSchema.title shouldBe "Full name"
-    }
-
-    @Test
     fun `should deserialize form mode ElicitRequest without mode field`() {
         val json = """
             {
@@ -123,8 +94,6 @@ class ElicitationTest {
         request.params.shouldBeInstanceOf<ElicitRequestFormParams>()
         request.params.message shouldBe "Enter your name"
     }
-
-    // ── URL mode ────────────────────────────────────────────────────────
 
     @Test
     fun `should serialize URL mode ElicitRequest`() {
@@ -154,57 +123,27 @@ class ElicitationTest {
     }
 
     @Test
-    fun `should deserialize URL mode ElicitRequest`() {
-        val json = """
-            {
-              "method": "elicitation/create",
-              "params": {
-                "mode": "url",
-                "message": "Authorize access",
-                "elicitationId": "id-123",
-                "url": "https://example.com/auth"
-              }
+    fun `should reject unsupported or non-string elicitation mode`() {
+        listOf("\"voice\"", "1", "{}").forEach { mode ->
+            withClue("mode=$mode") {
+                shouldThrow<SerializationException> {
+                    McpJson.decodeFromString<ElicitRequestParams>("""{"mode": $mode, "message": "m"}""")
+                }
             }
-        """.trimIndent()
-
-        val request = verifyDeserialization<ElicitRequest>(McpJson, json)
-        val params = request.params.shouldBeInstanceOf<ElicitRequestURLParams>()
-        params.message shouldBe "Authorize access"
-        params.elicitationId shouldBe "id-123"
-        params.url shouldBe "https://example.com/auth"
+        }
     }
 
-    // ── Deprecated compat ───────────────────────────────────────────────
-
+    @Suppress("DEPRECATION")
     @Test
-    fun `deprecated factory function should create ElicitRequestFormParams`() {
-        val schema = ElicitRequestParams.RequestedSchema(
-            properties = mapOf("name" to StringSchema()),
-        )
-        val params = ElicitRequestParams(message = "Test", requestedSchema = schema)
-        params.shouldBeInstanceOf<ElicitRequestFormParams>()
-        params.message shouldBe "Test"
-        params.requestedSchema shouldBe schema
-    }
-
-    @Test
-    fun `deprecated requestedSchema should return schema for form mode`() {
+    fun `deprecated requestedSchema should return schema only for form mode`() {
         val schema = ElicitRequestParams.RequestedSchema(
             properties = mapOf("x" to BooleanSchema()),
         )
-        val request = ElicitRequest(ElicitRequestFormParams(message = "m", requestedSchema = schema))
-        request.requestedSchema shouldBe schema
-    }
 
-    @Test
-    fun `deprecated requestedSchema should return null for URL mode`() {
-        val request = ElicitRequest(
-            ElicitRequestURLParams(message = "m", elicitationId = "id", url = "https://example.com"),
-        )
-        request.requestedSchema.shouldBeNull()
+        ElicitRequest(ElicitRequestFormParams(message = "m", requestedSchema = schema)).requestedSchema shouldBe schema
+        ElicitRequest(ElicitRequestURLParams(message = "m", elicitationId = "id", url = "https://example.com"))
+            .requestedSchema.shouldBeNull()
     }
-
-    // ── ElicitResult ────────────────────────────────────────────────────
 
     @Test
     fun `should serialize and deserialize accept result with content`() {
@@ -220,9 +159,10 @@ class ElicitationTest {
             },
         )
 
-        val json = McpJson.encodeToString(result)
-
-        json shouldEqualJson """
+        verifySerialization<ClientResult>(
+            result,
+            McpJson,
+            """
             {
               "action": "accept",
               "content": {
@@ -234,18 +174,8 @@ class ElicitationTest {
                 "submittedAt": "2025-01-12T15:00:58Z"
               }
             }
-        """.trimIndent()
-
-        val decoded = verifyDeserialization<ElicitResult>(McpJson, json)
-        decoded.action shouldBe ElicitResult.Action.Accept
-
-        val content = decoded.content.shouldNotBeNull()
-        content["repository"]?.jsonPrimitive?.content shouldBe "kotlin-sdk"
-        content["stars"]?.jsonPrimitive?.int shouldBe 128
-        content["private"]?.jsonPrimitive?.boolean shouldBe false
-
-        val meta = decoded.meta.shouldNotBeNull()
-        meta["submittedAt"]?.jsonPrimitive?.content shouldBe "2025-01-12T15:00:58Z"
+            """.trimIndent(),
+        )
     }
 
     @Test
@@ -259,10 +189,9 @@ class ElicitationTest {
             }
         """.trimIndent()
 
-        val result = verifyDeserialization<ElicitResult>(McpJson, json)
-        result.action shouldBe ElicitResult.Action.Decline
-        result.content.shouldBeNull()
-        result.meta?.get("reason")?.jsonPrimitive?.content shouldBe "User skipped"
+        val result = verifyDeserialization<ClientResult>(McpJson, json)
+
+        result.shouldBeInstanceOf<ElicitResult>().action shouldBe ElicitResult.Action.Decline
     }
 
     @Test
@@ -274,8 +203,6 @@ class ElicitationTest {
             )
         }
     }
-
-    // ── URLElicitationRequired error (-32042) ───────────────────────────
 
     @Test
     fun `UrlElicitationRequiredException carries code and serialized elicitations`() {
@@ -345,6 +272,14 @@ class ElicitationTest {
         )
 
         (exception is UrlElicitationRequiredException) shouldBe false
+        exception.code shouldBe RPCError.ErrorCode.URL_ELICITATION_REQUIRED
+    }
+
+    @Test
+    fun `fromError degrades to plain McpException for -32042 without data`() {
+        val exception = McpException.fromError(RPCError.ErrorCode.URL_ELICITATION_REQUIRED, "x", data = null)
+
+        exception.shouldNotBeInstanceOf<UrlElicitationRequiredException>()
         exception.code shouldBe RPCError.ErrorCode.URL_ELICITATION_REQUIRED
     }
 

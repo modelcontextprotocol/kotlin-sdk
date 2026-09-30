@@ -35,7 +35,6 @@ kotlin {
                 implementation(libs.junit.jupiter.params)
                 implementation(libs.kotest.assertions.ktor)
                 implementation(libs.ktor.client.content.negotiation)
-                implementation(libs.ktor.client.logging)
                 implementation(libs.ktor.serialization)
                 implementation(libs.ktor.server.content.negotiation)
                 implementation(libs.ktor.server.test.host)

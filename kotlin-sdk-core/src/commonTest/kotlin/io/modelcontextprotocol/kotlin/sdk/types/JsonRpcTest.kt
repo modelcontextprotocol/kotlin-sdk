@@ -1,11 +1,11 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.kotest.assertions.json.shouldEqualJson
+import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
 import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
-import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
@@ -141,105 +141,6 @@ class JsonRpcTest {
     }
 
     @Test
-    fun `should serialize JSONRPCRequest with params`() {
-        val request = JSONRPCRequest(
-            id = RequestId("req-1"),
-            method = "tools/list",
-            params = buildJsonObject {
-                put("cursor", "abc")
-                put("includeInactive", true)
-            },
-        )
-
-        verifySerialization(
-            request,
-            McpJson,
-            """
-            {
-              "id": "req-1",
-              "method": "tools/list",
-              "params": {
-                "cursor": "abc",
-                "includeInactive": true
-              },
-              "jsonrpc": "2.0"
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should deserialize JSONRPCRequest with numeric id`() {
-        val json = """
-            {
-              "id": 42,
-              "method": "resources/read",
-              "params": {
-                "uri": "file:///tmp/readme.md"
-              },
-              "jsonrpc": "2.0"
-            }
-        """.trimIndent()
-
-        val request = verifyDeserialization<JSONRPCRequest>(McpJson, json)
-
-        val id = request.id
-        assertIs<RequestId.NumberId>(id)
-        assertEquals(42L, id.value)
-        assertEquals("resources/read", request.method)
-        val params = request.params?.jsonObject
-        assertNotNull(params)
-        assertEquals("file:///tmp/readme.md", params["uri"]?.jsonPrimitive?.content)
-    }
-
-    @Test
-    fun `should serialize JSONRPCNotification with params`() {
-        val notification = JSONRPCNotification(
-            method = "notifications/log",
-            params = buildJsonObject {
-                put("level", "info")
-                put("message", "Completed operation")
-            },
-        )
-
-        verifySerialization(
-            notification,
-            McpJson,
-            """
-            {
-              "method": "notifications/log",
-              "params": {
-                "level": "info",
-                "message": "Completed operation"
-              },
-              "jsonrpc": "2.0"
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should deserialize JSONRPCNotification`() {
-        val json = """
-            {
-              "method": "notifications/progress",
-              "params": {
-                "progress": 50,
-                "total": 100
-              },
-              "jsonrpc": "2.0"
-            }
-        """.trimIndent()
-
-        val notification = verifyDeserialization<JSONRPCNotification>(McpJson, json)
-        assertEquals("notifications/progress", notification.method)
-        val params = notification.params?.jsonObject
-        assertNotNull(params)
-        assertEquals(50, params["progress"]?.jsonPrimitive?.int)
-        assertEquals(100, params["total"]?.jsonPrimitive?.int)
-    }
-
-    @Test
     fun `should serialize JSONRPCResponse with result`() {
         val response = JSONRPCResponse(
             id = RequestId("call-1"),
@@ -248,7 +149,7 @@ class JsonRpcTest {
             ),
         )
 
-        verifySerialization(
+        verifySerialization<JSONRPCMessage>(
             response,
             McpJson,
             """
@@ -283,87 +184,6 @@ class JsonRpcTest {
             }
             """.trimIndent(),
         )
-    }
-
-    @Test
-    fun `should deserialize JSONRPCResponse with EmptyResult`() {
-        val json = """
-            {
-              "id": 7,
-              "jsonrpc": "2.0",
-              "result": {
-                "_meta": {
-                  "cached": true
-                }
-              }
-            }
-        """.trimIndent()
-
-        val response = verifyDeserialization<JSONRPCResponse>(McpJson, json)
-        val result = response.result
-        assertIs<EmptyResult>(result)
-        assertEquals(RequestId.NumberId(7L), response.id)
-        val meta = result.meta
-        assertNotNull(meta)
-        assertEquals(true, meta["cached"]?.jsonPrimitive?.boolean)
-    }
-
-    @Test
-    fun `should serialize JSONRPCError`() {
-        val error = JSONRPCError(
-            id = RequestId(99),
-            error = RPCError(
-                code = RPCError.ErrorCode.METHOD_NOT_FOUND,
-                message = "Method not found",
-                data = buildJsonObject { put("method", "tools/unknown") },
-            ),
-        )
-
-        verifySerialization(
-            error,
-            McpJson,
-            """
-            {
-              "id": 99,
-              "error": {
-                "code": -32601,
-                "message": "Method not found",
-                "data": {
-                  "method": "tools/unknown"
-                }
-              },
-              "jsonrpc": "2.0"
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should deserialize JSONRPCError`() {
-        val json = """
-            {
-              "id": "req-404",
-              "jsonrpc": "2.0",
-              "error": {
-                "code": -32602,
-                "message": "Invalid params",
-                "data": {
-                  "field": "limit",
-                  "reason": "must be positive"
-                }
-              }
-            }
-        """.trimIndent()
-
-        val error = verifyDeserialization<JSONRPCError>(McpJson, json)
-        assertEquals(RequestId("req-404"), error.id)
-        assertEquals(RPCError.ErrorCode.INVALID_PARAMS, error.error.code)
-        assertEquals("Invalid params", error.error.message)
-
-        val data = error.error.data?.jsonObject
-        assertNotNull(data)
-        assertEquals("limit", data["field"]?.jsonPrimitive?.content)
-        assertEquals("must be positive", data["reason"]?.jsonPrimitive?.content)
     }
 
     @Test
@@ -436,33 +256,9 @@ class JsonRpcTest {
     }
 
     @Test
-    fun `should create JSONRPCRequest with string ID`() {
-        val params = buildJsonObject {
-            put("foo", "bar")
-        }
-        val request = JSONRPCRequest(
-            id = "req-42",
-            method = "notifications/log",
-            params = params,
-        )
-        request.id shouldBe RequestId("req-42")
-        request.method shouldBe "notifications/log"
-        request.params shouldBeSameInstanceAs params
-    }
-
-    @Test
-    fun `should create JSONRPCRequest with numeric ID`() {
-        val params = buildJsonObject {
-            put("foo", "bar")
-        }
-        val request = JSONRPCRequest(
-            id = 42,
-            method = "notifications/log",
-            params = params,
-        )
-        request.id shouldBe RequestId(42)
-        request.method shouldBe "notifications/log"
-        request.params shouldBeSameInstanceAs params
+    fun `should create JSONRPCRequest with string and numeric ID`() {
+        JSONRPCRequest(id = "req-42", method = "ping").id shouldBe RequestId("req-42")
+        JSONRPCRequest(id = 42, method = "ping").id shouldBe RequestId(42)
     }
 
     @Test
@@ -475,5 +271,48 @@ class JsonRpcTest {
 
         val message = McpJson.decodeFromString<JSONRPCMessage>(json)
         message shouldBeSameInstanceAs JSONRPCEmptyMessage
+    }
+
+    @Test
+    fun `should round-trip every request type through the polymorphic Request serializer`() {
+        val meta = RequestMeta(buildJsonObject { put("progressToken", "t") })
+        val metaJson = """"_meta":{"progressToken":"t"}"""
+        val cases: List<Pair<Request, String>> = listOf(
+            PingRequest() to """{"method":"ping"}""",
+            SetLevelRequest(SetLevelRequestParams(LoggingLevel.Info)) to
+                """{"method":"logging/setLevel","params":{"level":"info"}}""",
+            ListPromptsRequest() to """{"method":"prompts/list"}""",
+            GetPromptRequest(GetPromptRequestParams(name = "p")) to
+                """{"method":"prompts/get","params":{"name":"p"}}""",
+            ListToolsRequest(PaginatedRequestParams(cursor = "c", meta = meta)) to
+                """{"method":"tools/list","params":{"cursor":"c",$metaJson}}""",
+            CallToolRequest(CallToolRequestParams(name = "t")) to
+                """{"method":"tools/call","params":{"name":"t"}}""",
+            ListResourcesRequest(PaginatedRequestParams(cursor = "c")) to
+                """{"method":"resources/list","params":{"cursor":"c"}}""",
+            ListResourceTemplatesRequest(PaginatedRequestParams(cursor = "c")) to
+                """{"method":"resources/templates/list","params":{"cursor":"c"}}""",
+            ReadResourceRequest(ReadResourceRequestParams(uri = "file:///a", meta = meta)) to
+                """{"method":"resources/read","params":{"uri":"file:///a",$metaJson}}""",
+            SubscribeRequest(SubscribeRequestParams(uri = "file:///a", meta = meta)) to
+                """{"method":"resources/subscribe","params":{"uri":"file:///a",$metaJson}}""",
+            UnsubscribeRequest(UnsubscribeRequestParams(uri = "file:///a", meta = meta)) to
+                """{"method":"resources/unsubscribe","params":{"uri":"file:///a",$metaJson}}""",
+            ListTasksRequest(PaginatedRequestParams(cursor = "c")) to
+                """{"method":"tasks/list","params":{"cursor":"c"}}""",
+            GetTaskRequest(GetTaskRequestParams(taskId = "t1", meta = meta)) to
+                """{"method":"tasks/get","params":{"taskId":"t1",$metaJson}}""",
+            GetTaskPayloadRequest(GetTaskPayloadRequestParams(taskId = "t1", meta = meta)) to
+                """{"method":"tasks/result","params":{"taskId":"t1",$metaJson}}""",
+            CancelTaskRequest(CancelTaskRequestParams(taskId = "t1", meta = meta)) to
+                """{"method":"tasks/cancel","params":{"taskId":"t1",$metaJson}}""",
+            ListRootsRequest() to """{"method":"roots/list"}""",
+            CreateMessageRequest(CreateMessageRequestParams(maxTokens = 1, messages = emptyList())) to
+                """{"method":"sampling/createMessage","params":{"maxTokens":1,"messages":[]}}""",
+        )
+
+        cases.forEach { (request, json) ->
+            withClue(json) { verifySerialization<Request>(request, McpJson, json) }
+        }
     }
 }

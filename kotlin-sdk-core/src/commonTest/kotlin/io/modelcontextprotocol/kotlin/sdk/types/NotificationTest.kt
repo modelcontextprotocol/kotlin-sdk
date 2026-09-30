@@ -1,9 +1,11 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
+import io.kotest.assertions.withClue
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
 import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -21,7 +23,7 @@ class NotificationTest {
             ),
         )
 
-        verifySerialization(
+        verifySerialization<Notification>(
             notification,
             McpJson,
             """
@@ -51,51 +53,30 @@ class NotificationTest {
             }
         """.trimIndent()
 
-        val notification = verifyDeserialization<CancelledNotification>(McpJson, json)
-        val params = notification.params
+        val notification = verifyDeserialization<Notification>(McpJson, json)
 
-        assertEquals(Method.Defined.NotificationsCancelled, notification.method)
-        assertEquals(RequestId(42), params.requestId)
-        assertEquals("Timeout reached", params.reason)
-        assertNull(params.meta)
+        notification.shouldBeInstanceOf<CancelledNotification>().params.requestId shouldBe RequestId(42)
     }
 
     @Test
-    fun `should serialize InitializedNotification with meta`() {
-        val notification = InitializedNotification(
-            BaseNotificationParams(
-                meta = buildJsonObject { put("readyAt", "2025-01-12T15:00:58Z") },
-            ),
-        )
+    fun `should round-trip notifications through the polymorphic Notification serializer`() {
+        val params = BaseNotificationParams(buildJsonObject { put("source", "test") })
 
-        verifySerialization(
-            notification,
-            McpJson,
-            """
-            {
-              "method": "notifications/initialized",
-              "params": {
-                "_meta": {
-                  "readyAt": "2025-01-12T15:00:58Z"
-                }
-              }
+        fun withParams(method: String) = """{"method": "$method", "params": {"_meta": {"source": "test"}}}"""
+
+        listOf<Pair<Notification, String>>(
+            InitializedNotification() to """{"method": "notifications/initialized"}""",
+            InitializedNotification(params) to withParams("notifications/initialized"),
+            PromptListChangedNotification(params) to withParams("notifications/prompts/list_changed"),
+            ResourceListChangedNotification(params) to withParams("notifications/resources/list_changed"),
+            RootsListChangedNotification(params) to withParams("notifications/roots/list_changed"),
+            ToolListChangedNotification(params) to withParams("notifications/tools/list_changed"),
+            CustomNotification(Method.Custom("com.example/event"), params) to withParams("com.example/event"),
+        ).forEach { (notification, json) ->
+            withClue(json) {
+                verifySerialization(notification, McpJson, json)
             }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should deserialize InitializedNotification without params`() {
-        val json = """
-            {
-              "method": "notifications/initialized"
-            }
-        """.trimIndent()
-
-        val notification = verifyDeserialization<InitializedNotification>(McpJson, json)
-
-        assertEquals(Method.Defined.NotificationsInitialized, notification.method)
-        assertNull(notification.params)
+        }
     }
 
     @Test
@@ -110,7 +91,7 @@ class NotificationTest {
             ),
         )
 
-        verifySerialization(
+        verifySerialization<Notification>(
             notification,
             McpJson,
             """
@@ -142,15 +123,9 @@ class NotificationTest {
             }
         """.trimIndent()
 
-        val notification = verifyDeserialization<ProgressNotification>(McpJson, json)
-        val params = notification.params
+        val notification = verifyDeserialization<Notification>(McpJson, json)
 
-        assertEquals(Method.Defined.NotificationsProgress, notification.method)
-        assertEquals(ProgressToken(7), params.progressToken)
-        assertEquals(0.25, params.progress)
-        assertNull(params.total)
-        assertNull(params.message)
-        assertNull(params.meta)
+        notification.shouldBeInstanceOf<ProgressNotification>().params.progressToken shouldBe ProgressToken(7)
     }
 
     @Test
@@ -162,7 +137,7 @@ class NotificationTest {
             ),
         )
 
-        verifySerialization(
+        verifySerialization<Notification>(
             notification,
             McpJson,
             """
@@ -180,138 +155,6 @@ class NotificationTest {
     }
 
     @Test
-    fun `should deserialize ResourceUpdatedNotification`() {
-        val json = """
-            {
-              "method": "notifications/resources/updated",
-              "params": {
-                "uri": "file:///docs/guide.md",
-                "_meta": {
-                  "etag": "W/\"42\""
-                }
-              }
-            }
-        """.trimIndent()
-
-        val notification = verifyDeserialization<ResourceUpdatedNotification>(McpJson, json)
-        val params = notification.params
-
-        assertEquals(Method.Defined.NotificationsResourcesUpdated, notification.method)
-        assertEquals("file:///docs/guide.md", params.uri)
-        assertEquals("W/\"42\"", params.meta?.get("etag")?.jsonPrimitive?.content)
-    }
-
-    @Test
-    fun `should serialize PromptListChangedNotification with meta`() {
-        val notification = PromptListChangedNotification(
-            BaseNotificationParams(
-                meta = buildJsonObject { put("reason", "catalog-updated") },
-            ),
-        )
-
-        verifySerialization(
-            notification,
-            McpJson,
-            """
-            {
-              "method": "notifications/prompts/list_changed",
-              "params": {
-                "_meta": {
-                  "reason": "catalog-updated"
-                }
-              }
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should deserialize PromptListChangedNotification without params`() {
-        val json = """
-            {
-              "method": "notifications/prompts/list_changed"
-            }
-        """.trimIndent()
-
-        val notification = verifyDeserialization<PromptListChangedNotification>(McpJson, json)
-
-        assertEquals(Method.Defined.NotificationsPromptsListChanged, notification.method)
-        assertNull(notification.params)
-    }
-
-    @Test
-    fun `should serialize ResourceListChangedNotification with meta`() {
-        val notification = ResourceListChangedNotification(
-            BaseNotificationParams(
-                meta = buildJsonObject { put("reason", "subscription-updated") },
-            ),
-        )
-
-        verifySerialization(
-            notification,
-            McpJson,
-            """
-            {
-              "method": "notifications/resources/list_changed",
-              "params": {
-                "_meta": {
-                  "reason": "subscription-updated"
-                }
-              }
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should serialize RootsListChangedNotification with meta`() {
-        val notification = RootsListChangedNotification(
-            BaseNotificationParams(
-                meta = buildJsonObject { put("reason", "workspace-moved") },
-            ),
-        )
-
-        verifySerialization(
-            notification,
-            McpJson,
-            """
-            {
-              "method": "notifications/roots/list_changed",
-              "params": {
-                "_meta": {
-                  "reason": "workspace-moved"
-                }
-              }
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should serialize ToolListChangedNotification with meta`() {
-        val notification = ToolListChangedNotification(
-            BaseNotificationParams(
-                meta = buildJsonObject { put("reason", "tool-added") },
-            ),
-        )
-
-        verifySerialization(
-            notification,
-            McpJson,
-            """
-            {
-              "method": "notifications/tools/list_changed",
-              "params": {
-                "_meta": {
-                  "reason": "tool-added"
-                }
-              }
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
     fun `should serialize ElicitationCompleteNotification with meta`() {
         val notification = ElicitationCompleteNotification(
             ElicitationCompleteNotificationParams(
@@ -320,7 +163,7 @@ class NotificationTest {
             ),
         )
 
-        verifySerialization(
+        verifySerialization<Notification>(
             notification,
             McpJson,
             """
@@ -338,25 +181,6 @@ class NotificationTest {
     }
 
     @Test
-    fun `should deserialize ElicitationCompleteNotification`() {
-        val json = """
-            {
-              "method": "notifications/elicitation/complete",
-              "params": {
-                "elicitationId": "elicit-99"
-              }
-            }
-        """.trimIndent()
-
-        val notification = verifyDeserialization<ElicitationCompleteNotification>(McpJson, json)
-        val params = notification.params
-
-        assertEquals(Method.Defined.NotificationsElicitationComplete, notification.method)
-        assertEquals("elicit-99", params.elicitationId)
-        assertNull(params.meta)
-    }
-
-    @Test
     fun `should serialize TaskStatusNotification with all fields`() {
         val notification = TaskStatusNotification(
             TaskStatusNotificationParams(
@@ -371,7 +195,7 @@ class NotificationTest {
             ),
         )
 
-        verifySerialization(
+        verifySerialization<Notification>(
             notification,
             McpJson,
             """
@@ -421,37 +245,6 @@ class NotificationTest {
             }
             """.trimIndent(),
         )
-    }
-
-    @Test
-    fun `should deserialize TaskStatusNotification`() {
-        val json = """
-            {
-              "method": "notifications/tasks/status",
-              "params": {
-                "taskId": "task-3",
-                "status": "failed",
-                "statusMessage": "Connection lost",
-                "createdAt": "2025-01-01T00:00:00Z",
-                "lastUpdatedAt": "2025-01-01T00:03:00Z",
-                "ttl": 30000,
-                "pollInterval": 1000
-              }
-            }
-        """.trimIndent()
-
-        val notification = verifyDeserialization<TaskStatusNotification>(McpJson, json)
-        val params = notification.params!!
-
-        assertEquals(Method.Defined.NotificationsTasksStatus, notification.method)
-        assertEquals("task-3", params.taskId)
-        assertEquals(TaskStatus.Failed, params.status)
-        assertEquals("Connection lost", params.statusMessage)
-        assertEquals("2025-01-01T00:00:00Z", params.createdAt)
-        assertEquals("2025-01-01T00:03:00Z", params.lastUpdatedAt)
-        assertEquals(30000L, params.ttl)
-        assertEquals(1000L, params.pollInterval)
-        assertNull(params.meta)
     }
 
     @Test

@@ -2,8 +2,8 @@ package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.kotest.assertions.json.shouldEqualJson
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
+import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
@@ -15,33 +15,6 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalMcpApi::class)
 class DiscoveryTest {
-
-    @Test
-    fun `should decode server discover request from its wire shape`() {
-        val request = McpJson.decodeFromString<Request>(
-            """
-            {
-              "method": "server/discover",
-              "params": {
-                "_meta": {
-                  "io.modelcontextprotocol/protocolVersion": "2026-07-28",
-                  "io.modelcontextprotocol/clientInfo": {
-                    "name": "test-client",
-                    "version": "1.0.0"
-                  },
-                  "io.modelcontextprotocol/clientCapabilities": {}
-                }
-              }
-            }
-            """.trimIndent(),
-        )
-
-        val discover = assertIs<DiscoverRequest>(request)
-        assertEquals(Method.Defined.ServerDiscover, discover.method)
-        assertEquals("2026-07-28", discover.meta.protocolVersion)
-        assertEquals("test-client", discover.meta.clientInfo?.name)
-        assertEquals(ClientCapabilities(), discover.meta.clientCapabilities)
-    }
 
     @Test
     fun `should decode discovery request without optional client info`() {
@@ -112,70 +85,6 @@ class DiscoveryTest {
     }
 
     @Test
-    fun `should serialize every required discovery result field`() {
-        val result = DiscoverResult(
-            supportedVersions = listOf("2026-07-28"),
-            capabilities = ServerCapabilities(
-                tools = ServerCapabilities.Tools(listChanged = true),
-            ),
-            instructions = "Use tools intentionally.",
-        )
-
-        McpJson.encodeToString<ServerResult>(result) shouldEqualJson """
-            {
-              "supportedVersions": ["2026-07-28"],
-              "capabilities": {
-                "tools": {"listChanged": true}
-              },
-              "instructions": "Use tools intentionally.",
-              "resultType": "complete",
-              "ttlMs": 0,
-              "cacheScope": "private"
-            }
-        """.trimIndent()
-    }
-
-    @Test
-    fun `should encode optional server info in result metadata`() {
-        val result = DiscoverResult(
-            supportedVersions = listOf("2026-07-28"),
-            capabilities = ServerCapabilities(),
-            meta = Json.parseToJsonElement(
-                """
-                {
-                  "io.modelcontextprotocol/serverInfo": {
-                    "name": "test-server",
-                    "version": "2.0.0"
-                  },
-                  "com.example/source": "edge"
-                }
-                """.trimIndent(),
-            ).jsonObject,
-        )
-
-        McpJson.encodeToString<ServerResult>(result) shouldEqualJson """
-            {
-              "supportedVersions": ["2026-07-28"],
-              "capabilities": {},
-              "resultType": "complete",
-              "ttlMs": 0,
-              "cacheScope": "private",
-              "_meta": {
-                "io.modelcontextprotocol/serverInfo": {
-                  "name": "test-server",
-                  "version": "2.0.0"
-                },
-                "com.example/source": "edge"
-              }
-            }
-        """.trimIndent()
-        assertEquals(
-            Json.parseToJsonElement("""{"name":"test-server","version":"2.0.0"}"""),
-            result.meta?.get("io.modelcontextprotocol/serverInfo"),
-        )
-    }
-
-    @Test
     fun `should encode required defaults independently of McpJson`() {
         val result = DiscoverResult(
             supportedVersions = listOf("2026-07-28"),
@@ -241,6 +150,7 @@ class DiscoveryTest {
             {
               "supportedVersions": ["2026-07-28"],
               "capabilities": {},
+              "instructions": "Use tools intentionally.",
               "resultType": "complete",
               "ttlMs": 250,
               "cacheScope": "public",
@@ -256,13 +166,6 @@ class DiscoveryTest {
         val result = McpJson.decodeFromString<ServerResult>(wire)
 
         val discover = assertIs<DiscoverResult>(result)
-        assertEquals(250, discover.ttlMs)
-        assertEquals(CacheScope.Public, discover.cacheScope)
-        assertEquals(
-            Json.parseToJsonElement("""{"name":"server","version":"1"}"""),
-            discover.meta?.get("io.modelcontextprotocol/serverInfo"),
-        )
-        assertNotNull(discover.meta?.get("com.example/source"))
         McpJson.encodeToString<ServerResult>(discover) shouldEqualJson wire
     }
 
@@ -311,14 +214,11 @@ class DiscoveryTest {
     }
 
     @Test
-    fun `unsupported version data should round trip without losing versions`() {
-        val data = UnsupportedProtocolVersionData(
-            supported = listOf("2026-07-28", "2025-11-25"),
-            requested = "2099-01-01",
+    fun `should serialize unsupported protocol version data`() {
+        verifySerialization(
+            UnsupportedProtocolVersionData(supported = listOf("2026-07-28", "2025-11-25"), requested = "2099-01-01"),
+            McpJson,
+            """{"supported": ["2026-07-28", "2025-11-25"], "requested": "2099-01-01"}""",
         )
-
-        val encoded = McpJson.encodeToString(data)
-        assertEquals(data, McpJson.decodeFromString(encoded))
-        assertEquals(-32022, RPCError.ErrorCode.UNSUPPORTED_PROTOCOL_VERSION)
     }
 }

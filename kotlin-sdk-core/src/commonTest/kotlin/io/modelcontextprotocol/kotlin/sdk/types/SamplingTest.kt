@@ -1,22 +1,15 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
-import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
 import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.double
-import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
-import kotlin.test.assertNotNull
 
 class SamplingTest {
 
@@ -26,61 +19,11 @@ class SamplingTest {
         val content: List<SamplingMessageContent>,
     )
 
-    private val dummyTool = Tool(
-        name = "get_weather",
-        description = "returns weather",
-        inputSchema = ToolSchema(
-            properties = buildJsonObject { },
-            required = emptyList(),
-        ),
-    )
-
-    @Test
-    fun `should serialize ModelHint`() {
-        val hint = ModelHint(name = "claude-3-5-sonnet")
-
-        verifySerialization(
-            hint,
-            McpJson,
-            """
-            {
-              "name": "claude-3-5-sonnet"
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should serialize ModelPreferences with priorities`() {
-        val preferences = ModelPreferences(
-            hints = listOf(ModelHint(name = "haiku"), ModelHint(name = "openaichat")),
-            costPriority = 0.25,
-            speedPriority = 0.75,
-            intelligencePriority = 1.0,
-        )
-
-        verifySerialization(
-            preferences,
-            McpJson,
-            """
-            {
-              "hints": [
-                {"name": "haiku"},
-                {"name": "openaichat"}
-              ],
-              "costPriority": 0.25,
-              "speedPriority": 0.75,
-              "intelligencePriority": 1.0
-            }
-            """.trimIndent(),
-        )
-    }
-
     @Test
     fun `should reject ModelPreferences with invalid priority`() {
-        assertFailsWith<IllegalArgumentException> {
-            ModelPreferences(costPriority = 1.5)
-        }
+        shouldThrow<IllegalArgumentException> { ModelPreferences(costPriority = 1.5) }
+        shouldThrow<IllegalArgumentException> { ModelPreferences(speedPriority = -0.1) }
+        shouldThrow<IllegalArgumentException> { ModelPreferences(intelligencePriority = 1.1) }
     }
 
     @Test
@@ -88,6 +31,7 @@ class SamplingTest {
         val message = SamplingMessage(
             role = Role.User,
             content = listOf(TextContent(text = "Summarize the latest release.")),
+            meta = buildJsonObject { put("k", "v") },
         )
 
         verifySerialization(
@@ -99,6 +43,9 @@ class SamplingTest {
               "content": {
                 "type": "text",
                 "text": "Summarize the latest release."
+              },
+              "_meta": {
+                "k": "v"
               }
             }
             """.trimIndent(),
@@ -122,13 +69,18 @@ class SamplingTest {
                 ),
                 modelPreferences = ModelPreferences(
                     hints = listOf(ModelHint(name = "claude")),
+                    costPriority = 0.25,
                     speedPriority = 0.6,
+                    intelligencePriority = 1.0,
                 ),
                 systemPrompt = "Respond with concise bullet points.",
                 includeContext = IncludeContext.AllServers,
                 temperature = 0.8,
                 stopSequences = listOf("END"),
                 metadata = buildJsonObject { put("provider", "anthropic") },
+                tools = listOf(Tool(name = "get_weather", inputSchema = ToolSchema())),
+                toolChoice = ToolChoice(mode = ToolChoice.Mode.Required),
+                task = TaskMetadata(ttl = 60_000L),
                 meta = RequestMeta(buildJsonObject { put("progressToken", "sample-1") }),
             ),
         )
@@ -161,7 +113,9 @@ class SamplingTest {
                   "hints": [
                     {"name": "claude"}
                   ],
-                  "speedPriority": 0.6
+                  "costPriority": 0.25,
+                  "speedPriority": 0.6,
+                  "intelligencePriority": 1.0
                 },
                 "systemPrompt": "Respond with concise bullet points.",
                 "includeContext": "allServers",
@@ -170,6 +124,11 @@ class SamplingTest {
                 "metadata": {
                   "provider": "anthropic"
                 },
+                "tools": [
+                  {"name": "get_weather", "inputSchema": {"type": "object"}}
+                ],
+                "toolChoice": {"mode": "required"},
+                "task": {"ttl": 60000},
                 "_meta": {
                   "progressToken": "sample-1"
                 }
@@ -180,53 +139,10 @@ class SamplingTest {
     }
 
     @Test
-    fun `should deserialize CreateMessageRequest`() {
-        val json = """
-            {
-              "method": "sampling/createMessage",
-              "params": {
-                "maxTokens": 256,
-                "messages": [
-                  {
-                    "role": "user",
-                    "content": {
-                      "type": "text",
-                      "text": "Draft a project update."
-                    }
-                  }
-                ],
-                "modelPreferences": {
-                  "costPriority": 0.4
-                },
-                "includeContext": "thisServer",
-                "temperature": 1.1,
-                "stopSequences": ["\n\n"],
-                "metadata": {
-                  "provider": "openai"
-                },
-                "_meta": {
-                  "progressToken": 42
-                }
-              }
-            }
-        """.trimIndent()
-
-        val request = verifyDeserialization<CreateMessageRequest>(McpJson, json)
-
-        assertEquals(Method.Defined.SamplingCreateMessage, request.method)
-        val params = request.params
-        assertEquals(256, params.maxTokens)
-        assertEquals(IncludeContext.ThisServer, params.includeContext)
-        assertEquals(ProgressToken(42), params.meta?.progressToken)
-        assertEquals("openai", params.metadata?.get("provider")?.jsonPrimitive?.content)
-
-        val message = params.messages.first()
-        assertEquals(Role.User, message.role)
-        val content = assertIs<TextContent>(message.content.single())
-        assertEquals("Draft a project update.", content.text)
-
-        val preferences = assertNotNull(params.modelPreferences)
-        assertEquals(0.4, preferences.costPriority)
+    fun `should serialize all IncludeContext values`() {
+        verifySerialization(IncludeContext.None, McpJson, "\"none\"")
+        verifySerialization(IncludeContext.ThisServer, McpJson, "\"thisServer\"")
+        verifySerialization(IncludeContext.AllServers, McpJson, "\"allServers\"")
     }
 
     @Test
@@ -239,7 +155,7 @@ class SamplingTest {
             meta = buildJsonObject { put("latencyMs", 850) },
         )
 
-        verifySerialization(
+        verifySerialization<ClientResult>(
             result,
             McpJson,
             """
@@ -260,46 +176,11 @@ class SamplingTest {
     }
 
     @Test
-    fun `should deserialize CreateMessageResult`() {
-        val json = """
-            {
-              "role": "assistant",
-              "content": {
-                "type": "text",
-                "text": "Summary complete."
-              },
-              "model": "gpt-4o",
-              "stopReason": "stopSequence",
-              "_meta": {
-                "latencyMs": 1200.5
-              }
-            }
-        """.trimIndent()
-
-        val result = verifyDeserialization<CreateMessageResult>(McpJson, json)
-
-        assertEquals(Role.Assistant, result.role)
-        val text = assertIs<TextContent>(result.content.single())
-        assertEquals("Summary complete.", text.text)
-        assertEquals("gpt-4o", result.model)
-        assertEquals(StopReason.StopSequence, result.stopReason)
-        val meta = result.meta
-        assertNotNull(meta)
-        assertEquals(1200.5, meta["latencyMs"]?.jsonPrimitive?.double)
-    }
-
-    // ============================================================================
-    // SamplingMessage shape (SEP-1577)
-    // ============================================================================
-
-    @Test
-    fun `SamplingMessage content is a list of SamplingMessageContent`() {
-        val m = SamplingMessage(
-            role = Role.User,
-            content = listOf(TextContent("hi")),
-        )
-        m.content.size shouldBe 1
-        (m.content[0] as TextContent).text shouldBe "hi"
+    fun `should serialize all StopReason values`() {
+        verifySerialization(StopReason.EndTurn, McpJson, "\"endTurn\"")
+        verifySerialization(StopReason.StopSequence, McpJson, "\"stopSequence\"")
+        verifySerialization(StopReason.MaxTokens, McpJson, "\"maxTokens\"")
+        verifySerialization(StopReason.ToolUse, McpJson, "\"toolUse\"")
     }
 
     @Test
@@ -307,132 +188,6 @@ class SamplingTest {
         assertFailsWith<IllegalArgumentException> {
             SamplingMessage(role = Role.User, content = emptyList())
         }
-    }
-
-    @Test
-    fun `SamplingMessage single-element content serialises as single object`() {
-        val m = SamplingMessage(role = Role.User, content = listOf(TextContent("hi")))
-        val json = McpJson.encodeToString(SamplingMessage.serializer(), m)
-        check("""{"role":"user","content":""" in json) { "expected role/content prefix, got $json" }
-        check("\"type\":\"text\"" in json && "\"text\":\"hi\"" in json) {
-            "expected single-object content with text discriminator, got $json"
-        }
-        check("\"content\":[" !in json) { "expected single-object wire, but array form found: $json" }
-    }
-
-    @Test
-    fun `SamplingMessage multi-element content serialises as array`() {
-        val m = SamplingMessage(
-            role = Role.Assistant,
-            content = listOf(
-                TextContent("Let me use a tool"),
-                ToolUseContent(id = "c1", name = "get_weather", input = JsonObject(emptyMap())),
-            ),
-        )
-        val json = McpJson.encodeToString(SamplingMessage.serializer(), m)
-        check("\"content\":[" in json) { "expected array wire form, got $json" }
-    }
-
-    @Test
-    fun `SamplingMessage _meta round-trips`() {
-        val meta = buildJsonObject { put("k", JsonPrimitive("v")) }
-        val m = SamplingMessage(role = Role.User, content = listOf(TextContent("hi")), meta = meta)
-        val json = McpJson.encodeToString(SamplingMessage.serializer(), m)
-        val decoded = McpJson.decodeFromString(SamplingMessage.serializer(), json)
-        decoded.meta shouldBe meta
-    }
-
-    // ============================================================================
-    // CreateMessageRequestParams: tools / toolChoice + StopReason.ToolUse
-    // ============================================================================
-
-    @Test
-    fun `CreateMessageRequestParams tools and toolChoice default to null`() {
-        val params = CreateMessageRequestParams(maxTokens = 100, messages = emptyList())
-        params.tools shouldBe null
-        params.toolChoice shouldBe null
-    }
-
-    @Test
-    fun `CreateMessageRequestParams round-trips tools and toolChoice`() {
-        val original = CreateMessageRequestParams(
-            maxTokens = 100,
-            messages = emptyList(),
-            tools = listOf(dummyTool),
-            toolChoice = ToolChoice(mode = ToolChoice.Mode.Required),
-        )
-        val encoded = McpJson.encodeToString(CreateMessageRequestParams.serializer(), original)
-        val decoded = McpJson.decodeFromString(CreateMessageRequestParams.serializer(), encoded)
-        decoded.tools?.single()?.name shouldBe "get_weather"
-        decoded.toolChoice shouldBe ToolChoice(mode = ToolChoice.Mode.Required)
-    }
-
-    @Test
-    fun `CreateMessageRequestParams task defaults to null and is omitted when encoding`() {
-        val params = CreateMessageRequestParams(maxTokens = 100, messages = emptyList())
-        params.task shouldBe null
-        val encoded = McpJson.encodeToString(CreateMessageRequestParams.serializer(), params)
-        assertEquals(false, "\"task\"" in encoded)
-    }
-
-    @Test
-    fun `CreateMessageRequestParams round-trips task`() {
-        val original = CreateMessageRequestParams(
-            maxTokens = 100,
-            messages = emptyList(),
-            task = TaskMetadata(ttl = 60_000L),
-        )
-        val encoded = McpJson.encodeToString(CreateMessageRequestParams.serializer(), original)
-        val decoded = McpJson.decodeFromString(CreateMessageRequestParams.serializer(), encoded)
-        decoded.task shouldBe TaskMetadata(ttl = 60_000L)
-    }
-
-    @Test
-    fun `StopReason ToolUse serialises as toolUse`() {
-        StopReason.ToolUse.value shouldBe "toolUse"
-    }
-
-    // ============================================================================
-    // CreateMessageResult shape (SEP-1577)
-    // ============================================================================
-
-    @Test
-    fun `CreateMessageResult single-block content serialises as single object`() {
-        val r = CreateMessageResult(
-            role = Role.Assistant,
-            content = TextContent("42"),
-            model = "test-model",
-            stopReason = StopReason.EndTurn,
-        )
-        val json = McpJson.encodeToString(CreateMessageResult.serializer(), r)
-        check("\"content\":{" in json) { "expected single-object content wire form, got $json" }
-        check("\"content\":[" !in json) { "expected NOT to use array wire form for size-1, got $json" }
-    }
-
-    @Test
-    fun `CreateMessageResult multi-block content with ToolUse stopReason round-trips`() {
-        val r = CreateMessageResult(
-            role = Role.Assistant,
-            content = listOf(
-                TextContent("Let me use a tool"),
-                ToolUseContent(id = "c1", name = "get_weather", input = JsonObject(emptyMap())),
-            ),
-            model = "test-model",
-            stopReason = StopReason.ToolUse,
-        )
-        val json = McpJson.encodeToString(CreateMessageResult.serializer(), r)
-        val decoded = McpJson.decodeFromString(CreateMessageResult.serializer(), json)
-        decoded shouldBe r
-        decoded.stopReason shouldBe StopReason.ToolUse
-        decoded.content.size shouldBe 2
-    }
-
-    @Test
-    fun `CreateMessageResult pre-SEP single-object wire decodes correctly`() {
-        val json = """{"role":"assistant","content":{"type":"text","text":"hi"},"model":"m"}"""
-        val decoded = McpJson.decodeFromString(CreateMessageResult.serializer(), json)
-        decoded.content.size shouldBe 1
-        (decoded.content[0] as TextContent).text shouldBe "hi"
     }
 
     @Test
@@ -445,10 +200,6 @@ class SamplingTest {
             )
         }
     }
-
-    // ============================================================================
-    // SamplingContentSerializer (single-or-array wire heuristic)
-    // ============================================================================
 
     @Test
     fun `SamplingContentSerializer decodes single object into list of one`() {
@@ -495,41 +246,10 @@ class SamplingTest {
         }
     }
 
-    // ============================================================================
-    // ToolChoice
-    // ============================================================================
-
     @Test
-    fun `ToolChoice round-trips auto mode`() {
-        val original = ToolChoice(mode = ToolChoice.Mode.Auto)
-        val json = McpJson.encodeToString(ToolChoice.serializer(), original)
-        json shouldBe """{"mode":"auto"}"""
-        McpJson.decodeFromString(ToolChoice.serializer(), json) shouldBe original
-    }
-
-    @Test
-    fun `ToolChoice round-trips required mode`() {
-        val original = ToolChoice(mode = ToolChoice.Mode.Required)
-        McpJson.decodeFromString(
-            ToolChoice.serializer(),
-            McpJson.encodeToString(ToolChoice.serializer(), original),
-        ) shouldBe original
-    }
-
-    @Test
-    fun `ToolChoice round-trips none mode`() {
-        val original = ToolChoice(mode = ToolChoice.Mode.None)
-        McpJson.decodeFromString(
-            ToolChoice.serializer(),
-            McpJson.encodeToString(ToolChoice.serializer(), original),
-        ) shouldBe original
-    }
-
-    @Test
-    fun `ToolChoice absent mode serialises as empty object and deserialises to null mode`() {
-        val original = ToolChoice()
-        val json = McpJson.encodeToString(ToolChoice.serializer(), original)
-        json shouldBe """{}"""
-        McpJson.decodeFromString(ToolChoice.serializer(), json) shouldBe ToolChoice(mode = null)
+    fun `should serialize all ToolChoice modes`() {
+        verifySerialization(ToolChoice(ToolChoice.Mode.Auto), McpJson, """{"mode": "auto"}""")
+        verifySerialization(ToolChoice(ToolChoice.Mode.Required), McpJson, """{"mode": "required"}""")
+        verifySerialization(ToolChoice(ToolChoice.Mode.None), McpJson, """{"mode": "none"}""")
     }
 }

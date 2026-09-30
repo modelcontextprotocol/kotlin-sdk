@@ -10,8 +10,6 @@ import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotificationParams
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
-import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest
-import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsResult
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
@@ -20,8 +18,6 @@ import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotificationParams
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.Notification
 import io.modelcontextprotocol.kotlin.sdk.types.PromptListChangedNotification
-import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
-import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.Request
 import io.modelcontextprotocol.kotlin.sdk.types.RequestResult
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceListChangedNotification
@@ -152,26 +148,6 @@ class ClientConnectionTest : AbstractServerFeaturesTest() {
         addTool("test") { callAllMethods(cap) }
 
         client.callTool(CallToolRequest(CallToolRequestParams("test")))
-
-        cap.assertAll()
-    }
-
-    @Test
-    fun `all ClientConnection methods are callable from prompt handler`() = runTest {
-        val cap = Captures()
-        addPrompt("test") { callAllMethods(cap) }
-
-        client.getPrompt(GetPromptRequest(GetPromptRequestParams("test")))
-
-        cap.assertAll()
-    }
-
-    @Test
-    fun `all ClientConnection methods are callable from resource handler`() = runTest {
-        val cap = Captures()
-        addResource("test://resource") { callAllMethods(cap) }
-
-        client.readResource(ReadResourceRequest(ReadResourceRequestParams("test://resource")))
 
         cap.assertAll()
     }

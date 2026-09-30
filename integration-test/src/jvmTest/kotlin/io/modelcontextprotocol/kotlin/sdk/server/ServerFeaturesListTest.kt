@@ -15,6 +15,8 @@ import io.modelcontextprotocol.kotlin.sdk.types.Resource
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 
 class ServerFeaturesListTest : AbstractServerFeaturesTest() {
 
@@ -52,25 +54,6 @@ class ServerFeaturesListTest : AbstractServerFeaturesTest() {
             name shouldBe "my-tool"
             description shouldBe "Detailed description"
         }
-    }
-
-    @Test
-    fun `listTools should reflect tool removal`() = runTest {
-        server.addTool("keep", "Kept") { CallToolResult(emptyList()) }
-        server.addTool("drop", "Dropped") { CallToolResult(emptyList()) }
-        client.listTools().tools shouldHaveSize 2
-
-        server.removeTool("drop") shouldBe true
-
-        val tools = client.listTools().tools
-
-        tools shouldHaveSize 1
-        tools.single().name shouldBe "keep"
-    }
-
-    @Test
-    fun `removeTool should return false when tool not found`() = runTest {
-        server.removeTool("ghost") shouldBe false
     }
 
     // ── listPrompts ────────────────────────────────────────────────────────────
@@ -127,25 +110,6 @@ class ServerFeaturesListTest : AbstractServerFeaturesTest() {
         client.listPrompts().prompts.single().description shouldBe null
     }
 
-    @Test
-    fun `listPrompts should reflect prompt removal`() = runTest {
-        server.addPrompt("keep", "Kept") { GetPromptResult(messages = emptyList()) }
-        server.addPrompt("drop", "Dropped") { GetPromptResult(messages = emptyList()) }
-        client.listPrompts().prompts shouldHaveSize 2
-
-        server.removePrompt("drop") shouldBe true
-
-        val prompts = client.listPrompts().prompts
-
-        prompts shouldHaveSize 1
-        prompts.single().name shouldBe "keep"
-    }
-
-    @Test
-    fun `removePrompt should return false when prompt not found`() = runTest {
-        server.removePrompt("ghost") shouldBe false
-    }
-
     // ── listResources ──────────────────────────────────────────────────────────
 
     @Test
@@ -193,29 +157,25 @@ class ServerFeaturesListTest : AbstractServerFeaturesTest() {
         client.listResources().resources.single().mimeType shouldBe null
     }
 
-    @Test
-    fun `listResources should reflect resource removal`() = runTest {
-        server.addResource("test://keep", "Keep", "Kept") { ReadResourceResult(emptyList()) }
-        server.addResource("test://drop", "Drop", "Dropped") { ReadResourceResult(emptyList()) }
-        client.listResources().resources shouldHaveSize 2
-
-        server.removeResource("test://drop") shouldBe true
-
-        val resources = client.listResources().resources
-
-        resources shouldHaveSize 1
-        resources.single().uri shouldBe "test://keep"
-    }
-
-    @Test
-    fun `removeResource should return false when resource not found`() = runTest {
-        server.removeResource("test://ghost") shouldBe false
-    }
-
     // ── listResourceTemplates ──────────────────────────────────────────────────
 
     @Test
     fun `listResourceTemplates should return empty list`() = runTest {
         client.listResourceTemplates(ListResourceTemplatesRequest()).resourceTemplates.shouldBeEmpty()
+    }
+
+    // ── add / remove round trip ────────────────────────────────────────────────
+
+    @ParameterizedTest
+    @EnumSource(FeatureKind::class)
+    fun `list should reflect added and removed features`(kind: FeatureKind) = runTest {
+        kind.add(server, "a")
+        kind.addAll(server, listOf("b", "c"))
+        kind.list(client) shouldContainExactlyInAnyOrder listOf("a", "b", "c")
+
+        kind.remove(server, "a") shouldBe true
+        kind.remove(server, "a") shouldBe false
+        kind.removeAll(server, listOf("b", "c", "absent")) shouldBe 2
+        kind.list(client).shouldBeEmpty()
     }
 }

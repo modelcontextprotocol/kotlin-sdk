@@ -1,6 +1,14 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.assertions.throwables.shouldThrowAny
+import io.kotest.assertions.withClue
+import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldStartWith
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.ServerSession
@@ -12,6 +20,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageResult
 import io.modelcontextprotocol.kotlin.sdk.types.DoubleSchema
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestFormParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestURLParams
@@ -19,20 +28,14 @@ import io.modelcontextprotocol.kotlin.sdk.types.ElicitResult
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotificationParams
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
+import io.modelcontextprotocol.kotlin.sdk.types.EnumOption
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
-import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeResult
 import io.modelcontextprotocol.kotlin.sdk.types.IntegerSchema
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
-import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
-import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
-import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesRequest
-import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesResult
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsRequest
-import io.modelcontextprotocol.kotlin.sdk.types.ListToolsRequest
-import io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotificationParams
@@ -46,1532 +49,407 @@ import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.StringSchema
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.TitledMultiSelectEnumSchema
-import io.modelcontextprotocol.kotlin.sdk.types.Tool
-import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import io.modelcontextprotocol.kotlin.sdk.types.UntitledMultiSelectEnumSchema
 import io.modelcontextprotocol.kotlin.sdk.types.UntitledSingleSelectEnumSchema
 import io.modelcontextprotocol.kotlin.sdk.types.UrlElicitationRequiredException
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.awaitCancellation
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.joinAll
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withTimeout
-import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.serialization.json.putJsonArray
 import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
-import kotlin.test.fail
-import kotlin.time.Duration.Companion.seconds
 
 class ClientTest {
-    @Test
-    fun `should initialize with matching protocol version`() = runTest {
-        var initialised = false
-        val clientTransport = object : AbstractTransport() {
-            override suspend fun start() {}
-
-            override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
-                if (message !is JSONRPCRequest) return
-                initialised = true
-                val result = InitializeResult(
-                    protocolVersion = LATEST_PROTOCOL_VERSION,
-                    capabilities = ServerCapabilities(),
-                    serverInfo = Implementation(
-                        name = "test",
-                        version = "1.0",
-                    ),
-                )
-
-                val response = JSONRPCResponse(
-                    id = message.id,
-                    result = result,
-                )
-
-                _onMessage.invoke(response)
-            }
-
-            override suspend fun close() {
-            }
-        }
-
-        val client = Client(
-            clientInfo = Implementation(
-                name = "test client",
-                version = "1.0",
-            ),
-            options = ClientOptions(
-                capabilities = ClientCapabilities(
-                    sampling = ClientCapabilities.sampling,
-                ),
-            ),
-        )
-
-        client.connect(clientTransport)
-        assertTrue(initialised)
-    }
 
     @Test
     fun `should initialize with supported older protocol version`() = runTest {
-        val oldVersion = SUPPORTED_PROTOCOL_VERSIONS[1]
-        val clientTransport = object : AbstractTransport() {
-            override suspend fun start() {}
+        val client = newClient()
 
-            override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
-                if (message !is JSONRPCRequest) return
-                check(message.method == Method.Defined.Initialize.value)
+        client.connect(InitializeTransport { initializeResult(SUPPORTED_PROTOCOL_VERSIONS[1]) })
 
-                val result = InitializeResult(
-                    protocolVersion = oldVersion,
-                    capabilities = ServerCapabilities(),
-                    serverInfo = Implementation(
-                        name = "test",
-                        version = "1.0",
-                    ),
-                )
-
-                val response = JSONRPCResponse(
-                    id = message.id,
-                    result = result,
-                )
-                _onMessage.invoke(response)
-            }
-
-            override suspend fun close() {
-            }
-        }
-
-        val client = Client(
-            clientInfo = Implementation(
-                name = "test client",
-                version = "1.0",
-            ),
-            options = ClientOptions(
-                capabilities = ClientCapabilities(
-                    sampling = ClientCapabilities.sampling,
-                ),
-            ),
-        )
-
-        client.connect(clientTransport)
-        assertEquals(
-            Implementation("test", "1.0"),
-            client.serverVersion,
-        )
+        client.serverVersion shouldBe Implementation(name = "test server", version = "1.0")
     }
 
     @Test
-    fun `should reject unsupported protocol version`() = runTest {
-        var closed = false
-        val clientTransport = object : AbstractTransport() {
-            override suspend fun start() {}
-
-            override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
-                if (message !is JSONRPCRequest) return
-                check(message.method == Method.Defined.Initialize.value)
-
-                val result = InitializeResult(
-                    protocolVersion = "invalid-version",
-                    capabilities = ServerCapabilities(),
-                    serverInfo = Implementation(
-                        name = "test",
-                        version = "1.0",
-                    ),
-                )
-
-                val response = JSONRPCResponse(
-                    id = message.id,
-                    result = result,
-                )
-
-                _onMessage.invoke(response)
-            }
-
-            override suspend fun close() {
-                closed = true
-            }
-        }
-
-        val client = Client(
-            clientInfo = Implementation(
-                name = "test client",
-                version = "1.0",
-            ),
-            options = ClientOptions(),
+    fun `connect should close the transport and surface initialization failures`() = runTest {
+        val cases = listOf(
+            ConnectFailure("unsupported protocol version", { initializeResult("invalid-version") }) {
+                it.shouldBeInstanceOf<IllegalStateException>()
+                it.message shouldBe
+                    "Error connecting to transport: Server's protocol version is not supported: invalid-version"
+            },
+            ConnectFailure("unexpected exception is wrapped", { error("Test error") }) {
+                it.shouldBeInstanceOf<IllegalStateException>()
+                it.message shouldBe "Error connecting to transport: Test error"
+            },
+            ConnectFailure("McpException is rethrown", { throw McpException(-32600, "Invalid Request") }) {
+                it.shouldBeInstanceOf<McpException>().code shouldBe -32600
+                it.message shouldBe "Invalid Request"
+            },
+            ConnectFailure("StreamableHttpError is rethrown", { throw StreamableHttpError(500, "Server Error") }) {
+                it.shouldBeInstanceOf<StreamableHttpError>().code shouldBe 500
+                it.message shouldBe "Streamable HTTP error: Server Error"
+            },
+            ConnectFailure("SerializationException is rethrown", { throw SerializationException("malformed") }) {
+                it.shouldBeInstanceOf<SerializationException>()
+                it.message shouldBe "malformed"
+            },
         )
 
-        assertFailsWith<IllegalStateException>("Server's protocol version is not supported: invalid-version") {
-            client.connect(clientTransport)
-        }
-
-        assertTrue(closed)
-    }
-
-    @Test
-    fun `should reject due to non cancellation exception`() = runTest {
-        var closed = false
-        val failingTransport = object : AbstractTransport() {
-            override suspend fun start() {}
-
-            override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
-                if (message !is JSONRPCRequest) return
-                check(message.method == Method.Defined.Initialize.value)
-                throw IllegalStateException("Test error")
-            }
-
-            override suspend fun close() {
-                closed = true
+        for (case in cases) {
+            withClue(case.name) {
+                val transport = InitializeTransport(case.onInitialize)
+                case.verify(shouldThrowAny { newClient().connect(transport) })
+                transport.closed shouldBe true
             }
         }
-
-        val client = Client(
-            clientInfo = Implementation(
-                name = "test client",
-                version = "1.0",
-            ),
-            options = ClientOptions(),
-        )
-
-        val exception = assertFailsWith<IllegalStateException> {
-            client.connect(failingTransport)
-        }
-
-        assertEquals("Error connecting to transport: Test error", exception.message)
-
-        assertTrue(closed)
-    }
-
-    @Test
-    fun `should rethrow McpException as is`() = runTest {
-        var closed = false
-        val failingTransport = object : AbstractTransport() {
-            override suspend fun start() {}
-
-            override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
-                if (message !is JSONRPCRequest) return
-                check(message.method == Method.Defined.Initialize.value)
-                throw McpException(
-                    code = -32600,
-                    message = "Invalid Request",
-                )
-            }
-
-            override suspend fun close() {
-                closed = true
-            }
-        }
-
-        val client = Client(
-            clientInfo = Implementation(
-                name = "test client",
-                version = "1.0",
-            ),
-            options = ClientOptions(),
-        )
-
-        val exception = assertFailsWith<McpException> {
-            client.connect(failingTransport)
-        }
-
-        exception.code shouldBe -32600
-        exception.message shouldBe "Invalid Request"
-
-        assertTrue(closed)
-    }
-
-    @Test
-    fun `should rethrow StreamableHttpError as is`() = runTest {
-        var closed = false
-        val failingTransport = object : AbstractTransport() {
-            override suspend fun start() {}
-
-            override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
-                if (message !is JSONRPCRequest) return
-                check(message.method == Method.Defined.Initialize.value)
-                throw StreamableHttpError(
-                    code = 500,
-                    message = "Internal Server Error",
-                )
-            }
-
-            override suspend fun close() {
-                closed = true
-            }
-        }
-
-        val client = Client(
-            clientInfo = Implementation(
-                name = "test client",
-                version = "1.0",
-            ),
-            options = ClientOptions(),
-        )
-
-        val exception = assertFailsWith<StreamableHttpError> {
-            client.connect(failingTransport)
-        }
-
-        assertEquals(500, exception.code)
-        assertEquals("Streamable HTTP error: Internal Server Error", exception.message)
-
-        assertTrue(closed)
     }
 
     @Test
     fun `should respect server capabilities`() = runTest {
-        val serverOptions = ServerOptions(
-            capabilities = ServerCapabilities(
-                resources = ServerCapabilities.Resources(null, null),
-                tools = ServerCapabilities.Tools(null),
-            ),
+        val capabilities = ServerCapabilities(
+            resources = ServerCapabilities.Resources(),
+            tools = ServerCapabilities.Tools(),
         )
-        val server = Server(
-            Implementation(name = "test server", version = "1.0"),
-            serverOptions,
-        )
+        val client = newClient()
+        connect(client, newServer(capabilities))
 
-        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-
-        val client = Client(
-            clientInfo = Implementation(name = "test client", version = "1.0"),
-            options = ClientOptions(
-                capabilities = ClientCapabilities(sampling = ClientCapabilities.sampling),
-            ),
-        )
-
-        val serverSessionResult = CompletableDeferred<ServerSession>()
-
-        listOf(
-            launch {
-                client.connect(clientTransport)
-            },
-            launch {
-                serverSessionResult.complete(server.createSession(serverTransport))
-            },
-        ).joinAll()
-
-        val serverSession = serverSessionResult.await()
-        serverSession.setRequestHandler<InitializeRequest>(Method.Defined.Initialize) { _, _ ->
-            InitializeResult(
-                protocolVersion = LATEST_PROTOCOL_VERSION,
-                capabilities = ServerCapabilities(
-                    resources = ServerCapabilities.Resources(null, null),
-                    tools = ServerCapabilities.Tools(null),
-                ),
-                serverInfo = Implementation(name = "test", version = "1.0"),
-            )
-        }
-
-        serverSession.setRequestHandler<ListResourcesRequest>(Method.Defined.ResourcesList) { _, _ ->
-            ListResourcesResult(resources = emptyList(), nextCursor = null)
-        }
-
-        serverSession.setRequestHandler<ListToolsRequest>(Method.Defined.ToolsList) { _, _ ->
-            ListToolsResult(tools = emptyList(), nextCursor = null)
-        }
-        // Server supports resources and tools, but not prompts
-        val caps = client.serverCapabilities
-        assertEquals(ServerCapabilities.Resources(null, null), caps?.resources)
-        assertEquals(ServerCapabilities.Tools(null), caps?.tools)
-        assertTrue(caps?.prompts == null) // or check that prompts are absent
-
-        // These should not throw
+        client.serverCapabilities shouldBe capabilities
         client.listResources()
         client.listTools()
-
-        // This should fail because prompts are not supported
-        val ex = assertFailsWith<IllegalStateException> {
-            client.listPrompts()
-        }
-        assertTrue(ex.message?.contains("Server does not support prompts") == true)
+        shouldThrow<IllegalStateException> { client.listPrompts() }.message shouldBe
+            "Server does not support prompts (required for PromptsList)"
     }
 
     @Test
     fun `should respect client notification capabilities`() = runTest {
-        val server = Server(
-            Implementation(name = "test server", version = "1.0"),
-            ServerOptions(capabilities = ServerCapabilities()),
-        )
+        val server = newServer()
+        val supported = newClient(ClientCapabilities(roots = ClientCapabilities.Roots(listChanged = true)))
+        val unsupported = newClient()
+        connect(supported, server)
+        connect(unsupported, server)
 
-        val client = Client(
-            clientInfo = Implementation(name = "test client", version = "1.0"),
-            options = ClientOptions(
-                capabilities = ClientCapabilities(
-                    roots = ClientCapabilities.Roots(listChanged = true),
-                ),
-            ),
-        )
-
-        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-
-        listOf(
-            launch {
-                client.connect(clientTransport)
-                println("Client connected")
-            },
-            launch {
-                server.createSession(serverTransport)
-                println("Server connected")
-            },
-        ).joinAll()
-
-        // This should not throw because the client supports roots.listChanged
-        client.sendRootsListChanged()
-
-        // Create a new client without the roots.listChanged capability
-        val clientWithoutCapability = Client(
-            clientInfo = Implementation(name = "test client without capability", version = "1.0"),
-            options = ClientOptions(
-                capabilities = ClientCapabilities(),
-            ),
-        )
-
-        val (clientTransport2, serverTransport2) = InMemoryTransport.createLinkedPair()
-        listOf(
-            launch { clientWithoutCapability.connect(clientTransport2) },
-            launch { server.createSession(serverTransport2) },
-        ).joinAll()
-
-        // This should fail
-        val ex = assertFailsWith<IllegalStateException> {
-            clientWithoutCapability.sendRootsListChanged()
-        }
-        assertTrue(ex.message?.startsWith("Client does not support") == true)
+        supported.sendRootsListChanged()
+        shouldThrow<IllegalStateException> { unsupported.sendRootsListChanged() }.message shouldBe
+            "Client does not support roots list changed notifications (required for NotificationsRootsListChanged)"
     }
 
     @Test
     fun `should respect server notification capabilities`() = runTest {
-        val server = Server(
-            Implementation(name = "test server", version = "1.0"),
-            ServerOptions(
-                capabilities = ServerCapabilities(
-                    logging = EmptyJsonObject,
-                    resources = ServerCapabilities.Resources(listChanged = true, subscribe = null),
-                ),
-            ),
+        val capabilities = ServerCapabilities(
+            logging = EmptyJsonObject,
+            resources = ServerCapabilities.Resources(listChanged = true),
         )
+        val session = connect(newClient(), newServer(capabilities))
 
-        val client = Client(
-            clientInfo = Implementation(name = "test client", version = "1.0"),
-            options = ClientOptions(
-                capabilities = ClientCapabilities(),
-            ),
+        session.sendLoggingMessage(
+            LoggingMessageNotification(LoggingMessageNotificationParams(LoggingLevel.Info, JsonPrimitive("log"))),
         )
-
-        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-
-        val serverSessionResult = CompletableDeferred<ServerSession>()
-
-        listOf(
-            launch {
-                client.connect(clientTransport)
-                println("Client connected")
-            },
-            launch {
-                serverSessionResult.complete(server.createSession(serverTransport))
-                println("Server connected")
-            },
-        ).joinAll()
-
-        val serverSession = serverSessionResult.await()
-        // These should not throw
-        val jsonObject = buildJsonObject {
-            put("name", "John")
-            put("age", 30)
-            put("isStudent", false)
-        }
-        serverSession.sendLoggingMessage(
-            LoggingMessageNotification(
-                params = LoggingMessageNotificationParams(
-                    level = LoggingLevel.Info,
-                    data = jsonObject,
-                ),
-            ),
-        )
-        serverSession.sendResourceListChanged()
-
-        // This should fail because the server doesn't have the tools capability
-        val ex = assertFailsWith<IllegalStateException> {
-            serverSession.sendToolListChanged()
-        }
-        assertTrue(ex.message?.contains("Server does not support notifying of tool list changes") == true)
+        session.sendResourceListChanged()
+        shouldThrow<IllegalStateException> { session.sendToolListChanged() }.message shouldBe
+            "Server does not support notifying of tool list changes (required for notifications/tools/list_changed)"
     }
 
     @Test
-    fun `should handle client cancelling a request`() = runTest {
-        val server = Server(
-            Implementation(name = "test server", version = "1.0"),
-            ServerOptions(
-                capabilities = ServerCapabilities(
-                    resources = ServerCapabilities.Resources(
-                        listChanged = null,
-                        subscribe = null,
-                    ),
-                ),
-            ),
-        )
-
-        val def = CompletableDeferred<Unit>()
-        val defTimeOut = CompletableDeferred<Unit>()
-        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-
-        val client = Client(
-            clientInfo = Implementation(name = "test client", version = "1.0"),
-            options = ClientOptions(capabilities = ClientCapabilities()),
-        )
-
-        val serverSessionResult = CompletableDeferred<ServerSession>()
-
-        listOf(
-            launch {
-                client.connect(clientTransport)
-                println("Client connected")
-            },
-            launch {
-                serverSessionResult.complete(server.createSession(serverTransport))
-                println("Server connected")
-            },
-        ).joinAll()
-
-        val serverSession = serverSessionResult.await()
-
-        // Register the tap after createSession so it chains onto the session's subscription instead
-        // of pre-empting the handshake.
-        val cancelledOnWire = CompletableDeferred<Unit>()
-        serverTransport.onMessage { message ->
-            if (message is JSONRPCNotification && message.method == Method.Defined.NotificationsCancelled.value) {
-                cancelledOnWire.complete(Unit)
-            }
-        }
-
-        serverSession.setRequestHandler<ListResourcesRequest>(Method.Defined.ResourcesList) { _, _ ->
-            // Simulate delay
-            def.complete(Unit)
-            try {
-                delay(1000)
-            } catch (e: CancellationException) {
-                defTimeOut.complete(Unit)
-                throw e
-            }
-            ListResourcesResult(resources = emptyList())
-            fail("Shouldn't have been called")
-        }
-
-        val defCancel = CompletableDeferred<Unit>()
-        val job = launch {
-            try {
-                client.listResources()
-            } catch (e: CancellationException) {
-                defCancel.complete(Unit)
-                assertEquals("Cancelled by test", e.message)
-            }
-        }
-        def.await()
-        runCatching { job.cancel("Cancelled by test") }
-        defCancel.await()
-        cancelledOnWire.await()
-        defTimeOut.await()
-    }
-
-    @Test
-    fun `should handle request timeout`() = runTest {
-        val server = Server(
-            Implementation(name = "test server", version = "1.0"),
-            ServerOptions(
-                capabilities = ServerCapabilities(
-                    resources = ServerCapabilities.Resources(
-                        listChanged = null,
-                        subscribe = null,
-                    ),
-                ),
-            ),
-        )
-
-        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-        val client = Client(
-            clientInfo = Implementation(name = "test client", version = "1.0"),
-            options = ClientOptions(capabilities = ClientCapabilities()),
-        )
-
-        val serverSessionResult = CompletableDeferred<ServerSession>()
-
-        listOf(
-            launch {
-                client.connect(clientTransport)
-                println("Client connected")
-            },
-            launch {
-                serverSessionResult.complete(server.createSession(serverTransport))
-                println("Server connected")
-            },
-        ).joinAll()
-
-        val serverSession = serverSessionResult.await()
-        serverSession.setRequestHandler<ListResourcesRequest>(Method.Defined.ResourcesList) { _, _ ->
-            // Never respond: the handler runs on a real dispatcher while the 1 ms timeout runs on the
-            // virtual test clock, so a real-time delay could race it. Parking keeps the test deterministic.
-            awaitCancellation()
-        }
-
-        // Request with 1 msec timeout should fail immediately
-        val ex = assertFailsWith<Exception> {
-            withTimeout(1) {
-                client.listResources()
-            }
-        }
-        assertTrue(ex is TimeoutCancellationException)
-    }
-
-    @Test
-    fun `should only allow setRequestHandler for declared capabilities`() = runTest {
-        val client = Client(
-            clientInfo = Implementation(
-                name = "test client",
-                version = "1.0",
-            ),
-            options = ClientOptions(
-                capabilities = ClientCapabilities(
-                    sampling = ClientCapabilities.sampling,
-                ),
-            ),
-        )
+    fun `should only allow setRequestHandler for declared capabilities`() {
+        val client = newClient(ClientCapabilities(sampling = ClientCapabilities.sampling))
 
         client.setRequestHandler<CreateMessageRequest>(Method.Defined.SamplingCreateMessage) { _, _ ->
-            CreateMessageResult(
-                role = Role.Assistant,
-                content = TextContent(text = "Test response"),
-                model = "test-model",
-            )
+            CreateMessageResult(role = Role.Assistant, content = TextContent(text = "Test response"), model = "m")
         }
-
-        assertFailsWith<IllegalStateException>("Client does not support roots capability (required for RootsList)") {
+        shouldThrow<IllegalStateException> {
             client.setRequestHandler<ListRootsRequest>(Method.Defined.RootsList) { _, _ -> null }
-        }
+        }.message shouldBe "Client does not support roots capability (required for RootsList)"
     }
 
     @Test
-    fun `JSONRPCRequest with ToolsList method and default params returns list of tools`() = runTest {
-        val serverOptions = ServerOptions(
-            capabilities = ServerCapabilities(
-                tools = ServerCapabilities.Tools(null),
-            ),
-        )
-        val server = Server(
-            Implementation(name = "test server", version = "1.0"),
-            serverOptions,
-        )
+    fun `listRoots should reflect added and removed roots`() = runTest {
+        val client = newClient(ClientCapabilities(roots = ClientCapabilities.Roots()))
+        val session = connect(client)
+        val first = Root(uri = "file:///first", name = "first")
+        val second = Root(uri = "file:///second", name = "second")
 
-        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
+        client.addRoot(uri = "file:///first", name = "first")
+        client.addRoots(listOf(second))
+        session.listRoots().roots shouldContainExactlyInAnyOrder listOf(first, second)
 
-        val client = Client(
-            clientInfo = Implementation(name = "test client", version = "1.0"),
-            options = ClientOptions(
-                capabilities = ClientCapabilities(sampling = ClientCapabilities.sampling),
-            ),
-        )
-
-        var receivedMessage: JSONRPCMessage? = null
-        clientTransport.onMessage { msg ->
-            receivedMessage = msg
-        }
-
-        val serverSessionResult = CompletableDeferred<ServerSession>()
-
-        listOf(
-            launch {
-                client.connect(clientTransport)
-                println("Client connected")
-            },
-            launch {
-                serverSessionResult.complete(server.createSession(serverTransport))
-                println("Server connected")
-            },
-        ).joinAll()
-
-        val serverSession = serverSessionResult.await()
-
-        serverSession.setRequestHandler<InitializeRequest>(Method.Defined.Initialize) { _, _ ->
-            InitializeResult(
-                protocolVersion = LATEST_PROTOCOL_VERSION,
-                capabilities = ServerCapabilities(
-                    resources = ServerCapabilities.Resources(null, null),
-                    tools = ServerCapabilities.Tools(null),
-                ),
-                serverInfo = Implementation(name = "test", version = "1.0"),
-            )
-        }
-
-        val serverListToolsResult = ListToolsResult(
-            tools = listOf(
-                Tool(
-                    name = "testTool",
-                    title = "testTool title",
-                    description = "testTool description",
-                    annotations = null,
-                    inputSchema = ToolSchema(),
-                    outputSchema = null,
-                ),
-            ),
-            nextCursor = null,
-        )
-
-        serverSession.setRequestHandler<ListToolsRequest>(Method.Defined.ToolsList) { _, _ ->
-            serverListToolsResult
-        }
-
-        val serverCapabilities = client.serverCapabilities
-        assertEquals(ServerCapabilities.Tools(null), serverCapabilities?.tools)
-
-        val request = JSONRPCRequest(
-            method = Method.Defined.ToolsList.value,
-        )
-        clientTransport.send(request)
-
-        assertIs<JSONRPCResponse>(receivedMessage)
-        val receivedAsResponse = receivedMessage as JSONRPCResponse
-        assertEquals(request.id, receivedAsResponse.id)
-        assertEquals(request.jsonrpc, receivedAsResponse.jsonrpc)
-        assertEquals(serverListToolsResult, receivedAsResponse.result)
+        client.removeRoot(first.uri) shouldBe true
+        client.removeRoot(first.uri) shouldBe false
+        client.removeRoots(listOf(first.uri, second.uri)) shouldBe 1
+        session.listRoots().roots.shouldBeEmpty()
     }
 
     @Test
-    fun `listRoots returns list of roots`() = runTest {
-        val client = Client(
-            Implementation(name = "test client", version = "1.0"),
-            ClientOptions(
-                capabilities = ClientCapabilities(
-                    roots = ClientCapabilities.Roots(null),
-                ),
-            ),
+    fun `roots mutators should require roots capability`() {
+        val client = newClient()
+        val mutators = mapOf<String, Client.() -> Unit>(
+            "addRoot" to { addRoot(uri = "file:///root", name = "root") },
+            "addRoots" to { addRoots(listOf(Root(uri = "file:///root", name = "root"))) },
+            "removeRoot" to { removeRoot("file:///root") },
+            "removeRoots" to { removeRoots(listOf("file:///root")) },
         )
 
-        val clientRoots = listOf(
-            Root(uri = "file:///test-root", name = "testRoot"),
-        )
-
-        client.addRoots(clientRoots)
-
-        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-
-        val server = Server(
-            serverInfo = Implementation(name = "test server", version = "1.0"),
-            options = ServerOptions(
-                capabilities = ServerCapabilities(),
-            ),
-        )
-
-        val serverSessionResult = CompletableDeferred<ServerSession>()
-
-        listOf(
-            launch {
-                client.connect(clientTransport)
-                println("Client connected")
-            },
-            launch {
-                serverSessionResult.complete(server.createSession(serverTransport))
-                println("Server connected")
-            },
-        ).joinAll()
-
-        val serverSession = serverSessionResult.await()
-
-        val clientCapabilities = serverSession.clientCapabilities
-        assertEquals(ClientCapabilities.Roots(null), clientCapabilities?.roots)
-
-        val listRootsResult = serverSession.listRoots()
-
-        assertEquals(listRootsResult.roots, clientRoots)
-    }
-
-    @Test
-    fun `addRoot should throw when roots capability is not supported`() = runTest {
-        val client = Client(
-            Implementation(name = "test client", version = "1.0"),
-            ClientOptions(
-                capabilities = ClientCapabilities(),
-            ),
-        )
-
-        // Verify that adding a root throws an exception
-        val exception = assertFailsWith<IllegalStateException> {
-            client.addRoot(uri = "file:///test-root1", name = "testRoot1")
+        for ((name, mutate) in mutators) {
+            withClue(name) {
+                shouldThrow<IllegalStateException> { client.mutate() }.message shouldBe
+                    "Client does not support roots capability."
+            }
         }
-        assertEquals("Client does not support roots capability.", exception.message)
-    }
-
-    @Test
-    fun `removeRoot should throw when roots capability is not supported`() = runTest {
-        val client = Client(
-            Implementation(name = "test client", version = "1.0"),
-            ClientOptions(
-                capabilities = ClientCapabilities(),
-            ),
-        )
-
-        // Verify that removing a root throws an exception
-        val exception = assertFailsWith<IllegalStateException> {
-            client.removeRoot(uri = "file:///test-root1")
-        }
-        assertEquals("Client does not support roots capability.", exception.message)
-    }
-
-    @Test
-    fun `removeRoot should remove a root`() = runTest {
-        val client = Client(
-            Implementation(name = "test client", version = "1.0"),
-            ClientOptions(
-                capabilities = ClientCapabilities(
-                    roots = ClientCapabilities.Roots(null),
-                ),
-            ),
-        )
-
-        // Add some roots
-        client.addRoots(
-            listOf(
-                Root(uri = "file:///test-root1", name = "testRoot1"),
-                Root(uri = "file:///test-root2", name = "testRoot2"),
-            ),
-        )
-
-        // Remove a root
-        val result = client.removeRoot("file:///test-root1")
-
-        // Verify the root was removed
-        assertTrue(result, "Root should be removed successfully")
-    }
-
-    @Test
-    fun `removeRoots should remove multiple roots`() = runTest {
-        val client = Client(
-            Implementation(name = "test client", version = "1.0"),
-            ClientOptions(
-                capabilities = ClientCapabilities(
-                    roots = ClientCapabilities.Roots(null),
-                ),
-            ),
-        )
-
-        // Add some roots
-        client.addRoots(
-            listOf(
-                Root(uri = "file:///test-root1", name = "testRoot1"),
-                Root(uri = "file:///test-root2", name = "testRoot2"),
-            ),
-        )
-
-        // Remove multiple roots
-        val result = client.removeRoots(
-            listOf("file:///test-root1", "file:///test-root2"),
-        )
-
-        // Verify the root was removed
-        assertEquals(2, result, "Both roots should be removed")
     }
 
     @Test
     fun `sendRootsListChanged should notify server`() = runTest {
-        val client = Client(
-            Implementation(name = "test client", version = "1.0"),
-            ClientOptions(
-                capabilities = ClientCapabilities(
-                    roots = ClientCapabilities.Roots(listChanged = true),
-                ),
-            ),
-        )
-
-        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-
-        val server = Server(
-            serverInfo = Implementation(name = "test server", version = "1.0"),
-            options = ServerOptions(
-                capabilities = ServerCapabilities(),
-            ),
-        )
-
-        // The handler runs on Dispatchers.Default after concurrent dispatch is enabled; await the deferred.
-        val rootListChangedReceived = CompletableDeferred<Unit>()
-
-        val serverSessionResult = CompletableDeferred<ServerSession>()
-
-        listOf(
-            launch {
-                client.connect(clientTransport)
-                println("Client connected")
-            },
-            launch {
-                serverSessionResult.complete(server.createSession(serverTransport))
-                println("Server connected")
-            },
-        ).joinAll()
-
-        val serverSession = serverSessionResult.await()
-        serverSession.setNotificationHandler<RootsListChangedNotification>(
-            Method.Defined.NotificationsRootsListChanged,
-        ) {
-            rootListChangedReceived.complete(Unit)
+        val client = newClient(ClientCapabilities(roots = ClientCapabilities.Roots(listChanged = true)))
+        val session = connect(client)
+        val received = CompletableDeferred<Unit>()
+        session.setNotificationHandler<RootsListChangedNotification>(Method.Defined.NotificationsRootsListChanged) {
+            received.complete(Unit)
             CompletableDeferred(Unit)
         }
 
         client.sendRootsListChanged()
 
-        withTimeout(5.seconds) { rootListChangedReceived.await() }
+        received.await()
     }
 
     @Test
     fun `should reject server elicitation when elicitation capability is not supported`() = runTest {
-        val client = Client(
-            Implementation(name = "test client", version = "1.0"),
-            ClientOptions(
-                capabilities = ClientCapabilities(),
-            ),
-        )
+        val session = connect(newClient())
 
-        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-
-        val server = Server(
-            serverInfo = Implementation(name = "test server", version = "1.0"),
-            options = ServerOptions(
-                capabilities = ServerCapabilities(),
-            ),
-        )
-
-        val serverSessionResult = CompletableDeferred<ServerSession>()
-
-        listOf(
-            launch {
-                client.connect(clientTransport)
-                println("Client connected")
-            },
-            launch {
-                serverSessionResult.complete(server.createSession(serverTransport))
-                println("Server connected")
-            },
-        ).joinAll()
-
-        val serverSession = serverSessionResult.await()
-
-        // Verify that creating an elicitation throws an exception
-        val exception = assertFailsWith<IllegalStateException> {
-            serverSession.createElicitation(
-                message = "Please provide your GitHub username",
-                requestedSchema = ElicitRequestParams.RequestedSchema(
-                    properties = mapOf("name" to StringSchema()),
-                    required = listOf("name"),
-                ),
-            )
-        }
-        assertEquals(
-            "Client does not support elicitation (required for elicitation/create)",
-            exception.message,
-        )
-    }
-
-    @Test
-    fun `should handle logging setLevel request`() = runTest {
-        val server = Server(
-            Implementation(name = "test server", version = "1.0"),
-            ServerOptions(
-                capabilities = ServerCapabilities(
-                    logging = EmptyJsonObject,
-                ),
-            ),
-        )
-
-        val client = Client(
-            clientInfo = Implementation(name = "test client", version = "1.0"),
-            options = ClientOptions(
-                capabilities = ClientCapabilities(),
-            ),
-        )
-
-        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-
-        val receivedMessages = mutableListOf<LoggingMessageNotification>()
-        client.setNotificationHandler<LoggingMessageNotification>(Method.Defined.NotificationsMessage) { notification ->
-            receivedMessages.add(notification)
-            CompletableDeferred(Unit)
-        }
-
-        val serverSessionResult = CompletableDeferred<ServerSession>()
-
-        listOf(
-            launch {
-                client.connect(clientTransport)
-                println("Client connected")
-            },
-            launch {
-                serverSessionResult.complete(server.createSession(serverTransport))
-                println("Server connected")
-            },
-        ).joinAll()
-
-        val serverSession = serverSessionResult.await()
-
-        // Set logging level to warning
-        val minLevel = LoggingLevel.Warning
-        val result = client.setLoggingLevel(minLevel)
-        assertNull(result.meta)
-
-        // Send messages of different levels
-        val testMessages = listOf(
-            LoggingLevel.Debug to "Debug - should be filtered",
-            LoggingLevel.Info to "Info - should be filtered",
-            LoggingLevel.Warning to "Warning - should pass",
-            LoggingLevel.Error to "Error - should pass",
-        )
-
-        testMessages.forEach { (level, message) ->
-            serverSession.sendLoggingMessage(
-                LoggingMessageNotification(
-                    params = LoggingMessageNotificationParams(
-                        level = level,
-                        data = buildJsonObject { put("message", message) },
-                    ),
-                ),
-            )
-        }
-
-        delay(100)
-
-        // Only warning and error should be received
-        assertEquals(2, receivedMessages.size, "Should receive only 2 messages (warning and error)")
-
-        // Verify all received messages have severity >= minLevel
-        receivedMessages.forEach { message ->
-            val messageSeverity = message.params.level.ordinal
-            assertTrue(
-                messageSeverity >= minLevel.ordinal,
-                "Received message with level ${message.params.level} should have severity >= $minLevel",
-            )
-        }
+        shouldThrow<IllegalStateException> {
+            session.createElicitation(message = "Provide your name", requestedSchema = nameSchema(required = true))
+        }.message shouldBe "Client does not support elicitation (required for elicitation/create)"
     }
 
     @Test
     fun `should handle server elicitation`() = runTest {
-        val client = Client(
-            Implementation(name = "test client", version = "1.0"),
-            ClientOptions(
-                capabilities = ClientCapabilities(
-                    elicitation = ClientCapabilities.Elicitation(),
-                ),
-            ),
-        )
-
-        val elicitationMessage = "Please provide your GitHub username"
-        val requestedSchema = ElicitRequestParams.RequestedSchema(
-            properties = mapOf("name" to StringSchema()),
-            required = listOf("name"),
-        )
-
-        val elicitationResultAction = ElicitResult.Action.Accept
-        val elicitationResultContent = buildJsonObject {
-            put("name", "octocat")
+        val schema = nameSchema(required = true)
+        val accepted = ElicitResult(ElicitResult.Action.Accept, content = buildJsonObject { put("name", "octocat") })
+        val session = elicitationSession { request ->
+            request.params.message shouldBe "Provide your name"
+            request.params.shouldBeInstanceOf<ElicitRequestFormParams>().requestedSchema shouldBe schema
+            accepted
         }
 
-        client.setElicitationHandler { request ->
-            assertEquals(elicitationMessage, request.params.message)
-            val formParams = request.params as ElicitRequestFormParams
-            assertEquals(requestedSchema, formParams.requestedSchema)
-
-            ElicitResult(
-                action = elicitationResultAction,
-                content = elicitationResultContent,
-            )
-        }
-
-        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-
-        val server = Server(
-            serverInfo = Implementation(name = "test server", version = "1.0"),
-            options = ServerOptions(
-                capabilities = ServerCapabilities(),
-            ),
-        )
-
-        val serverSessionResult = CompletableDeferred<ServerSession>()
-
-        listOf(
-            launch {
-                client.connect(clientTransport)
-                println("Client connected")
-            },
-            launch {
-                serverSessionResult.complete(server.createSession(serverTransport))
-                println("Server connected")
-            },
-        ).joinAll()
-
-        val serverSession = serverSessionResult.await()
-
-        val result = serverSession.createElicitation(
-            message = elicitationMessage,
-            requestedSchema = requestedSchema,
-        )
-
-        assertEquals(elicitationResultAction, result.action)
-        assertEquals(elicitationResultContent, result.content)
+        session.createElicitation(message = "Provide your name", requestedSchema = schema) shouldBe accepted
     }
 
     @Test
     fun `should reject accepted elicitation content that does not match requested schema`() = runTest {
-        val requestedSchema = ElicitRequestParams.RequestedSchema(
-            properties = mapOf("name" to StringSchema()),
-            required = listOf("name"),
-        )
-        val (client, serverSession) = setupElicitationPair {
+        val session = elicitationSession {
             ElicitResult(action = ElicitResult.Action.Accept, content = buildJsonObject { put("name", 42) })
         }
 
-        val exception = assertFailsWith<McpException> {
-            serverSession.createElicitation(message = "mismatch", requestedSchema = requestedSchema)
+        val exception = shouldThrow<McpException> {
+            session.createElicitation(message = "mismatch", requestedSchema = nameSchema(required = true))
         }
-        assertTrue(
-            exception.message.orEmpty()
-                .startsWith("Elicitation response content does not match requested schema: "),
-            "Unexpected message: ${exception.message}",
-        )
-        assertTrue("'name' must be string" in exception.message.orEmpty(), "Unexpected message: ${exception.message}")
 
-        client.close()
+        exception.message shouldStartWith "Elicitation response content does not match requested schema: "
+        exception.message shouldContain "'name' must be string"
     }
 
     @Test
     fun `should reject accepted elicitation without content when schema has required properties`() = runTest {
-        val requestedSchema = ElicitRequestParams.RequestedSchema(
-            properties = mapOf("name" to StringSchema()),
-            required = listOf("name"),
-        )
-        val (client, serverSession) = setupElicitationPair {
-            ElicitResult(action = ElicitResult.Action.Accept, content = null)
-        }
+        val session = elicitationSession { ElicitResult(action = ElicitResult.Action.Accept) }
 
-        val exception = assertFailsWith<McpException> {
-            serverSession.createElicitation(message = "no content", requestedSchema = requestedSchema)
-        }
-        assertTrue(
-            "must have required property 'name'" in exception.message.orEmpty(),
-            "Unexpected message: ${exception.message}",
-        )
-
-        client.close()
+        shouldThrow<McpException> {
+            session.createElicitation(message = "no content", requestedSchema = nameSchema(required = true))
+        }.message shouldContain "must have required property 'name'"
     }
 
     @Test
     fun `should accept elicitation without content when schema has no required properties`() = runTest {
-        val requestedSchema = ElicitRequestParams.RequestedSchema(
-            properties = mapOf("name" to StringSchema()),
-        )
-        val (client, serverSession) = setupElicitationPair {
-            ElicitResult(action = ElicitResult.Action.Accept, content = null)
-        }
+        val session = elicitationSession { ElicitResult(action = ElicitResult.Action.Accept) }
 
-        val result = serverSession.createElicitation(message = "no required", requestedSchema = requestedSchema)
-
-        assertEquals(ElicitResult.Action.Accept, result.action)
-        assertNull(result.content)
-
-        client.close()
+        session.createElicitation(message = "no required", requestedSchema = nameSchema(required = false)) shouldBe
+            ElicitResult(action = ElicitResult.Action.Accept)
     }
 
     @Test
     fun `should pass through declined elicitation without validation`() = runTest {
-        val requestedSchema = ElicitRequestParams.RequestedSchema(
-            properties = mapOf("name" to StringSchema()),
-            required = listOf("name"),
-        )
-        val (client, serverSession) = setupElicitationPair {
+        val session = elicitationSession { ElicitResult(action = ElicitResult.Action.Decline) }
+
+        session.createElicitation(message = "decline", requestedSchema = nameSchema(required = true)) shouldBe
             ElicitResult(action = ElicitResult.Action.Decline)
-        }
-
-        val result = serverSession.createElicitation(message = "decline", requestedSchema = requestedSchema)
-
-        assertEquals(ElicitResult.Action.Decline, result.action)
-        assertNull(result.content)
-
-        client.close()
     }
 
     @Test
-    fun `should pass through cancelled elicitation without validation`() = runTest {
-        val requestedSchema = ElicitRequestParams.RequestedSchema(
-            properties = mapOf("name" to StringSchema()),
-            required = listOf("name"),
-        )
-        val (client, serverSession) = setupElicitationPair {
-            ElicitResult(action = ElicitResult.Action.Cancel)
+    fun `should apply schema defaults only to missing fields of accepted content`() = runTest {
+        val session = elicitationSession {
+            ElicitResult(action = ElicitResult.Action.Accept, content = buildJsonObject { put("nickname", "Custom") })
         }
 
-        val result = serverSession.createElicitation(message = "cancel", requestedSchema = requestedSchema)
+        val result = session.createElicitation(message = "defaults", requestedSchema = defaultsSchema())
 
-        assertEquals(ElicitResult.Action.Cancel, result.action)
-        assertNull(result.content)
-
-        client.close()
-    }
-
-    @Test
-    fun `should apply elicitation defaults for missing fields in empty content`() = runTest {
-        val schema = defaultsTestSchema()
-        val (client, serverSession) = setupElicitationPair {
-            ElicitResult(action = ElicitResult.Action.Accept, content = JsonObject(emptyMap()))
+        result.content shouldBe buildJsonObject {
+            put("nickname", "Custom")
+            put("name", "John Doe")
+            put("age", 30)
+            put("score", 95.5)
+            put("status", "active")
+            put("verified", true)
+            putJsonArray("tags") {
+                add("a")
+                add("b")
+            }
+            putJsonArray("options") { add("x") }
         }
-
-        val result = serverSession.createElicitation(message = "fill defaults", requestedSchema = schema)
-
-        assertEquals(ElicitResult.Action.Accept, result.action)
-        val content = result.content!!
-        assertEquals(JsonPrimitive("John Doe"), content["name"])
-        assertEquals(JsonPrimitive(30), content["age"])
-        assertEquals(JsonPrimitive(95.5), content["score"])
-        assertEquals(JsonPrimitive("active"), content["status"])
-        assertEquals(JsonPrimitive(true), content["verified"])
-
-        client.close()
     }
-
-    @Test
-    fun `should apply elicitation defaults only for missing fields preserving user values`() = runTest {
-        val schema = defaultsTestSchema()
-        val userContent = buildJsonObject { put("name", "Custom Name") }
-        val (client, serverSession) = setupElicitationPair {
-            ElicitResult(action = ElicitResult.Action.Accept, content = userContent)
-        }
-
-        val result = serverSession.createElicitation(message = "partial", requestedSchema = schema)
-
-        val content = result.content!!
-        assertEquals(JsonPrimitive("Custom Name"), content["name"])
-        assertEquals(JsonPrimitive(30), content["age"])
-        assertEquals(JsonPrimitive(95.5), content["score"])
-        assertEquals(JsonPrimitive("active"), content["status"])
-        assertEquals(JsonPrimitive(true), content["verified"])
-
-        client.close()
-    }
-
-    @Test
-    fun `should not apply elicitation defaults when action is decline`() = runTest {
-        val schema = defaultsTestSchema()
-        val (client, serverSession) = setupElicitationPair {
-            ElicitResult(action = ElicitResult.Action.Decline)
-        }
-
-        val result = serverSession.createElicitation(message = "decline", requestedSchema = schema)
-
-        assertEquals(ElicitResult.Action.Decline, result.action)
-        assertNull(result.content)
-
-        client.close()
-    }
-
-    @Test
-    fun `should not apply elicitation defaults when action is cancel`() = runTest {
-        val schema = defaultsTestSchema()
-        val (client, serverSession) = setupElicitationPair {
-            ElicitResult(action = ElicitResult.Action.Cancel)
-        }
-
-        val result = serverSession.createElicitation(message = "cancel", requestedSchema = schema)
-
-        assertEquals(ElicitResult.Action.Cancel, result.action)
-        assertNull(result.content)
-
-        client.close()
-    }
-
-    @Test
-    fun `should not modify content when schema has no defaults`() = runTest {
-        val schema = ElicitRequestParams.RequestedSchema(
-            properties = mapOf(
-                "name" to StringSchema(description = "name"),
-                "age" to IntegerSchema(description = "age"),
-            ),
-        )
-        val emptyContent = JsonObject(emptyMap())
-        val (client, serverSession) = setupElicitationPair {
-            ElicitResult(action = ElicitResult.Action.Accept, content = emptyContent)
-        }
-
-        val result = serverSession.createElicitation(message = "no defaults", requestedSchema = schema)
-
-        assertEquals(ElicitResult.Action.Accept, result.action)
-        assertTrue(result.content!!.isEmpty())
-
-        client.close()
-    }
-
-    @Test
-    fun `should apply elicitation defaults for multi-select enum schemas`() = runTest {
-        val schema = ElicitRequestParams.RequestedSchema(
-            properties = mapOf(
-                "tags" to UntitledMultiSelectEnumSchema(
-                    description = "tags",
-                    items = UntitledMultiSelectEnumSchema.Items(enumValues = listOf("a", "b", "c")),
-                    default = listOf("a", "b"),
-                ),
-                "options" to TitledMultiSelectEnumSchema(
-                    description = "options",
-                    items = TitledMultiSelectEnumSchema.Items(
-                        anyOf = listOf(
-                            io.modelcontextprotocol.kotlin.sdk.types.EnumOption("x", "X"),
-                            io.modelcontextprotocol.kotlin.sdk.types.EnumOption("y", "Y"),
-                        ),
-                    ),
-                    default = listOf("x"),
-                ),
-            ),
-        )
-        val (client, serverSession) = setupElicitationPair {
-            ElicitResult(action = ElicitResult.Action.Accept, content = JsonObject(emptyMap()))
-        }
-
-        val result = serverSession.createElicitation(message = "multi-select", requestedSchema = schema)
-
-        val content = result.content!!
-        val tags = content["tags"]!!
-        assertIs<kotlinx.serialization.json.JsonArray>(tags)
-        assertEquals(2, tags.size)
-        assertEquals("a", tags[0].jsonPrimitive.content)
-        assertEquals("b", tags[1].jsonPrimitive.content)
-
-        val options = content["options"]!!
-        assertIs<kotlinx.serialization.json.JsonArray>(options)
-        assertEquals(1, options.size)
-        assertEquals("x", options[0].jsonPrimitive.content)
-
-        client.close()
-    }
-
-    // ── URL-mode elicitation (SEP-1036) ─────────────────────────────────
 
     @Test
     fun `should handle URL mode elicitation end-to-end`() = runTest {
-        val client = Client(
-            Implementation(name = "test client", version = "1.0"),
-            ClientOptions(
-                capabilities = ClientCapabilities(
-                    elicitation = ClientCapabilities.Elicitation(url = EmptyJsonObject),
-                ),
-            ),
-        )
-
-        val elicitationId = "550e8400-e29b-41d4-a716-446655440000"
-        val url = "https://oauth.example.com/authorize"
-
-        client.setElicitationHandler { request ->
-            val params = assertIs<ElicitRequestURLParams>(request.params)
-            assertEquals(elicitationId, params.elicitationId)
-            assertEquals(url, params.url)
+        val session = elicitationSession(ClientCapabilities.Elicitation(url = EmptyJsonObject)) { request ->
+            val params = request.params.shouldBeInstanceOf<ElicitRequestURLParams>()
+            params.elicitationId shouldBe "550e8400-e29b-41d4-a716-446655440000"
+            params.url shouldBe "https://oauth.example.com/authorize"
             ElicitResult(action = ElicitResult.Action.Accept)
         }
 
-        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-        val server = Server(
-            serverInfo = Implementation(name = "test server", version = "1.0"),
-            options = ServerOptions(capabilities = ServerCapabilities()),
-        )
-
-        val serverSessionResult = CompletableDeferred<ServerSession>()
-        listOf(
-            launch { client.connect(clientTransport) },
-            launch { serverSessionResult.complete(server.createSession(serverTransport)) },
-        ).joinAll()
-        val serverSession = serverSessionResult.await()
-
-        val result = serverSession.createElicitation(
+        session.createElicitation(
             message = "Authorize access to continue",
-            elicitationId = elicitationId,
-            url = url,
-        )
-
-        assertEquals(ElicitResult.Action.Accept, result.action)
-        assertNull(result.content)
-
-        client.close()
+            elicitationId = "550e8400-e29b-41d4-a716-446655440000",
+            url = "https://oauth.example.com/authorize",
+        ) shouldBe ElicitResult(action = ElicitResult.Action.Accept)
     }
 
     @Test
     fun `should reject URL mode elicitation when client supports only form mode`() = runTest {
-        val (client, serverSession) = setupElicitationPair {
-            ElicitResult(action = ElicitResult.Action.Accept)
-        }
+        val session = connect(newClient(ClientCapabilities(elicitation = ClientCapabilities.Elicitation())))
 
-        val exception = assertFailsWith<IllegalArgumentException> {
-            serverSession.createElicitation(
-                message = "Authorize",
-                elicitationId = "id-1",
-                url = "https://example.com/auth",
-            )
-        }
-        assertTrue(exception.message!!.contains("elicitation.url"))
-
-        client.close()
+        shouldThrow<IllegalArgumentException> {
+            session.createElicitation(message = "Authorize", elicitationId = "id-1", url = "https://example.com/auth")
+        }.message shouldBe "Client did not advertise elicitation.url capability; cannot send a URL-mode elicitation."
     }
 
     @Test
     fun `should deliver elicitation complete notification to client`() = runTest {
         val received = CompletableDeferred<ElicitationCompleteNotification>()
-        val client = Client(
-            Implementation(name = "test client", version = "1.0"),
-            ClientOptions(
-                capabilities = ClientCapabilities(
-                    elicitation = ClientCapabilities.Elicitation(url = EmptyJsonObject),
-                ),
-            ),
-        )
+        val client = newClient(ClientCapabilities(elicitation = ClientCapabilities.Elicitation(url = EmptyJsonObject)))
         client.setElicitationCompleteHandler { received.complete(it) }
+        val session = connect(client)
 
-        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-        val server = Server(
-            serverInfo = Implementation(name = "test server", version = "1.0"),
-            options = ServerOptions(capabilities = ServerCapabilities()),
-        )
+        session.sendElicitationComplete(elicitationComplete("complete-id-1"))
 
-        val serverSessionResult = CompletableDeferred<ServerSession>()
-        listOf(
-            launch { client.connect(clientTransport) },
-            launch { serverSessionResult.complete(server.createSession(serverTransport)) },
-        ).joinAll()
-        val serverSession = serverSessionResult.await()
-
-        val elicitationId = "complete-id-1"
-        serverSession.sendElicitationComplete(
-            ElicitationCompleteNotification(ElicitationCompleteNotificationParams(elicitationId = elicitationId)),
-        )
-
-        val notification = received.await()
-        assertEquals(elicitationId, notification.params.elicitationId)
-
-        client.close()
+        received.await().params.elicitationId shouldBe "complete-id-1"
     }
 
     @Test
     fun `should reject elicitation complete when client supports only form mode`() = runTest {
-        val (client, serverSession) = setupElicitationPair {
-            ElicitResult(action = ElicitResult.Action.Accept)
-        }
+        val session = connect(newClient(ClientCapabilities(elicitation = ClientCapabilities.Elicitation())))
 
-        val exception = assertFailsWith<IllegalArgumentException> {
-            serverSession.sendElicitationComplete(
-                ElicitationCompleteNotification(ElicitationCompleteNotificationParams(elicitationId = "id-1")),
-            )
-        }
-        assertTrue(exception.message!!.contains("elicitation.url"))
-
-        client.close()
+        shouldThrow<IllegalArgumentException> {
+            session.sendElicitationComplete(elicitationComplete("id-1"))
+        }.message shouldBe
+            "Client did not advertise elicitation.url capability; cannot send an elicitation completion notification."
     }
 
     @Test
-    fun `setElicitationCompleteHandler should require url capability`() = runTest {
-        val client = Client(
-            Implementation(name = "test client", version = "1.0"),
-            ClientOptions(
-                capabilities = ClientCapabilities(
-                    elicitation = ClientCapabilities.Elicitation(),
-                ),
-            ),
-        )
+    fun `setElicitationCompleteHandler should require url capability`() {
+        val client = newClient(ClientCapabilities(elicitation = ClientCapabilities.Elicitation()))
 
-        assertFailsWith<IllegalStateException> {
-            client.setElicitationCompleteHandler { }
-        }
+        shouldThrow<IllegalStateException> { client.setElicitationCompleteHandler { } }.message shouldBe
+            "Client does not support url-mode elicitation."
     }
 
     @Test
     fun `should surface URL elicitation required error to client as typed exception`() = runTest {
-        val client = Client(
-            Implementation(name = "test client", version = "1.0"),
-            ClientOptions(
-                capabilities = ClientCapabilities(
-                    elicitation = ClientCapabilities.Elicitation(url = EmptyJsonObject),
-                ),
-            ),
+        val required = ElicitRequestURLParams(
+            message = "Authorize to continue",
+            elicitationId = "auth-required-1",
+            url = "https://oauth.example.com/authorize",
         )
-
-        val elicitationId = "auth-required-1"
-        val url = "https://oauth.example.com/authorize"
-
-        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-        val server = Server(
-            serverInfo = Implementation(name = "test server", version = "1.0"),
-            options = ServerOptions(capabilities = ServerCapabilities(tools = ServerCapabilities.Tools(true))),
-        )
+        val server = newServer(ServerCapabilities(tools = ServerCapabilities.Tools()))
         server.addTool("needs-auth", "Requires URL elicitation") {
-            throw UrlElicitationRequiredException(
-                listOf(
-                    ElicitRequestURLParams(
-                        message = "Authorize to continue",
-                        elicitationId = elicitationId,
-                        url = url,
-                    ),
-                ),
-            )
+            throw UrlElicitationRequiredException(listOf(required))
         }
+        val client = newClient(ClientCapabilities(elicitation = ClientCapabilities.Elicitation(url = EmptyJsonObject)))
+        connect(client, server)
 
-        val serverSessionResult = CompletableDeferred<ServerSession>()
-        listOf(
-            launch { client.connect(clientTransport) },
-            launch { serverSessionResult.complete(server.createSession(serverTransport)) },
-        ).joinAll()
-        serverSessionResult.await()
-
-        val exception = assertFailsWith<UrlElicitationRequiredException> {
+        val exception = shouldThrow<UrlElicitationRequiredException> {
             client.callTool(name = "needs-auth", arguments = emptyMap())
         }
-        val elicitation = exception.elicitations.single()
-        assertEquals(elicitationId, elicitation.elicitationId)
-        assertEquals(url, elicitation.url)
 
-        client.close()
+        exception.elicitations.single() shouldBe required
     }
 
-    private fun defaultsTestSchema(): ElicitRequestParams.RequestedSchema = ElicitRequestParams.RequestedSchema(
-        properties = mapOf(
-            "name" to StringSchema(description = "User name", default = "John Doe"),
-            "age" to IntegerSchema(description = "User age", default = 30),
-            "score" to DoubleSchema(description = "User score", default = 95.5),
-            "status" to UntitledSingleSelectEnumSchema(
-                description = "User status",
-                enumValues = listOf("active", "inactive", "pending"),
-                default = "active",
-            ),
-            "verified" to BooleanSchema(description = "Verification status", default = true),
-        ),
+    private class ConnectFailure(
+        val name: String,
+        val onInitialize: (JSONRPCRequest) -> InitializeResult,
+        val verify: (Throwable) -> Unit,
     )
 
-    private suspend fun setupElicitationPair(
-        handler: (io.modelcontextprotocol.kotlin.sdk.types.ElicitRequest) -> ElicitResult,
-    ): Pair<Client, ServerSession> = kotlinx.coroutines.coroutineScope {
-        val client = Client(
-            Implementation(name = "test client", version = "1.0"),
-            ClientOptions(capabilities = ClientCapabilities(elicitation = ClientCapabilities.Elicitation())),
-        )
-        client.setElicitationHandler(handler)
+    /** Answers the client's `initialize` request with [onInitialize]; a throwing [onInitialize] fails the send. */
+    private class InitializeTransport(private val onInitialize: (JSONRPCRequest) -> InitializeResult) :
+        AbstractTransport() {
+        var closed = false
 
-        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-        val server = Server(
-            serverInfo = Implementation(name = "test server", version = "1.0"),
-            options = ServerOptions(capabilities = ServerCapabilities()),
-        )
+        override suspend fun start() = Unit
 
-        val serverSessionResult = CompletableDeferred<ServerSession>()
-        listOf(
-            launch { client.connect(clientTransport) },
-            launch { serverSessionResult.complete(server.createSession(serverTransport)) },
-        ).joinAll()
+        override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
+            if (message is JSONRPCRequest) _onMessage(JSONRPCResponse(message.id, onInitialize(message)))
+        }
 
-        client to serverSessionResult.await()
+        override suspend fun close() {
+            closed = true
+        }
     }
+
+    private fun initializeResult(protocolVersion: String) = InitializeResult(
+        protocolVersion = protocolVersion,
+        capabilities = ServerCapabilities(),
+        serverInfo = Implementation(name = "test server", version = "1.0"),
+    )
+
+    private fun newClient(capabilities: ClientCapabilities = ClientCapabilities()) =
+        Client(Implementation(name = "test client", version = "1.0"), ClientOptions(capabilities = capabilities))
+
+    private fun newServer(capabilities: ServerCapabilities = ServerCapabilities()) =
+        Server(Implementation(name = "test server", version = "1.0"), ServerOptions(capabilities = capabilities))
+
+    private suspend fun connect(client: Client, server: Server = newServer()): ServerSession {
+        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
+        val session = server.createSession(serverTransport)
+        client.connect(clientTransport)
+        return session
+    }
+
+    private suspend fun elicitationSession(
+        elicitation: ClientCapabilities.Elicitation = ClientCapabilities.Elicitation(),
+        handler: (ElicitRequest) -> ElicitResult,
+    ): ServerSession {
+        val client = newClient(ClientCapabilities(elicitation = elicitation))
+        client.setElicitationHandler(handler)
+        return connect(client)
+    }
+
+    private fun elicitationComplete(elicitationId: String) =
+        ElicitationCompleteNotification(ElicitationCompleteNotificationParams(elicitationId = elicitationId))
+
+    private fun nameSchema(required: Boolean) = ElicitRequestParams.RequestedSchema(
+        properties = mapOf("name" to StringSchema()),
+        required = if (required) listOf("name") else null,
+    )
+
+    private fun defaultsSchema() = ElicitRequestParams.RequestedSchema(
+        properties = mapOf(
+            "name" to StringSchema(default = "John Doe"),
+            "nickname" to StringSchema(default = "JD"),
+            "age" to IntegerSchema(default = 30),
+            "score" to DoubleSchema(default = 95.5),
+            "status" to UntitledSingleSelectEnumSchema(enumValues = listOf("active", "inactive"), default = "active"),
+            "verified" to BooleanSchema(default = true),
+            "tags" to UntitledMultiSelectEnumSchema(
+                items = UntitledMultiSelectEnumSchema.Items(enumValues = listOf("a", "b", "c")),
+                default = listOf("a", "b"),
+            ),
+            "options" to TitledMultiSelectEnumSchema(
+                items = TitledMultiSelectEnumSchema.Items(anyOf = listOf(EnumOption("x", "X"), EnumOption("y", "Y"))),
+                default = listOf("x"),
+            ),
+            "comment" to StringSchema(),
+        ),
+    )
 }

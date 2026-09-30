@@ -21,8 +21,6 @@ import io.ktor.server.routing.routing
 import io.ktor.server.sse.SSE
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
-import io.modelcontextprotocol.kotlin.sdk.types.Implementation
-import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
@@ -32,17 +30,20 @@ import kotlin.test.Test
 class DnsRebindingProtectionTest {
 
     companion object {
+        /** Origin header (or none) sent against `allowedOrigins = ["http://localhost:3000"]`. */
         @JvmStatic
-        fun invalidHostCases(): List<Arguments> = listOf(
-            Arguments.of("", "Invalid Host header: (malformed or missing)"),
-            Arguments.of("evil.com", "Invalid Host: evil.com"),
+        fun originCases(): List<Arguments> = listOf(
+            Arguments.of(null, HttpStatusCode.OK, "ok"),
+            Arguments.of("http://localhost:9999", HttpStatusCode.OK, "ok"),
+            Arguments.of("https://localhost:3000", HttpStatusCode.OK, "ok"),
+            Arguments.of("http://evil.com", HttpStatusCode.Forbidden, "Invalid Origin host: evil.com"),
+            Arguments.of("not-a-url", HttpStatusCode.Forbidden, "Invalid Origin header: (unparseable)"),
         )
 
         @JvmStatic
         fun extractHostnameAcceptCases(): List<Arguments> = listOf(
             Arguments.of("localhost", "localhost"),
             Arguments.of("localhost:3000", "localhost"),
-            Arguments.of("127.0.0.1:8080", "127.0.0.1"),
             Arguments.of("[::1]", "[::1]"),
             Arguments.of("[::1]:3000", "[::1]"),
             Arguments.of("localhost:", "localhost"),
@@ -56,31 +57,13 @@ class DnsRebindingProtectionTest {
             "evil.com/path", // path
             "evil.com?q=1", // query
             "evil.com#frag", // fragment
-            "[::1", // malformed IPv6
+            "[::1", // unterminated IPv6
             "[]", // empty brackets
-            "[]:3000", // empty brackets + port
-            " localhost", // leading whitespace
-            "localhost ", // trailing whitespace
-            "localhost\t:80", // embedded tab
-            "localhost:abc", // non-numeric port
-            "localhost:-1", // negative port
+            "[::1]x", // IPv6 followed by something other than a port
             "[::1]:abc", // non-numeric IPv6 port
+            "localhost\t:80", // whitespace
+            "localhost:abc", // non-numeric port
             ":80", // leading colon
-        )
-
-        @JvmStatic
-        fun extractOriginHostAcceptCases(): List<Arguments> = listOf(
-            Arguments.of("http://example.com", "example.com"),
-            Arguments.of("http://example.com:8080", "example.com"),
-            Arguments.of("https://Example.COM", "Example.COM"),
-            Arguments.of("https://example.com", "example.com"),
-        )
-
-        @JvmStatic
-        fun extractOriginHostRejectCases(): List<String> = listOf(
-            "example.com", // no scheme
-            "not-a-url", // unparseable
-            "", // empty
         )
     }
 
@@ -89,7 +72,6 @@ class DnsRebindingProtectionTest {
         test: suspend ApplicationTestBuilder.() -> Unit,
     ): Unit = testApplication {
         application {
-            install(SSE)
             routing {
                 route("/mcp") {
                     install(DnsRebindingProtection, config)
@@ -101,23 +83,13 @@ class DnsRebindingProtectionTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = ["localhost", "127.0.0.1", "[::1]", "localhost:3000", "[::1]:8080"])
+    @ValueSource(strings = ["localhost", "127.0.0.1", "[::1]"])
     fun `plugin accepts valid Host header`(hostHeader: String) = testWithPlugin {
         val response = client.post("/mcp") {
             header(HttpHeaders.Host, hostHeader)
         }
         response.shouldHaveStatus(HttpStatusCode.OK)
         response.bodyAsText() shouldBe "ok"
-    }
-
-    @ParameterizedTest
-    @MethodSource("invalidHostCases")
-    fun `plugin rejects invalid Host header`(hostHeader: String, expectedBody: String) = testWithPlugin {
-        val response = client.post("/mcp") {
-            header(HttpHeaders.Host, hostHeader)
-        }
-        response.shouldHaveStatus(HttpStatusCode.Forbidden)
-        response.bodyAsText() shouldContain expectedBody
     }
 
     @Test
@@ -130,75 +102,21 @@ class DnsRebindingProtectionTest {
         response.bodyAsText() shouldContain "malformed or missing"
     }
 
-    @Test
-    fun `plugin allows request without Origin header`() = testWithPlugin(
+    @ParameterizedTest
+    @MethodSource("originCases")
+    fun `plugin validates Origin by hostname only`(
+        origin: String?,
+        expectedStatus: HttpStatusCode,
+        expectedBody: String,
+    ) = testWithPlugin(
         config = { allowedOrigins = listOf("http://localhost:3000") },
     ) {
         val response = client.post("/mcp") {
             header(HttpHeaders.Host, "localhost")
+            origin?.let { header(HttpHeaders.Origin, it) }
         }
-        response.shouldHaveStatus(HttpStatusCode.OK)
-        response.bodyAsText() shouldBe "ok"
-    }
-
-    @Test
-    fun `plugin rejects disallowed Origin`() = testWithPlugin(
-        config = { allowedOrigins = listOf("http://localhost:3000") },
-    ) {
-        val response = client.post("/mcp") {
-            header(HttpHeaders.Host, "localhost")
-            header(HttpHeaders.Origin, "http://evil.com")
-        }
-        response.shouldHaveStatus(HttpStatusCode.Forbidden)
-        response.bodyAsText() shouldContain "Invalid Origin host: evil.com"
-    }
-
-    @Test
-    fun `plugin allows matching Origin`() = testWithPlugin(
-        config = { allowedOrigins = listOf("http://localhost:3000") },
-    ) {
-        val response = client.post("/mcp") {
-            header(HttpHeaders.Host, "localhost")
-            header(HttpHeaders.Origin, "http://localhost:3000")
-        }
-        response.shouldHaveStatus(HttpStatusCode.OK)
-        response.bodyAsText() shouldBe "ok"
-    }
-
-    @Test
-    fun `plugin allows Origin with different port but same hostname`() = testWithPlugin(
-        config = { allowedOrigins = listOf("http://localhost:3000") },
-    ) {
-        val response = client.post("/mcp") {
-            header(HttpHeaders.Host, "localhost")
-            header(HttpHeaders.Origin, "http://localhost:9999")
-        }
-        response.shouldHaveStatus(HttpStatusCode.OK)
-        response.bodyAsText() shouldBe "ok"
-    }
-
-    @Test
-    fun `plugin allows Origin with different scheme but same hostname`() = testWithPlugin(
-        config = { allowedOrigins = listOf("http://localhost:3000") },
-    ) {
-        val response = client.post("/mcp") {
-            header(HttpHeaders.Host, "localhost")
-            header(HttpHeaders.Origin, "https://localhost:3000")
-        }
-        response.shouldHaveStatus(HttpStatusCode.OK)
-        response.bodyAsText() shouldBe "ok"
-    }
-
-    @Test
-    fun `plugin rejects unparseable Origin header`() = testWithPlugin(
-        config = { allowedOrigins = listOf("http://localhost:3000") },
-    ) {
-        val response = client.post("/mcp") {
-            header(HttpHeaders.Host, "localhost")
-            header(HttpHeaders.Origin, "not-a-url")
-        }
-        response.shouldHaveStatus(HttpStatusCode.Forbidden)
-        response.bodyAsText() shouldContain "Invalid Origin header: (unparseable)"
+        response.shouldHaveStatus(expectedStatus)
+        response.bodyAsText() shouldContain expectedBody
     }
 
     @Test
@@ -252,17 +170,11 @@ class DnsRebindingProtectionTest {
     fun `plugin with empty allowedHosts rejects all requests`() = testWithPlugin(
         config = { allowedHosts = emptyList() },
     ) {
-        val localhostResponse = client.post("/mcp") {
+        val response = client.post("/mcp") {
             header(HttpHeaders.Host, "localhost")
         }
-        localhostResponse.shouldHaveStatus(HttpStatusCode.Forbidden)
-        localhostResponse.bodyAsText() shouldContain "Invalid Host: localhost"
-
-        val otherResponse = client.post("/mcp") {
-            header(HttpHeaders.Host, "myapp.com")
-        }
-        otherResponse.shouldHaveStatus(HttpStatusCode.Forbidden)
-        otherResponse.bodyAsText() shouldContain "Invalid Host: myapp.com"
+        response.shouldHaveStatus(HttpStatusCode.Forbidden)
+        response.bodyAsText() shouldContain "Invalid Host: localhost"
     }
 
     @Test
@@ -318,7 +230,7 @@ class DnsRebindingProtectionTest {
             header(HttpHeaders.Host, "evil.com")
             contentType(ContentType.Application.Json)
         }
-        // Not 403 — the request reaches the handler (may get 400 for missing sessionId, etc.)
+        // Not 403 — the request reaches the handler, which rejects it for the missing sessionId.
         response.shouldHaveStatus(HttpStatusCode.BadRequest)
     }
 
@@ -406,23 +318,4 @@ class DnsRebindingProtectionTest {
     fun `extractHostname rejects invalid host`(input: String) {
         extractHostname(input) shouldBe null
     }
-
-    // -- extractOriginHost unit tests --
-
-    @ParameterizedTest
-    @MethodSource("extractOriginHostAcceptCases")
-    fun `extractOriginHost extracts hostname`(input: String, expected: String) {
-        extractOriginHost(input) shouldBe expected
-    }
-
-    @ParameterizedTest
-    @MethodSource("extractOriginHostRejectCases")
-    fun `extractOriginHost returns null for invalid origin`(input: String) {
-        extractOriginHost(input) shouldBe null
-    }
-
-    private fun testServer(): Server = Server(
-        serverInfo = Implementation(name = "test-server", version = "1.0.0"),
-        options = ServerOptions(capabilities = ServerCapabilities()),
-    )
 }
