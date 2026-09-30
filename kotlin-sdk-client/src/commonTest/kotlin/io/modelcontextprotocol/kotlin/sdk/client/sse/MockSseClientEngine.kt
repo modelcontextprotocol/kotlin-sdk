@@ -24,7 +24,7 @@ import kotlin.coroutines.CoroutineContext
 
 @OptIn(InternalAPI::class)
 internal open class MockSseClientEngine(
-    private val endpoint: String,
+    private val endpoint: String?,
     private val onPostRequest: (postRequest: HttpRequestData) -> Unit,
     override val dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : HttpClientEngine {
@@ -67,8 +67,10 @@ internal open class MockSseClientEngine(
         val sseResponseAdapter = requireNotNull(data.attributes.getOrNull(ResponseAdapterAttributeKey)) {
             "Missing SSE response adapter."
         }
-        channel.writeStringUtf8(endpointEvent())
-        channel.flush()
+        endpoint?.let {
+            channel.writeStringUtf8(endpointEvent(it))
+            channel.flush()
+        }
         val responseContext = responseContext()
         val responseBody = sseResponseAdapter.adapt(
             data,
@@ -90,7 +92,7 @@ internal open class MockSseClientEngine(
 
     private val eventStreamHeader by lazy { headersOf("Content-Type", "text/event-stream") }
 
-    private fun endpointEvent(): String = buildString {
+    private fun endpointEvent(endpoint: String): String = buildString {
         appendLine("event: endpoint")
         appendLine("data: $endpoint")
         appendLine()
