@@ -65,6 +65,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/client/KtorClientKt {
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/client/ReconnectionOptions {
+	public fun <init> ()V
 	public synthetic fun <init> (JJDIILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public synthetic fun <init> (JJDILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun equals (Ljava/lang/Object;)Z
