@@ -4,7 +4,6 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.ktor.client.HttpClient
-import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.prepareGet
@@ -15,7 +14,6 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.contentType
 import io.ktor.server.application.install
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
@@ -27,18 +25,12 @@ import io.ktor.server.testing.testApplication
 import io.ktor.sse.ServerSentEvent
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.readLine
-import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
-import io.modelcontextprotocol.kotlin.sdk.types.Implementation
-import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
-import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
-import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
-import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.channels.Channel
@@ -172,16 +164,9 @@ class StreamableHttpStreamReleaseTest {
     }
 
     private suspend fun HttpClient.initialize(): String {
-        val request = InitializeRequest(
-            InitializeRequestParams(
-                protocolVersion = LATEST_PROTOCOL_VERSION,
-                capabilities = ClientCapabilities(),
-                clientInfo = Implementation(name = "test-client", version = "1.0.0"),
-            ),
-        ).toJSON()
         val response = post("/mcp") {
             streamableHeaders()
-            setBody(McpJson.encodeToString(JSONRPCMessage.serializer(), request))
+            setBody(McpJson.encodeToString(JSONRPCMessage.serializer(), initializeRequest()))
         }
         response.status shouldBe HttpStatusCode.OK
         return response.headers[MCP_SESSION_ID_HEADER].shouldNotBeNull()
@@ -213,11 +198,6 @@ class StreamableHttpStreamReleaseTest {
             header(MCP_SESSION_ID_HEADER, sessionId)
             header(STREAM_NAME_HEADER, name)
         }
-
-    private fun HttpRequestBuilder.streamableHeaders() {
-        header(HttpHeaders.Accept, "${ContentType.Application.Json}, ${ContentType.Text.EventStream}")
-        contentType(ContentType.Application.Json)
-    }
 
     /**
      * An SSE session whose client stops reading once [stall] is called: a send then never completes and keeps holding

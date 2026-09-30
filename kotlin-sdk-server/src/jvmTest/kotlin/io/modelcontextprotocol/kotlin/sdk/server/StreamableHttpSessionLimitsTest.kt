@@ -15,24 +15,17 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.contentType
 import io.ktor.server.testing.testApplication
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
-import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
-import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
-import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
-import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
-import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -53,11 +46,6 @@ import kotlin.time.Duration.Companion.seconds
 class StreamableHttpSessionLimitsTest {
 
     private val idleTimeout = 200.milliseconds
-
-    private fun testServer(): Server = Server(
-        Implementation("test-server", "1.0"),
-        ServerOptions(capabilities = ServerCapabilities()),
-    )
 
     @Test
     fun `abandoned session is closed once idle for sessionIdleTimeout`() = testApplication {
@@ -94,7 +82,7 @@ class StreamableHttpSessionLimitsTest {
         client.initialize()
 
         val rejected = client.post("/mcp") {
-            streamableHeaders()
+            localhostStreamableHeaders()
             setBody(initializeRequestBody())
         }
         rejected.status shouldBe HttpStatusCode.ServiceUnavailable
@@ -132,7 +120,7 @@ class StreamableHttpSessionLimitsTest {
         }
 
         client.post("/mcp") {
-            streamableHeaders()
+            localhostStreamableHeaders()
             setBody(initializeRequestBody())
         }.status shouldBe HttpStatusCode.InternalServerError
         client.initialize()
@@ -145,7 +133,7 @@ class StreamableHttpSessionLimitsTest {
 
         repeat(3) {
             client.post("/mcp") {
-                streamableHeaders()
+                localhostStreamableHeaders()
                 setBody("""{"jsonrpc":"2.0","id":1,"method":"tools/list"}""")
             }.status shouldBe HttpStatusCode.BadRequest
         }
@@ -182,7 +170,7 @@ class StreamableHttpSessionLimitsTest {
         coroutineScope {
             val inFlight = async {
                 client.post("/mcp") {
-                    streamableHeaders()
+                    localhostStreamableHeaders()
                     header(MCP_SESSION_ID_HEADER, sessionId)
                     setBody(
                         """{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"wait","arguments":{}}}""",
@@ -194,7 +182,7 @@ class StreamableHttpSessionLimitsTest {
             // Accepting the reused id would route the answer for id 7 to this POST and leave the first one
             // waiting forever, holding its session open.
             val reused = client.post("/mcp") {
-                streamableHeaders()
+                localhostStreamableHeaders()
                 header(MCP_SESSION_ID_HEADER, sessionId)
                 setBody("""{"jsonrpc":"2.0","id":7,"method":"ping"}""")
             }
@@ -214,7 +202,7 @@ class StreamableHttpSessionLimitsTest {
         val sessionId = client.initialize()
 
         val response = client.post("/mcp") {
-            streamableHeaders()
+            localhostStreamableHeaders()
             header(MCP_SESSION_ID_HEADER, sessionId)
             setBody("""[{"jsonrpc":"2.0","id":9,"method":"ping"},{"jsonrpc":"2.0","id":9,"method":"ping"}]""")
         }
@@ -241,7 +229,7 @@ class StreamableHttpSessionLimitsTest {
 
     private suspend fun HttpClient.initialize(): String {
         val response = post("/mcp") {
-            streamableHeaders()
+            localhostStreamableHeaders()
             setBody(initializeRequestBody())
         }
         response.status shouldBe HttpStatusCode.OK
@@ -250,35 +238,26 @@ class StreamableHttpSessionLimitsTest {
 
     private suspend fun HttpClient.sendInitialized(sessionId: String) {
         post("/mcp") {
-            streamableHeaders()
+            localhostStreamableHeaders()
             header(MCP_SESSION_ID_HEADER, sessionId)
             setBody("""{"jsonrpc":"2.0","method":"notifications/initialized"}""")
         }.status shouldBe HttpStatusCode.Accepted
     }
 
     private suspend fun HttpClient.ping(sessionId: String): HttpResponse = post("/mcp") {
-        streamableHeaders()
+        localhostStreamableHeaders()
         header(MCP_SESSION_ID_HEADER, sessionId)
         setBody("""{"jsonrpc":"2.0","id":2,"method":"ping"}""")
     }
 
-    private fun HttpRequestBuilder.streamableHeaders() {
+    /** [streamableHeaders] plus the `Host` that the endpoint's DNS rebinding protection admits. */
+    private fun HttpRequestBuilder.localhostStreamableHeaders() {
         header(HttpHeaders.Host, "localhost")
-        header(HttpHeaders.Accept, "${ContentType.Application.Json}, ${ContentType.Text.EventStream}")
-        contentType(ContentType.Application.Json)
+        streamableHeaders()
     }
 
-    private fun initializeRequestBody(): String {
-        val request = InitializeRequest(
-            InitializeRequestParams(
-                protocolVersion = LATEST_PROTOCOL_VERSION,
-                capabilities = ClientCapabilities(),
-                clientInfo = Implementation(name = "test-client", version = "1.0.0"),
-            ),
-        ).toJSON()
-
-        return McpJson.encodeToString(JSONRPCMessage.serializer(), request)
-    }
+    private fun initializeRequestBody(): String =
+        McpJson.encodeToString(JSONRPCMessage.serializer(), initializeRequest())
 
     private suspend fun HttpResponse.decodeError(): JSONRPCError = McpJson.decodeFromString(bodyAsText())
 }
