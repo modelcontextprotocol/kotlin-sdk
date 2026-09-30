@@ -22,6 +22,22 @@ public fun HttpClient.mcpSseTransport(
 ): SseClientTransport = SseClientTransport(this, urlString, reconnectionTime, requestBuilder)
 
 /**
+ * Returns a new SSE transport with a custom endpoint discovery timeout.
+ *
+ * @param urlString Optional URL of the MCP server.
+ * @param reconnectionTime Optional duration to wait before attempting to reconnect.
+ * @param requestBuilder Optional lambda to configure the HTTP request.
+ * @param endpointDiscoveryTimeout Maximum time to wait for the server's endpoint event.
+ * @return An SSE transport configured with the supplied endpoint discovery timeout.
+ */
+public fun HttpClient.mcpSseTransport(
+    urlString: String? = null,
+    reconnectionTime: Duration? = null,
+    requestBuilder: HttpRequestBuilder.() -> Unit = {},
+    endpointDiscoveryTimeout: Duration,
+): SseClientTransport = SseClientTransport(this, urlString, reconnectionTime, requestBuilder, endpointDiscoveryTimeout)
+
+/**
  * Creates and connects an MCP client over SSE using the provided HttpClient.
  *
  * @param urlString Optional URL of the MCP server.
@@ -35,6 +51,32 @@ public suspend fun HttpClient.mcpSse(
     requestBuilder: HttpRequestBuilder.() -> Unit = {},
 ): Client {
     val transport = mcpSseTransport(urlString, reconnectionTime, requestBuilder)
+    val client = Client(
+        Implementation(
+            name = IMPLEMENTATION_NAME,
+            version = LIB_VERSION,
+        ),
+    )
+    client.connect(transport)
+    return client
+}
+
+/**
+ * Creates and connects an MCP client over SSE with a custom endpoint discovery timeout.
+ *
+ * @param urlString Optional URL of the MCP server.
+ * @param reconnectionTime Optional duration to wait before attempting to reconnect.
+ * @param requestBuilder Optional lambda to configure the HTTP request.
+ * @param endpointDiscoveryTimeout Maximum time to wait for the server's endpoint event.
+ * @return A connected [Client] ready for MCP communication.
+ */
+public suspend fun HttpClient.mcpSse(
+    urlString: String? = null,
+    reconnectionTime: Duration? = null,
+    requestBuilder: HttpRequestBuilder.() -> Unit = {},
+    endpointDiscoveryTimeout: Duration,
+): Client {
+    val transport = mcpSseTransport(urlString, reconnectionTime, requestBuilder, endpointDiscoveryTimeout)
     val client = Client(
         Implementation(
             name = IMPLEMENTATION_NAME,
