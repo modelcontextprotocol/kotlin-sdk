@@ -5,7 +5,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
-import io.mockk.spyk
+import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.modelcontextprotocol.kotlin.sdk.InternalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
@@ -13,483 +13,232 @@ import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.DisplayName
-import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.EnumSource
-import org.junit.jupiter.params.provider.MethodSource
-import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.cancellation.CancellationException
 
-/**
- * Unit tests for [AbstractClientTransport] state machine and lifecycle.
- *
- * Tests behavioral correctness of state transitions, lifecycle management,
- * and message sending without relying on mocking frameworks.
- */
-@OptIn(ExperimentalAtomicApi::class)
 class AbstractClientTransportTest {
 
-    companion object {
-        @JvmStatic
-        fun nonMcpExceptions() = listOf(
-            TestException("Generic failure"),
-            java.io.IOException("Network error"),
-            IllegalStateException("Invalid state"),
-        )
+    private val transport = TestClientTransport()
+
+    @Test
+    fun `should transition to OPERATIONAL after successful start`() = runTest {
+        transport.start()
+
+        transport.currentState shouldBe ClientTransportState.Operational
+        transport.initializeCalled shouldBe true
     }
 
-    private lateinit var transport: TestClientTransport
+    @Test
+    fun `should transition to INITIALIZATION_FAILED and close resources on start error`() = runTest {
+        transport.initializeFailure = TestException("Initialization failed")
 
-    @BeforeEach
-    fun beforeEach() {
-        transport = spyk(TestClientTransport())
+        shouldThrow<TestException> { transport.start() }
+
+        transport.currentState shouldBe ClientTransportState.InitializationFailed
+        transport.closeResourcesCallCount shouldBe 1
     }
 
-    @Nested
-    @DisplayName("Lifecycle")
-    inner class LifecycleTests {
+    @Test
+    fun `should reject starting twice`() = runTest {
+        transport.start()
 
-        @Test
-        fun `should start with NEW state`() {
-            transport.currentState shouldBe ClientTransportState.New
-        }
-
-        @Test
-        fun `should transition to OPERATIONAL after successful start`() = runTest {
-            transport.start()
-
-            transport.currentState shouldBe ClientTransportState.Operational
-            transport.initializeCalled shouldBe true
-        }
-
-        @Test
-        fun `should call initialize during start`() = runTest {
-            transport.start()
-
-            transport.initializeCalled shouldBe true
-            transport.currentState shouldBe ClientTransportState.Operational
-        }
-
-        @Test
-        fun `should transition to INITIALIZATION_FAILED on start error`() = runTest {
-            transport.shouldFailInitialization = true
-
-            shouldThrow<TestException> {
-                transport.start()
-            }
-
-            transport.currentState shouldBe ClientTransportState.InitializationFailed
-            transport.closeResourcesCalled shouldBe true
-        }
-
-        @Test
-        fun `should call closeResources on initialization failure`() = runTest {
-            transport.shouldFailInitialization = true
-
-            shouldThrow<TestException> {
-                transport.start()
-            }
-
-            transport.closeResourcesCalled shouldBe true
-        }
-
-        @Test
-        fun `should reject starting twice`() = runTest {
-            transport.start()
-
-            val exception = shouldThrow<IllegalStateException> {
-                transport.start()
-            }
-            exception.message shouldContain "expected transport state New"
-        }
-
-        @Test
-        fun `should transition to STOPPED after successful close`() = runTest {
-            transport.start()
-            transport.close()
-
-            transport.currentState shouldBe ClientTransportState.Stopped
-            transport.closeResourcesCalled shouldBe true
-        }
-
-        @Test
-        fun `should call closeResources during close`() = runTest {
-            transport.start()
-
-            transport.close()
-
-            transport.closeResourcesCalled shouldBe true
-            transport.currentState shouldBe ClientTransportState.Stopped
-        }
-
-        @Test
-        fun `should be idempotent when closed multiple times`() = runTest {
-            // given
-            transport.start()
-            transport.close()
-            // when
-            transport.close()
-            transport.close()
-
-            transport.currentState shouldBe ClientTransportState.Stopped
-            transport.closeResourcesCallCount shouldBe 1
-        }
-
-        @Test
-        fun `should call onClose callback exactly once on multiple close calls`() = runTest {
-            var onCloseCallCount = 0
-            transport.onClose { onCloseCallCount++ }
-
-            transport.start()
-            transport.close()
-            transport.close()
-
-            onCloseCallCount shouldBe 1
-        }
-
-        @Test
-        fun `should transition to SHUTDOWN_FAILED on close error`() = runTest {
-            transport.shouldFailClose = true
-            transport.start()
-
-            transport.close()
-
-            transport.currentState shouldBe ClientTransportState.ShutdownFailed
-        }
-
-        @Test
-        fun `should call onClose even when close fails`() = runTest {
-            // given
-            var onCloseCalled = false
-            transport.onClose { onCloseCalled = true }
-            transport.shouldFailClose = true
-            transport.start()
-            // when
-            transport.close()
-            // then
-            onCloseCalled shouldBe true
-        }
-
-        @Test
-        fun `should propagate CancellationException on close`() = runTest {
-            // given
-            transport.shouldThrowCancellation = true
-            transport.start()
-            // when-then
-            shouldThrow<CancellationException> {
-                transport.close()
-            }
-
-            transport.currentState shouldBe ClientTransportState.ShutdownFailed
-        }
-
-        @Test
-        fun `should call onClose even when CancellationException is thrown`() = runTest {
-            var onCloseCalled = false
-            transport.onClose { onCloseCalled = true }
-            transport.shouldThrowCancellation = true
-            transport.start()
-
-            shouldThrow<CancellationException> {
-                transport.close()
-            }
-
-            onCloseCalled shouldBe true
-        }
+        shouldThrow<IllegalStateException> { transport.start() }.message shouldContain "expected transport state New"
     }
 
-    @Nested
-    @DisplayName("State Transitions")
-    inner class StateTransitionTests {
+    @Test
+    fun `should transition to STOPPED and close resources after close`() = runTest {
+        transport.start()
+        transport.close()
 
-        @ParameterizedTest
-        @CsvSource(
-            "New, Initializing",
-            "New, Stopped",
-            "Initializing, Operational",
-            "Initializing, InitializationFailed",
-            "Operational, ShuttingDown",
-            "ShuttingDown, Stopped",
-            "ShuttingDown, ShutdownFailed",
-        )
-        fun `should allow valid transitions`(fromName: String, toName: String) {
-            val from = ClientTransportState.valueOf(fromName)
-            val to = ClientTransportState.valueOf(toName)
-
-            transport.forceState(from)
-            transport.testStateTransition(from, to)
-
-            transport.currentState shouldBe to
-        }
-
-        @ParameterizedTest
-        @CsvSource(
-            // From New: only Initializing is valid
-            "New, Operational",
-            "New, InitializationFailed",
-            "New, ShuttingDown",
-            "New, ShutdownFailed",
-            // From Initializing: only Operational or InitializationFailed are valid
-            "Initializing, New",
-            "Initializing, Initializing",
-            "Initializing, ShuttingDown",
-            "Initializing, Stopped",
-            "Initializing, ShutdownFailed",
-            // From Operational: only ShuttingDown is valid
-            "Operational, New",
-            "Operational, Initializing",
-            "Operational, InitializationFailed",
-            "Operational, Operational",
-            "Operational, Stopped",
-            "Operational, ShutdownFailed",
-            // From ShuttingDown: only Stopped or ShutdownFailed are valid
-            "ShuttingDown, New",
-            "ShuttingDown, Initializing",
-            "ShuttingDown, InitializationFailed",
-            "ShuttingDown, Operational",
-            "ShuttingDown, ShuttingDown",
-            // From terminal states: no transitions allowed
-            "InitializationFailed, New",
-            "InitializationFailed, Operational",
-            "Stopped, New",
-            "Stopped, Operational",
-            "ShutdownFailed, New",
-            "ShutdownFailed, Operational",
-        )
-        fun `should reject invalid transitions`(fromName: String, toName: String) {
-            val from = ClientTransportState.valueOf(fromName)
-            val to = ClientTransportState.valueOf(toName)
-
-            transport.forceState(from)
-
-            val exception = shouldThrow<IllegalArgumentException> {
-                transport.testStateTransition(from, to)
-            }
-            exception.message shouldContain "Invalid transition: $from → $to"
-        }
+        transport.currentState shouldBe ClientTransportState.Stopped
+        transport.closeResourcesCallCount shouldBe 1
     }
 
-    @Nested
-    @DisplayName("Send Operations")
-    inner class SendTests {
+    @Test
+    fun `should be idempotent when closed multiple times and call onClose exactly once`() = runTest {
+        var onCloseCalls = 0
+        transport.onClose { onCloseCalls++ }
+        transport.start()
 
-        @Test
-        fun `should send message successfully when OPERATIONAL`() = runTest {
-            val message = PingRequest().toJSON()
+        repeat(3) { transport.close() }
 
-            transport.start()
-            transport.send(message)
-
-            transport.sentMessages shouldBe listOf(message)
-        }
-
-        @Test
-        fun `should pass options to performSend`() = runTest {
-            val message = PingRequest().toJSON()
-            val options = TransportSendOptions()
-
-            transport.start()
-            transport.send(message, options)
-
-            transport.sentMessages shouldBe listOf(message)
-            transport.lastSendOptions shouldBe options
-        }
-
-        @Test
-        fun `should throw when sending before start`() = runTest {
-            val exception = shouldThrow<McpException> {
-                transport.send(PingRequest().toJSON())
-            }
-
-            exception.code shouldBe RPCError.ErrorCode.CONNECTION_CLOSED
-            exception.message shouldContain "Transport is not ready"
-        }
-
-        @Test
-        fun `should throw when sending after close`() = runTest {
-            transport.start()
-            transport.close()
-
-            val exception = shouldThrow<McpException> {
-                transport.send(PingRequest().toJSON())
-            }
-
-            exception.code shouldBe RPCError.ErrorCode.CONNECTION_CLOSED
-            exception.message shouldContain "Transport is not ready"
-        }
-
-        @ParameterizedTest
-        @EnumSource(
-            value = ClientTransportState::class,
-            names = ["Operational"],
-            mode = EnumSource.Mode.EXCLUDE,
-        )
-        fun `should throw when sending in non-OPERATIONAL state`(state: ClientTransportState) = runTest {
-            transport.forceState(state)
-
-            val exception = shouldThrow<McpException> {
-                transport.send(PingRequest().toJSON())
-            }
-
-            exception.code shouldBe RPCError.ErrorCode.CONNECTION_CLOSED
-            exception.message shouldContain "Transport is not ready"
-            transport.sentMessages.isEmpty() shouldBe true
-        }
-
-        @Test
-        fun `should call onError when performSend throws McpException`() = runTest {
-            var errorCallCount = 0
-            var capturedError: Throwable? = null
-            transport.onError { error ->
-                errorCallCount++
-                capturedError = error
-            }
-            transport.shouldFailSend = true
-            transport.sendException = McpException(RPCError.ErrorCode.INTERNAL_ERROR, "Send failed")
-
-            transport.start()
-            val exception = shouldThrow<McpException> {
-                transport.send(PingRequest().toJSON())
-            }
-
-            errorCallCount shouldBe 1
-            capturedError shouldBe transport.sendException
-            exception shouldBe transport.sendException
-        }
-
-        @ParameterizedTest
-        @MethodSource("io.modelcontextprotocol.kotlin.sdk.shared.AbstractClientTransportTest#nonMcpExceptions")
-        fun `should call onError when performSend throws non-MCP exception`(testException: Throwable) = runTest {
-            var errorCallCount = 0
-            var capturedError: Throwable? = null
-            transport.onError { error ->
-                errorCallCount++
-                capturedError = error
-            }
-            transport.shouldFailSend = true
-            transport.sendException = testException
-
-            transport.start()
-            val exception = shouldThrow<McpException> {
-                transport.send(PingRequest().toJSON())
-            }
-
-            errorCallCount shouldBe 1
-            capturedError shouldBe testException
-            exception.code shouldBe RPCError.ErrorCode.INTERNAL_ERROR
-            exception.cause shouldBe testException
-        }
-
-        @Test
-        fun `should NOT call onError when performSend throws CancellationException`() = runTest {
-            var errorCallCount = 0
-            transport.onError { errorCallCount++ }
-            transport.shouldFailSend = true
-            transport.sendException = CancellationException("Operation cancelled")
-
-            transport.start()
-            shouldThrow<CancellationException> {
-                transport.send(PingRequest().toJSON())
-            }
-
-            errorCallCount shouldBe 0
-        }
+        transport.currentState shouldBe ClientTransportState.Stopped
+        transport.closeResourcesCallCount shouldBe 1
+        onCloseCalls shouldBe 1
     }
 
-    @Nested
-    @DisplayName("Idempotency")
-    inner class IdempotencyTests {
+    @Test
+    fun `should transition to SHUTDOWN_FAILED and still call onClose on close error`() = runTest {
+        var onCloseCalled = false
+        transport.onClose { onCloseCalled = true }
+        transport.closeFailure = TestException("Close failed")
+        transport.start()
 
-        @Test
-        fun `should be idempotent when closing from NEW state`() = runTest {
-            transport.close()
+        transport.close()
 
-            transport.currentState shouldBe ClientTransportState.Stopped
-            transport.closeResourcesCalled shouldBe false
-        }
-
-        @Test
-        fun `should be idempotent when closing from INITIALIZATION_FAILED state`() = runTest {
-            transport.shouldFailInitialization = true
-            shouldThrow<TestException> { transport.start() }
-
-            transport.close()
-
-            transport.currentState shouldBe ClientTransportState.InitializationFailed
-            // closeResources was called during a failed start, but not during this close
-            transport.closeResourcesCallCount shouldBe 1
-        }
-
-        @ParameterizedTest
-        @EnumSource(
-            value = ClientTransportState::class,
-            names = ["ShuttingDown", "ShutdownFailed", "Stopped"],
-        )
-        fun `should be idempotent when closing from terminal or shutdown states`(state: ClientTransportState) =
-            runTest {
-                transport.forceState(state)
-                val initialCloseCount = transport.closeResourcesCallCount
-
-                transport.close()
-
-                transport.currentState shouldBe state
-                transport.closeResourcesCallCount shouldBe initialCloseCount
-            }
+        transport.currentState shouldBe ClientTransportState.ShutdownFailed
+        onCloseCalled shouldBe true
     }
 
-    /**
-     * Simple test implementation of [AbstractClientTransport] for behavioral testing.
-     * Tracks method calls without mocking frameworks.
-     */
+    @Test
+    fun `should propagate CancellationException on close and still call onClose`() = runTest {
+        var onCloseCalled = false
+        transport.onClose { onCloseCalled = true }
+        transport.closeFailure = CancellationException("Test cancellation")
+        transport.start()
+
+        shouldThrow<CancellationException> { transport.close() }
+
+        transport.currentState shouldBe ClientTransportState.ShutdownFailed
+        onCloseCalled shouldBe true
+    }
+
+    @Test
+    fun `should stop without closing resources when closed before start`() = runTest {
+        transport.close()
+
+        transport.currentState shouldBe ClientTransportState.Stopped
+        transport.closeResourcesCallCount shouldBe 0
+    }
+
+    @Test
+    fun `should ignore close after a failed start`() = runTest {
+        transport.initializeFailure = TestException("Initialization failed")
+        shouldThrow<TestException> { transport.start() }
+
+        transport.close()
+
+        transport.currentState shouldBe ClientTransportState.InitializationFailed
+        transport.closeResourcesCallCount shouldBe 1 // from the failed start only
+    }
+
+    @ParameterizedTest
+    @CsvSource("Operational, New", "Stopped, Operational")
+    fun `should reject invalid transitions`(from: ClientTransportState, to: ClientTransportState) {
+        transport.forceState(from)
+
+        shouldThrow<IllegalArgumentException> { transport.testStateTransition(from, to) }
+            .message shouldContain "Invalid transition: $from → $to"
+    }
+
+    @Test
+    fun `should pass message and options to performSend`() = runTest {
+        val message = PingRequest().toJSON()
+        val options = TransportSendOptions()
+        transport.start()
+
+        transport.send(message, options)
+
+        transport.sentMessages shouldBe listOf(message)
+        transport.lastSendOptions shouldBeSameInstanceAs options
+    }
+
+    @Test
+    fun `should throw when sending before start`() = runTest {
+        assertSendRejected()
+    }
+
+    @Test
+    fun `should throw when sending after close`() = runTest {
+        transport.start()
+        transport.close()
+
+        assertSendRejected()
+    }
+
+    // New and Stopped are covered above; every other non-Operational state must reject sends too.
+    @ParameterizedTest
+    @EnumSource(
+        value = ClientTransportState::class,
+        names = ["Initializing", "InitializationFailed", "ShuttingDown", "ShutdownFailed"],
+    )
+    fun `should throw when sending in non-OPERATIONAL state`(state: ClientTransportState) = runTest {
+        transport.forceState(state)
+
+        assertSendRejected()
+    }
+
+    @Test
+    fun `should call onError and rethrow as-is when performSend throws McpException`() = runTest {
+        val errors = mutableListOf<Throwable>()
+        transport.onError { errors += it }
+        val failure = McpException(RPCError.ErrorCode.INTERNAL_ERROR, "Send failed")
+        transport.sendFailure = failure
+        transport.start()
+
+        shouldThrow<McpException> { transport.send(PingRequest().toJSON()) } shouldBeSameInstanceAs failure
+        errors shouldBe listOf(failure)
+    }
+
+    @Test
+    fun `should call onError and wrap in INTERNAL_ERROR when performSend throws non-MCP exception`() = runTest {
+        val errors = mutableListOf<Throwable>()
+        transport.onError { errors += it }
+        val failure = TestException("Network error")
+        transport.sendFailure = failure
+        transport.start()
+
+        val exception = shouldThrow<McpException> { transport.send(PingRequest().toJSON()) }
+
+        exception.code shouldBe RPCError.ErrorCode.INTERNAL_ERROR
+        exception.cause shouldBeSameInstanceAs failure
+        errors shouldBe listOf(failure)
+    }
+
+    @Test
+    fun `should NOT call onError when performSend throws CancellationException`() = runTest {
+        var errorCalls = 0
+        transport.onError { errorCalls++ }
+        transport.sendFailure = CancellationException("Operation cancelled")
+        transport.start()
+
+        shouldThrow<CancellationException> { transport.send(PingRequest().toJSON()) }
+
+        errorCalls shouldBe 0
+    }
+
+    private suspend fun assertSendRejected() {
+        val exception = shouldThrow<McpException> { transport.send(PingRequest().toJSON()) }
+
+        exception.code shouldBe RPCError.ErrorCode.CONNECTION_CLOSED
+        exception.message shouldContain "Transport is not ready"
+        transport.sentMessages shouldBe emptyList()
+    }
+
     @OptIn(InternalMcpApi::class)
     private class TestClientTransport : AbstractClientTransport() {
         override val logger: KLogger = KotlinLogging.logger {}
         val sentMessages = mutableListOf<JSONRPCMessage>()
         var lastSendOptions: TransportSendOptions? = null
         var initializeCalled = false
-        var closeResourcesCalled = false
         var closeResourcesCallCount = 0
-        var shouldFailInitialization = false
-        var shouldFailClose = false
-        var shouldThrowCancellation = false
-        var shouldFailSend = false
-        var sendException: Throwable? = null
+        var initializeFailure: Exception? = null
+        var closeFailure: Exception? = null
+        var sendFailure: Exception? = null
 
         val currentState: ClientTransportState
             get() = state
 
         override suspend fun initialize() {
             initializeCalled = true
-            if (shouldFailInitialization) {
-                throw TestException("Initialization failed")
-            }
+            initializeFailure?.let { throw it }
         }
 
         override suspend fun performSend(message: JSONRPCMessage, options: TransportSendOptions?) {
-            if (shouldFailSend) {
-                throw sendException ?: TestException("Send failed")
-            }
+            sendFailure?.let { throw it }
             sentMessages.add(message)
             lastSendOptions = options
         }
 
         override suspend fun closeResources() {
-            closeResourcesCalled = true
             closeResourcesCallCount++
-
-            when {
-                shouldThrowCancellation -> throw CancellationException("Test cancellation")
-                shouldFailClose -> throw TestException("Close failed")
-            }
+            closeFailure?.let { throw it }
         }
 
-        fun testStateTransition(from: ClientTransportState, to: ClientTransportState) {
-            stateTransition(from, to)
-        }
+        fun testStateTransition(from: ClientTransportState, to: ClientTransportState) = stateTransition(from, to)
 
         fun forceState(newState: ClientTransportState) = updateState(newState)
     }

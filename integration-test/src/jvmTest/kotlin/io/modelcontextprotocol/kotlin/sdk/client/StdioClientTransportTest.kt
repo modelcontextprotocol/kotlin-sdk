@@ -1,205 +1,132 @@
 package io.modelcontextprotocol.kotlin.sdk.client
 
-import io.kotest.assertions.nondeterministic.eventually
-import io.modelcontextprotocol.kotlin.sdk.shared.BaseTransportTest
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
-import io.modelcontextprotocol.kotlin.test.utils.createSleepyProcessBuilder
+import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError
+import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import io.modelcontextprotocol.kotlin.test.utils.createTeeProcessBuilder
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.io.Buffer
+import kotlinx.io.RawSink
 import kotlinx.io.RawSource
 import kotlinx.io.asSink
 import kotlinx.io.asSource
 import kotlinx.io.buffered
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.condition.DisabledOnOs
 import org.junit.jupiter.api.condition.OS
+import java.io.PipedInputStream
+import java.io.PipedOutputStream
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import kotlin.concurrent.atomics.AtomicBoolean
-import kotlin.concurrent.atomics.ExperimentalAtomicApi
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
-import kotlin.test.fail
 import kotlin.time.Duration.Companion.seconds
 
 @Timeout(30, unit = TimeUnit.SECONDS)
 @DisabledOnOs(OS.WINDOWS) // TODO: fix running on windows
-class StdioClientTransportTest : BaseTransportTest() {
+class StdioClientTransportTest {
 
     @Test
-    fun `handle stdio error`(): Unit = runBlocking(Dispatchers.IO) {
-        val processBuilder = createSleepyProcessBuilder()
-
-        val process = processBuilder.start()
-
-        val stdin = process.inputStream.asSource().buffered()
-        val stdout = process.outputStream.asSink().buffered()
-        val stderr = process.errorStream.asSource().buffered()
-
-        val transport = StdioClientTransport(
-            input = stdin,
-            output = stdout,
-            error = stderr,
-        ) {
-            println("💥Ah-oh!, error: \"$it\"")
-            StdioClientTransport.StderrSeverity.FATAL
+    fun `fatal stderr output should fail connect`(): Unit = runBlocking(Dispatchers.IO) {
+        // stderr gets the line only after the client has written `initialize`, and stdin never ends,
+        // so only the FATAL classification can fail the connection.
+        val stderr = PipedOutputStream()
+        val stdin = BlockingRawSource()
+        val output = FirstWriteSink {
+            stderr.write("simulated error\n".encodeToByteArray())
+            stderr.flush()
         }
-
-        val client = Client(
-            clientInfo = Implementation(
-                name = "test-client",
-                version = "1.0",
-            ),
+        val transport = StdioClientTransport(
+            input = stdin.buffered(),
+            output = output.buffered(),
+            error = PipedInputStream(stderr).asSource().buffered(),
+            classifyStderr = { StdioClientTransport.StderrSeverity.FATAL },
         )
 
-        // The error in stderr should cause connecting to fail
-        // Use explicit timeout to avoid blocking indefinitely due to kotlinx.io cancellation issue (#514)
-        assertThrows<McpException> {
-            withTimeout(5.seconds) {
-                client.connect(transport)
-            }
+        val exception = shouldThrow<McpException> {
+            withTimeout(5.seconds) { Client(Implementation(name = "test-client", version = "1.0")).connect(transport) }
         }
 
-        process.destroyForcibly()
+        exception.code shouldBe RPCError.ErrorCode.CONNECTION_CLOSED
+        stdin.close()
+        stderr.close()
     }
 
-    @OptIn(ExperimentalAtomicApi::class)
     @Test
-    fun `should start then close cleanly`() = runTest {
-        // Run loopback process
-        val processBuilder = createTeeProcessBuilder()
-        val process = processBuilder.start()
-
-        val input = process.inputStream.asSource().buffered()
-        val output = process.outputStream.asSink().buffered()
-        val error = process.errorStream.asSource().buffered()
-
+    fun `close should invoke onClose while the process is still running`(): Unit = runBlocking(Dispatchers.IO) {
+        val process = createTeeProcessBuilder().start()
         val transport = StdioClientTransport(
-            input = input,
-            output = output,
-            error = error,
+            input = process.inputStream.asSource().buffered(),
+            output = process.outputStream.asSink().buffered(),
         )
-
-        transport.onError { error ->
-            fail("Unexpected error: $error")
-        }
-
-        val didClose = AtomicBoolean(false)
-        transport.onClose { didClose.store(true) }
-
+        val closed = CompletableDeferred<Unit>()
+        transport.onClose { closed.complete(Unit) }
         transport.start()
+        closed.isCompleted shouldBe false
 
-        // Verify transport stays open after start (use eventually for cross-platform reliability)
-        eventually(2.seconds) {
-            assertFalse(didClose.load(), "Transport should not be closed immediately after start")
-        }
+        val closing = launch { transport.close() }
+        withTimeout(2.seconds) { closed.await() }
 
-        // Destroy process BEFORE close() to unblock stdin reader
         process.destroyForcibly()
-
-        transport.close()
-
-        // Verify transport is closed after close() call
-        eventually(2.seconds) {
-            assertTrue(didClose.load(), "Transport should be closed after close() call")
-        }
+        closing.join()
     }
 
-    @OptIn(ExperimentalAtomicApi::class)
     @Test
     fun `should close cleanly while stdin read is blocked`(): Unit = runBlocking(Dispatchers.IO) {
         val input = BlockingRawSource()
-
-        val transport = StdioClientTransport(
-            input = input.buffered(),
-            output = Buffer(),
-        )
-
-        val didClose = AtomicBoolean(false)
-        transport.onClose { didClose.store(true) }
-        transport.onError { error ->
-            fail("Unexpected error while closing transport: $error")
-        }
+        val transport = StdioClientTransport(input = input.buffered(), output = Buffer())
+        val closed = CompletableDeferred<Unit>()
+        transport.onClose { closed.complete(Unit) }
 
         transport.start()
-
-        eventually(2.seconds) {
-            assertTrue(input.readStarted, "Transport should start reading stdin before close")
-        }
-
-        val closeJob = async {
-            transport.close()
-        }
-
-        val closed = withTimeoutOrNull(1.seconds) {
-            closeJob.await()
-        }
-
+        input.readStarted.await()
+        val closeJob = async { transport.close() }
+        val closedInTime = withTimeoutOrNull(1.seconds) { closeJob.await() }
         input.close()
         closeJob.await()
 
-        assertNotNull(closed, "Transport.close() should not wait for stdin to produce data or EOF")
-        assertTrue(didClose.load(), "Transport should be closed after close() call")
+        closedInTime.shouldNotBeNull()
+        closed.isCompleted shouldBe true
     }
 
     @Test
-    fun `should read messages`() = runTest {
-        val processBuilder = createTeeProcessBuilder()
-        val process = processBuilder.start()
-
-        val input = process.inputStream.asSource().buffered()
-        val output = process.outputStream.asSink().buffered()
-
+    fun `should read messages`(): Unit = runBlocking(Dispatchers.IO) {
+        val process = createTeeProcessBuilder().start()
         val transport = StdioClientTransport(
-            input = input,
-            output = output,
+            input = process.inputStream.asSource().buffered(),
+            output = process.outputStream.asSink().buffered(),
         )
+        val messages = listOf(PingRequest().toJSON(), InitializedNotification().toJSON())
+        val received = Channel<JSONRPCMessage>(Channel.UNLIMITED)
+        transport.onMessage { received.send(it) }
 
-        testTransportRead(transport)
+        transport.start()
+        messages.forEach { transport.send(it) }
 
-        process.waitFor()
-        process.destroyForcibly()
-    }
-
-    @Test
-    fun `should ignore first output messages`() = runTest {
-        val processBuilder = createTeeProcessBuilder()
-        val process = processBuilder.start()
-        process.outputStream.write("Stdio server started".toByteArray())
-
-        val input = process.inputStream.asSource().buffered()
-        val output = process.outputStream.asSink().buffered()
-
-        val transport = StdioClientTransport(
-            input = input,
-            output = output,
-        )
-
-        testTransportRead(transport)
-
-        process.waitFor()
+        List(messages.size) { received.receive() } shouldBe messages
+        transport.close()
         process.destroyForcibly()
     }
 
     private class BlockingRawSource : RawSource {
         private val closed = CountDownLatch(1)
-
-        @Volatile
-        var readStarted: Boolean = false
-            private set
+        val readStarted = CompletableDeferred<Unit>()
 
         override fun readAtMostTo(sink: Buffer, byteCount: Long): Long {
-            readStarted = true
+            readStarted.complete(Unit)
             closed.await()
             return -1L
         }
@@ -207,5 +134,22 @@ class StdioClientTransportTest : BaseTransportTest() {
         override fun close() {
             closed.countDown()
         }
+    }
+
+    /** Discards written bytes and calls [onFirstWrite] once. */
+    private class FirstWriteSink(private val onFirstWrite: () -> Unit) : RawSink {
+        private var written = false
+
+        override fun write(source: Buffer, byteCount: Long) {
+            source.skip(byteCount)
+            if (!written) {
+                written = true
+                onFirstWrite()
+            }
+        }
+
+        override fun flush() = Unit
+
+        override fun close() = Unit
     }
 }

@@ -10,6 +10,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import kotlinx.coroutines.channels.Channel
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
 /**
@@ -42,16 +43,18 @@ internal class TestProtocol(options: ProtocolOptions? = null) : Protocol(options
     override fun assertNotificationCapability(method: Method) {
         // noop
     }
-    public override fun assertRequestHandlerCapability(method: Method) {
+    override fun assertRequestHandlerCapability(method: Method) {
         // noop
     }
 }
 
 /** Shared [Transport] test double: records every sent message (with its options) and replays inbound ones. */
-internal class RecordingTransport : Transport {
-    val sentMessages = Channel<JSONRPCMessage>(Channel.UNLIMITED)
+internal class RecordingTransport(
+    private val startFailure: Throwable? = null,
+    private val sendFailure: Throwable? = null,
+) : Transport {
+    private val sentMessages = Channel<JSONRPCMessage>(Channel.UNLIMITED)
     private var onMessageCallback: (suspend (JSONRPCMessage) -> Unit)? = null
-    private var onCloseCallback: (() -> Unit)? = null
 
     val sentWithOptions = mutableListOf<Pair<JSONRPCMessage, TransportSendOptions?>>()
 
@@ -59,21 +62,21 @@ internal class RecordingTransport : Transport {
         private set
 
     override suspend fun start() {
-        // noop
+        startFailure?.let { throw it }
     }
 
     override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
+        sendFailure?.let { throw it }
         sentWithOptions.add(message to options)
         sentMessages.send(message)
     }
 
     override suspend fun close() {
-        onCloseCallback?.invoke()
+        closeCallback?.invoke()
     }
 
     override fun onClose(block: () -> Unit) {
         closeCallback = block
-        onCloseCallback = block
     }
 
     override fun onError(block: (Throwable) -> Unit) {
@@ -91,13 +94,17 @@ internal class RecordingTransport : Transport {
         }
     }
 
-    /** Cross-thread-safe reader used by real-dispatcher tests; [sentWithOptions] is single-thread only. */
-    suspend fun awaitSent(): JSONRPCMessage = sentMessages.receive()
-
     suspend fun deliver(message: JSONRPCMessage) {
         val callback = onMessageCallback ?: error("onMessage callback not registered")
         callback(message)
     }
+}
+
+internal suspend fun connectedProtocol(options: ProtocolOptions? = null): Pair<TestProtocol, RecordingTransport> {
+    val protocol = TestProtocol(options)
+    val transport = RecordingTransport()
+    protocol.connect(transport)
+    return protocol to transport
 }
 
 internal fun responsesOn(transport: RecordingTransport): List<JSONRPCResponse> =
@@ -105,6 +112,12 @@ internal fun responsesOn(transport: RecordingTransport): List<JSONRPCResponse> =
 
 internal fun errorsOn(transport: RecordingTransport): List<JSONRPCError> =
     transport.sentWithOptions.map { it.first }.filterIsInstance<JSONRPCError>()
+
+internal fun cancellationsOn(transport: RecordingTransport): List<CancelledNotificationParams> =
+    transport.sentWithOptions.map { it.first }
+        .filterIsInstance<JSONRPCNotification>()
+        .filter { it.method == Method.Defined.NotificationsCancelled.value }
+        .map { McpJson.decodeFromJsonElement<CancelledNotificationParams>(it.params!!) }
 
 internal fun cancelledNotification(requestId: RequestId, reason: String): JSONRPCNotification = JSONRPCNotification(
     method = Method.Defined.NotificationsCancelled.value,

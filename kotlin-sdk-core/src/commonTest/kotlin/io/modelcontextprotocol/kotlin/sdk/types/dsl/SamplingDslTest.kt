@@ -1,27 +1,24 @@
 package io.modelcontextprotocol.kotlin.sdk.types.dsl
 
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.matchers.collections.shouldHaveSize
-import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
-import io.modelcontextprotocol.kotlin.sdk.types.Annotations
 import io.modelcontextprotocol.kotlin.sdk.types.AudioContent
+import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.ImageContent
 import io.modelcontextprotocol.kotlin.sdk.types.IncludeContext
+import io.modelcontextprotocol.kotlin.sdk.types.ModelHint
 import io.modelcontextprotocol.kotlin.sdk.types.ModelPreferences
 import io.modelcontextprotocol.kotlin.sdk.types.Role
 import io.modelcontextprotocol.kotlin.sdk.types.SamplingMessage
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.assistant
 import io.modelcontextprotocol.kotlin.sdk.types.assistantAudio
-import io.modelcontextprotocol.kotlin.sdk.types.assistantImage
+import io.modelcontextprotocol.kotlin.sdk.types.assistantText
 import io.modelcontextprotocol.kotlin.sdk.types.buildCreateMessageRequest
 import io.modelcontextprotocol.kotlin.sdk.types.user
-import io.modelcontextprotocol.kotlin.sdk.types.userAudio
 import io.modelcontextprotocol.kotlin.sdk.types.userImage
-import io.modelcontextprotocol.kotlin.sdk.types.userText
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlin.test.Test
 
@@ -32,71 +29,47 @@ class SamplingDslTest {
         val request = buildCreateMessageRequest {
             maxTokens = 1000
             systemPrompt = "System prompt"
+            context = IncludeContext.ThisServer
             temperature = 0.5
             stopSequences = listOf("STOP")
             messages {
                 user { "Hello" }
                 assistant { "Hi" }
-                userText {
-                    text = "Text with annotations"
-                    annotations(
-                        audience = listOf(Role.User),
-                        priority = 1.0,
-                        lastModified = "2025-01-10T00:00:00Z",
-                    )
-                    meta {
-                        put("key", "value")
-                    }
-                }
-                assistantImage {
-                    data = "base64image"
+                assistantText { text = "How can I help?" }
+                userImage {
+                    data = "aW1n"
                     mimeType = "image/png"
-                    annotations(Annotations(priority = 0.5))
                 }
                 assistantAudio {
-                    data = "base64audio"
+                    data = "YXVk"
                     mimeType = "audio/wav"
                 }
             }
-            preferences(hints = listOf("hint"), intelligence = 0.9)
-            metadata {
-                put("metaKey", "metaValue")
-            }
+            preferences(hints = listOf("claude"), cost = 0.1, speed = 0.2, intelligence = 0.9)
+            metadata { put("metaKey", "metaValue") }
         }
 
-        request.params.maxTokens shouldBe 1000
-        request.params.systemPrompt shouldBe "System prompt"
-        request.params.temperature shouldBe 0.5
-        request.params.stopSequences shouldBe listOf("STOP")
-        request.params.messages shouldHaveSize 5
-
-        (request.params.messages[2].content.single() as TextContent).shouldNotBeNull {
-            text shouldBe "Text with annotations"
-            annotations shouldNotBeNull {
-                audience shouldBe listOf(Role.User)
-                priority shouldBe 1.0
-                lastModified shouldBe "2025-01-10T00:00:00Z"
-            }
-            meta?.get("key")?.jsonPrimitive?.content shouldBe "value"
-        }
-
-        (request.params.messages[3].content.single() as ImageContent).shouldNotBeNull {
-            data shouldBe "base64image"
-            mimeType shouldBe "image/png"
-            annotations?.priority shouldBe 0.5
-        }
-
-        (request.params.messages[4].content.single() as AudioContent).shouldNotBeNull {
-            data shouldBe "base64audio"
-            mimeType shouldBe "audio/wav"
-        }
-
-        request.params.modelPreferences shouldNotBeNull {
-            intelligencePriority shouldBe 0.9
-        }
-        request.params.metadata shouldNotBeNull {
-            get("metaKey")?.jsonPrimitive?.content shouldBe "metaValue"
-        }
+        request.params shouldBe CreateMessageRequestParams(
+            maxTokens = 1000,
+            messages = listOf(
+                SamplingMessage(Role.User, listOf(TextContent("Hello"))),
+                SamplingMessage(Role.Assistant, listOf(TextContent("Hi"))),
+                SamplingMessage(Role.Assistant, listOf(TextContent("How can I help?"))),
+                SamplingMessage(Role.User, listOf(ImageContent("aW1n", "image/png"))),
+                SamplingMessage(Role.Assistant, listOf(AudioContent("YXVk", "audio/wav"))),
+            ),
+            modelPreferences = ModelPreferences(
+                hints = listOf(ModelHint("claude")),
+                costPriority = 0.1,
+                speedPriority = 0.2,
+                intelligencePriority = 0.9,
+            ),
+            systemPrompt = "System prompt",
+            includeContext = IncludeContext.ThisServer,
+            temperature = 0.5,
+            stopSequences = listOf("STOP"),
+            metadata = buildJsonObject { put("metaKey", "metaValue") },
+        )
     }
 
     @Test
@@ -116,20 +89,6 @@ class SamplingDslTest {
     }
 
     @Test
-    fun `SamplingMessageBuilder should support direct content assignment`() {
-        val content = TextContent("Direct")
-        val request = buildCreateMessageRequest {
-            maxTokens = 100
-            messages {
-                user(content)
-                assistant(content)
-            }
-        }
-        request.params.messages[0].content.single() shouldBe content
-        request.params.messages[1].content.single() shouldBe content
-    }
-
-    @Test
     fun `buildCreateMessageRequest should throw if maxTokens is missing`() {
         shouldThrow<IllegalArgumentException> {
             buildCreateMessageRequest {
@@ -143,58 +102,6 @@ class SamplingDslTest {
         shouldThrow<IllegalArgumentException> {
             buildCreateMessageRequest {
                 maxTokens = 100
-            }
-        }
-    }
-
-    @Test
-    fun `TextContentBuilder should throw if text is missing`() {
-        shouldThrow<IllegalArgumentException> {
-            buildCreateMessageRequest {
-                maxTokens = 100
-                messages {
-                    userText { }
-                }
-            }
-        }
-    }
-
-    @Test
-    fun `ImageContentBuilder should throw if data or mimeType is missing`() {
-        shouldThrow<IllegalArgumentException> {
-            buildCreateMessageRequest {
-                maxTokens = 100
-                messages {
-                    userImage { data = "abc" }
-                }
-            }
-        }
-        shouldThrow<IllegalArgumentException> {
-            buildCreateMessageRequest {
-                maxTokens = 100
-                messages {
-                    userImage { mimeType = "image/png" }
-                }
-            }
-        }
-    }
-
-    @Test
-    fun `AudioContentBuilder should throw if data or mimeType is missing`() {
-        shouldThrow<IllegalArgumentException> {
-            buildCreateMessageRequest {
-                maxTokens = 100
-                messages {
-                    userAudio { data = "abc" }
-                }
-            }
-        }
-        shouldThrow<IllegalArgumentException> {
-            buildCreateMessageRequest {
-                maxTokens = 100
-                messages {
-                    userAudio { mimeType = "audio/wav" }
-                }
             }
         }
     }

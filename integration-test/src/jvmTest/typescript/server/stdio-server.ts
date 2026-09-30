@@ -1,17 +1,20 @@
 import {McpServer} from '@modelcontextprotocol/sdk/server/mcp';
 import {StdioServerTransport} from '@modelcontextprotocol/sdk/server/stdio';
-import {registerTestUtils} from './server-common';
+import {z} from 'zod';
 
 async function main() {
-    const server = new McpServer({
-        name: 'simple-stdio-server',
-        version: '1.0.0',
-    }, {capabilities: {logging: {}}});
+    const server = new McpServer({name: 'typescript-stdio-server', version: '1.0.0'});
 
-    registerTestUtils(server);
+    server.registerTool(
+        'greet',
+        {
+            description: 'Greets the caller by name',
+            inputSchema: {name: z.string().describe('Name to greet')},
+        },
+        async ({name}) => ({content: [{type: 'text', text: `Hello, ${name}!`}]}),
+    );
 
-    const transport = new StdioServerTransport();
-    await server.connect(transport);
+    await server.connect(new StdioServerTransport());
 }
 
 main().catch((err) => {

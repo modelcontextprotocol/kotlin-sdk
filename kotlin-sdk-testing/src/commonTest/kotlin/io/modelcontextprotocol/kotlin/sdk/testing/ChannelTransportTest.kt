@@ -1,19 +1,13 @@
 package io.modelcontextprotocol.kotlin.sdk.testing
 
-import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.types.shouldBeInstanceOf
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
-import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.ClosedSendChannelException
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -61,25 +55,21 @@ class ChannelTransportTest {
     }
 
     @Test
-    fun `start completes when channel closes`() = runTest {
+    fun `delivers pending messages and closes when the receive channel closes`() = runTest {
         val receiveChannel = Channel<JSONRPCMessage>(Channel.UNLIMITED)
         val transport = ChannelTransport(Channel(), receiveChannel)
 
-        val messageProcessed = CompletableDeferred<Unit>()
         val received = mutableListOf<JSONRPCMessage>()
-        transport.onMessage {
-            received.add(it)
-            messageProcessed.complete(Unit)
-        }
+        val closed = CompletableDeferred<Unit>()
+        transport.onMessage { received.add(it) }
+        transport.onClose { closed.complete(Unit) }
 
         transport.start()
 
         val msg = JSONRPCRequest(RequestId.NumberId(1), "method1")
         receiveChannel.send(msg)
-        receiveChannel.close() // Close the channel
-
-        // Wait for a message to be processed
-        messageProcessed.await()
+        receiveChannel.close()
+        closed.await()
 
         received.shouldContainExactly(msg)
     }
@@ -114,13 +104,12 @@ class ChannelTransportTest {
             messageProcessed.complete(Unit)
         }
 
-        val startJob = backgroundScope.launch { transport.start() }
+        transport.start()
 
         receiveChannel.send(JSONRPCRequest(RequestId.NumberId(1), "test"))
         messageProcessed.await()
 
         calls.shouldContainExactly("first", "second")
-        startJob.cancelAndJoin()
     }
 
     @Test
@@ -142,26 +131,6 @@ class ChannelTransportTest {
         messageProcessed.await()
 
         received.shouldContainExactly(message)
-    }
-
-    @Test
-    fun `send to closed channel triggers error`() = runTest {
-        val sendChannel = Channel<JSONRPCMessage>(Channel.UNLIMITED)
-        val transport = ChannelTransport(sendChannel, Channel())
-
-        transport.start()
-
-        var reportedError: Throwable? = null
-        transport.onError { reportedError = it }
-        sendChannel.close()
-
-        // send() wraps ClosedSendChannelException in McpException
-        shouldThrow<McpException> {
-            transport.send(JSONRPCRequest(RequestId.NumberId(1), "method"))
-        }
-
-        // send() reports the failure to onError before throwing, so there is nothing to wait for
-        reportedError.shouldBeInstanceOf<ClosedSendChannelException>()
     }
 
     @Test

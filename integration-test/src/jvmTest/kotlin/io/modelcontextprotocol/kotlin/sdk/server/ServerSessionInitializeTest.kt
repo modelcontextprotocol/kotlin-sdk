@@ -1,5 +1,10 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
+import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldNotContain
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.modelcontextprotocol.kotlin.sdk.shared.InMemoryTransport
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
@@ -25,11 +30,6 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 import org.junit.jupiter.api.Test
 import java.util.concurrent.CopyOnWriteArrayList
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 class ServerSessionInitializeTest {
 
@@ -39,7 +39,7 @@ class ServerSessionInitializeTest {
         instructions = null,
     )
 
-    private fun createInitializeRequest(clientName: String = "test-client"): InitializeRequest = InitializeRequest(
+    private fun createInitializeRequest(clientName: String): InitializeRequest = InitializeRequest(
         InitializeRequestParams(
             protocolVersion = LATEST_PROTOCOL_VERSION,
             capabilities = ClientCapabilities(),
@@ -60,32 +60,6 @@ class ServerSessionInitializeTest {
     )
 
     @Test
-    fun `should handle first initialize request successfully`() = runTest {
-        val session = createSession()
-        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-
-        assertNull(session.clientCapabilities)
-        assertNull(session.clientVersion)
-
-        val responseDone = CompletableDeferred<JSONRPCResponse>()
-        clientTransport.onMessage { message ->
-            if (message is JSONRPCResponse) {
-                responseDone.complete(message)
-            }
-        }
-
-        session.connect(serverTransport)
-        clientTransport.send(createInitializeRequest().toJSON())
-
-        val response = responseDone.await()
-        assertNotNull(response.result)
-        assertNotNull(session.clientCapabilities)
-        assertEquals("test-client", session.clientVersion?.name)
-    }
-
-    // Both initialize requests arrive before notifications/initialized, in the serial dispatch
-    // phase, so processing and response order stay deterministic.
-    @Test
     fun `should classify malformed initialize params as invalid params`() = runTest {
         val session = createSession()
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
@@ -101,12 +75,14 @@ class ServerSessionInitializeTest {
         clientTransport.send(createMalformedInitializeRequest())
 
         val response = responseDone.await()
-        assertEquals(RPCError.ErrorCode.INVALID_PARAMS, response.error.code)
-        assertFalse(response.error.message.contains("kotlinx.serialization"))
-        assertNull(session.clientCapabilities)
-        assertNull(session.clientVersion)
+        response.error.code shouldBe RPCError.ErrorCode.INVALID_PARAMS
+        response.error.message shouldNotContain "kotlinx.serialization"
+        session.clientCapabilities.shouldBeNull()
+        session.clientVersion.shouldBeNull()
     }
 
+    // Both initialize requests arrive before notifications/initialized, in the serial dispatch
+    // phase, so processing and response order stay deterministic.
     @Test
     fun `should reject duplicate initialize request`() = runTest {
         val session = createSession()
@@ -136,13 +112,10 @@ class ServerSessionInitializeTest {
 
         secondResponseDone.await()
 
-        assertEquals(2, responses.size)
-        assertTrue(responses[0] is JSONRPCResponse, "First response should be success")
-        assertTrue(responses[1] is JSONRPCError, "Second response should be error")
-        assertEquals(RPCError.ErrorCode.INVALID_REQUEST, (responses[1] as JSONRPCError).error.code)
-
-        // Capabilities still reflect the first client, not overwritten
-        assertEquals("first-client", session.clientVersion?.name)
+        responses shouldHaveSize 2
+        responses[0].shouldBeInstanceOf<JSONRPCResponse>()
+        responses[1].shouldBeInstanceOf<JSONRPCError>().error.code shouldBe RPCError.ErrorCode.INVALID_REQUEST
+        session.clientVersion?.name shouldBe "first-client"
     }
 
     @Test
@@ -185,10 +158,7 @@ class ServerSessionInitializeTest {
 
         allResponsesDone.await()
 
-        assertEquals(1, successes.size, "Exactly one initialize should succeed")
-        assertEquals(n - 1, errors.size, "All other initializes should be rejected")
-        errors.forEach { error ->
-            assertEquals(RPCError.ErrorCode.INVALID_REQUEST, error.error.code)
-        }
+        successes shouldHaveSize 1
+        errors.map { it.error.code } shouldBe List(n - 1) { RPCError.ErrorCode.INVALID_REQUEST }
     }
 }

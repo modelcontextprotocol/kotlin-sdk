@@ -8,7 +8,6 @@ plugins {
     id("mcp.publishing")
     id("mcp.dokka")
     id("mcp.abi-validation")
-    `netty-convention`
 }
 
 kotlin {
@@ -40,22 +39,14 @@ kotlin {
         commonTest {
             dependencies {
                 implementation(kotlin("test"))
-                implementation(project(":kotlin-sdk-testing"))
                 implementation(libs.kotest.assertions.core)
                 implementation(libs.kotlinx.coroutines.test)
-                implementation(libs.ktor.client.logging)
                 implementation(libs.ktor.client.mock)
-                implementation(libs.ktor.server.websockets)
             }
         }
 
         jvmTest {
             dependencies {
-                implementation(libs.awaitility)
-                implementation(libs.ktor.client.apache5)
-                implementation(libs.mockk)
-                implementation(libs.junit.jupiter.params)
-                implementation(dependencies.platform(libs.netty.bom))
                 runtimeOnly(libs.slf4j.simple)
             }
         }

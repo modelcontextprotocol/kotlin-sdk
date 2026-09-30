@@ -1,7 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.client.sse
 
-import io.kotest.assertions.nondeterministic.eventually
-import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.sse.SSE
@@ -16,64 +16,27 @@ import io.ktor.util.date.GMTDate
 import io.ktor.utils.io.ByteReadChannel
 import io.modelcontextprotocol.kotlin.sdk.client.SseClientTransport
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertFailsWith
-import kotlin.time.Duration.Companion.seconds
+
+private const val SSE_URL = "http://example.com/api/mcp/sse"
 
 class SseClientTransportTest {
 
     @Test
     fun `absolute path endpoint resolves against origin`() = runTest {
-        // Given
-        val sseUrl = "http://example.com/api/mcp/sse"
+        val post = sendThroughEndpoint(sseUrl = SSE_URL, endpointEvent = "/messages?sessionId=abc")
 
-        // And
-        val endpointEvent = "/messages?sessionId=abc"
-
-        // And
-        val engine = CapturingSseClientEngine(endpoint = endpointEvent)
-        val transport = sseTransport(sseUrl, engine)
-
-        // When
-        transport.start()
-        transport.send(JSONRPCNotification(method = "test"))
-
-        // Then
-        val capturedPosts = engine.capturedPosts
-        capturedPosts shouldHaveSize 1
-        capturedPosts[0].url.toString() shouldBe "http://example.com/messages?sessionId=abc"
-
-        // Cleanup
-        transport.close()
-        engine.close()
+        post.url.toString() shouldBe "http://example.com/messages?sessionId=abc"
     }
 
     @Test
     fun `relative path endpoint resolves against baseUrl`() = runTest {
-        // Given
-        val sseUrl = "http://example.com/api/mcp/sse"
+        val post = sendThroughEndpoint(sseUrl = SSE_URL, endpointEvent = "post?sessionId=xyz")
 
-        // And
-        val endpointEvent = "post?sessionId=xyz"
-
-        // And
-        val engine = CapturingSseClientEngine(endpoint = endpointEvent)
-        val transport = sseTransport(sseUrl, engine)
-
-        // When
-        transport.start()
-        transport.send(JSONRPCNotification(method = "test"))
-
-        // Then
-        val capturedPosts = engine.capturedPosts
-        capturedPosts shouldHaveSize 1
-        capturedPosts[0].url.toString() shouldBe "http://example.com/api/mcp/post?sessionId=xyz"
-
-        // Cleanup
-        transport.close()
-        engine.close()
+        post.url.toString() shouldBe "http://example.com/api/mcp/post?sessionId=xyz"
     }
 
     @Test
@@ -90,7 +53,7 @@ class SseClientTransportTest {
     @Test
     fun `full url endpoint with a different port is rejected`() = runTest {
         val exception = startWithRejectedEndpoint(
-            sseUrl = "http://example.com/api/mcp/sse",
+            sseUrl = SSE_URL,
             endpointEvent = "http://example.com:8080/messages?sessionId=abc",
         )
 
@@ -122,10 +85,7 @@ class SseClientTransportTest {
 
     @Test
     fun `full url endpoint with an explicit default port is accepted`() = runTest {
-        val post = sendThroughEndpoint(
-            sseUrl = "http://example.com/api/mcp/sse",
-            endpointEvent = "http://example.com:80/messages?sessionId=abc",
-        )
+        val post = sendThroughEndpoint(sseUrl = SSE_URL, endpointEvent = "http://example.com:80/messages?sessionId=abc")
 
         post.url.host shouldBe "example.com"
         post.url.port shouldBe 80
@@ -133,88 +93,48 @@ class SseClientTransportTest {
 
     @Test
     fun `full url endpoint host is compared case-insensitively`() = runTest {
-        val post = sendThroughEndpoint(
-            sseUrl = "http://example.com/api/mcp/sse",
-            endpointEvent = "http://EXAMPLE.com/messages?sessionId=abc",
-        )
+        val post = sendThroughEndpoint(sseUrl = SSE_URL, endpointEvent = "http://EXAMPLE.com/messages?sessionId=abc")
 
         post.url.toString() shouldBe "http://EXAMPLE.com/messages?sessionId=abc"
     }
 
     @Test
     fun `sse request redirected to a different origin is rejected`() = runTest {
-        // Given
-        val sseUrl = "http://example.com/api/mcp/sse"
-
-        // And
         val engine = CapturingSseClientEngine(
             endpoint = "/messages?sessionId=abc",
             sseRedirectLocation = "http://evil.example.com/sse",
         )
-        val transport = sseTransport(sseUrl, engine)
 
-        // When
-        val exception = assertFailsWith<IllegalStateException> {
-            transport.start()
-        }
+        val exception = shouldThrow<IllegalStateException> { sseTransport(SSE_URL, engine).start() }
 
-        // Then
         exception.message shouldBe
             "SSE request to http://example.com was redirected to a different origin http://evil.example.com"
-        engine.capturedPosts shouldHaveSize 0
-
-        // Cleanup
-        transport.close()
+        engine.capturedPosts.shouldBeEmpty()
         engine.close()
     }
 
     @Test
     fun `sse request redirected within the same origin is accepted`() = runTest {
-        // Given
-        val sseUrl = "http://example.com/api/mcp/sse"
-
-        // And
-        val engine = CapturingSseClientEngine(
-            endpoint = "/messages?sessionId=abc",
+        val post = sendThroughEndpoint(
+            sseUrl = SSE_URL,
+            endpointEvent = "/messages?sessionId=abc",
             sseRedirectLocation = "http://example.com/v2/sse",
         )
-        val transport = sseTransport(sseUrl, engine)
 
-        // When
-        transport.start()
-        transport.send(JSONRPCNotification(method = "test"))
-
-        // Then
-        val capturedPosts = engine.capturedPosts
-        capturedPosts shouldHaveSize 1
-        capturedPosts[0].url.toString() shouldBe "http://example.com/messages?sessionId=abc"
-
-        // Cleanup
-        transport.close()
-        engine.close()
+        post.url.toString() shouldBe "http://example.com/messages?sessionId=abc"
     }
 
     @Test
     fun `onClose callback fires when the SSE stream is disconnected by the server`() = runTest {
-        // Given
-        val sseUrl = "http://example.com/api/mcp/sse"
-
-        // And
         val engine = CapturingSseClientEngine(endpoint = "/messages?sessionId=abc")
-        val transport = sseTransport(sseUrl, engine)
-        var onCloseFired = false
-        transport.onClose { onCloseFired = true }
+        val transport = sseTransport(SSE_URL, engine)
+        val closed = CompletableDeferred<Unit>()
+        transport.onClose { closed.complete(Unit) }
 
-        // When
         transport.start()
         engine.disconnectSseStream()
 
-        // Then
-        eventually(2.seconds) {
-            onCloseFired shouldBe true
-        }
-
-        // Cleanup
+        closed.await()
         transport.close()
         engine.close()
     }
@@ -228,9 +148,9 @@ class SseClientTransportTest {
         val errors = mutableListOf<Throwable>()
         transport.onError { errors += it }
         try {
-            val exception = assertFailsWith<IllegalArgumentException> { transport.start() }
+            val exception = shouldThrow<IllegalArgumentException> { transport.start() }
             errors.map { it.message } shouldBe listOf(exception.message)
-            engine.capturedPosts shouldHaveSize 0
+            engine.capturedPosts.shouldBeEmpty()
             return exception
         } finally {
             transport.close()
@@ -238,8 +158,12 @@ class SseClientTransportTest {
         }
     }
 
-    private suspend fun sendThroughEndpoint(sseUrl: String, endpointEvent: String): HttpRequestData {
-        val engine = CapturingSseClientEngine(endpoint = endpointEvent)
+    private suspend fun sendThroughEndpoint(
+        sseUrl: String,
+        endpointEvent: String,
+        sseRedirectLocation: String? = null,
+    ): HttpRequestData {
+        val engine = CapturingSseClientEngine(endpointEvent, sseRedirectLocation)
         val transport = sseTransport(sseUrl, engine)
         try {
             transport.start()

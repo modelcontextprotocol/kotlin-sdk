@@ -34,8 +34,6 @@ kotlin {
 
             useJUnitPlatform()
 
-            maxParallelForks = Runtime.getRuntime().availableProcessors()
-            forkEvery = 100
             testLogging {
                 exceptionFormat = TestExceptionFormat.SHORT
                 events("failed")
