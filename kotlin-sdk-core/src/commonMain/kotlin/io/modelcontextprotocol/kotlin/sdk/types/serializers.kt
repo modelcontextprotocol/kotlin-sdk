@@ -16,8 +16,10 @@ import kotlinx.serialization.json.JsonContentPolymorphicSerializer
 import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonEncoder
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.JsonTransformingSerializer
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -234,6 +236,29 @@ internal object ResourceContentsPolymorphicSerializer :
         }
     }
 }
+
+// ============================================================================
+// Task Serializers
+// ============================================================================
+
+/**
+ * Writes `"ttl": null` for a task with unlimited retention: the schema requires the key,
+ * but [McpJson] drops null properties before a property-level serializer could write it.
+ */
+internal open class TaskFieldsSerializer<T : TaskFields>(serializer: KSerializer<T>) :
+    JsonTransformingSerializer<T>(serializer) {
+    override fun transformSerialize(element: JsonElement): JsonElement {
+        val fields = element.jsonObject
+        return if ("ttl" in fields) fields else JsonObject(fields + ("ttl" to JsonNull))
+    }
+}
+
+internal object TaskSerializer : TaskFieldsSerializer<Task>(Task.generatedSerializer())
+
+internal object GetTaskResultSerializer : TaskFieldsSerializer<GetTaskResult>(GetTaskResult.generatedSerializer())
+
+internal object TaskStatusNotificationParamsSerializer :
+    TaskFieldsSerializer<TaskStatusNotificationParams>(TaskStatusNotificationParams.generatedSerializer())
 
 // ============================================================================
 // Request Serializers
