@@ -9,6 +9,7 @@ import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.ApplicationCallPipeline
 import io.ktor.server.application.MissingApplicationPluginException
 import io.ktor.server.application.install
+import io.ktor.server.application.pluginOrNull
 import io.ktor.server.request.ApplicationRequest
 import io.ktor.server.request.header
 import io.ktor.server.request.httpMethod
@@ -151,7 +152,9 @@ public fun Application.mcp(
     block: ServerSSESession.() -> Server,
 ) {
     installMcpContentNegotiation()
-    install(SSE)
+    if (pluginOrNull(SSE) == null) {
+        install(SSE)
+    }
 
     routing {
         mcp(enableDnsRebindingProtection, allowedHosts, allowedOrigins, maxRequestBodySize, block)
@@ -169,7 +172,9 @@ private fun Application.mcpStreamableHttp(
     block: RoutingContext.() -> Server,
 ) {
     installMcpContentNegotiation()
-    install(SSE)
+    if (pluginOrNull(SSE) == null) {
+        install(SSE)
+    }
 
     val transportManager = TransportManager<StreamableHttpServerTransport>()
 
