@@ -222,6 +222,12 @@ public open class Client(private val clientInfo: Implementation, options: Client
             serverVersion = result.serverInfo
             serverInstructions = result.instructions
 
+            // Streamable HTTP MUST send MCP-Protocol-Version on requests after initialize.
+            // The transport only adds the header when protocolVersion is set; copy the negotiated value.
+            if (transport is StreamableHttpClientTransport) {
+                transport.protocolVersion = result.protocolVersion
+            }
+
             notification(InitializedNotification())
             enableConcurrentDispatch()
         } catch (error: Throwable) {
