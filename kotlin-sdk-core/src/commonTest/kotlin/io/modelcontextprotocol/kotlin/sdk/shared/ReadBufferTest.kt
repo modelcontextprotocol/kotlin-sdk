@@ -30,6 +30,21 @@ class ReadBufferTest {
     }
 
     @Test
+    fun `should yield a short message that follows a longer one split across chunks`() {
+        val readBuffer = ReadBuffer()
+        val longMessage: JSONRPCMessage = JSONRPCNotification(method = "x".repeat(line.length * 2))
+
+        readBuffer.append(serializeMessage(longMessage).removeSuffix("\n"))
+        readBuffer.readMessage().shouldBeNull()
+        // The rest of the long frame and a whole frame shorter than what was already searched.
+        readBuffer.append("\n$line")
+
+        readBuffer.readMessage() shouldBe longMessage
+        readBuffer.readMessage() shouldBe message
+        readBuffer.readMessage().shouldBeNull()
+    }
+
+    @Test
     fun `should skip empty blank and malformed lines and return the next message`() {
         val readBuffer = ReadBuffer()
 
@@ -61,12 +76,35 @@ class ReadBufferTest {
     }
 
     @Test
+    fun `should yield a message shorter than the searched partial data discarded by clear`() {
+        val readBuffer = ReadBuffer()
+        readBuffer.append("a".repeat(line.length * 2))
+        readBuffer.readMessage().shouldBeNull()
+
+        readBuffer.clear()
+        readBuffer.append(line)
+
+        readBuffer.readMessage() shouldBe message
+    }
+
+    @Test
     fun `should fail when an unframed blob exceeds the cap`() {
         val readBuffer = ReadBuffer(maxFrameSize = 64)
         // No newline ever arrives: the memory-exhaustion vector.
         readBuffer.append("a".repeat(100))
 
         shouldThrow<TooLongFrameException> { readBuffer.readMessage() }.message shouldContain "maximum size"
+    }
+
+    @Test
+    fun `should yield the next message after rejecting an unframed blob`() {
+        val readBuffer = ReadBuffer(maxFrameSize = 64)
+        readBuffer.append("a".repeat(100))
+        shouldThrow<TooLongFrameException> { readBuffer.readMessage() }
+
+        readBuffer.append(line)
+
+        readBuffer.readMessage() shouldBe message
     }
 
     @Test
