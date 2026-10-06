@@ -14,7 +14,9 @@ import io.ktor.server.request.header
 import io.ktor.server.request.httpMethod
 import io.ktor.server.response.header
 import io.ktor.server.response.respond
+import io.ktor.server.application.call
 import io.ktor.server.routing.Route
+import io.ktor.server.routing.intercept
 import io.ktor.server.routing.RoutingContext
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
@@ -171,42 +173,117 @@ private fun Application.mcpStreamableHttp(
     installMcpContentNegotiation()
     install(SSE)
 
+    routing {
+        mcpStreamableHttp(
+            path = path,
+            enableDnsRebindingProtection = enableDnsRebindingProtection,
+            allowedHosts = allowedHosts,
+            allowedOrigins = allowedOrigins,
+            configuration = configuration,
+            sseHeartbeatConfig = sseHeartbeatConfig,
+            block = block,
+        )
+    }
+}
+
+/**
+ * Registers MCP over [Streamable HTTP Transport](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#streamable-http)
+ * on this [Route] at the specified [path].
+ *
+ * Use this variant when the endpoint must live inside an existing routing block — for example,
+ * when it should be nested under `authenticate(...) { ... }` so the framework's auth plugin
+ * gates every request. [Application.mcpStreamableHttp] installs its own routing tree and
+ * therefore cannot be nested that way.
+ *
+ * **Preconditions:** both [ContentNegotiation][io.ktor.server.plugins.contentnegotiation.ContentNegotiation]
+ * (with [McpJson][io.modelcontextprotocol.kotlin.sdk.types.McpJson]) and the [SSE] plugin must be
+ * installed on the application before calling this function. Use [Application.mcpStreamableHttp]
+ * if you want both to be installed automatically.
+ *
+ * @param path The base path for the MCP Streamable HTTP endpoint. Defaults to "/mcp".
+ * @param enableDnsRebindingProtection Enables DNS rebinding attack protection for the endpoint. Defaults to `true`.
+ * @param allowedHosts A list of hostnames allowed to access the endpoint.
+ *          If `null` and DNS rebinding protection is enabled, defaults to `localhost`, `127.0.0.1`, `[::1]`.
+ * @param allowedOrigins A list of allowed `Origin` header values, compared by hostname only
+ *          (scheme and port are ignored). Requests without an `Origin` header are allowed.
+ *          When `null` while the localhost host defaults are in effect (no custom `allowedHosts`),
+ *          the `Origin` header is validated against `localhost`, `127.0.0.1`, `[::1]`.
+ *          With custom `allowedHosts`, `null` skips origin validation.
+ * @param eventStore An optional [EventStore] instance to enable resumable event stream functionality.
+ *          Allows storing and replaying events.
+ * @param sseHeartbeatConfig The heartbeat configuration option for SSE connections. `null` means no heartbeat is sent.
+ * @param block factory block with access to the [RoutingContext] (for reading request headers)
+ *          that creates and returns the [Server] to handle the connection.
+ */
+@KtorDsl
+@Suppress("LongParameterList")
+public fun Route.mcpStreamableHttp(
+    path: String = "/mcp",
+    enableDnsRebindingProtection: Boolean = true,
+    allowedHosts: List<String>? = null,
+    allowedOrigins: List<String>? = null,
+    eventStore: EventStore? = null,
+    sseHeartbeatConfig: (Heartbeat.() -> Unit)? = null,
+    block: RoutingContext.() -> Server,
+) {
+    mcpStreamableHttp(
+        path = path,
+        enableDnsRebindingProtection = enableDnsRebindingProtection,
+        allowedHosts = allowedHosts,
+        allowedOrigins = allowedOrigins,
+        configuration = StreamableHttpServerTransport.Configuration(
+            eventStore = eventStore,
+            enableJsonResponse = true,
+        ),
+        sseHeartbeatConfig = sseHeartbeatConfig,
+        block = block,
+    )
+}
+
+@Suppress("LongParameterList")
+internal fun Route.mcpStreamableHttp(
+    path: String,
+    enableDnsRebindingProtection: Boolean,
+    allowedHosts: List<String>?,
+    allowedOrigins: List<String>?,
+    configuration: StreamableHttpServerTransport.Configuration,
+    sseHeartbeatConfig: (Heartbeat.() -> Unit)?,
+    block: RoutingContext.() -> Server,
+) {
     val transportManager = TransportManager<StreamableHttpServerTransport>()
 
-    routing {
-        route(path) {
-            installDnsRebindingProtection(enableDnsRebindingProtection, allowedHosts, allowedOrigins)
+    route(path) {
+        installDnsRebindingProtection(enableDnsRebindingProtection, allowedHosts, allowedOrigins)
 
-            // Set Mcp-Session-Id on GET responses before Ktor's sse {} commits headers.
-            intercept(ApplicationCallPipeline.Plugins) {
-                if (context.request.httpMethod == HttpMethod.Get) {
-                    val sessionId = context.request.header(MCP_SESSION_ID_HEADER)
-                    if (sessionId != null && transportManager.getTransport(sessionId) != null) {
-                        context.response.header(MCP_SESSION_ID_HEADER, sessionId)
-                    }
+        // Set Mcp-Session-Id on GET responses before Ktor's sse {} commits headers.
+        intercept(ApplicationCallPipeline.Plugins) {
+            if (call.request.httpMethod == HttpMethod.Get) {
+                val sessionId = call.request.header(MCP_SESSION_ID_HEADER)
+                if (sessionId != null && transportManager.getTransport(sessionId) != null) {
+                    call.response.header(MCP_SESSION_ID_HEADER, sessionId)
                 }
             }
+        }
 
-            sse {
-                val transport = existingStreamableTransport(call, transportManager) ?: return@sse
-                sseHeartbeatConfig?.let { config -> heartbeat(config) }
-                transport.handleRequest(this, call)
-            }
+        sse {
+            val transport = existingStreamableTransport(call, transportManager) ?: return@sse
+            sseHeartbeatConfig?.let { config -> heartbeat(config) }
+            transport.handleRequest(this, call)
+        }
 
-            post {
-                val transport = streamableTransport(
-                    transportManager = transportManager,
-                    configuration = configuration,
-                    block = block,
-                ) ?: return@post
+        post {
+            val transport = streamableTransport(
+                transportManager = transportManager,
+                configuration = configuration,
+                block = block,
+            ) ?: return@post
 
-                transport.handleRequest(null, call)
-            }
+            transport.handleRequest(null, call)
+        }
 
-            delete {
-                val transport = existingStreamableTransport(call, transportManager) ?: return@delete
-                transport.handleRequest(null, call)
-            }
+        delete {
+            val transport = existingStreamableTransport(call, transportManager) ?: return@delete
+            transport.handleRequest(null, call)
         }
     }
 }
@@ -272,21 +349,88 @@ private fun Application.mcpStatelessStreamableHttp(
     installMcpContentNegotiation()
 
     routing {
-        route(path) {
-            installDnsRebindingProtection(enableDnsRebindingProtection, allowedHosts, allowedOrigins)
+        mcpStatelessStreamableHttp(
+            path = path,
+            enableDnsRebindingProtection = enableDnsRebindingProtection,
+            allowedHosts = allowedHosts,
+            allowedOrigins = allowedOrigins,
+            configuration = configuration,
+            block = block,
+        )
+    }
+}
 
-            post {
-                mcpStatelessStreamableHttpEndpoint(
-                    configuration = configuration,
-                    block = block,
-                )
-            }
-            get {
-                call.rejectUnsupportedMethod()
-            }
-            delete {
-                call.rejectUnsupportedMethod()
-            }
+/**
+ * Registers MCP over _stateless_ [Streamable HTTP Transport](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#streamable-http)
+ * on this [Route] at the specified [path].
+ *
+ * Use this variant when the endpoint must live inside an existing routing block — for example,
+ * when it should be nested under `authenticate(...) { ... }` so the framework's auth plugin
+ * gates every request. [Application.mcpStatelessStreamableHttp] installs its own routing tree
+ * and therefore cannot be nested that way.
+ *
+ * Sets up an HTTP POST endpoint at [path]. GET and DELETE requests return 405 Method Not Allowed.
+ * Every request/response pair is returned as JSON, so this endpoint opens no SSE stream and
+ * offers no resumability. Use [mcpStreamableHttp] when either is required.
+ *
+ * **Precondition:** [ContentNegotiation][io.ktor.server.plugins.contentnegotiation.ContentNegotiation]
+ * (with [McpJson][io.modelcontextprotocol.kotlin.sdk.types.McpJson]) must be installed on the
+ * application before calling this function. Use [Application.mcpStatelessStreamableHttp] if you
+ * want it to be installed automatically.
+ *
+ * @param path The URL path where the server listens for incoming JSON-RPC requests. Defaults to "/mcp".
+ * @param enableDnsRebindingProtection Determines whether DNS rebinding protection is enabled. Defaults to `true`.
+ * @param allowedHosts A list of allowed hostnames. If `null` and DNS rebinding protection is enabled,
+ * defaults to `localhost`, `127.0.0.1`, `[::1]`.
+ * @param allowedOrigins A list of allowed `Origin` header values, compared by hostname only
+ *      (scheme and port are ignored). Requests without an `Origin` header are allowed.
+ *      If `null`, origin validation is disabled.
+ * @param block factory block with access to the [RoutingContext] (for reading request headers)
+ *          that creates and returns the [Server] to handle the connection.
+ */
+@KtorDsl
+public fun Route.mcpStatelessStreamableHttp(
+    path: String = "/mcp",
+    enableDnsRebindingProtection: Boolean = true,
+    allowedHosts: List<String>? = null,
+    allowedOrigins: List<String>? = null,
+    block: RoutingContext.() -> Server,
+) {
+    mcpStatelessStreamableHttp(
+        path = path,
+        enableDnsRebindingProtection = enableDnsRebindingProtection,
+        allowedHosts = allowedHosts,
+        allowedOrigins = allowedOrigins,
+        configuration = StreamableHttpServerTransport.Configuration(
+            enableJsonResponse = true,
+        ),
+        block = block,
+    )
+}
+
+@Suppress("LongParameterList")
+internal fun Route.mcpStatelessStreamableHttp(
+    path: String,
+    enableDnsRebindingProtection: Boolean,
+    allowedHosts: List<String>?,
+    allowedOrigins: List<String>?,
+    configuration: StreamableHttpServerTransport.Configuration,
+    block: RoutingContext.() -> Server,
+) {
+    route(path) {
+        installDnsRebindingProtection(enableDnsRebindingProtection, allowedHosts, allowedOrigins)
+
+        post {
+            mcpStatelessStreamableHttpEndpoint(
+                configuration = configuration,
+                block = block,
+            )
+        }
+        get {
+            call.rejectUnsupportedMethod()
+        }
+        delete {
+            call.rejectUnsupportedMethod()
         }
     }
 }
