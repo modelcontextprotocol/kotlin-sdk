@@ -40,6 +40,66 @@ class SseClientTransportTest {
     }
 
     @Test
+    fun `query-only endpoint keeps the sse path`() = runTest {
+        val post = sendThroughEndpoint(sseUrl = SSE_URL, endpointEvent = "?sessionId=abc")
+
+        post.url.toString() shouldBe "http://example.com/api/mcp/sse?sessionId=abc"
+    }
+
+    @Test
+    fun `query-only endpoint replaces the sse query`() = runTest {
+        val post = sendThroughEndpoint(sseUrl = "$SSE_URL?token=t", endpointEvent = "?sessionId=abc")
+
+        post.url.toString() shouldBe "http://example.com/api/mcp/sse?sessionId=abc"
+    }
+
+    @Test
+    fun `relative path endpoint drops the sse query`() = runTest {
+        val post = sendThroughEndpoint(sseUrl = "$SSE_URL?token=t", endpointEvent = "post?sessionId=xyz")
+
+        post.url.toString() shouldBe "http://example.com/api/mcp/post?sessionId=xyz"
+    }
+
+    @Test
+    fun `relative path endpoint resolves against a trailing-slash sse url`() = runTest {
+        val post = sendThroughEndpoint(sseUrl = "http://example.com/api/mcp/", endpointEvent = "post?sessionId=xyz")
+
+        post.url.toString() shouldBe "http://example.com/api/mcp/post?sessionId=xyz"
+    }
+
+    @Test
+    fun `dot-segment endpoint resolves against the sse directory`() = runTest {
+        val post = sendThroughEndpoint(sseUrl = SSE_URL, endpointEvent = "../messages?sessionId=abc")
+
+        post.url.toString() shouldBe "http://example.com/api/messages?sessionId=abc"
+    }
+
+    @Test
+    fun `dot segments cannot climb above the root`() = runTest {
+        val post = sendThroughEndpoint(sseUrl = SSE_URL, endpointEvent = "../../../../messages?sessionId=abc")
+
+        post.url.toString() shouldBe "http://example.com/messages?sessionId=abc"
+    }
+
+    @Test
+    fun `network-path endpoint with a different host is rejected`() = runTest {
+        val exception = startWithRejectedEndpoint(
+            sseUrl = SSE_URL,
+            endpointEvent = "//evil.example.com/messages?sessionId=abc",
+        )
+
+        exception.message shouldBe
+            "Endpoint origin http://evil.example.com does not match connection origin http://example.com"
+    }
+
+    @Test
+    fun `network-path endpoint with the same host is accepted`() = runTest {
+        val post = sendThroughEndpoint(sseUrl = SSE_URL, endpointEvent = "//example.com/messages?sessionId=abc")
+
+        post.url.toString() shouldBe "http://example.com/messages?sessionId=abc"
+    }
+
+    @Test
     fun `full url endpoint with a different host is rejected without exposing credentials`() = runTest {
         val exception = startWithRejectedEndpoint(
             sseUrl = "http://user:secret@example.com/api/mcp/sse",

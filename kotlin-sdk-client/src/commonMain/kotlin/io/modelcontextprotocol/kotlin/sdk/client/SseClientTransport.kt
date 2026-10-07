@@ -60,17 +60,6 @@ public class SseClientTransport(
         session.call.request.url.protocolWithAuthority
     }
 
-    private val baseUrl: String by lazy {
-        session.call.request.url.let { url ->
-            val path = url.encodedPath
-            when {
-                path.isEmpty() -> origin
-                path.endsWith("/") -> origin + path.removeSuffix("/")
-                else -> origin + path.take(path.lastIndexOf("/"))
-            }
-        }
-    }
-
     override suspend fun initialize() {
         session = urlString?.let {
             client.sseSession(
@@ -156,27 +145,25 @@ public class SseClientTransport(
 
     /**
      * Resolves and completes [endpoint] based on [eventData].
-     * Uses full URLs as-is, but rejects those whose origin differs from the SSE connection origin,
-     * treats absolute paths as origin-relative, and relative paths as relative to [baseUrl].
+     * Resolves the reference against the SSE request URL as described in RFC 3986, section 5.2,
+     * and rejects the result if its origin differs from the SSE connection origin.
      */
     private fun handleEndpoint(eventData: String) {
         try {
-            val endpointUrl = if (eventData.startsWith("http://") || eventData.startsWith("https://")) {
-                val url = Url(eventData)
-                val connectionUrl = session.call.request.url
-                if (!url.hasSameOrigin(connectionUrl)) {
-                    val error = IllegalArgumentException(
-                        "Endpoint origin ${url.safeOrigin} does not match connection origin ${connectionUrl.safeOrigin}",
-                    )
-                    _onError(error)
-                    endpoint.completeExceptionally(error)
-                    return
-                }
-                eventData
-            } else if (eventData.startsWith("/")) {
-                origin + eventData
-            } else {
-                "$baseUrl/$eventData"
+            val connectionUrl = session.call.request.url
+            val endpointUrl = when {
+                eventData.startsWith("http://") || eventData.startsWith("https://") -> eventData
+                eventData.startsWith("//") -> "${connectionUrl.protocol.name}:$eventData"
+                else -> origin + connectionUrl.resolvePathAndQuery(eventData)
+            }
+            val url = Url(endpointUrl)
+            if (!url.hasSameOrigin(connectionUrl)) {
+                val error = IllegalArgumentException(
+                    "Endpoint origin ${url.safeOrigin} does not match connection origin ${connectionUrl.safeOrigin}",
+                )
+                _onError(error)
+                endpoint.completeExceptionally(error)
+                return
             }
             endpoint.complete(endpointUrl)
             logger.debug { "Client connected to endpoint: $endpointUrl" }
@@ -224,3 +211,45 @@ private fun Url.hasSameOrigin(other: Url): Boolean =
 /** Scheme, host and non-default port, without user info, so it is safe to put into error messages. */
 private val Url.safeOrigin: String
     get() = "${protocol.name}://$hostWithPortIfSpecified"
+
+/**
+ * Resolves a reference without scheme and authority against this URL (RFC 3986, section 5.2.2)
+ * and returns the resulting path and query. The fragment is dropped.
+ */
+private fun Url.resolvePathAndQuery(reference: String): String {
+    val withoutFragment = reference.substringBefore('#')
+    val referencePath = withoutFragment.substringBefore('?')
+    val referenceQuery = if ('?' in withoutFragment) withoutFragment.substringAfter('?') else null
+    val path = when {
+        referencePath.isEmpty() -> encodedPath
+
+        referencePath.startsWith("/") -> removeDotSegments(referencePath)
+
+        else -> removeDotSegments(
+            encodedPath.substringBeforeLast('/', missingDelimiterValue = "") + "/" + referencePath,
+        )
+    }
+    val baseQuery = encodedQuery.takeIf { it.isNotEmpty() }
+    val query = if (referencePath.isEmpty()) referenceQuery ?: baseQuery else referenceQuery
+    return if (query == null) path else "$path?$query"
+}
+
+/** Removes `.` and `..` segments from an absolute [path] (RFC 3986, section 5.2.4). */
+private fun removeDotSegments(path: String): String {
+    val output = ArrayDeque<String>()
+    val segments = path.removePrefix("/").split('/')
+    segments.forEachIndexed { index, segment ->
+        val isLast = index == segments.lastIndex
+        when (segment) {
+            "." -> if (isLast) output.addLast("")
+
+            ".." -> {
+                output.removeLastOrNull()
+                if (isLast) output.addLast("")
+            }
+
+            else -> output.addLast(segment)
+        }
+    }
+    return output.joinToString("/", prefix = "/")
+}
