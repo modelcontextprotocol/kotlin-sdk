@@ -25,6 +25,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -218,7 +219,11 @@ public class StdioServerTransport private constructor(
                     try {
                         _onMessage(message)
                     } catch (e: CancellationException) {
-                        throw e
+                        // Only the transport's own cancellation stops the loop. A cancellation that
+                        // escapes a handler is a failure of that handler, like any other exception.
+                        currentCoroutineContext().ensureActive()
+                        logger.error(e) { "Message handler was cancelled" }
+                        _onError(e)
                     } catch (e: Throwable) {
                         logger.error(e) { "Error processing message" }
                         _onError(e)
