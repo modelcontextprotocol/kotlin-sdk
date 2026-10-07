@@ -41,6 +41,9 @@ import kotlin.time.Duration
 /** A reference that starts with a scheme is an absolute URI (RFC 3986, section 3.1). */
 private val URI_SCHEME = Regex("^[A-Za-z][A-Za-z0-9+.-]*:")
 
+/** A scheme-prefixed or network-path reference with a non-empty authority (RFC 3986, section 3.2). */
+private val URI_WITH_AUTHORITY = Regex("^([A-Za-z][A-Za-z0-9+.-]*:)?//[^/?#]")
+
 /**
  * Client transport for SSE: this will connect to a server using Server-Sent Events for receiving
  * messages and make separate POST requests for sending messages.
@@ -156,6 +159,11 @@ public class SseClientTransport(
     private fun handleEndpoint(eventData: String) {
         try {
             val connectionUrl = session.call.request.url
+            val hasSchemeOrAuthority = URI_SCHEME.containsMatchIn(eventData) || eventData.startsWith("//")
+            if (hasSchemeOrAuthority && !URI_WITH_AUTHORITY.containsMatchIn(eventData)) {
+                rejectEndpoint("Endpoint URI with a scheme or authority must have a non-empty authority")
+                return
+            }
             val endpointUrl = when {
                 URI_SCHEME.containsMatchIn(eventData) -> eventData
                 eventData.startsWith("//") -> "${connectionUrl.protocol.name}:$eventData"
@@ -163,11 +171,9 @@ public class SseClientTransport(
             }
             val url = Url(endpointUrl)
             if (!url.hasSameOrigin(connectionUrl)) {
-                val error = IllegalArgumentException(
+                rejectEndpoint(
                     "Endpoint origin ${url.safeOrigin} does not match connection origin ${connectionUrl.safeOrigin}",
                 )
-                _onError(error)
-                endpoint.completeExceptionally(error)
                 return
             }
             endpoint.complete(url.withoutDotSegments() ?: endpointUrl)
@@ -179,6 +185,12 @@ public class SseClientTransport(
             endpoint.completeExceptionally(e)
             throw e
         }
+    }
+
+    private fun rejectEndpoint(message: String) {
+        val error = IllegalArgumentException(message)
+        _onError(error)
+        endpoint.completeExceptionally(error)
     }
 
     private suspend fun handleMessage(data: String) {
