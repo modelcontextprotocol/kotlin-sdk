@@ -82,6 +82,21 @@ class SseClientTransportTest {
     }
 
     @Test
+    fun `full url endpoint with an upper-case scheme is used as-is`() = runTest {
+        val post = sendThroughEndpoint(sseUrl = SSE_URL, endpointEvent = "HTTP://example.com/messages?sessionId=abc")
+
+        post.url.toString() shouldBe "http://example.com/messages?sessionId=abc"
+    }
+
+    @Test
+    fun `endpoint with a non-http scheme is rejected`() = runTest {
+        val exception = startWithRejectedEndpoint(sseUrl = SSE_URL, endpointEvent = "mailto:user@example.com")
+
+        exception.message shouldBe
+            "Endpoint origin mailto://example.com does not match connection origin http://example.com"
+    }
+
+    @Test
     fun `network-path endpoint with a different host is rejected`() = runTest {
         val exception = startWithRejectedEndpoint(
             sseUrl = SSE_URL,
