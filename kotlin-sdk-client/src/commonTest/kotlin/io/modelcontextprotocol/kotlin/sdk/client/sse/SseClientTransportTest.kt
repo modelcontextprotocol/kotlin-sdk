@@ -92,8 +92,7 @@ class SseClientTransportTest {
     fun `endpoint with a non-http scheme is rejected`() = runTest {
         val exception = startWithRejectedEndpoint(sseUrl = SSE_URL, endpointEvent = "mailto:user@example.com")
 
-        exception.message shouldBe
-            "Endpoint origin mailto://example.com does not match connection origin http://example.com"
+        exception.message shouldBe "Endpoint URI with a scheme or authority must have a non-empty authority"
     }
 
     @Test
@@ -110,6 +109,21 @@ class SseClientTransportTest {
             sendThroughEndpoint(sseUrl = SSE_URL, endpointEvent = "//example.com/a/./b/../messages?sessionId=abc")
 
         post.url.toString() shouldBe "http://example.com/a/messages?sessionId=abc"
+    }
+
+    @Test
+    fun `scheme-prefixed endpoint without an authority is rejected`() = runTest {
+        val exception =
+            startWithRejectedEndpoint(sseUrl = SSE_URL, endpointEvent = "http:example.com/messages?sessionId=abc")
+
+        exception.message shouldBe "Endpoint URI with a scheme or authority must have a non-empty authority"
+    }
+
+    @Test
+    fun `network-path endpoint with an empty authority is rejected`() = runTest {
+        val exception = startWithRejectedEndpoint(sseUrl = SSE_URL, endpointEvent = "///messages?sessionId=abc")
+
+        exception.message shouldBe "Endpoint URI with a scheme or authority must have a non-empty authority"
     }
 
     @Test
