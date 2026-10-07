@@ -11,8 +11,10 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.URLBuilder
 import io.ktor.http.Url
 import io.ktor.http.append
+import io.ktor.http.encodedPath
 import io.ktor.http.hostWithPortIfSpecified
 import io.ktor.http.isSuccess
 import io.ktor.http.protocolWithAuthority
@@ -168,7 +170,7 @@ public class SseClientTransport(
                 endpoint.completeExceptionally(error)
                 return
             }
-            endpoint.complete(endpointUrl)
+            endpoint.complete(url.withoutDotSegments() ?: endpointUrl)
             logger.debug { "Client connected to endpoint: $endpointUrl" }
         } catch (e: CancellationException) {
             throw e
@@ -235,6 +237,17 @@ private fun Url.resolvePathAndQuery(reference: String): String {
     val baseQuery = encodedQuery.takeIf { it.isNotEmpty() }
     val query = if (referencePath.isEmpty()) referenceQuery ?: baseQuery else referenceQuery
     return if (query == null) path else "$path?$query"
+}
+
+/**
+ * Returns this URL with `.` and `..` segments removed from its path (RFC 3986, section 5.2.2),
+ * or `null` if the path has none.
+ */
+private fun Url.withoutDotSegments(): String? {
+    val path = encodedPath
+    if (path.isEmpty()) return null
+    val normalized = removeDotSegments(path)
+    return if (normalized == path) null else URLBuilder(this).apply { encodedPath = normalized }.buildString()
 }
 
 /** Removes `.` and `..` segments from an absolute [path] (RFC 3986, section 5.2.4). */

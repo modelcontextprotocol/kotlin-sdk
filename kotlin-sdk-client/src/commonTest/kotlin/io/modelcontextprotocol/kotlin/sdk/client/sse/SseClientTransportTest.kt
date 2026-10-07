@@ -97,6 +97,22 @@ class SseClientTransportTest {
     }
 
     @Test
+    fun `dot segments are removed from a full url endpoint`() = runTest {
+        val post =
+            sendThroughEndpoint(sseUrl = SSE_URL, endpointEvent = "http://example.com/a/../messages?sessionId=abc")
+
+        post.url.toString() shouldBe "http://example.com/messages?sessionId=abc"
+    }
+
+    @Test
+    fun `dot segments are removed from a network-path endpoint`() = runTest {
+        val post =
+            sendThroughEndpoint(sseUrl = SSE_URL, endpointEvent = "//example.com/a/./b/../messages?sessionId=abc")
+
+        post.url.toString() shouldBe "http://example.com/a/messages?sessionId=abc"
+    }
+
+    @Test
     fun `network-path endpoint with a different host is rejected`() = runTest {
         val exception = startWithRejectedEndpoint(
             sseUrl = SSE_URL,
