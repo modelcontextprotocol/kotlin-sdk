@@ -36,6 +36,9 @@ import kotlinx.serialization.SerializationException
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.time.Duration
 
+/** A reference that starts with a scheme is an absolute URI (RFC 3986, section 3.1). */
+private val URI_SCHEME = Regex("^[A-Za-z][A-Za-z0-9+.-]*:")
+
 /**
  * Client transport for SSE: this will connect to a server using Server-Sent Events for receiving
  * messages and make separate POST requests for sending messages.
@@ -152,7 +155,7 @@ public class SseClientTransport(
         try {
             val connectionUrl = session.call.request.url
             val endpointUrl = when {
-                eventData.startsWith("http://") || eventData.startsWith("https://") -> eventData
+                URI_SCHEME.containsMatchIn(eventData) -> eventData
                 eventData.startsWith("//") -> "${connectionUrl.protocol.name}:$eventData"
                 else -> origin + connectionUrl.resolvePathAndQuery(eventData)
             }
