@@ -59,7 +59,16 @@ private const val MIN_PRIMING_EVENT_PROTOCOL_VERSION = "2025-11-25"
  * If [StreamableHttpServerTransport.Configuration.enableJsonResponse] is true, the session is null.
  * Otherwise, the session is not null.
  */
-private data class SessionContext(val session: ServerSSESession?, val call: ApplicationCall)
+private data class SessionContext(val session: ServerSSESession?, val call: ApplicationCall) {
+    /**
+     * Cancels the coroutine serving this stream's HTTP call, releasing the underlying
+     * connection. Required for streams whose handler suspends for the lifetime of the
+     * stream, which closing the [ServerSSESession] alone does not interrupt.
+     */
+    fun cancelCall() {
+        call.coroutineContext.job.cancel()
+    }
+}
 
 /**
  * Server transport for Streamable HTTP: this implements the MCP Streamable HTTP transport specification.
@@ -383,6 +392,11 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                     } catch (_: Exception) {
                     }
                 }
+                // Closing the SSE session only closes the response body. The standalone GET
+                // handler is parked on awaitCancellation(), so its call has to be cancelled
+                // explicitly; otherwise that coroutine — and the connection behind it — is
+                // never released.
+                streamsMapping[STANDALONE_SSE_STREAM_ID]?.cancelCall()
                 streamsMapping.clear()
                 requestToStreamMapping.clear()
                 requestToResponseMapping.clear()
@@ -613,9 +627,10 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         val newContext = SessionContext(sseSession, call)
         streamMutex.withLock {
             streamsMapping[STANDALONE_SSE_STREAM_ID]?.let { existingContext ->
-                // Close the previous SSE session. If alive, this cancels the old
-                // coroutine (which will hit its identity-guarded finally — that finally
-                // won't double-remove, since we replace the mapping below).
+                // Close the previous SSE session, then cancel its call. Closing the session
+                // only closes the response body, while the previous handler is parked on
+                // awaitCancellation(); cancelling makes it hit its identity-guarded finally —
+                // that finally won't double-remove, since we replace the mapping below.
                 try {
                     existingContext.session?.close()
                 } catch (e: CancellationException) {
@@ -623,6 +638,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 } catch (_: Exception) {
                     // Ignore — the old stream may already be closed.
                 }
+                existingContext.cancelCall()
                 // Evict the stale mapping — the old session is closed either way.
                 streamsMapping.remove(STANDALONE_SSE_STREAM_ID)
             }
