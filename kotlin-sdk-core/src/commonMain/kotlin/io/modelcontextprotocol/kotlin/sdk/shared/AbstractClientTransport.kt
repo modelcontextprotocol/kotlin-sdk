@@ -6,6 +6,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.CONNECTION_CLOSED
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.INTERNAL_ERROR
+import kotlinx.coroutines.CompletableDeferred
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.cancellation.CancellationException
@@ -25,6 +26,12 @@ import kotlin.coroutines.cancellation.CancellationException
 public abstract class AbstractClientTransport : AbstractTransport() {
 
     protected abstract val logger: KLogger
+
+    private val messagesMayBeProcessed = CompletableDeferred<Unit>()
+
+    init {
+        addOnMessageGate { messagesMayBeProcessed.await() }
+    }
 
     /**
      * Represents the current state of the client transport in an atomic and thread-safe manner.
@@ -127,6 +134,8 @@ public abstract class AbstractClientTransport : AbstractTransport() {
      *  **Important! This method will eventually become `final`.
      *  Please don't override it, or consistency guarantees might be lost. Override [initialize] instead.**
      *
+     * Messages received while [initialize] is running are held until the transport becomes operational.
+     *
      * @throws Exception if the initialization process fails and transfers state
      *                  to [ClientTransportState.InitializationFailed].
      * @see initialize
@@ -136,8 +145,10 @@ public abstract class AbstractClientTransport : AbstractTransport() {
         try {
             initialize()
             stateTransition(from = ClientTransportState.Initializing, to = ClientTransportState.Operational)
+            messagesMayBeProcessed.complete(Unit)
         } catch (e: Exception) {
             _state.store(ClientTransportState.InitializationFailed)
+            messagesMayBeProcessed.cancel()
             closeResources()
             throw e
         }
