@@ -7,6 +7,8 @@ import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.CONNECTION_CLOSED
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.INTERNAL_ERROR
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -211,22 +213,35 @@ public abstract class AbstractClientTransport : AbstractTransport() {
     }
 
     private suspend fun drainPendingMessages() {
-        while (true) {
-            val nextMessage = pendingMessagesMutex.withLock {
-                if (pendingMessages.isEmpty()) {
-                    drainingPendingMessages = false
-                    null
-                } else {
-                    pendingMessages.removeFirst()
-                }
-            } ?: return
+        try {
+            while (true) {
+                val nextMessage = pendingMessagesMutex.withLock {
+                    if (pendingMessages.isEmpty()) {
+                        drainingPendingMessages = false
+                        null
+                    } else {
+                        pendingMessages.removeFirst()
+                    }
+                } ?: return
 
-            try {
-                nextMessage()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Throwable) {
-                invokeOnErrorCallback(e)
+                try {
+                    nextMessage()
+                } catch (e: CancellationException) {
+                    // A handler may throw CancellationException while this drain is
+                    // still active. Report that handler failure like any other
+                    // throwable; only propagate cancellation of the drain itself.
+                    currentCoroutineContext().ensureActive()
+                    invokeOnErrorCallback(e)
+                } catch (e: Throwable) {
+                    invokeOnErrorCallback(e)
+                }
+            }
+        } finally {
+            withContext(NonCancellable) {
+                pendingMessagesMutex.withLock {
+                    pendingMessages.clear()
+                    drainingPendingMessages = false
+                }
             }
         }
     }

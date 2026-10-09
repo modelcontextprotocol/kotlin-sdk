@@ -4,15 +4,18 @@ import io.github.oshai.kotlinlogging.KLogger
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.InternalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -96,6 +99,68 @@ class AbstractClientTransportInitializationTest {
 
         assertEquals(handlerFailure, reportedError)
         assertEquals(ClientTransportState.Operational, transport.currentState)
+    }
+
+    @Test
+    fun `should report handler cancellation and continue draining buffered messages`() = runTest {
+        val transport = TestClientTransport(scope = this)
+        val firstMessage = JSONRPCNotification(method = "notifications/first")
+        val secondMessage = JSONRPCNotification(method = "notifications/second")
+        val firstHandlerStarted = CompletableDeferred<Unit>()
+        val releaseFirstHandler = CompletableDeferred<Unit>()
+        val processedMessages = mutableListOf<String>()
+        var reportedError: Throwable? = null
+        transport.onError { reportedError = it }
+        transport.onMessage { message ->
+            val notification = message as JSONRPCNotification
+            processedMessages.add(notification.method)
+            if (notification.method == firstMessage.method) {
+                firstHandlerStarted.complete(Unit)
+                releaseFirstHandler.await()
+                throw CancellationException("Message handler cancelled")
+            }
+        }
+        transport.messageDuringInitialize = firstMessage
+
+        val startJob = launch(start = CoroutineStart.UNDISPATCHED) { transport.start() }
+        firstHandlerStarted.await()
+        transport.receiveMessage(secondMessage)
+        releaseFirstHandler.complete(Unit)
+        startJob.join()
+
+        assertEquals(listOf(firstMessage.method, secondMessage.method), processedMessages)
+        assertEquals("Message handler cancelled", reportedError?.message)
+        assertEquals(ClientTransportState.Operational, transport.currentState)
+    }
+
+    @Test
+    fun `should release the drain gate when start is cancelled during a handler`() = runTest {
+        val transport = TestClientTransport(scope = this)
+        val firstMessage = JSONRPCNotification(method = "notifications/first")
+        val queuedMessage = JSONRPCNotification(method = "notifications/queued")
+        val laterMessage = JSONRPCNotification(method = "notifications/later")
+        val firstHandlerStarted = CompletableDeferred<Unit>()
+        val processedMessages = mutableListOf<String>()
+        transport.onMessage { message ->
+            val notification = message as JSONRPCNotification
+            processedMessages.add(notification.method)
+            if (notification.method == firstMessage.method) {
+                firstHandlerStarted.complete(Unit)
+                awaitCancellation()
+            }
+        }
+        transport.messageDuringInitialize = firstMessage
+
+        val startJob = launch(start = CoroutineStart.UNDISPATCHED) { transport.start() }
+        firstHandlerStarted.await()
+        transport.receiveMessage(queuedMessage)
+        startJob.cancel(CancellationException("Cancel initialization drain"))
+        startJob.join()
+
+        assertEquals(ClientTransportState.Operational, transport.currentState)
+        transport.receiveMessage(laterMessage)
+
+        assertEquals(listOf(firstMessage.method, laterMessage.method), processedMessages)
     }
 
     private class TestClientTransport(private val scope: CoroutineScope) : AbstractClientTransport() {
