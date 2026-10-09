@@ -55,12 +55,61 @@ class AbstractClientTransportInitializationTest {
         assertFalse(messageProcessed)
     }
 
+    @Test
+    fun `should process messages received while draining in arrival order`() = runTest {
+        val transport = TestClientTransport(scope = this)
+        val firstMessageStarted = CompletableDeferred<Unit>()
+        val releaseFirstMessage = CompletableDeferred<Unit>()
+        val processedMessages = mutableListOf<Int>()
+        transport.onMessage {
+            val messageNumber = processedMessages.size + 1
+            processedMessages.add(messageNumber)
+            if (messageNumber == 1) {
+                firstMessageStarted.complete(Unit)
+                releaseFirstMessage.await()
+            }
+        }
+        transport.messageDuringInitialize = PingRequest().toJSON()
+
+        val startJob = launch(start = CoroutineStart.UNDISPATCHED) { transport.start() }
+        firstMessageStarted.await()
+
+        transport.receiveMessage(PingRequest().toJSON())
+        assertEquals(listOf(1), processedMessages)
+
+        releaseFirstMessage.complete(Unit)
+        startJob.join()
+
+        assertEquals(listOf(1, 2), processedMessages)
+    }
+
+    @Test
+    fun `should report buffered message handler failures without failing initialization`() = runTest {
+        val transport = TestClientTransport(scope = this)
+        val handlerFailure = IllegalStateException("Message handler failed")
+        var reportedError: Throwable? = null
+        transport.onError { reportedError = it }
+        transport.onMessage { throw handlerFailure }
+        transport.messageDuringInitialize = PingRequest().toJSON()
+
+        transport.start()
+
+        assertEquals(handlerFailure, reportedError)
+        assertEquals(ClientTransportState.Operational, transport.currentState)
+    }
+
     private class TestClientTransport(private val scope: CoroutineScope) : AbstractClientTransport() {
         override val logger: KLogger = KotlinLogging.logger {}
         val sentMessages = mutableListOf<JSONRPCMessage>()
         var messageDuringInitialize: JSONRPCMessage? = null
         var initializeFailure: Exception? = null
         var messageJob: Job? = null
+        val currentState: ClientTransportState
+            get() = state
+
+        suspend fun receiveMessage(message: JSONRPCMessage) {
+            _onMessage(message)
+        }
 
         override suspend fun initialize() {
             messageDuringInitialize?.let { message ->

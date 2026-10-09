@@ -32,28 +32,52 @@ public abstract class AbstractClientTransport : AbstractTransport() {
 
     private val pendingMessagesMutex = Mutex()
     private val pendingMessages = ArrayDeque<suspend () -> Unit>()
+    private var drainingPendingMessages: Boolean = false
 
     init {
         addOnMessageGate { _, dispatch ->
-            val shouldDispatch = pendingMessagesMutex.withLock {
+            val action = pendingMessagesMutex.withLock {
                 when (state) {
-                    ClientTransportState.Operational -> true
+                    ClientTransportState.Operational -> {
+                        if (drainingPendingMessages || pendingMessages.isNotEmpty()) {
+                            pendingMessages.addLast(dispatch)
+                            if (drainingPendingMessages) {
+                                MessageAction.BUFFER
+                            } else {
+                                drainingPendingMessages = true
+                                MessageAction.DRAIN
+                            }
+                        } else {
+                            MessageAction.DISPATCH
+                        }
+                    }
 
                     ClientTransportState.New, ClientTransportState.Initializing -> {
                         pendingMessages.addLast(dispatch)
-                        false
+                        MessageAction.BUFFER
                     }
 
                     ClientTransportState.InitializationFailed,
                     ClientTransportState.ShuttingDown,
                     ClientTransportState.ShutdownFailed,
                     ClientTransportState.Stopped,
-                    -> false
+                    -> MessageAction.DROP
                 }
             }
 
-            if (shouldDispatch) dispatch()
+            when (action) {
+                MessageAction.DISPATCH -> dispatch()
+                MessageAction.DRAIN -> drainPendingMessages()
+                MessageAction.BUFFER, MessageAction.DROP -> Unit
+            }
         }
+    }
+
+    private enum class MessageAction {
+        DISPATCH,
+        DRAIN,
+        BUFFER,
+        DROP,
     }
 
     /**
@@ -170,31 +194,40 @@ public abstract class AbstractClientTransport : AbstractTransport() {
             initialize()
             pendingMessagesMutex.withLock {
                 stateTransition(from = ClientTransportState.Initializing, to = ClientTransportState.Operational)
+                drainingPendingMessages = true
             }
-            drainPendingMessages()
         } catch (e: Exception) {
             withContext(NonCancellable) {
                 pendingMessagesMutex.withLock {
                     _state.store(ClientTransportState.InitializationFailed)
                     pendingMessages.clear()
+                    drainingPendingMessages = false
                 }
                 closeResources()
             }
             throw e
         }
+        drainPendingMessages()
     }
 
     private suspend fun drainPendingMessages() {
         while (true) {
             val nextMessage = pendingMessagesMutex.withLock {
                 if (pendingMessages.isEmpty()) {
+                    drainingPendingMessages = false
                     null
                 } else {
                     pendingMessages.removeFirst()
                 }
             } ?: return
 
-            nextMessage()
+            try {
+                nextMessage()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                invokeOnErrorCallback(e)
+            }
         }
     }
 
