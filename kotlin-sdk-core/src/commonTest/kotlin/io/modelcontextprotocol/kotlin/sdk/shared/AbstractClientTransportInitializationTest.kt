@@ -12,6 +12,7 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -31,14 +32,14 @@ class AbstractClientTransportInitializationTest {
         }
         transport.messageDuringInitialize = PingRequest().toJSON()
 
-        transport.start()
+        withTimeout(1_000) { transport.start() }
         messageProcessed.await()
 
         assertEquals(response, transport.sentMessages.single())
     }
 
     @Test
-    fun `should cancel messages received when initialization fails`() = runTest {
+    fun `should discard messages received when initialization fails`() = runTest {
         val transport = TestClientTransport(scope = this)
         var messageProcessed = false
         transport.onMessage { messageProcessed = true }
@@ -50,7 +51,7 @@ class AbstractClientTransportInitializationTest {
         transport.messageJob?.join()
 
         assertEquals(failure, actualFailure)
-        assertTrue(transport.messageJob?.isCancelled == true)
+        assertTrue(transport.messageJob?.isCompleted == true)
         assertFalse(messageProcessed)
     }
 
@@ -65,7 +66,9 @@ class AbstractClientTransportInitializationTest {
             messageDuringInitialize?.let { message ->
                 messageJob = scope.launch(start = CoroutineStart.UNDISPATCHED) {
                     _onMessage(message)
+                    messageRead.complete(Unit)
                 }
+                messageRead.await()
             }
             initializeFailure?.let { throw it }
         }
@@ -75,5 +78,7 @@ class AbstractClientTransportInitializationTest {
         }
 
         override suspend fun closeResources() = Unit
+
+        private val messageRead = CompletableDeferred<Unit>()
     }
 }

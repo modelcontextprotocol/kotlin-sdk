@@ -6,7 +6,10 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.CONNECTION_CLOSED
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.INTERNAL_ERROR
-import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.cancellation.CancellationException
@@ -27,10 +30,30 @@ public abstract class AbstractClientTransport : AbstractTransport() {
 
     protected abstract val logger: KLogger
 
-    private val messagesMayBeProcessed = CompletableDeferred<Unit>()
+    private val pendingMessagesMutex = Mutex()
+    private val pendingMessages = ArrayDeque<suspend () -> Unit>()
 
     init {
-        addOnMessageGate { messagesMayBeProcessed.await() }
+        addOnMessageGate { _, dispatch ->
+            val shouldDispatch = pendingMessagesMutex.withLock {
+                when (state) {
+                    ClientTransportState.Operational -> true
+
+                    ClientTransportState.New, ClientTransportState.Initializing -> {
+                        pendingMessages.addLast(dispatch)
+                        false
+                    }
+
+                    ClientTransportState.InitializationFailed,
+                    ClientTransportState.ShuttingDown,
+                    ClientTransportState.ShutdownFailed,
+                    ClientTransportState.Stopped,
+                    -> false
+                }
+            }
+
+            if (shouldDispatch) dispatch()
+        }
     }
 
     /**
@@ -134,7 +157,8 @@ public abstract class AbstractClientTransport : AbstractTransport() {
      *  **Important! This method will eventually become `final`.
      *  Please don't override it, or consistency guarantees might be lost. Override [initialize] instead.**
      *
-     * Messages received while [initialize] is running are held until the transport becomes operational.
+     * Messages received while [initialize] is running are buffered and dispatched in arrival order after the
+     * transport becomes operational. Buffering keeps the transport's receive loop free to complete initialization.
      *
      * @throws Exception if the initialization process fails and transfers state
      *                  to [ClientTransportState.InitializationFailed].
@@ -144,13 +168,33 @@ public abstract class AbstractClientTransport : AbstractTransport() {
         stateTransition(from = ClientTransportState.New, to = ClientTransportState.Initializing)
         try {
             initialize()
-            stateTransition(from = ClientTransportState.Initializing, to = ClientTransportState.Operational)
-            messagesMayBeProcessed.complete(Unit)
+            pendingMessagesMutex.withLock {
+                stateTransition(from = ClientTransportState.Initializing, to = ClientTransportState.Operational)
+            }
+            drainPendingMessages()
         } catch (e: Exception) {
-            _state.store(ClientTransportState.InitializationFailed)
-            messagesMayBeProcessed.cancel()
-            closeResources()
+            withContext(NonCancellable) {
+                pendingMessagesMutex.withLock {
+                    _state.store(ClientTransportState.InitializationFailed)
+                    pendingMessages.clear()
+                }
+                closeResources()
+            }
             throw e
+        }
+    }
+
+    private suspend fun drainPendingMessages() {
+        while (true) {
+            val nextMessage = pendingMessagesMutex.withLock {
+                if (pendingMessages.isEmpty()) {
+                    null
+                } else {
+                    pendingMessages.removeFirst()
+                }
+            } ?: return
+
+            nextMessage()
         }
     }
 

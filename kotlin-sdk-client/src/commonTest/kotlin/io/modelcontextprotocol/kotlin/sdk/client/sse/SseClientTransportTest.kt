@@ -15,10 +15,15 @@ import io.ktor.http.headersOf
 import io.ktor.util.date.GMTDate
 import io.ktor.utils.io.ByteReadChannel
 import io.modelcontextprotocol.kotlin.sdk.client.SseClientTransport
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
+import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.encodeToString
 import kotlin.test.Test
 
 private const val SSE_URL = "http://example.com/api/mcp/sse"
@@ -137,6 +142,35 @@ class SseClientTransportTest {
         closed.await()
         transport.close()
         engine.close()
+    }
+
+    @Test
+    fun `message before endpoint event does not block initialization`() = runTest {
+        val messages = listOf(
+            JSONRPCNotification(method = "notifications/first"),
+            JSONRPCNotification(method = "notifications/second"),
+        )
+        val engine = MockSseClientEngine(
+            endpoint = "/messages",
+            onPostRequest = {},
+            dispatcher = UnconfinedTestDispatcher(testScheduler),
+            messagesBeforeEndpoint = messages.map { McpJson.encodeToString(it) },
+        )
+        val transport = SseClientTransport(HttpClient(engine) { install(SSE) }, SSE_URL)
+        val receivedMessages = mutableListOf<JSONRPCMessage>()
+        transport.onMessage {
+            transport.send(JSONRPCNotification(method = "notifications/test"))
+            receivedMessages += it
+        }
+
+        try {
+            withTimeout(1_000) { transport.start() }
+
+            receivedMessages shouldBe messages
+        } finally {
+            transport.close()
+            engine.close()
+        }
     }
 
     private fun sseTransport(sseUrl: String, engine: CapturingSseClientEngine) =
