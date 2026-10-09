@@ -27,6 +27,7 @@ internal open class MockSseClientEngine(
     private val endpoint: String,
     private val onPostRequest: (postRequest: HttpRequestData) -> Unit,
     override val dispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val messagesBeforeEndpoint: List<String> = emptyList(),
 ) : HttpClientEngine {
 
     override val config = HttpClientEngineConfig()
@@ -91,6 +92,11 @@ internal open class MockSseClientEngine(
     private val eventStreamHeader by lazy { headersOf("Content-Type", "text/event-stream") }
 
     private fun endpointEvent(): String = buildString {
+        messagesBeforeEndpoint.forEach { message ->
+            appendLine("event: message")
+            appendLine("data: $message")
+            appendLine()
+        }
         appendLine("event: endpoint")
         appendLine("data: $endpoint")
         appendLine()

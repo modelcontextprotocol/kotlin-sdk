@@ -6,6 +6,12 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.CONNECTION_CLOSED
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.INTERNAL_ERROR
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.cancellation.CancellationException
@@ -25,6 +31,56 @@ import kotlin.coroutines.cancellation.CancellationException
 public abstract class AbstractClientTransport : AbstractTransport() {
 
     protected abstract val logger: KLogger
+
+    private val pendingMessagesMutex = Mutex()
+    private val pendingMessages = ArrayDeque<suspend () -> Unit>()
+    private var drainingPendingMessages: Boolean = false
+
+    init {
+        addOnMessageGate { _, dispatch ->
+            val action = pendingMessagesMutex.withLock {
+                when (state) {
+                    ClientTransportState.Operational -> {
+                        if (drainingPendingMessages || pendingMessages.isNotEmpty()) {
+                            pendingMessages.addLast(dispatch)
+                            if (drainingPendingMessages) {
+                                MessageAction.BUFFER
+                            } else {
+                                drainingPendingMessages = true
+                                MessageAction.DRAIN
+                            }
+                        } else {
+                            MessageAction.DISPATCH
+                        }
+                    }
+
+                    ClientTransportState.New, ClientTransportState.Initializing -> {
+                        pendingMessages.addLast(dispatch)
+                        MessageAction.BUFFER
+                    }
+
+                    ClientTransportState.InitializationFailed,
+                    ClientTransportState.ShuttingDown,
+                    ClientTransportState.ShutdownFailed,
+                    ClientTransportState.Stopped,
+                    -> MessageAction.DROP
+                }
+            }
+
+            when (action) {
+                MessageAction.DISPATCH -> dispatch()
+                MessageAction.DRAIN -> drainPendingMessages()
+                MessageAction.BUFFER, MessageAction.DROP -> Unit
+            }
+        }
+    }
+
+    private enum class MessageAction {
+        DISPATCH,
+        DRAIN,
+        BUFFER,
+        DROP,
+    }
 
     /**
      * Represents the current state of the client transport in an atomic and thread-safe manner.
@@ -127,19 +183,72 @@ public abstract class AbstractClientTransport : AbstractTransport() {
      *  **Important! This method will eventually become `final`.
      *  Please don't override it, or consistency guarantees might be lost. Override [initialize] instead.**
      *
+     * Messages received while [initialize] is running are buffered and dispatched in arrival order after the
+     * transport becomes operational. Buffering keeps the transport's receive loop free to complete initialization.
+     *
      * @throws Exception if the initialization process fails and transfers state
      *                  to [ClientTransportState.InitializationFailed].
+     * @throws CancellationException if the message drain is cancelled; the transport is closed before propagation.
      * @see initialize
      */
     public override suspend fun start() {
         stateTransition(from = ClientTransportState.New, to = ClientTransportState.Initializing)
         try {
             initialize()
-            stateTransition(from = ClientTransportState.Initializing, to = ClientTransportState.Operational)
+            pendingMessagesMutex.withLock {
+                stateTransition(from = ClientTransportState.Initializing, to = ClientTransportState.Operational)
+                drainingPendingMessages = true
+            }
         } catch (e: Exception) {
-            _state.store(ClientTransportState.InitializationFailed)
-            closeResources()
+            withContext(NonCancellable) {
+                pendingMessagesMutex.withLock {
+                    _state.store(ClientTransportState.InitializationFailed)
+                    pendingMessages.clear()
+                    drainingPendingMessages = false
+                }
+                closeResources()
+            }
             throw e
+        }
+        try {
+            drainPendingMessages()
+        } catch (e: CancellationException) {
+            withContext(NonCancellable) { close() }
+            throw e
+        }
+    }
+
+    private suspend fun drainPendingMessages() {
+        try {
+            while (true) {
+                val nextMessage = pendingMessagesMutex.withLock {
+                    if (pendingMessages.isEmpty()) {
+                        drainingPendingMessages = false
+                        null
+                    } else {
+                        pendingMessages.removeFirst()
+                    }
+                } ?: return
+
+                try {
+                    nextMessage()
+                } catch (e: CancellationException) {
+                    // A handler may throw CancellationException while this drain is
+                    // still active. Report that handler failure like any other
+                    // throwable; only propagate cancellation of the drain itself.
+                    currentCoroutineContext().ensureActive()
+                    invokeOnErrorCallback(e)
+                } catch (e: Throwable) {
+                    invokeOnErrorCallback(e)
+                }
+            }
+        } finally {
+            withContext(NonCancellable) {
+                pendingMessagesMutex.withLock {
+                    pendingMessages.clear()
+                    drainingPendingMessages = false
+                }
+            }
         }
     }
 
