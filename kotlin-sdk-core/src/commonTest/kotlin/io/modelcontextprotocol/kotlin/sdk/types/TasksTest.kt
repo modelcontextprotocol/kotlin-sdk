@@ -138,6 +138,45 @@ class TasksTest {
     }
 
     @Test
+    fun `should serialize GetTaskResult with minimal fields`() {
+        val result = GetTaskResult(
+            taskId = "task-21",
+            status = TaskStatus.Working,
+            createdAt = "2025-01-01T00:00:00Z",
+            lastUpdatedAt = "2025-01-01T00:00:00Z",
+            ttl = null,
+        )
+        val json = """
+            {
+              "taskId": "task-21",
+              "status": "working",
+              "createdAt": "2025-01-01T00:00:00Z",
+              "lastUpdatedAt": "2025-01-01T00:00:00Z",
+              "ttl": null
+            }
+        """.trimIndent()
+
+        verifySerialization<ClientResult>(result, McpJson, json)
+        verifySerialization<ServerResult>(result, McpJson, json)
+    }
+
+    @Test
+    fun `should decode Task without ttl as unlimited`() {
+        val task = McpJson.decodeFromString<Task>(
+            """
+            {
+              "taskId": "task-3",
+              "status": "working",
+              "createdAt": "2025-01-01T00:00:00Z",
+              "lastUpdatedAt": "2025-01-01T00:00:00Z"
+            }
+            """.trimIndent(),
+        )
+
+        task.ttl.shouldBeNull()
+    }
+
+    @Test
     fun `should preserve arbitrary payload fields in GetTaskPayloadResult`() {
         val json = """
             {
@@ -189,7 +228,8 @@ class TasksTest {
                   "taskId": "task-1",
                   "status": "working",
                   "createdAt": "2025-01-01T00:00:00Z",
-                  "lastUpdatedAt": "2025-01-01T00:00:00Z"
+                  "lastUpdatedAt": "2025-01-01T00:00:00Z",
+                  "ttl": null
                 },
                 {
                   "taskId": "task-2",
