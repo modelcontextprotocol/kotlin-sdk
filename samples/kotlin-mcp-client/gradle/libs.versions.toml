@@ -1,5 +1,5 @@
 [versions]
-anthropic = "2.65.0"
+anthropic = "2.68.0"
 kotlin = "2.4.20"
 ktor = "3.6.0"
 mcp-kotlin = "0.15.0"
