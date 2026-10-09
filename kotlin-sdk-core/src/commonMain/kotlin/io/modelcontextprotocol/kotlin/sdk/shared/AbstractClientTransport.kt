@@ -188,6 +188,7 @@ public abstract class AbstractClientTransport : AbstractTransport() {
      *
      * @throws Exception if the initialization process fails and transfers state
      *                  to [ClientTransportState.InitializationFailed].
+     * @throws CancellationException if the message drain is cancelled; the transport is closed before propagation.
      * @see initialize
      */
     public override suspend fun start() {
@@ -209,7 +210,12 @@ public abstract class AbstractClientTransport : AbstractTransport() {
             }
             throw e
         }
-        drainPendingMessages()
+        try {
+            drainPendingMessages()
+        } catch (e: CancellationException) {
+            withContext(NonCancellable) { close() }
+            throw e
+        }
     }
 
     private suspend fun drainPendingMessages() {

@@ -134,13 +134,15 @@ class AbstractClientTransportInitializationTest {
     }
 
     @Test
-    fun `should release the drain gate when start is cancelled during a handler`() = runTest {
+    fun `should close the transport when start is cancelled during a handler`() = runTest {
         val transport = TestClientTransport(scope = this)
         val firstMessage = JSONRPCNotification(method = "notifications/first")
         val queuedMessage = JSONRPCNotification(method = "notifications/queued")
         val laterMessage = JSONRPCNotification(method = "notifications/later")
         val firstHandlerStarted = CompletableDeferred<Unit>()
         val processedMessages = mutableListOf<String>()
+        var closeCallbackCalls = 0
+        transport.onClose { closeCallbackCalls++ }
         transport.onMessage { message ->
             val notification = message as JSONRPCNotification
             processedMessages.add(notification.method)
@@ -157,10 +159,13 @@ class AbstractClientTransportInitializationTest {
         startJob.cancel(CancellationException("Cancel initialization drain"))
         startJob.join()
 
-        assertEquals(ClientTransportState.Operational, transport.currentState)
+        assertTrue(startJob.isCancelled)
+        assertEquals(ClientTransportState.Stopped, transport.currentState)
+        assertEquals(1, transport.closeResourcesCalls)
+        assertEquals(1, closeCallbackCalls)
         transport.receiveMessage(laterMessage)
 
-        assertEquals(listOf(firstMessage.method, laterMessage.method), processedMessages)
+        assertEquals(listOf(firstMessage.method), processedMessages)
     }
 
     private class TestClientTransport(private val scope: CoroutineScope) : AbstractClientTransport() {
@@ -169,6 +174,7 @@ class AbstractClientTransportInitializationTest {
         var messageDuringInitialize: JSONRPCMessage? = null
         var initializeFailure: Exception? = null
         var messageJob: Job? = null
+        var closeResourcesCalls: Int = 0
         val currentState: ClientTransportState
             get() = state
 
@@ -191,7 +197,9 @@ class AbstractClientTransportInitializationTest {
             sentMessages.add(message)
         }
 
-        override suspend fun closeResources() = Unit
+        override suspend fun closeResources() {
+            closeResourcesCalls++
+        }
 
         private val messageRead = CompletableDeferred<Unit>()
     }
