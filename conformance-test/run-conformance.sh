@@ -44,7 +44,7 @@ start_server() {
     echo "Waiting for server to be ready..."
     local retries=0
     local max_retries=30
-    while ! curl -sf "$SERVER_URL" > /dev/null 2>&1; do
+    while ! curl -s -o /dev/null "$SERVER_URL" 2>&1; do
         retries=$((retries + 1))
         if [ "$retries" -ge "$max_retries" ]; then
             echo "ERROR: Server failed to start after $max_retries attempts"

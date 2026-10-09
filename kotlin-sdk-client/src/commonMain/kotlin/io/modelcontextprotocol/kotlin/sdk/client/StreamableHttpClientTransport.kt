@@ -90,6 +90,9 @@ private sealed interface ConnectResult {
  * Supports automatic SSE reconnection with exponential backoff, stream resumption via the
  * `Last-Event-ID` header, and explicit session termination.
  *
+ * A session the server has terminated answers `404`, reported through [onError] as a [StreamableHttpError].
+ * The transport does not start a new session; connect the client again with a new transport.
+ *
  * @param client Ktor HTTP client used for all requests
  * @param url MCP endpoint URL
  * @param reconnectionOptions reconnection backoff and retry-limit settings for the SSE stream
@@ -378,6 +381,13 @@ public class StreamableHttpClientTransport(
         val responseContentType = e.response?.contentType()
 
         return when {
+            responseStatus == HttpStatusCode.NotFound && sessionId != null -> {
+                val error = StreamableHttpError(responseStatus.value, "Session $sessionId not found, stream disabled")
+                logger.warn { error.message }
+                _onError(error)
+                true
+            }
+
             responseStatus == HttpStatusCode.NotFound || responseStatus == HttpStatusCode.MethodNotAllowed -> {
                 logger.info { "Server returned ${responseStatus.value} for GET/SSE, stream disabled." }
                 true
