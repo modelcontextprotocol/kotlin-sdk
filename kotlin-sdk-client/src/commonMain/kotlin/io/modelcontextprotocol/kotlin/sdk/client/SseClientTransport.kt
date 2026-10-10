@@ -32,13 +32,20 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.SerializationException
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
+
+private val DEFAULT_ENDPOINT_DISCOVERY_TIMEOUT: Duration = 30.seconds
 
 /**
  * Client transport for SSE: this will connect to a server using Server-Sent Events for receiving
  * messages and make separate POST requests for sending messages.
+ *
+ * @param endpointDiscoveryTimeout Maximum time to wait for the server's endpoint event. The legacy
+ * constructor and convenience functions use a 30-second default.
  */
 @OptIn(ExperimentalAtomicApi::class)
 public class SseClientTransport(
@@ -46,7 +53,16 @@ public class SseClientTransport(
     private val urlString: String?,
     private val reconnectionTime: Duration? = null,
     private val requestBuilder: HttpRequestBuilder.() -> Unit = {},
+    private val endpointDiscoveryTimeout: Duration,
 ) : AbstractClientTransport() {
+
+    /** Creates a transport using the default endpoint discovery timeout. */
+    public constructor(
+        client: HttpClient,
+        urlString: String?,
+        reconnectionTime: Duration? = null,
+        requestBuilder: HttpRequestBuilder.() -> Unit = {},
+    ) : this(client, urlString, reconnectionTime, requestBuilder, DEFAULT_ENDPOINT_DISCOVERY_TIMEOUT)
 
     override val logger: KLogger = KotlinLogging.logger {}
 
@@ -68,6 +84,12 @@ public class SseClientTransport(
                 path.endsWith("/") -> origin + path.removeSuffix("/")
                 else -> origin + path.take(path.lastIndexOf("/"))
             }
+        }
+    }
+
+    init {
+        require(endpointDiscoveryTimeout.isFinite() && endpointDiscoveryTimeout > Duration.ZERO) {
+            "Endpoint discovery timeout must be finite and positive"
         }
     }
 
@@ -100,7 +122,13 @@ public class SseClientTransport(
             collectMessages()
         }
 
-        endpoint.await()
+        if (withTimeoutOrNull(endpointDiscoveryTimeout) { endpoint.await() } == null) {
+            val timeoutError = IllegalStateException(
+                "Timed out waiting for the SSE endpoint event after $endpointDiscoveryTimeout",
+            )
+            _onError(timeoutError)
+            throw timeoutError
+        }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
