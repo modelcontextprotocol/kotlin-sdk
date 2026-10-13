@@ -4,6 +4,7 @@ package io.modelcontextprotocol.kotlin.sdk.types
 
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KeepGeneratedSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -54,7 +55,8 @@ public sealed interface TaskFields {
  * @property ttl Actual retention duration from creation in milliseconds, null for unlimited.
  * @property pollInterval Suggested polling interval in milliseconds.
  */
-@Serializable
+@KeepGeneratedSerializer
+@Serializable(with = TaskSerializer::class)
 public data class Task(
     override val taskId: String,
     override val status: TaskStatus,
@@ -176,7 +178,8 @@ public data class GetTaskRequestParams(
  * @property pollInterval Suggested polling interval in milliseconds.
  * @property meta Optional metadata for this response.
  */
-@Serializable
+@KeepGeneratedSerializer
+@Serializable(with = GetTaskResultSerializer::class)
 public data class GetTaskResult(
     override val taskId: String,
     override val status: TaskStatus,
