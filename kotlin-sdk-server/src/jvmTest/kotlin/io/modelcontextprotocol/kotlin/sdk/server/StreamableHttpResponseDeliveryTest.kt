@@ -12,6 +12,9 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
@@ -86,6 +89,19 @@ class StreamableHttpResponseDeliveryTest {
         }
 
         response.status shouldBe HttpStatusCode.BadRequest
+    }
+
+    @Test
+    fun `GET routes next to the stateful endpoint are not checked for a session`() = testApplication {
+        application {
+            mcpStreamableHttp { testServer() }
+            routing { get("/health") { call.respondText("ok") } }
+        }
+
+        val response = client.get("/health")
+
+        response.status shouldBe HttpStatusCode.OK
+        response.bodyAsText() shouldBe "ok"
     }
 
     private suspend fun HttpResponse.decodeError(): JSONRPCError = McpJson.decodeFromString(bodyAsText())

@@ -6,8 +6,8 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
-import io.ktor.server.application.ApplicationCallPipeline
 import io.ktor.server.application.MissingApplicationPluginException
+import io.ktor.server.application.createRouteScopedPlugin
 import io.ktor.server.application.install
 import io.ktor.server.application.isHandled
 import io.ktor.server.application.pluginOrNull
@@ -200,23 +200,10 @@ private fun Application.mcpStreamableHttp(
         route(path) {
             installDnsRebindingProtection(enableDnsRebindingProtection, allowedHosts, allowedOrigins)
             installCancelCallOnClose()
-
-            // Ktor's sse {} commits a 200 before its handler runs. A GET for a missing, expired, or deleted
-            // session is therefore rejected here, while its status can still be set: the spec requires 404
-            // for a terminated session. A GET that goes through gets Mcp-Session-Id.
-            intercept(ApplicationCallPipeline.Plugins) {
-                if (context.request.httpMethod != HttpMethod.Get || context.isHandled) return@intercept
-                val sessionId = context.sessionIdOrReject() ?: return@intercept finish()
-                // Touched, not just looked up, so that the session cannot expire before sse {} runs.
-                if (sessions.touch(sessionId) == null) {
-                    context.rejectSessionNotFound()
-                    return@intercept finish()
-                }
-                context.response.header(MCP_SESSION_ID_HEADER, sessionId)
-            }
+            installGetSessionGuard(sessions)
 
             sse {
-                // Validated by the interceptor above; an open stream does not keep the session alive.
+                // Already checked by the session guard.
                 val transport = call.request.sessionId()?.let { sessions.touch(it) } ?: return@sse
                 sseHeartbeatConfig?.let { config -> heartbeat(config) }
                 transport.handleRequest(this, call)
@@ -591,6 +578,23 @@ private fun Route.installCancelCallOnClose() {
     } catch (_: MissingApplicationPluginException) {
         install(HttpRequestLifecycle) { cancelCallOnClose = true }
     }
+}
+
+/** Checks the session of a GET before sse {}, which sends 200 and the headers before its handler runs. */
+private fun Route.installGetSessionGuard(sessions: StreamableHttpSessionManager<StreamableHttpServerTransport>) {
+    val guard = createRouteScopedPlugin("MCP-StreamableHttpGetSessionGuard") {
+        onCall { call ->
+            if (call.request.httpMethod != HttpMethod.Get || call.isHandled) return@onCall
+            val sessionId = call.sessionIdOrReject() ?: return@onCall
+            // Touched so that the session cannot expire before sse {} runs.
+            if (sessions.touch(sessionId) == null) {
+                call.rejectSessionNotFound()
+                return@onCall
+            }
+            call.response.header(MCP_SESSION_ID_HEADER, sessionId)
+        }
+    }
+    install(guard)
 }
 
 private fun Route.installDnsRebindingProtection(enabled: Boolean, hosts: List<String>?, origins: List<String>?) {
