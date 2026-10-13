@@ -31,9 +31,10 @@ private const val VARIABLE_MATCH_SCORE = 1
  *
  * ### Matching rules
  *
+ * - Blank URIs are rejected.
  * - The URI and template must have the same number of `/`-delimited segments.
  * - Literal segments must match exactly (after percent-decoding the URI segment).
- * - `{variable}` segments capture the percent-decoded URI segment value.
+ * - `{variable}` segments capture a non-empty percent-decoded URI segment value.
  * - Query strings and fragments (`?`, `#`) are **not** stripped — they become part of
  *   the captured variable value for the segment that contains them.
  *
@@ -121,6 +122,7 @@ public class PathSegmentTemplateMatcher @JvmOverloads constructor(
             logger.debug { "URL is too long (max=$maxUriLength)" }
             return null
         }
+        if (resourceUri.isBlank()) return null
 
         // Resolve dot-segments (e.g. /a/../b → /a/b) before splitting.
         // Prevents traversal attacks on JVM/JS; no-op on native/WASM targets.
@@ -140,6 +142,7 @@ public class PathSegmentTemplateMatcher @JvmOverloads constructor(
             val urlSegment = urlParts[i].decodeURLPart()
             val variableName = variableIndices[i]
             if (variableName != null) {
+                if (urlSegment.isEmpty()) return null
                 variables[variableName] = urlSegment
                 score += VARIABLE_MATCH_SCORE
             } else if (templateParts[i] == urlSegment) {
