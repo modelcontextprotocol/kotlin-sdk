@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.4.20"
+kotlin = "2.4.21"
 ktor = "3.6.0"
 mcp-kotlin = "0.15.0"
 slf4j = "2.0.20"
