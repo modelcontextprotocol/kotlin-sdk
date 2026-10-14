@@ -36,6 +36,7 @@ import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.serialization.json.JsonObject
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -132,9 +133,20 @@ public open class ServerSession(
      * If initialization has already completed, [block] runs immediately on the calling thread.
      * Otherwise it runs when `notifications/initialized` is received, after the callbacks
      * registered before it. Each callback runs at most once.
+     *
+     * An exception thrown by [block] is reported to [onError] instead of being propagated.
      */
     public fun onInitialized(block: () -> Unit) {
-        if (pendingInitializedCallbacks.getAndUpdate { it?.adding(block) } == null) block()
+        if (pendingInitializedCallbacks.getAndUpdate { it?.adding(block) } == null) {
+            try {
+                block()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (cause: Throwable) {
+                logger.error(cause) { "Error in onInitialized callback" }
+                onError(cause)
+            }
+        }
     }
 
     /**

@@ -22,6 +22,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
@@ -164,7 +165,7 @@ class ServerSessionInitializeTest {
         errors.map { it.error.code } shouldBe List(n - 1) { RPCError.ErrorCode.INVALID_REQUEST }
     }
 
-    private suspend fun completeHandshake(session: ServerSession) {
+    private suspend fun connectAndInitialize(session: ServerSession): InMemoryTransport {
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
         val responseDone = CompletableDeferred<JSONRPCResponse>()
         clientTransport.onMessage { message ->
@@ -174,7 +175,11 @@ class ServerSessionInitializeTest {
         session.connect(serverTransport)
         clientTransport.send(createInitializeRequest("test-client").toJSON())
         responseDone.await()
-        clientTransport.send(InitializedNotification().toJSON())
+        return clientTransport
+    }
+
+    private suspend fun completeHandshake(session: ServerSession) {
+        connectAndInitialize(session).send(InitializedNotification().toJSON())
     }
 
     @Test
@@ -195,17 +200,52 @@ class ServerSessionInitializeTest {
     }
 
     @Test
-    fun `should run every onInitialized callback registered concurrently`() = runTest {
+    fun `should run each onInitialized callback exactly once when registration races initialization`() = runTest {
         val session = createSession()
+        val clientTransport = connectAndInitialize(session)
         val counters = List(200) { AtomicInteger() }
 
         withContext(Dispatchers.Default) {
-            counters.map { counter ->
-                launch { session.onInitialized { counter.incrementAndGet() } }
-            }.joinAll()
+            val barrier = CompletableDeferred<Unit>()
+            val jobs = mutableListOf<Job>()
+            counters.forEachIndexed { index, counter ->
+                // Mid-batch, so registrations land before, during and after the notification.
+                if (index == counters.size / 2) {
+                    jobs += launch {
+                        barrier.await()
+                        clientTransport.send(InitializedNotification().toJSON())
+                    }
+                }
+                jobs += launch {
+                    barrier.await()
+                    session.onInitialized { counter.incrementAndGet() }
+                }
+            }
+            barrier.complete(Unit)
+            jobs.joinAll()
+        }
+        // A duplicate notification must not run any callback again.
+        clientTransport.send(InitializedNotification().toJSON())
+
+        counters.map { it.get() } shouldBe List(counters.size) { 1 }
+    }
+
+    @Test
+    fun `should report a late onInitialized callback failure to onError`() = runTest {
+        val errors = CopyOnWriteArrayList<Throwable>()
+        val session = object : ServerSession(
+            serverInfo = Implementation(name = "test-server", version = "1.0"),
+            options = ServerOptions(capabilities = ServerCapabilities()),
+            instructions = null,
+        ) {
+            override fun onError(error: Throwable) {
+                errors.add(error)
+            }
         }
         completeHandshake(session)
 
-        counters.map { it.get() } shouldBe List(counters.size) { 1 }
+        session.onInitialized { error("late failure") }
+
+        errors.map { it.message } shouldBe listOf("late failure")
     }
 }
