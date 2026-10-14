@@ -3,7 +3,7 @@
 atomicfu = "0.33.0"
 detekt = "2.0.0-alpha.6"
 dokka = "2.2.0"
-kotlin = "2.4.20"
+kotlin = "2.4.21"
 kover = "0.9.9"
 ktlint = "14.2.0"
 knit = "0.5.1"
