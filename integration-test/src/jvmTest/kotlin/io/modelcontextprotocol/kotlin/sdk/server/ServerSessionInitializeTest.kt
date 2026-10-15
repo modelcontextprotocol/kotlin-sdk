@@ -231,7 +231,7 @@ class ServerSessionInitializeTest {
     }
 
     @Test
-    fun `should report a late onInitialized callback failure to onError`() = runTest {
+    fun `should report onInitialized callback failures to onError without skipping other callbacks`() = runTest {
         val errors = CopyOnWriteArrayList<Throwable>()
         val session = object : ServerSession(
             serverInfo = Implementation(name = "test-server", version = "1.0"),
@@ -242,10 +242,14 @@ class ServerSessionInitializeTest {
                 errors.add(error)
             }
         }
-        completeHandshake(session)
+        val calls = CopyOnWriteArrayList<String>()
+        session.onInitialized { error("early failure") }
+        session.onInitialized { calls.add("early") }
 
+        completeHandshake(session)
         session.onInitialized { error("late failure") }
 
-        errors.map { it.message } shouldBe listOf("late failure")
+        calls shouldBe listOf("early")
+        errors.map { it.message } shouldBe listOf("early failure", "late failure")
     }
 }

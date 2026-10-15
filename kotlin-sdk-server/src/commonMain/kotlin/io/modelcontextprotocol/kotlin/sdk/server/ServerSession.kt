@@ -134,10 +134,11 @@ public open class ServerSession(
      * Otherwise it runs when `notifications/initialized` is received, after the callbacks
      * registered before it. Each callback runs at most once.
      *
-     * An exception thrown by [block] is reported to [onError] instead of being propagated.
+     * An exception thrown by [block] is reported to [onError] instead of being propagated,
+     * so it does not prevent other callbacks from running.
      */
     public fun onInitialized(block: () -> Unit) {
-        if (pendingInitializedCallbacks.getAndUpdate { it?.adding(block) } == null) {
+        val callback = {
             try {
                 block()
             } catch (e: CancellationException) {
@@ -146,6 +147,9 @@ public open class ServerSession(
                 logger.error(cause) { "Error in onInitialized callback" }
                 onError(cause)
             }
+        }
+        if (pendingInitializedCallbacks.getAndUpdate { it?.adding(callback) } == null) {
+            callback()
         }
     }
 
