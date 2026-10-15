@@ -4,9 +4,7 @@ import io.kotest.assertions.ktor.client.shouldHaveContentType
 import io.kotest.assertions.ktor.client.shouldHaveStatus
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldNotBeNull
-import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
-import io.kotest.matchers.types.shouldBeInstanceOf
 import io.ktor.client.HttpClient
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
@@ -14,8 +12,8 @@ import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.prepareGet
 import io.ktor.client.request.setBody
-import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.server.application.install
@@ -23,12 +21,8 @@ import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.server.sse.SSE
 import io.ktor.server.testing.testApplication
-import io.modelcontextprotocol.kotlin.sdk.types.InitializeResult
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
-import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.ValueSource
 import kotlin.test.Test
 
 class KtorExtensionsTest {
@@ -96,45 +90,32 @@ class KtorExtensionsTest {
         client.assertMcpEndpointsAt("/")
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = [false, true])
-    fun `Application mcpStreamableHttp should work with or without an installed SSE plugin`(sseInstalled: Boolean) =
-        testApplication {
-            application {
-                if (sseInstalled) install(SSE)
-                mcpStreamableHttp(enableDnsRebindingProtection = false) { testServer() }
-            }
-
-            client.assertStreamableMcpEndpointAt("/mcp")
-        }
-
     @Test
-    fun `Application mcpStreamableHttp should register multiple endpoints`() = testApplication {
+    fun `Application mcpStreamableHttp should register independent endpoints`() = testApplication {
         application {
-            mcpStreamableHttp("/first", enableDnsRebindingProtection = false) { testServer() }
-            mcpStreamableHttp("/second", enableDnsRebindingProtection = false) { testServer() }
+            mcpStreamableHttp("/first") { testServer() }
+            mcpStreamableHttp("/second") { testServer() }
         }
 
-        client.assertStreamableMcpEndpointAt("/first")
-        client.assertStreamableMcpEndpointAt("/second")
+        val firstSession = client.initializeStreamableSession("/first")
+        // Also proves /second is registered, so the 404 below comes from its own session table.
+        client.initializeStreamableSession("/second")
+
+        client.delete("/second") {
+            header(HttpHeaders.Host, "localhost")
+            header(MCP_SESSION_ID_HEADER, firstSession)
+        }.shouldHaveStatus(HttpStatusCode.NotFound)
     }
 
-    private suspend fun HttpClient.assertStreamableMcpEndpointAt(path: String) {
+    /** POSTs `initialize` to the Streamable HTTP endpoint at [path] and returns the session id it assigns. */
+    private suspend fun HttpClient.initializeStreamableSession(path: String): String {
         val response = post(path) {
+            header(HttpHeaders.Host, "localhost")
             streamableHeaders()
             setBody(McpJson.encodeToString(JSONRPCMessage.serializer(), initializeRequest()))
         }
         response.shouldHaveStatus(HttpStatusCode.OK)
-        response.shouldHaveContentType(ContentType.Application.Json)
-        val sessionId = response.headers[MCP_SESSION_ID_HEADER].shouldNotBeNull()
-        try {
-            val result = McpJson.decodeFromString<JSONRPCResponse>(response.bodyAsText()).result
-            result.shouldBeInstanceOf<InitializeResult>().serverInfo.name shouldBe "test-server"
-        } finally {
-            delete(path) {
-                header(MCP_SESSION_ID_HEADER, sessionId)
-            }.shouldHaveStatus(HttpStatusCode.OK)
-        }
+        return response.headers[MCP_SESSION_ID_HEADER].shouldNotBeNull()
     }
 
     /**

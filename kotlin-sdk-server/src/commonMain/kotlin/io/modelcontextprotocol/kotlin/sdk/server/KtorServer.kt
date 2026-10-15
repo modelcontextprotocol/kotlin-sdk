@@ -129,6 +129,7 @@ public fun Route.mcp(
  *
  * Automatically installs [ContentNegotiation][io.ktor.server.plugins.contentnegotiation.ContentNegotiation]
  * with [McpJson][io.modelcontextprotocol.kotlin.sdk.types.McpJson] and [SSE].
+ * An already installed [SSE] plugin is reused.
  *
  * @param enableDnsRebindingProtection whether to install [DnsRebindingProtection] on this route. Defaults to `true`.
  * @param allowedHosts hostnames allowed in the `Host` header. Defaults to `localhost`, `127.0.0.1`, `[::1]`.
@@ -225,6 +226,7 @@ private fun Application.mcpStreamableHttp(
  *
  * Automatically installs [ContentNegotiation][io.ktor.server.plugins.contentnegotiation.ContentNegotiation]
  * with [McpJson][io.modelcontextprotocol.kotlin.sdk.types.McpJson] and [SSE].
+ * An already installed [SSE] plugin is reused.
  *
  * @param path The base path for the MCP Streamable HTTP endpoint. Defaults to "/mcp".
  * @param enableDnsRebindingProtection Enables DNS rebinding attack protection for the endpoint. Defaults to `true`.
