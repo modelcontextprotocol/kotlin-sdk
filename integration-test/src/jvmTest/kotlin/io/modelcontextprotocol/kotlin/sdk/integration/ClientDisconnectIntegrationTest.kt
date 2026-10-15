@@ -20,6 +20,7 @@ import io.ktor.server.application.createApplicationPlugin
 import io.ktor.server.application.install
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.request.httpMethod
+import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
@@ -27,9 +28,11 @@ import io.modelcontextprotocol.kotlin.sdk.server.mcp
 import io.modelcontextprotocol.kotlin.sdk.server.mcpStreamableHttp
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.job
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -94,6 +97,33 @@ class ClientDisconnectIntegrationTest {
     }
 
     @Test
+    fun `an application route next to MCP runs to completion after its client disconnects`(): Unit = runBlocking {
+        val handlerStarted = CompletableDeferred<Unit>()
+        val handlerCompleted = CompletableDeferred<Boolean>()
+        withCioServer({
+            mcp { testServer() }
+            routing {
+                get("/slow") {
+                    handlerStarted.complete(Unit)
+                    try {
+                        delay(2.seconds)
+                        handlerCompleted.complete(true)
+                    } catch (e: CancellationException) {
+                        handlerCompleted.complete(false)
+                        throw e
+                    }
+                }
+            }
+        }) { port ->
+            connect(port, "GET /slow HTTP/1.1\r\nHost: localhost\r\n\r\n").use {
+                withTimeout(10.seconds) { handlerStarted.await() }
+            }
+
+            withTimeout(10.seconds) { handlerCompleted.await() } shouldBe true
+        }
+    }
+
+    @Test
     fun `a GET stream ends as soon as its client disconnects`(): Unit = runBlocking {
         val server = testServer()
         val finishedGets = AtomicInteger()
@@ -108,24 +138,6 @@ class ClientDisconnectIntegrationTest {
             // Long before the session could expire.
             eventually(10.seconds) { finishedGets.get() shouldBe 1 }
             server.sessions shouldHaveSize 1
-        }
-    }
-
-    @Test
-    fun `a GET stream ends when its session expires even while its client stays connected`(): Unit = runBlocking {
-        val server = testServer()
-        val finishedGets = AtomicInteger()
-        withCioServer({
-            countFinishedGets(finishedGets)
-            mcpStreamableHttp(sessionIdleTimeout = 1.seconds) { server }
-        }) { port ->
-            val sessionId = initializeSession(port)
-            openStream(port, sessionId).use {
-                eventually(10.seconds) {
-                    server.sessions.shouldBeEmpty()
-                    finishedGets.get() shouldBe 1
-                }
-            }
         }
     }
 

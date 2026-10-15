@@ -21,6 +21,7 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.RoutingContext
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
+import io.ktor.server.routing.method
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
@@ -45,8 +46,9 @@ private val logger = KotlinLogging.logger {}
  * **Precondition:** the [SSE] plugin must be installed on the application before calling this function.
  * Use [Application.mcp] if you want SSE to be installed automatically.
  *
- * Installs [HttpRequestLifecycle] with `cancelCallOnClose` on this route, unless it is already installed here,
- * on a parent route, or on the application, so that an SSE session ends when its client disconnects.
+ * Installs [HttpRequestLifecycle] with `cancelCallOnClose` on the SSE `GET` route only, unless it is already
+ * installed on this route, a parent route, or the application, so that an SSE session ends when its client
+ * disconnects.
  *
  * @param path the URL path to register the SSE endpoint.
  * @param enableDnsRebindingProtection whether to install [DnsRebindingProtection] on this route. Defaults to `true`.
@@ -84,8 +86,9 @@ public fun Route.mcp(
  * **Precondition:** the [SSE] plugin must be installed on the application before calling this function.
  * Use [Application.mcp] if you want SSE to be installed automatically.
  *
- * Installs [HttpRequestLifecycle] with `cancelCallOnClose` on this route, unless it is already installed here,
- * on a parent route, or on the application, so that an SSE session ends when its client disconnects.
+ * Installs [HttpRequestLifecycle] with `cancelCallOnClose` on the SSE `GET` route only, unless it is already
+ * installed on this route, a parent route, or the application, so that an SSE session ends when its client
+ * disconnects.
  *
  * @param enableDnsRebindingProtection whether to install [DnsRebindingProtection] on this route. Defaults to `true`.
  * @param allowedHosts hostnames allowed in the `Host` header. Defaults to `localhost`, `127.0.0.1`, `[::1]`.
@@ -121,12 +124,15 @@ public fun Route.mcp(
     }
 
     installDnsRebindingProtection(enableDnsRebindingProtection, allowedHosts, allowedOrigins)
-    installCancelCallOnClose()
 
     val transportManager = TransportManager<SseServerTransport>()
 
-    sse {
-        mcpSseEndpoint("", transportManager, maxRequestBodySize, block)
+    // Only the SSE GET: this route may be the routing root, whose other handlers must not be cancelled.
+    method(HttpMethod.Get) {
+        installCancelCallOnClose()
+        sse {
+            mcpSseEndpoint("", transportManager, maxRequestBodySize, block)
+        }
     }
 
     post {
@@ -141,7 +147,7 @@ public fun Route.mcp(
  *
  * Automatically installs [ContentNegotiation][io.ktor.server.plugins.contentnegotiation.ContentNegotiation]
  * with [McpJson][io.modelcontextprotocol.kotlin.sdk.types.McpJson] and [SSE], and, like [Route.mcp],
- * [HttpRequestLifecycle] on the routing root.
+ * [HttpRequestLifecycle] on the SSE `GET` route only.
  * An already installed [SSE] plugin is reused.
  *
  * @param enableDnsRebindingProtection whether to install [DnsRebindingProtection] on this route. Defaults to `true`.
