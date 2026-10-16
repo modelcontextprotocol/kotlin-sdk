@@ -22,6 +22,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.Request
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.RequestResult
 import io.modelcontextprotocol.kotlin.sdk.types.fromJSON
+import io.modelcontextprotocol.kotlin.sdk.types.selectRequestResultDeserializer
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
@@ -51,6 +52,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.ContinuationInterceptor
@@ -740,6 +742,34 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     }
 
     /**
+     * Decodes the result of an incoming [response] for the original request [method].
+     *
+     * The shape-decoded [JSONRPCResponse.result] is only a heuristic: distinct result types can
+     * share a JSON shape (e.g. a `tasks/result` payload vs. `CallToolResult`), so when the raw
+     * wire JSON was captured during transport decoding it is decoded again here with the result
+     * type declared by [method] (see
+     * https://github.com/modelcontextprotocol/kotlin-sdk/issues/601).
+     *
+     * Falls back to the shape-decoded [JSONRPCResponse.result] when no raw JSON is available
+     * (programmatically constructed responses), when the method is custom or unknown, or when the
+     * payload does not match the method's declared result type (e.g. a task-augmented `tools/call`
+     * returning `CreateTaskResult`).
+     */
+    private fun deserializeResult(method: Method, response: JSONRPCResponse): RequestResult {
+        val rawResult = response.rawResult ?: return response.result
+        val deserializer = selectRequestResultDeserializer(method.value) ?: return response.result
+        return try {
+            McpJson.decodeFromJsonElement(deserializer, rawResult)
+        } catch (e: SerializationException) {
+            logger.debug(e) {
+                "Failed to deserialize the result of '${method.value}' as " +
+                    "'${deserializer.descriptor.serialName}'; falling back to the shape-decoded result"
+            }
+            response.result
+        }
+    }
+
+    /**
      * Closes the connection.
      */
     public suspend fun close() {
@@ -813,7 +843,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
 
                 try {
                     @Suppress("UNCHECKED_CAST")
-                    result.complete(response!!.result as T)
+                    result.complete(deserializeResult(request.method, response!!) as T)
                 } catch (e: Throwable) {
                     result.completeExceptionally(e)
                 }
