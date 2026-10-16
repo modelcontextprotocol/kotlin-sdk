@@ -172,6 +172,24 @@ class StreamableHttpClientTransportTest {
     }
 
     @Test
+    fun `should send MCP name header from taskId for task requests`() = runTest {
+        listOf("tasks/get", "tasks/cancel").forEach { method ->
+            withClue(method) {
+                val headers = postHeaders(
+                    JSONRPCRequest(
+                        id = "test-id",
+                        method = method,
+                        params = buildJsonObject { put("taskId", "task-123") },
+                    ),
+                )
+
+                headers["Mcp-Method"] shouldBe method
+                headers["Mcp-Name"] shouldBe "task-123"
+            }
+        }
+    }
+
+    @Test
     fun `should omit MCP name header for methods without a defined source`() = runTest {
         val headers = postHeaders(
             JSONRPCRequest(

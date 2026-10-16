@@ -409,12 +409,16 @@ public class StreamableHttpClientTransport(
         }
     }
 
-    /** SEP-2243 defines the `Mcp-Name` source per method; other methods carry no `Mcp-Name`. */
+    /**
+     * Resolves the `Mcp-Name` source per method, as defined by SEP-2243 and, for task requests,
+     * by SEP-2663. Other methods carry no `Mcp-Name`.
+     */
     private fun JSONRPCRequest.mcpNameHeaderSource(): String? {
         val params = params as? JsonObject ?: return null
         return when (method) {
             Method.Defined.ToolsCall.value, Method.Defined.PromptsGet.value -> params.stringValue("name")
             Method.Defined.ResourcesRead.value -> params.stringValue("uri")
+            Method.Defined.TasksGet.value, Method.Defined.TasksCancel.value -> params.stringValue("taskId")
             else -> null
         }
     }
