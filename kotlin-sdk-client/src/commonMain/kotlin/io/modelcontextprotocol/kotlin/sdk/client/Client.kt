@@ -513,6 +513,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
      * @param name The name of the tool to call.
      * @param arguments A map of argument names to values for the tool.
      * @param meta A map of metadata key-value pairs. Keys must follow MCP specification format.
+     *             When empty, no `_meta` field is sent.
      *             - Optional prefix: dot-separated labels followed by slash (e.g., "api.example.com/")
      *             - Name: alphanumeric start/end, may contain hyphens, underscores, dots, alphanumerics
      *             - Reserved prefixes starting with "mcp" or "modelcontextprotocol" are forbidden
@@ -529,13 +530,14 @@ public open class Client(private val clientInfo: Implementation, options: Client
         validateMetaKeys(meta.keys)
 
         val jsonArguments = arguments.toJson()
-        val jsonMeta = meta.toJson()
+        // Omit `_meta` entirely when empty: some servers reject `"_meta": {}` (it must be an object or absent).
+        val requestMeta = meta.takeIf { it.isNotEmpty() }?.let { RequestMeta(JsonObject(it.toJson())) }
 
         val request = CallToolRequest(
             CallToolRequestParams(
                 name = name,
                 arguments = JsonObject(jsonArguments),
-                meta = RequestMeta(JsonObject(jsonMeta)),
+                meta = requestMeta,
             ),
         )
         return callTool(request, options)
