@@ -31,6 +31,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
+import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineName
@@ -400,18 +401,21 @@ public class StreamableHttpClientTransport(
     }
 
     private fun applyStandardPostHeaders(builder: HttpRequestBuilder, message: JSONRPCMessage) {
-        val (method, params) = when (message) {
-            is JSONRPCRequest -> message.method to message.params
-            is JSONRPCNotification -> message.method to message.params
-            else -> return
-        }
+        val request = message as? JSONRPCRequest ?: return
 
         builder.headers {
-            append(MCP_METHOD_HEADER, method)
+            append(MCP_METHOD_HEADER, request.method)
+            request.mcpNameHeaderSource()?.let { append(MCP_NAME_HEADER, it.encodeMcpHeaderValue()) }
+        }
+    }
 
-            val paramsObject = params as? JsonObject ?: return@headers
-            val mcpName = paramsObject.stringValue("name") ?: paramsObject.stringValue("uri")
-            mcpName?.let { append(MCP_NAME_HEADER, it.encodeMcpHeaderValue()) }
+    /** SEP-2243 defines the `Mcp-Name` source per method; other methods carry no `Mcp-Name`. */
+    private fun JSONRPCRequest.mcpNameHeaderSource(): String? {
+        val params = params as? JsonObject ?: return null
+        return when (method) {
+            Method.Defined.ToolsCall.value, Method.Defined.PromptsGet.value -> params.stringValue("name")
+            Method.Defined.ResourcesRead.value -> params.stringValue("uri")
+            else -> null
         }
     }
 
