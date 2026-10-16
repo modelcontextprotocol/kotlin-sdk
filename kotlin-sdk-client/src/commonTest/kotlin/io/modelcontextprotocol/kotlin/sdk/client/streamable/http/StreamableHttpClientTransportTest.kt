@@ -21,9 +21,13 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteReadChannel
+import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.StreamableHttpClientTransport
 import io.modelcontextprotocol.kotlin.sdk.client.StreamableHttpError
 import io.modelcontextprotocol.kotlin.sdk.shared.TooLongFrameException
+import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.InitializeResult
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
@@ -32,7 +36,10 @@ import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
@@ -124,6 +131,67 @@ class StreamableHttpClientTransportTest {
         val headers = postHeaders(JSONRPCNotification(method = "test")) { protocolVersion = "2025-06-18" }
 
         headers["mcp-protocol-version"] shouldBe "2025-06-18"
+    }
+
+    @Test
+    fun `connect should apply the negotiated protocol version to subsequent streamable HTTP requests`() = runTest {
+        val negotiated = "2025-03-26"
+        val jsonHeaders = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+        val transport = createTransport { data ->
+            if (data.method != HttpMethod.Post) {
+                return@createTransport respond("", HttpStatusCode.MethodNotAllowed)
+            }
+            when (val message = McpJson.decodeFromString<JSONRPCMessage>((data.body as TextContent).text)) {
+                is JSONRPCRequest -> when (message.method) {
+                    "initialize" -> respond(
+                        McpJson.encodeToString(
+                            JSONRPCMessage.serializer(),
+                            JSONRPCResponse(
+                                id = message.id,
+                                result = InitializeResult(
+                                    protocolVersion = negotiated,
+                                    capabilities = ServerCapabilities(),
+                                    serverInfo = Implementation("test-server", "1.0.0"),
+                                ),
+                            ),
+                        ),
+                        HttpStatusCode.OK,
+                        jsonHeaders,
+                    )
+
+                    "ping" -> respond(
+                        McpJson.encodeToString(
+                            JSONRPCMessage.serializer(),
+                            JSONRPCResponse(id = message.id, result = EmptyResult()),
+                        ),
+                        HttpStatusCode.OK,
+                        jsonHeaders,
+                    )
+
+                    else -> respond("", HttpStatusCode.Accepted)
+                }
+
+                else -> respond("", HttpStatusCode.Accepted)
+            }
+        }
+
+        // Protocol request timeouts use delay(); runTest would skip the 60s budget before MockEngine replies.
+        withContext(Dispatchers.Default) {
+            val client = Client(Implementation("test-client", "1.0.0"))
+            try {
+                client.connect(transport)
+                transport.protocolVersion shouldBe negotiated
+
+                client.ping()
+                val ping = requests.last { req ->
+                    req.method == HttpMethod.Post &&
+                        (req.body as TextContent).text.contains("\"method\":\"ping\"")
+                }
+                ping.headers["mcp-protocol-version"] shouldBe negotiated
+            } finally {
+                client.close()
+            }
+        }
     }
 
     @Test
