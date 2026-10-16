@@ -1,7 +1,9 @@
 package io.modelcontextprotocol.kotlin.sdk.client.sse
 
+import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.sse.SSE
@@ -14,12 +16,18 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.util.date.GMTDate
 import io.ktor.utils.io.ByteReadChannel
+import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.SseClientTransport
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertFailsWith
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 private const val SSE_URL = "http://example.com/api/mcp/sse"
 
@@ -139,7 +147,38 @@ class SseClientTransportTest {
         engine.close()
     }
 
-    private fun sseTransport(sseUrl: String, engine: CapturingSseClientEngine) =
+    @Test
+    fun `connect fails when the server never sends an endpoint event`() = runTest {
+        val sseUrl = "http://example.com/api/mcp/sse"
+        val timeout = 100.milliseconds
+        val engine = MockSseClientEngine(endpoint = null, onPostRequest = {})
+        val transport = SseClientTransport(
+            client = HttpClient(engine) { install(SSE) },
+            urlString = sseUrl,
+            endpointDiscoveryTimeout = timeout,
+        )
+        val client = Client(Implementation("test-client", "1.0.0"))
+        val errors = mutableListOf<Throwable>()
+        var onCloseFired = false
+        transport.onError { errors += it }
+        transport.onClose { onCloseFired = true }
+
+        try {
+            val exception = assertFailsWith<IllegalStateException> { client.connect(transport) }
+
+            exception.message shouldBe "Timed out waiting for the SSE endpoint event after $timeout"
+            errors shouldHaveSize 1
+            errors.single() shouldBe exception
+            eventually(2.seconds) {
+                onCloseFired shouldBe true
+            }
+        } finally {
+            client.close()
+            engine.close()
+        }
+    }
+
+    private fun sseTransport(sseUrl: String, engine: MockSseClientEngine) =
         SseClientTransport(HttpClient(engine) { install(SSE) }, sseUrl)
 
     private suspend fun startWithRejectedEndpoint(sseUrl: String, endpointEvent: String): IllegalArgumentException {
@@ -179,7 +218,7 @@ class SseClientTransportTest {
         endpoint: String,
         private val sseRedirectLocation: String?,
         private val capturedPostRequests: MutableList<HttpRequestData>,
-    ) : MockSseClientEngine(endpoint, capturedPostRequests::add) {
+    ) : MockSseClientEngine(endpoint, capturedPostRequests::add, Dispatchers.Unconfined) {
 
         constructor(endpoint: String, sseRedirectLocation: String? = null) :
             this(endpoint, sseRedirectLocation, mutableListOf())
