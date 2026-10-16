@@ -158,6 +158,48 @@ class StreamableHttpClientTransportTest {
     }
 
     @Test
+    fun `should send MCP name header from name for prompts get`() = runTest {
+        val headers = postHeaders(
+            JSONRPCRequest(
+                id = "test-id",
+                method = "prompts/get",
+                params = buildJsonObject { put("name", "code_review") },
+            ),
+        )
+
+        headers["Mcp-Method"] shouldBe "prompts/get"
+        headers["Mcp-Name"] shouldBe "code_review"
+    }
+
+    @Test
+    fun `should omit MCP name header for methods without a defined source`() = runTest {
+        val headers = postHeaders(
+            JSONRPCRequest(
+                id = "test-id",
+                method = "resources/subscribe",
+                params = buildJsonObject { put("uri", "file:///README.md") },
+            ),
+        )
+
+        headers["Mcp-Method"] shouldBe "resources/subscribe"
+        headers["Mcp-Name"].shouldBeNull()
+    }
+
+    @Test
+    fun `should send only the MCP method header for requests without a name source`() = runTest {
+        val headers = postHeaders(
+            JSONRPCRequest(
+                id = "test-id",
+                method = "tools/list",
+                params = buildJsonObject { put("cursor", "next-page") },
+            ),
+        )
+
+        headers["Mcp-Method"] shouldBe "tools/list"
+        headers["Mcp-Name"].shouldBeNull()
+    }
+
+    @Test
     fun `should encode MCP name header values when required`() = runTest {
         listOf(
             "Hello, 世界" to "=?base64?SGVsbG8sIOS4lueVjA==?=",
@@ -181,10 +223,23 @@ class StreamableHttpClientTransportTest {
     }
 
     @Test
-    fun `should send only the MCP method header for notifications without params`() = runTest {
+    fun `should omit MCP standard headers for notifications`() = runTest {
         val headers = postHeaders(JSONRPCNotification(method = "notifications/tools/list_changed"))
 
-        headers["Mcp-Method"] shouldBe "notifications/tools/list_changed"
+        headers["Mcp-Method"].shouldBeNull()
+        headers["Mcp-Name"].shouldBeNull()
+    }
+
+    @Test
+    fun `should omit MCP standard headers for notifications that carry a URI`() = runTest {
+        val headers = postHeaders(
+            JSONRPCNotification(
+                method = "notifications/resources/updated",
+                params = buildJsonObject { put("uri", "file:///README.md") },
+            ),
+        )
+
+        headers["Mcp-Method"].shouldBeNull()
         headers["Mcp-Name"].shouldBeNull()
     }
 
