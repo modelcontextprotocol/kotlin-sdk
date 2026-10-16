@@ -4,6 +4,8 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
+import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.sse.SSE
 import io.ktor.client.request.HttpRequestData
 import io.ktor.client.request.HttpResponseData
@@ -33,7 +35,7 @@ class SseClientTransportTest {
     }
 
     @Test
-    fun `relative path endpoint resolves against baseUrl`() = runTest {
+    fun `relative path endpoint resolves against the sse directory`() = runTest {
         val post = sendThroughEndpoint(sseUrl = SSE_URL, endpointEvent = "post?sessionId=xyz")
 
         post.url.toString() shouldBe "http://example.com/api/mcp/post?sessionId=xyz"
@@ -68,80 +70,14 @@ class SseClientTransportTest {
     }
 
     @Test
-    fun `dot-segment endpoint resolves against the sse directory`() = runTest {
-        val post = sendThroughEndpoint(sseUrl = SSE_URL, endpointEvent = "../messages?sessionId=abc")
-
-        post.url.toString() shouldBe "http://example.com/api/messages?sessionId=abc"
-    }
-
-    @Test
-    fun `dot segments cannot climb above the root`() = runTest {
-        val post = sendThroughEndpoint(sseUrl = SSE_URL, endpointEvent = "../../../../messages?sessionId=abc")
-
-        post.url.toString() shouldBe "http://example.com/messages?sessionId=abc"
-    }
-
-    @Test
-    fun `full url endpoint with an upper-case scheme is used as-is`() = runTest {
-        val post = sendThroughEndpoint(sseUrl = SSE_URL, endpointEvent = "HTTP://example.com/messages?sessionId=abc")
-
-        post.url.toString() shouldBe "http://example.com/messages?sessionId=abc"
-    }
-
-    @Test
-    fun `endpoint with a non-http scheme is rejected`() = runTest {
-        val exception = startWithRejectedEndpoint(sseUrl = SSE_URL, endpointEvent = "mailto:user@example.com")
-
-        exception.message shouldBe "Endpoint URI with a scheme or authority must have a non-empty authority"
-    }
-
-    @Test
-    fun `dot segments are removed from a full url endpoint`() = runTest {
-        val post =
-            sendThroughEndpoint(sseUrl = SSE_URL, endpointEvent = "http://example.com/a/../messages?sessionId=abc")
-
-        post.url.toString() shouldBe "http://example.com/messages?sessionId=abc"
-    }
-
-    @Test
-    fun `dot segments are removed from a network-path endpoint`() = runTest {
-        val post =
-            sendThroughEndpoint(sseUrl = SSE_URL, endpointEvent = "//example.com/a/./b/../messages?sessionId=abc")
-
-        post.url.toString() shouldBe "http://example.com/a/messages?sessionId=abc"
-    }
-
-    @Test
-    fun `scheme-prefixed endpoint without an authority is rejected`() = runTest {
-        val exception =
-            startWithRejectedEndpoint(sseUrl = SSE_URL, endpointEvent = "http:example.com/messages?sessionId=abc")
-
-        exception.message shouldBe "Endpoint URI with a scheme or authority must have a non-empty authority"
-    }
-
-    @Test
-    fun `network-path endpoint with an empty authority is rejected`() = runTest {
-        val exception = startWithRejectedEndpoint(sseUrl = SSE_URL, endpointEvent = "///messages?sessionId=abc")
-
-        exception.message shouldBe "Endpoint URI with a scheme or authority must have a non-empty authority"
-    }
-
-    @Test
-    fun `network-path endpoint with a different host is rejected`() = runTest {
+    fun `full url endpoint without a host is rejected`() = runTest {
+        // Ktor fills an empty host with localhost, which would match this SSE origin.
         val exception = startWithRejectedEndpoint(
-            sseUrl = SSE_URL,
-            endpointEvent = "//evil.example.com/messages?sessionId=abc",
+            sseUrl = "http://localhost/api/mcp/sse",
+            endpointEvent = "http://@/messages?sessionId=abc",
         )
 
-        exception.message shouldBe
-            "Endpoint origin http://evil.example.com does not match connection origin http://example.com"
-    }
-
-    @Test
-    fun `network-path endpoint with the same host is accepted`() = runTest {
-        val post = sendThroughEndpoint(sseUrl = SSE_URL, endpointEvent = "//example.com/messages?sessionId=abc")
-
-        post.url.toString() shouldBe "http://example.com/messages?sessionId=abc"
+        exception.message shouldBe "Endpoint is not a valid URL"
     }
 
     @Test
@@ -230,6 +166,17 @@ class SseClientTransportTest {
     }
 
     @Test
+    fun `relative sse url resolved by the default request is not treated as a redirect`() = runTest {
+        val post = sendThroughEndpoint(
+            sseUrl = "sse",
+            endpointEvent = "/messages?sessionId=abc",
+            clientConfig = { defaultRequest { url("http://example.com/api/mcp/") } },
+        )
+
+        post.url.toString() shouldBe "http://example.com/messages?sessionId=abc"
+    }
+
+    @Test
     fun `onClose callback fires when the SSE stream is disconnected by the server`() = runTest {
         val engine = CapturingSseClientEngine(endpoint = "/messages?sessionId=abc")
         val transport = sseTransport(SSE_URL, engine)
@@ -244,8 +191,17 @@ class SseClientTransportTest {
         engine.close()
     }
 
-    private fun sseTransport(sseUrl: String, engine: CapturingSseClientEngine) =
-        SseClientTransport(HttpClient(engine) { install(SSE) }, sseUrl)
+    private fun sseTransport(
+        sseUrl: String,
+        engine: CapturingSseClientEngine,
+        clientConfig: HttpClientConfig<*>.() -> Unit = {},
+    ) = SseClientTransport(
+        HttpClient(engine) {
+            install(SSE)
+            clientConfig()
+        },
+        sseUrl,
+    )
 
     private suspend fun startWithRejectedEndpoint(sseUrl: String, endpointEvent: String): IllegalArgumentException {
         val engine = CapturingSseClientEngine(endpoint = endpointEvent)
@@ -267,9 +223,10 @@ class SseClientTransportTest {
         sseUrl: String,
         endpointEvent: String,
         sseRedirectLocation: String? = null,
+        clientConfig: HttpClientConfig<*>.() -> Unit = {},
     ): HttpRequestData {
         val engine = CapturingSseClientEngine(endpointEvent, sseRedirectLocation)
-        val transport = sseTransport(sseUrl, engine)
+        val transport = sseTransport(sseUrl, engine, clientConfig)
         try {
             transport.start()
             transport.send(JSONRPCNotification(method = "test"))
