@@ -42,6 +42,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
@@ -625,8 +626,9 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                 )
             } catch (e: CancellationException) {
                 // Intentional exception to the always-rethrow-CE convention, only at this boundary.
-                if (handlerJob == null) throw e // serial phase: inline dispatch is not response-suppressed
-                if (handlerJob.isCancelled) throw e // genuine peer or close cancel: suppress the response
+                // Serial phase: the handler runs inline, so a real close cancels the delivering coroutine itself.
+                if (handlerJob == null) currentCoroutineContext().ensureActive()
+                if (handlerJob?.isCancelled == true) throw e // genuine peer or close cancel: suppress the response
                 // CE escaped a live handler job (e.g. a leaked inner withTimeout). Answer
                 // INTERNAL_ERROR so the peer does not hang until its own timeout.
                 respondWithError(capturedTransport, request, e)
