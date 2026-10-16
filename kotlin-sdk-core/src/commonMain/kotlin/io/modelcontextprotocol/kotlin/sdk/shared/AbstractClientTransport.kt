@@ -149,9 +149,9 @@ public abstract class AbstractClientTransport : AbstractTransport() {
      * This method ensures that the transport is operational before attempting to send the message.
      * If the transport's state does not allow sending operations, an exception is thrown.
      * It delegates the actual transmission to the abstract [performSend] method, which must be
-     * implemented by subclasses to handle the specifics of the transmission mechanism. Errors
-     * during the send operation are handled appropriately, and cancellation exceptions are always
-     * propagated.
+     * implemented by subclasses to handle the specifics of the transmission mechanism. Send failures
+     * propagate to the caller without invoking [onError]; background failures are reported through
+     * that callback. Cancellation exceptions are always propagated.
      *
      * **Important! This method will eventually become `final`.
      * Please don't override it, or consistency guarantees might be lost. Override [performSend] instead.**
@@ -178,7 +178,6 @@ public abstract class AbstractClientTransport : AbstractTransport() {
         } catch (e: CancellationException) {
             throw e // Always propagate cancellation
         } catch (e: Exception) {
-            _onError(e)
             if (e is McpException) {
                 throw e
             } else {

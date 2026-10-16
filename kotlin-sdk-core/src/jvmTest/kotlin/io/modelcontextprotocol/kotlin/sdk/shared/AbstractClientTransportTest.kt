@@ -162,7 +162,7 @@ class AbstractClientTransportTest {
     }
 
     @Test
-    fun `should call onError and rethrow as-is when performSend throws McpException`() = runTest {
+    fun `should rethrow McpException without calling onError`() = runTest {
         val errors = mutableListOf<Throwable>()
         transport.onError { errors += it }
         val failure = McpException(RPCError.ErrorCode.INTERNAL_ERROR, "Send failed")
@@ -170,11 +170,11 @@ class AbstractClientTransportTest {
         transport.start()
 
         shouldThrow<McpException> { transport.send(PingRequest().toJSON()) } shouldBeSameInstanceAs failure
-        errors shouldBe listOf(failure)
+        errors shouldBe emptyList()
     }
 
     @Test
-    fun `should call onError and wrap in INTERNAL_ERROR when performSend throws non-MCP exception`() = runTest {
+    fun `should wrap non-MCP send exceptions without calling onError`() = runTest {
         val errors = mutableListOf<Throwable>()
         transport.onError { errors += it }
         val failure = TestException("Network error")
@@ -185,7 +185,7 @@ class AbstractClientTransportTest {
 
         exception.code shouldBe RPCError.ErrorCode.INTERNAL_ERROR
         exception.cause shouldBeSameInstanceAs failure
-        errors shouldBe listOf(failure)
+        errors shouldBe emptyList()
     }
 
     @Test

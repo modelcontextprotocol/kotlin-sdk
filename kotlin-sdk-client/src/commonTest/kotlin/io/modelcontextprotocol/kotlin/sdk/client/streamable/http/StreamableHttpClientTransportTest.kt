@@ -6,7 +6,6 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
-import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandler
@@ -197,7 +196,7 @@ class StreamableHttpClientTransportTest {
     }
 
     @Test
-    fun `should fail the send and report the error when a JSON response is invalid`() = runTest {
+    fun `should fail the send without calling onError when a JSON response is invalid`() = runTest {
         val transport = createTransport {
             respond(
                 "this is not valid json",
@@ -206,12 +205,55 @@ class StreamableHttpClientTransportTest {
             )
         }
         transport.start()
+        try {
+            val exception = shouldThrow<McpException> { transport.send(request) }
 
-        val exception = shouldThrow<McpException> { transport.send(request) }
+            exception.code shouldBe RPCError.ErrorCode.INTERNAL_ERROR
+            exception.cause.shouldBeInstanceOf<IllegalArgumentException>()
+            errors.shouldBeEmpty()
+        } finally {
+            transport.close()
+        }
+    }
 
-        exception.code shouldBe RPCError.ErrorCode.INTERNAL_ERROR
-        errors.first() shouldBeSameInstanceAs exception.cause
-        transport.close()
+    @Test
+    fun `should fail the send without calling onError for an HTTP error status`() = runTest {
+        val transport = createTransport { respond("Server failed", HttpStatusCode.InternalServerError) }
+        transport.start()
+        try {
+            val exception = shouldThrow<McpException> { transport.send(request) }
+
+            exception.cause.shouldBeInstanceOf<StreamableHttpError>().code shouldBe 500
+            errors.shouldBeEmpty()
+        } finally {
+            transport.close()
+        }
+    }
+
+    @Test
+    fun `should fail the send without calling onError for an unexpected content type`() = runTest {
+        val transport = createTransport {
+            respond("not JSON", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "text/plain"))
+        }
+        transport.start()
+        try {
+            val exception = shouldThrow<McpException> { transport.send(request) }
+
+            exception.cause.shouldBeInstanceOf<StreamableHttpError>().code shouldBe -1
+            errors.shouldBeEmpty()
+        } finally {
+            transport.close()
+        }
+    }
+
+    @Test
+    fun `should fail the send without calling onError for invalid inline SSE JSON`() = runTest {
+        val exception = shouldThrow<McpException> {
+            sendWithInlineSse(sseEvent("event: message", "data: not JSON"))
+        }
+
+        exception.cause.shouldBeInstanceOf<IllegalArgumentException>()
+        errors.shouldBeEmpty()
     }
 
     @Test
@@ -264,7 +306,7 @@ class StreamableHttpClientTransportTest {
         }
 
         exception.cause.shouldBeInstanceOf<TooLongFrameException>()
-        errors.single().shouldBeInstanceOf<TooLongFrameException>()
+        errors.shouldBeEmpty()
         messages.shouldBeEmpty()
     }
 
