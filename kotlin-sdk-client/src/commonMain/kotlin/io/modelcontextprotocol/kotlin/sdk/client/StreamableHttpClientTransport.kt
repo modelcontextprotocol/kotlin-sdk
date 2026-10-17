@@ -196,18 +196,12 @@ public class StreamableHttpClientTransport(
 
         if (!response.status.isSuccess()) {
             val error = StreamableHttpError(response.status.value, response.bodyAsText())
-            _onError(error)
             throw error
         }
 
         when (response.contentType()?.withoutParameters()) {
             ContentType.Application.Json -> response.bodyAsText().takeIf { it.isNotEmpty() }?.let { json ->
-                runCatching { McpJson.decodeFromString<JSONRPCMessage>(json) }
-                    .onSuccess { _onMessage(it) }
-                    .onFailure {
-                        _onError(it)
-                        throw it
-                    }
+                _onMessage(McpJson.decodeFromString<JSONRPCMessage>(json))
             }
 
             ContentType.Text.EventStream -> {
@@ -229,7 +223,6 @@ public class StreamableHttpClientTransport(
 
                 val ct = response.contentType()?.toString() ?: "<none>"
                 val error = StreamableHttpError(-1, "Unexpected content type: $ct")
-                _onError(error)
                 throw error
             }
         }
@@ -509,19 +502,13 @@ public class StreamableHttpClientTransport(
                 return
             }
             if (eventName == null || eventName == "message") {
-                runCatching { McpJson.decodeFromString<JSONRPCMessage>(data) }
-                    .onSuccess { msg ->
-                        if (msg is JSONRPCResponse) receivedResponse = true
-                        if (replayMessageId != null && msg is JSONRPCResponse) {
-                            _onMessage(msg.copy(id = replayMessageId))
-                        } else {
-                            _onMessage(msg)
-                        }
-                    }
-                    .onFailure {
-                        _onError(it)
-                        throw it
-                    }
+                val msg = McpJson.decodeFromString<JSONRPCMessage>(data)
+                if (msg is JSONRPCResponse) receivedResponse = true
+                if (replayMessageId != null && msg is JSONRPCResponse) {
+                    _onMessage(msg.copy(id = replayMessageId))
+                } else {
+                    _onMessage(msg)
+                }
             }
             if (eventName == "error") {
                 _onError(StreamableHttpError(null, data))
