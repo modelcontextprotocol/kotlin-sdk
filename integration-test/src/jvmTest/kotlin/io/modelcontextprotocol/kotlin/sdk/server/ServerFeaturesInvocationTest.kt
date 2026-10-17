@@ -75,10 +75,40 @@ class ServerFeaturesInvocationTest : AbstractServerFeaturesTest() {
     }
 
     @Test
-    fun `callTool should return error result when tool not found`() = runTest {
-        val result = client.callTool(CallToolRequest(CallToolRequestParams("nonexistent")))
+    fun `callTool should throw when tool not found`() = runTest {
+        val exception = shouldThrow<McpException> {
+            client.callTool(CallToolRequest(CallToolRequestParams("nonexistent")))
+        }
 
-        result shouldBe CallToolResult(content = listOf(TextContent("Tool nonexistent not found")), isError = true)
+        exception.code shouldBe RPCError.ErrorCode.INVALID_PARAMS
+        exception.message shouldBe "Tool not found: nonexistent"
+    }
+
+    @Test
+    fun `callTool should throw after tool is removed`() = runTest {
+        var invocations = 0
+        server.addTool("removed", "Tool that will be removed") {
+            invocations++
+            CallToolResult(emptyList())
+        }
+        client.callTool("removed", emptyMap())
+        server.removeTool("removed")
+
+        val exception = shouldThrow<McpException> {
+            client.callTool("removed", emptyMap())
+        }
+
+        exception.code shouldBe RPCError.ErrorCode.INVALID_PARAMS
+        exception.message shouldBe "Tool not found: removed"
+        invocations shouldBe 1
+    }
+
+    @Test
+    fun `callTool should preserve tool execution error results`() = runTest {
+        val errorResult = CallToolResult(listOf(TextContent("Invalid departure date")), isError = true)
+        server.addTool("validate", "Validates input") { errorResult }
+
+        client.callTool("validate", emptyMap()) shouldBe errorResult
     }
 
     @Test
