@@ -13,6 +13,8 @@ import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import kotlin.test.Test
 
 class ClientSendErrorRegressionTest {
@@ -65,6 +67,23 @@ class ClientSendErrorRegressionTest {
         }
     }
 
+    @ParameterizedTest
+    @ValueSource(ints = [1, 2])
+    fun `failed handler response reaches the error callback once without a second response`(failures: Int) = runTest {
+        val transport = FailingSendTransport(failures)
+        val protocol = TestProtocol()
+        protocol.fallbackRequestHandler = { _, _ -> EmptyResult() }
+        protocol.connect(transport)
+        try {
+            transport.deliver(JSONRPCRequest(RequestId.NumberId(1), "test/successful-handler"))
+
+            protocol.errors shouldBe listOf(transport.failure)
+            transport.sendAttempts shouldBe 1
+        } finally {
+            protocol.close()
+        }
+    }
+
     @Test
     fun `background errors still reach the error callback`() = runTest {
         val transport = FailingSendTransport()
@@ -81,7 +100,7 @@ class ClientSendErrorRegressionTest {
         }
     }
 
-    private class FailingSendTransport : AbstractClientTransport() {
+    private class FailingSendTransport(private val failures: Int = Int.MAX_VALUE) : AbstractClientTransport() {
         override val logger: KLogger = KotlinLogging.logger {}
         val failure = McpException(RPCError.ErrorCode.INTERNAL_ERROR, "Send failed")
         var sendAttempts = 0
@@ -92,7 +111,7 @@ class ClientSendErrorRegressionTest {
 
         override suspend fun performSend(message: JSONRPCMessage, options: TransportSendOptions?) {
             sendAttempts++
-            throw failure
+            if (sendAttempts <= failures) throw failure
         }
 
         suspend fun deliver(message: JSONRPCMessage) = _onMessage(message)

@@ -119,6 +119,22 @@ class StreamableHttpClientTransportTest {
     }
 
     @Test
+    fun `terminateSession should throw without calling onError and retain the session on failure`() = runTest {
+        val transport = transportWithSession(deleteStatus = HttpStatusCode.ServiceUnavailable)
+        try {
+            val exception = shouldThrow<StreamableHttpError> { transport.terminateSession() }
+
+            exception.code shouldBe 503
+            requests.last().method shouldBe HttpMethod.Delete
+            requests.last().headers[SESSION_ID_HEADER] shouldBe SESSION_ID
+            transport.sessionId shouldBe SESSION_ID
+            errors.shouldBeEmpty()
+        } finally {
+            transport.close()
+        }
+    }
+
+    @Test
     fun `should send the protocol version header once it is set`() = runTest {
         val headers = postHeaders(JSONRPCNotification(method = "test")) { protocolVersion = "2025-06-18" }
 

@@ -268,7 +268,6 @@ public class StreamableHttpClientTransport(
                 "Failed to terminate session: ${response.status.description}",
             )
             logger.error(error) { "Failed to terminate session" }
-            _onError(error)
             throw error
         }
 
