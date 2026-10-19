@@ -31,6 +31,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class KtorExtensionsTest {
 
+    @Suppress("DEPRECATION")
     @Test
     fun `Route mcp should throw at registration time if SSE plugin is not installed`() {
         val exception = shouldThrow<IllegalStateException> {
@@ -46,6 +47,7 @@ class KtorExtensionsTest {
         exception.message shouldContain "install(SSE)"
     }
 
+    @Suppress("DEPRECATION")
     @Test
     fun `Route mcp should register SSE and POST endpoints at the given subpath`() = testApplication {
         application {
@@ -60,6 +62,7 @@ class KtorExtensionsTest {
         client.assertMcpEndpointsAt("/api/mcp")
     }
 
+    @Suppress("DEPRECATION")
     @Test
     fun `Route mcp with path parameter should register endpoints at the resolved path`() = testApplication {
         application {
@@ -79,6 +82,7 @@ class KtorExtensionsTest {
      * Verifies that a closed session stops receiving POSTs and is not retained until the
      * [Server] itself closes, even while its SSE connection is still open.
      */
+    @Suppress("DEPRECATION")
     @Test
     fun `Route mcp stops routing POSTs to a session once it closes`() = testApplication {
         val server = testServer()
@@ -101,6 +105,7 @@ class KtorExtensionsTest {
         }
     }
 
+    @Suppress("DEPRECATION")
     @Test
     fun `Application mcp should install SSE and register endpoints at the root`() = testApplication {
         application {
@@ -110,6 +115,7 @@ class KtorExtensionsTest {
         client.assertMcpEndpointsAt("/")
     }
 
+    @Suppress("DEPRECATION")
     @Test
     fun `Application mcp should reuse an installed SSE plugin`() = testApplication {
         application {

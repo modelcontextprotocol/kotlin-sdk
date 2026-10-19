@@ -18,6 +18,7 @@ import kotlin.test.Test
 import io.ktor.client.plugins.sse.SSE as ClientSSE
 import io.ktor.server.sse.SSE as ServerSSE
 
+@Suppress("DEPRECATION")
 class SseTransportTest {
 
     @Test
