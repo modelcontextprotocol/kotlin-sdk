@@ -121,6 +121,7 @@ public class StreamableHttpClientTransport(
             "kotlin.time.Duration.Companion.seconds",
             "io.modelcontextprotocol.kotlin.sdk.client.ReconnectionOptions",
         ),
+        level = DeprecationLevel.ERROR,
     )
     public constructor(
         client: HttpClient,
