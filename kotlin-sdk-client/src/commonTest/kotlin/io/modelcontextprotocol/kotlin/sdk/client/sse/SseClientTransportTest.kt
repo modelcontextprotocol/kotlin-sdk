@@ -15,17 +15,32 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpProtocolVersion
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.append
+import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
 import io.ktor.util.date.GMTDate
 import io.ktor.utils.io.ByteReadChannel
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.SseClientTransport
+import io.modelcontextprotocol.kotlin.sdk.client.mcpSse
+import io.modelcontextprotocol.kotlin.sdk.client.mcpSseTransport
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.InitializeResult
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
+import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.McpJson
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.put
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import kotlin.time.Duration.Companion.milliseconds
@@ -244,6 +259,92 @@ class SseClientTransportTest {
 
     private fun sseTransport(sseUrl: String, engine: MockSseClientEngine) =
         SseClientTransport(HttpClient(engine) { install(SSE) }, sseUrl)
+    @Test
+    fun `connect times out while the SSE handshake is pending`() = runTest {
+        val timeout = 100.milliseconds
+        val engine = object : MockSseClientEngine(endpoint = null, onPostRequest = {}) {
+            override suspend fun execute(data: HttpRequestData): HttpResponseData {
+                if (data.method == HttpMethod.Get) awaitCancellation()
+                return super.execute(data)
+            }
+        }
+        val client = HttpClient(engine) { install(SSE) }
+        val transport = SseClientTransport(
+            client = client,
+            urlString = SSE_URL,
+            endpointDiscoveryTimeout = timeout,
+        )
+        val errors = mutableListOf<Throwable>()
+        transport.onError { errors += it }
+
+        try {
+            val exception = assertFailsWith<IllegalStateException> { transport.start() }
+
+            exception.message shouldBe "Timed out waiting for the SSE endpoint event after $timeout"
+            errors shouldHaveSize 1
+            errors.single() shouldBe exception
+        } finally {
+            client.close()
+            engine.close()
+        }
+    }
+
+    @Test
+    fun `custom endpoint timeout preserves trailing request builder lambda`() = runTest {
+        val engine = CapturingSseClientEngine(endpoint = "/messages?sessionId=abc")
+        val client = HttpClient(engine) { install(SSE) }
+        val transport = client.mcpSseTransport(urlString = SSE_URL, endpointDiscoveryTimeout = 2.seconds) {
+            headers.append(HttpHeaders.Authorization, "Bearer token")
+        }
+
+        try {
+            transport.start()
+            transport.send(JSONRPCNotification(method = "test"))
+
+            engine.capturedPosts.single().headers[HttpHeaders.Authorization] shouldBe "Bearer token"
+        } finally {
+            transport.close()
+            client.close()
+            engine.close()
+        }
+
+        val convenienceEngine = CapturingSseClientEngine(
+            endpoint = "/messages?sessionId=xyz",
+            respondToInitialize = true,
+        )
+        val convenienceHttpClient = HttpClient(convenienceEngine) { install(SSE) }
+        val mcpClient = withContext(Dispatchers.Default) {
+            convenienceHttpClient.mcpSse(
+                urlString = SSE_URL,
+                endpointDiscoveryTimeout = 2.seconds,
+            ) {
+                headers.append(HttpHeaders.Authorization, "Bearer token")
+            }
+        }
+
+        try {
+            mcpClient.close()
+            convenienceEngine.capturedPosts.shouldHaveSize(2)
+            convenienceEngine.capturedPosts.forEach {
+                it.headers[HttpHeaders.Authorization] shouldBe "Bearer token"
+            }
+        } finally {
+            convenienceHttpClient.close()
+            convenienceEngine.close()
+        }
+    }
+
+    private fun sseTransport(
+        sseUrl: String,
+        engine: CapturingSseClientEngine,
+        clientConfig: HttpClientConfig<*>.() -> Unit = {},
+    ) = SseClientTransport(
+        HttpClient(engine) {
+            install(SSE)
+            clientConfig()
+        },
+        sseUrl,
+    )
 
     private suspend fun startWithRejectedEndpoint(sseUrl: String, endpointEvent: String): IllegalArgumentException {
         val engine = CapturingSseClientEngine(endpoint = endpointEvent)
@@ -283,10 +384,11 @@ class SseClientTransportTest {
         endpoint: String,
         private val sseRedirectLocation: String?,
         private val capturedPostRequests: MutableList<HttpRequestData>,
-    ) : MockSseClientEngine(endpoint, capturedPostRequests::add, Dispatchers.Unconfined) {
+        private val respondToInitialize: Boolean,
+    ) : MockSseClientEngine(endpoint, capturedPostRequests::add) {
 
-        constructor(endpoint: String, sseRedirectLocation: String? = null) :
-            this(endpoint, sseRedirectLocation, mutableListOf())
+        constructor(endpoint: String, sseRedirectLocation: String? = null, respondToInitialize: Boolean = false) :
+            this(endpoint, sseRedirectLocation, mutableListOf(), respondToInitialize)
 
         private var redirected = false
 
@@ -296,16 +398,41 @@ class SseClientTransportTest {
         /** Answers the first SSE request with a redirect to [sseRedirectLocation], if it is set. */
         override suspend fun execute(data: HttpRequestData): HttpResponseData {
             val location = sseRedirectLocation
-            if (location == null || data.method != HttpMethod.Get || redirected) return super.execute(data)
-            redirected = true
-            return HttpResponseData(
-                statusCode = HttpStatusCode.Found,
-                requestTime = GMTDate(),
-                headers = headersOf(HttpHeaders.Location, location),
-                version = HttpProtocolVersion.HTTP_1_1,
-                body = ByteReadChannel.Empty,
-                callContext = dispatcher + Job(),
-            )
+            if (location != null && data.method == HttpMethod.Get && !redirected) {
+                redirected = true
+                return HttpResponseData(
+                    statusCode = HttpStatusCode.Found,
+                    requestTime = GMTDate(),
+                    headers = headersOf(HttpHeaders.Location, location),
+                    version = HttpProtocolVersion.HTTP_1_1,
+                    body = ByteReadChannel.Empty,
+                    callContext = dispatcher + Job(),
+                )
+            }
+
+            if (respondToInitialize && data.method == HttpMethod.Post) {
+                val request = McpJson.decodeFromString<JSONRPCMessage>((data.body as TextContent).text)
+                if (request is JSONRPCRequest && request.method == "initialize") {
+                    sendSseMessage(
+                        buildJsonObject {
+                            put("jsonrpc", "2.0")
+                            put("id", McpJson.encodeToJsonElement(request.id))
+                            put(
+                                "result",
+                                McpJson.encodeToJsonElement(
+                                    InitializeResult(
+                                        protocolVersion = LATEST_PROTOCOL_VERSION,
+                                        capabilities = ServerCapabilities(),
+                                        serverInfo = Implementation("mock-server", "1.0.0"),
+                                    ),
+                                ),
+                            )
+                        }.toString(),
+                    )
+                }
+            }
+
+            return super.execute(data)
         }
     }
 }

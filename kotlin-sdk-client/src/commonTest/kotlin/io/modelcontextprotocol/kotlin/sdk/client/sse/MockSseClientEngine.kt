@@ -17,9 +17,11 @@ import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.InternalAPI
 import io.ktor.utils.io.writeStringUtf8
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 
 @OptIn(InternalAPI::class)
@@ -59,6 +61,13 @@ internal open class MockSseClientEngine(
      */
     fun disconnectSseStream() {
         channel.close()
+    }
+
+    fun sendSseMessage(data: String) {
+        CoroutineScope(coroutineContext).launch {
+            channel.writeStringUtf8("event: message\ndata: $data\n\n")
+            channel.flush()
+        }
     }
 
     private fun responseContext(): CoroutineContext = dispatcher + Job()

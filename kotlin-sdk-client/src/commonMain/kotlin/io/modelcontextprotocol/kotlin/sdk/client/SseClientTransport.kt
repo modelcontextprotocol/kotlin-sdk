@@ -25,6 +25,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -39,31 +40,60 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-private val DEFAULT_ENDPOINT_DISCOVERY_TIMEOUT: Duration = 30.seconds
+internal val DEFAULT_ENDPOINT_DISCOVERY_TIMEOUT: Duration = 30.seconds
 
 /**
  * Client transport for SSE: this will connect to a server using Server-Sent Events for receiving
  * messages and make separate POST requests for sending messages.
  *
- * @param endpointDiscoveryTimeout Maximum time to wait for the server's endpoint event. The legacy
- * constructor and convenience functions use a 30-second default.
+ * @param client HTTP client used for SSE and POST requests.
+ * @param urlString Optional URL of the MCP server.
+ * @param reconnectionTime Optional duration to wait before attempting to reconnect.
+ * @param endpointDiscoveryTimeout Maximum time to wait for the SSE connection and the server's
+ * endpoint event. Defaults to 30 seconds.
+ * @param requestBuilder Optional lambda to configure each HTTP request.
  */
 @OptIn(ExperimentalAtomicApi::class)
-public class SseClientTransport(
+public class SseClientTransport private constructor(
     private val client: HttpClient,
     private val urlString: String?,
-    private val reconnectionTime: Duration? = null,
-    private val requestBuilder: HttpRequestBuilder.() -> Unit = {},
+    private val reconnectionTime: Duration?,
     private val endpointDiscoveryTimeout: Duration,
+    private val requestBuilder: HttpRequestBuilder.() -> Unit,
+    @Suppress("UNUSED_PARAMETER") compatibilityMarker: Unit,
 ) : AbstractClientTransport() {
 
-    /** Creates a transport using the default endpoint discovery timeout. */
+    /**
+     * Creates a transport using the default endpoint discovery timeout.
+     *
+     * @param client HTTP client used for SSE and POST requests.
+     * @param urlString Optional URL of the MCP server.
+     * @param reconnectionTime Optional duration to wait before attempting to reconnect.
+     * @param requestBuilder Optional lambda to configure each HTTP request.
+     */
     public constructor(
         client: HttpClient,
         urlString: String?,
         reconnectionTime: Duration? = null,
         requestBuilder: HttpRequestBuilder.() -> Unit = {},
-    ) : this(client, urlString, reconnectionTime, requestBuilder, DEFAULT_ENDPOINT_DISCOVERY_TIMEOUT)
+    ) : this(client, urlString, reconnectionTime, DEFAULT_ENDPOINT_DISCOVERY_TIMEOUT, requestBuilder, Unit)
+
+    /**
+     * Creates a transport with a custom timeout for the SSE handshake and endpoint event.
+     *
+     * @param client HTTP client used for SSE and POST requests.
+     * @param urlString Optional URL of the MCP server.
+     * @param reconnectionTime Optional duration to wait before attempting to reconnect.
+     * @param endpointDiscoveryTimeout Maximum time to wait for the SSE connection and server endpoint event.
+     * @param requestBuilder Optional lambda to configure each HTTP request.
+     */
+    public constructor(
+        client: HttpClient,
+        urlString: String?,
+        reconnectionTime: Duration? = null,
+        endpointDiscoveryTimeout: Duration,
+        requestBuilder: HttpRequestBuilder.() -> Unit = {},
+    ) : this(client, urlString, reconnectionTime, endpointDiscoveryTimeout, requestBuilder, Unit)
 
     override val logger: KLogger = KotlinLogging.logger {}
 
@@ -95,39 +125,47 @@ public class SseClientTransport(
     }
 
     override suspend fun initialize() {
-        session = urlString?.let {
-            client.sseSession(
-                urlString = it,
-                reconnectionTime = reconnectionTime,
-                block = requestBuilder,
-            )
-        } ?: client.sseSession(
-            reconnectionTime = reconnectionTime,
-            block = requestBuilder,
-        )
+        val discoveredEndpoint = withContext(Dispatchers.Default) {
+            withTimeoutOrNull(endpointDiscoveryTimeout) {
+                session = urlString?.let {
+                    client.sseSession(
+                        urlString = it,
+                        reconnectionTime = reconnectionTime,
+                        block = requestBuilder,
+                    )
+                } ?: client.sseSession(
+                    reconnectionTime = reconnectionTime,
+                    block = requestBuilder,
+                )
 
-        // Endpoints are validated against the origin of the SSE request, so that request must not
-        // have been redirected away from the origin the transport was configured with.
-        val requestedUrl = urlString?.let(::parseUrl)
-        val connectionUrl = session.call.request.url
-        if (requestedUrl != null) {
-            check(requestedUrl.hasSameOrigin(connectionUrl)) {
-                "SSE request to ${requestedUrl.safeOrigin} was redirected to a different origin " +
-                    connectionUrl.safeOrigin
+                // Endpoints are validated against the origin of the SSE request, so that request must not
+                // have been redirected away from the origin the transport was configured with.
+                val requestedUrl = urlString?.let(::parseUrl)
+                val connectionUrl = session.call.request.url
+                if (requestedUrl != null) {
+                    check(requestedUrl.hasSameOrigin(connectionUrl)) {
+                        "SSE request to ${requestedUrl.safeOrigin} was redirected to a different origin " +
+                            connectionUrl.safeOrigin
+                    }
+                }
+
+                scope = CoroutineScope(session.coroutineContext + SupervisorJob())
+
+                job = scope.launch(CoroutineName("SseMcpClientTransport.connect#${hashCode()}")) {
+                    collectMessages()
+                }
+
+                endpoint.await()
             }
         }
 
-        scope = CoroutineScope(session.coroutineContext + SupervisorJob())
-
-        job = scope.launch(CoroutineName("SseMcpClientTransport.connect#${hashCode()}")) {
-            collectMessages()
-        }
-
-        if (withTimeoutOrNull(endpointDiscoveryTimeout) { endpoint.await() } == null) {
+        if (discoveredEndpoint == null) {
             val timeoutError = IllegalStateException(
                 "Timed out waiting for the SSE endpoint event after $endpointDiscoveryTimeout",
             )
             _onError(timeoutError)
+            closeResources()
+            invokeOnCloseCallback()
             throw timeoutError
         }
     }
