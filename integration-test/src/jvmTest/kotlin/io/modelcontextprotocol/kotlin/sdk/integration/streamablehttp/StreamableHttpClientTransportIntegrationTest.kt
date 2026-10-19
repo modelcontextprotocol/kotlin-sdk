@@ -17,14 +17,20 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.StreamableHttpClientTransport
+import io.modelcontextprotocol.kotlin.sdk.client.StreamableHttpError
+import io.modelcontextprotocol.kotlin.sdk.server.Server
+import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
+import io.modelcontextprotocol.kotlin.sdk.server.mcpStreamableHttp
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification
 import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.test.utils.actualPort
 import io.modelcontextprotocol.kotlin.test.utils.runIntegrationTest
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -94,6 +100,30 @@ class StreamableHttpClientTransportIntegrationTest {
         },
     ) { client ->
         client.ping()
+    }
+
+    @Test
+    fun `client reports an expired session through onError`() = runIntegrationTest(timeout = 20.seconds) {
+        val server = Server(Implementation("test-server", "1.0.0"), ServerOptions(ServerCapabilities()))
+        val ktorServer = embeddedServer(ServerCIO, host = HOST, port = 0) {
+            mcpStreamableHttp(sessionIdleTimeout = 1.seconds) { server }
+        }.startSuspend(wait = false)
+        val httpClient = HttpClient(ClientCIO) { install(SSE) }
+        val client = Client(Implementation("test-client", "1.0.0"))
+        try {
+            val url = "http://$HOST:${ktorServer.actualPort()}$MCP_PATH"
+            val transport = StreamableHttpClientTransport(httpClient, url)
+            val sessionNotFound = CompletableDeferred<StreamableHttpError>()
+            transport.onError { if (it is StreamableHttpError && it.code == 404) sessionNotFound.complete(it) }
+            client.connect(transport)
+
+            // The open GET stream does not keep the session alive, so its reconnect after expiry gets 404.
+            withTimeout(10.seconds) { sessionNotFound.await() }
+        } finally {
+            client.close()
+            httpClient.close()
+            ktorServer.stopSuspend(1000, 2000)
+        }
     }
 
     private fun withConnectedClient(
