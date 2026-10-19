@@ -641,6 +641,9 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             } catch (cause: Throwable) {
                 logger.error(cause) { "Error sending response for request: ${request.method} (id: ${request.id})" }
                 onError(cause)
+                if (handlerJob?.isCancelled != true) {
+                    respondWithError(capturedTransport, request, cause)
+                }
             }
         }
     }
