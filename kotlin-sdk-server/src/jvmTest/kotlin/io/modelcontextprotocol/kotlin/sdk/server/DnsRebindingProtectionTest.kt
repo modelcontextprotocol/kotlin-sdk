@@ -202,6 +202,7 @@ class DnsRebindingProtectionTest {
         ex.message shouldContain "not-a-url"
     }
 
+    @Suppress("DEPRECATION")
     @Test
     fun `Route mcp with DNS protection enabled rejects non-localhost`() = testApplication {
         application {
@@ -218,6 +219,7 @@ class DnsRebindingProtectionTest {
         response.shouldHaveStatus(HttpStatusCode.Forbidden)
     }
 
+    @Suppress("DEPRECATION")
     @Test
     fun `Route mcp with DNS protection disabled allows any host`() = testApplication {
         application {

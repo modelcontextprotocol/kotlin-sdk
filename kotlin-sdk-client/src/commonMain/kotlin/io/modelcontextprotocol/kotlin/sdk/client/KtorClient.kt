@@ -15,6 +15,12 @@ import kotlin.time.Duration
  * @param requestBuilder Optional lambda to configure the HTTP request.
  * @return A [SseClientTransport] configured for MCP communication.
  */
+@Deprecated(
+    "The SSE transport is deprecated in the MCP specification (SEP-2596) " +
+        "and will be removed in a future release. Use mcpStreamableHttpTransport instead.",
+    level = DeprecationLevel.WARNING,
+)
+@Suppress("DEPRECATION")
 public fun HttpClient.mcpSseTransport(
     urlString: String? = null,
     reconnectionTime: Duration? = null,
@@ -29,6 +35,12 @@ public fun HttpClient.mcpSseTransport(
  * @param requestBuilder Optional lambda to configure the HTTP request.
  * @return A connected [Client] ready for MCP communication.
  */
+@Deprecated(
+    "The SSE transport is deprecated in the MCP specification (SEP-2596) " +
+        "and will be removed in a future release. Use mcpStreamableHttp instead.",
+    level = DeprecationLevel.WARNING,
+)
+@Suppress("DEPRECATION")
 public suspend fun HttpClient.mcpSse(
     urlString: String? = null,
     reconnectionTime: Duration? = null,
