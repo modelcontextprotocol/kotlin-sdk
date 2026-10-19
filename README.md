@@ -803,6 +803,48 @@ embeddedServer(CIO, port = 3000) {
 -->
 <!--- KNIT example-server-routes-01.kt -->
 
+**Session limits:** `mcpStreamableHttp()` keeps every session in memory until the client deletes it, the server closes
+it, or it expires. A session expires after `sessionIdleTimeout` (30 minutes by default) without requests; its client
+then receives `404 Not Found` and has to initialize a new session. An open GET stream does not keep a session alive
+(expiry closes the stream too), so a client that only listens for notifications should send `ping` requests. At most
+`maxSessions` sessions (10,000 by default) are open at once; while that many are open, a request that would open another
+one receives `503 Service Unavailable`. Any request other than `initialize` that carries no `Mcp-Session-Id`, a plain
+`GET /mcp` included, receives `400 Bad Request`, so point health checks at a separate route. Size both limits to your
+traffic:
+
+<!--- CLEAR -->
+<!--- INCLUDE 
+import io.ktor.server.cio.CIO
+import io.ktor.server.engine.embeddedServer
+import io.modelcontextprotocol.kotlin.sdk.server.Server
+import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
+import io.modelcontextprotocol.kotlin.sdk.server.mcpStreamableHttp
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import kotlin.time.Duration.Companion.minutes
+
+private class MyServer :
+    Server(
+        serverInfo = Implementation(name = "ExampleServer", version = "1.0"),
+        options = ServerOptions(capabilities = ServerCapabilities()),
+    )
+
+fun main() {
+-->
+
+```kotlin
+embeddedServer(CIO, port = 3000) {
+    mcpStreamableHttp(sessionIdleTimeout = 10.minutes, maxSessions = 1_000) {
+        MyServer()
+    }
+}.start(wait = true)
+```
+
+<!--- SUFFIX 
+}
+-->
+<!--- KNIT example-server-routes-02.kt -->
+
 **CORS for browser-based clients (e.g. MCP Inspector):** if you connect from a browser-based
 client you need to install the Ktor CORS plugin so that MCP-specific headers are allowed and exposed:
 
@@ -869,7 +911,7 @@ embeddedServer(CIO, port = 3000) {
 <!--- SUFFIX 
 }
 -->
-<!--- KNIT example-server-routes-02.kt -->
+<!--- KNIT example-server-routes-03.kt -->
 
 Prefer Streamable HTTP for new projects.
 
