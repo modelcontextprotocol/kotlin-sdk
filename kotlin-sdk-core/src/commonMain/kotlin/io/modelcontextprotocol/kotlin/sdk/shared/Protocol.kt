@@ -637,7 +637,10 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             try {
                 capturedTransport.send(JSONRPCResponse(id = request.id, result = result ?: EmptyResult()))
             } catch (e: CancellationException) {
-                throw e
+                if (handlerJob == null || handlerJob.isCancelled) throw e
+                // Like a leaked handler CE above, a send-local cancellation must still answer the peer.
+                onError(e)
+                respondWithError(capturedTransport, request, e)
             } catch (cause: Throwable) {
                 logger.error(cause) { "Error sending response for request: ${request.method} (id: ${request.id})" }
                 onError(cause)

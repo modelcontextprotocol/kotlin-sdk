@@ -10,14 +10,22 @@ import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestResult
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class ClientSendErrorRegressionTest {
@@ -117,6 +125,100 @@ class ClientSendErrorRegressionTest {
     }
 
     @Test
+    fun `response send leaking cancellation reports once and answers the peer`() =
+        responseSendCancellationAnswersPeer { throw CancellationException("Send cancelled") }
+
+    @Test
+    fun `response send timing out reports once and answers the peer`() =
+        responseSendCancellationAnswersPeer { withTimeout(10.milliseconds) { awaitCancellation() } }
+
+    private fun responseSendCancellationAnswersPeer(cancelSend: suspend () -> Unit): TestResult = runTest {
+        val (peer, peerTransport) = connectedProtocol()
+        val transport = FailingSendTransport(
+            failures = 0,
+            beforeSend = { if (it is JSONRPCResponse) cancelSend() },
+            onSend = peerTransport::deliver,
+        )
+        val protocol = TestProtocol(ProtocolOptions(handlerCoroutineContext = StandardTestDispatcher(testScheduler)))
+        protocol.connect(transport)
+        protocol.enableConcurrency()
+        try {
+            val pending = async {
+                shouldThrow<McpException> { peer.request<EmptyResult>(PingRequest()) }
+            }
+            val request = peerTransport.awaitRequest()
+            transport.deliver(request)
+
+            val peerError = withTimeout(1.seconds) { pending.await() }
+            val failure = protocol.errors.single().shouldBeInstanceOf<CancellationException>()
+            transport.sendAttempts shouldBe 2
+            val response = transport.deliveredMessages.single().shouldBeInstanceOf<JSONRPCError>()
+            response.id shouldBe request.id
+            response.error.code shouldBe RPCError.ErrorCode.INTERNAL_ERROR
+            response.error.message shouldBe failure.message
+            peerError.code shouldBe RPCError.ErrorCode.INTERNAL_ERROR
+            peerError.message shouldBe failure.message
+            peer.responseHandlers shouldBe emptyMap()
+        } finally {
+            protocol.close()
+            peer.close()
+        }
+    }
+
+    @Test
+    fun `peer cancellation during response send suppresses the fallback and error callback`() =
+        cancelledResponseSendGetsNoReply(closeConnection = false)
+
+    @Test
+    fun `connection close during response send suppresses the fallback and error callback`() =
+        cancelledResponseSendGetsNoReply(closeConnection = true)
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun cancelledResponseSendGetsNoReply(closeConnection: Boolean): TestResult = runTest {
+        val transport = FailingSendTransport(failures = 0, beforeSend = { awaitCancellation() })
+        val protocol = TestProtocol(ProtocolOptions(handlerCoroutineContext = StandardTestDispatcher(testScheduler)))
+        protocol.connect(transport)
+        protocol.enableConcurrency()
+        try {
+            val request = JSONRPCRequest(RequestId.NumberId(1), "ping")
+            transport.deliver(request)
+            transport.sendAttempts shouldBe 1
+
+            if (closeConnection) {
+                protocol.close()
+            } else {
+                transport.deliver(cancelledNotification(request.id, "Caller cancelled"))
+            }
+            runCurrent()
+
+            transport.sendAttempts shouldBe 1
+            transport.deliveredMessages shouldBe emptyList()
+            protocol.errors shouldBe emptyList()
+        } finally {
+            protocol.close()
+        }
+    }
+
+    @Test
+    fun `serial response send cancellation propagates without a fallback or error callback`() = runTest {
+        val failure = CancellationException("Send cancelled during initialization")
+        val transport = FailingSendTransport(failures = 0, beforeSend = { throw failure })
+        val protocol = TestProtocol()
+        protocol.connect(transport)
+        try {
+            shouldThrow<CancellationException> {
+                transport.deliver(JSONRPCRequest(RequestId.NumberId(1), "ping"))
+            }.message shouldBe failure.message
+
+            transport.sendAttempts shouldBe 1
+            transport.deliveredMessages shouldBe emptyList()
+            protocol.errors shouldBe emptyList()
+        } finally {
+            protocol.close()
+        }
+    }
+
+    @Test
     fun `background errors still reach the error callback`() = runTest {
         val transport = FailingSendTransport()
         val protocol = TestProtocol()
@@ -134,6 +236,7 @@ class ClientSendErrorRegressionTest {
 
     private class FailingSendTransport(
         private val failures: Int = Int.MAX_VALUE,
+        private val beforeSend: suspend (JSONRPCMessage) -> Unit = {},
         private val onSend: suspend (JSONRPCMessage) -> Unit = {},
     ) : AbstractClientTransport() {
         override val logger: KLogger = KotlinLogging.logger {}
@@ -148,6 +251,7 @@ class ClientSendErrorRegressionTest {
 
         override suspend fun performSend(message: JSONRPCMessage, options: TransportSendOptions?) {
             sendAttempts++
+            beforeSend(message)
             if (sendAttempts <= failures) throw if (sendAttempts == 1) failure else retryFailure
             deliveredMessages += message
             onSend(message)
