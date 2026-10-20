@@ -125,6 +125,45 @@ class AbstractClientTransportTest {
     }
 
     @Test
+    fun `should explain the observed state when checkState fails`() {
+        shouldThrow<IllegalStateException> {
+            transport.testCheckState(ClientTransportState.Operational)
+        }.message shouldBe "Expected transport state Operational, but found New"
+    }
+
+    @Test
+    fun `should evaluate a custom checkState message once with the actual state`() {
+        var invocations = 0
+        var observed: ClientTransportState? = null
+
+        val exception = shouldThrow<IllegalStateException> {
+            transport.testCheckState(ClientTransportState.Operational) { actual ->
+                invocations++
+                observed = actual
+                "state was $actual"
+            }
+        }
+
+        invocations shouldBe 1
+        observed shouldBe ClientTransportState.New
+        exception.message shouldBe "state was New"
+    }
+
+    @Test
+    fun `should skip the checkState message when the state matches`() {
+        transport.testCheckState(ClientTransportState.New) { error("message must not be evaluated") }
+    }
+
+    @Test
+    fun `should format checkState from the forced actual state`() {
+        transport.forceState(ClientTransportState.Stopped)
+
+        shouldThrow<IllegalStateException> {
+            transport.testCheckState(ClientTransportState.Operational)
+        }.message shouldBe "Expected transport state Operational, but found Stopped"
+    }
+
+    @Test
     fun `should pass message and options to performSend`() = runTest {
         val message = PingRequest().toJSON()
         val options = TransportSendOptions()
@@ -241,6 +280,11 @@ class AbstractClientTransportTest {
         fun testStateTransition(from: ClientTransportState, to: ClientTransportState) = stateTransition(from, to)
 
         fun forceState(newState: ClientTransportState) = updateState(newState)
+
+        fun testCheckState(expected: ClientTransportState) = checkState(expected)
+
+        fun testCheckState(expected: ClientTransportState, lazyMessage: (ClientTransportState) -> Any) =
+            checkState(expected, lazyMessage)
     }
 
     private class TestException(message: String) : Exception(message)

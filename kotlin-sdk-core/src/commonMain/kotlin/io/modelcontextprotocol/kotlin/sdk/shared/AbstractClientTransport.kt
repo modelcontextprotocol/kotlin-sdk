@@ -111,7 +111,7 @@ public abstract class AbstractClientTransport : AbstractTransport() {
         },
     ) {
         val actualState = state
-        check(actualState == expected) { lazyMessage }
+        check(actualState == expected) { lazyMessage(actualState) }
     }
 
     /**
