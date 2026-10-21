@@ -367,36 +367,6 @@ public fun Application.mcpStatelessStreamableHttp(
     )
 }
 
-/**
- * Retained only so that existing call sites get a migration hint instead of an unresolved parameter name.
- *
- * @param eventStore never consulted by a stateless endpoint. Resumption is driven by a `GET` carrying
- *          `Last-Event-ID`, and this endpoint answers `GET` with `405 Method Not Allowed`, so no stream
- *          exists to store events on or replay them to. Use [mcpStreamableHttp] when you need resumability.
- */
-@Deprecated(
-    "Use mcpStatelessStreamableHttp without eventStore.",
-    ReplaceWith("mcpStatelessStreamableHttp(path, enableDnsRebindingProtection, allowedHosts, allowedOrigins, block)"),
-    DeprecationLevel.ERROR,
-)
-@Suppress("UnusedParameter")
-public fun Application.mcpStatelessStreamableHttp(
-    path: String = "/mcp",
-    enableDnsRebindingProtection: Boolean = true,
-    allowedHosts: List<String>? = null,
-    allowedOrigins: List<String>? = null,
-    eventStore: EventStore?,
-    block: RoutingContext.() -> Server,
-) {
-    mcpStatelessStreamableHttp(
-        path = path,
-        enableDnsRebindingProtection = enableDnsRebindingProtection,
-        allowedHosts = allowedHosts,
-        allowedOrigins = allowedOrigins,
-        block = block,
-    )
-}
-
 private suspend fun ServerSSESession.mcpSseEndpoint(
     postEndpoint: String,
     transportManager: TransportManager<SseServerTransport>,
