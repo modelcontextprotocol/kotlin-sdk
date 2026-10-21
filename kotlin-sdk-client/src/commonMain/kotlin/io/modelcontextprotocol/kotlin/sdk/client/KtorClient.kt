@@ -19,23 +19,9 @@ import kotlin.time.Duration
 public fun HttpClient.mcpSseTransport(
     urlString: String? = null,
     reconnectionTime: Duration? = null,
-    endpointDiscoveryTimeout: Duration,
+    endpointDiscoveryTimeout: Duration = DEFAULT_ENDPOINT_DISCOVERY_TIMEOUT,
     requestBuilder: HttpRequestBuilder.() -> Unit = {},
 ): SseClientTransport = SseClientTransport(this, urlString, reconnectionTime, endpointDiscoveryTimeout, requestBuilder)
-
-/**
- * Creates a transport using the default endpoint discovery timeout.
- *
- * @param urlString Optional URL of the MCP server.
- * @param reconnectionTime Optional duration to wait before attempting to reconnect.
- * @param requestBuilder Optional lambda to configure the HTTP request.
- * @return A [SseClientTransport] configured for MCP communication.
- */
-public fun HttpClient.mcpSseTransport(
-    urlString: String? = null,
-    reconnectionTime: Duration? = null,
-    requestBuilder: HttpRequestBuilder.() -> Unit = {},
-): SseClientTransport = mcpSseTransport(urlString, reconnectionTime, DEFAULT_ENDPOINT_DISCOVERY_TIMEOUT, requestBuilder)
 
 /**
  * Creates and connects an MCP client over SSE using the provided HttpClient.
@@ -49,7 +35,7 @@ public fun HttpClient.mcpSseTransport(
 public suspend fun HttpClient.mcpSse(
     urlString: String? = null,
     reconnectionTime: Duration? = null,
-    endpointDiscoveryTimeout: Duration,
+    endpointDiscoveryTimeout: Duration = DEFAULT_ENDPOINT_DISCOVERY_TIMEOUT,
     requestBuilder: HttpRequestBuilder.() -> Unit = {},
 ): Client {
     val transport = mcpSseTransport(urlString, reconnectionTime, endpointDiscoveryTimeout, requestBuilder)
@@ -62,17 +48,3 @@ public suspend fun HttpClient.mcpSse(
     client.connect(transport)
     return client
 }
-
-/**
- * Connects an MCP client using the default endpoint discovery timeout.
- *
- * @param urlString Optional URL of the MCP server.
- * @param reconnectionTime Optional duration to wait before attempting to reconnect.
- * @param requestBuilder Optional lambda to configure the HTTP request.
- * @return A connected [Client] ready for MCP communication.
- */
-public suspend fun HttpClient.mcpSse(
-    urlString: String? = null,
-    reconnectionTime: Duration? = null,
-    requestBuilder: HttpRequestBuilder.() -> Unit = {},
-): Client = mcpSse(urlString, reconnectionTime, DEFAULT_ENDPOINT_DISCOVERY_TIMEOUT, requestBuilder)

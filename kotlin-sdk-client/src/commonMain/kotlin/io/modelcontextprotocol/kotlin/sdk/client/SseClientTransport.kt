@@ -54,46 +54,13 @@ internal val DEFAULT_ENDPOINT_DISCOVERY_TIMEOUT: Duration = 30.seconds
  * @param requestBuilder Optional lambda to configure each HTTP request.
  */
 @OptIn(ExperimentalAtomicApi::class)
-public class SseClientTransport private constructor(
+public class SseClientTransport(
     private val client: HttpClient,
     private val urlString: String?,
-    private val reconnectionTime: Duration?,
-    private val endpointDiscoveryTimeout: Duration,
-    private val requestBuilder: HttpRequestBuilder.() -> Unit,
-    @Suppress("UNUSED_PARAMETER") compatibilityMarker: Unit,
+    private val reconnectionTime: Duration? = null,
+    private val endpointDiscoveryTimeout: Duration = DEFAULT_ENDPOINT_DISCOVERY_TIMEOUT,
+    private val requestBuilder: HttpRequestBuilder.() -> Unit = {},
 ) : AbstractClientTransport() {
-
-    /**
-     * Creates a transport using the default endpoint discovery timeout.
-     *
-     * @param client HTTP client used for SSE and POST requests.
-     * @param urlString Optional URL of the MCP server.
-     * @param reconnectionTime Optional duration to wait before attempting to reconnect.
-     * @param requestBuilder Optional lambda to configure each HTTP request.
-     */
-    public constructor(
-        client: HttpClient,
-        urlString: String?,
-        reconnectionTime: Duration? = null,
-        requestBuilder: HttpRequestBuilder.() -> Unit = {},
-    ) : this(client, urlString, reconnectionTime, DEFAULT_ENDPOINT_DISCOVERY_TIMEOUT, requestBuilder, Unit)
-
-    /**
-     * Creates a transport with a custom timeout for the SSE handshake and endpoint event.
-     *
-     * @param client HTTP client used for SSE and POST requests.
-     * @param urlString Optional URL of the MCP server.
-     * @param reconnectionTime Optional duration to wait before attempting to reconnect.
-     * @param endpointDiscoveryTimeout Maximum time to wait for the SSE connection and server endpoint event.
-     * @param requestBuilder Optional lambda to configure each HTTP request.
-     */
-    public constructor(
-        client: HttpClient,
-        urlString: String?,
-        reconnectionTime: Duration? = null,
-        endpointDiscoveryTimeout: Duration,
-        requestBuilder: HttpRequestBuilder.() -> Unit = {},
-    ) : this(client, urlString, reconnectionTime, endpointDiscoveryTimeout, requestBuilder, Unit)
 
     override val logger: KLogger = KotlinLogging.logger {}
 

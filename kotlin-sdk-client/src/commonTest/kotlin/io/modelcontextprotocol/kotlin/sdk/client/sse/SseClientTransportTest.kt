@@ -36,6 +36,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.buildJsonObject
@@ -259,6 +260,31 @@ class SseClientTransportTest {
 
     private fun sseTransport(sseUrl: String, engine: MockSseClientEngine) =
         SseClientTransport(HttpClient(engine) { install(SSE) }, sseUrl)
+    @Test
+    fun `connect uses a real timeout clock while waiting for the SSE handshake`() = runTest {
+        val timeout = 2.seconds
+        val engine = object : MockSseClientEngine(endpoint = "/messages?sessionId=abc", onPostRequest = {}) {
+            override suspend fun execute(data: HttpRequestData): HttpResponseData {
+                if (data.method == HttpMethod.Get) delay(100)
+                return super.execute(data)
+            }
+        }
+        val client = HttpClient(engine) { install(SSE) }
+        val transport = SseClientTransport(
+            client = client,
+            urlString = SSE_URL,
+            endpointDiscoveryTimeout = timeout,
+        )
+
+        try {
+            transport.start()
+        } finally {
+            transport.close()
+            client.close()
+            engine.close()
+        }
+    }
+
     @Test
     fun `connect times out while the SSE handshake is pending`() = runTest {
         val timeout = 100.milliseconds
