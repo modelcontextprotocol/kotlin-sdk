@@ -215,18 +215,6 @@ class SseClientTransportTest {
         engine.close()
     }
 
-    private fun sseTransport(
-        sseUrl: String,
-        engine: CapturingSseClientEngine,
-        clientConfig: HttpClientConfig<*>.() -> Unit = {},
-    ) = SseClientTransport(
-        HttpClient(engine) {
-            install(SSE)
-            clientConfig()
-        },
-        sseUrl,
-    )
-
     @Test
     fun `connect fails when the server never sends an endpoint event`() = runTest {
         val sseUrl = "http://example.com/api/mcp/sse"
@@ -258,8 +246,6 @@ class SseClientTransportTest {
         }
     }
 
-    private fun sseTransport(sseUrl: String, engine: MockSseClientEngine) =
-        SseClientTransport(HttpClient(engine) { install(SSE) }, sseUrl)
     @Test
     fun `connect uses a real timeout clock while waiting for the SSE handshake`() = runTest {
         val timeout = 2.seconds
