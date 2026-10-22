@@ -31,6 +31,11 @@ internal const val SESSION_ID_PARAM = "sessionId"
  * @param maxRequestBodySize maximum allowed size, in bytes, of an incoming POST body; larger requests are
  *      rejected with `413 Payload Too Large` without being buffered in full. Defaults to 4 MiB.
  */
+@Deprecated(
+    "The SSE transport is deprecated in the MCP specification (SEP-2596) " +
+        "and will be removed in a future release. Use StreamableHttpServerTransport instead.",
+    level = DeprecationLevel.WARNING,
+)
 @OptIn(ExperimentalAtomicApi::class)
 public class SseServerTransport(
     private val endpoint: String,

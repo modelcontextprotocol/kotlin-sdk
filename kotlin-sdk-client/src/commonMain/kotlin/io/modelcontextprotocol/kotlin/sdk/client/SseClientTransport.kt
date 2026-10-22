@@ -41,6 +41,11 @@ import kotlin.time.Duration
  * Client transport for SSE: this will connect to a server using Server-Sent Events for receiving
  * messages and make separate POST requests for sending messages.
  */
+@Deprecated(
+    "The SSE transport is deprecated in the MCP specification (SEP-2596) " +
+        "and will be removed in a future release. Use StreamableHttpClientTransport instead.",
+    level = DeprecationLevel.WARNING,
+)
 @OptIn(ExperimentalAtomicApi::class)
 public class SseClientTransport(
     private val client: HttpClient,
