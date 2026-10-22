@@ -70,21 +70,6 @@ public class SseClientTransport(
     private lateinit var scope: CoroutineScope
     private var job: Job? = null
 
-    private val origin: String by lazy {
-        session.call.request.url.protocolWithAuthority
-    }
-
-    private val baseUrl: String by lazy {
-        session.call.request.url.let { url ->
-            val path = url.encodedPath
-            when {
-                path.isEmpty() -> origin
-                path.endsWith("/") -> origin + path.removeSuffix("/")
-                else -> origin + path.take(path.lastIndexOf("/"))
-            }
-        }
-    }
-
     init {
         require(endpointDiscoveryTimeout.isFinite() && endpointDiscoveryTimeout > Duration.ZERO) {
             "Endpoint discovery timeout must be finite and positive"
