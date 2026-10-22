@@ -66,7 +66,7 @@ private val logger = KotlinLogging.logger {}
  */
 @Deprecated(
     "The SSE transport is deprecated in the MCP specification (SEP-2596) " +
-        "and will be removed in a future release. Use Application.mcpStreamableHttp instead.",
+        "and will be removed in a future release. Use StreamableHttpServerTransport instead.",
     level = DeprecationLevel.WARNING,
 )
 @KtorDsl
@@ -110,7 +110,7 @@ public fun Route.mcp(
  */
 @Deprecated(
     "The SSE transport is deprecated in the MCP specification (SEP-2596) " +
-        "and will be removed in a future release. Use Application.mcpStreamableHttp instead.",
+        "and will be removed in a future release. Use StreamableHttpServerTransport instead.",
     level = DeprecationLevel.WARNING,
 )
 @KtorDsl
