@@ -2,6 +2,7 @@ package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.kotest.matchers.shouldBe
 import io.ktor.client.request.delete
+import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.statement.HttpResponse
@@ -11,6 +12,9 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
@@ -57,6 +61,47 @@ class StreamableHttpResponseDeliveryTest {
 
         response.status shouldBe HttpStatusCode.NotFound
         response.decodeError().error.message shouldBe "Session not found"
+    }
+
+    @Test
+    fun `stateful GET for an unknown session returns 404`() = testApplication {
+        application { mcpStreamableHttp { testServer() } }
+
+        val response = client.get("/mcp") {
+            header(HttpHeaders.Host, "localhost")
+            header(HttpHeaders.Accept, eventStream)
+            header(MCP_SESSION_ID_HEADER, "unknown-session")
+        }
+
+        response.status shouldBe HttpStatusCode.NotFound
+        val error = response.decodeError().error
+        error.message shouldBe "Session not found"
+        error.code shouldBe -32001
+    }
+
+    @Test
+    fun `stateful GET without a session id returns 400`() = testApplication {
+        application { mcpStreamableHttp { testServer() } }
+
+        val response = client.get("/mcp") {
+            header(HttpHeaders.Host, "localhost")
+            header(HttpHeaders.Accept, eventStream)
+        }
+
+        response.status shouldBe HttpStatusCode.BadRequest
+    }
+
+    @Test
+    fun `GET routes next to the stateful endpoint are not checked for a session`() = testApplication {
+        application {
+            mcpStreamableHttp { testServer() }
+            routing { get("/health") { call.respondText("ok") } }
+        }
+
+        val response = client.get("/health")
+
+        response.status shouldBe HttpStatusCode.OK
+        response.bodyAsText() shouldBe "ok"
     }
 
     private suspend fun HttpResponse.decodeError(): JSONRPCError = McpJson.decodeFromString(bodyAsText())
