@@ -27,6 +27,9 @@ public class ReadBuffer internal constructor(private val maxFrameSize: Int) {
 
     private val buffer: Buffer = Buffer()
 
+    /** Number of bytes at the front of [buffer] already known to hold no line terminator. */
+    private var scannedBytes: Long = 0
+
     /** Appends raw bytes to the internal buffer for subsequent message parsing. */
     public fun append(chunk: ByteArray) {
         buffer.write(chunk)
@@ -63,11 +66,13 @@ public class ReadBuffer internal constructor(private val maxFrameSize: Int) {
     }
 
     private fun readNextLine(): String? {
-        val lfIndex = if (buffer.exhausted()) -1L else buffer.indexOf('\n'.code.toByte())
+        val lfIndex = if (buffer.exhausted()) -1L else buffer.indexOf('\n'.code.toByte(), startIndex = scannedBytes)
         if (lfIndex == -1L) {
+            scannedBytes = buffer.size
             failIfFrameTooLong(buffer.size)
             return null
         }
+        scannedBytes = 0
         failIfFrameTooLong(lfIndex)
 
         return if (lfIndex == 0L) {
@@ -88,7 +93,7 @@ public class ReadBuffer internal constructor(private val maxFrameSize: Int) {
 
     private fun failIfFrameTooLong(frameSize: Long) {
         if (maxFrameSize in 1..<frameSize) {
-            buffer.clear()
+            clear()
             throw TooLongFrameException(frameSize, maxFrameSize)
         }
     }
@@ -111,6 +116,7 @@ public class ReadBuffer internal constructor(private val maxFrameSize: Int) {
     /** Clears all buffered data, discarding any partially received messages. */
     public fun clear() {
         buffer.clear()
+        scannedBytes = 0
     }
 }
 
