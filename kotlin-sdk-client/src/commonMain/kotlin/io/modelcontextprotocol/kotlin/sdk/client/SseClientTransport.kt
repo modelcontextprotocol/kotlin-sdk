@@ -15,6 +15,7 @@ import io.ktor.http.Url
 import io.ktor.http.append
 import io.ktor.http.hostWithPortIfSpecified
 import io.ktor.http.isSuccess
+import io.ktor.http.parseUrl
 import io.ktor.http.protocolWithAuthority
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractClientTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
@@ -56,21 +57,6 @@ public class SseClientTransport(
     private lateinit var scope: CoroutineScope
     private var job: Job? = null
 
-    private val origin: String by lazy {
-        session.call.request.url.protocolWithAuthority
-    }
-
-    private val baseUrl: String by lazy {
-        session.call.request.url.let { url ->
-            val path = url.encodedPath
-            when {
-                path.isEmpty() -> origin
-                path.endsWith("/") -> origin + path.removeSuffix("/")
-                else -> origin + path.take(path.lastIndexOf("/"))
-            }
-        }
-    }
-
     override suspend fun initialize() {
         session = urlString?.let {
             client.sseSession(
@@ -85,7 +71,7 @@ public class SseClientTransport(
 
         // Endpoints are validated against the origin of the SSE request, so that request must not
         // have been redirected away from the origin the transport was configured with.
-        val requestedUrl = urlString?.let { Url(it) }?.takeIf { it.host.isNotEmpty() }
+        val requestedUrl = urlString?.let(::parseUrl)
         val connectionUrl = session.call.request.url
         if (requestedUrl != null) {
             check(requestedUrl.hasSameOrigin(connectionUrl)) {
@@ -125,7 +111,7 @@ public class SseClientTransport(
     private suspend fun CoroutineScope.collectMessages() {
         try {
             session.incoming.collect { event ->
-                ensureActive()
+                this@collectMessages.ensureActive()
 
                 when (event.event) {
                     "error" -> {
@@ -154,39 +140,16 @@ public class SseClientTransport(
         }
     }
 
-    /**
-     * Resolves and completes [endpoint] based on [eventData].
-     * Uses full URLs as-is, but rejects those whose origin differs from the SSE connection origin,
-     * treats absolute paths as origin-relative, and relative paths as relative to [baseUrl].
-     */
     private fun handleEndpoint(eventData: String) {
-        try {
-            val endpointUrl = if (eventData.startsWith("http://") || eventData.startsWith("https://")) {
-                val url = Url(eventData)
-                val connectionUrl = session.call.request.url
-                if (!url.hasSameOrigin(connectionUrl)) {
-                    val error = IllegalArgumentException(
-                        "Endpoint origin ${url.safeOrigin} does not match connection origin ${connectionUrl.safeOrigin}",
-                    )
-                    _onError(error)
-                    endpoint.completeExceptionally(error)
-                    return
-                }
-                eventData
-            } else if (eventData.startsWith("/")) {
-                origin + eventData
-            } else {
-                "$baseUrl/$eventData"
-            }
-            endpoint.complete(endpointUrl)
-            logger.debug { "Client connected to endpoint: $endpointUrl" }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Throwable) {
+        val endpointUrl = try {
+            session.call.request.url.resolveEndpoint(eventData)
+        } catch (e: IllegalArgumentException) {
             _onError(e)
             endpoint.completeExceptionally(e)
-            throw e
+            return
         }
+        endpoint.complete(endpointUrl)
+        logger.debug { "Client connected to endpoint: $endpointUrl" }
     }
 
     private suspend fun handleMessage(data: String) {
@@ -224,3 +187,23 @@ private fun Url.hasSameOrigin(other: Url): Boolean =
 /** Scheme, host and non-default port, without user info, so it is safe to put into error messages. */
 private val Url.safeOrigin: String
     get() = "${protocol.name}://$hostWithPortIfSpecified"
+
+/**
+ * Resolves [reference] from an `endpoint` event against this SSE request URL.
+ * A full URL must have the same origin, and a query-only reference keeps the path (RFC 3986, section 5.2.2).
+ */
+private fun Url.resolveEndpoint(reference: String): String {
+    if (reference.startsWith("http://") || reference.startsWith("https://")) {
+        val url = requireNotNull(parseUrl(reference)) { "Endpoint is not a valid URL" }
+        require(url.hasSameOrigin(this)) {
+            "Endpoint origin ${url.safeOrigin} does not match connection origin $safeOrigin"
+        }
+        return reference
+    }
+    val pathAndQuery = when {
+        reference.startsWith("/") -> reference
+        reference.startsWith("?") -> encodedPath.ifEmpty { "/" } + reference
+        else -> encodedPath.substringBeforeLast('/', missingDelimiterValue = "") + "/" + reference
+    }
+    return protocolWithAuthority + pathAndQuery
+}

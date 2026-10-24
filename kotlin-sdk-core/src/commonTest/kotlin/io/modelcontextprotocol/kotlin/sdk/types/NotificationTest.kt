@@ -1,5 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
+import io.kotest.assertions.json.shouldEqualJson
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -240,11 +241,39 @@ class NotificationTest {
                 "taskId": "task-2",
                 "status": "completed",
                 "createdAt": "2025-01-01T00:00:00Z",
-                "lastUpdatedAt": "2025-01-01T00:02:00Z"
+                "lastUpdatedAt": "2025-01-01T00:02:00Z",
+                "ttl": null
               }
             }
             """.trimIndent(),
         )
+    }
+
+    @Test
+    fun `should keep null ttl when converting TaskStatusNotification to JSONRPCNotification`() {
+        val notification = TaskStatusNotification(
+            TaskStatusNotificationParams(
+                taskId = "task-3",
+                status = TaskStatus.Working,
+                createdAt = "2025-01-01T00:00:00Z",
+                lastUpdatedAt = "2025-01-01T00:00:00Z",
+                ttl = null,
+            ),
+        )
+
+        McpJson.encodeToString(notification.toJSON()) shouldEqualJson """
+            {
+              "jsonrpc": "2.0",
+              "method": "notifications/tasks/status",
+              "params": {
+                "taskId": "task-3",
+                "status": "working",
+                "createdAt": "2025-01-01T00:00:00Z",
+                "lastUpdatedAt": "2025-01-01T00:00:00Z",
+                "ttl": null
+              }
+            }
+        """.trimIndent()
     }
 
     @Test

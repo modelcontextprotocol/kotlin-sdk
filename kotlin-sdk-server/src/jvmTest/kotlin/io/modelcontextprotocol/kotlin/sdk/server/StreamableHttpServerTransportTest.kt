@@ -21,12 +21,15 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.install
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
+import io.ktor.server.sse.ServerSSESession
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
+import io.ktor.sse.ServerSentEvent
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.discard
 import io.ktor.utils.io.readLine
@@ -53,6 +56,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
@@ -62,6 +66,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.coroutines.CoroutineContext
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation as ClientContentNegotiation
@@ -439,6 +444,33 @@ class StreamableHttpServerTransportTest {
         }
     }
 
+    @Test
+    fun `sse terminal response is not held up by a stream that never closes`() = testApplication {
+        val transport = StreamableHttpServerTransport(
+            StreamableHttpServerTransport.Configuration(enableJsonResponse = false),
+        )
+        transport.setSessionIdGenerator(null) // stateless: accept requests without an init handshake
+        transport.answerRequests()
+        val handled = CompletableDeferred<Unit>()
+        application {
+            routing {
+                post(path) {
+                    transport.handlePostRequest(UnclosableServerSSESession(call, call.coroutineContext), call)
+                    handled.complete(Unit)
+                }
+            }
+        }
+
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        try {
+            scope.launch { client.postMessages(null, JSONRPCRequest(id = RequestId("ping-1"), method = "ping")) }
+            // The response is sent, but closing its stream never finishes; send() must return anyway.
+            withTimeout(5.seconds) { handled.await() }
+        } finally {
+            scope.cancel()
+        }
+    }
+
     @ParameterizedTest
     @MethodSource("unparsableBodyCases")
     fun `POST with an unparsable body returns a JSON-RPC error`(body: String, expectedCode: Int) = testApplication {
@@ -614,4 +646,15 @@ class StreamableHttpServerTransportTest {
 
     private fun toolsList(id: RequestId): JSONRPCRequest =
         JSONRPCRequest(id = id, method = Method.Defined.ToolsList.value)
+}
+
+/** An SSE session whose client stopped reading: closing it waits on a stuck send and never finishes. */
+private class UnclosableServerSSESession(
+    override val call: ApplicationCall,
+    override val coroutineContext: CoroutineContext,
+) : ServerSSESession {
+    override suspend fun send(event: ServerSentEvent) {}
+    override suspend fun close() {
+        awaitCancellation()
+    }
 }
