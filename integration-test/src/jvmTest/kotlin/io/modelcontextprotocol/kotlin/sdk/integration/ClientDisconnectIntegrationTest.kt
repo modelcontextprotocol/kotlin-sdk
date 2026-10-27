@@ -54,6 +54,7 @@ class ClientDisconnectIntegrationTest {
 
     private fun testServer() = Server(Implementation("test-server", "1.0"), ServerOptions(ServerCapabilities()))
 
+    @Suppress("DEPRECATION")
     @Test
     fun `an SSE session ends when its client disconnects`(): Unit = runBlocking {
         val server = testServer()
@@ -75,6 +76,7 @@ class ClientDisconnectIntegrationTest {
         }
     }
 
+    @Suppress("DEPRECATION")
     @Test
     fun `an SSE handler ends when the server closes its session`(): Unit = runBlocking {
         val server = testServer()
@@ -101,6 +103,7 @@ class ClientDisconnectIntegrationTest {
         val handlerStarted = CompletableDeferred<Unit>()
         val handlerCompleted = CompletableDeferred<Boolean>()
         withCioServer({
+            @Suppress("DEPRECATION")
             mcp { testServer() }
             routing {
                 get("/slow") {

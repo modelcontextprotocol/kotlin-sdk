@@ -64,8 +64,12 @@ private val logger = KotlinLogging.logger {}
  *      that creates and returns the [Server] to handle the connection.
  * @throws IllegalStateException if the [SSE] plugin is not installed.
  */
+@Deprecated(
+    "$SSE_DEPRECATION_MESSAGE Use StreamableHttpServerTransport instead.",
+    level = DeprecationLevel.WARNING,
+)
 @KtorDsl
-@Suppress("LongParameterList")
+@Suppress("DEPRECATION", "LongParameterList")
 public fun Route.mcp(
     path: String,
     enableDnsRebindingProtection: Boolean = true,
@@ -103,8 +107,12 @@ public fun Route.mcp(
  *      that creates and returns the [Server] to handle the connection.
  * @throws IllegalStateException if the [SSE] plugin is not installed.
  */
+@Deprecated(
+    "$SSE_DEPRECATION_MESSAGE Use StreamableHttpServerTransport instead.",
+    level = DeprecationLevel.WARNING,
+)
 @KtorDsl
-@Suppress("LongParameterList")
+@Suppress("DEPRECATION", "LongParameterList")
 public fun Route.mcp(
     enableDnsRebindingProtection: Boolean = true,
     allowedHosts: List<String>? = null,
@@ -162,8 +170,12 @@ public fun Route.mcp(
  * @param block factory block with access to the [ServerSSESession]
  *      that creates and returns the [Server] to handle the connection.
  */
+@Deprecated(
+    "$SSE_DEPRECATION_MESSAGE Use mcpStreamableHttp instead.",
+    level = DeprecationLevel.WARNING,
+)
 @KtorDsl
-@Suppress("LongParameterList")
+@Suppress("DEPRECATION", "LongParameterList")
 public fun Application.mcp(
     enableDnsRebindingProtection: Boolean = true,
     allowedHosts: List<String>? = null,
@@ -367,6 +379,7 @@ public fun Application.mcpStatelessStreamableHttp(
     )
 }
 
+@Suppress("DEPRECATION")
 private suspend fun ServerSSESession.mcpSseEndpoint(
     postEndpoint: String,
     transportManager: TransportManager<SseServerTransport>,
@@ -394,6 +407,7 @@ private suspend fun ServerSSESession.mcpSseEndpoint(
     }
 }
 
+@Suppress("DEPRECATION")
 private fun ServerSSESession.mcpSseTransport(
     postEndpoint: String,
     transportManager: TransportManager<SseServerTransport>,
@@ -430,6 +444,7 @@ private suspend fun RoutingContext.mcpStatelessStreamableHttpEndpoint(
     }
 }
 
+@Suppress("DEPRECATION")
 private suspend fun RoutingContext.mcpPostEndpoint(transportManager: TransportManager<SseServerTransport>) {
     val sessionId: String = call.request.queryParameters["sessionId"] ?: run {
         call.respond(HttpStatusCode.BadRequest, "sessionId query parameter is not provided")
