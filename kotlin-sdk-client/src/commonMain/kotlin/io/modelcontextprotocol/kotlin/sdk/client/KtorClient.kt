@@ -16,8 +16,7 @@ import kotlin.time.Duration
  * @return A [SseClientTransport] configured for MCP communication.
  */
 @Deprecated(
-    "The SSE transport is deprecated in the MCP specification (SEP-2596) " +
-        "and will be removed in a future release. Use mcpStreamableHttpTransport instead.",
+    "$SSE_DEPRECATION_MESSAGE Use mcpStreamableHttpTransport instead.",
     level = DeprecationLevel.WARNING,
 )
 @Suppress("DEPRECATION")
@@ -36,8 +35,7 @@ public fun HttpClient.mcpSseTransport(
  * @return A connected [Client] ready for MCP communication.
  */
 @Deprecated(
-    "The SSE transport is deprecated in the MCP specification (SEP-2596) " +
-        "and will be removed in a future release. Use mcpStreamableHttp instead.",
+    "$SSE_DEPRECATION_MESSAGE Use mcpStreamableHttp instead.",
     level = DeprecationLevel.WARNING,
 )
 @Suppress("DEPRECATION")

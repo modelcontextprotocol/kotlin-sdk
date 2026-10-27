@@ -65,8 +65,7 @@ private val logger = KotlinLogging.logger {}
  * @throws IllegalStateException if the [SSE] plugin is not installed.
  */
 @Deprecated(
-    "The SSE transport is deprecated in the MCP specification (SEP-2596) " +
-        "and will be removed in a future release. Use StreamableHttpServerTransport instead.",
+    "$SSE_DEPRECATION_MESSAGE Use StreamableHttpServerTransport instead.",
     level = DeprecationLevel.WARNING,
 )
 @KtorDsl
@@ -109,8 +108,7 @@ public fun Route.mcp(
  * @throws IllegalStateException if the [SSE] plugin is not installed.
  */
 @Deprecated(
-    "The SSE transport is deprecated in the MCP specification (SEP-2596) " +
-        "and will be removed in a future release. Use StreamableHttpServerTransport instead.",
+    "$SSE_DEPRECATION_MESSAGE Use StreamableHttpServerTransport instead.",
     level = DeprecationLevel.WARNING,
 )
 @KtorDsl
@@ -173,8 +171,7 @@ public fun Route.mcp(
  *      that creates and returns the [Server] to handle the connection.
  */
 @Deprecated(
-    "The SSE transport is deprecated in the MCP specification (SEP-2596) " +
-        "and will be removed in a future release. Use mcpStreamableHttp instead.",
+    "$SSE_DEPRECATION_MESSAGE Use mcpStreamableHttp instead.",
     level = DeprecationLevel.WARNING,
 )
 @KtorDsl
