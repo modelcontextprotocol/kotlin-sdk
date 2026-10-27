@@ -3,6 +3,7 @@ package io.modelcontextprotocol.kotlin.sdk.server
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
+import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.ktor.client.HttpClient
@@ -386,6 +387,23 @@ class StreamableHttpServerTransportTest {
         } finally {
             handlerScope.cancel()
         }
+    }
+
+    @Test
+    fun `json response for a large batch answers every request`() = testApplication {
+        val client = jsonClient()
+        postEndpoint().answerRequests()
+        val sessionId = client.initialize()
+        val requests = List(50_000) { JSONRPCRequest(id = RequestId("ping-$it"), method = "ping") }
+
+        // Each response used to rescan the whole batch, making this POST quadratic in its size.
+        val response = withTimeout(10.seconds) { client.postMessages(sessionId, *requests.toTypedArray()) }
+
+        response.status shouldBe HttpStatusCode.OK
+        val ids = response.body<List<JSONRPCResponse>>().map { it.id }
+        // Not shouldContainExactlyInAnyOrder: that matcher is quadratic itself, too slow for this many ids.
+        ids shouldHaveSize requests.size
+        ids.toSet() shouldBe requests.map { it.id }.toSet()
     }
 
     @Test
