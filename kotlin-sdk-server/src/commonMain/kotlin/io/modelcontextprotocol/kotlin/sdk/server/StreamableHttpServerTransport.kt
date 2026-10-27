@@ -95,7 +95,7 @@ private sealed interface PostRefusal {
 @OptIn(ExperimentalUuidApi::class, ExperimentalAtomicApi::class)
 public class StreamableHttpServerTransport(private val configuration: Configuration) : AbstractTransport() {
 
-    @Deprecated("Use default constructor with explicit Configuration()")
+    @Deprecated("Use default constructor with explicit Configuration()", level = DeprecationLevel.ERROR)
     public constructor() : this(configuration = Configuration())
 
     /**
@@ -120,6 +120,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         replaceWith = ReplaceWith(
             "StreamableHttpServerTransport(Configuration(enableJsonResponse = enableJsonResponse, enableDnsRebindingProtection = enableDnsRebindingProtection, allowedHosts = allowedHosts, allowedOrigins = allowedOrigins, eventStore = eventStore, retryIntervalMillis = retryIntervalMillis))",
         ),
+        level = DeprecationLevel.ERROR,
     )
     public constructor(
         enableJsonResponse: Boolean = false,
@@ -155,17 +156,17 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         public val enableJsonResponse: Boolean = false,
         @Deprecated(
             message = "Use install(DnsRebindingProtection) on your Ktor route instead",
-            level = DeprecationLevel.WARNING,
+            level = DeprecationLevel.ERROR,
         )
         public val enableDnsRebindingProtection: Boolean = false,
         @Deprecated(
             message = "Use install(DnsRebindingProtection) on your Ktor route instead",
-            level = DeprecationLevel.WARNING,
+            level = DeprecationLevel.ERROR,
         )
         public val allowedHosts: List<String>? = null,
         @Deprecated(
             message = "Use install(DnsRebindingProtection) on your Ktor route instead",
-            level = DeprecationLevel.WARNING,
+            level = DeprecationLevel.ERROR,
         )
         public val allowedOrigins: List<String>? = null,
         public val eventStore: EventStore? = null,
@@ -821,6 +822,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         }
     }
 
+    @Suppress("DEPRECATION_ERROR")
     private fun validateHeaders(call: ApplicationCall): String? {
         if (!configuration.enableDnsRebindingProtection) return null
 

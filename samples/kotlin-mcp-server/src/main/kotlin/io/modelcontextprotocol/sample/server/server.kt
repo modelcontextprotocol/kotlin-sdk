@@ -194,8 +194,8 @@ private fun Application.installCors() {
 fun runMcpServerUsingStdio() {
     val server = configureServer()
     val transport = StdioServerTransport(
-        inputStream = System.`in`.asSource().buffered(),
-        outputStream = System.out.asSink().buffered(),
+        input = System.`in`.asSource().buffered(),
+        output = System.out.asSink().buffered(),
     )
 
     runBlocking {
