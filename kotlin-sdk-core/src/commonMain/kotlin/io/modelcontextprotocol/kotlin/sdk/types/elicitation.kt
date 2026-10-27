@@ -30,7 +30,7 @@ public data class ElicitRequest(override val params: ElicitRequestParams) : Serv
     @Deprecated(
         "Use (params as ElicitRequestFormParams).requestedSchema",
         ReplaceWith("(params as ElicitRequestFormParams).requestedSchema"),
-        DeprecationLevel.WARNING,
+        DeprecationLevel.ERROR,
     )
     public val requestedSchema: ElicitRequestParams.RequestedSchema?
         get() = (params as? ElicitRequestFormParams)?.requestedSchema
@@ -88,7 +88,7 @@ public sealed interface ElicitRequestParams : RequestParams {
 @Deprecated(
     "Use ElicitRequestFormParams instead",
     ReplaceWith("ElicitRequestFormParams(message, requestedSchema = requestedSchema, meta = meta)"),
-    DeprecationLevel.WARNING,
+    DeprecationLevel.ERROR,
 )
 @Suppress("FunctionName")
 public fun ElicitRequestParams(
