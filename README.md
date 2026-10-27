@@ -498,8 +498,8 @@ val server = Server(
 
 val session = server.createSession(
     StdioServerTransport(
-        inputStream = System.`in`.asSource().buffered(),
-        outputStream = System.out.asSink().buffered()
+        input = System.`in`.asSource().buffered(),
+        output = System.out.asSink().buffered()
     )
 )
 
@@ -561,8 +561,8 @@ val server = Server(
 
 val session = server.createSession(
     StdioServerTransport(
-        inputStream = System.`in`.asSource().buffered(),
-        outputStream = System.out.asSink().buffered()
+        input = System.`in`.asSource().buffered(),
+        output = System.out.asSink().buffered()
     )
 )
 
@@ -620,8 +620,8 @@ val server = Server(
 
 val session = server.createSession(
     StdioServerTransport(
-        inputStream = System.`in`.asSource().buffered(),
-        outputStream = System.out.asSink().buffered()
+        input = System.`in`.asSource().buffered(),
+        output = System.out.asSink().buffered()
     )
 )
 
@@ -713,7 +713,6 @@ import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.Role
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.putJsonObject
 
 fun main() {
 -->
@@ -723,7 +722,7 @@ val client = Client(
     clientInfo = Implementation("demo-client", "1.0.0"),
     options = ClientOptions(
         capabilities = ClientCapabilities(
-            sampling = buildJsonObject { putJsonObject("tools") { } }, // drop tools if you don't support tool use
+            sampling = ClientCapabilities.Sampling(tools = buildJsonObject { }), // drop tools if you don't support tool use
         ),
     ),
 )
@@ -865,6 +864,11 @@ install(CORS) {
 
 ### SSE Transport
 
+> [!WARNING]
+> The SSE transport is [deprecated](https://modelcontextprotocol.io/specification/2026-07-28/deprecated) in the MCP
+> specification and will be removed in a future release.
+> Use the [Streamable HTTP transport](#streamable-http-transport) instead.
+
 Server-Sent Events remain available for backwards compatibility with older MCP clients. Two Ktor helpers are provided:
 
 - **`Application.mcp { }`** — installs SSE and `ContentNegotiation` with `McpJson` automatically, then registers MCP
@@ -912,8 +916,6 @@ embeddedServer(CIO, port = 3000) {
 }
 -->
 <!--- KNIT example-server-routes-03.kt -->
-
-Prefer Streamable HTTP for new projects.
 
 ### WebSocket Transport
 
