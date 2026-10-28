@@ -23,6 +23,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.TaskMetadata
 import io.modelcontextprotocol.kotlin.sdk.types.TaskStatus
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -31,6 +32,7 @@ import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.put
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertContains
 
 /**
  * Regression tests for https://github.com/modelcontextprotocol/kotlin-sdk/issues/601:
@@ -150,6 +152,74 @@ class ProtocolResultDeserializationTest {
     }
 
     @Test
+    fun `should preserve the raw tasks result when copying a decoded response`() = runTest {
+        protocol.connect(transport)
+
+        val inFlight = async {
+            protocol.request<GetTaskPayloadResult>(
+                GetTaskPayloadRequest(GetTaskPayloadRequestParams(taskId = "task-42")),
+            )
+        }
+        val sent = transport.awaitRequest()
+        val payload = buildJsonObject {
+            callToolPayload.forEach { (key, value) -> put(key, value) }
+            put("vendorData", buildJsonObject { put("sequence", 7) })
+        }
+        val response = wireResponse(RequestId("server-side-id"), payload).shouldBeInstanceOf<JSONRPCResponse>()
+
+        transport.deliver(response.copy(id = sent.id))
+
+        inFlight.await().json shouldBe payload
+    }
+
+    @Test
+    fun `should use the replacement result when copying a decoded response`() = runTest {
+        protocol.connect(transport)
+
+        val inFlight = async {
+            protocol.request<CallToolResult>(CallToolRequest(CallToolRequestParams(name = "echo")))
+        }
+        val sent = transport.awaitRequest()
+        val replacementPayload = buildJsonObject {
+            put(
+                "content",
+                buildJsonArray {
+                    add(
+                        buildJsonObject {
+                            put("type", "text")
+                            put("text", "replacement")
+                        },
+                    )
+                },
+            )
+            put("isError", false)
+        }
+        val response = wireResponse(RequestId("server-side-id"), callToolPayload).shouldBeInstanceOf<JSONRPCResponse>()
+        val replacement = wireResponse(sent.id, replacementPayload).shouldBeInstanceOf<JSONRPCResponse>().result
+
+        transport.deliver(response.copy(id = sent.id, result = replacement))
+
+        McpJson.encodeToJsonElement(inFlight.await()) shouldBe replacementPayload
+    }
+
+    @Test
+    fun `should keep wire data out of public response value semantics`() {
+        val id = RequestId("req-1")
+        val response = wireResponse(id, callToolPayload).shouldBeInstanceOf<JSONRPCResponse>()
+        val constructed = JSONRPCResponse(id, response.result)
+
+        response shouldBe constructed
+        response.hashCode() shouldBe constructed.hashCode()
+        response.toString() shouldBe constructed.toString()
+        McpJson.encodeToJsonElement(response) shouldBe McpJson.encodeToJsonElement(constructed)
+
+        val copiedId = RequestId("req-2")
+        val (actualId, actualResult) = response.copy(id = copiedId)
+        actualId shouldBe copiedId
+        actualResult shouldBe response.result
+    }
+
+    @Test
     fun `should decode empty result for ping`() = runTest {
         protocol.connect(transport)
 
@@ -174,6 +244,64 @@ class ProtocolResultDeserializationTest {
 
         val result = inFlight.await()
         result.isError shouldBe false
+    }
+
+    @Test
+    fun `should report the serialization error for malformed call tool content`() = runTest {
+        protocol.connect(transport)
+
+        val inFlight = async {
+            runCatching {
+                protocol.request<CallToolResult>(CallToolRequest(CallToolRequestParams(name = "echo"))).content
+            }
+        }
+        val sent = transport.awaitRequest()
+        val malformedPayload = buildJsonObject {
+            put("content", buildJsonArray { add(buildJsonObject { put("type", "text") }) })
+        }
+
+        transport.deliver(wireResponse(sent.id, malformedPayload))
+
+        val error = inFlight.await().exceptionOrNull().shouldBeInstanceOf<SerializationException>()
+        assertContains(error.message.orEmpty(), "text")
+    }
+
+    @Test
+    fun `should report the serialization error for an invalid task status`() = runTest {
+        protocol.connect(transport)
+
+        val inFlight = async {
+            runCatching {
+                protocol.request<GetTaskResult>(GetTaskRequest(GetTaskRequestParams(taskId = "task-42"))).status
+            }
+        }
+        val sent = transport.awaitRequest()
+        val malformedPayload = buildJsonObject {
+            taskStatePayload.forEach { (key, value) -> put(key, value) }
+            put("status", "bogus-status")
+        }
+
+        transport.deliver(wireResponse(sent.id, malformedPayload))
+
+        val error = inFlight.await().exceptionOrNull().shouldBeInstanceOf<SerializationException>()
+        assertContains(error.message.orEmpty(), "bogus-status")
+    }
+
+    @Test
+    fun `should reject a task result for a request without task augmentation`() = runTest {
+        protocol.connect(transport)
+
+        val inFlight = async {
+            runCatching {
+                protocol.request<CallToolResult>(CallToolRequest(CallToolRequestParams(name = "echo"))).content
+            }
+        }
+        val sent = transport.awaitRequest()
+
+        transport.deliver(wireResponse(sent.id, buildJsonObject { put("task", taskStatePayload) }))
+
+        val error = inFlight.await().exceptionOrNull().shouldBeInstanceOf<SerializationException>()
+        assertContains(error.message.orEmpty(), "content")
     }
 
     @Test

@@ -211,22 +211,44 @@ public data class JSONRPCNotification(val method: String, val params: JsonElemen
  * @property result The result of the method execution. Structure depends on the method that was called.
  */
 @Serializable
-public data class JSONRPCResponse(val id: RequestId, val result: RequestResult = EmptyResult()) : JSONRPCMessage {
+@ConsistentCopyVisibility
+public data class JSONRPCResponse private constructor(
+    public val id: RequestId,
+    public val result: RequestResult = EmptyResult(),
+    /** Raw wire JSON for method-based decoding; excluded from the public response value. */
+    @Transient
+    internal var rawResult: JsonElement? = null,
+) : JSONRPCMessage {
+    /**
+     * Creates a response with the original public constructor interface.
+     *
+     * @param id The identifier of the original request.
+     * @param result The result of the method execution.
+     */
+    public constructor(id: RequestId, result: RequestResult = EmptyResult()) : this(id, result, null)
+
     /** Always `"2.0"` to indicate JSON-RPC 2.0 protocol. */
     @EncodeDefault
     override val jsonrpc: String = JSONRPC_VERSION
 
     /**
-     * The raw JSON of [result] exactly as received on the wire, captured when this response is
-     * decoded as part of a [JSONRPCMessage]. `null` for programmatically constructed responses.
+     * Copies this response, preserving the original wire JSON when [result] is unchanged.
+     * Replacing the result discards the old wire JSON so it cannot override the new value.
      *
-     * The shape-decoded [result] is only a heuristic: distinct result types can share a JSON
-     * shape (e.g. a `tasks/result` payload vs. [CallToolResult]). The request/response
-     * correlation point re-decodes [rawResult] with the result type declared by the original
-     * request's method (see https://github.com/modelcontextprotocol/kotlin-sdk/issues/601).
+     * @param id The identifier for the copied response.
+     * @param result The result for the copied response.
+     * @return A response carrying the selected public fields and matching wire data.
      */
-    @Transient
-    internal var rawResult: JsonElement? = null
+    public fun copy(id: RequestId = this.id, result: RequestResult = this.result): JSONRPCResponse =
+        JSONRPCResponse(id, result, rawResult.takeIf { result === this.result })
+
+    // Keep wire data out of the value semantics of the original two-field data class.
+    override fun equals(other: Any?): Boolean =
+        this === other || (other is JSONRPCResponse && id == other.id && result == other.result)
+
+    override fun hashCode(): Int = 31 * id.hashCode() + result.hashCode()
+
+    override fun toString(): String = "JSONRPCResponse(id=$id, result=$result)"
 }
 
 // ============================================================================

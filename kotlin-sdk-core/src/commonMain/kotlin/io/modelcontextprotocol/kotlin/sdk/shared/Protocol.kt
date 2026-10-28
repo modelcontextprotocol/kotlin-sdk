@@ -3,6 +3,7 @@ package io.modelcontextprotocol.kotlin.sdk.shared
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.types.CancelledNotification
 import io.modelcontextprotocol.kotlin.sdk.types.CancelledNotificationParams
+import io.modelcontextprotocol.kotlin.sdk.types.CreateTaskResult
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCEmptyMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
@@ -742,29 +743,27 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     }
 
     /**
-     * Decodes the result of an incoming [response] for the original request [method].
+     * Decodes the result of an incoming [response] for the original [request].
      *
      * The shape-decoded [JSONRPCResponse.result] is only a heuristic: distinct result types can
      * share a JSON shape (e.g. a `tasks/result` payload vs. `CallToolResult`), so when the raw
      * wire JSON was captured during transport decoding it is decoded again here with the result
-     * type declared by [method] (see
+     * type declared by its method (see
      * https://github.com/modelcontextprotocol/kotlin-sdk/issues/601).
      *
      * Falls back to the shape-decoded [JSONRPCResponse.result] when no raw JSON is available
-     * (programmatically constructed responses), when the method is custom or unknown, or when the
-     * payload does not match the method's declared result type (e.g. a task-augmented `tools/call`
-     * returning `CreateTaskResult`).
+     * (programmatically constructed responses) or when the method is custom or unknown. A request
+     * with task augmentation may receive [CreateTaskResult] instead of the method's normal result.
+     * All other failures to decode the declared result type are propagated to the caller.
      */
-    private fun deserializeResult(method: Method, response: JSONRPCResponse): RequestResult {
+    private fun deserializeResult(request: JSONRPCRequest, response: JSONRPCResponse): RequestResult {
         val rawResult = response.rawResult ?: return response.result
-        val deserializer = selectRequestResultDeserializer(method.value) ?: return response.result
+        val deserializer = selectRequestResultDeserializer(request.method) ?: return response.result
         return try {
             McpJson.decodeFromJsonElement(deserializer, rawResult)
         } catch (e: SerializationException) {
-            logger.debug(e) {
-                "Failed to deserialize the result of '${method.value}' as " +
-                    "'${deserializer.descriptor.serialName}'; falling back to the shape-decoded result"
-            }
+            val taskRequested = (request.params as? JsonObject)?.get("task") is JsonObject
+            if (!taskRequested || response.result !is CreateTaskResult) throw e
             response.result
         }
     }
@@ -843,7 +842,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
 
                 try {
                     @Suppress("UNCHECKED_CAST")
-                    result.complete(deserializeResult(request.method, response!!) as T)
+                    result.complete(deserializeResult(jsonRpcRequest, response!!) as T)
                 } catch (e: Throwable) {
                     result.completeExceptionally(e)
                 }
