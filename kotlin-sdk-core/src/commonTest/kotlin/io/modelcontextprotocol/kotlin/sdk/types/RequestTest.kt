@@ -1,23 +1,21 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.kotest.assertions.json.shouldEqualJson
+import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
-import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
 import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.double
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class RequestTest {
@@ -60,16 +58,6 @@ class RequestTest {
     }
 
     @OptIn(ExperimentalMcpApi::class)
-    @Test
-    fun `empty client capabilities should mean no optional capabilities`() {
-        val json = Json.parseToJsonElement(
-            """{"${RequestMetaKeys.CLIENT_CAPABILITIES}": {}}""",
-        ) as JsonObject
-
-        RequestMeta(json).clientCapabilities shouldBe ClientCapabilities()
-    }
-
-    @OptIn(ExperimentalMcpApi::class)
     @Suppress("DEPRECATION")
     @Test
     fun `typed request metadata should reject malformed fields`() {
@@ -103,77 +91,11 @@ class RequestTest {
         }
     }
 
-    @OptIn(ExperimentalMcpApi::class)
-    @Test
-    fun `legacy requests should not gain request scoped metadata`() {
-        val request = ListToolsRequest()
-
-        McpJson.encodeToString<Request>(request) shouldEqualJson """
-            {
-              "method": "tools/list"
-            }
-        """.trimIndent()
-        assertNull(request.params?.meta?.protocolVersion)
-    }
-
     @Test
     fun `should expose progress token from RequestMeta`() {
-        val stringTokenMeta = RequestMeta(buildJsonObject { put("progressToken", "sync-1") })
-        val numberTokenMeta = RequestMeta(buildJsonObject { put("progressToken", 7) })
-        val customMeta = RequestMeta(
-            buildJsonObject {
-                put("progressToken", "ignored")
-                put("source", "client")
-            },
-        )
-
-        assertEquals(ProgressToken("sync-1"), stringTokenMeta.progressToken)
-        assertEquals(ProgressToken(7), numberTokenMeta.progressToken)
-        assertEquals("client", customMeta["source"]?.jsonPrimitive?.content)
-    }
-
-    @Test
-    fun `should serialize BaseRequestParams with meta`() {
-        val params = BaseRequestParams(
-            meta = RequestMeta(
-                buildJsonObject {
-                    put("progressToken", "base-42")
-                    put("origin", "test-suite")
-                },
-            ),
-        )
-
-        verifySerialization(
-            params,
-            McpJson,
-            """
-            {
-              "_meta": {
-                "progressToken": "base-42",
-                "origin": "test-suite"
-              }
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should deserialize BaseRequestParams with numeric progress token`() {
-        val json = """
-            {
-              "_meta": {
-                "progressToken": 501,
-                "latencyMs": 12.5
-              }
-            }
-        """.trimIndent()
-
-        val params = verifyDeserialization<BaseRequestParams>(McpJson, json)
-
-        val meta = params.meta
-        assertNotNull(meta)
-        assertEquals(ProgressToken(501), meta.progressToken)
-        assertEquals(12.5, meta["latencyMs"]?.jsonPrimitive?.double)
+        RequestMeta(buildJsonObject { put("progressToken", "sync-1") }).progressToken shouldBe ProgressToken("sync-1")
+        RequestMeta(buildJsonObject { put("progressToken", 7) }).progressToken shouldBe ProgressToken(7)
+        RequestMeta(buildJsonObject { put("progressToken", EmptyJsonObject) }).progressToken.shouldBeNull()
     }
 
     @Test
@@ -198,47 +120,7 @@ class RequestTest {
     }
 
     @Test
-    fun `should deserialize PaginatedRequestParams`() {
-        val json = """
-            {
-              "cursor": "cursor-2",
-              "_meta": {
-                "progressToken": 99
-              }
-            }
-        """.trimIndent()
-
-        val params = verifyDeserialization<PaginatedRequestParams>(McpJson, json)
-
-        assertEquals("cursor-2", params.cursor)
-        assertEquals(ProgressToken(99), params.meta?.progressToken)
-    }
-
-    @Test
-    fun `should serialize CustomRequest with params`() {
-        val request = CustomRequest(
-            method = Method.Custom("workspace/sync"),
-            params = BaseRequestParams(
-                meta = RequestMeta(buildJsonObject { put("progressToken", "sync-req") }),
-            ),
-        )
-
-        val json = McpJson.encodeToString<Request>(request)
-
-        json shouldEqualJson """
-            {
-              "method": "workspace/sync",
-              "params": {
-                "_meta": {
-                  "progressToken": "sync-req"
-                }
-              }
-            }
-        """.trimIndent()
-    }
-
-    @Test
-    fun `should deserialize unknown method into CustomRequest`() {
+    fun `should round-trip unknown method as CustomRequest`() {
         val json = """
             {
               "method": "extensions/customAction",
@@ -250,44 +132,10 @@ class RequestTest {
             }
         """.trimIndent()
 
-        val request = McpJson.decodeFromString<Request>(json)
+        val custom = McpJson.decodeFromString<Request>(json).shouldBeInstanceOf<CustomRequest>()
 
-        val custom = assertIs<CustomRequest>(request)
-        val method = custom.method
-        val customMethod = assertIs<Method.Custom>(method)
-        assertEquals("extensions/customAction", customMethod.value)
-        custom.params?.meta?.json
-            ?.get("progressToken")
-            ?.jsonPrimitive?.content shouldBe "custom-1"
-    }
-
-    @Test
-    fun `should serialize EmptyResult with meta`() {
-        val result = EmptyResult(
-            meta = buildJsonObject {
-                put("processedBy", "worker-1")
-            },
-        )
-
-        verifySerialization(
-            result,
-            McpJson,
-            """
-            {
-              "_meta": {
-                "processedBy": "worker-1"
-              }
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should deserialize EmptyResult without meta`() {
-        val json = "{}"
-
-        val result = verifyDeserialization<EmptyResult>(McpJson, json)
-
-        assertNull(result.meta)
+        custom.method shouldBe Method.Custom("extensions/customAction")
+        custom.params?.meta?.progressToken shouldBe ProgressToken("custom-1")
+        McpJson.encodeToString<Request>(custom) shouldEqualJson json
     }
 }

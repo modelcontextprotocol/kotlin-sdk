@@ -91,11 +91,10 @@ class ElicitationValidationTest {
 
     @Test
     fun `validate missing required property fails`() {
-        assertRejected(
-            schema("name" to StringSchema(), required = listOf("name")),
-            JsonObject(emptyMap()),
-            "must have required property 'name'",
-        )
+        // JSON Schema's `required` is independent of `properties`: "consent" is required but undeclared.
+        val schema = schema("name" to StringSchema(), required = listOf("name", "consent"))
+        assertRejected(schema, JsonObject(emptyMap()), "must have required property 'name'")
+        assertRejected(schema, buildJsonObject { put("name", "octocat") }, "must have required property 'consent'")
     }
 
     @Test
@@ -103,15 +102,6 @@ class ElicitationValidationTest {
         assertDoesNotThrow {
             validateElicitationContent(schema("name" to StringSchema()), JsonObject(emptyMap()))
         }
-    }
-
-    @Test
-    fun `validate wrong type for string property fails`() {
-        assertRejected(
-            schema("name" to StringSchema()),
-            buildJsonObject { put("name", 42) },
-            "'name' must be string",
-        )
     }
 
     @Test
@@ -174,28 +164,21 @@ class ElicitationValidationTest {
 
     @Test
     fun `validate integral number forms are accepted for integer property`() {
-        // JSON Schema's "integer" matches numbers with a zero fractional part.
+        // JSON Schema's "integer" matches numbers with a zero fractional part, including exponent forms.
+        val schema = schema("age" to IntegerSchema(minimum = 0, maximum = 200))
         assertDoesNotThrow {
-            validateElicitationContent(
-                schema("age" to IntegerSchema(minimum = 0, maximum = 200)),
-                buildJsonObject { put("age", 5.0) },
-            )
+            validateElicitationContent(schema, buildJsonObject { put("age", 5.0) })
+            validateElicitationContent(schema, McpJson.parseToJsonElement("""{"age": 1e2}""") as JsonObject)
         }
     }
 
     @Test
-    fun `validate exponent form is accepted for integer property`() {
-        val content = McpJson.parseToJsonElement("""{"age": 1e2}""") as JsonObject
-        assertDoesNotThrow {
-            validateElicitationContent(
-                schema("age" to IntegerSchema(minimum = 0, maximum = 200)),
-                content,
-            )
-        }
-    }
-
-    @Test
-    fun `validate number outside range fails`() {
+    fun `validate number outside minimum and maximum fails`() {
+        assertRejected(
+            schema("score" to DoubleSchema(minimum = 0.0)),
+            buildJsonObject { put("score", -0.5) },
+            "'score' must be >= 0.0",
+        )
         assertRejected(
             schema("score" to DoubleSchema(maximum = 1.0)),
             buildJsonObject { put("score", 1.5) },
@@ -362,7 +345,12 @@ class ElicitationValidationTest {
     }
 
     @Test
-    fun `validate non-primitive value is rejected for scalar schemas`() {
+    fun `validate value of another JSON type is rejected for scalar schemas`() {
+        assertRejected(
+            schema("name" to StringSchema()),
+            buildJsonObject { put("name", 42) },
+            "'name' must be string",
+        )
         assertRejected(
             schema("name" to StringSchema()),
             buildJsonObject { putJsonArray("name") { add("x") } },
@@ -376,15 +364,6 @@ class ElicitationValidationTest {
     }
 
     @Test
-    fun `validate number below minimum fails`() {
-        assertRejected(
-            schema("score" to DoubleSchema(minimum = 0.0)),
-            buildJsonObject { put("score", -0.5) },
-            "'score' must be >= 0.0",
-        )
-    }
-
-    @Test
     fun `validate non-finite value for number property fails`() {
         // McpJson is lenient, so an unquoted NaN literal can arrive off the wire; it decodes to
         // the same primitive as Double.NaN here.
@@ -392,16 +371,6 @@ class ElicitationValidationTest {
             schema("score" to DoubleSchema(minimum = 0.0, maximum = 1.0)),
             buildJsonObject { put("score", Double.NaN) },
             "'score' must be number",
-        )
-    }
-
-    @Test
-    fun `validate required property not declared in properties is still required`() {
-        // JSON Schema's `required` is independent of `properties`.
-        assertRejected(
-            schema("name" to StringSchema(), required = listOf("name", "consent")),
-            buildJsonObject { put("name", "octocat") },
-            "must have required property 'consent'",
         )
     }
 

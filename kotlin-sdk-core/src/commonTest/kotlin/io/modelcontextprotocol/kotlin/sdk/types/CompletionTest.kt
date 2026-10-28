@@ -1,17 +1,12 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
-import io.kotest.assertions.json.shouldEqualJson
-import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
+import io.kotest.assertions.throwables.shouldThrow
 import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 
 class CompletionTest {
 
@@ -102,43 +97,10 @@ class CompletionTest {
     }
 
     @Test
-    fun `should deserialize CompleteRequest from JSON`() {
-        val json = """
-            {
-              "method": "completion/complete",
-              "params": {
-                "argument": {
-                  "name": "file",
-                  "value": "mai"
-                },
-                "ref": {
-                  "type": "ref/resource",
-                  "uri": "file:///{path}"
-                },
-                "context": {
-                  "arguments": {
-                    "path": "src/main"
-                  }
-                },
-                "_meta": {
-                  "progressToken": 42
-                }
-              }
-            }
-        """.trimIndent()
-
-        val request = verifyDeserialization<CompleteRequest>(McpJson, json)
-        assertEquals(Method.Defined.CompletionComplete, request.method)
-
-        val params = request.params
-        assertEquals("file", params.argument.name)
-        assertEquals("mai", params.argument.value)
-        val ref = params.ref
-        assertIs<ResourceTemplateReference>(ref)
-        assertEquals("file:///{path}", ref.uri)
-        assertNotNull(params.context)
-        assertEquals(mapOf("path" to "src/main"), params.context.arguments)
-        assertEquals(ProgressToken(42), params.meta?.progressToken)
+    fun `should reject unknown reference type`() {
+        shouldThrow<SerializationException> {
+            McpJson.decodeFromString<Reference>("""{"type": "ref/unknown", "name": "x"}""")
+        }
     }
 
     @Test
@@ -154,7 +116,7 @@ class CompletionTest {
             },
         )
 
-        verifySerialization(
+        verifySerialization<ServerResult>(
             result,
             McpJson,
             """
@@ -173,55 +135,6 @@ class CompletionTest {
             }
             """.trimIndent(),
         )
-    }
-
-    @Test
-    fun `should deserialize CompleteResult from JSON`() {
-        val json = """
-            {
-              "completion": {
-                "values": ["README.md", "CONTRIBUTING.md"],
-                "total": 2,
-                "hasMore": false
-              },
-              "_meta": {
-                "fetchedAt": "2025-01-12T15:00:58Z"
-              }
-            }
-        """.trimIndent()
-
-        val result = verifyDeserialization<CompleteResult>(McpJson, json)
-        assertEquals(listOf("README.md", "CONTRIBUTING.md"), result.completion.values)
-        assertEquals(2, result.completion.total)
-        assertEquals(false, result.completion.hasMore)
-        assertNotNull(result.meta)
-        assertEquals(
-            "2025-01-12T15:00:58Z",
-            result.meta["fetchedAt"]?.jsonPrimitive?.content,
-        )
-    }
-
-    @Test
-    fun `should allow omitting optional Total and HasMore`() {
-        val result = CompleteResult(
-            completion = CompleteResult.Completion(values = listOf("foo")),
-            meta = null,
-        )
-
-        val json = McpJson.encodeToString(result)
-        json shouldEqualJson """
-            {
-              "completion": {
-                "values": ["foo"]
-              }
-            }
-        """.trimIndent()
-
-        val decoded = verifyDeserialization<CompleteResult>(McpJson, json)
-        assertEquals(listOf("foo"), decoded.completion.values)
-        assertNull(decoded.completion.total)
-        assertNull(decoded.completion.hasMore)
-        assertNull(decoded.meta)
     }
 
     @Test

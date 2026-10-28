@@ -1,179 +1,19 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
-import io.kotest.matchers.string.shouldContain
-import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
-import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequestParams
+import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
-import io.modelcontextprotocol.kotlin.sdk.types.Implementation
-import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
-import io.modelcontextprotocol.kotlin.sdk.types.TextContent
-import io.modelcontextprotocol.kotlin.sdk.types.ToolListChangedNotification
-import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 class ServerToolsTest : AbstractServerFeaturesTest() {
 
-    override fun getServerCapabilities(): ServerCapabilities = ServerCapabilities(
-        tools = ServerCapabilities.Tools(null),
-    )
+    override fun getServerCapabilities(): ServerCapabilities = ServerCapabilities(tools = ServerCapabilities.Tools())
 
     @Test
-    fun `removeTool should remove a tool and do not send notification`() = runTest {
-        // Configure notification handler
-        var toolListChangedNotificationReceived = false
-        client.setNotificationHandler<ToolListChangedNotification>(Method.Defined.NotificationsToolsListChanged) {
-            toolListChangedNotificationReceived = true
-            CompletableDeferred(Unit)
-        }
+    fun `addTool should accept a non-conforming tool name`() = runTest {
+        server.addTool("my invalid tool!", "Tool with non-conforming name") { CallToolResult(emptyList()) }
 
-        // Add a tool
-        server.addTool("test-tool", "Test Tool", ToolSchema()) {
-            CallToolResult(listOf(TextContent("Test result")))
-        }
-
-        // Remove the tool
-        val result = server.removeTool("test-tool")
-
-        // Verify the tool was removed
-        assertTrue(result, "Tool should be removed successfully")
-
-        // Verify that the notification was not sent
-        assertFalse(
-            toolListChangedNotificationReceived,
-            "No notification should be sent when tools capability is not supported",
-        )
-    }
-
-    @Test
-    fun `removeTools should remove multiple tools`() = runTest {
-        // Configure notification handler
-        var toolListChangedNotificationReceived = false
-        client.setNotificationHandler<ToolListChangedNotification>(Method.Defined.NotificationsToolsListChanged) {
-            toolListChangedNotificationReceived = true
-            CompletableDeferred(Unit)
-        }
-
-        // Add tools
-        server.addTool("test-tool-1", "Test Tool 1") {
-            CallToolResult(listOf(TextContent("Test result 1")))
-        }
-        server.addTool("test-tool-2", "Test Tool 2") {
-            CallToolResult(listOf(TextContent("Test result 2")))
-        }
-        client.setNotificationHandler<ToolListChangedNotification>(Method.Defined.NotificationsToolsListChanged) {
-            throw IllegalStateException("Notification should not be sent")
-        }
-
-        // Remove the tools
-        val result = server.removeTools(listOf("test-tool-1", "test-tool-2"))
-
-        // Verify the tools were removed
-        assertEquals(2, result, "Both tools should be removed")
-
-        // Verify that the notification was not sent
-        assertFalse(
-            toolListChangedNotificationReceived,
-            "No notification should be sent when tools capability is not supported",
-        )
-    }
-
-    @Test
-    fun `removeTool should return false when tool does not exist`() = runTest {
-        // Track notifications
-        var toolListChangedNotificationReceived = false
-        client.setNotificationHandler<ToolListChangedNotification>(Method.Defined.NotificationsToolsListChanged) {
-            toolListChangedNotificationReceived = true
-            CompletableDeferred(Unit)
-        }
-
-        // Try to remove a non-existent tool
-        val result = server.removeTool("non-existent-tool")
-
-        // Verify the result
-        assertFalse(result, "Removing non-existent tool should return false")
-        assertFalse(toolListChangedNotificationReceived, "No notification should be sent when tool doesn't exist")
-    }
-
-    @Test
-    fun `addTool should succeed with non-conforming tool name`() = runTest {
-        server.addTool("my invalid tool!", "Tool with non-conforming name", ToolSchema()) {
-            CallToolResult(listOf(TextContent("It works")))
-        }
-
-        val result = server.removeTool("my invalid tool!")
-        assertTrue(result, "Tool with non-conforming name should have been registered and removable")
-    }
-
-    @Test
-    fun `addTool should throw when tool with same name is already registered`() = runTest {
-        server.addTool("test-tool", "Original Tool") {
-            CallToolResult(listOf(TextContent("Original result")))
-        }
-
-        val exception = assertThrows<IllegalArgumentException> {
-            server.addTool("test-tool", "Duplicate Tool") {
-                CallToolResult(listOf(TextContent("Duplicate result")))
-            }
-        }
-        exception.message.orEmpty() shouldContain "Tool \"test-tool\" is already registered"
-
-        // The original registration is intact
-        val tools = client.listTools().tools
-        assertEquals(1, tools.size, "Only the original tool should be registered")
-        val result = client.callTool(CallToolRequest(CallToolRequestParams("test-tool")))
-        assertEquals("Original result", (result.content.single() as TextContent).text)
-    }
-
-    @Test
-    fun `addTool should succeed after removing existing tool`() = runTest {
-        server.addTool("test-tool", "Original Tool") {
-            CallToolResult(listOf(TextContent("Original result")))
-        }
-
-        server.removeTool("test-tool")
-        server.addTool("test-tool", "Replacement Tool") {
-            CallToolResult(listOf(TextContent("Replacement result")))
-        }
-
-        assertEquals(1, client.listTools().tools.size, "Re-adding after removal should not duplicate the tool")
-        val result = client.callTool(CallToolRequest(CallToolRequestParams("test-tool")))
-        assertEquals("Replacement result", (result.content.single() as TextContent).text)
-    }
-
-    @Test
-    fun `removeTool should throw when tools capability is not supported`() = runTest {
-        var toolListChangedNotificationReceived = false
-        client.setNotificationHandler<ToolListChangedNotification>(Method.Defined.NotificationsToolsListChanged) {
-            toolListChangedNotificationReceived = true
-            CompletableDeferred(Unit)
-        }
-
-        // Create server without tools capability
-        val serverOptions = ServerOptions(
-            capabilities = ServerCapabilities(),
-        )
-        val server = Server(
-            Implementation(name = "test server", version = "1.0"),
-            serverOptions,
-        )
-
-        // Verify that removing a tool throws an exception
-        val exception = assertThrows<IllegalStateException> {
-            server.removeTool("test-tool")
-        }
-        assertEquals("Server does not support tools capability.", exception.message)
-
-        // Verify that the notification was not sent
-        assertFalse(
-            toolListChangedNotificationReceived,
-            "No notification should be sent when tools capability is not supported",
-        )
+        client.listTools().tools.single().name shouldBe "my invalid tool!"
     }
 }

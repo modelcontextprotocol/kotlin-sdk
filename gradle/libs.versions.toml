@@ -1,28 +1,25 @@
 [versions]
 # plugins version
 atomicfu = "0.33.0"
-binaryCompatibilityValidatorPlugin = "0.18.2"
 detekt = "2.0.0-alpha.6"
 dokka = "2.2.0"
-kotlin = "2.4.10"
-kover = "0.9.9"
+kotlin = "2.4.21"
+kover = "0.9.11"
 ktlint = "14.2.0"
 knit = "0.5.1"
 mavenPublish = "0.37.0"
-netty = "4.2.18.Final"
 
 # libraries version
 awaitility = "4.3.0"
 collections-immutable = "0.5.2"
 coroutines = "1.11.0"
-kotest = "6.2.5"
+kotest = "6.2.6"
 kotlinx-io = "0.9.1"
 ktor = "3.5.2"
 logging = "8.0.4"
 mockk = "1.14.11"
 serialization = "1.11.0"
-slf4j = "2.0.19"
-logback = "1.6.3"
+slf4j = "2.0.20"
 junit = "5.14.4"
 
 [libraries]
@@ -43,7 +40,6 @@ kotlinx-io-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-io-core", v
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 
 # Ktor
-ktor-client-apache5 = { group = "io.ktor", name = "ktor-client-apache5", version.ref = "ktor" }
 ktor-client-auth = { group = "io.ktor", name = "ktor-client-auth", version.ref = "ktor" }
 ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
 ktor-client-logging = { group = "io.ktor", name = "ktor-client-logging", version.ref = "ktor" }
@@ -64,9 +60,7 @@ kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 ktor-client-mock = { group = "io.ktor", name = "ktor-client-mock", version.ref = "ktor" }
 ktor-server-test-host = { group = "io.ktor", name = "ktor-server-test-host", version.ref = "ktor" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
-netty-bom = { group = "io.netty", name = "netty-bom", version.ref = "netty" }
 slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
-logback-classic = { group = "ch.qos.logback", name = "logback-classic", version.ref = "logback" }
 junit-jupiter-params = { module = "org.junit.jupiter:junit-jupiter-params", version.ref = "junit" }
 
 # Samples
@@ -74,7 +68,6 @@ ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "
 ktor-server-cio = { group = "io.ktor", name = "ktor-server-cio", version.ref = "ktor" }
 
 [plugins]
-kotlinx-binary-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibilityValidatorPlugin" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
 knit = { id = "org.jetbrains.kotlinx.knit", version.ref = "knit" }

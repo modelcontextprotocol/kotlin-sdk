@@ -5,31 +5,25 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
-import io.modelcontextprotocol.kotlin.sdk.types.CancelledNotificationParams
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequestParams
-import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
-import io.modelcontextprotocol.kotlin.sdk.types.McpJson
-import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ProgressNotification
+import io.modelcontextprotocol.kotlin.sdk.types.ProgressNotificationParams
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
-import kotlinx.coroutines.CompletableDeferred
+import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.advanceTimeBy
-import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
-import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
@@ -41,84 +35,57 @@ class ProtocolOutboundCancellationTest {
 
     @Test
     fun `request times out awaiting the response and sends CancelledNotification with timeout reason`() = runTest {
-        val protocol = TestProtocol()
-        val transport = RecordingTransport()
-        protocol.connect(transport)
+        val (protocol, transport) = connectedProtocol()
 
-        val inFlight = async {
-            shouldThrow<McpException> {
-                protocol.request<EmptyResult>(PingRequest(), RequestOptions(timeout = 5.seconds))
-            }
+        // the peer never responds; virtual time runs out the 5 s request timeout
+        val thrown = shouldThrow<McpException> {
+            protocol.request<EmptyResult>(PingRequest(), RequestOptions(timeout = 5.seconds))
         }
-        val sent = transport.awaitRequest() // request is on the wire; peer never responds
-        advanceTimeBy(6.seconds)
-        runCurrent()
 
-        val thrown = inFlight.await()
         thrown.code shouldBe RPCError.ErrorCode.REQUEST_TIMEOUT
         thrown.data?.jsonObject?.get("timeout")?.jsonPrimitive?.long shouldBe 5.seconds.inWholeMilliseconds
-
-        val cancelledJson = transport.sentWithOptions
-            .map { it.first }
-            .filterIsInstance<JSONRPCNotification>()
-            .single { it.method == Method.Defined.NotificationsCancelled.value }
-        val cancelledParams = McpJson.decodeFromJsonElement<CancelledNotificationParams>(cancelledJson.params!!)
-        cancelledParams.requestId shouldBe sent.id
-        cancelledParams.reason.shouldNotBeNull() shouldContain "timed out"
+        val cancelled = cancellationsOn(transport).single()
+        cancelled.requestId shouldBe transport.awaitRequest().id
+        cancelled.reason.shouldNotBeNull() shouldContain "timed out"
     }
 
     @Test
     fun `outer withTimeout around request propagates the original timeout exception and notifies the peer`() = runTest {
-        val protocol = TestProtocol()
-        val transport = RecordingTransport()
-        protocol.connect(transport)
+        val (protocol, transport) = connectedProtocol()
 
-        val inFlight = async {
-            shouldThrow<TimeoutCancellationException> {
-                withTimeout(1.seconds) {
-                    protocol.request<EmptyResult>(PingRequest())
-                }
-            }
+        shouldThrow<TimeoutCancellationException> {
+            withTimeout(1.seconds) { protocol.request<EmptyResult>(PingRequest()) }
         }
-        transport.awaitRequest() // request is on the wire; peer never responds
-        advanceTimeBy(2.seconds)
-        runCurrent()
-        inFlight.await()
 
-        transport.sentWithOptions.map { it.first }.filterIsInstance<JSONRPCNotification>()
-            .filter { it.method == Method.Defined.NotificationsCancelled.value } shouldHaveSize 1
+        cancellationsOn(transport).single().requestId shouldBe transport.awaitRequest().id
     }
 
     @Test
     fun `caller cancellation sends CancelledNotification and rethrows the original exception`() = runTest {
-        val protocol = TestProtocol()
-        val transport = RecordingTransport()
-        protocol.connect(transport)
-
-        val cancelled = CompletableDeferred<CancellationException>()
+        val (protocol, transport) = connectedProtocol()
+        var thrown: CancellationException? = null
         val job = launch {
             try {
                 protocol.request<EmptyResult>(PingRequest())
             } catch (e: CancellationException) {
-                cancelled.complete(e)
+                thrown = e
                 throw e
             }
         }
-        transport.awaitRequest()
-        job.cancelAndJoin()
+        val sent = transport.awaitRequest()
 
-        cancelled.await()
-        val wire = transport.sentWithOptions.map { it.first }.filterIsInstance<JSONRPCNotification>()
-            .filter { it.method == Method.Defined.NotificationsCancelled.value }
-        wire shouldHaveSize 1
+        job.cancel(CancellationException("user gave up"))
+        job.join()
+
+        thrown?.message shouldBe "user gave up"
+        val cancelled = cancellationsOn(transport).single()
+        cancelled.requestId shouldBe sent.id
+        cancelled.reason shouldBe "user gave up"
     }
 
     @Test
     fun `cancelling the initialize request performs local cleanup but sends no CancelledNotification`() = runTest {
-        val protocol = TestProtocol()
-        val transport = RecordingTransport()
-        protocol.connect(transport)
-
+        val (protocol, transport) = connectedProtocol()
         val job = launch {
             protocol.request<EmptyResult>(
                 InitializeRequest(
@@ -131,37 +98,27 @@ class ProtocolOutboundCancellationTest {
             )
         }
         val sent = transport.awaitRequest()
-        sent.method shouldBe Method.Defined.Initialize.value
         job.cancelAndJoin()
 
-        transport.sentWithOptions.map { it.first }.filterIsInstance<JSONRPCNotification>()
-            .filter { it.method == Method.Defined.NotificationsCancelled.value } shouldHaveSize 0
-        protocol.responseHandlers shouldBe emptyMap()
-    }
-
-    @Test
-    fun `late response for a cancelled request is ignored silently`() = runTest {
-        val protocol = TestProtocol()
-        val transport = RecordingTransport()
-        protocol.connect(transport)
-
-        val job = launch { protocol.request<EmptyResult>(PingRequest()) }
-        val sent = transport.awaitRequest()
-        job.cancelAndJoin()
-
+        cancellationsOn(transport) shouldBe emptyList()
+        // local cleanup remembered the id, so a late answer is not reported as unknown
         transport.deliver(JSONRPCResponse(id = sent.id, result = EmptyResult()))
-
-        protocol.errors shouldHaveSize 0 // no "unknown message ID" onError
+        protocol.errors shouldBe emptyList()
     }
 
     @Test
-    fun `response for a genuinely unknown id still reports onError`() = runTest {
-        val protocol = TestProtocol()
-        val transport = RecordingTransport()
-        protocol.connect(transport)
+    fun `late response and progress for a cancelled request are ignored while an unknown id is still reported`() =
+        runTest {
+            val (protocol, transport) = connectedProtocol()
+            val job = launch { protocol.request<EmptyResult>(PingRequest(), RequestOptions(onProgress = {})) }
+            val sent = transport.awaitRequest()
+            job.cancelAndJoin()
 
-        transport.deliver(JSONRPCResponse(id = RequestId(999L), result = EmptyResult()))
+            transport.deliver(ProgressNotification(ProgressNotificationParams(sent.id, 0.5)).toJSON())
+            transport.deliver(JSONRPCResponse(id = sent.id, result = EmptyResult()))
+            protocol.errors shouldBe emptyList()
 
-        protocol.errors shouldHaveSize 1
-    }
+            transport.deliver(JSONRPCResponse(id = RequestId(999L), result = EmptyResult()))
+            protocol.errors shouldHaveSize 1
+        }
 }

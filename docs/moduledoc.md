@@ -41,8 +41,8 @@ High-level client for connecting to MCP servers and invoking their features:
   `serverVersion`, and `serverInstructions`.
 - Typed operations for tools, prompts, resources, completion, logging, roots, sampling, and elicitation with capability
   enforcement.
-- Transports: `StdioClientTransport`, `SseClientTransport`, `WebSocketClientTransport`, and `StreamableHttpClientTransport`,
-  plus Ktor client extensions for quick wiring.
+- Transports: `StdioClientTransport`, `StreamableHttpClientTransport`, `WebSocketClientTransport`, and the deprecated
+  `SseClientTransport`, plus Ktor client extensions for quick wiring.
 
 Minimal WebSocket client:
 
@@ -66,15 +66,15 @@ Server toolkit for exposing MCP tools, prompts, and resources:
 
 - `Server` runtime coordinates sessions, initialization flow, and capability enforcement with registries for tools,
   prompts, resources, and templates.
-- Transports: `StdioServerTransport` for CLI/editor bridges; Ktor extensions (`mcp` for SSE + POST back-channel and
-  `mcpWebSocket` for WebSocket) for HTTP hosting.
+- Transports: `StdioServerTransport` for CLI/editor bridges; Ktor extensions (`mcpStreamableHttp` for Streamable HTTP,
+  `mcpWebSocket` for WebSocket, and the deprecated `mcp` for SSE) for HTTP hosting.
 - Built-in notifications for list changes and resource subscriptions when capabilities enable them.
 
-Minimal Ktor SSE server:
+Minimal Ktor Streamable HTTP server:
 
 ```kotlin
 fun Application.module() {
-    mcp {
+    mcpStreamableHttp {
         Server(
             serverInfo = Implementation("sample-server", "1.0.0"),
             options = ServerOptions(ServerCapabilities(

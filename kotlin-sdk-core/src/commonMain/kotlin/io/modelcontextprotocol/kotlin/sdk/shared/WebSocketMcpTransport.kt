@@ -64,12 +64,19 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
                 } catch (_: ClosedReceiveChannelException) {
                     logger.debug { "Closed receive channel, exiting" }
                     return@launch
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    // The session is already failing (e.g. FrameTooBigException) and Ktor closes it.
+                    invokeOnErrorCallback(e)
+                    return@launch
                 }
 
+                // Keep reading after a bad message: an open session nobody reads buffers frames without limit.
                 if (message !is Frame.Text) {
                     val e = IllegalArgumentException("Expected text frame, got ${message::class.simpleName}: $message")
-                    _onError.invoke(e)
-                    throw e
+                    invokeOnErrorCallback(e)
+                    continue
                 }
 
                 try {
@@ -78,15 +85,14 @@ public abstract class WebSocketMcpTransport : AbstractTransport() {
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    _onError.invoke(e)
-                    throw e
+                    invokeOnErrorCallback(e)
                 }
             }
         }
 
         @OptIn(InternalCoroutinesApi::class)
         session.coroutineContext.job.invokeOnCompletion {
-            if (it != null) {
+            if (it != null && it !is CancellationException) {
                 _onError.invoke(it)
             } else {
                 invokeOnCloseCallback()

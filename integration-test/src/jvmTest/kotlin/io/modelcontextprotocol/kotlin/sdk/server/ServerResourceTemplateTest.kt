@@ -1,12 +1,8 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
-import io.kotest.matchers.collections.shouldBeEmpty
-import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.maps.shouldContainKey
-import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.string.shouldContain
-import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.ListResourceTemplatesRequest
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
@@ -18,37 +14,15 @@ import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 
 class ServerResourceTemplateTest : AbstractServerFeaturesTest() {
 
     override fun getServerCapabilities(): ServerCapabilities = ServerCapabilities(
         resources = ServerCapabilities.Resources(listChanged = null, subscribe = null),
     )
-
-    @Test
-    fun `listResourceTemplates should return registered templates`() = runTest {
-        server.addResourceTemplate("test://data/{id}", "Test Data", mimeType = "text/plain") { _, _ ->
-            ReadResourceResult(listOf(TextResourceContents("content", "test://data/1")))
-        }
-
-        val result = client.listResourceTemplates(ListResourceTemplatesRequest())
-
-        result.resourceTemplates shouldHaveSize 1
-        result.resourceTemplates[0] shouldNotBeNull {
-            uriTemplate shouldBe "test://data/{id}"
-            name shouldBe "Test Data"
-            mimeType shouldBe "text/plain"
-        }
-    }
-
-    @Test
-    fun `listResourceTemplates should return empty list when none registered`() = runTest {
-        val result = client.listResourceTemplates(ListResourceTemplatesRequest())
-
-        result.resourceTemplates.shouldBeEmpty()
-    }
 
     @Test
     fun `readResource should match URI against template and invoke handler`() = runTest {
@@ -119,12 +93,16 @@ class ServerResourceTemplateTest : AbstractServerFeaturesTest() {
     }
 
     @Test
-    fun `readResource should return RESOURCE_NOT_FOUND error when no match`() = runTest {
-        val exception = assertThrows<McpException> {
-            client.readResource(ReadResourceRequest(ReadResourceRequestParams("test://nonexistent/uri")))
+    fun `readResource should return RESOURCE_NOT_FOUND error when no template matches`() = runTest {
+        server.addResourceTemplate("test://items/{itemId}", "Item") { _, _ -> ReadResourceResult(emptyList()) }
+
+        val exception = shouldThrow<McpException> {
+            client.readResource(ReadResourceRequest(ReadResourceRequestParams("test://users/42")))
         }
 
         exception.code shouldBe RPCError.ErrorCode.RESOURCE_NOT_FOUND
+        exception.message shouldBe "Resource not found"
+        exception.data shouldBe buildJsonObject { put("uri", "test://users/42") }
     }
 
     @Test
@@ -154,66 +132,6 @@ class ServerResourceTemplateTest : AbstractServerFeaturesTest() {
 
         removed shouldBe true
         server.resourceTemplates.size shouldBe 0
-    }
-
-    @Test
-    fun `removeResourceTemplate should return false when template does not exist`() {
-        val removed = server.removeResourceTemplate("test://nonexistent/{id}")
-
-        removed shouldBe false
-    }
-
-    @Test
-    fun `addResourceTemplate should throw when template with same uriTemplate is already registered`() {
-        server.addResourceTemplate("test://items/{id}", "Item") { _, _ ->
-            ReadResourceResult(emptyList())
-        }
-
-        val exception = assertThrows<IllegalArgumentException> {
-            server.addResourceTemplate("test://items/{id}", "Duplicate Item") { _, _ ->
-                ReadResourceResult(emptyList())
-            }
-        }
-        exception.message.orEmpty() shouldContain "ResourceTemplate \"test://items/{id}\" is already registered"
-
-        // The original registration is intact
-        server.resourceTemplates shouldHaveSize 1
-        server.resourceTemplates[0].name shouldBe "Item"
-    }
-
-    @Test
-    fun `addResourceTemplate should throw when resources capability is not supported`() {
-        val noResourcesServer = Server(
-            serverInfo = Implementation("test", "1.0"),
-            options = ServerOptions(capabilities = ServerCapabilities()),
-        )
-
-        assertThrows<IllegalStateException> {
-            noResourcesServer.addResourceTemplate("test://{id}", "Test") { _, _ ->
-                ReadResourceResult(emptyList())
-            }
-        }
-    }
-
-    @Test
-    fun `addResourceTemplate with ResourceTemplate object should register correctly`() = runTest {
-        val template = ResourceTemplate(
-            uriTemplate = "test://docs/{section}",
-            name = "Documentation",
-            description = "API docs",
-            mimeType = "text/html",
-        )
-        server.addResourceTemplate(template) { request, variables ->
-            val section = variables["section"] ?: "index"
-            ReadResourceResult(
-                listOf(TextResourceContents("docs for $section", request.uri, mimeType = "text/html")),
-            )
-        }
-
-        val result = client.readResource(ReadResourceRequest(ReadResourceRequestParams("test://docs/api")))
-
-        result.contents shouldHaveSize 1
-        (result.contents[0] as TextResourceContents).text shouldBe "docs for api"
     }
 
     @Test

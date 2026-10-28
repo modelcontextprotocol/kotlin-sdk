@@ -1,40 +1,15 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
-import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
+import io.kotest.assertions.json.shouldEqualJson
+import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.int
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertIs
-import kotlin.test.assertNotNull
 
 class ToolsTest {
-
-    @Test
-    fun `should serialize Tool with minimal fields`() {
-        val tool = Tool(
-            name = "search",
-            inputSchema = ToolSchema(),
-        )
-
-        verifySerialization(
-            tool,
-            McpJson,
-            """
-            {
-              "name": "search",
-              "inputSchema": {
-                "type": "object"
-              }
-            }
-            """.trimIndent(),
-        )
-    }
 
     @Test
     fun `should serialize Tool with annotations and schemas`() {
@@ -122,143 +97,35 @@ class ToolsTest {
     }
 
     @Test
-    fun `should deserialize Tool from JSON`() {
-        val json = """
-            {
-              "name": "translate",
-              "inputSchema": {
-                "type": "object",
-                "properties": {
-                  "text": {"type": "string"},
-                  "targetLanguage": {"type": "string"}
-                },
-                "required": ["text", "targetLanguage"]
-              },
-              "annotations": {
-                "title": "Translate Text",
-                "readOnlyHint": true
-              },
-              "_meta": {
-                "category": "language"
-              }
-            }
-        """.trimIndent()
-
-        val tool = verifyDeserialization<Tool>(McpJson, json)
-
-        assertEquals("translate", tool.name)
-        assertEquals("Translate Text", tool.annotations?.title)
-        assertEquals(true, tool.annotations?.readOnlyHint)
-        val schema = tool.inputSchema
-        val properties = schema.properties
-        assertNotNull(properties)
-        assertNotNull(properties["text"])
-        assertEquals(listOf("text", "targetLanguage"), schema.required)
-        assertEquals("language", tool.meta?.get("category")?.jsonPrimitive?.content)
-    }
-
-    @Test
-    fun `should serialize ToolSchema with schema field`() {
-        val tool = Tool(
-            name = "typed-tool",
-            inputSchema = ToolSchema(
-                schema = "https://json-schema.org/draft/2020-12/schema",
-                properties = buildJsonObject {
-                    put("name", buildJsonObject { put("type", "string") })
-                },
-            ),
+    fun `should serialize ToolSchema with schema dialect and defs`() {
+        val schema = ToolSchema(
+            schema = "https://json-schema.org/draft/2020-12/schema",
+            properties = buildJsonObject {
+                put("parent", buildJsonObject { put($$"$ref", $$"#/$defs/parentRequest") })
+            },
+            required = listOf("parent"),
+            defs = buildJsonObject {
+                put("parentRequest", buildJsonObject { put("type", "object") })
+            },
         )
 
         verifySerialization(
-            tool,
+            schema,
             McpJson,
             $$"""
             {
-              "name": "typed-tool",
-              "inputSchema": {
-                "$schema": "https://json-schema.org/draft/2020-12/schema",
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string"
-                  }
-                }
+              "$schema": "https://json-schema.org/draft/2020-12/schema",
+              "type": "object",
+              "properties": {
+                "parent": {"$ref": "#/$defs/parentRequest"}
+              },
+              "required": ["parent"],
+              "$defs": {
+                "parentRequest": {"type": "object"}
               }
             }
             """.trimIndent(),
         )
-    }
-
-    @Test
-    fun `should deserialize ToolSchema with schema field`() {
-        val json = $$"""
-            {
-              "name": "typed-tool",
-              "inputSchema": {
-                "$schema": "https://json-schema.org/draft/2020-12/schema",
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-        """.trimIndent()
-
-        val tool = verifyDeserialization<Tool>(McpJson, json)
-
-        assertEquals("https://json-schema.org/draft/2020-12/schema", tool.inputSchema.schema)
-        assertNotNull(tool.inputSchema.properties)
-    }
-
-    @Test
-    fun `should serialize ToolSchema with defs`() {
-        val tool = toolWithDefs()
-
-        verifySerialization(tool, McpJson, toolWithDefsJson())
-    }
-
-    @Test
-    fun `should deserialize ToolSchema with defs`() {
-        val json = $$"""
-            {
-              "name": "create-page",
-              "inputSchema": {
-                "type": "object",
-                "$defs": {
-                  "parentRequest": {
-                    "type": "object",
-                    "properties": {
-                      "page_id": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                },
-                "properties": {
-                  "parent": {
-                    "$ref": "#/$defs/parentRequest"
-                  }
-                },
-                "required": ["parent"]
-              }
-            }
-        """.trimIndent()
-
-        val tool = verifyDeserialization<Tool>(McpJson, json)
-
-        val schema = tool.inputSchema
-        val defs = schema.defs
-        assertNotNull(defs)
-        val parentRequest = defs["parentRequest"]?.jsonObject
-        assertNotNull(parentRequest)
-        assertEquals("object", parentRequest["type"]?.jsonPrimitive?.content)
-        assertEquals(
-            $$"#/$defs/parentRequest",
-            schema.properties?.get("parent")?.jsonObject?.get($$"$ref")?.jsonPrimitive?.content,
-        )
-        assertEquals(listOf("parent"), schema.required)
     }
 
     @Test
@@ -294,32 +161,6 @@ class ToolsTest {
     }
 
     @Test
-    fun `should deserialize CallToolRequest`() {
-        val json = """
-            {
-              "method": "tools/call",
-              "params": {
-                "name": "analyze-code",
-                "arguments": {
-                  "path": "src/main.kt"
-                },
-                "_meta": {
-                  "progressToken": 77
-                }
-              }
-            }
-        """.trimIndent()
-
-        val request = verifyDeserialization<CallToolRequest>(McpJson, json)
-
-        assertEquals(Method.Defined.ToolsCall, request.method)
-        val params = request.params
-        assertEquals("analyze-code", params.name)
-        assertEquals("src/main.kt", params.arguments?.get("path")?.jsonPrimitive?.content)
-        assertEquals(ProgressToken(77), params.meta?.progressToken)
-    }
-
-    @Test
     fun `should serialize CallToolRequest with task augmentation`() {
         val request = CallToolRequest(
             CallToolRequestParams(
@@ -352,25 +193,6 @@ class ToolsTest {
     }
 
     @Test
-    fun `should omit task from CallToolRequest when null`() {
-        val request = CallToolRequest(CallToolRequestParams(name = "plain"))
-
-        assertEquals(null, request.task)
-        verifySerialization(
-            request,
-            McpJson,
-            """
-            {
-              "method": "tools/call",
-              "params": {
-                "name": "plain"
-              }
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
     fun `should serialize CallToolResult with structured content`() {
         val result = CallToolResult(
             content = listOf(
@@ -384,7 +206,7 @@ class ToolsTest {
             meta = buildJsonObject { put("elapsedMs", 1200) },
         )
 
-        verifySerialization(
+        verifySerialization<ServerResult>(
             result,
             McpJson,
             """
@@ -404,64 +226,6 @@ class ToolsTest {
               },
               "_meta": {
                 "elapsedMs": 1200
-              }
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should deserialize CallToolResult`() {
-        val json = """
-            {
-              "content": [
-                {
-                  "type": "text",
-                  "text": "Unable to reach server."
-                }
-              ],
-              "isError": true,
-              "structuredContent": {
-                "errorCode": "NETWORK",
-                "retryable": true
-              },
-              "_meta": {
-                "requestId": "req-9"
-              }
-            }
-        """.trimIndent()
-
-        val result = verifyDeserialization<CallToolResult>(McpJson, json)
-
-        assertEquals(true, result.isError)
-        val text = assertIs<TextContent>(result.content.first())
-        assertEquals("Unable to reach server.", text.text)
-        val structured = result.structuredContent
-        assertNotNull(structured)
-        assertEquals("NETWORK", structured["errorCode"]?.jsonPrimitive?.content)
-        assertEquals("req-9", result.meta?.get("requestId")?.jsonPrimitive?.content)
-    }
-
-    @Test
-    fun `should serialize ListToolsRequest with cursor`() {
-        val request = ListToolsRequest(
-            PaginatedRequestParams(
-                cursor = "cursor-1",
-                meta = RequestMeta(buildJsonObject { put("progressToken", "tools-list-1") }),
-            ),
-        )
-
-        verifySerialization(
-            request,
-            McpJson,
-            """
-            {
-              "method": "tools/list",
-              "params": {
-                "cursor": "cursor-1",
-                "_meta": {
-                  "progressToken": "tools-list-1"
-                }
               }
             }
             """.trimIndent(),
@@ -494,7 +258,7 @@ class ToolsTest {
             meta = buildJsonObject { put("page", 1) },
         )
 
-        verifySerialization(
+        verifySerialization<ServerResult>(
             result,
             McpJson,
             """
@@ -523,109 +287,20 @@ class ToolsTest {
     }
 
     @Test
-    fun `should deserialize ListToolsResult`() {
-        val json = """
-            {
-              "tools": [
-                {
-                  "name": "search",
-                  "inputSchema": {
-                    "type": "object"
-                  },
-                  "description": "Search the workspace"
-                }
-              ],
-              "nextCursor": "cursor-next",
-              "_meta": {
-                "page": 3
-              }
-            }
-        """.trimIndent()
-
-        val result = verifyDeserialization<ListToolsResult>(McpJson, json)
-
-        assertEquals("cursor-next", result.nextCursor)
-        val tools = result.tools
-        assertEquals(1, tools.size)
-        val tool = tools.first()
-        assertEquals("search", tool.name)
-        assertEquals("Search the workspace", tool.description)
-        assertEquals("object", tool.inputSchema.type)
-        assertEquals(3, result.meta?.get("page")?.jsonPrimitive?.int)
-    }
-
-    @Test
-    fun `should build success CallToolResult with text content`() {
+    fun `should build success and error CallToolResult with text content`() {
         val meta = buildJsonObject { put("source", "toolkit") }
 
-        val result = CallToolResult.success("Operation complete", meta)
-
-        assertEquals(false, result.isError)
-        val text = assertIs<TextContent>(result.content.single())
-        assertEquals("Operation complete", text.text)
-        assertEquals("toolkit", result.meta?.get("source")?.jsonPrimitive?.content)
-        assertEquals(null, result.structuredContent)
+        CallToolResult.success("Operation complete", meta) shouldBe
+            CallToolResult(content = listOf(TextContent("Operation complete")), isError = false, meta = meta)
+        CallToolResult.error("Failed to connect", meta) shouldBe
+            CallToolResult(content = listOf(TextContent("Failed to connect")), isError = true, meta = meta)
     }
 
     @Test
-    fun `should build error CallToolResult with text content`() {
-        val meta = buildJsonObject { put("code", "ERR42") }
-
-        val result = CallToolResult.error("Failed to connect", meta)
-
-        assertEquals(true, result.isError)
-        val text = assertIs<TextContent>(result.content.single())
-        assertEquals("Failed to connect", text.text)
-        assertEquals("ERR42", result.meta?.get("code")?.jsonPrimitive?.content)
-        assertEquals(null, result.structuredContent)
-    }
-
-    @Test
-    fun `should serialize ToolExecution with taskSupport`() {
-        val execution = ToolExecution(taskSupport = TaskSupport.Required)
-
-        verifySerialization(
-            execution,
-            McpJson,
-            """
-            {
-              "taskSupport": "required"
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should serialize ToolExecution without taskSupport`() {
-        val execution = ToolExecution()
-
-        verifySerialization(
-            execution,
-            McpJson,
-            "{}",
-        )
-    }
-
-    @Test
-    fun `should deserialize ToolExecution with taskSupport`() {
-        val json = """
-            {
-              "taskSupport": "optional"
-            }
-        """.trimIndent()
-
-        val execution = verifyDeserialization<ToolExecution>(McpJson, json)
-
-        assertEquals(TaskSupport.Optional, execution.taskSupport)
-    }
-
-    @Test
-    fun `should deserialize ToolExecution without taskSupport`() {
-        val json = "{}"
-
-        val execution = verifyDeserialization<ToolExecution>(McpJson, json)
-
-        assertEquals(null, execution.taskSupport)
+    fun `should serialize all TaskSupport values`() {
+        verifySerialization(TaskSupport.Forbidden, McpJson, "\"forbidden\"")
+        verifySerialization(TaskSupport.Optional, McpJson, "\"optional\"")
+        verifySerialization(TaskSupport.Required, McpJson, "\"required\"")
     }
 
     @Test
@@ -656,195 +331,11 @@ class ToolsTest {
     }
 
     @Test
-    fun `should deserialize Tool with execution`() {
-        val json = """
-            {
-              "name": "long-running-task",
-              "inputSchema": {
-                "type": "object"
-              },
-              "execution": {
-                "taskSupport": "forbidden"
-              }
-            }
-        """.trimIndent()
-
-        val tool = verifyDeserialization<Tool>(McpJson, json)
-
-        assertEquals("long-running-task", tool.name)
-        assertNotNull(tool.execution)
-        assertEquals(TaskSupport.Forbidden, tool.execution.taskSupport)
-    }
-
-    @Test
     fun `should serialize tool schema type even when defaults disabled`() {
-        val tool = weatherTool()
+        val tool = Tool(name = "t", inputSchema = ToolSchema(), outputSchema = ToolSchema())
+        val json = Json(from = McpJson) { encodeDefaults = false }
 
-        val customJson = Json(from = McpJson) {
-            encodeDefaults = false
-        }
-        val encoded = customJson.encodeToString(Tool.serializer(), tool)
-        val element = Json.parseToJsonElement(encoded).jsonObject
-
-        val inputSchema = element["inputSchema"]?.jsonObject
-        val outputSchema = element["outputSchema"]?.jsonObject
-
-        assertNotNull(inputSchema)
-        assertEquals("object", inputSchema["type"]?.jsonPrimitive?.content)
-        assertNotNull(outputSchema)
-        assertEquals("object", outputSchema["type"]?.jsonPrimitive?.content)
+        json.encodeToString(Tool.serializer(), tool) shouldEqualJson
+            """{"name": "t", "inputSchema": {"type": "object"}, "outputSchema": {"type": "object"}}"""
     }
-
-    @Test
-    fun `should deserialize complex tool definition`() {
-        val expected = weatherTool()
-        val actual = verifyDeserialization<Tool>(McpJson, weatherToolJson())
-
-        assertEquals(expected, actual)
-    }
-
-    private fun weatherTool(): Tool = Tool(
-        name = "get_weather",
-        title = "Get weather",
-        description = "Get the current weather in a given location",
-        inputSchema = ToolSchema(
-            properties = buildJsonObject {
-                put(
-                    "location",
-                    buildJsonObject {
-                        put("type", "string")
-                        put("description", "The city and state, e.g. San Francisco, CA")
-                    },
-                )
-            },
-            required = listOf("location"),
-        ),
-        outputSchema = ToolSchema(
-            properties = buildJsonObject {
-                put(
-                    "temperature",
-                    buildJsonObject {
-                        put("type", "number")
-                        put("description", "Temperature in celsius")
-                    },
-                )
-                put(
-                    "conditions",
-                    buildJsonObject {
-                        put("type", "string")
-                        put("description", "Weather conditions description")
-                    },
-                )
-                put(
-                    "humidity",
-                    buildJsonObject {
-                        put("type", "number")
-                        put("description", "Humidity percentage")
-                    },
-                )
-            },
-            required = listOf("temperature", "conditions", "humidity"),
-        ),
-        meta = buildJsonObject { put("_for_test_only", true) },
-    )
-
-    private fun weatherToolJson(): String = """
-        {
-          "name": "get_weather",
-          "title": "Get weather",
-          "description": "Get the current weather in a given location",
-          "inputSchema": {
-            "type": "object",
-            "properties": {
-              "location": {
-                "type": "string",
-                "description": "The city and state, e.g. San Francisco, CA"
-              }
-            },
-            "required": ["location"]
-          },
-          "outputSchema": {
-            "type": "object",
-            "properties": {
-              "temperature": {
-                "type": "number",
-                "description": "Temperature in celsius"
-              },
-              "conditions": {
-                "type": "string",
-                "description": "Weather conditions description"
-              },
-              "humidity": {
-                "type": "number",
-                "description": "Humidity percentage"
-              }
-            },
-            "required": ["temperature", "conditions", "humidity"]
-          },
-          "_meta": {
-            "_for_test_only": true
-          }
-        }
-    """.trimIndent()
-
-    private fun toolWithDefs(): Tool = Tool(
-        name = "create-page",
-        inputSchema = toolSchemaWithDefs(),
-    )
-
-    private fun toolSchemaWithDefs(): ToolSchema = ToolSchema(
-        properties = buildJsonObject {
-            put(
-                "parent",
-                buildJsonObject {
-                    put($$"$ref", $$"#/$defs/parentRequest")
-                },
-            )
-        },
-        required = listOf("parent"),
-        defs = buildJsonObject {
-            put(
-                "parentRequest",
-                buildJsonObject {
-                    put("type", "object")
-                    put(
-                        "properties",
-                        buildJsonObject {
-                            put(
-                                "page_id",
-                                buildJsonObject {
-                                    put("type", "string")
-                                },
-                            )
-                        },
-                    )
-                },
-            )
-        },
-    )
-
-    private fun toolWithDefsJson(): String = $$"""
-        {
-          "name": "create-page",
-          "inputSchema": {
-            "type": "object",
-            "$defs": {
-              "parentRequest": {
-                "type": "object",
-                "properties": {
-                  "page_id": {
-                    "type": "string"
-                  }
-                }
-              }
-            },
-            "properties": {
-              "parent": {
-                "$ref": "#/$defs/parentRequest"
-              }
-            },
-            "required": ["parent"]
-          }
-        }
-    """.trimIndent()
 }

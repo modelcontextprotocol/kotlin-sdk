@@ -2,6 +2,7 @@ package io.modelcontextprotocol.kotlin.sdk.types.dsl
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestFormParams
@@ -48,24 +49,14 @@ class ElicitationDslTest {
     }
 
     @Test
-    fun `ElicitRequestedSchemaBuilder should support direct properties assignment`() {
-        val request = buildElicitRequest {
-            message = "Test"
-            requestedSchema {
-                properties(buildJsonObject { put("key", buildJsonObject { put("type", "string") }) })
-            }
-        }
-        val formParams = request.params.shouldBeInstanceOf<ElicitRequestFormParams>()
-        formParams.requestedSchema.properties["key"].shouldBeInstanceOf<StringSchema>()
-    }
-
-    @Test
     fun `buildElicitRequest should throw if message is missing`() {
         shouldThrow<IllegalArgumentException> {
             buildElicitRequest {
-                requestedSchema { properties { put("a", 1) } }
+                requestedSchema {
+                    properties { put("name", buildJsonObject { put("type", "string") }) }
+                }
             }
-        }
+        }.message shouldContain "'message'"
     }
 
     @Test

@@ -7,7 +7,7 @@ plugins {
     id("mcp.detekt")
     id("mcp.publishing")
     id("mcp.dokka")
-    alias(libs.plugins.kotlinx.binary.compatibility.validator)
+    id("mcp.abi-validation")
 }
 
 // Generation library versions
@@ -72,7 +72,6 @@ kotlin {
         jvmTest {
             dependencies {
                 implementation(libs.junit.jupiter.params)
-                implementation(libs.mockk)
                 runtimeOnly(libs.slf4j.simple)
             }
         }

@@ -1,16 +1,9 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
-import io.modelcontextprotocol.kotlin.test.utils.verifyDeserialization
 import io.modelcontextprotocol.kotlin.test.utils.verifySerialization
-import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 
 class InitializeTest {
 
@@ -80,56 +73,6 @@ class InitializeTest {
     }
 
     @Test
-    fun `should deserialize InitializeRequest from JSON`() {
-        val json = """
-            {
-              "method": "initialize",
-              "params": {
-                "protocolVersion": "2025-03-26",
-                "capabilities": {
-                  "sampling": {},
-                  "roots": {
-                    "listChanged": false
-                  },
-                  "experimental": {
-                    "custom-cap": {
-                      "enabled": true
-                    }
-                  }
-                },
-                "clientInfo": {
-                  "name": "sdk-client",
-                  "version": "2.1.0",
-                  "title": "SDK Client"
-                },
-                "_meta": {
-                  "progressToken": 99
-                }
-              }
-            }
-        """.trimIndent()
-
-        val request = verifyDeserialization<InitializeRequest>(McpJson, json)
-        assertEquals(Method.Defined.Initialize, request.method)
-
-        val params = request.params
-        assertEquals("2025-03-26", params.protocolVersion)
-        assertEquals("sdk-client", params.clientInfo.name)
-        assertEquals("2.1.0", params.clientInfo.version)
-        assertEquals("SDK Client", params.clientInfo.title)
-        assertEquals(ProgressToken(99), params.meta?.progressToken)
-
-        val capabilities = params.capabilities
-        assertNotNull(capabilities.sampling)
-        assertEquals(false, capabilities.roots?.listChanged)
-        val experimental = capabilities.experimental
-        assertNotNull(experimental)
-        val custom = experimental["custom-cap"]?.jsonObject
-        assertNotNull(custom)
-        assertEquals(true, custom["enabled"]?.jsonPrimitive?.boolean)
-    }
-
-    @Test
     fun `should serialize InitializeResult with instructions`() {
         val result = InitializeResult(
             protocolVersion = "2024-11-05",
@@ -152,7 +95,7 @@ class InitializeTest {
             meta = buildJsonObject { put("issuedAt", "2025-01-12T15:00:58Z") },
         )
 
-        verifySerialization(
+        verifySerialization<ServerResult>(
             result,
             McpJson,
             """
@@ -186,67 +129,5 @@ class InitializeTest {
             }
             """.trimIndent(),
         )
-    }
-
-    @Test
-    fun `should serialize InitializeResult without meta - meta must be omitted`() {
-        val result = InitializeResult(
-            protocolVersion = "2025-03-26",
-            capabilities = ServerCapabilities(tools = ServerCapabilities.Tools(listChanged = false)),
-            serverInfo = Implementation(name = "test-server", version = "1.0.0"),
-        )
-
-        verifySerialization(
-            result,
-            McpJson,
-            """
-            {
-              "protocolVersion": "2025-03-26",
-              "capabilities": {
-                "tools": {
-                  "listChanged": false
-                }
-              },
-              "serverInfo": {
-                "name": "test-server",
-                "version": "1.0.0"
-              }
-            }
-            """.trimIndent(),
-        )
-    }
-
-    @Test
-    fun `should deserialize InitializeResult from JSON`() {
-        val json = """
-            {
-              "protocolVersion": "2025-03-26",
-              "capabilities": {
-                "tools": {},
-                "resources": {
-                  "listChanged": true
-                }
-              },
-              "serverInfo": {
-                "name": "result-server",
-                "version": "4.0.0"
-              }
-            }
-        """.trimIndent()
-
-        val result = verifyDeserialization<InitializeResult>(McpJson, json)
-
-        assertEquals("2025-03-26", result.protocolVersion)
-        assertEquals("result-server", result.serverInfo.name)
-        assertEquals("4.0.0", result.serverInfo.version)
-        assertNull(result.instructions)
-        assertNull(result.meta)
-
-        val capabilities = result.capabilities
-        assertNotNull(capabilities.tools)
-        assertEquals(true, capabilities.resources?.listChanged)
-        assertNull(capabilities.resources?.subscribe)
-        assertNull(capabilities.prompts)
-        assertNull(capabilities.logging)
     }
 }

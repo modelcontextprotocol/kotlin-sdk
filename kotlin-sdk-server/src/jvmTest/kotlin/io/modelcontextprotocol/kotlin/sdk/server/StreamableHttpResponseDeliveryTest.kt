@@ -4,8 +4,7 @@ import io.kotest.matchers.shouldBe
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
+import io.ktor.client.request.request
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
@@ -13,12 +12,15 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
-import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
-import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import kotlin.test.Test
 
 /**
@@ -30,33 +32,21 @@ class StreamableHttpResponseDeliveryTest {
 
     private val eventStream = ContentType.Text.EventStream.toString()
 
-    private fun testServer(): Server = Server(
-        Implementation("test-server", "1.0"),
-        ServerOptions(capabilities = ServerCapabilities()),
-    )
-
-    @Test
-    fun `stateless GET is rejected with 405 and advertises POST`() = testApplication {
+    @ParameterizedTest
+    @ValueSource(strings = ["GET", "DELETE"])
+    fun `stateless endpoint rejects the method with 405 and advertises POST`(method: String) = testApplication {
         application { mcpStatelessStreamableHttp { testServer() } }
 
-        val response = client.get("/mcp") {
+        val response = client.request("/mcp") {
+            this.method = HttpMethod.parse(method)
             header(HttpHeaders.Host, "localhost")
             header(HttpHeaders.Accept, eventStream)
         }
 
-        response.assertMethodNotAllowed()
-    }
-
-    @Test
-    fun `stateless DELETE is rejected with 405 and advertises POST`() = testApplication {
-        application { mcpStatelessStreamableHttp { testServer() } }
-
-        val response = client.delete("/mcp") {
-            header(HttpHeaders.Host, "localhost")
-            header(HttpHeaders.Accept, eventStream)
-        }
-
-        response.assertMethodNotAllowed()
+        response.status shouldBe HttpStatusCode.MethodNotAllowed
+        response.headers[HttpHeaders.Allow] shouldBe HttpMethod.Post.value
+        response.contentType()?.withoutParameters() shouldBe ContentType.Application.Json
+        response.decodeError().error.code shouldBe RPCError.ErrorCode.CONNECTION_CLOSED
     }
 
     @Test
@@ -74,25 +64,44 @@ class StreamableHttpResponseDeliveryTest {
     }
 
     @Test
-    fun `POST carrying no request is acknowledged with a bodiless 202`() = testApplication {
-        application { mcpStatelessStreamableHttp { testServer() } }
+    fun `stateful GET for an unknown session returns 404`() = testApplication {
+        application { mcpStreamableHttp { testServer() } }
 
-        val response = client.post("/mcp") {
+        val response = client.get("/mcp") {
             header(HttpHeaders.Host, "localhost")
-            header(HttpHeaders.Accept, "${ContentType.Application.Json}, $eventStream")
-            contentType(ContentType.Application.Json)
-            setBody("""{"jsonrpc":"2.0","method":"notifications/initialized"}""")
+            header(HttpHeaders.Accept, eventStream)
+            header(MCP_SESSION_ID_HEADER, "unknown-session")
         }
 
-        response.status shouldBe HttpStatusCode.Accepted
-        response.bodyAsText() shouldBe ""
+        response.status shouldBe HttpStatusCode.NotFound
+        val error = response.decodeError().error
+        error.message shouldBe "Session not found"
+        error.code shouldBe -32001
     }
 
-    private suspend fun HttpResponse.assertMethodNotAllowed() {
-        status shouldBe HttpStatusCode.MethodNotAllowed
-        headers[HttpHeaders.Allow] shouldBe HttpMethod.Post.value
-        contentType()?.withoutParameters() shouldBe ContentType.Application.Json
-        decodeError().error.code shouldBe RPCError.ErrorCode.CONNECTION_CLOSED
+    @Test
+    fun `stateful GET without a session id returns 400`() = testApplication {
+        application { mcpStreamableHttp { testServer() } }
+
+        val response = client.get("/mcp") {
+            header(HttpHeaders.Host, "localhost")
+            header(HttpHeaders.Accept, eventStream)
+        }
+
+        response.status shouldBe HttpStatusCode.BadRequest
+    }
+
+    @Test
+    fun `GET routes next to the stateful endpoint are not checked for a session`() = testApplication {
+        application {
+            mcpStreamableHttp { testServer() }
+            routing { get("/health") { call.respondText("ok") } }
+        }
+
+        val response = client.get("/health")
+
+        response.status shouldBe HttpStatusCode.OK
+        response.bodyAsText() shouldBe "ok"
     }
 
     private suspend fun HttpResponse.decodeError(): JSONRPCError = McpJson.decodeFromString(bodyAsText())

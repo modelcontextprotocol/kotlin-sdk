@@ -900,6 +900,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                 withContext(NonCancellable) {
                     try {
                         cancelPending(timeoutError, notifyPeerOnCancel)
+                    } catch (_: CancellationException) {
                     } catch (e: Throwable) {
                         logger.warn(e) { "Failed to notify peer about timed-out request" }
                         onError(e)
@@ -917,6 +918,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             withContext(NonCancellable) {
                 try {
                     cancelPending(cause, notifyPeerOnCancel)
+                } catch (_: CancellationException) {
                 } catch (e: Throwable) {
                     logger.warn(e) { "Failed to notify peer about cancelled request" }
                     onError(e)

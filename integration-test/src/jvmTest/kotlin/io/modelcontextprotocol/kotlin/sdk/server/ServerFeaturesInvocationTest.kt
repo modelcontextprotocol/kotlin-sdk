@@ -1,7 +1,9 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.kotest.assertions.assertSoftly
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
@@ -12,6 +14,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.PromptMessage
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
@@ -23,9 +26,10 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import org.junit.jupiter.api.Test
-import kotlin.test.assertFailsWith
 
 class ServerFeaturesInvocationTest : AbstractServerFeaturesTest() {
 
@@ -74,10 +78,7 @@ class ServerFeaturesInvocationTest : AbstractServerFeaturesTest() {
     fun `callTool should return error result when tool not found`() = runTest {
         val result = client.callTool(CallToolRequest(CallToolRequestParams("nonexistent")))
 
-        assertSoftly(result) {
-            isError shouldBe true
-            (content.single() as TextContent).text shouldBe "Tool nonexistent not found"
-        }
+        result shouldBe CallToolResult(content = listOf(TextContent("Tool nonexistent not found")), isError = true)
     }
 
     @Test
@@ -96,21 +97,15 @@ class ServerFeaturesInvocationTest : AbstractServerFeaturesTest() {
 
     @Test
     fun `callTool should pass empty arguments map to handler`() = runTest {
+        val received = CompletableDeferred<JsonObject?>()
         server.addTool("greet", "Greeting tool") { request ->
-            val name = request.params.arguments?.get("name")?.jsonPrimitive?.content ?: "stranger"
-            CallToolResult(listOf(TextContent("Hello, $name!")))
+            received.complete(request.params.arguments)
+            CallToolResult(emptyList())
         }
 
-        val result = client.callTool(
-            CallToolRequest(
-                CallToolRequestParams(
-                    name = "greet",
-                    arguments = JsonObject(emptyMap()),
-                ),
-            ),
-        )
+        client.callTool(CallToolRequest(CallToolRequestParams(name = "greet", arguments = JsonObject(emptyMap()))))
 
-        (result.content.single() as TextContent).text shouldBe "Hello, stranger!"
+        received.await() shouldBe JsonObject(emptyMap())
     }
 
     // ── Prompt invocation ──────────────────────────────────────────────────────
@@ -159,26 +154,26 @@ class ServerFeaturesInvocationTest : AbstractServerFeaturesTest() {
     }
 
     @Test
-    fun `getPrompt should use default when arguments are absent`() = runTest {
+    fun `getPrompt should pass absent arguments as null`() = runTest {
+        val received = CompletableDeferred<Map<String, String>?>()
         server.addPrompt("templated", "Templated prompt") { request ->
-            val topic = request.params.arguments?.get("topic") ?: "unknown"
-            GetPromptResult(
-                messages = listOf(
-                    PromptMessage(role = Role.User, content = TextContent("Tell me about $topic")),
-                ),
-            )
+            received.complete(request.params.arguments)
+            GetPromptResult(messages = emptyList())
         }
 
-        val result = client.getPrompt(GetPromptRequest(GetPromptRequestParams("templated")))
+        client.getPrompt(GetPromptRequest(GetPromptRequestParams("templated")))
 
-        (result.messages.single().content as TextContent).text shouldBe "Tell me about unknown"
+        received.await().shouldBeNull()
     }
 
     @Test
     fun `getPrompt should throw when prompt not found`() = runTest {
-        assertFailsWith<McpException> {
+        val exception = shouldThrow<McpException> {
             client.getPrompt(GetPromptRequest(GetPromptRequestParams("nonexistent")))
         }
+
+        exception.code shouldBe RPCError.ErrorCode.INVALID_PARAMS
+        exception.message shouldBe "Prompt not found: nonexistent"
     }
 
     // ── Resource invocation ────────────────────────────────────────────────────
@@ -215,8 +210,12 @@ class ServerFeaturesInvocationTest : AbstractServerFeaturesTest() {
 
     @Test
     fun `readResource should throw when resource not found`() = runTest {
-        assertFailsWith<McpException> {
+        val exception = shouldThrow<McpException> {
             client.readResource(ReadResourceRequest(ReadResourceRequestParams("test://nonexistent")))
         }
+
+        exception.code shouldBe RPCError.ErrorCode.RESOURCE_NOT_FOUND
+        exception.message shouldBe "Resource not found"
+        exception.data shouldBe buildJsonObject { put("uri", "test://nonexistent") }
     }
 }

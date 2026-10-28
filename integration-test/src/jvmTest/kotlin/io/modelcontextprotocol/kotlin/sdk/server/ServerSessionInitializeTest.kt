@@ -1,10 +1,16 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
+import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldNotContain
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.modelcontextprotocol.kotlin.sdk.shared.InMemoryTransport
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
@@ -16,6 +22,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
@@ -25,11 +32,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 import org.junit.jupiter.api.Test
 import java.util.concurrent.CopyOnWriteArrayList
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import java.util.concurrent.atomic.AtomicInteger
 
 class ServerSessionInitializeTest {
 
@@ -39,7 +42,7 @@ class ServerSessionInitializeTest {
         instructions = null,
     )
 
-    private fun createInitializeRequest(clientName: String = "test-client"): InitializeRequest = InitializeRequest(
+    private fun createInitializeRequest(clientName: String): InitializeRequest = InitializeRequest(
         InitializeRequestParams(
             protocolVersion = LATEST_PROTOCOL_VERSION,
             capabilities = ClientCapabilities(),
@@ -60,32 +63,6 @@ class ServerSessionInitializeTest {
     )
 
     @Test
-    fun `should handle first initialize request successfully`() = runTest {
-        val session = createSession()
-        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
-
-        assertNull(session.clientCapabilities)
-        assertNull(session.clientVersion)
-
-        val responseDone = CompletableDeferred<JSONRPCResponse>()
-        clientTransport.onMessage { message ->
-            if (message is JSONRPCResponse) {
-                responseDone.complete(message)
-            }
-        }
-
-        session.connect(serverTransport)
-        clientTransport.send(createInitializeRequest().toJSON())
-
-        val response = responseDone.await()
-        assertNotNull(response.result)
-        assertNotNull(session.clientCapabilities)
-        assertEquals("test-client", session.clientVersion?.name)
-    }
-
-    // Both initialize requests arrive before notifications/initialized, in the serial dispatch
-    // phase, so processing and response order stay deterministic.
-    @Test
     fun `should classify malformed initialize params as invalid params`() = runTest {
         val session = createSession()
         val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
@@ -101,12 +78,14 @@ class ServerSessionInitializeTest {
         clientTransport.send(createMalformedInitializeRequest())
 
         val response = responseDone.await()
-        assertEquals(RPCError.ErrorCode.INVALID_PARAMS, response.error.code)
-        assertFalse(response.error.message.contains("kotlinx.serialization"))
-        assertNull(session.clientCapabilities)
-        assertNull(session.clientVersion)
+        response.error.code shouldBe RPCError.ErrorCode.INVALID_PARAMS
+        response.error.message shouldNotContain "kotlinx.serialization"
+        session.clientCapabilities.shouldBeNull()
+        session.clientVersion.shouldBeNull()
     }
 
+    // Both initialize requests arrive before notifications/initialized, in the serial dispatch
+    // phase, so processing and response order stay deterministic.
     @Test
     fun `should reject duplicate initialize request`() = runTest {
         val session = createSession()
@@ -136,13 +115,10 @@ class ServerSessionInitializeTest {
 
         secondResponseDone.await()
 
-        assertEquals(2, responses.size)
-        assertTrue(responses[0] is JSONRPCResponse, "First response should be success")
-        assertTrue(responses[1] is JSONRPCError, "Second response should be error")
-        assertEquals(RPCError.ErrorCode.INVALID_REQUEST, (responses[1] as JSONRPCError).error.code)
-
-        // Capabilities still reflect the first client, not overwritten
-        assertEquals("first-client", session.clientVersion?.name)
+        responses shouldHaveSize 2
+        responses[0].shouldBeInstanceOf<JSONRPCResponse>()
+        responses[1].shouldBeInstanceOf<JSONRPCError>().error.code shouldBe RPCError.ErrorCode.INVALID_REQUEST
+        session.clientVersion?.name shouldBe "first-client"
     }
 
     @Test
@@ -185,10 +161,95 @@ class ServerSessionInitializeTest {
 
         allResponsesDone.await()
 
-        assertEquals(1, successes.size, "Exactly one initialize should succeed")
-        assertEquals(n - 1, errors.size, "All other initializes should be rejected")
-        errors.forEach { error ->
-            assertEquals(RPCError.ErrorCode.INVALID_REQUEST, error.error.code)
+        successes shouldHaveSize 1
+        errors.map { it.error.code } shouldBe List(n - 1) { RPCError.ErrorCode.INVALID_REQUEST }
+    }
+
+    private suspend fun connectAndInitialize(session: ServerSession): InMemoryTransport {
+        val (clientTransport, serverTransport) = InMemoryTransport.createLinkedPair()
+        val responseDone = CompletableDeferred<JSONRPCResponse>()
+        clientTransport.onMessage { message ->
+            if (message is JSONRPCResponse) responseDone.complete(message)
         }
+
+        session.connect(serverTransport)
+        clientTransport.send(createInitializeRequest("test-client").toJSON())
+        responseDone.await()
+        return clientTransport
+    }
+
+    private suspend fun completeHandshake(session: ServerSession) {
+        connectAndInitialize(session).send(InitializedNotification().toJSON())
+    }
+
+    @Test
+    fun `should run onInitialized callback registered after initialization`() = runTest {
+        val session = createSession()
+        val calls = CopyOnWriteArrayList<String>()
+        val initialized = CompletableDeferred<Unit>()
+
+        session.onInitialized { calls.add("early") }
+        session.onInitialized { initialized.complete(Unit) }
+
+        completeHandshake(session)
+        initialized.await()
+
+        session.onInitialized { calls.add("late") }
+
+        calls shouldBe listOf("early", "late")
+    }
+
+    @Test
+    fun `should run each onInitialized callback exactly once when registration races initialization`() = runTest {
+        val session = createSession()
+        val clientTransport = connectAndInitialize(session)
+        val counters = List(200) { AtomicInteger() }
+
+        withContext(Dispatchers.Default) {
+            val barrier = CompletableDeferred<Unit>()
+            val jobs = mutableListOf<Job>()
+            counters.forEachIndexed { index, counter ->
+                // Mid-batch, so registrations land before, during and after the notification.
+                if (index == counters.size / 2) {
+                    jobs += launch {
+                        barrier.await()
+                        clientTransport.send(InitializedNotification().toJSON())
+                    }
+                }
+                jobs += launch {
+                    barrier.await()
+                    session.onInitialized { counter.incrementAndGet() }
+                }
+            }
+            barrier.complete(Unit)
+            jobs.joinAll()
+        }
+        // A duplicate notification must not run any callback again.
+        clientTransport.send(InitializedNotification().toJSON())
+
+        counters.map { it.get() } shouldBe List(counters.size) { 1 }
+    }
+
+    @Test
+    fun `should report onInitialized callback failures to onError without skipping other callbacks`() = runTest {
+        val errors = CopyOnWriteArrayList<Throwable>()
+        val session = object : ServerSession(
+            serverInfo = Implementation(name = "test-server", version = "1.0"),
+            options = ServerOptions(capabilities = ServerCapabilities()),
+            instructions = null,
+        ) {
+            override fun onError(error: Throwable) {
+                errors.add(error)
+            }
+        }
+        val calls = CopyOnWriteArrayList<String>()
+        session.onInitialized { error("early failure") }
+        session.onInitialized { calls.add("early") }
+
+        completeHandshake(session)
+        session.onInitialized { error("late failure") }
+
+        calls shouldBe listOf("early")
+        errors.map { it.message } shouldBe listOf("early failure", "late failure")
     }
 }

@@ -65,6 +65,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/client/KtorClientKt {
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/client/ReconnectionOptions {
+	public fun <init> ()V
 	public synthetic fun <init> (JJDIILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public synthetic fun <init> (JJDILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun equals (Ljava/lang/Object;)Z
@@ -82,7 +83,6 @@ public final class io/modelcontextprotocol/kotlin/sdk/client/SseClientTransport 
 }
 
 public final class io/modelcontextprotocol/kotlin/sdk/client/StdioClientTransport : io/modelcontextprotocol/kotlin/sdk/shared/AbstractClientTransport {
-	public static final field BUFFER_SIZE J
 	public fun <init> (Lkotlinx/io/Source;Lkotlinx/io/Sink;)V
 	public fun <init> (Lkotlinx/io/Source;Lkotlinx/io/Sink;Lkotlinx/io/Source;)V
 	public fun <init> (Lkotlinx/io/Source;Lkotlinx/io/Sink;Lkotlinx/io/Source;Lkotlinx/coroutines/channels/Channel;)V

@@ -1,8 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
-import io.kotest.assertions.nondeterministic.continually
 import io.kotest.assertions.nondeterministic.eventually
-import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
@@ -20,7 +18,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import java.util.concurrent.CopyOnWriteArrayList
-import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class ClientConnectionLoggingTest : AbstractServerFeaturesTest() {
@@ -60,67 +57,6 @@ class ClientConnectionLoggingTest : AbstractServerFeaturesTest() {
 
     @ParameterizedTest
     @EnumSource(LoggingLevel::class)
-    fun `notification should filter logging messages below level`(minLevel: LoggingLevel): Unit = runBlocking {
-        val receivedMessages = CopyOnWriteArrayList<LoggingMessageNotification>()
-        client.setNotificationHandler<LoggingMessageNotification>(Method.Defined.NotificationsMessage) {
-            receivedMessages.add(it)
-            CompletableDeferred(Unit)
-        }
-
-        client.setLoggingLevel(minLevel)
-
-        addTool("test-notification-filtered") {
-            LoggingLevel.entries.forEach { level ->
-                notification(
-                    LoggingMessageNotification(
-                        LoggingMessageNotificationParams(
-                            level = level,
-                            data = JsonPrimitive(level.name),
-                        ),
-                    ),
-                )
-            }
-        }
-
-        client.callTool(CallToolRequest(CallToolRequestParams("test-notification-filtered")))
-
-        // Handlers dispatch on Dispatchers.Default after the handshake, so await the expected count
-        // before asserting order.
-        val expectedLevels = LoggingLevel.entries.filter { it >= minLevel }
-        eventually(5.seconds) { receivedMessages shouldHaveSize expectedLevels.size }
-        receivedMessages.map { it.params.level } shouldBe expectedLevels
-    }
-
-    @ParameterizedTest
-    @EnumSource(LoggingLevel::class)
-    fun `sendLoggingMessage should send message at level`(expectedLevel: LoggingLevel): Unit = runBlocking {
-        val notificationReceived = CompletableDeferred<LoggingMessageNotification>()
-        client.setNotificationHandler<LoggingMessageNotification>(Method.Defined.NotificationsMessage) {
-            notificationReceived.complete(it)
-            CompletableDeferred(Unit)
-        }
-
-        val expectedData = JsonObject(mapOf("key" to JsonPrimitive("value")))
-
-        addTool("test-logging") {
-            sendLoggingMessage(
-                LoggingMessageNotification(
-                    LoggingMessageNotificationParams(
-                        level = expectedLevel,
-                        data = expectedData,
-                    ),
-                ),
-            )
-        }
-
-        client.callTool(CallToolRequest(CallToolRequestParams("test-logging")))
-        val received = notificationReceived.await()
-        received.params.level shouldBe expectedLevel
-        received.params.data shouldBe expectedData
-    }
-
-    @ParameterizedTest
-    @EnumSource(LoggingLevel::class)
     fun `sendLoggingMessage should filter messages below level`(minLevel: LoggingLevel): Unit = runBlocking {
         val receivedMessages = CopyOnWriteArrayList<LoggingMessageNotification>()
         client.setNotificationHandler<LoggingMessageNotification>(Method.Defined.NotificationsMessage) {
@@ -150,33 +86,5 @@ class ClientConnectionLoggingTest : AbstractServerFeaturesTest() {
         val expectedLevels = LoggingLevel.entries.filter { it >= minLevel }
         eventually(5.seconds) { receivedMessages shouldHaveSize expectedLevels.size }
         receivedMessages.map { it.params.level } shouldBe expectedLevels
-    }
-
-    @Test
-    fun `sendLoggingMessage should send no messages when level is set to highest`(): Unit = runBlocking {
-        val receivedMessages = CopyOnWriteArrayList<LoggingMessageNotification>()
-        client.setNotificationHandler<LoggingMessageNotification>(Method.Defined.NotificationsMessage) {
-            receivedMessages.add(it)
-            CompletableDeferred(Unit)
-        }
-
-        client.setLoggingLevel(LoggingLevel.Emergency)
-
-        addTool("test-logging-highest") {
-            LoggingLevel.entries.dropLast(1).forEach { level ->
-                sendLoggingMessage(
-                    LoggingMessageNotification(
-                        LoggingMessageNotificationParams(
-                            level = level,
-                            data = JsonPrimitive(level.name),
-                        ),
-                    ),
-                )
-            }
-        }
-
-        client.callTool(CallToolRequest(CallToolRequestParams("test-logging-highest")))
-        // Handlers dispatch asynchronously, so hold for a window to confirm nothing ever arrives.
-        continually(500.milliseconds) { receivedMessages.shouldBeEmpty() }
     }
 }

@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.shared
 
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.utils.runCatchingCancellable
 import kotlinx.coroutines.CompletableDeferred
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -67,7 +68,15 @@ public abstract class AbstractTransport : Transport {
      */
     protected fun invokeOnCloseCallback() {
         if (onCloseCalled.compareAndSet(expectedValue = false, newValue = true)) {
-            runCatching { _onClose() }
+            runCatchingCancellable { _onClose() }
         }
+    }
+
+    /**
+     * Reports [error] through the `_onError` callback, swallowing any [Throwable] the callback
+     * raises. A [kotlin.coroutines.cancellation.CancellationException] propagates instead.
+     */
+    protected fun invokeOnErrorCallback(error: Throwable) {
+        runCatchingCancellable { _onError(error) }
     }
 }

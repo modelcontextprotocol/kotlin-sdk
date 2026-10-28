@@ -1,16 +1,14 @@
 package io.modelcontextprotocol.kotlin.sdk.shared
 
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
+import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.modelcontextprotocol.kotlin.sdk.types.CustomRequest
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
-import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
@@ -22,224 +20,142 @@ import io.modelcontextprotocol.kotlin.sdk.types.ProgressNotificationParams
 import io.modelcontextprotocol.kotlin.sdk.types.ProgressToken
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.Request
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.RequestMeta
+import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonObjectBuilder
-import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.encodeToJsonElement
-import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonObject
 import kotlin.coroutines.cancellation.CancellationException
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 
 class ProtocolTest {
-    private lateinit var protocol: TestProtocol
-    private lateinit var transport: RecordingTransport
 
-    @BeforeTest
-    fun setUp() {
-        protocol = TestProtocol()
-        transport = RecordingTransport()
+    /** Sends [request] through a freshly connected protocol, answers it, and returns what went on the wire. */
+    private suspend fun TestScope.sendAndAnswer(request: Request, options: RequestOptions? = null): JSONRPCRequest {
+        val (protocol, transport) = connectedProtocol()
+        val inFlight = async { protocol.request<EmptyResult>(request, options) }
+        val sent = transport.awaitRequest()
+        transport.deliver(JSONRPCResponse(sent.id, EmptyResult()))
+        inFlight.await()
+        return sent
     }
 
     @Test
     fun `should preserve existing meta when adding progress token`() = runTest {
-        protocol.connect(transport)
-        val request = ReadResourceRequest(
-            ReadResourceRequestParams(
-                uri = "test://resource",
-                meta = metaOf {
-                    put("customField", JsonPrimitive("customValue"))
-                    put("anotherField", JsonPrimitive(123))
-                },
-            ),
-        )
-
-        val inFlight = async {
-            protocol.request<EmptyResult>(
-                request = request,
-                options = RequestOptions(onProgress = {}),
-            )
+        val meta = buildJsonObject {
+            put("customField", "customValue")
+            put("anotherField", 123)
         }
 
-        val sent = transport.awaitRequest()
-        val params = sent.params?.jsonObject.shouldNotBeNull()
-        val meta = params["_meta"]?.jsonObject.shouldNotBeNull()
-
-        params["uri"]?.jsonPrimitive?.content shouldBe "test://resource"
-        meta["customField"]?.jsonPrimitive?.content shouldBe "customValue"
-        meta["anotherField"]?.jsonPrimitive?.int shouldBe 123
-        meta["progressToken"] shouldBe McpJson.encodeToJsonElement(sent.id)
-
-        transport.deliver(JSONRPCResponse(sent.id, EmptyResult()))
-        inFlight.await()
-    }
-
-    @Test
-    fun `should create meta with progress token when none exists`() = runTest {
-        protocol.connect(transport)
-        val request = ReadResourceRequest(
-            ReadResourceRequestParams(
-                uri = "test://resource",
-                meta = null,
-            ),
+        val sent = sendAndAnswer(
+            ReadResourceRequest(ReadResourceRequestParams(uri = "test://resource", meta = RequestMeta(meta))),
+            RequestOptions(onProgress = {}),
         )
 
-        val inFlight = async {
-            protocol.request<EmptyResult>(
-                request = request,
-                options = RequestOptions(onProgress = {}),
-            )
-        }
-
-        val sent = transport.awaitRequest()
         val params = sent.params?.jsonObject.shouldNotBeNull()
-        val meta = params["_meta"]?.jsonObject.shouldNotBeNull()
-
         params["uri"]?.jsonPrimitive?.content shouldBe "test://resource"
-        meta["progressToken"] shouldBe McpJson.encodeToJsonElement(sent.id)
-
-        transport.deliver(JSONRPCResponse(sent.id, EmptyResult()))
-        inFlight.await()
+        params["_meta"] shouldBe JsonObject(meta + ("progressToken" to McpJson.encodeToJsonElement(sent.id)))
     }
 
     @Test
     fun `should not modify meta when onProgress is absent`() = runTest {
-        protocol.connect(transport)
-        val originalMeta = metaJson {
-            put("customField", JsonPrimitive("customValue"))
-        }
-        val request = ReadResourceRequest(
-            ReadResourceRequestParams(
-                uri = "test://resource",
-                meta = RequestMeta(originalMeta),
-            ),
+        val meta = buildJsonObject { put("customField", "customValue") }
+
+        val sent = sendAndAnswer(
+            ReadResourceRequest(ReadResourceRequestParams(uri = "test://resource", meta = RequestMeta(meta))),
         )
 
-        val inFlight = async {
-            protocol.request<EmptyResult>(request)
-        }
-
-        val sent = transport.awaitRequest()
         val params = sent.params?.jsonObject.shouldNotBeNull()
-        val meta = params["_meta"]?.jsonObject.shouldNotBeNull()
-
-        meta shouldBe originalMeta
         params["uri"]?.jsonPrimitive?.content shouldBe "test://resource"
-
-        transport.deliver(JSONRPCResponse(sent.id, EmptyResult()))
-        inFlight.await()
-    }
-
-    @Test
-    fun `should propagate CancellationException from notification handler without calling onError`() = runTest {
-        protocol.connect(transport)
-
-        protocol.fallbackNotificationHandler = {
-            throw CancellationException("test cancellation")
-        }
-
-        shouldThrow<CancellationException> {
-            transport.deliver(JSONRPCNotification(method = "test/notification"))
-        }
-
-        protocol.errors shouldHaveSize 0
-    }
-
-    @Test
-    fun `should report non-cancellation exception from notification handler via onError`() = runTest {
-        protocol.connect(transport)
-
-        protocol.fallbackNotificationHandler = {
-            throw IllegalStateException("handler failed")
-        }
-
-        // Non-CE exceptions are caught and reported, not propagated
-        transport.deliver(JSONRPCNotification(method = "test/notification"))
-
-        protocol.errors shouldHaveSize 1
-        protocol.errors[0].message shouldBe "handler failed"
+        params["_meta"] shouldBe meta
     }
 
     @Test
     fun `should create params object when request params are null`() = runTest {
-        protocol.connect(transport)
-        val request = CustomRequest(
-            method = Method.Custom("example"),
-            params = null,
+        val sent = sendAndAnswer(
+            CustomRequest(method = Method.Custom("example"), params = null),
+            RequestOptions(onProgress = {}),
         )
 
-        val inFlight = async {
-            protocol.request<EmptyResult>(
-                request = request,
-                options = RequestOptions(onProgress = {}),
-            )
+        sent.params shouldBe buildJsonObject {
+            putJsonObject("_meta") { put("progressToken", McpJson.encodeToJsonElement(sent.id)) }
         }
+    }
 
+    @Test
+    fun `progress reaches the request callback and progress for an unknown token is reported`() = runTest {
+        val (protocol, transport) = connectedProtocol()
+        val received = mutableListOf<Double>()
+        val inFlight = async {
+            protocol.request<EmptyResult>(PingRequest(), RequestOptions(onProgress = { received += it.progress }))
+        }
         val sent = transport.awaitRequest()
-        val params = sent.params?.jsonObject.shouldNotBeNull()
-        val meta = params["_meta"]?.jsonObject.shouldNotBeNull()
 
-        params.keys shouldContainExactly setOf("_meta")
-        meta["progressToken"] shouldBe McpJson.encodeToJsonElement(sent.id)
-
+        transport.deliver(ProgressNotification(ProgressNotificationParams(sent.id, 0.5)).toJSON())
         transport.deliver(JSONRPCResponse(sent.id, EmptyResult()))
         inFlight.await()
+        transport.deliver(ProgressNotification(ProgressNotificationParams(sent.id, 1.0)).toJSON()) // token retired
+
+        received shouldBe listOf(0.5)
+        protocol.errors shouldHaveSize 1
+    }
+
+    @Test
+    fun `should propagate CancellationException from notification handler without calling onError`() = runTest {
+        val (protocol, transport) = connectedProtocol()
+        protocol.fallbackNotificationHandler = { throw CancellationException("test cancellation") }
+
+        shouldThrow<CancellationException> { transport.deliver(JSONRPCNotification(method = "test/notification")) }
+
+        protocol.errors shouldBe emptyList()
+    }
+
+    @Test
+    fun `should report non-cancellation exception from notification handler via onError`() = runTest {
+        val (protocol, transport) = connectedProtocol()
+        protocol.fallbackNotificationHandler = { throw IllegalStateException("handler failed") }
+
+        transport.deliver(JSONRPCNotification(method = "test/notification"))
+
+        protocol.errors.single().message shouldBe "handler failed"
     }
 
     @Test
     fun `request handler receives enriched extra and ambient context element`() = runTest {
-        protocol.connect(transport)
-
-        var seenByParameter: RequestHandlerExtra? = null
-        var seenAmbient: RequestHandlerExtra? = null
+        val (protocol, transport) = connectedProtocol()
+        val seen = mutableListOf<Pair<RequestHandlerExtra, RequestHandlerExtra?>>()
         protocol.fallbackRequestHandler = { _, extra ->
-            seenByParameter = extra
-            seenAmbient = currentRequestHandlerExtra()
+            seen += extra to currentRequestHandlerExtra()
             EmptyResult()
         }
 
         transport.deliver(JSONRPCRequest(id = RequestId(7L), method = "custom/echo"))
+        transport.deliver(JSONRPCRequest(id = RequestId(8L), method = Method.Defined.ToolsList.value))
 
-        seenByParameter shouldNotBe null
-        seenByParameter?.requestId shouldBe RequestId(7L)
-        seenByParameter?.method shouldBe Method.Custom("custom/echo")
+        seen.map { (extra, _) -> extra.requestId to extra.method } shouldBe listOf(
+            RequestId(7L) to Method.Custom("custom/echo"),
+            RequestId(8L) to Method.Defined.ToolsList,
+        )
         // the SAME instance flows through both delivery paths
-        seenAmbient shouldBe seenByParameter
-    }
-
-    @Test
-    fun `extra method resolves defined methods to Defined entries`() = runTest {
-        protocol.connect(transport)
-
-        var seenMethod: Method? = null
-        protocol.setRequestHandler<PingRequest>(Method.Defined.Ping) { _, extra ->
-            seenMethod = extra.method
-            EmptyResult()
-        }
-        transport.deliver(JSONRPCRequest(id = RequestId(1L), method = "ping"))
-
-        seenMethod shouldBe Method.Defined.Ping
+        seen.forEach { (extra, ambient) -> ambient shouldBeSameInstanceAs extra }
     }
 
     @Test
     fun `extra sendNotification stamps relatedRequestId`() = runTest {
-        protocol.connect(transport)
-
+        val (protocol, transport) = connectedProtocol()
         protocol.fallbackRequestHandler = { _, extra ->
-            extra.sendNotification(
-                ProgressNotification(
-                    ProgressNotificationParams(progressToken = ProgressToken(1L), progress = 0.5),
-                ),
-            )
+            extra.sendNotification(ProgressNotification(ProgressNotificationParams(ProgressToken(1L), 0.5)))
             EmptyResult()
         }
 
@@ -251,100 +167,78 @@ class ProtocolTest {
 
     @Test
     fun `extra sendRequest stamps relatedRequestId and preserves caller options`() = runTest {
-        protocol.connect(transport)
-
+        val (protocol, transport) = connectedProtocol()
+        val onProgress: ProgressCallback = {}
         protocol.fallbackRequestHandler = { _, extra ->
             extra.sendRequest<EmptyResult>(
                 PingRequest(),
-                RequestOptions(resumptionToken = "tok", onProgress = { }, timeout = 30.seconds),
+                RequestOptions(resumptionToken = "tok", onProgress = onProgress, timeout = 30.seconds),
             )
             EmptyResult()
         }
 
         // The serial phase runs the handler inline inside deliver(), and the handler suspends
         // awaiting the nested request's response — drive delivery from a child coroutine.
-        val delivery = launch {
-            transport.deliver(JSONRPCRequest(id = RequestId(42L), method = "custom/nested"))
-        }
+        val delivery = launch { transport.deliver(JSONRPCRequest(id = RequestId(42L), method = "custom/nested")) }
 
         val outbound = transport.awaitRequest()
-        val recorded = transport.sentWithOptions
-            .first { (it.first as? JSONRPCRequest)?.id == outbound.id }
-            .second
-        val options = recorded.shouldBeInstanceOf<RequestOptions>()
+        val options = transport.sentWithOptions.single { it.first == outbound }.second
+            .shouldBeInstanceOf<RequestOptions>()
         options.relatedRequestId shouldBe RequestId(42L)
         options.resumptionToken shouldBe "tok"
         options.timeout shouldBe 30.seconds
-        options.onProgress shouldNotBe null
+        options.onProgress shouldBeSameInstanceAs onProgress
 
         transport.deliver(JSONRPCResponse(id = outbound.id, result = EmptyResult()))
         delivery.join()
     }
 
     @Test
-    fun `currentRequestHandlerExtra returns null outside handlers`() = runTest {
-        currentRequestHandlerExtra() shouldBe null
-    }
-
-    @Test
     fun `connect while already connected throws IllegalStateException`() = runTest {
-        protocol.connect(transport)
-        shouldThrow<IllegalStateException> {
-            protocol.connect(RecordingTransport())
-        }
+        val (protocol, _) = connectedProtocol()
+
+        shouldThrow<IllegalStateException> { protocol.connect(RecordingTransport()) }
     }
 
     @Test
     fun `stale onClose from a previous transport does not tear down the successor connection`() = runTest {
-        protocol.connect(transport)
-        val staleCloseCallback = transport.closeCallback ?: error("onClose not registered")
+        val (protocol, first) = connectedProtocol()
+        val staleCloseCallback = first.closeCallback.shouldNotBeNull()
 
-        protocol.close() // disconnect first transport (fires its own doClose)
+        protocol.close() // disconnect the first transport (fires its own doClose)
         val second = RecordingTransport()
-        protocol.connect(second) // reconnect
+        protocol.connect(second)
+        staleCloseCallback() // late duplicate close signal from the first transport
 
-        staleCloseCallback() // late duplicate close signal from transport #1
-
-        // successor connection must still be alive
         protocol.transport shouldBe second
     }
 
     @Test
     fun `failed transport start rolls back the connection and allows reconnect`() = runTest {
-        val failing = object : Transport {
-            override suspend fun start(): Unit = error("boom")
-            override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {}
-            override suspend fun close() {}
-            override fun onClose(block: () -> Unit) {}
-            override fun onError(block: (Throwable) -> Unit) {}
-            override fun onMessage(block: suspend (JSONRPCMessage) -> Unit) {}
+        val protocol = TestProtocol()
+
+        shouldThrow<IllegalStateException> {
+            protocol.connect(RecordingTransport(startFailure = IllegalStateException("boom")))
         }
-        shouldThrow<IllegalStateException> { protocol.connect(failing) }
         protocol.transport shouldBe null // rolled back
-        protocol.connect(transport) // reconnect succeeds, no "already connected"
+
+        val transport = RecordingTransport()
+        protocol.connect(transport) // no "already connected"
         protocol.transport shouldBe transport
     }
 
     @Test
     fun `request cleans up its handlers when the transport send fails`() = runTest {
-        // Send fails without closing the connection, so the leak is not masked by doClose().
-        val failingSend = object : Transport {
-            override suspend fun start() {}
-            override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?): Unit =
-                throw IllegalStateException("send failed")
-            override suspend fun close() {}
-            override fun onClose(block: () -> Unit) {}
-            override fun onError(block: (Throwable) -> Unit) {}
-            override fun onMessage(block: suspend (JSONRPCMessage) -> Unit) {}
-        }
-        protocol.connect(failingSend)
+        // Send fails without closing the connection, so a leak is not masked by doClose().
+        val protocol = TestProtocol()
+        protocol.connect(RecordingTransport(sendFailure = IllegalStateException("send failed")))
 
         shouldThrow<IllegalStateException> {
             protocol.request<EmptyResult>(PingRequest(), RequestOptions(onProgress = {}))
         }
 
-        protocol.responseHandlers.size shouldBe 0
-        protocol.progressHandlers.size shouldBe 0
+        protocol.responseHandlers shouldBe emptyMap()
+        protocol.progressHandlers shouldBe emptyMap()
     }
 
     @Test
@@ -364,7 +258,3 @@ class ProtocolTest {
         error.message.shouldNotBeNull() shouldContain "maxInFlightHandlers"
     }
 }
-
-private fun metaOf(builderAction: JsonObjectBuilder.() -> Unit): RequestMeta = RequestMeta(metaJson(builderAction))
-
-private fun metaJson(builderAction: JsonObjectBuilder.() -> Unit): JsonObject = buildJsonObject(builderAction)

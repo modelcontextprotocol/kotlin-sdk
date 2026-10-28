@@ -1,15 +1,15 @@
 package io.modelcontextprotocol.kotlin.sdk.utils
 
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.assertions.withClue
 import io.kotest.matchers.maps.shouldBeEmpty
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.modelcontextprotocol.kotlin.sdk.types.ResourceTemplate
 import kotlin.test.Test
 
 class PathSegmentTemplateMatcherTest {
-
-    // region: Construction
 
     @Test
     fun `should throw on blank template`() {
@@ -39,9 +39,6 @@ class PathSegmentTemplateMatcherTest {
         matcher(atLimit, maxDepth = 10) // must not throw
     }
 
-    // endregion
-    // region: Basic matching
-
     @Test
     fun `should return null for URI with fewer segments than template`() {
         matcher("users/{id}/posts").match("users/42") shouldBe null
@@ -66,14 +63,6 @@ class PathSegmentTemplateMatcherTest {
     }
 
     @Test
-    fun `should extract single variable`() {
-        val result = matcher("users/{id}").match("users/42")
-        result.shouldNotBeNull {
-            variables["id"] shouldBe "42"
-        }
-    }
-
-    @Test
     fun `should extract multiple variables`() {
         val result = matcher("users/{userId}/posts/{postId}").match("users/alice/posts/99")
         result.shouldNotBeNull {
@@ -90,50 +79,20 @@ class PathSegmentTemplateMatcherTest {
         }
     }
 
-    // endregion
-    // region:Scoring
-
     @Test
-    fun `all-literal template scores higher than parameterized template for same URI`() {
-        val literal = matcher("users/profile").match("users/profile")!!
-        val parameterized = matcher("users/{id}").match("users/profile")!!
-        (literal.score > parameterized.score) shouldBe true
-    }
-
-    @Test
-    fun `score increases with number of segments`() {
-        val short = matcher("a/b").match("a/b")!!
-        val long = matcher("a/b/c").match("a/b/c")!!
-        (long.score > short.score) shouldBe true
-    }
-
-    @Test
-    fun `all-literal two-segment template score is 4`() {
-        // 2 literal segments × LITERAL_MATCH_SCORE(2) = 4
-        matcher("users/profile").match("users/profile")!!.score shouldBe 4
-    }
-
-    @Test
-    fun `one-variable two-segment template score is 3`() {
-        // 1 literal × 2 + 1 variable × 1 = 3
-        matcher("users/{id}").match("users/42")!!.score shouldBe 3
-    }
-
-    @Test
-    fun `all-variable template scores one per segment`() {
-        // 2 variables × VARIABLE_MATCH_SCORE(1) = 2
-        matcher("{a}/{b}").match("x/y")!!.score shouldBe 2
-    }
-
-    // endregion
-    // region:URL decoding
-
-    @Test
-    fun `should URL-decode percent-encoded variable value`() {
-        val result = matcher("search/{query}").match("search/hello%20world")
-        result.shouldNotBeNull {
-            variables["query"] shouldBe "hello world"
+    fun `score should count 2 per literal and 1 per variable segment`() {
+        listOf("users/profile" to 4, "users/{id}" to 3, "{a}/{b}" to 2).forEach { (template, score) ->
+            withClue(template) {
+                matcher(template).match("users/profile")?.score shouldBe score
+            }
         }
+    }
+
+    @Test
+    fun `should percent-decode variable values exactly once`() {
+        val files = matcher("files/{path}")
+        files.match("files/..%2Fetc%2Fpasswd")?.variables shouldBe mapOf("path" to "../etc/passwd")
+        files.match("files/%252Fetc%252Fpasswd")?.variables shouldBe mapOf("path" to "%2Fetc%2Fpasswd")
     }
 
     @Test
@@ -142,8 +101,12 @@ class PathSegmentTemplateMatcherTest {
         matcher("users/profile").match("users/pro%66ile").shouldNotBeNull()
     }
 
-    // endregion
-    // region:Length guard
+    @Test
+    fun `should keep query string and fragment in variable value`() {
+        val api = matcher("api://host/{id}")
+        api.match("api://host/foo?bar=baz")?.variables shouldBe mapOf("id" to "foo?bar=baz")
+        api.match("api://host/foo#section")?.variables shouldBe mapOf("id" to "foo#section")
+    }
 
     @Test
     fun `should return null when URI exceeds maxUrlLength`() {
@@ -153,28 +116,14 @@ class PathSegmentTemplateMatcherTest {
 
     @Test
     fun `should match URI at exactly maxUrlLength`() {
-        // URI of exactly maxUrlLength characters must be accepted
         val uri = "a/" + "x".repeat(2046) // length = 2048
         matcher("a/{id}", maxUrlLength = 2048).match(uri).shouldNotBeNull()
     }
 
-    // endregion
-    // region:Edge cases
-
     @Test
-    fun `should match root-level single segment template`() {
-        val result = matcher("{id}").match("42")
-        result.shouldNotBeNull {
-            variables["id"] shouldBe "42"
-        }
-    }
-
-    @Test
-    fun `should treat leading and trailing slashes as equivalent`() {
-        val result = matcher("/users/{id}/").match("/users/7/")
-        result.shouldNotBeNull {
-            variables["id"] shouldBe "7"
-        }
+    fun `should ignore leading and trailing slashes`() {
+        matcher("/users/{id}/").match("users/7")?.variables shouldBe mapOf("id" to "7")
+        matcher("users/{id}").match("/users/7/")?.variables shouldBe mapOf("id" to "7")
     }
 
     @Test
@@ -196,32 +145,16 @@ class PathSegmentTemplateMatcherTest {
         fromFactory.match(uriToMatch) shouldBe direct.match(uriToMatch)
     }
 
-    // endregion
-    // region: MatchResult equality
-
     @Test
-    fun `MatchResult equals by value`() {
-        val a = MatchResult(mapOf("id" to "1"), score = 3)
-        val b = MatchResult(mapOf("id" to "1"), score = 3)
-        a shouldBe b
-    }
+    fun `MatchResult should be equal by variables and score`() {
+        val result = MatchResult(mapOf("id" to "1"), score = 3)
+        val same = MatchResult(mapOf("id" to "1"), score = 3)
 
-    @Test
-    fun `MatchResult not equal when score differs`() {
-        val a = MatchResult(mapOf("id" to "1"), score = 3)
-        val b = MatchResult(mapOf("id" to "1"), score = 2)
-        (a == b) shouldBe false
+        result shouldBe same
+        result.hashCode() shouldBe same.hashCode()
+        result shouldNotBe MatchResult(mapOf("id" to "1"), score = 2)
+        result shouldNotBe MatchResult(mapOf("id" to "2"), score = 3)
     }
-
-    @Test
-    fun `MatchResult not equal when variables differ`() {
-        val a = MatchResult(mapOf("id" to "1"), score = 3)
-        val b = MatchResult(mapOf("id" to "2"), score = 3)
-        (a == b) shouldBe false
-    }
-
-    // endregion
-    // region: Helpers
 
     private fun matcher(
         uriTemplate: String,
@@ -232,5 +165,4 @@ class PathSegmentTemplateMatcherTest {
         maxUriLength = maxUrlLength,
         maxDepth = maxDepth,
     )
-    // endregion
 }

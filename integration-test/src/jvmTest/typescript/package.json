@@ -3,22 +3,15 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "client:stdio": "tsx client/stdio-client.ts",
-    "client:http": "tsx client/http-client.ts http://localhost:3000/mcp greet Hello",
-    "server:stdio": "tsx server/stdio-server.ts",
-    "server:http": "tsx server/http-server.ts"
+    "server:stdio": "tsx server/stdio-server.ts"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.30.0",
-    "express": "^5.2.1",
-    "zod": "^4.6.2"
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
-    "@types/node": "^26.5.1",
-    "cors": "^2.8.6",
-    "tsx": "^4.23.13",
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   }
 }
