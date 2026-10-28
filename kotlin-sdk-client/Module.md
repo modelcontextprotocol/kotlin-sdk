@@ -14,7 +14,8 @@ protocol types from `kotlin-sdk-core` and ships with transports for CLI and Ktor
 - **Capability enforcement**: Methods fail fast if the server does not advertise the needed capability; optional
   strictness mirrors the protocol options used by the server SDK.
 - **Transports**: Ready-to-use implementations for STDIO (CLI interoperability), Ktor SSE (`SseClientTransport` with
-  POST back-channel), Ktor WebSocket, and Streamable HTTP for environments that prefer request/response streaming.
+  POST back-channel, deprecated), Ktor WebSocket, and Streamable HTTP for environments that prefer request/response
+  streaming.
 - **Ktor client integration**: Extension helpers wire MCP over Ktor client engines with minimal setup for SSE,
   Streamable HTTP, or WebSocket.
 
@@ -50,7 +51,8 @@ println(result.content)
 ### Ktor-based transports
 
 - **SSE** (streaming GET + POST back-channel): create `SseClientTransport(httpClient, url)` (or
-  `HttpClient.mcpSseTransport(url)`); sessions are keyed by `sessionId` managed by the SDK.
+  `HttpClient.mcpSseTransport(url)`); sessions are keyed by `sessionId` managed by the SDK. Deprecated; use Streamable
+  HTTP instead.
 - **WebSocket**: use `WebSocketClientTransport(httpClient, url)` (or `HttpClient.mcpWebSocketTransport(url)`) to get
   bidirectional messaging in one connection.
 - **Streamable HTTP**: `StreamableHttpClientTransport(httpClient, url)` enables MCP over streaming HTTP
