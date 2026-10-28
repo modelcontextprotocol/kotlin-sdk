@@ -753,19 +753,19 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
      *
      * Falls back to the shape-decoded [JSONRPCResponse.result] when no raw JSON is available
      * (programmatically constructed responses) or when the method is custom or unknown. A request
-     * with task augmentation may receive [CreateTaskResult] instead of the method's normal result.
+     * with task augmentation may receive a [CreateTaskResult] envelope instead of the method's normal
+     * result. Decode that envelope directly from the raw JSON before considering the normal result,
+     * since its extension fields can overlap with other result shapes.
      * All other failures to decode the declared result type are propagated to the caller.
      */
     private fun deserializeResult(request: JSONRPCRequest, response: JSONRPCResponse): RequestResult {
         val rawResult = response.rawResult ?: return response.result
         val deserializer = selectRequestResultDeserializer(request.method) ?: return response.result
-        return try {
-            McpJson.decodeFromJsonElement(deserializer, rawResult)
-        } catch (e: SerializationException) {
-            val taskRequested = (request.params as? JsonObject)?.get("task") is JsonObject
-            if (!taskRequested || response.result !is CreateTaskResult) throw e
-            response.result
+        val taskRequested = (request.params as? JsonObject)?.get("task") is JsonObject
+        if (taskRequested && rawResult is JsonObject && "task" in rawResult) {
+            return McpJson.decodeFromJsonElement(CreateTaskResult.serializer(), rawResult)
         }
+        return McpJson.decodeFromJsonElement(deserializer, rawResult)
     }
 
     /**

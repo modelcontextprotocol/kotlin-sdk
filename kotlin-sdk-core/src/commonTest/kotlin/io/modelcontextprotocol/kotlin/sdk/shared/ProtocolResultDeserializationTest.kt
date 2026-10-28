@@ -340,6 +340,52 @@ class ProtocolResultDeserializationTest {
     }
 
     @Test
+    fun `should decode task envelopes with extensions matching other result shapes`() = runTest {
+        protocol.connect(transport)
+        val task = buildJsonObject {
+            taskStatePayload.forEach { (key, value) -> put(key, value) }
+            put("status", "working")
+            put("ttl", 60_000)
+        }
+        val extensions = listOf(buildJsonObject { put("action", "accept") }, callToolPayload)
+
+        for (extension in extensions) {
+            val inFlight = async {
+                protocol.request<CreateTaskResult>(
+                    CallToolRequest(CallToolRequestParams(name = "slow-tool", task = TaskMetadata())),
+                )
+            }
+            val sent = transport.awaitRequest()
+            val payload = buildJsonObject {
+                put("task", task)
+                extension.forEach { (key, value) -> put(key, value) }
+            }
+
+            transport.deliver(wireResponse(sent.id, payload))
+
+            val result = inFlight.await()
+            result.task.taskId shouldBe "task-42"
+            result.task.status shouldBe TaskStatus.Working
+        }
+    }
+
+    @Test
+    fun `should accept a normal result when task augmentation is ignored`() = runTest {
+        protocol.connect(transport)
+
+        val inFlight = async {
+            protocol.request<CallToolResult>(
+                CallToolRequest(CallToolRequestParams(name = "echo", task = TaskMetadata())),
+            )
+        }
+        val sent = transport.awaitRequest()
+
+        transport.deliver(wireResponse(sent.id, callToolPayload))
+
+        inFlight.await().isError shouldBe false
+    }
+
+    @Test
     fun `should keep shape-decoded result on the message for direct transport consumers`() {
         val message = wireResponse(
             RequestId("req-1"),
