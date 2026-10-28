@@ -90,7 +90,7 @@ class ReadBufferTest {
     }
 
     @Test
-    fun `should deserialize message with leading UTF-8 BOM`() {
+    fun `should recover message with leading UTF-8 BOM`() {
         val readBuffer = ReadBuffer()
 
         readBuffer.append("\uFEFF$line")
