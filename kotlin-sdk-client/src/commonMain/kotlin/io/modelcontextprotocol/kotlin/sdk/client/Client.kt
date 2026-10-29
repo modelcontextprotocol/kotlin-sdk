@@ -44,13 +44,18 @@ import io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.PaginatedRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.PaginatedResult
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.types.PrimitiveSchemaDefinition
+import io.modelcontextprotocol.kotlin.sdk.types.Prompt
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
 import io.modelcontextprotocol.kotlin.sdk.types.Request
 import io.modelcontextprotocol.kotlin.sdk.types.RequestMeta
 import io.modelcontextprotocol.kotlin.sdk.types.RequestResult
+import io.modelcontextprotocol.kotlin.sdk.types.Resource
+import io.modelcontextprotocol.kotlin.sdk.types.ResourceTemplate
 import io.modelcontextprotocol.kotlin.sdk.types.Root
 import io.modelcontextprotocol.kotlin.sdk.types.RootsListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.SUPPORTED_PROTOCOL_VERSIONS
@@ -61,6 +66,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.StringSchema
 import io.modelcontextprotocol.kotlin.sdk.types.SubscribeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.TitledMultiSelectEnumSchema
 import io.modelcontextprotocol.kotlin.sdk.types.TitledSingleSelectEnumSchema
+import io.modelcontextprotocol.kotlin.sdk.types.Tool
 import io.modelcontextprotocol.kotlin.sdk.types.UnsubscribeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.UntitledMultiSelectEnumSchema
 import io.modelcontextprotocol.kotlin.sdk.types.UntitledSingleSelectEnumSchema
@@ -74,6 +80,8 @@ import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -449,6 +457,38 @@ public open class Client(private val clientInfo: Implementation, options: Client
     ): ListPromptsResult = request(request, options)
 
     /**
+     * Lists all prompts from the server as a cold [Flow], following `nextCursor` until the server has no more pages.
+     *
+     * No request is sent until the flow is collected, and every collection starts again from the first page
+     * (or from [request]'s cursor, if it has one). Pages are requested lazily, one at a time, as the collector
+     * consumes the items, so `take(n)` or cancelling the collector stops further requests. A failure of any page
+     * request is thrown to the collector.
+     *
+     * The `_meta` of [request] is sent with every page request.
+     *
+     * Pagination guard: if the server returns a `nextCursor` that was already used in this collection
+     * (including the cursor of [request]), the flow fails instead of looping forever.
+     *
+     * @param request The request for the first page. Defaults to an empty request.
+     * @param options Optional request options, applied to every page request.
+     * @return A flow of all prompts, in the order the server returned them.
+     * @throws IllegalStateException On collection, if the server does not support prompts or repeats a cursor.
+     */
+    public fun promptsFlow(
+        request: ListPromptsRequest = ListPromptsRequest(),
+        options: RequestOptions? = null,
+    ): Flow<Prompt> = paginate(
+        firstCursor = request.cursor,
+        fetch = { cursor ->
+            listPrompts(
+                if (cursor == request.cursor) request else ListPromptsRequest(pageParams(cursor, request.meta)),
+                options,
+            )
+        },
+        items = { it.prompts },
+    )
+
+    /**
      * Lists all available resources from the server.
      *
      * @param request A request object for listing resources (usually empty).
@@ -462,6 +502,38 @@ public open class Client(private val clientInfo: Implementation, options: Client
     ): ListResourcesResult = request(request, options)
 
     /**
+     * Lists all resources from the server as a cold [Flow], following `nextCursor` until the server has no more pages.
+     *
+     * No request is sent until the flow is collected, and every collection starts again from the first page
+     * (or from [request]'s cursor, if it has one). Pages are requested lazily, one at a time, as the collector
+     * consumes the items, so `take(n)` or cancelling the collector stops further requests. A failure of any page
+     * request is thrown to the collector.
+     *
+     * The `_meta` of [request] is sent with every page request.
+     *
+     * Pagination guard: if the server returns a `nextCursor` that was already used in this collection
+     * (including the cursor of [request]), the flow fails instead of looping forever.
+     *
+     * @param request The request for the first page. Defaults to an empty request.
+     * @param options Optional request options, applied to every page request.
+     * @return A flow of all resources, in the order the server returned them.
+     * @throws IllegalStateException On collection, if the server does not support resources or repeats a cursor.
+     */
+    public fun resourcesFlow(
+        request: ListResourcesRequest = ListResourcesRequest(),
+        options: RequestOptions? = null,
+    ): Flow<Resource> = paginate(
+        firstCursor = request.cursor,
+        fetch = { cursor ->
+            listResources(
+                if (cursor == request.cursor) request else ListResourcesRequest(pageParams(cursor, request.meta)),
+                options,
+            )
+        },
+        items = { it.resources },
+    )
+
+    /**
      * Lists resource templates available on the server.
      *
      * @param request The request object for listing resource templates.
@@ -473,6 +545,43 @@ public open class Client(private val clientInfo: Implementation, options: Client
         request: ListResourceTemplatesRequest,
         options: RequestOptions? = null,
     ): ListResourceTemplatesResult = request(request, options)
+
+    /**
+     * Lists all resource templates from the server as a cold [Flow], following `nextCursor` until the server has
+     * no more pages.
+     *
+     * No request is sent until the flow is collected, and every collection starts again from the first page
+     * (or from [request]'s cursor, if it has one). Pages are requested lazily, one at a time, as the collector
+     * consumes the items, so `take(n)` or cancelling the collector stops further requests. A failure of any page
+     * request is thrown to the collector.
+     *
+     * The `_meta` of [request] is sent with every page request.
+     *
+     * Pagination guard: if the server returns a `nextCursor` that was already used in this collection
+     * (including the cursor of [request]), the flow fails instead of looping forever.
+     *
+     * @param request The request for the first page. Defaults to an empty request.
+     * @param options Optional request options, applied to every page request.
+     * @return A flow of all resource templates, in the order the server returned them.
+     * @throws IllegalStateException On collection, if the server does not support resources or repeats a cursor.
+     */
+    public fun resourceTemplatesFlow(
+        request: ListResourceTemplatesRequest = ListResourceTemplatesRequest(),
+        options: RequestOptions? = null,
+    ): Flow<ResourceTemplate> = paginate(
+        firstCursor = request.cursor,
+        fetch = { cursor ->
+            listResourceTemplates(
+                if (cursor == request.cursor) {
+                    request
+                } else {
+                    ListResourceTemplatesRequest(pageParams(cursor, request.meta))
+                },
+                options,
+            )
+        },
+        items = { it.resourceTemplates },
+    )
 
     /**
      * Reads a resource from the server by its URI.
@@ -566,6 +675,67 @@ public open class Client(private val clientInfo: Implementation, options: Client
         request: ListToolsRequest = ListToolsRequest(),
         options: RequestOptions? = null,
     ): ListToolsResult = request(request, options)
+
+    /**
+     * Lists all tools from the server as a cold [Flow], following `nextCursor` until the server has no more pages.
+     *
+     * No request is sent until the flow is collected, and every collection starts again from the first page
+     * (or from [request]'s cursor, if it has one). Pages are requested lazily, one at a time, as the collector
+     * consumes the items, so `take(n)` or cancelling the collector stops further requests. A failure of any page
+     * request is thrown to the collector.
+     *
+     * The `_meta` of [request] is sent with every page request.
+     *
+     * Pagination guard: if the server returns a `nextCursor` that was already used in this collection
+     * (including the cursor of [request]), the flow fails instead of looping forever.
+     *
+     * Example:
+     * ```kotlin
+     * client.toolsFlow().collect { tool -> println(tool.name) }
+     * val firstTen = client.toolsFlow().take(10).toList()
+     * ```
+     *
+     * @param request The request for the first page. Defaults to an empty request.
+     * @param options Optional request options, applied to every page request.
+     * @return A flow of all tools, in the order the server returned them.
+     * @throws IllegalStateException On collection, if the server does not support tools or repeats a cursor.
+     */
+    public fun toolsFlow(request: ListToolsRequest = ListToolsRequest(), options: RequestOptions? = null): Flow<Tool> =
+        paginate(
+            firstCursor = request.cursor,
+            fetch = { cursor ->
+                listTools(
+                    if (cursor == request.cursor) request else ListToolsRequest(pageParams(cursor, request.meta)),
+                    options,
+                )
+            },
+            items = { it.tools },
+        )
+
+    private fun pageParams(cursor: String?, meta: RequestMeta?): PaginatedRequestParams =
+        PaginatedRequestParams(cursor = cursor, meta = meta)
+
+    /**
+     * Builds a cold flow that fetches pages starting at [firstCursor] and emits each page's [items] until a page
+     * has no `nextCursor`. Fails if a `nextCursor` repeats one that was already requested.
+     */
+    private fun <R : PaginatedResult, T> paginate(
+        firstCursor: String?,
+        fetch: suspend (cursor: String?) -> R,
+        items: (R) -> List<T>,
+    ): Flow<T> = flow {
+        val seen = mutableSetOf<String>()
+        firstCursor?.let(seen::add)
+        var cursor = firstCursor
+        do {
+            val page = fetch(cursor)
+            items(page).forEach { emit(it) }
+            cursor = page.nextCursor
+            check(cursor == null || seen.add(cursor)) {
+                "Pagination loop detected: the server returned the cursor '$cursor' more than once."
+            }
+        } while (cursor != null)
+    }
 
     /**
      * Registers a single root.
