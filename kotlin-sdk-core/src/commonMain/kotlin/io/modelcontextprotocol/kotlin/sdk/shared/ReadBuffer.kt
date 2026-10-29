@@ -21,6 +21,7 @@ public class ReadBuffer internal constructor(private val maxFrameSize: Int) {
 
     internal companion object {
         internal const val DEFAULT_MAX_FRAME_SIZE: Int = 16 * 1024 * 1024
+        private const val LOG_LINE_PREFIX_LENGTH: Int = 160
     }
 
     private val logger = KotlinLogging.logger { }
@@ -53,8 +54,17 @@ public class ReadBuffer internal constructor(private val maxFrameSize: Int) {
             val message = try {
                 deserializeMessage(line)
             } catch (e: Exception) {
-                logger.error(e) { "Failed to deserialize message from line: $line\nAttempting to recover..." }
-                tryRecover(line)
+                val recovered = tryRecover(line)
+                if (recovered != null) {
+                    logger.warn {
+                        "Recovered JSON-RPC message after deserialization failure; line prefix: ${line.logPrefix()}"
+                    }
+                } else {
+                    logger.error(e) {
+                        "Failed to deserialize JSON-RPC message; line prefix: ${line.logPrefix()}; skipping."
+                    }
+                }
+                recovered
             }
             if (message != null) {
                 return message
@@ -102,11 +112,13 @@ public class ReadBuffer internal constructor(private val maxFrameSize: Int) {
 
         return try {
             deserializeMessage(trimmed)
-        } catch (ignored: Exception) {
-            logger.error(ignored) { "Deserialization failed for line: $line\nSkipping..." }
+        } catch (_: Exception) {
             null
         }
     }
+
+    private fun String.logPrefix(): String =
+        if (length > LOG_LINE_PREFIX_LENGTH) take(LOG_LINE_PREFIX_LENGTH) + "..." else this
 
     /** Clears all buffered data, discarding any partially received messages. */
     public fun clear() {
