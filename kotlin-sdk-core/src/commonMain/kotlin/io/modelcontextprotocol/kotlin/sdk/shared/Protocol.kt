@@ -610,19 +610,8 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
         val handlerJob = if (trackCancellation) currentCoroutineContext().job else null
 
         withContext(extra) {
-            try {
-                val result = handler(request, extra)
-                logger.trace { "Request handled successfully: ${request.method} (id: ${request.id})" }
-                if (handlerJob?.isCancelled == true) {
-                    logger.trace { "Suppressing response for request cancelled by peer (id: ${request.id})" }
-                    return@withContext
-                }
-                capturedTransport.send(
-                    JSONRPCResponse(
-                        id = request.id,
-                        result = result ?: EmptyResult(),
-                    ),
-                )
+            val result = try {
+                handler(request, extra)
             } catch (e: CancellationException) {
                 // Intentional exception to the always-rethrow-CE convention, only at this boundary.
                 if (handlerJob == null) throw e // serial phase: inline dispatch is not response-suppressed
@@ -630,12 +619,34 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                 // CE escaped a live handler job (e.g. a leaked inner withTimeout). Answer
                 // INTERNAL_ERROR so the peer does not hang until its own timeout.
                 respondWithError(capturedTransport, request, e)
+                return@withContext
             } catch (cause: Throwable) {
                 if (handlerJob?.isCancelled == true) {
                     logger.trace { "Suppressing error response for request cancelled by peer (id: ${request.id})" }
                     return@withContext
                 }
                 respondWithError(capturedTransport, request, cause)
+                return@withContext
+            }
+
+            logger.trace { "Request handled successfully: ${request.method} (id: ${request.id})" }
+            if (handlerJob?.isCancelled == true) {
+                logger.trace { "Suppressing response for request cancelled by peer (id: ${request.id})" }
+                return@withContext
+            }
+            try {
+                capturedTransport.send(JSONRPCResponse(id = request.id, result = result ?: EmptyResult()))
+            } catch (e: CancellationException) {
+                if (handlerJob == null || handlerJob.isCancelled) throw e
+                // Like a leaked handler CE above, a send-local cancellation must still answer the peer.
+                onError(e)
+                respondWithError(capturedTransport, request, e)
+            } catch (cause: Throwable) {
+                logger.error(cause) { "Error sending response for request: ${request.method} (id: ${request.id})" }
+                onError(cause)
+                if (handlerJob?.isCancelled != true) {
+                    respondWithError(capturedTransport, request, cause)
+                }
             }
         }
     }
