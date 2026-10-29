@@ -155,6 +155,25 @@ class ProtocolResultDeserializationTest {
     }
 
     @Test
+    fun `should decode arbitrary task payloads that fail content shape checks`() = runTest {
+        protocol.connect(transport)
+
+        val inFlight = async {
+            protocol.request<GetTaskPayloadResult>(
+                GetTaskPayloadRequest(GetTaskPayloadRequestParams(taskId = "task-42")),
+            )
+        }
+        val sent = transport.awaitRequest()
+        val payload = buildJsonObject {
+            put("content", buildJsonArray { add(buildJsonObject { }) })
+        }
+
+        transport.deliver(wireResponse(sent.id, payload))
+
+        inFlight.await().json shouldBe payload
+    }
+
+    @Test
     fun `should preserve the raw tasks result when copying a decoded response`() = runTest {
         protocol.connect(transport)
 
@@ -287,6 +306,25 @@ class ProtocolResultDeserializationTest {
 
         val error = inFlight.await().exceptionOrNull().shouldBeInstanceOf<SerializationException>()
         assertContains(error.message.orEmpty(), "text")
+    }
+
+    @Test
+    fun `should reject invalid content shape for a custom method`() = runTest {
+        protocol.connect(transport)
+
+        val inFlight = async {
+            runCatching {
+                protocol.request<RequestResult>(CustomRequest(Method.Custom("custom/echo"), params = null))
+            }
+        }
+        val sent = transport.awaitRequest()
+        val payload = buildJsonObject {
+            put("content", buildJsonArray { add(buildJsonObject { }) })
+        }
+        transport.deliver(wireResponse(sent.id, payload))
+
+        val error = inFlight.await().exceptionOrNull().shouldBeInstanceOf<IllegalArgumentException>()
+        assertContains(error.message.orEmpty(), "Missing required 'type' field")
     }
 
     @Test

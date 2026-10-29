@@ -564,10 +564,10 @@ internal object ServerResultPolymorphicSerializer :
  * shape, e.g. a `tasks/result` payload — see
  * https://github.com/modelcontextprotocol/kotlin-sdk/issues/601).
  *
- * The public [JSONRPCResponse.result] keeps the shape-decoded value for direct consumers; a result
- * whose shape matches no known type surfaces as [GetTaskPayloadResult] (the SDK's raw-payload result
- * type) instead of failing the whole message decode, leaving the final interpretation to the
- * correlation point.
+ * The public [JSONRPCResponse.result] keeps the shape-decoded value for direct consumers when
+ * decoding succeeds. Object results that fail these provisional shape checks are carried as
+ * [GetTaskPayloadResult] (the SDK's raw-payload result type), leaving the final interpretation and
+ * validation to the correlation point.
  */
 internal object JSONRPCResponseWireSerializer : KSerializer<JSONRPCResponse> {
     override val descriptor: SerialDescriptor = JSONRPCResponse.serializer().descriptor
@@ -592,7 +592,8 @@ internal object JSONRPCResponseWireSerializer : KSerializer<JSONRPCResponse> {
 
             else -> try {
                 json.decodeFromJsonElement(RequestResultPolymorphicSerializer, resultElement)
-            } catch (e: SerializationException) {
+            } catch (e: IllegalArgumentException) {
+                // Shape checks can fail before serializer validation, e.g. content without a type.
                 (resultElement as? JsonObject)?.let(::GetTaskPayloadResult) ?: throw e
             }
         }
