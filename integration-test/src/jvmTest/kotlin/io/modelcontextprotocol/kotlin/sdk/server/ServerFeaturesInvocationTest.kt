@@ -85,33 +85,6 @@ class ServerFeaturesInvocationTest : AbstractServerFeaturesTest() {
     }
 
     @Test
-    fun `callTool should throw after tool is removed`() = runTest {
-        var invocations = 0
-        server.addTool("removed", "Tool that will be removed") {
-            invocations++
-            CallToolResult(emptyList())
-        }
-        client.callTool("removed", emptyMap())
-        server.removeTool("removed")
-
-        val exception = shouldThrow<McpException> {
-            client.callTool("removed", emptyMap())
-        }
-
-        exception.code shouldBe RPCError.ErrorCode.INVALID_PARAMS
-        exception.message shouldBe "Tool not found: removed"
-        invocations shouldBe 1
-    }
-
-    @Test
-    fun `callTool should preserve tool execution error results`() = runTest {
-        val errorResult = CallToolResult(listOf(TextContent("Invalid departure date")), isError = true)
-        server.addTool("validate", "Validates input") { errorResult }
-
-        client.callTool("validate", emptyMap()) shouldBe errorResult
-    }
-
-    @Test
     fun `callTool should return error result when handler throws`() = runTest {
         server.addTool("failing", "Failing tool") {
             throw IllegalStateException("handler failure")

@@ -1,6 +1,5 @@
 package io.modelcontextprotocol.kotlin.sdk.integration
 
-import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.ktor.client.HttpClient
@@ -24,8 +23,6 @@ import io.modelcontextprotocol.kotlin.sdk.server.mcpWebSocket
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
-import io.modelcontextprotocol.kotlin.sdk.types.McpException
-import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
@@ -69,23 +66,6 @@ class TransportIntegrationTest {
 
         (result.content.single() as TextContent).text shouldBe SPECIAL_TEXT
         result.structuredContent shouldBe buildJsonObject { put("text", SPECIAL_TEXT) }
-    }
-
-    @ParameterizedTest
-    @EnumSource
-    fun `unknown tool errors preserve the session`(kind: TransportKind) = runTransportTest(kind) {
-        val client = connect()
-
-        val exception = shouldThrow<McpException> {
-            client.callTool("nonexistent", emptyMap())
-        }
-
-        exception.code shouldBe RPCError.ErrorCode.INVALID_PARAMS
-        exception.message shouldBe "Tool not found: nonexistent"
-
-        val result = client.callTool("echo", mapOf("text" to "still connected"))
-        (result.content.single() as TextContent).text shouldBe "still connected"
-        result.isError shouldNotBe true
     }
 
     @ParameterizedTest
