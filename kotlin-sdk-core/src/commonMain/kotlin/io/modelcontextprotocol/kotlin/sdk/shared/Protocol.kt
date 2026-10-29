@@ -22,6 +22,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.Request
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.RequestResult
+import io.modelcontextprotocol.kotlin.sdk.types.RequestResultPolymorphicSerializer
 import io.modelcontextprotocol.kotlin.sdk.types.fromJSON
 import io.modelcontextprotocol.kotlin.sdk.types.selectRequestResultDeserializer
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
@@ -752,7 +753,8 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
      * https://github.com/modelcontextprotocol/kotlin-sdk/issues/601).
      *
      * Falls back to the shape-decoded [JSONRPCResponse.result] when no raw JSON is available
-     * (programmatically constructed responses) or when the method is custom or unknown. A request
+     * (programmatically constructed responses). Custom or unknown methods use shape-based decoding,
+     * including its validation errors, instead of accepting the wire decoder's raw-payload fallback. A request
      * with task augmentation may receive a [CreateTaskResult] envelope instead of the method's normal
      * result. Decode that envelope directly from the raw JSON before considering the normal result,
      * since its extension fields can overlap with other result shapes.
@@ -760,7 +762,8 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
      */
     private fun deserializeResult(request: JSONRPCRequest, response: JSONRPCResponse): RequestResult {
         val rawResult = response.rawResult ?: return response.result
-        val deserializer = selectRequestResultDeserializer(request.method) ?: return response.result
+        val deserializer = selectRequestResultDeserializer(request.method)
+            ?: return McpJson.decodeFromJsonElement(RequestResultPolymorphicSerializer, rawResult)
         val taskRequested = (request.params as? JsonObject)?.get("task") is JsonObject
         if (taskRequested && rawResult is JsonObject && "task" in rawResult) {
             return McpJson.decodeFromJsonElement(CreateTaskResult.serializer(), rawResult)

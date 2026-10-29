@@ -6,6 +6,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.CreateTaskResult
+import io.modelcontextprotocol.kotlin.sdk.types.CustomRequest
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.GetTaskPayloadRequest
 import io.modelcontextprotocol.kotlin.sdk.types.GetTaskPayloadRequestParams
@@ -17,8 +18,10 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
+import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
+import io.modelcontextprotocol.kotlin.sdk.types.RequestResult
 import io.modelcontextprotocol.kotlin.sdk.types.TaskMetadata
 import io.modelcontextprotocol.kotlin.sdk.types.TaskStatus
 import kotlinx.coroutines.async
@@ -264,6 +267,69 @@ class ProtocolResultDeserializationTest {
 
         val error = inFlight.await().exceptionOrNull().shouldBeInstanceOf<SerializationException>()
         assertContains(error.message.orEmpty(), "text")
+    }
+
+    @Test
+    fun `should report the shape decoding error for a custom method result`() = runTest {
+        protocol.connect(transport)
+
+        val inFlight = async {
+            runCatching {
+                protocol.request<RequestResult>(CustomRequest(Method.Custom("custom/echo"), params = null))
+            }
+        }
+        val sent = transport.awaitRequest()
+        val malformedPayload = buildJsonObject {
+            put("content", buildJsonArray { add(buildJsonObject { put("type", "text") }) })
+        }
+
+        transport.deliver(wireResponse(sent.id, malformedPayload))
+
+        val error = inFlight.await().exceptionOrNull().shouldBeInstanceOf<SerializationException>()
+        assertContains(error.message.orEmpty(), "text")
+    }
+
+    @Test
+    fun `should reject an unrecognized result shape for a custom method`() = runTest {
+        protocol.connect(transport)
+
+        val inFlight = async {
+            runCatching {
+                protocol.request<RequestResult>(CustomRequest(Method.Custom("custom/echo"), params = null))
+            }
+        }
+        val sent = transport.awaitRequest()
+        transport.deliver(wireResponse(sent.id, buildJsonObject { put("customField", "custom-value") }))
+
+        val error = inFlight.await().exceptionOrNull().shouldBeInstanceOf<SerializationException>()
+        assertContains(error.message.orEmpty(), "Cannot determine RequestResult type")
+    }
+
+    @Test
+    fun `should retain shape-based decoding for valid custom method results`() = runTest {
+        protocol.connect(transport)
+
+        val inFlight = async {
+            protocol.request<CallToolResult>(CustomRequest(Method.Custom("custom/echo"), params = null))
+        }
+        val sent = transport.awaitRequest()
+        transport.deliver(wireResponse(sent.id, callToolPayload))
+
+        McpJson.encodeToJsonElement(inFlight.await()) shouldBe callToolPayload
+    }
+
+    @Test
+    fun `should retain programmatically constructed custom method results`() = runTest {
+        protocol.connect(transport)
+
+        val inFlight = async {
+            protocol.request<GetTaskPayloadResult>(CustomRequest(Method.Custom("custom/echo"), params = null))
+        }
+        val sent = transport.awaitRequest()
+        val payload = buildJsonObject { put("customField", "custom-value") }
+        transport.deliver(JSONRPCResponse(sent.id, GetTaskPayloadResult(payload)))
+
+        inFlight.await().json shouldBe payload
     }
 
     @Test
