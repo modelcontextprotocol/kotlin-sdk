@@ -3,6 +3,7 @@ package io.modelcontextprotocol.kotlin.sdk.shared
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.types.CancelledNotification
 import io.modelcontextprotocol.kotlin.sdk.types.CancelledNotificationParams
+import io.modelcontextprotocol.kotlin.sdk.types.CreateTaskResult
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCEmptyMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
@@ -21,7 +22,9 @@ import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.Request
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.RequestResult
+import io.modelcontextprotocol.kotlin.sdk.types.RequestResultPolymorphicSerializer
 import io.modelcontextprotocol.kotlin.sdk.types.fromJSON
+import io.modelcontextprotocol.kotlin.sdk.types.selectRequestResultDeserializer
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
@@ -51,6 +54,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.ContinuationInterceptor
@@ -740,6 +744,34 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     }
 
     /**
+     * Decodes the result of an incoming [response] for the original [request].
+     *
+     * The shape-decoded [JSONRPCResponse.result] is only a heuristic: distinct result types can
+     * share a JSON shape (e.g. a `tasks/result` payload vs. `CallToolResult`), so when the raw
+     * wire JSON was captured during transport decoding it is decoded again here with the result
+     * type declared by its method (see
+     * https://github.com/modelcontextprotocol/kotlin-sdk/issues/601).
+     *
+     * Falls back to the shape-decoded [JSONRPCResponse.result] when no raw JSON is available
+     * (programmatically constructed responses). Custom or unknown methods use shape-based decoding,
+     * including its validation errors, instead of accepting the wire decoder's raw-payload fallback. A request
+     * with task augmentation may receive a [CreateTaskResult] envelope instead of the method's normal
+     * result. Decode that envelope directly from the raw JSON before considering the normal result,
+     * since its extension fields can overlap with other result shapes.
+     * All other failures to decode the declared result type are propagated to the caller.
+     */
+    private fun deserializeResult(request: JSONRPCRequest, response: JSONRPCResponse): RequestResult {
+        val rawResult = response.rawResult ?: return response.result
+        val deserializer = selectRequestResultDeserializer(request.method)
+            ?: return McpJson.decodeFromJsonElement(RequestResultPolymorphicSerializer, rawResult)
+        val taskRequested = (request.params as? JsonObject)?.get("task") is JsonObject
+        if (taskRequested && rawResult is JsonObject && "task" in rawResult) {
+            return McpJson.decodeFromJsonElement(CreateTaskResult.serializer(), rawResult)
+        }
+        return McpJson.decodeFromJsonElement(deserializer, rawResult)
+    }
+
+    /**
      * Closes the connection.
      */
     public suspend fun close() {
@@ -813,7 +845,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
 
                 try {
                     @Suppress("UNCHECKED_CAST")
-                    result.complete(response!!.result as T)
+                    result.complete(deserializeResult(jsonRpcRequest, response!!) as T)
                 } catch (e: Throwable) {
                     result.completeExceptionally(e)
                 }
