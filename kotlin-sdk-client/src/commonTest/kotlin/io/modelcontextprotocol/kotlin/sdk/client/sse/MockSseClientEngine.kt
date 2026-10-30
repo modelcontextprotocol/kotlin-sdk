@@ -17,14 +17,16 @@ import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.InternalAPI
 import io.ktor.utils.io.writeStringUtf8
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 
 @OptIn(InternalAPI::class)
 internal open class MockSseClientEngine(
-    private val endpoint: String,
+    private val endpoint: String?,
     private val onPostRequest: (postRequest: HttpRequestData) -> Unit,
     override val dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : HttpClientEngine {
@@ -61,14 +63,23 @@ internal open class MockSseClientEngine(
         channel.close()
     }
 
+    fun sendSseMessage(data: String) {
+        CoroutineScope(coroutineContext).launch {
+            channel.writeStringUtf8("event: message\ndata: $data\n\n")
+            channel.flush()
+        }
+    }
+
     private fun responseContext(): CoroutineContext = dispatcher + Job()
 
     private suspend fun respondWithSseEndpointEvent(data: HttpRequestData): HttpResponseData {
         val sseResponseAdapter = requireNotNull(data.attributes.getOrNull(ResponseAdapterAttributeKey)) {
             "Missing SSE response adapter."
         }
-        channel.writeStringUtf8(endpointEvent())
-        channel.flush()
+        endpoint?.let {
+            channel.writeStringUtf8(endpointEvent(it))
+            channel.flush()
+        }
         val responseContext = responseContext()
         val responseBody = sseResponseAdapter.adapt(
             data,
@@ -90,7 +101,7 @@ internal open class MockSseClientEngine(
 
     private val eventStreamHeader by lazy { headersOf("Content-Type", "text/event-stream") }
 
-    private fun endpointEvent(): String = buildString {
+    private fun endpointEvent(endpoint: String): String = buildString {
         appendLine("event: endpoint")
         appendLine("data: $endpoint")
         appendLine()
