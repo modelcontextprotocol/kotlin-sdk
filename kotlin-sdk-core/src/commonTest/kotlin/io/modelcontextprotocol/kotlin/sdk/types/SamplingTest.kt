@@ -22,8 +22,11 @@ class SamplingTest {
     @Test
     fun `should reject ModelPreferences with invalid priority`() {
         shouldThrow<IllegalArgumentException> { ModelPreferences(costPriority = 1.5) }
+            .message shouldBe "costPriority must be in 0.0 <= x <= 1.0 value range"
         shouldThrow<IllegalArgumentException> { ModelPreferences(speedPriority = -0.1) }
+            .message shouldBe "speedPriority must be in 0.0 <= x <= 1.0 value range"
         shouldThrow<IllegalArgumentException> { ModelPreferences(intelligencePriority = 1.1) }
+            .message shouldBe "intelligencePriority must be in 0.0 <= x <= 1.0 value range"
     }
 
     @Test
