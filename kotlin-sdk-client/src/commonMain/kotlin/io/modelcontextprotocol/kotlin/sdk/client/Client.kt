@@ -517,8 +517,9 @@ public open class Client(private val clientInfo: Implementation, options: Client
      *             - Name: alphanumeric start/end, may contain hyphens, underscores, dots, alphanumerics
      *             - Reserved prefixes starting with "mcp" or "modelcontextprotocol" are forbidden
      * @param options Optional request options.
-     * @return The result of the tool call, or `null` if none.
+     * @return The tool result. Tool execution errors are reported in it via [CallToolResult.isError].
      * @throws IllegalStateException If the server does not support tools.
+     * @throws McpException If the request fails, e.g. with `INVALID_PARAMS` when the tool is unknown.
      */
     public suspend fun callTool(
         name: String,
@@ -546,8 +547,9 @@ public open class Client(private val clientInfo: Implementation, options: Client
      *
      * @param request The request object containing the tool name and arguments.
      * @param options Optional request options.
-     * @return The result of the tool call, or `null` if none.
+     * @return The tool result. Tool execution errors are reported in it via [CallToolResult.isError].
      * @throws IllegalStateException If the server does not support tools.
+     * @throws McpException If the request fails, e.g. with `INVALID_PARAMS` when the tool is unknown.
      */
     public suspend fun callTool(request: CallToolRequest, options: RequestOptions? = null): CallToolResult =
         request(request, options)

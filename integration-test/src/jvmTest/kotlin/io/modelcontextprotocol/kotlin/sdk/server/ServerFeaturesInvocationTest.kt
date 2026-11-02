@@ -75,10 +75,13 @@ class ServerFeaturesInvocationTest : AbstractServerFeaturesTest() {
     }
 
     @Test
-    fun `callTool should return error result when tool not found`() = runTest {
-        val result = client.callTool(CallToolRequest(CallToolRequestParams("nonexistent")))
+    fun `callTool should throw when tool not found`() = runTest {
+        val exception = shouldThrow<McpException> {
+            client.callTool(CallToolRequest(CallToolRequestParams("nonexistent")))
+        }
 
-        result shouldBe CallToolResult(content = listOf(TextContent("Tool nonexistent not found")), isError = true)
+        exception.code shouldBe RPCError.ErrorCode.INVALID_PARAMS
+        exception.message shouldBe "Tool not found: nonexistent"
     }
 
     @Test
