@@ -75,6 +75,21 @@ private sealed interface PostRefusal {
     class ReusedId(val id: RequestId) : PostRefusal
 }
 
+/** The requests of one POST; in JSON-response mode a cancelled request counts as settled, as it is never answered. */
+private class StreamRequests(val ids: List<RequestId>) {
+    private val responses: MutableMap<RequestId, JSONRPCMessage> = HashMap()
+    private val settled: MutableSet<RequestId> = HashSet()
+
+    val allSettled: Boolean get() = settled.size == ids.size
+
+    fun settle(id: RequestId, response: JSONRPCMessage?) {
+        if (response != null) responses[id] = response
+        settled += id
+    }
+
+    fun responsesInOrder(): List<JSONRPCMessage> = ids.mapNotNull(responses::get)
+}
+
 /**
  * Server transport for Streamable HTTP: this implements the MCP Streamable HTTP transport specification.
  * It supports both SSE streaming and direct HTTP responses.
@@ -193,7 +208,9 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
 
     private val streamsMapping: ConcurrentMap<String, SessionContext> = ConcurrentMap()
     private val requestToStreamMapping: ConcurrentMap<RequestId, String> = ConcurrentMap()
-    private val requestToResponseMapping: ConcurrentMap<RequestId, JSONRPCMessage> = ConcurrentMap()
+
+    /** Each in-flight POST's requests by stream id, so settling one never scans the requests of the session. */
+    private val streamRequests: ConcurrentMap<String, StreamRequests> = ConcurrentMap()
 
     /**
      * JSON-response mode only: one entry per in-flight POST, completed by [send] with the collected
@@ -201,13 +218,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
      * awaits it so the HTTP exchange stays open while handlers run concurrently.
      */
     private val pendingJsonResponses: ConcurrentMap<String, CompletableDeferred<List<JSONRPCMessage>>> = ConcurrentMap()
-
-    /**
-     * JSON-response mode only: request ids retired by an inbound cancellation while their POST is
-     * still awaiting. Treated as settled-without-response so the POST's "a response for every id"
-     * completion condition is not blocked by a request that will never be answered.
-     */
-    private val cancelledRequestIds: ConcurrentMap<RequestId, Unit> = ConcurrentMap()
 
     private val sessionMutex = Mutex()
     private val streamMutex = Mutex()
@@ -306,53 +316,30 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
             if (!isTerminated) return
         }
 
-        requestToResponseMapping[responseRequestId!!] = message
-
         streamMutex.withLock {
-            // The request may have been retired (disconnect or cancellation cleanup) between recording
-            // the response above and acquiring the lock. Reclaim the stray mapping and drop it.
-            if (routingRequestId !in requestToStreamMapping) {
-                requestToResponseMapping.remove(routingRequestId)
-                return
-            }
-            // Recomputed under the lock. Handlers may respond concurrently, and the sender that
-            // observes the last settled request also retires the ids, so a losing sender sees an
-            // empty set. A cancelled request counts as settled even though it produces no response.
-            val relatedIds = requestToStreamMapping.filterValues { it == streamId }.keys
-            if (relatedIds.isEmpty() ||
-                relatedIds.any { it !in requestToResponseMapping && it !in cancelledRequestIds }
-            ) {
-                return
-            }
-
-            if (configuration.enableJsonResponse) {
-                // Hand the collected responses to the POST suspended in [handlePostRequest], which
-                // completes the HTTP exchange. A null pendingPost means the POST was already retired
-                // (disconnect or cancellation), so the responses are undeliverable and dropped quietly.
-                val pendingPost = pendingJsonResponses.remove(streamId)
-                if (pendingPost == null) {
-                    cleanUpRequests(relatedIds, streamId)
-                    return
-                }
-                val responses = relatedIds.mapNotNull { requestToResponseMapping[it] }
-                cleanUpRequests(relatedIds, streamId)
-                pendingPost.complete(responses)
-            } else {
-                cleanUpRequests(relatedIds, streamId)
-            }
+            // The request may have been retired (disconnect or cancellation cleanup) since the lookup above.
+            if (requestToStreamMapping[routingRequestId] != streamId) return
+            val requests = streamRequests[streamId] ?: return
+            // Handlers may respond concurrently; only the sender that settles the last request retires them.
+            requests.settle(routingRequestId, message.takeIf { configuration.enableJsonResponse })
+            if (!requests.allSettled) return
+            retireSettledRequests(streamId, requests)
         }
         // Every response is out, so end the stream; outside the lock, as closing can wait on a slow client.
         if (!configuration.enableJsonResponse) activeStream?.session?.closeQuietly()
     }
 
+    /** Retires a POST whose requests are all settled and, in JSON-response mode, completes its HTTP exchange. */
+    private fun retireSettledRequests(streamId: String, requests: StreamRequests) {
+        cleanUpRequests(requests.ids, streamId)
+        // No pending POST means it was already retired (disconnect or cancellation): the responses are dropped.
+        pendingJsonResponses.remove(streamId)?.complete(requests.responsesInOrder())
+    }
+
     /** Retires [ids] that are still routed to [streamId], leaving any later request that reused an id alone. */
     private fun cleanUpRequests(ids: Collection<RequestId>, streamId: String) {
-        ids.forEach { requestId ->
-            if (requestToStreamMapping.remove(requestId, streamId)) {
-                requestToResponseMapping.remove(requestId)
-                cancelledRequestIds.remove(requestId)
-            }
-        }
+        streamRequests.remove(streamId)
+        ids.forEach { requestToStreamMapping.remove(it, streamId) }
     }
 
     /**
@@ -382,14 +369,9 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
     private suspend fun retireCancelledJsonRequest(requestId: RequestId) {
         streamMutex.withLock {
             val streamId = requestToStreamMapping[requestId] ?: return
-            cancelledRequestIds[requestId] = Unit
-            val relatedIds = requestToStreamMapping.filterValues { it == streamId }.keys
-            val allSettled = relatedIds.all { it in requestToResponseMapping || it in cancelledRequestIds }
-            if (!allSettled) return
-            val pendingPost = pendingJsonResponses.remove(streamId) ?: return
-            val responses = relatedIds.mapNotNull { requestToResponseMapping[it] }
-            cleanUpRequests(relatedIds, streamId)
-            pendingPost.complete(responses)
+            val requests = streamRequests[streamId] ?: return
+            requests.settle(requestId, response = null)
+            if (requests.allSettled) retireSettledRequests(streamId, requests)
         }
     }
 
@@ -400,8 +382,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 val contexts = streamsMapping.values.toList()
                 streamsMapping.clear()
                 requestToStreamMapping.clear()
-                requestToResponseMapping.clear()
-                cancelledRequestIds.clear()
+                streamRequests.clear()
                 // Release any POST calls suspended awaiting JSON responses.
                 pendingJsonResponses.values.forEach { it.cancel() }
                 pendingJsonResponses.clear()
@@ -562,6 +543,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 if (reusedId != null) return@withLock PostRefusal.ReusedId(reusedId)
                 streamsMapping[streamId] = SessionContext(session, call)
                 requestIds.forEach { requestToStreamMapping[it] = streamId }
+                streamRequests[streamId] = StreamRequests(requestIds)
                 pendingPost?.let { pendingJsonResponses[streamId] = it }
                 null
             }
