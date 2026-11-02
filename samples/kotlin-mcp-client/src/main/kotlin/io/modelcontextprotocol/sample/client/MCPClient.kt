@@ -100,12 +100,7 @@ class MCPClient(apiKey: String) : AutoCloseable {
     // Process a user query and return a string response
     suspend fun processQuery(query: String): String {
         // Create an initial message with a user's query
-        val messages = mutableListOf(
-            MessageParam.builder()
-                .role(MessageParam.Role.USER)
-                .content(query)
-                .build(),
-        )
+        val messages = mutableListOf(MessageParam.ofUser(query))
 
         // Send the query to the Anthropic model and get the response
         val response = anthropic.messages().create(
@@ -159,20 +154,10 @@ class MCPClient(apiKey: String) : AutoCloseable {
         // If there were tool calls, send tool results back and get final response
         if (toolResults.isNotEmpty()) {
             // Add the full assistant response (includes tool_use blocks)
-            messages.add(
-                MessageParam.builder()
-                    .role(MessageParam.Role.ASSISTANT)
-                    .contentOfBlockParams(response.content().map { it.toParam() })
-                    .build(),
-            )
+            messages.add(response.toParam())
 
             // Add user message with tool results
-            messages.add(
-                MessageParam.builder()
-                    .role(MessageParam.Role.USER)
-                    .contentOfBlockParams(toolResults)
-                    .build(),
-            )
+            messages.add(MessageParam.ofUserOfContentBlockParams(toolResults))
 
             // Retrieve an updated response after tool execution (without tools)
             val aiResponse = anthropic.messages().create(
