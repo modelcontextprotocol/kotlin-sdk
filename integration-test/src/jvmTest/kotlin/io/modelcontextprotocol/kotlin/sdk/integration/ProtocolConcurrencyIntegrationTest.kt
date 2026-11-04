@@ -108,7 +108,7 @@ class ProtocolConcurrencyIntegrationTest {
         val result = withTimeout(10.seconds) {
             client.callTool(CallToolRequest(CallToolRequestParams("needs-roots")))
         }
-        val text = (result as CallToolResult).content.filterIsInstance<TextContent>().single().text
+        val text = result.content.filterIsInstance<TextContent>().single().text
         text shouldBe "roots=0"
 
         client.close()
