@@ -42,7 +42,7 @@ Every page on modelcontextprotocol.io is served as raw markdown when you append 
 |---|---|
 | Spec page | `https://modelcontextprotocol.io/specification/<rev>/<page>.md`, where `<rev>` is `latest`, `2026-07-28`, `2025-11-25`, `2025-06-18`, `2025-03-26`, `2024-11-05` or `draft` |
 | What a revision changed | `specification/<rev>/changelog.md`, removals included; from 2026-07-28 on, `specification/<rev>/deprecated.md` lists deprecated features, which are still in the spec |
-| SEP | `https://modelcontextprotocol.io/seps/<number>.md` (redirects to the full name). Only merged SEPs are on the site: if the number 404s, say the SEP isn't merged rather than describing it from memory |
+| SEP | `https://modelcontextprotocol.io/seps/<number>.md` (redirects to the full name). Some merged SEPs have no page: on a 404, check `gh pr view <number> -R modelcontextprotocol/modelcontextprotocol --json state,labels` rather than describing it from memory |
 | Extensions (outside the core spec) | `extensions/overview.md`; Tasks `extensions/tasks/overview.md`, MCP Apps `extensions/apps/overview.md`, auth `extensions/auth/*.md` |
 | Schema | `https://raw.githubusercontent.com/modelcontextprotocol/modelcontextprotocol/main/schema/<rev>/schema.ts`, see below |
 | Every page of every revision | `https://modelcontextprotocol.io/llms.txt` (~50 KB) |
