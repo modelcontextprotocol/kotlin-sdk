@@ -31,7 +31,7 @@ Give the verdict from that revision, even when the code at hand implements an ol
 
 Revisions also remove things, 2026-07-28 more than any before it, and that changes how to read what you find:
 
-- If the topic does not exist in the revision you answer from (in 2026-07-28: sessions, `initialize`, `ping`, `resources/subscribe`, `logging/setLevel`, SSE resumability, ...), the answer is that it was removed. Say what replaced it, cite `changelog.md` or `deprecated.md`, and name the last revision that defined it so the user can ask for that one. Don't fill the gap from memory.
+- If the topic does not exist in the revision you answer from (in 2026-07-28: sessions, `initialize`, `ping`, `resources/subscribe`, `logging/setLevel`, SSE resumability, ...), the answer is that it was removed. Say what replaced it, cite `changelog.md`, and name the last revision that defined it so the user can ask for that one. Don't fill the gap from memory.
 - Pages of removed features redirect without warning: `specification/2026-07-28/basic/lifecycle.md` lands on `basic/versioning.md`. If the page you got is not about what you asked for, the feature probably moved or was removed.
 
 ## Where things live
@@ -41,7 +41,7 @@ Every page on modelcontextprotocol.io is served as raw markdown when you append 
 | What | Where |
 |---|---|
 | Spec page | `https://modelcontextprotocol.io/specification/<rev>/<page>.md`, where `<rev>` is `latest`, `2026-07-28`, `2025-11-25`, `2025-06-18`, `2025-03-26`, `2024-11-05` or `draft` |
-| What a revision changed | `specification/<rev>/changelog.md`; removals and deprecations in `specification/<rev>/deprecated.md` |
+| What a revision changed | `specification/<rev>/changelog.md`, removals included; from 2026-07-28 on, `specification/<rev>/deprecated.md` lists deprecated features, which are still in the spec |
 | SEP | `https://modelcontextprotocol.io/seps/<number>.md` (redirects to the full name). Only merged SEPs are on the site: if the number 404s, say the SEP isn't merged rather than describing it from memory |
 | Extensions (outside the core spec) | `extensions/overview.md`; Tasks `extensions/tasks/overview.md`, MCP Apps `extensions/apps/overview.md`, auth `extensions/auth/*.md` |
 | Schema | `https://raw.githubusercontent.com/modelcontextprotocol/modelcontextprotocol/main/schema/<rev>/schema.ts`, see below |
