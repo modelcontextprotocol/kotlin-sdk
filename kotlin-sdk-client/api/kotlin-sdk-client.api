@@ -29,10 +29,16 @@ public class io/modelcontextprotocol/kotlin/sdk/client/Client : io/modelcontextp
 	public static synthetic fun listTools$default (Lio/modelcontextprotocol/kotlin/sdk/client/Client;Lio/modelcontextprotocol/kotlin/sdk/types/ListToolsRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public final fun ping (Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun ping$default (Lio/modelcontextprotocol/kotlin/sdk/client/Client;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun promptsFlow (Lio/modelcontextprotocol/kotlin/sdk/types/ListPromptsRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;)Lkotlinx/coroutines/flow/Flow;
+	public static synthetic fun promptsFlow$default (Lio/modelcontextprotocol/kotlin/sdk/client/Client;Lio/modelcontextprotocol/kotlin/sdk/types/ListPromptsRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
 	public final fun readResource (Lio/modelcontextprotocol/kotlin/sdk/types/ReadResourceRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun readResource$default (Lio/modelcontextprotocol/kotlin/sdk/client/Client;Lio/modelcontextprotocol/kotlin/sdk/types/ReadResourceRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public final fun removeRoot (Ljava/lang/String;)Z
 	public final fun removeRoots (Ljava/util/List;)I
+	public final fun resourceTemplatesFlow (Lio/modelcontextprotocol/kotlin/sdk/types/ListResourceTemplatesRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;)Lkotlinx/coroutines/flow/Flow;
+	public static synthetic fun resourceTemplatesFlow$default (Lio/modelcontextprotocol/kotlin/sdk/client/Client;Lio/modelcontextprotocol/kotlin/sdk/types/ListResourceTemplatesRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
+	public final fun resourcesFlow (Lio/modelcontextprotocol/kotlin/sdk/types/ListResourcesRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;)Lkotlinx/coroutines/flow/Flow;
+	public static synthetic fun resourcesFlow$default (Lio/modelcontextprotocol/kotlin/sdk/client/Client;Lio/modelcontextprotocol/kotlin/sdk/types/ListResourcesRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
 	public final fun sendRootsListChanged (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun setElicitationCompleteHandler (Lkotlin/jvm/functions/Function1;)V
 	public final fun setElicitationHandler (Lkotlin/jvm/functions/Function1;)V
@@ -40,6 +46,8 @@ public class io/modelcontextprotocol/kotlin/sdk/client/Client : io/modelcontextp
 	public static synthetic fun setLoggingLevel$default (Lio/modelcontextprotocol/kotlin/sdk/client/Client;Lio/modelcontextprotocol/kotlin/sdk/types/LoggingLevel;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public final fun subscribeResource (Lio/modelcontextprotocol/kotlin/sdk/types/SubscribeRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun subscribeResource$default (Lio/modelcontextprotocol/kotlin/sdk/client/Client;Lio/modelcontextprotocol/kotlin/sdk/types/SubscribeRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun toolsFlow (Lio/modelcontextprotocol/kotlin/sdk/types/ListToolsRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;)Lkotlinx/coroutines/flow/Flow;
+	public static synthetic fun toolsFlow$default (Lio/modelcontextprotocol/kotlin/sdk/client/Client;Lio/modelcontextprotocol/kotlin/sdk/types/ListToolsRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
 	public final fun unsubscribeResource (Lio/modelcontextprotocol/kotlin/sdk/types/UnsubscribeRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun unsubscribeResource$default (Lio/modelcontextprotocol/kotlin/sdk/client/Client;Lio/modelcontextprotocol/kotlin/sdk/types/UnsubscribeRequest;Lio/modelcontextprotocol/kotlin/sdk/shared/RequestOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	protected fun wrapRequestHandler (Lio/modelcontextprotocol/kotlin/sdk/types/Method;Lkotlin/jvm/functions/Function3;)Lkotlin/jvm/functions/Function3;
