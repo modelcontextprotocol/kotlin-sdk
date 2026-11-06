@@ -61,7 +61,7 @@ public data class ModelPreferences(
         }
 
         require(speedPriority == null || speedPriority in 0.0..1.0) {
-            "costPriority must be in 0.0 <= x <= 1.0 value range"
+            "speedPriority must be in 0.0 <= x <= 1.0 value range"
         }
 
         require(intelligencePriority == null || intelligencePriority in 0.0..1.0) {
