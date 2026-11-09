@@ -10,8 +10,8 @@ that make it straightforward to expose tools, prompts, and resources to MCP clie
   tracks active sessions and cleans them up when transports close.
 - **Feature registries**: Helpers to register and remove tools, prompts, resources, and resource templates. Registry
   listeners emit list-changed notifications when the capability is enabled.
-- **Transports**: Ready-to-use transports for STDIO (CLI-style hosting), Ktor Server-Sent Events (SSE) with POST
-  back-channel, and Ktor WebSocket. All share the common `Transport` abstraction from the SDK.
+- **Transports**: Ready-to-use transports for STDIO (CLI-style hosting), Ktor Server-Sent Events (SSE, deprecated) with
+  POST back-channel, and Ktor WebSocket. All share the common `Transport` abstraction from the SDK.
 - **Ktor integration**: Extension functions (`Route.mcp`, `Route.mcpWebSocket`, and `Application` variants) that
   plug MCP into an existing Ktor server with minimal boilerplate.
 - **Notifications**: Built-in support for resource subscription, resource-updated events, and feature list change
@@ -57,6 +57,9 @@ server.createSession(transport)
 ```
 
 ### Hosting with Ktor (SSE)
+
+The SSE transport is deprecated in the MCP specification and will be removed in a future release. Use
+`mcpStreamableHttp` instead.
 
 ```kotlin
 fun Application.module() {

@@ -133,7 +133,7 @@ class ElicitationTest {
         }
     }
 
-    @Suppress("DEPRECATION")
+    @Suppress("DEPRECATION_ERROR")
     @Test
     fun `deprecated requestedSchema should return schema only for form mode`() {
         val schema = ElicitRequestParams.RequestedSchema(

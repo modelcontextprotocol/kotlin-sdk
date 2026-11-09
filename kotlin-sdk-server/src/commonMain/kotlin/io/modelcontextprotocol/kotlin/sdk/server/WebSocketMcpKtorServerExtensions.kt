@@ -18,8 +18,13 @@ import kotlinx.coroutines.awaitCancellation
 
 private val logger = KotlinLogging.logger {}
 
+// Ktor's default maxFrameSize does not limit inbound messages at all.
+private const val DEFAULT_MAX_FRAME_SIZE: Long = 16L * 1024 * 1024
+
 /**
  * Configures the Ktor Application to handle Model Context Protocol (MCP) over WebSocket.
+ *
+ * Set `maxFrameSize` when installing the `WebSockets` plugin: by default Ktor does not limit inbound messages.
  */
 @KtorDsl
 public fun Route.mcpWebSocket(block: () -> Server) {
@@ -30,6 +35,8 @@ public fun Route.mcpWebSocket(block: () -> Server) {
 
 /**
  * Configures the Ktor Application to handle Model Context Protocol (MCP) over WebSocket.
+ *
+ * Set `maxFrameSize` when installing the `WebSockets` plugin: by default Ktor does not limit inbound messages.
  */
 @KtorDsl
 public fun Route.mcpWebSocket(path: String, block: () -> Server) {
@@ -40,10 +47,14 @@ public fun Route.mcpWebSocket(path: String, block: () -> Server) {
 
 /**
  * Configures the Ktor Application to handle Model Context Protocol (MCP) over WebSocket.
+ *
+ * Installs the `WebSockets` plugin with inbound messages limited to 16 MiB.
  */
 @KtorDsl
 public fun Application.mcpWebSocket(block: () -> Server) {
-    install(WebSockets)
+    install(WebSockets) {
+        maxFrameSize = DEFAULT_MAX_FRAME_SIZE
+    }
 
     routing {
         mcpWebSocket(block)
@@ -52,10 +63,14 @@ public fun Application.mcpWebSocket(block: () -> Server) {
 
 /**
  * Configures the Ktor Application to handle Model Context Protocol (MCP) over WebSocket at the specified path.
+ *
+ * Installs the `WebSockets` plugin with inbound messages limited to 16 MiB.
  */
 @KtorDsl
 public fun Application.mcpWebSocket(path: String, block: () -> Server) {
-    install(WebSockets)
+    install(WebSockets) {
+        maxFrameSize = DEFAULT_MAX_FRAME_SIZE
+    }
 
     routing {
         mcpWebSocket(path, block)

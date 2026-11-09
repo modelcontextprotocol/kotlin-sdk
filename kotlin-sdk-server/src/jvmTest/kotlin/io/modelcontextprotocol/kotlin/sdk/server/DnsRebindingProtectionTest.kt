@@ -6,6 +6,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
+import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.statement.bodyAsText
@@ -201,6 +202,7 @@ class DnsRebindingProtectionTest {
         ex.message shouldContain "not-a-url"
     }
 
+    @Suppress("DEPRECATION")
     @Test
     fun `Route mcp with DNS protection enabled rejects non-localhost`() = testApplication {
         application {
@@ -217,6 +219,7 @@ class DnsRebindingProtectionTest {
         response.shouldHaveStatus(HttpStatusCode.Forbidden)
     }
 
+    @Suppress("DEPRECATION")
     @Test
     fun `Route mcp with DNS protection disabled allows any host`() = testApplication {
         application {
@@ -243,6 +246,18 @@ class DnsRebindingProtectionTest {
         val response = client.post("/mcp") {
             header(HttpHeaders.Host, "evil.com")
             contentType(ContentType.Application.Json)
+        }
+        response.shouldHaveStatus(HttpStatusCode.Forbidden)
+    }
+
+    @Test
+    fun `mcpStreamableHttp rejects a GET from a non-localhost Host before checking its session`() = testApplication {
+        application {
+            mcpStreamableHttp { testServer() }
+        }
+
+        val response = client.get("/mcp") {
+            header(HttpHeaders.Host, "evil.com")
         }
         response.shouldHaveStatus(HttpStatusCode.Forbidden)
     }

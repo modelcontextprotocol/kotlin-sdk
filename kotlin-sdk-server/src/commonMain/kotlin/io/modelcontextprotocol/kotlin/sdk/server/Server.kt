@@ -645,9 +645,9 @@ public open class Server(
         // Check if the tool exists
         val tool = toolRegistry.get(requestParams.name) ?: run {
             logger.error { "Tool not found: ${requestParams.name}" }
-            return CallToolResult(
-                content = listOf(TextContent(text = "Tool ${requestParams.name} not found")),
-                isError = true,
+            throw McpException(
+                code = RPCError.ErrorCode.INVALID_PARAMS,
+                message = "Tool not found: ${requestParams.name}",
             )
         }
 

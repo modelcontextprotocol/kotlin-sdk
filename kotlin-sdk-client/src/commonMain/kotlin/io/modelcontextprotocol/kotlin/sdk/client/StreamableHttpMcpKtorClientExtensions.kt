@@ -37,6 +37,7 @@ public fun HttpClient.mcpStreamableHttpTransport(
         "mcpStreamableHttpTransport(url, " +
             "ReconnectionOptions(initialReconnectionDelay = reconnectionTime ?: 1.seconds), requestBuilder)",
     ),
+    level = DeprecationLevel.ERROR,
 )
 public fun HttpClient.mcpStreamableHttpTransport(
     url: String,
@@ -82,6 +83,7 @@ public suspend fun HttpClient.mcpStreamableHttp(
         "mcpStreamableHttp(url, " +
             "ReconnectionOptions(initialReconnectionDelay = reconnectionTime ?: 1.seconds), requestBuilder)",
     ),
+    level = DeprecationLevel.ERROR,
 )
 public suspend fun HttpClient.mcpStreamableHttp(
     url: String,

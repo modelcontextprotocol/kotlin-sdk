@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package io.modelcontextprotocol.kotlin.sdk.integration.sse
 
 import io.kotest.matchers.shouldBe

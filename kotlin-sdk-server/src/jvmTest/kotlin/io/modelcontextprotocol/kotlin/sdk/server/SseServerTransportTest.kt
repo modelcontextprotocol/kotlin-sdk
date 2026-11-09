@@ -16,6 +16,7 @@ import io.ktor.server.testing.testApplication
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.test.Test
 
+@Suppress("DEPRECATION")
 class SseServerTransportTest {
 
     @Test

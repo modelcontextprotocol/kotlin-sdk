@@ -10,9 +10,9 @@ import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
 import io.modelcontextprotocol.kotlin.sdk.client.Client
-import io.modelcontextprotocol.kotlin.sdk.client.SseClientTransport
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
 import io.modelcontextprotocol.kotlin.sdk.client.StreamableHttpClientTransport
+import io.modelcontextprotocol.kotlin.sdk.client.mcpSseTransport
 import io.modelcontextprotocol.kotlin.sdk.client.mcpWebSocketTransport
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
@@ -139,7 +139,10 @@ class TransportIntegrationTest {
             engine = when (kind) {
                 TransportKind.STDIO -> null
 
-                TransportKind.SSE -> embeddedServer(ServerCIO, host = HOST, port = 0) { mcp { server } }
+                TransportKind.SSE -> embeddedServer(ServerCIO, host = HOST, port = 0) {
+                    @Suppress("DEPRECATION")
+                    mcp { server }
+                }
 
                 TransportKind.STREAMABLE_HTTP -> embeddedServer(ServerCIO, host = HOST, port = 0) {
                     mcpStreamableHttp { server }
@@ -170,7 +173,9 @@ class TransportIntegrationTest {
         private suspend fun clientTransport(): Transport = when (kind) {
             TransportKind.STDIO -> stdioClientTransport()
 
-            TransportKind.SSE -> SseClientTransport(httpClient { install(SSE) }, "http://$HOST:${port()}")
+            TransportKind.SSE ->
+                @Suppress("DEPRECATION")
+                httpClient { install(SSE) }.mcpSseTransport("http://$HOST:${port()}")
 
             TransportKind.STREAMABLE_HTTP ->
                 StreamableHttpClientTransport(httpClient { install(SSE) }, "http://$HOST:${port()}/mcp")

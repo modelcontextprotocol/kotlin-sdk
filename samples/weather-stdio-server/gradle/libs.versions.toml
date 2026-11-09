@@ -1,9 +1,9 @@
 [versions]
 coroutines = "1.11.0"
-kotlin = "2.4.20"
-ktor = "3.6.0"
+kotlin = "2.4.21"
+ktor = "3.6.1"
 logging = "8.0.4"
-mcp-kotlin = "0.15.0"
+mcp-kotlin = "0.16.0"
 shadow = "9.6.1"
 slf4j = "2.0.20"
 

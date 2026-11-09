@@ -82,7 +82,7 @@ public data class ClientCapabilities(
                 "experimental = experimental, " +
                 "extensions = extensions)",
         ),
-        level = DeprecationLevel.WARNING,
+        level = DeprecationLevel.ERROR,
     )
     public constructor(
         sampling: JsonObject?,

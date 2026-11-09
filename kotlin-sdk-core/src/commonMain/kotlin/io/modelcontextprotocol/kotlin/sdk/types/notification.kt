@@ -4,6 +4,7 @@ package io.modelcontextprotocol.kotlin.sdk.types
 
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KeepGeneratedSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -413,7 +414,8 @@ public data class TaskStatusNotification(override val params: TaskStatusNotifica
  * @property pollInterval Suggested polling interval in milliseconds.
  * @property meta Optional metadata for this notification.
  */
-@Serializable
+@KeepGeneratedSerializer
+@Serializable(with = TaskStatusNotificationParamsSerializer::class)
 public data class TaskStatusNotificationParams(
     override val taskId: String,
     override val status: TaskStatus,

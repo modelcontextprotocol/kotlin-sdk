@@ -48,8 +48,8 @@ fun runMcpServer() {
         server.registerTools(httpClient)
 
         val transport = StdioServerTransport(
-            System.`in`.asInput(),
-            System.out.asSink().buffered(),
+            input = System.`in`.asInput(),
+            output = System.out.asSink().buffered(),
         )
 
         runBlocking {

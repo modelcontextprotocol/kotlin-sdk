@@ -26,6 +26,7 @@ import io.ktor.utils.io.readUTF8Line
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractClientTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.TooLongFrameException
 import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
@@ -90,6 +91,9 @@ private sealed interface ConnectResult {
  * Supports automatic SSE reconnection with exponential backoff, stream resumption via the
  * `Last-Event-ID` header, and explicit session termination.
  *
+ * A session the server has terminated answers `404`, reported through [onError] as a [StreamableHttpError].
+ * The transport does not start a new session; connect the client again with a new transport.
+ *
  * @param client Ktor HTTP client used for all requests
  * @param url MCP endpoint URL
  * @param reconnectionOptions reconnection backoff and retry-limit settings for the SSE stream
@@ -118,6 +122,7 @@ public class StreamableHttpClientTransport(
             "kotlin.time.Duration.Companion.seconds",
             "io.modelcontextprotocol.kotlin.sdk.client.ReconnectionOptions",
         ),
+        level = DeprecationLevel.ERROR,
     )
     public constructor(
         client: HttpClient,
@@ -378,6 +383,13 @@ public class StreamableHttpClientTransport(
         val responseContentType = e.response?.contentType()
 
         return when {
+            responseStatus == HttpStatusCode.NotFound && sessionId != null -> {
+                val error = StreamableHttpError(responseStatus.value, "Session $sessionId not found, stream disabled")
+                logger.warn { error.message }
+                _onError(error)
+                true
+            }
+
             responseStatus == HttpStatusCode.NotFound || responseStatus == HttpStatusCode.MethodNotAllowed -> {
                 logger.info { "Server returned ${responseStatus.value} for GET/SSE, stream disabled." }
                 true
@@ -429,6 +441,14 @@ public class StreamableHttpClientTransport(
         return "$MCP_BASE64_PREFIX${Base64.Default.encode(encodeToByteArray())}$MCP_BASE64_SUFFIX"
     }
 
+    /** Re-addresses a replayed response or error to the request that resumed the stream. */
+    private fun JSONRPCMessage.withReplayId(replayMessageId: RequestId?): JSONRPCMessage = when {
+        replayMessageId == null -> this
+        this is JSONRPCResponse -> copy(id = replayMessageId)
+        this is JSONRPCError -> copy(id = replayMessageId)
+        else -> this
+    }
+
     private suspend fun collectSse(
         session: ClientSSESession,
         replayMessageId: RequestId?,
@@ -452,12 +472,8 @@ public class StreamableHttpClientTransport(
                         event.data?.takeIf { it.isNotEmpty() }?.let { json ->
                             runCatching { McpJson.decodeFromString<JSONRPCMessage>(json) }
                                 .onSuccess { msg ->
-                                    if (msg is JSONRPCResponse) receivedResponse = true
-                                    if (replayMessageId != null && msg is JSONRPCResponse) {
-                                        _onMessage(msg.copy(id = replayMessageId))
-                                    } else {
-                                        _onMessage(msg)
-                                    }
+                                    if (msg is JSONRPCResponse || msg is JSONRPCError) receivedResponse = true
+                                    _onMessage(msg.withReplayId(replayMessageId))
                                 }
                                 .onFailure(_onError)
                         }
@@ -501,12 +517,8 @@ public class StreamableHttpClientTransport(
             if (eventName == null || eventName == "message") {
                 runCatching { McpJson.decodeFromString<JSONRPCMessage>(data) }
                     .onSuccess { msg ->
-                        if (msg is JSONRPCResponse) receivedResponse = true
-                        if (replayMessageId != null && msg is JSONRPCResponse) {
-                            _onMessage(msg.copy(id = replayMessageId))
-                        } else {
-                            _onMessage(msg)
-                        }
+                        if (msg is JSONRPCResponse || msg is JSONRPCError) receivedResponse = true
+                        _onMessage(msg.withReplayId(replayMessageId))
                     }
                     .onFailure {
                         _onError(it)

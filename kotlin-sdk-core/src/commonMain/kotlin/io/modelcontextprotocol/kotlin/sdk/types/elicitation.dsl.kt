@@ -153,7 +153,7 @@ public class ElicitRequestBuilder @PublishedApi internal constructor() : Request
             "Missing required field 'requestedSchema'. Use requestedSchema { properties { ... } }"
         }
 
-        val params = ElicitRequestParams(message = message, requestedSchema = requestedSchema, meta = meta)
+        val params = ElicitRequestFormParams(message = message, requestedSchema = requestedSchema, meta = meta)
         return ElicitRequest(params)
     }
 }
