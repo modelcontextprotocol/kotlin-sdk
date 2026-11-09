@@ -236,7 +236,7 @@ class SamplingTest {
     @Test
     fun `SamplingContentSerializer encoding an empty list throws`() {
         val h = Holder(content = emptyList())
-        assertFailsWith<IllegalStateException> {
+        assertFailsWith<SerializationException> {
             McpJson.encodeToString(Holder.serializer(), h)
         }
     }
