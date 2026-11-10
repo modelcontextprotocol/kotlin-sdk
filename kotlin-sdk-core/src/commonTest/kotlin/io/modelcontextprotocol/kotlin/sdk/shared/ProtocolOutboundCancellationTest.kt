@@ -10,6 +10,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
@@ -47,6 +48,22 @@ class ProtocolOutboundCancellationTest {
         val cancelled = cancellationsOn(transport).single()
         cancelled.requestId shouldBe transport.awaitRequest().id
         cancelled.reason.shouldNotBeNull() shouldContain "timed out"
+    }
+
+    @Test
+    fun `CancelledNotification keeps relatedRequestId but not the resumption token of the request`() = runTest {
+        val (protocol, transport) = connectedProtocol()
+
+        shouldThrow<McpException> {
+            protocol.request<EmptyResult>(
+                PingRequest(),
+                RequestOptions(relatedRequestId = RequestId(42L), resumptionToken = "tok", timeout = 5.seconds),
+            )
+        }
+
+        val options = transport.sentWithOptions.single { it.first is JSONRPCNotification }.second.shouldNotBeNull()
+        options.relatedRequestId shouldBe RequestId(42L)
+        options.resumptionToken shouldBe null
     }
 
     @Test
