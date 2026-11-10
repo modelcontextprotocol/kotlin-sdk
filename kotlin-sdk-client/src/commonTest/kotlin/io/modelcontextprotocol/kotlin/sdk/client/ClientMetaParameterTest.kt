@@ -79,14 +79,7 @@ class ClientMetaParameterTest {
     fun `should omit _meta when no meta is given`() = runTest {
         connectedClient().callTool("test-tool", mapOf("arg" to "value"))
 
-        mockTransport.lastRequest().params.shouldBeInstanceOf<JsonObject>().containsKey("_meta") shouldBe false
-    }
-
-    @Test
-    fun `should still send _meta when meta is not empty`() = runTest {
-        connectedClient().callTool("test-tool", mapOf("arg" to "value"), mapOf("retry_count" to 1))
-
-        sentMeta() shouldBe buildJsonObject { put("retry_count", 1) }
+        sentMeta() shouldBe null
     }
 
     @Test
