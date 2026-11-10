@@ -21,6 +21,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.io.Buffer
@@ -225,24 +226,6 @@ class StdioServerTransportTest {
         server.close()
     }
 
-    @Test
-    fun `should not invoke onError for CancellationException in handler`() = runIntegrationTest {
-        val server = StdioServerTransport(input = bufferedInput, output = printOutput)
-        val capturedError = CompletableDeferred<Throwable>()
-        val closed = CompletableDeferred<Unit>()
-        server.onError { capturedError.complete(it) }
-        server.onClose { closed.complete(Unit) }
-        server.onMessage { throw CancellationException("cancelled") }
-        server.start()
-
-        inputWriter.write(serializeMessage(PingRequest().toJSON()))
-        inputWriter.flush()
-
-        // The cancellation stops the processor; the transport then shuts down without reporting an error.
-        closed.await()
-        capturedError.isCompleted shouldBe false
-    }
-
     // endregion
 
     @Test
@@ -400,9 +383,10 @@ class StdioServerTransportTest {
     @Test
     fun `should not hang close when handler suspends indefinitely`() = runIntegrationTest {
         val server = StdioServerTransport(input = bufferedInput, output = printOutput)
+        val capturedErrors = mutableListOf<Throwable>()
         val handlerEntered = CompletableDeferred<Unit>()
         val neverComplete = CompletableDeferred<Unit>()
-        server.onError {}
+        server.onError { capturedErrors.add(it) }
         server.onMessage {
             handlerEntered.complete(Unit)
             neverComplete.await()
@@ -414,6 +398,7 @@ class StdioServerTransportTest {
 
         handlerEntered.await()
         server.close()
+        capturedErrors shouldBe emptyList()
     }
 
     // endregion
@@ -440,6 +425,36 @@ class StdioServerTransportTest {
             server.send(PingRequest().toJSON())
         }
         ex.code shouldBe RPCError.ErrorCode.CONNECTION_CLOSED
+    }
+
+    @Test
+    fun `should stop without onError when the scope is cancelled during a handler`() = runIntegrationTest {
+        val externalScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        val server = StdioServerTransport(input = bufferedInput, output = printOutput) {
+            scope = externalScope
+        }
+        val capturedErrors = mutableListOf<Throwable>()
+        val handlerEntered = CompletableDeferred<Unit>()
+        val closeCaptured = CompletableDeferred<Unit>()
+        server.onError { capturedErrors.add(it) }
+        server.onClose { closeCaptured.complete(Unit) }
+        server.onMessage {
+            handlerEntered.complete(Unit)
+            CompletableDeferred<Unit>().await()
+        }
+        server.start()
+
+        inputWriter.write(serializeMessage(PingRequest().toJSON()))
+        inputWriter.flush()
+        handlerEntered.await()
+        externalScope.cancel()
+
+        closeCaptured.await()
+        // onClose can fire before the processor has handled the cancellation, so wait for all pumps.
+        // Closing the input lets the blocking reader return.
+        inputWriter.close()
+        externalScope.coroutineContext.job.join()
+        capturedErrors shouldBe emptyList()
     }
 
     @Test
@@ -541,6 +556,7 @@ class StdioServerTransportTest {
     private fun handlerErrors() = listOf(
         RuntimeException("handler failure"),
         OutOfMemoryError("handler error"),
+        CancellationException("handler cancelled"),
     )
 
     /** A [RawSource] that immediately throws [throwable] on every read attempt. */
