@@ -383,9 +383,10 @@ class StdioServerTransportTest {
     @Test
     fun `should not hang close when handler suspends indefinitely`() = runIntegrationTest {
         val server = StdioServerTransport(input = bufferedInput, output = printOutput)
+        val capturedErrors = mutableListOf<Throwable>()
         val handlerEntered = CompletableDeferred<Unit>()
         val neverComplete = CompletableDeferred<Unit>()
-        server.onError {}
+        server.onError { capturedErrors.add(it) }
         server.onMessage {
             handlerEntered.complete(Unit)
             neverComplete.await()
@@ -397,6 +398,7 @@ class StdioServerTransportTest {
 
         handlerEntered.await()
         server.close()
+        capturedErrors shouldBe emptyList()
     }
 
     // endregion

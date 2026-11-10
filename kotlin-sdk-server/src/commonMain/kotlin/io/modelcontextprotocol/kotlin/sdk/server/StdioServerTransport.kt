@@ -222,7 +222,7 @@ public class StdioServerTransport private constructor(
                         // Only the transport's own cancellation stops the loop. A cancellation that
                         // escapes a handler is a failure of that handler, like any other exception.
                         currentCoroutineContext().ensureActive()
-                        logger.error(e) { "Message handler was cancelled" }
+                        logger.error(e) { "Message handler leaked a CancellationException" }
                         _onError(e)
                     } catch (e: Throwable) {
                         logger.error(e) { "Error processing message" }
