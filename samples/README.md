@@ -13,6 +13,7 @@ For background on the protocol itself, see the [MCP documentation](https://model
 | [kotlin-mcp-server](./kotlin-mcp-server)               | Server            | STDIO, SSE      | Tools, Resources, Prompts          |
 | [weather-stdio-server](./weather-stdio-server)         | Server            | STDIO           | Tools                              |
 | [kotlin-mcp-client](./kotlin-mcp-client)               | Client            | STDIO           | Tool discovery & invocation        |
+| [simple-oauth-client](./simple-oauth-client)           | Client            | Streamable HTTP | OAuth authorization, tools         |
 | [notebooks](./notebooks)                               | Client (Notebook) | Streamable HTTP | Tool discovery & invocation        |
 
 ## Getting Started
@@ -55,6 +56,13 @@ Includes Claude Desktop integration instructions.
 An interactive CLI client that connects to any MCP server over STDIO and routes queries through
 Anthropic's Claude API, bridging MCP tools with LLM conversations.
 [Read more →](./kotlin-mcp-client)
+
+### Simple OAuth Client
+
+A command-line client for OAuth-protected servers over Streamable HTTP. Implements the MCP
+authorization flow — resource and authorization server discovery, dynamic client registration,
+PKCE, and a loopback redirect — then lists and calls tools.
+[Read more →](./simple-oauth-client)
 
 ### MCP Client Notebook
 
