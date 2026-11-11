@@ -166,6 +166,35 @@ class ProtocolConcurrencyTest {
     }
 
     @Test
+    fun `handler leaking CancellationException in the serial phase produces INTERNAL_ERROR`() = runTest {
+        val (protocol, transport) = connected(concurrent = false)
+        protocol.fallbackRequestHandler = { _, _ -> throw CancellationException("leaked") }
+
+        transport.deliver(JSONRPCRequest(id = RequestId(7L), method = "test/leak"))
+
+        val error = errorsOn(transport).single()
+        error.id shouldBe RequestId(7L)
+        error.error.code shouldBe RPCError.ErrorCode.INTERNAL_ERROR
+    }
+
+    @Test
+    fun `cancelling the delivering coroutine in the serial phase sends no response`() = runTest {
+        val (protocol, transport) = connected(concurrent = false)
+        protocol.fallbackRequestHandler = { _, _ ->
+            delay(10.seconds)
+            EmptyResult()
+        }
+
+        val delivery = launch { transport.deliver(JSONRPCRequest(id = RequestId(8L), method = "test/slow")) }
+        runCurrent()
+        delivery.cancel()
+        advanceUntilIdle()
+
+        delivery.isCancelled shouldBe true
+        transport.sentWithOptions shouldBe emptyList()
+    }
+
+    @Test
     fun `suspension-free notification handlers observe strict arrival order`() = runTest {
         val (protocol, transport) = connected()
         val seen = mutableListOf<Int>()

@@ -5,7 +5,6 @@ import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
-import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonElement
@@ -77,10 +76,10 @@ class ClientMetaParameterTest {
     }
 
     @Test
-    fun `should send an empty _meta object when no meta is given`() = runTest {
+    fun `should omit _meta when no meta is given`() = runTest {
         connectedClient().callTool("test-tool", mapOf("arg" to "value"))
 
-        sentMeta() shouldBe EmptyJsonObject
+        sentMeta() shouldBe null
     }
 
     @Test
