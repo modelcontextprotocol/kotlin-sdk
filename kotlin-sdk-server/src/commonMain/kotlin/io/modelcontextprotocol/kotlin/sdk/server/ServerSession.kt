@@ -438,7 +438,8 @@ public open class ServerSession(
         options: RequestOptions? = null,
     ): ListRootsResult {
         logger.debug { "Listing roots with params: $params" }
-        return request(ListRootsRequest(BaseRequestParams(RequestMeta(params))), options)
+        val requestParams = params.takeIf { it.isNotEmpty() }?.let { BaseRequestParams(RequestMeta(it)) }
+        return request(ListRootsRequest(requestParams), options)
     }
 
     /**
