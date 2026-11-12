@@ -1,6 +1,7 @@
 package io.modelcontextprotocol.kotlin.sdk.integration.streamablehttp
 
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.sse.SSE
@@ -25,17 +26,22 @@ import io.modelcontextprotocol.kotlin.sdk.server.mcpStreamableHttp
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.test.utils.actualPort
 import io.modelcontextprotocol.kotlin.test.utils.runIntegrationTest
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
@@ -147,6 +153,122 @@ class StreamableHttpClientTransportIntegrationTest {
     }
 
     @Test
+    fun `client keeps the GET stream open while a request stream resumes`() {
+        val sendNotification = CompletableDeferred<Unit>()
+        val received = Channel<String>(Channel.UNLIMITED)
+        withConnectedClient(
+            postRoute = { mcpPostRoute { primingOnlyStream(it) } },
+            getRoute = {
+                get(MCP_PATH) {
+                    val lastEventId = call.request.headers[LAST_EVENT_ID_HEADER]
+                    call.response.header(SESSION_ID_HEADER, SESSION_ID)
+                    call.respondTextWriter(contentType = ContentType.Text.EventStream) {
+                        if (lastEventId == null) {
+                            write(": open\n\n")
+                            flush()
+                            sendNotification.await()
+                            write(sseEvent(id = "1", data = logNotification("after resumption")))
+                            flush()
+                            awaitCancellation()
+                        } else {
+                            write(sseEvent(id = "$lastEventId-1", data = toolResult(id = lastEventId)))
+                            flush()
+                        }
+                    }
+                }
+            },
+            configure = {
+                setNotificationHandler<LoggingMessageNotification>(Method.Defined.NotificationsMessage) {
+                    received.trySend(it.params.data.jsonPrimitive.content)
+                    CompletableDeferred(Unit)
+                }
+            },
+        ) { client ->
+            client.callTool("poll", emptyMap()).text() shouldBe "polled"
+
+            sendNotification.complete(Unit)
+            withTimeout(5.seconds) { received.receive() } shouldBe "after resumption"
+        }
+    }
+
+    @Test
+    fun `client resumes concurrent request streams independently`() {
+        val resumptions = AtomicInteger()
+        val bothResumed = CompletableDeferred<Unit>()
+        withConnectedClient(
+            postRoute = { mcpPostRoute { primingOnlyStream(it) } },
+            getRoute = {
+                get(MCP_PATH) {
+                    val lastEventId = call.request.headers[LAST_EVENT_ID_HEADER]
+                    if (lastEventId == null) {
+                        call.respondText("", ContentType.Text.EventStream, HttpStatusCode.MethodNotAllowed)
+                        return@get
+                    }
+                    call.response.header(SESSION_ID_HEADER, SESSION_ID)
+                    call.respondTextWriter(contentType = ContentType.Text.EventStream) {
+                        write(": resumed\n\n")
+                        flush()
+                        // Answers only once both streams are resumed, so both must still be open.
+                        if (resumptions.incrementAndGet() == 2) bothResumed.complete(Unit)
+                        bothResumed.await()
+                        write(sseEvent(id = "$lastEventId-1", data = toolResult(id = lastEventId)))
+                        flush()
+                    }
+                }
+            },
+        ) { client ->
+            val results = coroutineScope {
+                List(2) {
+                    async { client.callTool("poll", emptyMap(), options = RequestOptions(timeout = 5.seconds)) }
+                }.awaitAll()
+            }
+
+            results.map { it.text() } shouldBe listOf("polled", "polled")
+        }
+    }
+
+    @Test
+    fun `client stops resuming the stream of a request it cancelled`() {
+        val resumptions = AtomicInteger()
+        withConnectedClient(
+            postRoute = { mcpPostRoute { primingOnlyStream(it) } },
+            getRoute = { pollingRoute(resumptions) },
+        ) { client ->
+            val exception = shouldThrow<McpException> {
+                client.callTool("poll", emptyMap(), options = RequestOptions(timeout = 1.seconds))
+            }
+
+            exception.code shouldBe RPCError.ErrorCode.REQUEST_TIMEOUT
+            delay(RESUMPTION_WINDOW)
+            val afterCancel = resumptions.get()
+            afterCancel shouldBeGreaterThan 0
+            delay(RESUMPTION_WINDOW)
+            resumptions.get() shouldBe afterCancel
+        }
+    }
+
+    @Test
+    fun `client stops resuming the stream of a cancelled request sent with a resumption token`() {
+        val resumptions = AtomicInteger()
+        withConnectedClient(getRoute = { pollingRoute(resumptions) }) { client ->
+            val exception = shouldThrow<McpException> {
+                client.callTool(
+                    "poll",
+                    emptyMap(),
+                    options = RequestOptions(resumptionToken = "1", timeout = 1.seconds),
+                )
+            }
+
+            exception.code shouldBe RPCError.ErrorCode.REQUEST_TIMEOUT
+            delay(RESUMPTION_WINDOW)
+            val afterCancel = resumptions.get()
+            afterCancel shouldBeGreaterThan 0
+            delay(RESUMPTION_WINDOW)
+            resumptions.get() shouldBe afterCancel
+        }
+    }
+
+    @Test
     fun `client reports an expired session through onError`() = runIntegrationTest(timeout = 20.seconds) {
         val server = Server(Implementation("test-server", "1.0.0"), ServerOptions(ServerCapabilities()))
         val ktorServer = embeddedServer(ServerCIO, host = HOST, port = 0) {
@@ -172,12 +294,13 @@ class StreamableHttpClientTransportIntegrationTest {
 
     private fun withConnectedClient(
         getRoute: Route.() -> Unit,
+        postRoute: Route.() -> Unit = { mcpPostRoute() },
         configure: Client.() -> Unit = {},
         block: suspend (Client) -> Unit,
     ) = runIntegrationTest(timeout = 20.seconds) {
         val server = embeddedServer(ServerCIO, host = HOST, port = 0) {
             routing {
-                mcpPostRoute()
+                postRoute()
                 getRoute()
             }
         }.startSuspend(wait = false)
@@ -195,16 +318,17 @@ class StreamableHttpClientTransportIntegrationTest {
 
     /**
      * Answers `initialize` and `ping` with JSON and accepts notifications.
-     * `tools/call` gets an error on an SSE stream with event ids, the way a server with an event store answers.
+     * `tools/call` gets [toolCallStream] of its request id as an SSE stream; by default an error with event ids,
+     * the way a server with an event store answers.
      */
-    private fun Route.mcpPostRoute() {
+    private fun Route.mcpPostRoute(toolCallStream: (requestId: String) -> String = { errorStream(it) }) {
         post(MCP_PATH) {
             val message = Json.parseToJsonElement(call.receiveText()).jsonObject
             call.response.header(SESSION_ID_HEADER, SESSION_ID)
             val method = message["method"]?.jsonPrimitive?.content
             if (method == "tools/call") {
                 call.respondTextWriter(contentType = ContentType.Text.EventStream) {
-                    write("id: 1\ndata:\n\n" + sseEvent(id = "2", data = errorResponse(id = "${message["id"]}")))
+                    write(toolCallStream("${message["id"]}"))
                     flush()
                 }
                 return@post
@@ -244,8 +368,35 @@ class StreamableHttpClientTransportIntegrationTest {
         }
     }
 
+    /** Rejects the standalone GET stream and ends each resumption without the response, so the client keeps polling. */
+    private fun Route.pollingRoute(resumptions: AtomicInteger) {
+        get(MCP_PATH) {
+            if (call.request.headers[LAST_EVENT_ID_HEADER] == null) {
+                call.respondText("", ContentType.Text.EventStream, HttpStatusCode.MethodNotAllowed)
+                return@get
+            }
+            resumptions.incrementAndGet()
+            call.response.header(SESSION_ID_HEADER, SESSION_ID)
+            call.respondTextWriter(contentType = ContentType.Text.EventStream) {
+                write("retry: 50\n\n")
+                flush()
+            }
+        }
+    }
+
+    private fun errorStream(requestId: String): String =
+        "id: 1\ndata:\n\n" + sseEvent(id = "2", data = errorResponse(id = requestId))
+
+    /** Only a priming event whose id is the request id: the server closed the stream before answering. */
+    private fun primingOnlyStream(requestId: String): String = "id: $requestId\nretry: 50\ndata:\n\n"
+
     private fun errorResponse(id: String): String =
         """{"jsonrpc":"2.0","id":$id,"error":{"code":-32602,"message":"Tool not found: missing"}}"""
+
+    private fun toolResult(id: String): String =
+        """{"jsonrpc":"2.0","id":$id,"result":{"content":[{"type":"text","text":"polled"}]}}"""
+
+    private fun CallToolResult.text(): String = (content.single() as TextContent).text
 
     private fun logNotification(data: String): String =
         """{"jsonrpc":"2.0","method":"notifications/message","params":{"level":"info","data":"$data"}}"""

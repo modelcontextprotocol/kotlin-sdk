@@ -843,7 +843,9 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                         reason = reason.message ?: "Unknown",
                     ),
                 )
-                transport.send(notification.toJSON(), options)
+                // relatedRequestId only: given a resumption token, a transport resumes a stream instead of sending.
+                val sendOptions = options?.relatedRequestId?.let { TransportSendOptions(relatedRequestId = it) }
+                transport.send(notification.toJSON(), sendOptions)
             }
 
             result.completeExceptionally(reason)
