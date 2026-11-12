@@ -36,6 +36,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.ListRootsRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ListRootsResult
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotificationParams
@@ -180,6 +181,21 @@ class ClientTest {
         client.removeRoot(first.uri) shouldBe false
         client.removeRoots(listOf(first.uri, second.uri)) shouldBe 1
         session.listRoots().roots.shouldBeEmpty()
+    }
+
+    @Test
+    fun `listRoots should omit _meta when no params are given`() = runTest {
+        val client = newClient(ClientCapabilities(roots = ClientCapabilities.Roots()))
+        val session = connect(client)
+        val received = CompletableDeferred<ListRootsRequest>()
+        client.setRequestHandler<ListRootsRequest>(Method.Defined.RootsList) { request, _ ->
+            received.complete(request)
+            ListRootsResult(emptyList())
+        }
+
+        session.listRoots()
+
+        received.await().params?.meta shouldBe null
     }
 
     @Test
