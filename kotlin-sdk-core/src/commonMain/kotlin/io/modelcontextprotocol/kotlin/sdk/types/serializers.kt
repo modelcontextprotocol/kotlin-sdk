@@ -21,6 +21,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.JsonTransformingSerializer
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
@@ -472,6 +473,47 @@ private fun selectServerResultDeserializer(element: JsonElement): Deserializatio
 }
 
 /**
+ * Result deserializers keyed by the original request method.
+ *
+ * Shape-based selection ([selectClientResultDeserializer] / [selectServerResultDeserializer]) is only a
+ * heuristic: distinct result types can share a JSON shape (e.g. a `tasks/result` payload vs.
+ * [CallToolResult]), so the correlation point prefers the type declared by the method that was called.
+ */
+@OptIn(ExperimentalMcpApi::class)
+private val requestResultDeserializers: Map<String, DeserializationStrategy<out RequestResult>> by lazy {
+    mapOf(
+        Method.Defined.Initialize.value to InitializeResult.serializer(),
+        Method.Defined.ServerDiscover.value to DiscoverResult.serializer(),
+        Method.Defined.Ping.value to EmptyResult.serializer(),
+        Method.Defined.ResourcesList.value to ListResourcesResult.serializer(),
+        Method.Defined.ResourcesTemplatesList.value to ListResourceTemplatesResult.serializer(),
+        Method.Defined.ResourcesRead.value to ReadResourceResult.serializer(),
+        Method.Defined.ResourcesSubscribe.value to EmptyResult.serializer(),
+        Method.Defined.ResourcesUnsubscribe.value to EmptyResult.serializer(),
+        Method.Defined.PromptsList.value to ListPromptsResult.serializer(),
+        Method.Defined.PromptsGet.value to GetPromptResult.serializer(),
+        Method.Defined.ToolsList.value to ListToolsResult.serializer(),
+        Method.Defined.ToolsCall.value to CallToolResult.serializer(),
+        Method.Defined.LoggingSetLevel.value to EmptyResult.serializer(),
+        Method.Defined.SamplingCreateMessage.value to CreateMessageResult.serializer(),
+        Method.Defined.CompletionComplete.value to CompleteResult.serializer(),
+        Method.Defined.RootsList.value to ListRootsResult.serializer(),
+        Method.Defined.ElicitationCreate.value to ElicitResult.serializer(),
+        Method.Defined.TasksGet.value to GetTaskResult.serializer(),
+        Method.Defined.TasksResult.value to GetTaskPayloadResult.serializer(),
+        Method.Defined.TasksList.value to ListTasksResult.serializer(),
+        Method.Defined.TasksCancel.value to GetTaskResult.serializer(),
+    )
+}
+
+/**
+ * Selects the deserializer for the result type declared by the given request method.
+ * Returns null for custom or unknown methods, where shape-based decoding remains the fallback.
+ */
+internal fun selectRequestResultDeserializer(method: String): DeserializationStrategy<out RequestResult>? =
+    requestResultDeserializers[method]
+
+/**
  * Polymorphic serializer for [RequestResult] types.
  * Supports both client and server results.
  * Throws [SerializationException] if the result type cannot be determined.
@@ -514,6 +556,52 @@ internal object ServerResultPolymorphicSerializer :
 // ============================================================================
 
 /**
+ * Wire deserializer for [JSONRPCResponse] used when decoding a full [JSONRPCMessage].
+ *
+ * Captures the raw `result` JSON into [JSONRPCResponse.rawResult] so the request/response
+ * correlation point can decode it with the result type declared by the original request's method
+ * (shape-based decoding alone picks the wrong runtime type when distinct result types share a JSON
+ * shape, e.g. a `tasks/result` payload — see
+ * https://github.com/modelcontextprotocol/kotlin-sdk/issues/601).
+ *
+ * The public [JSONRPCResponse.result] keeps the shape-decoded value for direct consumers when
+ * decoding succeeds. Object results that fail these provisional shape checks are carried as
+ * [GetTaskPayloadResult] (the SDK's raw-payload result type), leaving the final interpretation and
+ * validation to the correlation point.
+ */
+internal object JSONRPCResponseWireSerializer : KSerializer<JSONRPCResponse> {
+    override val descriptor: SerialDescriptor = JSONRPCResponse.serializer().descriptor
+
+    override fun serialize(encoder: Encoder, value: JSONRPCResponse) {
+        JSONRPCResponse.serializer().serialize(encoder, value)
+    }
+
+    override fun deserialize(decoder: Decoder): JSONRPCResponse {
+        val jsonDecoder = decoder as? JsonDecoder
+            ?: throw SerializationException("JSONRPCResponseWireSerializer requires a Json decoder")
+        val json = jsonDecoder.json
+        val jsonObject = jsonDecoder.decodeJsonElement().jsonObject
+
+        val idElement = jsonObject["id"]
+            ?: throw SerializationException("Missing required 'id' field in JSONRPCResponse")
+        val id = json.decodeFromJsonElement(RequestId.serializer(), idElement)
+
+        val resultElement = jsonObject["result"]
+        val result = when {
+            resultElement == null -> EmptyResult()
+
+            else -> try {
+                json.decodeFromJsonElement(RequestResultPolymorphicSerializer, resultElement)
+            } catch (e: IllegalArgumentException) {
+                // Shape checks can fail before serializer validation, e.g. content without a type.
+                (resultElement as? JsonObject)?.let(::GetTaskPayloadResult) ?: throw e
+            }
+        }
+        return JSONRPCResponse(id, result).also { it.rawResult = resultElement }
+    }
+}
+
+/**
  * Polymorphic serializer for [JSONRPCMessage] types.
  * Determines the message type based on the presence of specific fields:
  * - "error" -> JSONRPCError
@@ -528,7 +616,7 @@ internal object JSONRPCMessagePolymorphicSerializer :
         val jsonObj = element.jsonObject
         return when {
             "error" in jsonObj -> JSONRPCError.serializer()
-            "result" in jsonObj && "id" in jsonObj -> JSONRPCResponse.serializer()
+            "result" in jsonObj && "id" in jsonObj -> JSONRPCResponseWireSerializer
             "result" in jsonObj && jsonObj["result"]?.jsonObject?.isEmpty() == true -> JSONRPCEmptyMessage.serializer()
             "method" in jsonObj && "id" in jsonObj -> JSONRPCRequest.serializer()
             "method" in jsonObj -> JSONRPCNotification.serializer()
