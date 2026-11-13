@@ -93,6 +93,21 @@ class ServerResourceTemplateTest : AbstractServerFeaturesTest() {
     }
 
     @Test
+    fun `readResource should prefer fewer distinct variables when scores are equal`() = runTest {
+        val uri = "test://items/42/42"
+        server.addResourceTemplate("test://items/{first}/{second}", "Distinct variables") { _, _ ->
+            ReadResourceResult(listOf(TextResourceContents("distinct", uri)))
+        }
+        server.addResourceTemplate("test://items/{id}/{id}", "Repeated variable") { _, _ ->
+            ReadResourceResult(listOf(TextResourceContents("repeated", uri)))
+        }
+
+        val result = client.readResource(ReadResourceRequest(ReadResourceRequestParams(uri)))
+
+        (result.contents[0] as TextResourceContents).text shouldBe "repeated"
+    }
+
+    @Test
     fun `readResource should return INVALID_PARAMS error when no template matches`() = runTest {
         server.addResourceTemplate("test://items/{itemId}", "Item") { _, _ -> ReadResourceResult(emptyList()) }
 
