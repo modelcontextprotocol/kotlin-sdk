@@ -217,7 +217,7 @@ class ServerFeaturesInvocationTest : AbstractServerFeaturesTest() {
             client.readResource(ReadResourceRequest(ReadResourceRequestParams("test://nonexistent")))
         }
 
-        exception.code shouldBe RPCError.ErrorCode.RESOURCE_NOT_FOUND
+        exception.code shouldBe RPCError.ErrorCode.INVALID_PARAMS
         exception.message shouldBe "Resource not found"
         exception.data shouldBe buildJsonObject { put("uri", "test://nonexistent") }
     }

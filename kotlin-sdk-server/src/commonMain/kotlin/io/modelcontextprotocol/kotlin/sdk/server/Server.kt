@@ -717,7 +717,7 @@ public open class Server(
             ?: run {
                 logger.error { "Resource not found: $uri" }
                 throw McpException(
-                    code = RPCError.ErrorCode.RESOURCE_NOT_FOUND,
+                    code = RPCError.ErrorCode.INVALID_PARAMS,
                     message = "Resource not found",
                     data = buildJsonObject { put("uri", uri) },
                 )

@@ -536,13 +536,13 @@ public open class Client(private val clientInfo: Implementation, options: Client
         validateMetaKeys(meta.keys)
 
         val jsonArguments = arguments.toJson()
-        val jsonMeta = meta.toJson()
+        val requestMeta = meta.takeIf { it.isNotEmpty() }?.let { RequestMeta(JsonObject(it.toJson())) }
 
         val request = CallToolRequest(
             CallToolRequestParams(
                 name = name,
                 arguments = JsonObject(jsonArguments),
-                meta = RequestMeta(JsonObject(jsonMeta)),
+                meta = requestMeta,
             ),
         )
         return callTool(request, options)

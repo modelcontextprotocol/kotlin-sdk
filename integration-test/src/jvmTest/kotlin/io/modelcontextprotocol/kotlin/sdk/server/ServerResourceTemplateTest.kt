@@ -93,14 +93,14 @@ class ServerResourceTemplateTest : AbstractServerFeaturesTest() {
     }
 
     @Test
-    fun `readResource should return RESOURCE_NOT_FOUND error when no template matches`() = runTest {
+    fun `readResource should return INVALID_PARAMS error when no template matches`() = runTest {
         server.addResourceTemplate("test://items/{itemId}", "Item") { _, _ -> ReadResourceResult(emptyList()) }
 
         val exception = shouldThrow<McpException> {
             client.readResource(ReadResourceRequest(ReadResourceRequestParams("test://users/42")))
         }
 
-        exception.code shouldBe RPCError.ErrorCode.RESOURCE_NOT_FOUND
+        exception.code shouldBe RPCError.ErrorCode.INVALID_PARAMS
         exception.message shouldBe "Resource not found"
         exception.data shouldBe buildJsonObject { put("uri", "test://users/42") }
     }
