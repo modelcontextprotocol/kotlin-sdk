@@ -1894,6 +1894,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/EmbeddedResource$Com
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/EmptyResult : io/modelcontextprotocol/kotlin/sdk/types/ClientResult, io/modelcontextprotocol/kotlin/sdk/types/ServerResult {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/EmptyResult$Companion;
+	public fun <init> ()V
 	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
