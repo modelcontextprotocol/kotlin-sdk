@@ -9,6 +9,7 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.modelcontextprotocol.kotlin.sdk.types.CustomRequest
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
@@ -28,6 +29,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.encodeToJsonElement
@@ -256,5 +258,23 @@ class ProtocolTest {
                 .connect(RecordingTransport())
         }
         error.message.shouldNotBeNull() shouldContain "maxInFlightHandlers"
+    }
+
+    /** Decodes a response to [id] the way a transport does. */
+    private fun wireResponse(id: RequestId, result: String): JSONRPCMessage =
+        McpJson.decodeFromString("""{"jsonrpc":"2.0","id":${McpJson.encodeToString(id)},"result":$result}""")
+
+    @Test
+    fun `request rejects a result of unknown shape instead of timing out`() = runTest {
+        val (protocol, transport) = connectedProtocol()
+        val inFlight = async {
+            shouldThrow<SerializationException> {
+                protocol.request<EmptyResult>(CustomRequest(Method.Custom("skills/list"), null))
+            }
+        }
+
+        transport.deliver(wireResponse(transport.awaitRequest().id, """{"skills":[]}"""))
+
+        inFlight.await()
     }
 }
