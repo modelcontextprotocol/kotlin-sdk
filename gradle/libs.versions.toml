@@ -18,7 +18,7 @@ kotlinx-io = "0.9.2"
 ktor = "3.6.1"
 logging = "8.0.4"
 mockk = "1.14.11"
-serialization = "1.12.0"
+serialization = "1.13.0"
 slf4j = "2.0.20"
 junit = "5.14.4"
 
