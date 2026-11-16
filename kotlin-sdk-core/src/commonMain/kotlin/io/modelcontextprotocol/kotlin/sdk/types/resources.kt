@@ -208,16 +208,25 @@ public data class ListResourcesRequest(override val params: PaginatedRequestPara
  * @property nextCursor An opaque token representing the pagination position after the last returned result.
  * If present, there may be more results available. The client can pass this token
  * in a subsequent request to fetch the next page.
+ * @property ttlMs How long, in milliseconds, clients may treat this result as fresh. `0` means immediately stale.
+ * @property cacheScope Whether a cached copy of this result may be shared across authorization contexts.
  * @property meta Optional metadata for this response.
+ * @throws IllegalArgumentException if [ttlMs] is negative
  */
 @Serializable
 public data class ListResourcesResult(
     val resources: List<Resource>,
     override val nextCursor: String? = null,
+    val ttlMs: Long = 0,
+    val cacheScope: CacheScope = CacheScope.Private,
     @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : ServerResult,
-    PaginatedResult
+    PaginatedResult {
+    init {
+        require(ttlMs >= 0) { "ttlMs must be non-negative, but was $ttlMs" }
+    }
+}
 
 // ============================================================================
 // resources/read
@@ -273,14 +282,23 @@ public data class ReadResourceRequestParams(
  * @property contents The contents of the resource. Can include text content (with MIME type and text data)
  * or binary/blob content (with MIME type and Base64-encoded data).
  * Multiple content blocks can be returned for resources with multiple parts.
+ * @property ttlMs How long, in milliseconds, clients may treat this result as fresh. `0` means immediately stale.
+ * @property cacheScope Whether a cached copy of this result may be shared across authorization contexts.
  * @property meta Optional metadata for this response.
+ * @throws IllegalArgumentException if [ttlMs] is negative
  */
 @Serializable
 public data class ReadResourceResult(
     val contents: List<ResourceContents>,
+    val ttlMs: Long = 0,
+    val cacheScope: CacheScope = CacheScope.Private,
     @SerialName("_meta")
     override val meta: JsonObject? = null,
-) : ServerResult
+) : ServerResult {
+    init {
+        require(ttlMs >= 0) { "ttlMs must be non-negative, but was $ttlMs" }
+    }
+}
 
 // ============================================================================
 // resources/subscribe
@@ -411,13 +429,22 @@ public data class ListResourceTemplatesRequest(override val params: PaginatedReq
  * @property nextCursor An opaque token representing the pagination position after the last returned result.
  * If present, there may be more results available. The client can pass this token
  * in a subsequent request to fetch the next page.
+ * @property ttlMs How long, in milliseconds, clients may treat this result as fresh. `0` means immediately stale.
+ * @property cacheScope Whether a cached copy of this result may be shared across authorization contexts.
  * @property meta Optional metadata for this response.
+ * @throws IllegalArgumentException if [ttlMs] is negative
  */
 @Serializable
 public data class ListResourceTemplatesResult(
     val resourceTemplates: List<ResourceTemplate>,
     override val nextCursor: String? = null,
+    val ttlMs: Long = 0,
+    val cacheScope: CacheScope = CacheScope.Private,
     @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : ServerResult,
-    PaginatedResult
+    PaginatedResult {
+    init {
+        require(ttlMs >= 0) { "ttlMs must be non-negative, but was $ttlMs" }
+    }
+}
