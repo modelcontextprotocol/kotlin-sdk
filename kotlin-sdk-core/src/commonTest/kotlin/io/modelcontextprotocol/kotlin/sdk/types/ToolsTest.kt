@@ -292,7 +292,7 @@ class ToolsTest {
 
     @Test
     fun `should build success and error CallToolResult with text content`() {
-        val meta = buildJsonObject { put("source", "toolkit") }
+        val meta = ResultMeta(buildJsonObject { put("source", "toolkit") })
 
         CallToolResult.success("Operation complete", meta) shouldBe
             CallToolResult(content = listOf(TextContent("Operation complete")), isError = false, meta = meta)

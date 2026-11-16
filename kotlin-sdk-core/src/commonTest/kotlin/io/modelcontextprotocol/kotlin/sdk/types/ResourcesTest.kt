@@ -142,6 +142,9 @@ class ResourcesTest {
                 },
                 {"uri": "custom://resource/42", "mimeType": "application/octet-stream"}
               ],
+              "resultType": "complete",
+              "ttlMs": 0,
+              "cacheScope": "private",
               "_meta": {"generatedAt": "2025-01-12T15:00:58Z"}
             }
         """.trimIndent()

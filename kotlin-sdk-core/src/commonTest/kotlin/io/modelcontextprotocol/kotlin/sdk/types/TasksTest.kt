@@ -154,7 +154,8 @@ class TasksTest {
               "status": "working",
               "createdAt": "2025-01-01T00:00:00Z",
               "lastUpdatedAt": "2025-01-01T00:00:00Z",
-              "ttl": null
+              "ttl": null,
+              "resultType": "complete"
             }
         """.trimIndent()
 

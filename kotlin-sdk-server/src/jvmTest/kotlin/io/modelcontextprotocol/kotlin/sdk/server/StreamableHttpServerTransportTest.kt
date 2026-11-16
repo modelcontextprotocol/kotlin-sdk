@@ -646,7 +646,7 @@ class StreamableHttpServerTransportTest {
         header(HttpHeaders.Host, "localhost")
         header(HttpHeaders.Accept, ContentType.Text.EventStream.toString())
         header(MCP_SESSION_ID_HEADER, sessionId)
-        header("mcp-protocol-version", LATEST_PROTOCOL_VERSION)
+        header("mcp-protocol-version", LATEST_HANDSHAKE_VERSION)
     }
 
     /** A live standalone stream carries the session id and stays open after its first event. */
