@@ -278,6 +278,8 @@ class ToolsTest {
                 }
               ],
               "nextCursor": "cursor-2",
+              "ttlMs": 0,
+              "cacheScope": "private",
               "_meta": {
                 "page": 1
               }

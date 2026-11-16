@@ -2800,17 +2800,21 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ListPromptsRequestBu
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/ListPromptsResult : io/modelcontextprotocol/kotlin/sdk/types/PaginatedResult, io/modelcontextprotocol/kotlin/sdk/types/ServerResult {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/ListPromptsResult$Companion;
-	public fun <init> (Ljava/util/List;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;)V
-	public synthetic fun <init> (Ljava/util/List;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/util/List;Ljava/lang/String;JLio/modelcontextprotocol/kotlin/sdk/types/CacheScope;Lkotlinx/serialization/json/JsonObject;)V
+	public synthetic fun <init> (Ljava/util/List;Ljava/lang/String;JLio/modelcontextprotocol/kotlin/sdk/types/CacheScope;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/util/List;
 	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Lkotlinx/serialization/json/JsonObject;
-	public final fun copy (Ljava/util/List;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/ListPromptsResult;
-	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ListPromptsResult;Ljava/util/List;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ListPromptsResult;
+	public final fun component3 ()J
+	public final fun component4 ()Lio/modelcontextprotocol/kotlin/sdk/types/CacheScope;
+	public final fun component5 ()Lkotlinx/serialization/json/JsonObject;
+	public final fun copy (Ljava/util/List;Ljava/lang/String;JLio/modelcontextprotocol/kotlin/sdk/types/CacheScope;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/ListPromptsResult;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ListPromptsResult;Ljava/util/List;Ljava/lang/String;JLio/modelcontextprotocol/kotlin/sdk/types/CacheScope;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ListPromptsResult;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCacheScope ()Lio/modelcontextprotocol/kotlin/sdk/types/CacheScope;
 	public fun getMeta ()Lkotlinx/serialization/json/JsonObject;
 	public fun getNextCursor ()Ljava/lang/String;
 	public final fun getPrompts ()Ljava/util/List;
+	public final fun getTtlMs ()J
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -2871,17 +2875,21 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ListResourceTemplate
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/ListResourceTemplatesResult : io/modelcontextprotocol/kotlin/sdk/types/PaginatedResult, io/modelcontextprotocol/kotlin/sdk/types/ServerResult {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/ListResourceTemplatesResult$Companion;
-	public fun <init> (Ljava/util/List;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;)V
-	public synthetic fun <init> (Ljava/util/List;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/util/List;Ljava/lang/String;JLio/modelcontextprotocol/kotlin/sdk/types/CacheScope;Lkotlinx/serialization/json/JsonObject;)V
+	public synthetic fun <init> (Ljava/util/List;Ljava/lang/String;JLio/modelcontextprotocol/kotlin/sdk/types/CacheScope;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/util/List;
 	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Lkotlinx/serialization/json/JsonObject;
-	public final fun copy (Ljava/util/List;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/ListResourceTemplatesResult;
-	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ListResourceTemplatesResult;Ljava/util/List;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ListResourceTemplatesResult;
+	public final fun component3 ()J
+	public final fun component4 ()Lio/modelcontextprotocol/kotlin/sdk/types/CacheScope;
+	public final fun component5 ()Lkotlinx/serialization/json/JsonObject;
+	public final fun copy (Ljava/util/List;Ljava/lang/String;JLio/modelcontextprotocol/kotlin/sdk/types/CacheScope;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/ListResourceTemplatesResult;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ListResourceTemplatesResult;Ljava/util/List;Ljava/lang/String;JLio/modelcontextprotocol/kotlin/sdk/types/CacheScope;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ListResourceTemplatesResult;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCacheScope ()Lio/modelcontextprotocol/kotlin/sdk/types/CacheScope;
 	public fun getMeta ()Lkotlinx/serialization/json/JsonObject;
 	public fun getNextCursor ()Ljava/lang/String;
 	public final fun getResourceTemplates ()Ljava/util/List;
+	public final fun getTtlMs ()J
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -2942,17 +2950,21 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ListResourcesRequest
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/ListResourcesResult : io/modelcontextprotocol/kotlin/sdk/types/PaginatedResult, io/modelcontextprotocol/kotlin/sdk/types/ServerResult {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/ListResourcesResult$Companion;
-	public fun <init> (Ljava/util/List;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;)V
-	public synthetic fun <init> (Ljava/util/List;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/util/List;Ljava/lang/String;JLio/modelcontextprotocol/kotlin/sdk/types/CacheScope;Lkotlinx/serialization/json/JsonObject;)V
+	public synthetic fun <init> (Ljava/util/List;Ljava/lang/String;JLio/modelcontextprotocol/kotlin/sdk/types/CacheScope;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/util/List;
 	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Lkotlinx/serialization/json/JsonObject;
-	public final fun copy (Ljava/util/List;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/ListResourcesResult;
-	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ListResourcesResult;Ljava/util/List;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ListResourcesResult;
+	public final fun component3 ()J
+	public final fun component4 ()Lio/modelcontextprotocol/kotlin/sdk/types/CacheScope;
+	public final fun component5 ()Lkotlinx/serialization/json/JsonObject;
+	public final fun copy (Ljava/util/List;Ljava/lang/String;JLio/modelcontextprotocol/kotlin/sdk/types/CacheScope;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/ListResourcesResult;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ListResourcesResult;Ljava/util/List;Ljava/lang/String;JLio/modelcontextprotocol/kotlin/sdk/types/CacheScope;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ListResourcesResult;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCacheScope ()Lio/modelcontextprotocol/kotlin/sdk/types/CacheScope;
 	public fun getMeta ()Lkotlinx/serialization/json/JsonObject;
 	public fun getNextCursor ()Ljava/lang/String;
 	public final fun getResources ()Ljava/util/List;
+	public final fun getTtlMs ()J
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -3146,17 +3158,21 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ListToolsRequestBuil
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/ListToolsResult : io/modelcontextprotocol/kotlin/sdk/types/PaginatedResult, io/modelcontextprotocol/kotlin/sdk/types/ServerResult {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/ListToolsResult$Companion;
-	public fun <init> (Ljava/util/List;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;)V
-	public synthetic fun <init> (Ljava/util/List;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/util/List;Ljava/lang/String;JLio/modelcontextprotocol/kotlin/sdk/types/CacheScope;Lkotlinx/serialization/json/JsonObject;)V
+	public synthetic fun <init> (Ljava/util/List;Ljava/lang/String;JLio/modelcontextprotocol/kotlin/sdk/types/CacheScope;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/util/List;
 	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Lkotlinx/serialization/json/JsonObject;
-	public final fun copy (Ljava/util/List;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/ListToolsResult;
-	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ListToolsResult;Ljava/util/List;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ListToolsResult;
+	public final fun component3 ()J
+	public final fun component4 ()Lio/modelcontextprotocol/kotlin/sdk/types/CacheScope;
+	public final fun component5 ()Lkotlinx/serialization/json/JsonObject;
+	public final fun copy (Ljava/util/List;Ljava/lang/String;JLio/modelcontextprotocol/kotlin/sdk/types/CacheScope;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/ListToolsResult;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ListToolsResult;Ljava/util/List;Ljava/lang/String;JLio/modelcontextprotocol/kotlin/sdk/types/CacheScope;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ListToolsResult;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCacheScope ()Lio/modelcontextprotocol/kotlin/sdk/types/CacheScope;
 	public fun getMeta ()Lkotlinx/serialization/json/JsonObject;
 	public fun getNextCursor ()Ljava/lang/String;
 	public final fun getTools ()Ljava/util/List;
+	public final fun getTtlMs ()J
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -3958,15 +3974,19 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ReadResourceRequestP
 
 public final class io/modelcontextprotocol/kotlin/sdk/types/ReadResourceResult : io/modelcontextprotocol/kotlin/sdk/types/ServerResult {
 	public static final field Companion Lio/modelcontextprotocol/kotlin/sdk/types/ReadResourceResult$Companion;
-	public fun <init> (Ljava/util/List;Lkotlinx/serialization/json/JsonObject;)V
-	public synthetic fun <init> (Ljava/util/List;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/util/List;JLio/modelcontextprotocol/kotlin/sdk/types/CacheScope;Lkotlinx/serialization/json/JsonObject;)V
+	public synthetic fun <init> (Ljava/util/List;JLio/modelcontextprotocol/kotlin/sdk/types/CacheScope;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/util/List;
-	public final fun component2 ()Lkotlinx/serialization/json/JsonObject;
-	public final fun copy (Ljava/util/List;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/ReadResourceResult;
-	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ReadResourceResult;Ljava/util/List;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ReadResourceResult;
+	public final fun component2 ()J
+	public final fun component3 ()Lio/modelcontextprotocol/kotlin/sdk/types/CacheScope;
+	public final fun component4 ()Lkotlinx/serialization/json/JsonObject;
+	public final fun copy (Ljava/util/List;JLio/modelcontextprotocol/kotlin/sdk/types/CacheScope;Lkotlinx/serialization/json/JsonObject;)Lio/modelcontextprotocol/kotlin/sdk/types/ReadResourceResult;
+	public static synthetic fun copy$default (Lio/modelcontextprotocol/kotlin/sdk/types/ReadResourceResult;Ljava/util/List;JLio/modelcontextprotocol/kotlin/sdk/types/CacheScope;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/modelcontextprotocol/kotlin/sdk/types/ReadResourceResult;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCacheScope ()Lio/modelcontextprotocol/kotlin/sdk/types/CacheScope;
 	public final fun getContents ()Ljava/util/List;
 	public fun getMeta ()Lkotlinx/serialization/json/JsonObject;
+	public final fun getTtlMs ()J
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }

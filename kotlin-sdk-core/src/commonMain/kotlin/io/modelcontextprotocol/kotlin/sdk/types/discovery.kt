@@ -49,9 +49,8 @@ public data class DiscoverRequest(override val params: DiscoverRequestParams) : 
         get() = params.meta
 }
 
-/** Defines where a cached discovery result may be reused. */
+/** Defines where a cached result may be reused. */
 @Serializable
-@ExperimentalMcpApi
 public enum class CacheScope {
     /** The result may only be reused within the same authorization context. */
     @SerialName("private")
