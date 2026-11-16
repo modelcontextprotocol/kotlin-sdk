@@ -241,6 +241,15 @@ public data class EmptyResult(@SerialName("_meta") override val meta: JsonObject
     ServerResult
 
 /**
+ * A result whose shape matches no known [RequestResult] type, such as a custom method's, kept as received.
+ */
+@Serializable(with = CustomResultSerializer::class)
+internal data class CustomResult(val json: JsonObject) : RequestResult {
+    override val meta: JsonObject?
+        get() = json["_meta"] as? JsonObject
+}
+
+/**
  * Represents a paginated result.
  */
 @Serializable

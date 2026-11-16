@@ -187,6 +187,26 @@ class JsonRpcTest {
     }
 
     @Test
+    fun `should keep a JSONRPCResponse result of unknown shape as received`() {
+        val message = verifyDeserialization<JSONRPCMessage>(
+            McpJson,
+            """
+            {
+              "id": 3,
+              "result": {
+                "skills": [{ "uri": "skill://code-review/SKILL.md" }],
+                "_meta": { "traceId": "abc" }
+              },
+              "jsonrpc": "2.0"
+            }
+            """.trimIndent(),
+        )
+
+        val result = assertIs<CustomResult>(assertIs<JSONRPCResponse>(message).result)
+        result.meta shouldBe buildJsonObject { put("traceId", "abc") }
+    }
+
+    @Test
     fun `should decode JSONRPCMessage as request`() {
         val json = """
             {
