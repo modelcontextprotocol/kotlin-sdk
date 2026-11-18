@@ -193,8 +193,6 @@ class RequestScopedLifecycleTest {
 
         client.callTool("echo", emptyMap())
 
-        // Declaring the capability cannot make a removed method available, so naming it as missing
-        // would send the author after a fix that does not exist.
         codes.await() shouldBe List(3) { RPCError.ErrorCode.METHOD_NOT_FOUND }
         client.close()
     }
@@ -236,7 +234,6 @@ class RequestScopedLifecycleTest {
 
     private fun ok() = CallToolResult(content = listOf(TextContent("ok")))
 
-    /** The code of the [McpException] [block] fails with, or `null` when it fails otherwise or not at all. */
     private suspend fun refusalCode(block: suspend () -> Unit): Int? =
         (runCatching { block() }.exceptionOrNull() as? McpException)?.code
 
