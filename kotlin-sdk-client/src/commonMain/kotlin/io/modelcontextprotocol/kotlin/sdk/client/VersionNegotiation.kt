@@ -55,14 +55,6 @@ public sealed interface VersionNegotiationMode {
     }
 }
 
-/**
- * How long [VersionNegotiationMode.Auto] waits for a stdio server to answer the probe before
- * treating its silence as a server that predates discovery.
- *
- * A legacy stdio server may never answer a request it does not know, so waiting out the full
- * request timeout would stall every such connection for a minute. Ten seconds is well beyond the
- * time a stdio server takes to start and answer once warm, and a sixth of the request timeout.
- */
 internal val STDIO_PROBE_TIMEOUT: Duration = 10.seconds
 
 /** What a `server/discover` probe came back as, normalized for [classifyProbeOutcome]. */

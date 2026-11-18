@@ -43,7 +43,6 @@ class StdioVersionProbeTest {
             val serverStdin = PipedInputStream(clientStdout, PIPE_SIZE)
             val received = mutableListOf<String>()
 
-            // A legacy server that never answers a request it does not know, as the spec allows.
             thread(isDaemon = true) {
                 serverStdin.bufferedReader().lineSequence().forEach { line ->
                     val message = McpJson.decodeFromString<JSONRPCMessage>(line)
@@ -73,8 +72,6 @@ class StdioVersionProbeTest {
                 ClientOptions(versionNegotiation = VersionNegotiationMode.Auto),
             )
 
-            // The server hangs up at half the request timeout, so a client still waiting on the probe
-            // fails to connect. Ending the stream is also the only way to stop the blocking stdin read.
             val hangUp = launch {
                 delay(DEFAULT_REQUEST_TIMEOUT / 2)
                 serverStdout.close()

@@ -352,8 +352,6 @@ public open class Client(private val clientInfo: Implementation, options: Client
         val offered = if (mode is VersionNegotiationMode.Pin) listOf(mode.version) else MODERN_PROTOCOL_VERSIONS
         val fallbackAvailable = mode !is VersionNegotiationMode.Pin
         val overStdio = transport is StdioClientTransport
-        // Only over stdio does silence decide the fallback, so only there is the wait cut short;
-        // elsewhere, and under a pin, a slow answer is still an answer worth waiting for.
         val probeTimeout = if (overStdio && fallbackAvailable) STDIO_PROBE_TIMEOUT else DEFAULT_REQUEST_TIMEOUT
         var version = offered.first()
         var corrected = false
@@ -388,7 +386,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
     }
 
     /**
-     * Sends one `server/discover` probe at [version], waiting at most [timeout] for the answer.
+     * Sends one `server/discover` probe at [version].
      *
      * The probe rides the ordinary request path, so it consumes a request id. [version] is settled
      * for the duration of the probe — it is what admits a request-scoped method, attaches the
