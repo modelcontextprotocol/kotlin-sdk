@@ -32,8 +32,8 @@ public sealed interface VersionNegotiationMode {
      * evidence of the request-scoped lifecycle.
      *
      * Anything not recognized as such evidence falls back, so a server that has never heard of
-     * discovery still connects, at the cost of one extra round trip. A probe that gets no answer at
-     * all over HTTP, such as a `5xx` or an unreachable server, fails the connection instead.
+     * discovery still connects, at the cost of one extra round trip. Over HTTP, a `5xx` or an
+     * unreachable server fails the connection instead.
      */
     public data object Auto : VersionNegotiationMode
 
@@ -151,13 +151,9 @@ private fun classifyRefusal(
     clientModernVersions: List<String>,
     fallbackAvailable: Boolean,
 ): ProbeVerdict {
-    // Denylist, not allowlist: a legacy server refuses an unknown method with whatever code it
-    // likes, so only the codes the request-scoped revision defines are read as evidence.
     if (error.code !in MODERN_ERROR_CODES) {
         return fallBack(fallbackAvailable) { error }
     }
-    // A request-scoped server objecting to something other than the version: the handshake would
-    // not cure it, so report what it objected to.
     if (error.code != RPCError.ErrorCode.UNSUPPORTED_PROTOCOL_VERSION) {
         return ProbeVerdict.Failed(error)
     }
@@ -182,7 +178,6 @@ private fun classifyRefusal(
     }
 }
 
-/** Error codes only a request-scoped server sends; a refusal carrying one identifies its era. */
 private val MODERN_ERROR_CODES = setOf(
     RPCError.ErrorCode.HEADER_MISMATCH,
     RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY,

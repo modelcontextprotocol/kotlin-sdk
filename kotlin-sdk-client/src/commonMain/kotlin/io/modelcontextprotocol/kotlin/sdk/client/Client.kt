@@ -401,8 +401,6 @@ public open class Client(private val clientInfo: Implementation, options: Client
             throw e
         } catch (e: McpException) {
             when {
-                // The transport failed the POST itself rather than delivering an answer; it wraps
-                // the failure, while an error the server sent carries no cause.
                 transport is StreamableHttpClientTransport &&
                     e.code == RPCError.ErrorCode.INTERNAL_ERROR &&
                     e.cause != null -> httpRejection(e) ?: throw e
@@ -425,11 +423,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
     }
 
     /**
-     * What an HTTP rejection of the probe says about the server, or `null` when it says nothing.
-     *
-     * Only a `4xx` is the server refusing the probe; a `5xx` or a server that could not be reached
-     * is an outage, reported as is rather than mistaken for a server that predates discovery. A
-     * request-scoped server puts a JSON-RPC error in the body of its `4xx`, so the body is what
+     * A request-scoped server puts a JSON-RPC error in the body of its `4xx`, so the body is what
      * tells the two eras apart.
      */
     private fun httpRejection(failure: McpException): ProbeOutcome? {

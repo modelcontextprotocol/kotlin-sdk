@@ -43,7 +43,6 @@ class VersionProbeTest {
 
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
 
-    /** Request methods the scripted server received, in order. */
     private val received = mutableListOf<String>()
 
     private fun initializeResponse(id: RequestId): String = McpJson.encodeToString(
@@ -58,7 +57,6 @@ class VersionProbeTest {
         ),
     )
 
-    /** A Streamable HTTP server answering the probe with [onDiscover] and `initialize` with a handshake result. */
     private fun httpTransport(
         onDiscover: MockRequestHandleScope.() -> HttpResponseData,
     ): StreamableHttpClientTransport {
@@ -93,7 +91,6 @@ class VersionProbeTest {
 
     @Test
     fun `should fall back when a legacy server rejects the probe as uninitialized`() = runTest {
-        // Byte for byte what a session-ful 2025-11-25 server answers before initialize.
         val transport = httpTransport(
             rejectWith(
                 HttpStatusCode.BadRequest,
@@ -151,7 +148,6 @@ class VersionProbeTest {
 
     @Test
     fun `should not fall back when the probe is refused with a missing-capability error`() = runTest {
-        // An in-band refusal, as a stdio server sends it.
         val transport = InBandTransport(
             discoverError = RPCError(
                 code = RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY,
@@ -165,7 +161,6 @@ class VersionProbeTest {
         received shouldBe listOf("server/discover")
     }
 
-    /** A server that answers the probe in-band with [discoverError] and `initialize` with a handshake result. */
     private inner class InBandTransport(private val discoverError: RPCError) : Transport {
         private var onMessageBlock: (suspend (JSONRPCMessage) -> Unit)? = null
         private var onCloseBlock: (() -> Unit)? = null
