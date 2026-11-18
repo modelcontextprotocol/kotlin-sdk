@@ -136,8 +136,6 @@ class ModernStreamableHttpTest {
 
         val response = post(getPrompt(clientCapabilities = """{"roots":{}}"""), method = "prompts/get", name = "greet")
 
-        // `prompts/get` exists; the handler asked for something this revision removed. 404 is for a
-        // method the server does not implement, and saying it here would tell the client otherwise.
         response.status shouldBe HttpStatusCode.OK
         response.errorCode() shouldBe RPCError.ErrorCode.METHOD_NOT_FOUND
     }
@@ -148,7 +146,6 @@ class ModernStreamableHttpTest {
 
         val response = post(getPrompt(clientCapabilities = "{}"), method = "prompts/get", name = "greet")
 
-        // The one handler-raised error the revision puts on an HTTP status, however late it surfaces.
         response.status shouldBe HttpStatusCode.BadRequest
         response.errorCode() shouldBe RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY
     }
@@ -238,7 +235,6 @@ class ModernStreamableHttpTest {
         }
     }
 
-    /** Registers a server exposing one `greet` prompt at `/mcp`. */
     private fun ApplicationTestBuilder.servePrompt(
         provider: suspend ClientConnection.(GetPromptRequest) -> GetPromptResult,
     ) {

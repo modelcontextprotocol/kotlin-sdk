@@ -280,10 +280,6 @@ private class SingleExchangeTransport(val requestId: RequestId) : AbstractTransp
 
     val notifications: Channel<JSONRPCMessage> = Channel(Channel.BUFFERED)
 
-    /**
-     * Whether a running handler sent [outcome], rather than the session refusing the request before
-     * one ran. Written before [outcome] completes, so it is settled for anyone who has seen it.
-     */
     var answeredByHandler: Boolean = false
         private set
 
