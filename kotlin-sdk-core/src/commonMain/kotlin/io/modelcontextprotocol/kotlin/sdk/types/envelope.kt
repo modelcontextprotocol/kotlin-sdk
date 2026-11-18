@@ -1,9 +1,16 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -61,6 +68,7 @@ private val ENVELOPE_META_KEYS: Set<String> = setOf(
 @ExperimentalMcpApi
 public data class RequestEnvelope(
     @SerialName(PROTOCOL_VERSION_META_KEY)
+    @Serializable(with = ProtocolVersionSerializer::class)
     val protocolVersion: String,
     @SerialName(CLIENT_CAPABILITIES_META_KEY)
     val clientCapabilities: ClientCapabilities,
@@ -69,6 +77,24 @@ public data class RequestEnvelope(
     @SerialName(LOG_LEVEL_META_KEY)
     val logLevel: LoggingLevel? = null,
 )
+
+@OptIn(ExperimentalMcpApi::class)
+internal object ProtocolVersionSerializer : KSerializer<String> {
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("io.modelcontextprotocol.kotlin.sdk.types.ProtocolVersion", PrimitiveKind.STRING)
+
+    override fun serialize(encoder: Encoder, value: String) {
+        encoder.encodeString(value)
+    }
+
+    override fun deserialize(decoder: Decoder): String {
+        val element = (decoder as? JsonDecoder)?.decodeJsonElement() ?: return decoder.decodeString()
+        if (element !is JsonPrimitive || !element.isString) {
+            throw SerializationException("$PROTOCOL_VERSION_META_KEY must be a JSON string")
+        }
+        return element.content
+    }
+}
 
 /**
  * Renders this envelope as request metadata, preserving every non-protocol entry of [base].
@@ -95,12 +121,7 @@ public fun RequestEnvelope.toMeta(base: RequestMeta? = null): RequestMeta = Requ
  * message names the offending `_meta` key
  */
 @ExperimentalMcpApi
-public fun RequestMeta.toEnvelope(): RequestEnvelope {
-    if (PROTOCOL_VERSION_META_KEY in json && claimedProtocolVersion == null) {
-        throw SerializationException("$PROTOCOL_VERSION_META_KEY must be a JSON string")
-    }
-    return McpJson.decodeFromJsonElement(json)
-}
+public fun RequestMeta.toEnvelope(): RequestEnvelope = McpJson.decodeFromJsonElement(json)
 
 /**
  * The protocol envelope carried by this metadata, or `null` when it is absent or not intact.
