@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.server.utils.warnIfInvalidToolName
 import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions
+import io.modelcontextprotocol.kotlin.sdk.shared.RequestHandlerExtra
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
 import io.modelcontextprotocol.kotlin.sdk.types.CacheScope
@@ -268,7 +269,7 @@ public open class Server(
                 handleListTools()
             }
             session.setRequestHandler<CallToolRequest>(Method.Defined.ToolsCall) { request, extra ->
-                handleCallTool(session, request, requestScoped = extra.envelope != null)
+                handleCallTool(session, request, requestScoped = extra.isRequestScoped)
             }
         }
 
@@ -972,3 +973,6 @@ public open class Server(
     }
     // End the notification handling section
 }
+
+@OptIn(ExperimentalMcpApi::class)
+private val RequestHandlerExtra.isRequestScoped: Boolean get() = envelope != null
