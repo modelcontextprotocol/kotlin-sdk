@@ -243,7 +243,6 @@ class AbstractClientTransportTest {
             initializeCalled = true
             initializeFailure?.let { throw it }
             receiveDuringInitialize?.let { message ->
-                // A reader started by initialize(), as real transports do, delivering a message right away.
                 CoroutineScope(UnconfinedTestDispatcher()).launch {
                     try {
                         _onMessage(message)

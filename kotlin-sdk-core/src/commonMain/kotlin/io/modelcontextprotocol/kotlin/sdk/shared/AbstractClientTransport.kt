@@ -40,12 +40,6 @@ public abstract class AbstractClientTransport : AbstractTransport() {
      */
     private val _state: AtomicReference<ClientTransportState> = AtomicReference(ClientTransportState.New)
 
-    /**
-     * Completed by [start] once the transport is [ClientTransportState.Operational].
-     *
-     * Readers started in [initialize] can receive messages before that, and a handler replying to one
-     * would hit the state check in [send], so [onMessage] handlers wait for this first.
-     */
     private val operational = CompletableDeferred<Unit>()
 
     /**

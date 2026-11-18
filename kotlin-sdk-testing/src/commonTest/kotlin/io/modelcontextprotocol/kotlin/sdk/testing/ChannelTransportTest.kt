@@ -36,8 +36,6 @@ class ChannelTransportTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun `answers a request the peer sent before start returned`() = runTest {
-        // The event loop gets its own scheduler, so it can run while start() is still suspended,
-        // the interleaving a busy multithreaded dispatcher produces.
         val loopScheduler = TestCoroutineScheduler()
         val sendChannel = Channel<JSONRPCMessage>(Channel.UNLIMITED)
         val receiveChannel = Channel<JSONRPCMessage>(Channel.UNLIMITED)
@@ -48,9 +46,9 @@ class ChannelTransportTest {
         receiveChannel.send(request)
 
         val start = launch { transport.start() }
-        runCurrent() // start() launches the event loop and waits for it
-        loopScheduler.runCurrent() // the event loop takes the request
-        runCurrent() // start() returns
+        runCurrent()
+        loopScheduler.runCurrent()
+        runCurrent()
         loopScheduler.runCurrent()
 
         start.isCompleted shouldBe true
