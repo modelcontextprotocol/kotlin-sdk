@@ -232,7 +232,6 @@ class RequestScopedLifecycleTest {
             ok()
         }
 
-        // The handshake revisions define no -32021, so a tool that cannot run reports it in its result.
         client.callTool("echo", emptyMap()).isError shouldBe true
         client.close()
     }
