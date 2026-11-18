@@ -2,6 +2,7 @@ package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
+import io.modelcontextprotocol.kotlin.sdk.shared.RequestHandlerExtra
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.currentRequestHandlerExtra
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
@@ -373,7 +374,7 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
             ?: return session.protocolVersion?.let { isModernProtocolVersion(it) } != true &&
                 acceptedByLevelSetting(level)
         if (level !in allowedLogLevels(extra.protocolVersion, extra.meta)) return false
-        return acceptedByLevelSetting(level)
+        return extra.isRequestScoped || acceptedByLevelSetting(level)
     }
 
     /** Whether a `logging/setLevel` the client issued on this connection admits [level]. */
@@ -442,3 +443,6 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
         )
     }
 }
+
+@OptIn(ExperimentalMcpApi::class)
+private val RequestHandlerExtra.isRequestScoped: Boolean get() = envelope != null
