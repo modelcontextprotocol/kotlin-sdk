@@ -32,20 +32,28 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
+import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
+import kotlinx.atomicfu.atomic
+import kotlinx.atomicfu.getAndUpdate
+import kotlinx.atomicfu.update
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.math.pow
@@ -145,7 +153,11 @@ public class StreamableHttpClientTransport(
     /** MCP protocol version negotiated with the server, or `null` before connection. */
     public var protocolVersion: String? = null
 
-    private var sseJob: Job? = null
+    /** The GET stream for server-initiated messages, opened once the session is initialized. */
+    private var standaloneSseJob: Job? = null
+
+    /** Request streams being resumed until they deliver their response, by request id. */
+    private val resumedStreams = atomic(persistentMapOf<RequestId, Job>())
 
     private val scope by lazy { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
 
@@ -167,9 +179,14 @@ public class StreamableHttpClientTransport(
     override suspend fun performSend(message: JSONRPCMessage, options: TransportSendOptions?) {
         logger.debug { "Client sending message via POST to $url: ${McpJson.encodeToString(message)}" }
 
+        // A cancelled request is never answered, so its resumed stream would reconnect until the transport closes.
+        message.cancelledRequestId()?.let { requestId ->
+            resumedStreams.getAndUpdate { it.remove(requestId) }[requestId]?.cancel()
+        }
+
         // If we have a resumption token, reconnect the SSE stream with it
         options?.resumptionToken?.let { token ->
-            startSseSession(
+            resumeStream(
                 resumptionToken = token,
                 onResumptionToken = options.onResumptionToken,
                 replayMessageId = if (message is JSONRPCRequest) message.id else null,
@@ -191,7 +208,7 @@ public class StreamableHttpClientTransport(
 
         if (response.status == HttpStatusCode.Accepted) {
             if (message is JSONRPCNotification && message.method == "notifications/initialized") {
-                startSseSession(onResumptionToken = options?.onResumptionToken)
+                openStandaloneStream(onResumptionToken = options?.onResumptionToken)
             }
             return
         }
@@ -216,7 +233,7 @@ public class StreamableHttpClientTransport(
                 val replayMessageId = if (message is JSONRPCRequest) message.id else null
                 val result = handleInlineSse(response, replayMessageId, options?.onResumptionToken)
                 if (result.hasPrimingEvent && !result.receivedResponse) {
-                    startSseSession(
+                    resumeStream(
                         resumptionToken = result.lastEventId,
                         replayMessageId = replayMessageId,
                         onResumptionToken = options?.onResumptionToken,
@@ -255,8 +272,7 @@ public class StreamableHttpClientTransport(
 
     override suspend fun closeResources() {
         logger.debug { "Client transport closing." }
-        sseJob?.cancelAndJoin()
-        scope.cancel()
+        scope.coroutineContext.job.cancelAndJoin()
     }
 
     /**
@@ -285,56 +301,90 @@ public class StreamableHttpClientTransport(
         logger.debug { "Session terminated successfully" }
     }
 
-    private fun startSseSession(
-        resumptionToken: String? = null,
-        replayMessageId: RequestId? = null,
-        onResumptionToken: ((String) -> Unit)? = null,
-        initialServerRetryDelay: Duration? = null,
-    ) {
+    private fun openStandaloneStream(onResumptionToken: ((String) -> Unit)?) {
         // Cancel-and-replace: cancel() signals the previous job, join() inside
         // the new coroutine ensures it completes before we start collecting.
         // This is intentionally non-suspend to avoid blocking performSend.
-        val previousJob = sseJob
+        val previousJob = standaloneSseJob
         previousJob?.cancel()
-        sseJob = scope.launch(CoroutineName("StreamableHttpTransport.collect#${hashCode()}")) {
+        standaloneSseJob = scope.launch(CoroutineName("StreamableHttpTransport.collect#${hashCode()}")) {
             previousJob?.join()
-            var lastEventId = resumptionToken
-            var serverRetryDelay = initialServerRetryDelay
-            var attempt = 0
-            var needsDelay = initialServerRetryDelay != null
+            runSseStream(
+                resumptionToken = null,
+                replayMessageId = null,
+                onResumptionToken = onResumptionToken,
+                initialServerRetryDelay = null,
+            )
+        }
+    }
 
-            while (isActive) {
-                // Delay before (re)connection: skip only for first fresh SSE connection
-                if (needsDelay) {
-                    delay(getNextReconnectionDelay(attempt, serverRetryDelay))
+    /**
+     * Resumes a request's stream on a GET of its own, next to the standalone stream and other resumed streams,
+     * until it delivers the response, the request is cancelled, reconnecting gives up or the transport closes.
+     */
+    private fun resumeStream(
+        resumptionToken: String?,
+        replayMessageId: RequestId?,
+        onResumptionToken: ((String) -> Unit)?,
+        initialServerRetryDelay: Duration? = null,
+    ) {
+        val job = scope.launch(CoroutineName("StreamableHttpTransport.resume#${hashCode()}"), CoroutineStart.LAZY) {
+            runSseStream(resumptionToken, replayMessageId, onResumptionToken, initialServerRetryDelay)
+        }
+        if (replayMessageId != null) {
+            // Resuming the same request again replaces the earlier resumption.
+            resumedStreams.getAndUpdate { it.put(replayMessageId, job) }[replayMessageId]?.cancel()
+            job.invokeOnCompletion {
+                resumedStreams.update { streams ->
+                    if (streams[replayMessageId] === job) streams.remove(replayMessageId) else streams
                 }
-                needsDelay = true
-
-                // Connect
-                val session = when (val cr = connectSse(lastEventId)) {
-                    is ConnectResult.Success -> {
-                        attempt = 0
-                        cr.session
-                    }
-
-                    ConnectResult.NonRetryable -> return@launch
-
-                    ConnectResult.Failed -> {
-                        // Give up after maxRetries consecutive failed connection attempts
-                        if (++attempt >= reconnectionOptions.maxRetries) {
-                            _onError(StreamableHttpError(null, "Maximum reconnection attempts exceeded"))
-                            return@launch
-                        }
-                        continue
-                    }
-                }
-
-                // Collect
-                val result = collectSse(session, replayMessageId, onResumptionToken)
-                lastEventId = result.lastEventId ?: lastEventId
-                serverRetryDelay = result.serverRetryDelay ?: serverRetryDelay
-                if (result.receivedResponse) break
             }
+        }
+        job.start()
+    }
+
+    private suspend fun runSseStream(
+        resumptionToken: String?,
+        replayMessageId: RequestId?,
+        onResumptionToken: ((String) -> Unit)?,
+        initialServerRetryDelay: Duration?,
+    ) {
+        var lastEventId = resumptionToken
+        var serverRetryDelay = initialServerRetryDelay
+        var attempt = 0
+        var needsDelay = initialServerRetryDelay != null
+
+        while (currentCoroutineContext().isActive) {
+            // Delay before (re)connection: skip only for first fresh SSE connection
+            if (needsDelay) {
+                delay(getNextReconnectionDelay(attempt, serverRetryDelay))
+            }
+            needsDelay = true
+
+            // Connect
+            val session = when (val cr = connectSse(lastEventId)) {
+                is ConnectResult.Success -> {
+                    attempt = 0
+                    cr.session
+                }
+
+                ConnectResult.NonRetryable -> return
+
+                ConnectResult.Failed -> {
+                    // Give up after maxRetries consecutive failed connection attempts
+                    if (++attempt >= reconnectionOptions.maxRetries) {
+                        _onError(StreamableHttpError(null, "Maximum reconnection attempts exceeded"))
+                        return
+                    }
+                    continue
+                }
+            }
+
+            // Collect
+            val result = collectSse(session, replayMessageId, onResumptionToken)
+            lastEventId = result.lastEventId ?: lastEventId
+            serverRetryDelay = result.serverRetryDelay ?: serverRetryDelay
+            if (result.receivedResponse) break
         }
     }
 
@@ -447,6 +497,13 @@ public class StreamableHttpClientTransport(
         this is JSONRPCResponse -> copy(id = replayMessageId)
         this is JSONRPCError -> copy(id = replayMessageId)
         else -> this
+    }
+
+    /** The id of the request a `notifications/cancelled` message cancels, or `null` for any other message. */
+    private fun JSONRPCMessage.cancelledRequestId(): RequestId? {
+        if (this !is JSONRPCNotification || method != Method.Defined.NotificationsCancelled.value) return null
+        val requestId = (params as? JsonObject)?.get("requestId") ?: return null
+        return runCatching { McpJson.decodeFromJsonElement<RequestId>(requestId) }.getOrNull()
     }
 
     private suspend fun collectSse(
