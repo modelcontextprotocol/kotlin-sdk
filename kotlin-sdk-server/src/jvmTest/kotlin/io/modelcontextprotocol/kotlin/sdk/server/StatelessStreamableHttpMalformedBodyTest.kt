@@ -20,11 +20,6 @@ import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import kotlin.test.Test
 
-/**
- * An unparseable body carries no request-scoped claim, so it is handshake-era traffic unless the
- * version header names a request-scoped revision. Handshake-era traffic is served exactly as a
- * handshake-only endpoint serves it: `Accept` and `Content-Type` are judged before the body is.
- */
 class StatelessStreamableHttpMalformedBodyTest {
 
     @Test
