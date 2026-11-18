@@ -369,10 +369,12 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
         val extra = currentRequestHandlerExtra()
             // Outside a handler there is no request to have opted in, so nothing is deliverable on
             // the request-scoped lifecycle and the connection-scoped filter applies on the other.
-            ?: return session.protocolVersion != null && acceptedByLevelSetting(level)
+            ?: return didHandshake && acceptedByLevelSetting(level)
         if (level !in allowedLogLevels(extra.protocolVersion, extra.meta)) return false
         return acceptedByLevelSetting(level)
     }
+
+    private val didHandshake: Boolean get() = session.protocolVersion != null
 
     /** Whether a `logging/setLevel` the client issued on this connection admits [level]. */
     private fun acceptedByLevelSetting(level: LoggingLevel): Boolean {

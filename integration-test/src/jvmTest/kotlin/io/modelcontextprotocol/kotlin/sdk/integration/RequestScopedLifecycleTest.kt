@@ -40,6 +40,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import io.modelcontextprotocol.kotlin.sdk.types.serverInfo
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonPrimitive
@@ -62,8 +63,6 @@ class RequestScopedLifecycleTest {
     private val serverInfo = Implementation(name = "probe-server", version = "9.9")
 
     private val clientCapabilities = ClientCapabilities(roots = ClientCapabilities.Roots())
-
-    private lateinit var session: ServerSession
 
     @Test
     fun `a request-scoped request carries the client identity and capabilities to the handler`() = runBlocking {
@@ -264,7 +263,7 @@ class RequestScopedLifecycleTest {
     @Test
     fun `a log sent outside any request does not reach a request-scoped client`() = runBlocking {
         val logs = mutableListOf<LoggingLevel>()
-        val client = connect(
+        val (client, session) = connectWithSession(
             negotiation = VersionNegotiationMode.Auto,
             logLevel = LoggingLevel.Debug,
             onLog = { logs += it },
@@ -272,7 +271,7 @@ class RequestScopedLifecycleTest {
         client.callTool("echo", emptyMap())
 
         session.sendLoggingMessage(log(LoggingLevel.Error))
-        client.callTool("echo", emptyMap())
+        client.awaitEarlierServerMessages()
 
         logs.shouldContainExactly()
         client.close()
@@ -281,10 +280,10 @@ class RequestScopedLifecycleTest {
     @Test
     fun `a log sent outside any request reaches a handshake client`() = runBlocking {
         val logs = mutableListOf<LoggingLevel>()
-        val client = connect(VersionNegotiationMode.Legacy, onLog = { logs += it }) { ok() }
+        val (client, session) = connectWithSession(VersionNegotiationMode.Legacy, onLog = { logs += it }) { ok() }
 
         session.sendLoggingMessage(log(LoggingLevel.Error))
-        client.callTool("echo", emptyMap())
+        client.awaitEarlierServerMessages()
 
         logs.shouldContainExactly(LoggingLevel.Error)
         client.close()
@@ -294,6 +293,10 @@ class RequestScopedLifecycleTest {
 
     private suspend fun refusalCode(block: suspend () -> Unit): Int? =
         (runCatching { block() }.exceptionOrNull() as? McpException)?.code
+
+    private suspend fun Client.awaitEarlierServerMessages() {
+        callTool("echo", emptyMap())
+    }
 
     private fun log(level: LoggingLevel) = LoggingMessageNotification(
         LoggingMessageNotificationParams(level = level, data = JsonPrimitive("entry")),
@@ -309,7 +312,15 @@ class RequestScopedLifecycleTest {
         onLog: (LoggingLevel) -> Unit = {},
         capabilities: ClientCapabilities = clientCapabilities,
         handler: suspend ClientConnection.(CallToolRequest) -> CallToolResult,
-    ): Client {
+    ): Client = connectWithSession(negotiation, logLevel, onLog, capabilities, handler).first
+
+    private suspend fun connectWithSession(
+        negotiation: VersionNegotiationMode,
+        logLevel: LoggingLevel? = null,
+        onLog: (LoggingLevel) -> Unit = {},
+        capabilities: ClientCapabilities = clientCapabilities,
+        handler: suspend ClientConnection.(CallToolRequest) -> CallToolResult,
+    ): Pair<Client, ServerSession> {
         val server = Server(
             serverInfo = serverInfo,
             options = ServerOptions(
@@ -341,10 +352,11 @@ class RequestScopedLifecycleTest {
         }
 
         val (clientTransport, serverTransport) = ChannelTransport.createLinkedPair()
-        runBlocking {
-            launch { session = server.createSession(serverTransport) }
+        val session = runBlocking {
+            val created = async { server.createSession(serverTransport) }
             launch { client.connect(clientTransport) }
+            created.await()
         }
-        return client
+        return client to session
     }
 }
