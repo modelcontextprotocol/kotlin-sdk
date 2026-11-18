@@ -287,6 +287,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
     @OptIn(ExperimentalMcpApi::class)
     override suspend fun connect(transport: Transport) {
         super.connect(transport)
+        _discovered.value = null
 
         try {
             if (!negotiateRequestScoped(transport)) {
