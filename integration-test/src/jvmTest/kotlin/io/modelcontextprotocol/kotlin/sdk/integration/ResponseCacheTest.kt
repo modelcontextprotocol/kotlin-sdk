@@ -9,6 +9,7 @@ import io.modelcontextprotocol.kotlin.sdk.client.InMemoryResponseCacheStore
 import io.modelcontextprotocol.kotlin.sdk.client.VersionNegotiationMode
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
+import io.modelcontextprotocol.kotlin.sdk.server.ServerSession
 import io.modelcontextprotocol.kotlin.sdk.testing.ChannelTransport
 import io.modelcontextprotocol.kotlin.sdk.types.CacheScope
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
@@ -22,6 +23,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.Tool
 import io.modelcontextprotocol.kotlin.sdk.types.ToolListChangedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -100,6 +102,70 @@ class ResponseCacheTest {
 
         fixture.listCalls.get() shouldBe 2
         fixture.client.close()
+    }
+
+    @Test
+    fun `a listing in flight when the list changes is not served after the change`() = runBlocking {
+        val listCalls = AtomicInteger()
+        val firstListingHeld = CompletableDeferred<Unit>()
+        val releaseFirstListing = CompletableDeferred<Unit>()
+        val announced = CompletableDeferred<Unit>()
+        val server = Server(
+            serverInfo = Implementation("cache-server", "1.0"),
+            options = ServerOptions(
+                capabilities = ServerCapabilities(tools = ServerCapabilities.Tools(listChanged = true)),
+            ),
+        )
+        val client = Client(
+            clientInfo = Implementation("cache-client", "1.0"),
+            options = ClientOptions(
+                versionNegotiation = VersionNegotiationMode.Auto,
+                responseCache = InMemoryResponseCacheStore(),
+            ),
+        )
+        client.setNotificationHandler<ToolListChangedNotification>(Method.Defined.NotificationsToolsListChanged) {
+            announced.complete(Unit)
+            CompletableDeferred(Unit)
+        }
+        lateinit var session: ServerSession
+        val (clientTransport, serverTransport) = ChannelTransport.createLinkedPair()
+        runBlocking {
+            launch {
+                session = server.createSession(serverTransport)
+                session.setRequestHandler<ListToolsRequest>(Method.Defined.ToolsList) { _, _ ->
+                    val call = listCalls.incrementAndGet()
+                    // The first listing was computed before the change and is answered only after it.
+                    if (call == 1) {
+                        firstListingHeld.complete(Unit)
+                        releaseFirstListing.await()
+                    }
+                    val name = if (call == 1) "before-change" else "after-change"
+                    ListToolsResult(
+                        tools = listOf(
+                            Tool(
+                                name = name,
+                                description = "the $name tool",
+                                inputSchema = ToolSchema(properties = EmptyJsonObject, required = null),
+                            ),
+                        ),
+                        ttlMs = 60_000,
+                        cacheScope = CacheScope.Private,
+                    )
+                }
+            }
+            launch { client.connect(clientTransport) }
+        }
+
+        val inFlight = async { client.listTools() }
+        withTimeout(5.seconds) { firstListingHeld.await() }
+        session.sendToolListChanged()
+        // Invalidation runs at the router, ahead of handler lookup, so the cache is already staled.
+        withTimeout(5.seconds) { announced.await() }
+        releaseFirstListing.complete(Unit)
+        inFlight.await().tools.single().name shouldBe "before-change"
+
+        client.listTools().tools.single().name shouldBe "after-change"
+        client.close()
     }
 
     @Test
