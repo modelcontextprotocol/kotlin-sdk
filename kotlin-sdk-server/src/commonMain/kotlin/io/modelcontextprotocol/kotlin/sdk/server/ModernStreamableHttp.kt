@@ -304,8 +304,6 @@ private class SingleExchangeTransport(val requestId: RequestId) : AbstractTransp
     /** Hands [message] to the session and returns once it has been answered. */
     suspend fun deliver(message: JSONRPCMessage) {
         _onMessage(message)
-        // A request-scoped request is dispatched concurrently, so the session takes it and returns
-        // before its handler has answered.
         outcome.join()
     }
 }

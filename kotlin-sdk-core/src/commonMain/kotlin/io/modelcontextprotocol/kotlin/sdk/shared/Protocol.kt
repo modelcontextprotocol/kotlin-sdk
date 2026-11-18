@@ -555,8 +555,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     private suspend fun dispatchRequest(connection: Connection, request: JSONRPCRequest) {
         if (!connection.concurrentDispatchEnabled.value && eraOf(request.requestMeta()) == ProtocolEra.Legacy) {
             // Serial phase (before the peer completes MCP initialization): inline, in arrival
-            // order — the delivering coroutine awaits the handler. A request-scoped request has no
-            // initialization phase to wait for, so it is never held to this order.
+            // order — the delivering coroutine awaits the handler.
             onRequest(request, connection, trackCancellation = false)
             return
         }

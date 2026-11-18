@@ -50,7 +50,6 @@ import kotlin.time.Duration.Companion.seconds
 @OptIn(ExperimentalMcpApi::class)
 class EraInterleavingTest {
 
-    /** Completes once the `hang` tool's handler has been cancelled. */
     private val hangCancelled = CompletableDeferred<Unit>()
 
     @Test
@@ -93,8 +92,6 @@ class EraInterleavingTest {
         val peer = connect()
 
         peer.send(id = 1, method = "tools/call", envelope = LATEST_MODERN_VERSION, params = hangCall())
-        // Unrelated requests on one connection are independent: the second must not queue behind
-        // a handler that has not finished.
         val listed = peer.call(id = 2, method = "tools/list", envelope = LATEST_MODERN_VERSION)
 
         listed.id shouldBe RequestId.NumberId(2)
@@ -134,7 +131,6 @@ class EraInterleavingTest {
             params: JsonObject = buildJsonObject { },
         ): JSONRPCResponse = withTimeout(5.seconds) { send(id, method, envelope, params).await() }
 
-        /** Sends a request without waiting for its answer. */
         suspend fun send(
             id: Int,
             method: String,
@@ -164,7 +160,6 @@ class EraInterleavingTest {
             params: JsonObject,
         ): JSONRPCMessage {
             val body = when (method) {
-                // The echo tool, unless params name another.
                 "tools/call" -> JsonObject(
                     buildJsonObject {
                         put("name", "echo")
