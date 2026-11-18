@@ -101,6 +101,8 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 private val logger = KotlinLogging.logger {}
 
@@ -121,9 +123,11 @@ private val logger = KotlinLogging.logger {}
  * @property responseCache Where to keep results a server marked reusable. Off by default;
  *   [InMemoryResponseCacheStore] caches for the lifetime of this client. Consulted only on the
  *   request-scoped lifecycle, the only one whose results carry caching directives.
- * @property cachePartition The authorization context this client fetches under, which
- *   [CacheScope.Private] entries are confined to. Only meaningful for a store shared across
- *   principals; the default scopes such entries to this client instance.
+ * @property cachePartition The namespace this client files cached results under, public and
+ *   [CacheScope.Private] alike. Clients configured with the same partition share entries, so it
+ *   must name both the server and the authorization context, such as the server URL and the
+ *   access token's subject. Empty, the default, confines entries to the current connection:
+ *   neither another client nor this one after a reconnect is served them.
  */
 public class ClientOptions(
     public val capabilities: ClientCapabilities = ClientCapabilities(),
@@ -218,6 +222,9 @@ public open class Client(private val clientInfo: Implementation, options: Client
     @OptIn(ExperimentalMcpApi::class)
     private val cachePartition: String = options.cachePartition
 
+    /** The partition this connection files cached results under, settled by [connect]. */
+    private val connectionCachePartition: AtomicRef<String> = atomic(cachePartition)
+
     private val roots = atomic(persistentMapOf<String, Root>())
 
     private val _protocolVersion: AtomicRef<String?> = atomic(null)
@@ -284,9 +291,11 @@ public open class Client(private val clientInfo: Implementation, options: Client
      * @param transport The transport to use for communication with the server.
      * @throws IllegalStateException If the server's protocol version is not supported.
      */
-    @OptIn(ExperimentalMcpApi::class)
+    @OptIn(ExperimentalMcpApi::class, ExperimentalUuidApi::class)
     override suspend fun connect(transport: Transport) {
         super.connect(transport)
+        val partition = cachePartition.ifEmpty { Uuid.random().toString() }
+        connectionCachePartition.value = partition
 
         try {
             if (!negotiateRequestScoped(transport)) {
@@ -489,7 +498,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
         ) {
             return fetch()
         }
-        val key = CacheKey(method = method, paramsKey = paramsKey, partition = cachePartition)
+        val key = CacheKey(method = method, paramsKey = paramsKey, partition = connectionCachePartition.value)
         if (mode == CacheMode.Use) {
             store.get(key)?.takeIf { Clock.System.now() < it.expiresAt }?.let {
                 @Suppress("UNCHECKED_CAST")
