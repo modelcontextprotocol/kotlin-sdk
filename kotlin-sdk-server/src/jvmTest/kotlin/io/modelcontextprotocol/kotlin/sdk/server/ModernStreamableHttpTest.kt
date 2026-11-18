@@ -2,6 +2,7 @@ package io.modelcontextprotocol.kotlin.sdk.server
 
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldNotContain
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -16,6 +17,7 @@ import io.ktor.http.contentType
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
+import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
@@ -24,6 +26,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.LATEST_MODERN_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotificationParams
+import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.NAME_BEARING_METHODS
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
@@ -32,6 +35,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * The HTTP contract of the request-scoped lifecycle (protocol revision 2026-07-28, SEP-2575): the
@@ -184,6 +188,30 @@ class ModernStreamableHttpTest {
             response.bodyAsText() shouldContain "notifications/message"
         }
     }
+
+    @Test
+    fun `a server-to-client request from a handler is refused instead of sent on the response stream`() =
+        testApplication {
+            serve {
+                // The timeout only bounds a request that went out anyway; a refused one never waits on it.
+                val code = try {
+                    ping(options = RequestOptions(timeout = 5.seconds))
+                    null
+                } catch (e: McpException) {
+                    e.code
+                }
+                CallToolResult(content = listOf(TextContent("ping failed with $code")))
+            }
+
+            val response = post(callTool("echo"))
+
+            // The revision forbids independent requests on a response stream, and the handler is told
+            // at once rather than left waiting for an answer no client can send back.
+            response.status shouldBe HttpStatusCode.OK
+            val body = response.bodyAsText()
+            body shouldNotContain "\"method\":\"ping\""
+            body shouldContain "ping failed with ${RPCError.ErrorCode.METHOD_NOT_FOUND}"
+        }
 
     /** Registers a server exposing one `echo` tool at `/mcp`. */
     private fun ApplicationTestBuilder.serve(
