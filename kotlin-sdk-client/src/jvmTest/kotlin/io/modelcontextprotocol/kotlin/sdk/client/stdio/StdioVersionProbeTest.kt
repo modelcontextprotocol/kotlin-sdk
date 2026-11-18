@@ -72,7 +72,7 @@ class StdioVersionProbeTest {
                 ClientOptions(versionNegotiation = VersionNegotiationMode.Auto),
             )
 
-            val hangUp = launch {
+            val endBeforeRequestTimeout = launch {
                 delay(DEFAULT_REQUEST_TIMEOUT / 2)
                 serverStdout.close()
             }
@@ -82,7 +82,7 @@ class StdioVersionProbeTest {
                 client.protocolVersion shouldBe LATEST_HANDSHAKE_VERSION
                 synchronized(received) { received.toList() } shouldBe listOf("server/discover", "initialize")
             } finally {
-                hangUp.cancel()
+                endBeforeRequestTimeout.cancel()
                 serverStdout.close()
                 client.close()
             }
