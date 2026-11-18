@@ -91,6 +91,7 @@ import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.io.IOException
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -400,10 +401,11 @@ public open class Client(private val clientInfo: Implementation, options: Client
         } catch (e: CancellationException) {
             throw e
         } catch (e: McpException) {
+            val cause = e.cause
             when {
-                transport is StreamableHttpClientTransport &&
-                    e.code == RPCError.ErrorCode.INTERNAL_ERROR &&
-                    e.cause != null -> httpRejection(e) ?: throw e
+                cause is StreamableHttpError -> httpRejection(e, cause)
+
+                cause is IOException -> throw e
 
                 // Silence and a peer that went away instead of answering are the same signal; on stdio
                 // both mean a server that predates discovery, and the classifier decides what to do.
@@ -426,12 +428,10 @@ public open class Client(private val clientInfo: Implementation, options: Client
      * A request-scoped server puts a JSON-RPC error in the body of its `4xx`, so the body is what
      * tells the two eras apart.
      */
-    private fun httpRejection(failure: McpException): ProbeOutcome? {
-        val rejection = failure.cause as? StreamableHttpError ?: return null
-        val status = rejection.code ?: return null
-        if (status !in 400..499) return null
+    private fun httpRejection(failure: McpException, rejection: StreamableHttpError): ProbeOutcome {
+        if (rejection.code !in 400..499) throw failure
         val error = try {
-            rejection.detail?.let { McpJson.decodeFromString<JSONRPCError>(it).error }
+            rejection.rejectedBody?.let { McpJson.decodeFromString<JSONRPCError>(it).error }
         } catch (_: SerializationException) {
             null
         } ?: return ProbeOutcome.Refused(failure)
