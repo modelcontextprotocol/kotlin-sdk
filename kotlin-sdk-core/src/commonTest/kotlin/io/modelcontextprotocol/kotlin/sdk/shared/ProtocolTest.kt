@@ -280,7 +280,6 @@ class ProtocolTest {
         val inFlight = async { runCatching { protocol.request<ListToolsResult>(ListToolsRequest()) } }
         val sent = transport.awaitRequest()
 
-        // Read from text, as a serializing transport reads the peer's bytes.
         val wire = buildJsonObject {
             put("jsonrpc", "2.0")
             put("id", McpJson.encodeToJsonElement(sent.id))

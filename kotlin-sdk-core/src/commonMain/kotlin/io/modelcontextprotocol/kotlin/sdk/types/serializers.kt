@@ -431,13 +431,6 @@ private fun selectEmptyResult(element: JsonElement): DeserializationStrategy<Emp
     }
 }
 
-/**
- * Selects [WireResult] for a result that declares a `resultType` other than [COMPLETE_RESULT_TYPE].
- *
- * No typed result describes such a shape, yet the response is still well formed. Keeping it as raw
- * JSON lets it reach the request it answers, where the unrecognized `resultType` is refused, instead
- * of failing to decode and leaving that request to time out.
- */
 @OptIn(InternalMcpApi::class)
 private fun selectUnrecognizedResult(element: JsonElement): DeserializationStrategy<WireResult>? {
     val resultType = element.jsonObject.resultTypeString()
