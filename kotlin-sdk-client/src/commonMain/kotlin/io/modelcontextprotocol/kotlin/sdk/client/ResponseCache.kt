@@ -80,8 +80,8 @@ public const val MAX_CACHE_TTL_MS: Long = 24L * 60 * 60 * 1000
 /**
  * A [ResponseCacheStore] holding entries in memory for the lifetime of this instance.
  *
- * Unbounded, holding one entry per method, params and partition the client has issued, entries
- * filed by its earlier connections included.
+ * Unbounded: an entry stays until invalidated or cleared, even past its expiry or after the
+ * connection that filed it closes.
  */
 @ExperimentalMcpApi
 public class InMemoryResponseCacheStore : ResponseCacheStore {

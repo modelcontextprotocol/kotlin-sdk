@@ -224,7 +224,6 @@ public open class Client(private val clientInfo: Implementation, options: Client
     @OptIn(ExperimentalMcpApi::class)
     private val cachePartition: String = options.cachePartition
 
-    /** The partition this connection files cached results under, settled by [connect]. */
     private val connectionCachePartition: AtomicRef<String> = atomic(cachePartition)
 
     private val roots = atomic(persistentMapOf<String, Root>())

@@ -246,10 +246,6 @@ class ResponseCacheTest {
         ),
     )
 
-    /**
-     * Connects [client] to a fresh session of [server] whose `tools/list` answers a single tool named
-     * [tool], fresh for a minute under [scope], counting each answer in [listCalls].
-     */
     private suspend fun connectSession(
         client: Client,
         server: Server,
