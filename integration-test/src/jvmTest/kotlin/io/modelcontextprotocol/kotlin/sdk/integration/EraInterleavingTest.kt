@@ -109,6 +109,26 @@ class EraInterleavingTest {
         peer.close()
     }
 
+    @Test
+    fun `a request-scoped request is not narrowed by a log level an earlier request set`() = runBlocking {
+        val peer = connect()
+
+        peer.call(
+            id = 1,
+            method = "logging/setLevel",
+            envelope = null,
+            params = buildJsonObject {
+                put("level", "error")
+            },
+        )
+        peer.call(id = 2, method = "tools/call", envelope = LATEST_MODERN_VERSION, logLevel = "debug")
+
+        // The request asked for debug and above on its own; no earlier request takes that away.
+        peer.notifications.map { McpJson.decodeFromString<JSONRPCNotification>(it).method } shouldContainExactly
+            listOf("notifications/message")
+        peer.close()
+    }
+
     /** A raw peer holding one connection to a server that logs while serving `echo`. */
     private class Peer(private val transport: ChannelTransport) {
         val notifications: MutableList<String> = mutableListOf()
@@ -129,18 +149,20 @@ class EraInterleavingTest {
             method: String,
             envelope: String?,
             params: JsonObject = buildJsonObject { },
-        ): JSONRPCResponse = withTimeout(5.seconds) { send(id, method, envelope, params).await() }
+            logLevel: String? = null,
+        ): JSONRPCResponse = withTimeout(5.seconds) { send(id, method, envelope, params, logLevel).await() }
 
         suspend fun send(
             id: Int,
             method: String,
             envelope: String?,
             params: JsonObject = buildJsonObject { },
+            logLevel: String? = null,
         ): Deferred<JSONRPCResponse> {
             val requestId = RequestId.NumberId(id.toLong())
             val answer = CompletableDeferred<JSONRPCResponse>()
             pending[requestId] = answer
-            transport.send(request(requestId, method, envelope, params))
+            transport.send(request(requestId, method, envelope, params, logLevel))
             return answer
         }
 
@@ -158,6 +180,7 @@ class EraInterleavingTest {
             method: String,
             envelope: String?,
             params: JsonObject,
+            logLevel: String?,
         ): JSONRPCMessage {
             val body = when (method) {
                 "tools/call" -> JsonObject(
@@ -177,6 +200,7 @@ class EraInterleavingTest {
                         "_meta" to buildJsonObject {
                             put("io.modelcontextprotocol/protocolVersion", envelope)
                             put("io.modelcontextprotocol/clientCapabilities", EmptyJsonObject)
+                            logLevel?.let { put("io.modelcontextprotocol/logLevel", it) }
                         }
                         ),
                 )
