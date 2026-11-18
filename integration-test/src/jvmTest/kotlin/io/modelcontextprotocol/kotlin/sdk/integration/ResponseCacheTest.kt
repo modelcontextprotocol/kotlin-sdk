@@ -135,7 +135,6 @@ class ResponseCacheTest {
                 session = server.createSession(serverTransport)
                 session.setRequestHandler<ListToolsRequest>(Method.Defined.ToolsList) { _, _ ->
                     val call = listCalls.incrementAndGet()
-                    // The first listing was computed before the change and is answered only after it.
                     if (call == 1) {
                         firstListingHeld.complete(Unit)
                         releaseFirstListing.await()
@@ -160,7 +159,6 @@ class ResponseCacheTest {
         val inFlight = async { client.listTools() }
         withTimeout(5.seconds) { firstListingHeld.await() }
         session.sendToolListChanged()
-        // Invalidation runs at the router, ahead of handler lookup, so the cache is already staled.
         withTimeout(5.seconds) { announced.await() }
         releaseFirstListing.complete(Unit)
         inFlight.await().tools.single().name shouldBe "before-change"

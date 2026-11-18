@@ -226,7 +226,6 @@ public open class Client(private val clientInfo: Implementation, options: Client
 
     private val connectionCachePartition: AtomicRef<String> = atomic(cachePartition)
 
-    /** How many times a notification has staled each method's cached results. */
     private val cacheInvalidations = atomic(persistentMapOf<String, Int>())
 
     private val roots = atomic(persistentMapOf<String, Root>())
@@ -538,7 +537,6 @@ public open class Client(private val clientInfo: Implementation, options: Client
         val fresh = fetch()
         if (fresh is CacheableResult) {
             store.put(key, CacheEntry(result = fresh, expiresAt = fresh.expiryFrom(), cacheScope = fresh.cacheScope))
-            // A notification that arrived while the request was in flight stales what it answered.
             if (cacheInvalidations.value[method] != invalidations) store.invalidate(method)
         }
         return fresh
