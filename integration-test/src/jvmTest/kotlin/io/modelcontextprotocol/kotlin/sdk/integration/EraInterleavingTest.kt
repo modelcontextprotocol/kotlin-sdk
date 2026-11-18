@@ -123,7 +123,6 @@ class EraInterleavingTest {
         )
         peer.call(id = 2, method = "tools/call", envelope = LATEST_MODERN_VERSION, logLevel = "debug")
 
-        // The request asked for debug and above on its own; no earlier request takes that away.
         peer.notifications.map { McpJson.decodeFromString<JSONRPCNotification>(it).method } shouldContainExactly
             listOf("notifications/message")
         peer.close()
