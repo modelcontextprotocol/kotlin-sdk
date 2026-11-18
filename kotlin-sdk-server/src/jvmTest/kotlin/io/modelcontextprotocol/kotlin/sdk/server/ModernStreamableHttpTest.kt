@@ -18,6 +18,8 @@ import io.ktor.server.testing.testApplication
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.LATEST_MODERN_VERSION
@@ -129,6 +131,29 @@ class ModernStreamableHttpTest {
     }
 
     @Test
+    fun `a method-not-found raised inside a handler stays in band on 200`() = testApplication {
+        servePrompt { GetPromptResult(messages = emptyList(), description = listRoots().roots.toString()) }
+
+        val response = post(getPrompt(clientCapabilities = """{"roots":{}}"""), method = "prompts/get", name = "greet")
+
+        // `prompts/get` exists; the handler asked for something this revision removed. 404 is for a
+        // method the server does not implement, and saying it here would tell the client otherwise.
+        response.status shouldBe HttpStatusCode.OK
+        response.errorCode() shouldBe RPCError.ErrorCode.METHOD_NOT_FOUND
+    }
+
+    @Test
+    fun `a missing client capability raised inside a handler answers 400`() = testApplication {
+        servePrompt { GetPromptResult(messages = emptyList(), description = listRoots().roots.toString()) }
+
+        val response = post(getPrompt(clientCapabilities = "{}"), method = "prompts/get", name = "greet")
+
+        // The one handler-raised error the revision puts on an HTTP status, however late it surfaces.
+        response.status shouldBe HttpStatusCode.BadRequest
+        response.errorCode() shouldBe RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY
+    }
+
+    @Test
     fun `a request-scoped notification is acknowledged with 202 and no body`() = testApplication {
         serve()
 
@@ -213,6 +238,20 @@ class ModernStreamableHttpTest {
         }
     }
 
+    /** Registers a server exposing one `greet` prompt at `/mcp`. */
+    private fun ApplicationTestBuilder.servePrompt(
+        provider: suspend ClientConnection.(GetPromptRequest) -> GetPromptResult,
+    ) {
+        application {
+            mcpStatelessStreamableHttp {
+                Server(
+                    Implementation("test-server", "1.0"),
+                    ServerOptions(capabilities = ServerCapabilities(prompts = ServerCapabilities.Prompts(null))),
+                ).apply { addPrompt(name = "greet", promptProvider = provider) }
+            }
+        }
+    }
+
     private suspend fun ApplicationTestBuilder.post(
         body: String,
         method: String = "tools/call",
@@ -251,6 +290,13 @@ class ModernStreamableHttpTest {
                                 "io.modelcontextprotocol/clientCapabilities":{}$level}}}
         """.trimIndent()
     }
+
+    private fun getPrompt(clientCapabilities: String): String = """
+        {"jsonrpc":"2.0","id":1,"method":"prompts/get",
+         "params":{"name":"greet",
+                   "_meta":{"io.modelcontextprotocol/protocolVersion":"$LATEST_MODERN_VERSION",
+                            "io.modelcontextprotocol/clientCapabilities":$clientCapabilities}}}
+    """.trimIndent()
 
     private fun request(id: Int, method: String): String = """
         {"jsonrpc":"2.0","id":$id,"method":"$method",
