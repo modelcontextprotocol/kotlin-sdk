@@ -83,7 +83,10 @@ private const val DEFAULT_MAX_INLINE_SSE_EVENT_SIZE: Int = 16 * 1024 * 1024
  * @param message detailed error description appended to the exception message
  */
 public class StreamableHttpError(public val code: Int? = null, message: String? = null) :
-    Exception("Streamable HTTP error: $message")
+    Exception("Streamable HTTP error: $message") {
+    /** The description this error was raised with; for a rejected POST, the response body. */
+    internal val detail: String? = message
+}
 
 private sealed interface ConnectResult {
     data class Success(val session: ClientSSESession) : ConnectResult

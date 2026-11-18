@@ -35,6 +35,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeResult
 import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.IntegerSchema
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.LATEST_HANDSHAKE_VERSION
@@ -399,12 +400,19 @@ public open class Client(private val clientInfo: Implementation, options: Client
         } catch (e: CancellationException) {
             throw e
         } catch (e: McpException) {
-            // Silence and a peer that went away instead of answering are the same signal; on stdio
-            // both mean a server that predates discovery, and the classifier decides what to do.
-            if (e.code == RPCError.ErrorCode.REQUEST_TIMEOUT || e.code == RPCError.ErrorCode.CONNECTION_CLOSED) {
-                ProbeOutcome.Silent
-            } else {
-                ProbeOutcome.Refused(e)
+            when {
+                // The transport failed the POST itself rather than delivering an answer; it wraps
+                // the failure, while an error the server sent carries no cause.
+                transport is StreamableHttpClientTransport &&
+                    e.code == RPCError.ErrorCode.INTERNAL_ERROR &&
+                    e.cause != null -> httpRejection(e) ?: throw e
+
+                // Silence and a peer that went away instead of answering are the same signal; on stdio
+                // both mean a server that predates discovery, and the classifier decides what to do.
+                e.code == RPCError.ErrorCode.REQUEST_TIMEOUT || e.code == RPCError.ErrorCode.CONNECTION_CLOSED ->
+                    ProbeOutcome.Silent
+
+                else -> ProbeOutcome.Refused(e)
             }
         } catch (_: SerializationException) {
             ProbeOutcome.Answered(null)
@@ -414,6 +422,26 @@ public open class Client(private val clientInfo: Implementation, options: Client
         } finally {
             withdraw(transport)
         }
+    }
+
+    /**
+     * What an HTTP rejection of the probe says about the server, or `null` when it says nothing.
+     *
+     * Only a `4xx` is the server refusing the probe; a `5xx` or a server that could not be reached
+     * is an outage, reported as is rather than mistaken for a server that predates discovery. A
+     * request-scoped server puts a JSON-RPC error in the body of its `4xx`, so the body is what
+     * tells the two eras apart.
+     */
+    private fun httpRejection(failure: McpException): ProbeOutcome? {
+        val rejection = failure.cause as? StreamableHttpError ?: return null
+        val status = rejection.code ?: return null
+        if (status !in 400..499) return null
+        val error = try {
+            rejection.detail?.let { McpJson.decodeFromString<JSONRPCError>(it).error }
+        } catch (_: SerializationException) {
+            null
+        } ?: return ProbeOutcome.Refused(failure)
+        return ProbeOutcome.Refused(McpException(error.code, error.message, error.data, cause = rejection))
     }
 
     /** Undoes [settle], leaving the connection unsettled again. */
