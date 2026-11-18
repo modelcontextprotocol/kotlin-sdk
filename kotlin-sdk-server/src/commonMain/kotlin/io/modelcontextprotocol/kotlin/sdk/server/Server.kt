@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.server.utils.warnIfInvalidToolName
 import io.modelcontextprotocol.kotlin.sdk.shared.ProtocolOptions
+import io.modelcontextprotocol.kotlin.sdk.shared.RequestHandlerExtra
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
 import io.modelcontextprotocol.kotlin.sdk.types.CacheScope
@@ -267,8 +268,8 @@ public open class Server(
             session.setRequestHandler<ListToolsRequest>(Method.Defined.ToolsList) { _, _ ->
                 handleListTools()
             }
-            session.setRequestHandler<CallToolRequest>(Method.Defined.ToolsCall) { request, _ ->
-                handleCallTool(session, request)
+            session.setRequestHandler<CallToolRequest>(Method.Defined.ToolsCall) { request, extra ->
+                handleCallTool(session, request, requestScoped = extra.isRequestScoped)
             }
         }
 
@@ -684,7 +685,11 @@ public open class Server(
         return ListToolsResult(tools = toolList, nextCursor = null)
     }
 
-    private suspend fun handleCallTool(session: ServerSession, request: CallToolRequest): CallToolResult {
+    private suspend fun handleCallTool(
+        session: ServerSession,
+        request: CallToolRequest,
+        requestScoped: Boolean,
+    ): CallToolResult {
         val requestParams = request.params
         logger.debug { "Handling tool call request for tool: ${requestParams.name}" }
 
@@ -712,7 +717,8 @@ public open class Server(
             // A tool that fails is a result marked isError, but a capability the client never
             // declared is a defect of the request rather than of the run — the revision answers
             // that as a JSON-RPC error, and on HTTP it is the one in-band code that is not 200.
-            if (e.code == RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY) throw e
+            // The handshake revisions define no such code, so their requests keep the failed result.
+            if (requestScoped && e.code == RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY) throw e
             logger.error(e) { "Error executing tool ${requestParams.name}" }
             CallToolResult(
                 content = listOf(TextContent(text = "Error executing tool ${requestParams.name}: ${e.message}")),
@@ -967,3 +973,6 @@ public open class Server(
     }
     // End the notification handling section
 }
+
+@OptIn(ExperimentalMcpApi::class)
+private val RequestHandlerExtra.isRequestScoped: Boolean get() = envelope != null
