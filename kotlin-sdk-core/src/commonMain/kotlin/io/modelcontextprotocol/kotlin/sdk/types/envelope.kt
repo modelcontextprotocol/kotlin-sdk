@@ -96,7 +96,6 @@ public fun RequestEnvelope.toMeta(base: RequestMeta? = null): RequestMeta = Requ
  */
 @ExperimentalMcpApi
 public fun RequestMeta.toEnvelope(): RequestEnvelope {
-    // McpJson is lenient and would read a number or boolean as a string, which validateEnvelope refuses.
     if (PROTOCOL_VERSION_META_KEY in json && claimedProtocolVersion == null) {
         throw SerializationException("$PROTOCOL_VERSION_META_KEY must be a JSON string")
     }
