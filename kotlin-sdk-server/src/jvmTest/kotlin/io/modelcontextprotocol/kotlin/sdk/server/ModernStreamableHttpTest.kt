@@ -193,7 +193,6 @@ class ModernStreamableHttpTest {
     fun `a server-to-client request from a handler is refused instead of sent on the response stream`() =
         testApplication {
             serve {
-                // The timeout only bounds a request that went out anyway; a refused one never waits on it.
                 val code = try {
                     ping(options = RequestOptions(timeout = 5.seconds))
                     null
@@ -205,8 +204,6 @@ class ModernStreamableHttpTest {
 
             val response = post(callTool("echo"))
 
-            // The revision forbids independent requests on a response stream, and the handler is told
-            // at once rather than left waiting for an answer no client can send back.
             response.status shouldBe HttpStatusCode.OK
             val body = response.bodyAsText()
             body shouldNotContain "\"method\":\"ping\""

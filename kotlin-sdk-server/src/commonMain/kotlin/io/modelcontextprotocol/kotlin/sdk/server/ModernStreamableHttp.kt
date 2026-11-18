@@ -284,8 +284,6 @@ private class SingleExchangeTransport(val requestId: RequestId) : AbstractTransp
             return
         }
         if (message is JSONRPCRequest) {
-            // Thrown rather than dropped, so the caller fails now instead of awaiting an answer
-            // until its timeout.
             throw McpException(
                 code = RPCError.ErrorCode.METHOD_NOT_FOUND,
                 message = "${message.method} cannot be sent: the request-scoped lifecycle has no " +
