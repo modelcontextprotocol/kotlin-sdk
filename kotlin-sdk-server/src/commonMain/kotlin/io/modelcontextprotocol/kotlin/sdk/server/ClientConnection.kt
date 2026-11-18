@@ -371,7 +371,9 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
             // the request-scoped lifecycle and the connection-scoped filter applies on the other.
             ?: return didHandshake && acceptedByLevelSetting(level)
         if (level !in allowedLogLevels(extra.protocolVersion, extra.meta)) return false
-        return acceptedByLevelSetting(level)
+        // A request-scoped request's own logLevel is the whole filter: a level set by an earlier
+        // request on this connection is context the revision forbids relying on.
+        return extra.envelope != null || acceptedByLevelSetting(level)
     }
 
     private val didHandshake: Boolean get() = session.protocolVersion != null
