@@ -218,7 +218,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
     @OptIn(ExperimentalMcpApi::class)
     private val cachePartition: String = options.cachePartition
 
-    private val cacheInvalidations = atomic(persistentMapOf<String, Int>())
+    private val invalidationCountByMethod = atomic(persistentMapOf<String, Int>())
 
     private val roots = atomic(persistentMapOf<String, Root>())
 
@@ -498,11 +498,11 @@ public open class Client(private val clientInfo: Implementation, options: Client
                 return it.result as T
             }
         }
-        val invalidations = cacheInvalidations.value[method]
+        val invalidationsBeforeFetch = invalidationCountByMethod.value[method]
         val fresh = fetch()
         if (fresh is CacheableResult) {
             store.put(key, CacheEntry(result = fresh, expiresAt = fresh.expiryFrom(), cacheScope = fresh.cacheScope))
-            if (cacheInvalidations.value[method] != invalidations) store.invalidate(method)
+            if (invalidationCountByMethod.value[method] != invalidationsBeforeFetch) store.invalidate(method)
         }
         return fresh
     }
@@ -517,7 +517,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
     final override suspend fun onNotificationRouted(notification: JSONRPCNotification) {
         val store = responseCache ?: return
         CACHE_INVALIDATING_NOTIFICATIONS[notification.method]?.forEach { method ->
-            cacheInvalidations.update { it.putting(method, (it[method] ?: 0) + 1) }
+            invalidationCountByMethod.update { it.putting(method, (it[method] ?: 0) + 1) }
             store.invalidate(method)
         }
     }

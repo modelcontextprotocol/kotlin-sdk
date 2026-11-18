@@ -109,7 +109,7 @@ class ResponseCacheTest {
         val listCalls = AtomicInteger()
         val firstListingHeld = CompletableDeferred<Unit>()
         val releaseFirstListing = CompletableDeferred<Unit>()
-        val announced = CompletableDeferred<Unit>()
+        val invalidationApplied = CompletableDeferred<Unit>()
         val server = Server(
             serverInfo = Implementation("cache-server", "1.0"),
             options = ServerOptions(
@@ -124,7 +124,7 @@ class ResponseCacheTest {
             ),
         )
         client.setNotificationHandler<ToolListChangedNotification>(Method.Defined.NotificationsToolsListChanged) {
-            announced.complete(Unit)
+            invalidationApplied.complete(Unit)
             CompletableDeferred(Unit)
         }
         lateinit var session: ServerSession
@@ -158,7 +158,7 @@ class ResponseCacheTest {
         val inFlight = async { client.listTools() }
         withTimeout(5.seconds) { firstListingHeld.await() }
         session.sendToolListChanged()
-        withTimeout(5.seconds) { announced.await() }
+        withTimeout(5.seconds) { invalidationApplied.await() }
         releaseFirstListing.complete(Unit)
         inFlight.await().tools.single().name shouldBe "before-change"
 
