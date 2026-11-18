@@ -456,8 +456,6 @@ private suspend fun RoutingContext.mcpDualEraStreamableHttpEndpoint(
     val parsed = try {
         McpJson.parseToJsonElement(body)
     } catch (e: SerializationException) {
-        // A body that does not parse claims nothing, so the version header alone names its lifecycle.
-        // A handshake-era sender gets the legacy transport's answer: Accept and Content-Type first.
         if (call.request.headers[MCP_PROTOCOL_VERSION_HEADER] !in MODERN_PROTOCOL_VERSIONS) {
             mcpStatelessStreamableHttpEndpoint(configuration, block)
             return
