@@ -20,6 +20,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
+import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
@@ -265,9 +266,9 @@ private sealed interface FirstEvent {
  * The transport behind one request-scoped exchange.
  *
  * There is no session, no stream registry and no resumability to keep: one request goes in, its
- * notifications and then its response come out. A message that is neither is dropped, because the
- * revision requires every notification on a response stream to relate to its originating request and
- * there is no other stream to put one on.
+ * notifications and then its response come out. A request is refused rather than sent, because the
+ * revision forbids server-to-client requests on a response stream and there is no other stream to put
+ * one on.
  */
 private class SingleExchangeTransport(val requestId: RequestId) : AbstractTransport() {
 
@@ -281,6 +282,15 @@ private class SingleExchangeTransport(val requestId: RequestId) : AbstractTransp
         if (message.isFinal(requestId)) {
             outcome.complete(message)
             return
+        }
+        if (message is JSONRPCRequest) {
+            // Thrown rather than dropped, so the caller fails now instead of awaiting an answer
+            // until its timeout.
+            throw McpException(
+                code = RPCError.ErrorCode.METHOD_NOT_FOUND,
+                message = "${message.method} cannot be sent: the request-scoped lifecycle has no " +
+                    "server-to-client requests",
+            )
         }
         try {
             // Suspends rather than drops when the buffer fills: on this wire a notification the
