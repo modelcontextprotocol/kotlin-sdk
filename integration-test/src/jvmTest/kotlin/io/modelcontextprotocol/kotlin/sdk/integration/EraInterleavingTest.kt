@@ -10,6 +10,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.LATEST_MODERN_VERSION
@@ -23,12 +24,15 @@ import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import io.modelcontextprotocol.kotlin.sdk.types.serverInfo
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 
@@ -45,6 +49,9 @@ import kotlin.time.Duration.Companion.seconds
  */
 @OptIn(ExperimentalMcpApi::class)
 class EraInterleavingTest {
+
+    /** Completes once the `hang` tool's handler has been cancelled. */
+    private val hangCancelled = CompletableDeferred<Unit>()
 
     @Test
     fun `one connection answers a handshake request and a request-scoped request in turn`() = runBlocking {
@@ -81,10 +88,34 @@ class EraInterleavingTest {
         peer.close()
     }
 
+    @Test
+    fun `a request-scoped request is answered while an earlier one is still running`() = runBlocking {
+        val peer = connect()
+
+        peer.send(id = 1, method = "tools/call", envelope = LATEST_MODERN_VERSION, params = hangCall())
+        // Unrelated requests on one connection are independent: the second must not queue behind
+        // a handler that has not finished.
+        val listed = peer.call(id = 2, method = "tools/list", envelope = LATEST_MODERN_VERSION)
+
+        listed.id shouldBe RequestId.NumberId(2)
+        peer.close()
+    }
+
+    @Test
+    fun `a running request-scoped request is cancelled by notifications cancelled`() = runBlocking {
+        val peer = connect()
+
+        peer.send(id = 1, method = "tools/call", envelope = LATEST_MODERN_VERSION, params = hangCall())
+        peer.cancel(id = 1)
+
+        withTimeout(5.seconds) { hangCancelled.await() }
+        peer.close()
+    }
+
     /** A raw peer holding one connection to a server that logs while serving `echo`. */
     private class Peer(private val transport: ChannelTransport) {
         val notifications: MutableList<String> = mutableListOf()
-        private val pending = mutableMapOf<RequestId, CompletableDeferred<JSONRPCResponse>>()
+        private val pending = ConcurrentHashMap<RequestId, CompletableDeferred<JSONRPCResponse>>()
 
         suspend fun start() {
             transport.onMessage { message ->
@@ -101,13 +132,28 @@ class EraInterleavingTest {
             method: String,
             envelope: String?,
             params: JsonObject = buildJsonObject { },
-        ): JSONRPCResponse {
+        ): JSONRPCResponse = withTimeout(5.seconds) { send(id, method, envelope, params).await() }
+
+        /** Sends a request without waiting for its answer. */
+        suspend fun send(
+            id: Int,
+            method: String,
+            envelope: String?,
+            params: JsonObject = buildJsonObject { },
+        ): Deferred<JSONRPCResponse> {
             val requestId = RequestId.NumberId(id.toLong())
             val answer = CompletableDeferred<JSONRPCResponse>()
             pending[requestId] = answer
             transport.send(request(requestId, method, envelope, params))
-            return withTimeout(5.seconds) { answer.await() }
+            return answer
         }
+
+        suspend fun cancel(id: Int) = transport.send(
+            JSONRPCNotification(
+                method = "notifications/cancelled",
+                params = buildJsonObject { put("requestId", id) },
+            ),
+        )
 
         suspend fun close() = transport.close()
 
@@ -118,10 +164,13 @@ class EraInterleavingTest {
             params: JsonObject,
         ): JSONRPCMessage {
             val body = when (method) {
-                "tools/call" -> buildJsonObject {
-                    put("name", "echo")
-                    put("arguments", EmptyJsonObject)
-                }
+                // The echo tool, unless params name another.
+                "tools/call" -> JsonObject(
+                    buildJsonObject {
+                        put("name", "echo")
+                        put("arguments", EmptyJsonObject)
+                    } + params,
+                )
 
                 else -> params
             }
@@ -166,6 +215,17 @@ class EraInterleavingTest {
             )
             CallToolResult(content = listOf(TextContent("echoed")))
         }
+        server.addTool(
+            name = "hang",
+            description = "runs until cancelled",
+            inputSchema = ToolSchema(properties = EmptyJsonObject, required = null),
+        ) {
+            try {
+                awaitCancellation()
+            } finally {
+                hangCancelled.complete(Unit)
+            }
+        }
 
         val (clientTransport, serverTransport) = ChannelTransport.createLinkedPair()
         server.createSession(serverTransport)
@@ -173,4 +233,6 @@ class EraInterleavingTest {
     }
 
     private fun JSONRPCResponse.meta() = result.meta
+
+    private fun hangCall() = buildJsonObject { put("name", "hang") }
 }
