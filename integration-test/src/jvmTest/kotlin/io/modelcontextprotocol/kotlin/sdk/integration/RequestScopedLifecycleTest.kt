@@ -132,6 +132,33 @@ class RequestScopedLifecycleTest {
     }
 
     @Test
+    fun `discover is refused after a reconnect falls back to the handshake`() = runBlocking {
+        val client = Client(
+            clientInfo = clientInfo,
+            options = ClientOptions(versionNegotiation = VersionNegotiationMode.Auto),
+        )
+        val (modernClientSide, modernServerSide) = ChannelTransport.createLinkedPair()
+        Server(serverInfo, ServerOptions(capabilities = ServerCapabilities(tools = ServerCapabilities.Tools())))
+            .createSession(modernServerSide)
+        client.connect(modernClientSide)
+        client.discover().supportedVersions shouldContainExactly MODERN_PROTOCOL_VERSIONS
+        client.close()
+
+        // A server that predates discovery has no `server/discover` handler at all.
+        val (legacyClientSide, legacyServerSide) = ChannelTransport.createLinkedPair()
+        Server(serverInfo, ServerOptions(capabilities = ServerCapabilities(tools = ServerCapabilities.Tools())))
+            .createSession(legacyServerSide)
+            .removeRequestHandler(Method.Defined.ServerDiscover)
+        client.connect(legacyClientSide)
+        client.protocolVersion shouldBe LATEST_HANDSHAKE_VERSION
+
+        val error = assertFailsWith<McpException> { client.discover() }
+
+        error.code shouldBe RPCError.ErrorCode.METHOD_NOT_FOUND
+        client.close()
+    }
+
+    @Test
     fun `a method the revision removed is refused on a request-scoped connection`() = runBlocking {
         val client = connect(VersionNegotiationMode.Auto) { ok() }
 
