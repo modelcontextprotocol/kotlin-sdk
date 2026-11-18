@@ -31,7 +31,10 @@ import io.ktor.server.sse.ServerSSESession
 import io.ktor.server.sse.heartbeat
 import io.ktor.server.sse.sse
 import io.ktor.utils.io.KtorDsl
+import io.modelcontextprotocol.kotlin.sdk.InternalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
+import io.modelcontextprotocol.kotlin.sdk.types.MCP_PROTOCOL_VERSION_HEADER
+import io.modelcontextprotocol.kotlin.sdk.types.MODERN_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import kotlinx.coroutines.CompletableDeferred
@@ -430,6 +433,7 @@ private fun ServerSSESession.mcpSseTransport(
  * the reference SDKs do. The body is read once here — Ktor's request channel is single-use — and
  * handed to whichever leg serves it.
  */
+@OptIn(InternalMcpApi::class)
 private suspend fun RoutingContext.mcpDualEraStreamableHttpEndpoint(
     configuration: StreamableHttpServerTransport.Configuration,
     block: RoutingContext.() -> Server,
@@ -452,6 +456,12 @@ private suspend fun RoutingContext.mcpDualEraStreamableHttpEndpoint(
     val parsed = try {
         McpJson.parseToJsonElement(body)
     } catch (e: SerializationException) {
+        // A body that does not parse claims nothing, so the version header alone names its lifecycle.
+        // A handshake-era sender gets the legacy transport's answer: Accept and Content-Type first.
+        if (call.request.headers[MCP_PROTOCOL_VERSION_HEADER] !in MODERN_PROTOCOL_VERSIONS) {
+            mcpStatelessStreamableHttpEndpoint(configuration, block)
+            return
+        }
         logger.debug(e) { "Rejected an unparseable request body" }
         call.respondJsonRpcError(
             error = RPCError(code = RPCError.ErrorCode.PARSE_ERROR, message = "Parse error"),
