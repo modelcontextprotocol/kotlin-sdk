@@ -221,6 +221,7 @@ public data class ListResourcesResult(
     val resources: List<Resource>,
     override val nextCursor: String? = null,
     val resultType: String = COMPLETE_RESULT_TYPE,
+    @Serializable(with = TtlMsSerializer::class)
     override val ttlMs: Long = 0,
     override val cacheScope: CacheScope = CacheScope.Private,
     @SerialName("_meta")
@@ -298,6 +299,7 @@ public data class ReadResourceRequestParams(
 public data class ReadResourceResult(
     val contents: List<ResourceContents>,
     val resultType: String = COMPLETE_RESULT_TYPE,
+    @Serializable(with = TtlMsSerializer::class)
     override val ttlMs: Long = 0,
     override val cacheScope: CacheScope = CacheScope.Private,
     @SerialName("_meta")
@@ -450,6 +452,7 @@ public data class ListResourceTemplatesResult(
     val resourceTemplates: List<ResourceTemplate>,
     override val nextCursor: String? = null,
     val resultType: String = COMPLETE_RESULT_TYPE,
+    @Serializable(with = TtlMsSerializer::class)
     override val ttlMs: Long = 0,
     override val cacheScope: CacheScope = CacheScope.Private,
     @SerialName("_meta")
