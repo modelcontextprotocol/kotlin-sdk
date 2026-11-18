@@ -35,6 +35,8 @@ standardized protocol interface.
     * [Prompts](#prompts)
     * [Resources](#resources)
     * [Tools](#tools)
+      * [Tool results](#tool-results)
+        * [Error handling in tool handlers](#error-handling-in-tool-handlers)
     * [Completion](#completion)
     * [Logging](#logging)
     * [Pagination](#pagination)
@@ -461,6 +463,142 @@ server.addTool(
 Register as many tools as you need—long-running jobs can report progress via the request context, and tools can also
 trigger sampling (see below) when they need the client’s LLM. Set `listChanged = true` only if your tool catalog can
 change at runtime and your server will emit `notifications/tools/list_changed` when it does.
+
+##### Tool results
+
+`CallToolResult.content` is a list of content blocks, so a single result can mix text with other media. Besides
+`TextContent`, the SDK provides:
+
+* `ImageContent` and `AudioContent` — base64-encoded `data` plus a `mimeType`.
+* `EmbeddedResource` — wraps a `TextResourceContents` or `BlobResourceContents` that carries its own `uri` and
+  `mimeType`, so the client receives the resource inline instead of having to call `resources/read`.
+* `ResourceLink` — only a reference (`uri`, `name`); the client fetches the content separately if it needs it.
+
+<!--- INCLUDE
+import io.modelcontextprotocol.kotlin.sdk.server.Server
+import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
+import io.modelcontextprotocol.kotlin.sdk.types.AudioContent
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.types.EmbeddedResource
+import io.modelcontextprotocol.kotlin.sdk.types.ImageContent
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
+import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
+import kotlin.io.encoding.Base64
+
+// Stand-ins for your own code that produces binary data.
+fun renderChartPng(): ByteArray = byteArrayOf()
+fun synthesizeSpeechWav(): ByteArray = byteArrayOf()
+
+fun main() {
+    val server = Server(
+        serverInfo = Implementation(name = "example-server", version = "1.0.0"),
+        options = ServerOptions(
+            capabilities = ServerCapabilities(tools = ServerCapabilities.Tools()),
+        ),
+    )
+-->
+
+```kotlin
+// Image: base64-encode the raw bytes and set the MIME type.
+server.addTool(name = "chart", description = "Render a chart as a PNG image") {
+    CallToolResult(
+        content = listOf(
+            ImageContent(data = Base64.encode(renderChartPng()), mimeType = "image/png"),
+        ),
+    )
+}
+
+// Audio: the same shape as an image.
+server.addTool(name = "speak", description = "Read a text aloud") {
+    CallToolResult(
+        content = listOf(
+            AudioContent(data = Base64.encode(synthesizeSpeechWav()), mimeType = "audio/wav"),
+        ),
+    )
+}
+
+// Embedded resource: a text resource that travels inside the result.
+server.addTool(name = "read_config", description = "Return the current configuration") {
+    CallToolResult(
+        content = listOf(
+            TextContent(text = "Current configuration:"),
+            EmbeddedResource(
+                resource = TextResourceContents(
+                    text = """{"debug": false}""",
+                    uri = "config://app/settings.json",
+                    mimeType = "application/json",
+                ),
+            ),
+        ),
+    )
+}
+```
+
+<!--- SUFFIX
+}
+-->
+
+<!--- KNIT example-server-tools-02.kt -->
+
+Use `BlobResourceContents(blob = ..., uri = ..., mimeType = ...)` instead of `TextResourceContents` for binary
+resources; `blob` is base64-encoded as well.
+
+###### Error handling in tool handlers
+
+MCP distinguishes two kinds of failures:
+
+* **Tool execution errors** are returned as a normal result with `isError = true`. The model sees the message and can
+  correct its call, for example by retrying with different arguments.
+* **Protocol errors** are JSON-RPC errors, such as calling a tool that does not exist (`INVALID_PARAMS`).
+
+For failures the model can act on, return the error result yourself, so you control the message:
+
+<!--- INCLUDE
+import io.modelcontextprotocol.kotlin.sdk.server.Server
+import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
+import kotlinx.serialization.json.jsonPrimitive
+
+fun main() {
+    val server = Server(
+        serverInfo = Implementation(name = "example-server", version = "1.0.0"),
+        options = ServerOptions(
+            capabilities = ServerCapabilities(tools = ServerCapabilities.Tools()),
+        ),
+    )
+-->
+
+```kotlin
+server.addTool(name = "divide", description = "Divide a by b") { request ->
+    val a = request.arguments?.get("a")?.jsonPrimitive?.content?.toDoubleOrNull()
+    val b = request.arguments?.get("b")?.jsonPrimitive?.content?.toDoubleOrNull()
+
+    if (a == null || b == null || b == 0.0) {
+        return@addTool CallToolResult(
+            content = listOf(TextContent(text = "Provide numeric 'a' and a non-zero numeric 'b'.")),
+            isError = true,
+        )
+    }
+    CallToolResult(content = listOf(TextContent(text = (a / b).toString())))
+}
+```
+
+<!--- SUFFIX
+}
+-->
+
+<!--- KNIT example-server-tools-03.kt -->
+
+If a handler throws, the server does not fail the request. It catches the exception and replies with a result that has
+`isError = true` and the text `Error executing tool <name>: <exception message>`, and it logs the exception.
+Because the exception message reaches the client, don't let exceptions carry internal details you don't want to
+expose. `CancellationException` is rethrown, and `UrlElicitationRequiredException` is sent as a JSON-RPC error
+(`-32042`) rather than turned into an error result.
 
 #### Completion
 
