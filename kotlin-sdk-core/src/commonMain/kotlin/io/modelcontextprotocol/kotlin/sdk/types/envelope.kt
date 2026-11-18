@@ -95,7 +95,13 @@ public fun RequestEnvelope.toMeta(base: RequestMeta? = null): RequestMeta = Requ
  * message names the offending `_meta` key
  */
 @ExperimentalMcpApi
-public fun RequestMeta.toEnvelope(): RequestEnvelope = McpJson.decodeFromJsonElement(json)
+public fun RequestMeta.toEnvelope(): RequestEnvelope {
+    // McpJson is lenient and would read a number or boolean as a string, which validateEnvelope refuses.
+    if (PROTOCOL_VERSION_META_KEY in json && claimedProtocolVersion == null) {
+        throw SerializationException("$PROTOCOL_VERSION_META_KEY must be a JSON string")
+    }
+    return McpJson.decodeFromJsonElement(json)
+}
 
 /**
  * The protocol envelope carried by this metadata, or `null` when it is absent or not intact.
