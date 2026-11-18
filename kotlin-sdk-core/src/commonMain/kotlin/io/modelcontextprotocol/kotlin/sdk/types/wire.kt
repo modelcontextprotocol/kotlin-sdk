@@ -107,7 +107,7 @@ internal val RequestResult.resultTypeOrNull: String?
         is WireResult -> json.resultTypeString()
     }
 
-private fun JsonObject.resultTypeString(): String? = (this["resultType"] as? JsonPrimitive)
+internal fun JsonObject.resultTypeString(): String? = (this["resultType"] as? JsonPrimitive)
     ?.takeIf { it.isString }
     ?.content
 
