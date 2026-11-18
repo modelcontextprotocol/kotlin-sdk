@@ -33,9 +33,9 @@ public enum class CacheMode {
  * @property method the JSON-RPC method that produced the result
  * @property paramsKey the part of the request that changes the result — a URI for `resources/read`,
  * empty for the list methods, whose results depend on nothing else
- * @property partition the authorization context the result was fetched under, supplied by the
- * caller. A [CacheScope.Private] entry is never served across partitions; empty scopes it to this
- * client instance.
+ * @property partition the namespace the result was filed under, naming one server seen under one
+ * authorization context: [ClientOptions.cachePartition], or a value unique to the connection that
+ * fetched it when that is empty. No entry, [CacheScope.Private] or not, is served across partitions.
  */
 @ExperimentalMcpApi
 public data class CacheKey(val method: String, val paramsKey: String = "", val partition: String = "")
@@ -80,7 +80,8 @@ public const val MAX_CACHE_TTL_MS: Long = 24L * 60 * 60 * 1000
 /**
  * A [ResponseCacheStore] holding entries in memory for the lifetime of this instance.
  *
- * Unbounded, holding one entry per method-and-params combination the client has issued.
+ * Unbounded, holding one entry per method, params and partition the client has issued, entries
+ * filed by its earlier connections included.
  */
 @ExperimentalMcpApi
 public class InMemoryResponseCacheStore : ResponseCacheStore {
