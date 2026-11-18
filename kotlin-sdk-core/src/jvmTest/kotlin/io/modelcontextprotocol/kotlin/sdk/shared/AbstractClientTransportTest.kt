@@ -8,10 +8,14 @@ import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.modelcontextprotocol.kotlin.sdk.InternalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -137,6 +141,18 @@ class AbstractClientTransportTest {
     }
 
     @Test
+    fun `should answer a message received during initialization once OPERATIONAL`() = runTest {
+        val request = PingRequest().toJSON()
+        val response = JSONRPCResponse(request.id)
+        transport.onMessage { transport.send(response) }
+        transport.receiveDuringInitialize = request
+
+        transport.start()
+
+        transport.sentMessages shouldBe listOf(response)
+    }
+
+    @Test
     fun `should throw when sending before start`() = runTest {
         assertSendRejected()
     }
@@ -218,6 +234,7 @@ class AbstractClientTransportTest {
         var initializeFailure: Exception? = null
         var closeFailure: Exception? = null
         var sendFailure: Exception? = null
+        var receiveDuringInitialize: JSONRPCMessage? = null
 
         val currentState: ClientTransportState
             get() = state
@@ -225,6 +242,16 @@ class AbstractClientTransportTest {
         override suspend fun initialize() {
             initializeCalled = true
             initializeFailure?.let { throw it }
+            receiveDuringInitialize?.let { message ->
+                // A reader started by initialize(), as real transports do, delivering a message right away.
+                CoroutineScope(UnconfinedTestDispatcher()).launch {
+                    try {
+                        _onMessage(message)
+                    } catch (e: McpException) {
+                        _onError(e)
+                    }
+                }
+            }
         }
 
         override suspend fun performSend(message: JSONRPCMessage, options: TransportSendOptions?) {
