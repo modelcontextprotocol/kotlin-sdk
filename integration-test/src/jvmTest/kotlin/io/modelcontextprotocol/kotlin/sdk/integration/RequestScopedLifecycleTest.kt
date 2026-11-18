@@ -144,7 +144,6 @@ class RequestScopedLifecycleTest {
         client.discover().supportedVersions shouldContainExactly MODERN_PROTOCOL_VERSIONS
         client.close()
 
-        // A server that predates discovery has no `server/discover` handler at all.
         val (legacyClientSide, legacyServerSide) = ChannelTransport.createLinkedPair()
         Server(serverInfo, ServerOptions(capabilities = ServerCapabilities(tools = ServerCapabilities.Tools())))
             .createSession(legacyServerSide)
