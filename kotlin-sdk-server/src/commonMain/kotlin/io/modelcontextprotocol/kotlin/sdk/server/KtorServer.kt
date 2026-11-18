@@ -433,7 +433,6 @@ private fun ServerSSESession.mcpSseTransport(
  * the reference SDKs do. The body is read once here — Ktor's request channel is single-use — and
  * handed to whichever leg serves it.
  */
-@OptIn(InternalMcpApi::class)
 private suspend fun RoutingContext.mcpDualEraStreamableHttpEndpoint(
     configuration: StreamableHttpServerTransport.Configuration,
     block: RoutingContext.() -> Server,
@@ -456,7 +455,7 @@ private suspend fun RoutingContext.mcpDualEraStreamableHttpEndpoint(
     val parsed = try {
         McpJson.parseToJsonElement(body)
     } catch (e: SerializationException) {
-        if (call.request.headers[MCP_PROTOCOL_VERSION_HEADER] !in MODERN_PROTOCOL_VERSIONS) {
+        if (call.claimsLegacyLifecycle()) {
             mcpStatelessStreamableHttpEndpoint(configuration, block)
             return
         }
@@ -482,6 +481,10 @@ private suspend fun RoutingContext.mcpDualEraStreamableHttpEndpoint(
         )
     }
 }
+
+@OptIn(InternalMcpApi::class)
+private fun ApplicationCall.claimsLegacyLifecycle(): Boolean =
+    request.headers[MCP_PROTOCOL_VERSION_HEADER] !in MODERN_PROTOCOL_VERSIONS
 
 private suspend fun RoutingContext.mcpStatelessStreamableHttpEndpoint(
     configuration: StreamableHttpServerTransport.Configuration,
