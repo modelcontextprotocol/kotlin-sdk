@@ -369,7 +369,6 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
         val extra = currentRequestHandlerExtra()
             // Outside a handler there is no request to have opted in, so nothing is deliverable on
             // the request-scoped lifecycle and the connection-scoped filter applies on the other.
-            // Only the handshake puts a connection on the other, so one without it gets nothing.
             ?: return session.protocolVersion != null && acceptedByLevelSetting(level)
         if (level !in allowedLogLevels(extra.protocolVersion, extra.meta)) return false
         return acceptedByLevelSetting(level)

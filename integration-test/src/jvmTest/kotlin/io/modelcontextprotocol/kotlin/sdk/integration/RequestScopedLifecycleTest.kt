@@ -58,7 +58,6 @@ class RequestScopedLifecycleTest {
 
     private val clientCapabilities = ClientCapabilities(roots = ClientCapabilities.Roots())
 
-    /** The server side of the connection [connect] opened. */
     private lateinit var session: ServerSession
 
     @Test
@@ -211,7 +210,6 @@ class RequestScopedLifecycleTest {
         client.callTool("echo", emptyMap())
 
         session.sendLoggingMessage(log(LoggingLevel.Error))
-        // Answered after the log was sent, over one ordered stream: a delivered log arrives first.
         client.callTool("echo", emptyMap())
 
         logs.shouldContainExactly()
