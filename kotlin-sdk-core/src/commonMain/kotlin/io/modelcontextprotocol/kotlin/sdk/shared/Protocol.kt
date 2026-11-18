@@ -553,7 +553,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     }
 
     private suspend fun dispatchRequest(connection: Connection, request: JSONRPCRequest) {
-        if (!connection.concurrentDispatchEnabled.value && eraOf(request.requestMeta()) == ProtocolEra.Legacy) {
+        if (isInHandshakeSerialPhase(connection, request)) {
             // Serial phase (before the peer completes MCP initialization): inline, in arrival
             // order — the delivering coroutine awaits the handler.
             onRequest(request, connection, trackCancellation = false)
@@ -583,6 +583,9 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             }
         }
     }
+
+    private fun isInHandshakeSerialPhase(connection: Connection, request: JSONRPCRequest): Boolean =
+        !connection.concurrentDispatchEnabled.value && eraOf(request.requestMeta()) == ProtocolEra.Legacy
 
     private suspend fun dispatchNotification(connection: Connection, notification: JSONRPCNotification) {
         if (notification.method == Method.Defined.NotificationsInitialized.value) {
