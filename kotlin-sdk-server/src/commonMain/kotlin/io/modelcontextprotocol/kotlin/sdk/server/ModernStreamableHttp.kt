@@ -186,9 +186,9 @@ private suspend fun ApplicationCall.respondModern(transport: SingleExchangeTrans
         val buffered = transport.notifications.tryReceive().getOrNull()
         if (buffered == null) {
             respondText(
-                text = McpJson.encodeToString(first.message),
+                text = McpJson.encodeToString(first.answer.message),
                 contentType = ContentType.Application.Json,
-                status = statusOf(first.message, byHandler = transport.answeredByHandler),
+                status = statusOf(first.answer),
             )
             return
         }
@@ -212,7 +212,7 @@ private suspend fun ApplicationCall.commitSse(transport: SingleExchangeTransport
                 select<JSONRPCMessage?> {
                     // Same bias as above: drain what the handler emitted before ending the stream.
                     transport.notifications.onReceive { it }
-                    transport.outcome.onAwait { it }
+                    transport.outcome.onAwait { it.message }
                 }
             }
             when {
@@ -239,25 +239,27 @@ private fun JSONRPCMessage.isFinal(requestId: RequestId): Boolean = when (this) 
 }
 
 /**
- * The HTTP status [message] travels on.
+ * The HTTP status [answer] travels on.
  *
  * A refusal made before any handler ran takes the status [HTTP_STATUS_BY_ERROR_CODE] gives its code,
  * which is how a method this server does not implement answers `404`. An error a handler raised is
  * the payload and travels on `200`, except a missing client capability, which the revision answers
  * `400` wherever it surfaces.
  */
-private fun statusOf(message: JSONRPCMessage, byHandler: Boolean): HttpStatusCode {
-    val code = (message as? JSONRPCError)?.error?.code ?: return HttpStatusCode.OK
-    if (byHandler && code != RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY) return HttpStatusCode.OK
+private fun statusOf(answer: Answer): HttpStatusCode {
+    val code = (answer.message as? JSONRPCError)?.error?.code ?: return HttpStatusCode.OK
+    if (answer.byHandler && code != RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY) return HttpStatusCode.OK
     return HTTP_STATUS_BY_ERROR_CODE[code] ?: HttpStatusCode.OK
 }
 
 private fun sseEvent(message: JSONRPCMessage): String = "data: ${McpJson.encodeToString(message)}\n\n"
 
+private data class Answer(val message: JSONRPCMessage, val byHandler: Boolean)
+
 /** What ended the deferral window. */
 private sealed interface FirstEvent {
     /** The handler answered. */
-    data class Answered(val message: JSONRPCMessage) : FirstEvent
+    data class Answered(val answer: Answer) : FirstEvent
 
     /** The handler emitted a notification before answering. */
     data class Emitted(val message: JSONRPCMessage) : FirstEvent
@@ -276,19 +278,15 @@ private sealed interface FirstEvent {
  */
 private class SingleExchangeTransport(val requestId: RequestId) : AbstractTransport() {
 
-    val outcome: CompletableDeferred<JSONRPCMessage> = CompletableDeferred()
+    val outcome: CompletableDeferred<Answer> = CompletableDeferred()
 
     val notifications: Channel<JSONRPCMessage> = Channel(Channel.BUFFERED)
-
-    var answeredByHandler: Boolean = false
-        private set
 
     override suspend fun start() = Unit
 
     override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
         if (message.isFinal(requestId)) {
-            answeredByHandler = currentRequestHandlerExtra() != null
-            outcome.complete(message)
+            outcome.complete(Answer(message, byHandler = currentRequestHandlerExtra() != null))
             return
         }
         try {
@@ -308,7 +306,7 @@ private class SingleExchangeTransport(val requestId: RequestId) : AbstractTransp
     }
 
     /** The answer to this exchange, or `null` while there is none yet. */
-    fun answered(): JSONRPCMessage? = if (outcome.isCompleted && !outcome.isCancelled) outcome.getCompleted() else null
+    fun answered(): Answer? = if (outcome.isCompleted && !outcome.isCancelled) outcome.getCompleted() else null
 
     /** Hands [message] to the session and returns once it has been answered. */
     suspend fun deliver(message: JSONRPCMessage) {
