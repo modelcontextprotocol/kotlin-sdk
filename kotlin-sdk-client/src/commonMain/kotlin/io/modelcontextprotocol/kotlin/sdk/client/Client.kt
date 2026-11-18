@@ -218,6 +218,9 @@ public open class Client(private val clientInfo: Implementation, options: Client
     @OptIn(ExperimentalMcpApi::class)
     private val cachePartition: String = options.cachePartition
 
+    /** How many times a notification has staled each method's cached results. */
+    private val cacheInvalidations = atomic(persistentMapOf<String, Int>())
+
     private val roots = atomic(persistentMapOf<String, Root>())
 
     private val _protocolVersion: AtomicRef<String?> = atomic(null)
@@ -496,9 +499,12 @@ public open class Client(private val clientInfo: Implementation, options: Client
                 return it.result as T
             }
         }
+        val invalidations = cacheInvalidations.value[method]
         val fresh = fetch()
         if (fresh is CacheableResult) {
             store.put(key, CacheEntry(result = fresh, expiresAt = fresh.expiryFrom(), cacheScope = fresh.cacheScope))
+            // A notification that arrived while the request was in flight stales what it answered.
+            if (cacheInvalidations.value[method] != invalidations) store.invalidate(method)
         }
         return fresh
     }
@@ -512,7 +518,10 @@ public open class Client(private val clientInfo: Implementation, options: Client
     @OptIn(ExperimentalMcpApi::class)
     final override suspend fun onNotificationRouted(notification: JSONRPCNotification) {
         val store = responseCache ?: return
-        CACHE_INVALIDATING_NOTIFICATIONS[notification.method]?.forEach { store.invalidate(it) }
+        CACHE_INVALIDATING_NOTIFICATIONS[notification.method]?.forEach { method ->
+            cacheInvalidations.update { it.putting(method, (it[method] ?: 0) + 1) }
+            store.invalidate(method)
+        }
     }
 
     /** This client's protocol envelope for a request made under [version]. */
