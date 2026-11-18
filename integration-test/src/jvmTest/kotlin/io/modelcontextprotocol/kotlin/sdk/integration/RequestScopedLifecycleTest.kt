@@ -16,6 +16,9 @@ import io.modelcontextprotocol.kotlin.sdk.testing.ChannelTransport
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
+import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.LATEST_HANDSHAKE_VERSION
@@ -27,6 +30,8 @@ import io.modelcontextprotocol.kotlin.sdk.types.MODERN_PROTOCOL_VERSIONS
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
+import io.modelcontextprotocol.kotlin.sdk.types.Role
+import io.modelcontextprotocol.kotlin.sdk.types.SamplingMessage
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.SubscribeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.SubscribeRequestParams
@@ -162,6 +167,39 @@ class RequestScopedLifecycleTest {
     }
 
     @Test
+    fun `a server request the revision removed is refused as removed even without the capability`() = runBlocking {
+        val codes = CompletableDeferred<List<Int?>>()
+        val client = connect(VersionNegotiationMode.Auto, capabilities = ClientCapabilities()) {
+            codes.complete(
+                listOf(
+                    refusalCode { listRoots() },
+                    refusalCode {
+                        createMessage(
+                            CreateMessageRequest(
+                                CreateMessageRequestParams(
+                                    maxTokens = 1,
+                                    messages = listOf(SamplingMessage(Role.User, TextContent("hi"))),
+                                ),
+                            ),
+                        )
+                    },
+                    refusalCode {
+                        createElicitation("confirm?", ElicitRequestParams.RequestedSchema(properties = emptyMap()))
+                    },
+                ),
+            )
+            ok()
+        }
+
+        client.callTool("echo", emptyMap())
+
+        // Declaring the capability cannot make a removed method available, so naming it as missing
+        // would send the author after a fix that does not exist.
+        codes.await() shouldBe List(3) { RPCError.ErrorCode.METHOD_NOT_FOUND }
+        client.close()
+    }
+
+    @Test
     fun `a request-scoped request that did not opt in receives no log notifications`() = runBlocking {
         val logs = mutableListOf<LoggingLevel>()
         val client = connect(VersionNegotiationMode.Auto, onLog = { logs += it }) {
@@ -198,6 +236,10 @@ class RequestScopedLifecycleTest {
 
     private fun ok() = CallToolResult(content = listOf(TextContent("ok")))
 
+    /** The code of the [McpException] [block] fails with, or `null` when it fails otherwise or not at all. */
+    private suspend fun refusalCode(block: suspend () -> Unit): Int? =
+        (runCatching { block() }.exceptionOrNull() as? McpException)?.code
+
     private fun log(level: LoggingLevel) = LoggingMessageNotification(
         LoggingMessageNotificationParams(level = level, data = JsonPrimitive("entry")),
     )
@@ -210,6 +252,7 @@ class RequestScopedLifecycleTest {
         negotiation: VersionNegotiationMode,
         logLevel: LoggingLevel? = null,
         onLog: (LoggingLevel) -> Unit = {},
+        capabilities: ClientCapabilities = clientCapabilities,
         handler: suspend ClientConnection.(CallToolRequest) -> CallToolResult,
     ): Client {
         val server = Server(
@@ -232,7 +275,7 @@ class RequestScopedLifecycleTest {
         val client = Client(
             clientInfo = clientInfo,
             options = ClientOptions(
-                capabilities = clientCapabilities,
+                capabilities = capabilities,
                 versionNegotiation = negotiation,
                 logLevel = logLevel,
             ),
