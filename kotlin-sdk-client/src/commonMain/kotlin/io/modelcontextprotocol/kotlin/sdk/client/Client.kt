@@ -500,8 +500,9 @@ public open class Client(private val clientInfo: Implementation, options: Client
         }
         val invalidationsBeforeFetch = invalidationCountByMethod.value[method]
         val fresh = fetch()
-        if (fresh is CacheableResult) {
+        if (fresh is CacheableResult && invalidationCountByMethod.value[method] == invalidationsBeforeFetch) {
             store.put(key, CacheEntry(result = fresh, expiresAt = fresh.expiryFrom(), cacheScope = fresh.cacheScope))
+            // A notification can land between the check above and the put.
             if (invalidationCountByMethod.value[method] != invalidationsBeforeFetch) store.invalidate(method)
         }
         return fresh
