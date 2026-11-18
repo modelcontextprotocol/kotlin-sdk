@@ -34,10 +34,9 @@ private val REQUEST_SCOPED_RESULT_KEYS: Set<String> = setOf("resultType", "ttlMs
 /**
  * Renders an encoded result for the lifecycle it is being sent under.
  *
- * On [ProtocolEra.Legacy] the request-scoped fields are removed. On [ProtocolEra.Modern] a result
- * that declares no `resultType` is sent as [COMPLETE_RESULT_TYPE], and the server identifies itself
- * in `_meta`, unless [serverInfo] is `null` or the result already names one — an identity a handler
- * wrote wins over the automatic one.
+ * On [ProtocolEra.Legacy] the request-scoped fields are removed. On [ProtocolEra.Modern] the server
+ * identifies itself in `_meta`, unless [serverInfo] is `null` or the result already names one — an
+ * identity a handler wrote wins over the automatic one.
  */
 internal fun encodeOutboundResult(era: ProtocolEra, json: JsonObject, serverInfo: Implementation?): JsonObject =
     when (era) {
