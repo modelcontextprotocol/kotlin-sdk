@@ -41,10 +41,10 @@ private val REQUEST_SCOPED_RESULT_KEYS: Set<String> = setOf("resultType", "ttlMs
 internal fun encodeOutboundResult(era: ProtocolEra, json: JsonObject, serverInfo: Implementation?): JsonObject =
     when (era) {
         ProtocolEra.Legacy -> JsonObject(json.filterKeys { it !in REQUEST_SCOPED_RESULT_KEYS })
-        ProtocolEra.Modern -> json.withResultType().withServerInfoStamp(serverInfo)
+        ProtocolEra.Modern -> json.withDefaultResultType().withServerInfoStamp(serverInfo)
     }
 
-private fun JsonObject.withResultType(): JsonObject =
+private fun JsonObject.withDefaultResultType(): JsonObject =
     if ("resultType" in this) this else JsonObject(this + ("resultType" to JsonPrimitive(COMPLETE_RESULT_TYPE)))
 
 private fun JsonObject.withServerInfoStamp(serverInfo: Implementation?): JsonObject {
