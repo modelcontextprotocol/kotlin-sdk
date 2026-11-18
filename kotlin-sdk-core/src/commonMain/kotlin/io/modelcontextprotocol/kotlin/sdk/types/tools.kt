@@ -311,6 +311,7 @@ public data class ListToolsResult(
     val tools: List<Tool>,
     override val nextCursor: String? = null,
     val resultType: String = COMPLETE_RESULT_TYPE,
+    @Serializable(with = TtlMsSerializer::class)
     override val ttlMs: Long = 0,
     override val cacheScope: CacheScope = CacheScope.Private,
     @SerialName("_meta")
