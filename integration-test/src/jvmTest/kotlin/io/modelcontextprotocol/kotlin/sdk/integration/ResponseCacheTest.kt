@@ -187,11 +187,10 @@ class ResponseCacheTest {
     @Test
     fun `a private entry is not served to another client sharing the store`() = runBlocking {
         val store = InMemoryResponseCacheStore()
-        val server = cacheServer()
         val alice = cachingClient(store)
         val bob = cachingClient(store)
-        connectSession(alice, server, tool = "alice-private", scope = CacheScope.Private)
-        connectSession(bob, server, tool = "bob-private", scope = CacheScope.Private)
+        connectSession(alice, cacheServer(), tool = "alice-private", scope = CacheScope.Private)
+        connectSession(bob, cacheServer(), tool = "bob-private", scope = CacheScope.Private)
 
         alice.listTools().tools.single().name shouldBe "alice-private"
         bob.listTools().tools.single().name shouldBe "bob-private"
@@ -215,12 +214,11 @@ class ResponseCacheTest {
     @Test
     fun `clients configured with the same partition share entries`() = runBlocking {
         val store = InMemoryResponseCacheStore()
-        val server = cacheServer()
         val listCalls = AtomicInteger()
         val first = cachingClient(store, partition = "cache-server/alice")
         val second = cachingClient(store, partition = "cache-server/alice")
-        connectSession(first, server, tool = "echo", scope = CacheScope.Private, listCalls = listCalls)
-        connectSession(second, server, tool = "echo", scope = CacheScope.Private, listCalls = listCalls)
+        connectSession(first, cacheServer(), tool = "echo", scope = CacheScope.Private, listCalls = listCalls)
+        connectSession(second, cacheServer(), tool = "echo", scope = CacheScope.Private, listCalls = listCalls)
 
         first.listTools()
         second.listTools()
