@@ -29,12 +29,10 @@ class ProtocolVersionsTest {
 
     @Test
     fun `the deprecated list should keep its handshake-only newest-first value`() {
-        // Callers read first() as the preferred version and validate initialize against this list.
         @Suppress("DEPRECATION")
         val deprecated = SUPPORTED_PROTOCOL_VERSIONS
 
         deprecated shouldContainExactly listOf("2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05")
-        // What the IDE writes when it applies the deprecation's ReplaceWith.
         HANDSHAKE_PROTOCOL_VERSIONS.reversed() shouldContainExactly deprecated
     }
 
