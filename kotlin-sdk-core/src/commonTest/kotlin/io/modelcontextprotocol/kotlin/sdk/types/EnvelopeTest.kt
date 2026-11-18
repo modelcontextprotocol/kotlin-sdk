@@ -161,6 +161,9 @@ class EnvelopeTest {
         val illTyped = listOf(
             PROTOCOL_VERSION_META_KEY to "{}",
             PROTOCOL_VERSION_META_KEY to "null",
+            // McpJson is lenient, so these would read as strings unless refused explicitly.
+            PROTOCOL_VERSION_META_KEY to "20260728",
+            PROTOCOL_VERSION_META_KEY to "true",
             CLIENT_INFO_META_KEY to "\"not-an-implementation\"",
             CLIENT_CAPABILITIES_META_KEY to "\"not-capabilities\"",
             CLIENT_CAPABILITIES_META_KEY to "[]",
