@@ -2,6 +2,8 @@ package io.modelcontextprotocol.kotlin.sdk.integration
 
 import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
+import io.modelcontextprotocol.kotlin.sdk.client.CacheEntry
+import io.modelcontextprotocol.kotlin.sdk.client.CacheKey
 import io.modelcontextprotocol.kotlin.sdk.client.CacheMode
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.ClientOptions
@@ -30,7 +32,9 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.Test
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.ExperimentalTime
 
 /**
  * The client-side response cache (SEP-2549, revision 2026-07-28): what it reuses, what it refuses to
@@ -40,7 +44,7 @@ import kotlin.time.Duration.Companion.seconds
  * server's `tools/list` handler ran: the round trip either happened or it did not, and that count is
  * the only honest witness to which.
  */
-@OptIn(ExperimentalMcpApi::class)
+@OptIn(ExperimentalMcpApi::class, ExperimentalTime::class)
 class ResponseCacheTest {
 
     @Test
@@ -164,6 +168,76 @@ class ResponseCacheTest {
         inFlight.await().tools.single().name shouldBe "before-change"
 
         client.listTools().tools.single().name shouldBe "after-change"
+        client.close()
+    }
+
+    @Test
+    fun `a listing that lands after the change leaves other partitions cached`() = runBlocking {
+        val store = InMemoryResponseCacheStore()
+        val otherPartition = CacheKey(method = Method.Defined.ToolsList.value, partition = "other-client")
+        val listCalls = AtomicInteger()
+        val firstListingHeld = CompletableDeferred<Unit>()
+        val releaseFirstListing = CompletableDeferred<Unit>()
+        val invalidationApplied = CompletableDeferred<Unit>()
+        val server = Server(
+            serverInfo = Implementation("cache-server", "1.0"),
+            options = ServerOptions(
+                capabilities = ServerCapabilities(tools = ServerCapabilities.Tools(listChanged = true)),
+            ),
+        )
+        val client = Client(
+            clientInfo = Implementation("cache-client", "1.0"),
+            options = ClientOptions(
+                versionNegotiation = VersionNegotiationMode.Auto,
+                responseCache = store,
+            ),
+        )
+        client.setNotificationHandler<ToolListChangedNotification>(Method.Defined.NotificationsToolsListChanged) {
+            invalidationApplied.complete(Unit)
+            CompletableDeferred(Unit)
+        }
+        lateinit var session: ServerSession
+        val (clientTransport, serverTransport) = ChannelTransport.createLinkedPair()
+        runBlocking {
+            launch {
+                session = server.createSession(serverTransport)
+                session.setRequestHandler<ListToolsRequest>(Method.Defined.ToolsList) { _, _ ->
+                    val call = listCalls.incrementAndGet()
+                    if (call == 1) {
+                        firstListingHeld.complete(Unit)
+                        releaseFirstListing.await()
+                    }
+                    val name = if (call == 1) "before-change" else "after-change"
+                    ListToolsResult(
+                        tools = listOf(
+                            Tool(
+                                name = name,
+                                description = "the $name tool",
+                                inputSchema = ToolSchema(properties = EmptyJsonObject, required = null),
+                            ),
+                        ),
+                        ttlMs = 60_000,
+                        cacheScope = CacheScope.Private,
+                    )
+                }
+            }
+            launch { client.connect(clientTransport) }
+        }
+
+        val inFlight = async { client.listTools() }
+        withTimeout(5.seconds) { firstListingHeld.await() }
+        session.sendToolListChanged()
+        withTimeout(5.seconds) { invalidationApplied.await() }
+        val otherEntry = CacheEntry(
+            result = ListToolsResult(tools = emptyList()),
+            expiresAt = Clock.System.now() + 60.seconds,
+            cacheScope = CacheScope.Private,
+        )
+        store.put(otherPartition, otherEntry)
+        releaseFirstListing.complete(Unit)
+        inFlight.await().tools.single().name shouldBe "before-change"
+
+        store.get(otherPartition) shouldBe otherEntry
         client.close()
     }
 
