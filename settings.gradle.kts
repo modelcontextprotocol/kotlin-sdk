@@ -2,6 +2,7 @@ rootProject.name = "kotlin-sdk"
 
 pluginManagement {
     repositories {
+        google()
         mavenCentral()
         gradlePluginPortal()
     }
@@ -14,6 +15,15 @@ pluginManagement {
 dependencyResolutionManagement {
     repositories {
         mavenCentral()
+        google {
+            content {
+                includeGroupByRegex("com\\.android\\.tools(\\..*)?")
+                includeGroup("androidx.annotation")
+                includeGroupByRegex("androidx\\.test(\\..*)?")
+                includeGroup("androidx.tracing")
+                includeGroup("com.google.testing.platform")
+            }
+        }
     }
 }
 
