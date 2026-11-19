@@ -73,6 +73,7 @@ See [How to Write a Git Commit Message](https://chris.beams.io/posts/git-commit/
 
 * To build MCP Kotlin SDK, JDK version 21 or higher is required. Make sure this is your default JDK (`JAVA_HOME` is set
   accordingly)
+* Install Android SDK Platform 35 to build the Android variants, including during a full `assemble` or `build`.
 * The project can be opened in IntelliJ IDEA without additional prerequisites.
 
 ### Building MCP Kotlin SDK from source
@@ -80,6 +81,17 @@ See [How to Write a Git Commit Message](https://chris.beams.io/posts/git-commit/
 * Run `./gradlew assemble` to build the project and produce the corresponding artifacts.
 * Run `./gradlew test` to test the module and speed up development.
 * Run `./gradlew build` to build the project, which also runs all the tests.
+
+### Android client device test
+
+With an API 28 or newer device or emulator connected through ADB, run the Streamable HTTP device test explicitly.
+
+```shell
+./gradlew :kotlin-sdk-client:connectedAndroidDeviceTest -PandroidDeviceTests=true
+```
+
+On Windows, use `gradlew.bat`. The test starts its own loopback HTTPS fixture. The standard
+`check` and `build` do not require an Android device.
 
 ## Contacting maintainers
 
