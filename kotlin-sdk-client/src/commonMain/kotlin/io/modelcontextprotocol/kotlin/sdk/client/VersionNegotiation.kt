@@ -10,6 +10,8 @@ import io.modelcontextprotocol.kotlin.sdk.types.UnsupportedProtocolVersionData
 import io.modelcontextprotocol.kotlin.sdk.types.isModernProtocolVersion
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * How a client settles which protocol lifecycle it speaks with a server.
@@ -29,7 +31,8 @@ public sealed interface VersionNegotiationMode {
 
     /**
      * Probe `server/discover`, and fall back to the handshake unless the answer is positive
-     * evidence of the request-scoped lifecycle.
+     * evidence of the request-scoped lifecycle. Over stdio, a server that has not answered the
+     * probe within ten seconds is taken to predate discovery.
      *
      * Anything not recognized as such evidence falls back, so a server that has never heard of
      * discovery still connects, at the cost of one extra round trip.
@@ -51,6 +54,8 @@ public sealed interface VersionNegotiationMode {
         }
     }
 }
+
+internal val STDIO_PROBE_TIMEOUT: Duration = 10.seconds
 
 /** What a `server/discover` probe came back as, normalized for [classifyProbeOutcome]. */
 internal sealed interface ProbeOutcome {
