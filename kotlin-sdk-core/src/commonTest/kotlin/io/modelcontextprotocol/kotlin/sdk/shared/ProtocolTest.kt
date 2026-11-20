@@ -1,5 +1,6 @@
 package io.modelcontextprotocol.kotlin.sdk.shared
 
+import io.kotest.assertions.json.shouldEqualJson
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -7,14 +8,17 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.matchers.types.shouldBeSameInstanceAs
+import io.modelcontextprotocol.kotlin.sdk.types.CLIENT_CAPABILITIES_META_KEY
 import io.modelcontextprotocol.kotlin.sdk.types.CustomRequest
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
+import io.modelcontextprotocol.kotlin.sdk.types.LATEST_MODERN_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.Method
+import io.modelcontextprotocol.kotlin.sdk.types.PROTOCOL_VERSION_META_KEY
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ProgressNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ProgressNotificationParams
@@ -241,6 +245,28 @@ class ProtocolTest {
 
         protocol.responseHandlers shouldBe emptyMap()
         protocol.progressHandlers shouldBe emptyMap()
+    }
+
+    @Test
+    fun `an explicit empty result declares itself complete on a request-scoped request`() = runTest {
+        val (protocol, transport) = connectedProtocol()
+        protocol.fallbackRequestHandler = { _, _ -> EmptyResult() }
+
+        transport.deliver(
+            JSONRPCRequest(
+                id = RequestId(1L),
+                method = "custom/acknowledge",
+                params = buildJsonObject {
+                    putJsonObject("_meta") {
+                        put(PROTOCOL_VERSION_META_KEY, LATEST_MODERN_VERSION)
+                        putJsonObject(CLIENT_CAPABILITIES_META_KEY) {}
+                    }
+                },
+            ),
+        )
+
+        val response = responsesOn(transport).single()
+        McpJson.encodeToString(response.result) shouldEqualJson """{"resultType": "complete"}"""
     }
 
     @Test
