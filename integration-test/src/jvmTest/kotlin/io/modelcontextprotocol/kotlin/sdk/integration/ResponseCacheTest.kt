@@ -6,6 +6,7 @@ import io.modelcontextprotocol.kotlin.sdk.client.CacheMode
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.ClientOptions
 import io.modelcontextprotocol.kotlin.sdk.client.InMemoryResponseCacheStore
+import io.modelcontextprotocol.kotlin.sdk.client.ResponseCacheStore
 import io.modelcontextprotocol.kotlin.sdk.client.VersionNegotiationMode
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
@@ -169,7 +170,111 @@ class ResponseCacheTest {
         fixture.client.close()
     }
 
+    @Test
+    fun `clients sharing a store each get their own server's listing`() = runBlocking {
+        val store = InMemoryResponseCacheStore()
+        val alphaClient = cachingClient(store)
+        val bravoClient = cachingClient(store)
+        connectSession(alphaClient, cacheServer("alpha-server"), tool = "alpha", scope = CacheScope.Public)
+        connectSession(bravoClient, cacheServer("bravo-server"), tool = "bravo", scope = CacheScope.Public)
+
+        alphaClient.listTools().tools.single().name shouldBe "alpha"
+        bravoClient.listTools().tools.single().name shouldBe "bravo"
+        alphaClient.close()
+        bravoClient.close()
+    }
+
+    @Test
+    fun `a private entry is not served to another client sharing the store`() = runBlocking {
+        val store = InMemoryResponseCacheStore()
+        val alice = cachingClient(store)
+        val bob = cachingClient(store)
+        connectSession(alice, cacheServer(), tool = "alice-private", scope = CacheScope.Private)
+        connectSession(bob, cacheServer(), tool = "bob-private", scope = CacheScope.Private)
+
+        alice.listTools().tools.single().name shouldBe "alice-private"
+        bob.listTools().tools.single().name shouldBe "bob-private"
+        alice.close()
+        bob.close()
+    }
+
+    @Test
+    fun `a reconnect to another server does not serve the previous server's listing`() = runBlocking {
+        val client = cachingClient(InMemoryResponseCacheStore())
+
+        connectSession(client, cacheServer("first-server"), tool = "first", scope = CacheScope.Public)
+        client.listTools().tools.single().name shouldBe "first"
+        client.close()
+        connectSession(client, cacheServer("second-server"), tool = "second", scope = CacheScope.Public)
+
+        client.listTools().tools.single().name shouldBe "second"
+        client.close()
+    }
+
+    @Test
+    fun `clients configured with the same partition share entries`() = runBlocking {
+        val store = InMemoryResponseCacheStore()
+        val listCalls = AtomicInteger()
+        val first = cachingClient(store, partition = "cache-server/alice")
+        val second = cachingClient(store, partition = "cache-server/alice")
+        connectSession(first, cacheServer(), tool = "echo", scope = CacheScope.Private, listCalls = listCalls)
+        connectSession(second, cacheServer(), tool = "echo", scope = CacheScope.Private, listCalls = listCalls)
+
+        first.listTools()
+        second.listTools()
+
+        listCalls.get() shouldBe 1
+        first.close()
+        second.close()
+    }
+
     private class Fixture(val server: Server, val client: Client, val listCalls: AtomicInteger)
+
+    private fun cacheServer(name: String = "cache-server") = Server(
+        serverInfo = Implementation(name, "1.0"),
+        options = ServerOptions(
+            capabilities = ServerCapabilities(tools = ServerCapabilities.Tools(listChanged = true)),
+        ),
+    )
+
+    private fun cachingClient(store: ResponseCacheStore, partition: String = "") = Client(
+        clientInfo = Implementation("cache-client", "1.0"),
+        options = ClientOptions(
+            versionNegotiation = VersionNegotiationMode.Auto,
+            responseCache = store,
+            cachePartition = partition,
+        ),
+    )
+
+    private suspend fun connectSession(
+        client: Client,
+        server: Server,
+        tool: String,
+        scope: CacheScope,
+        listCalls: AtomicInteger = AtomicInteger(),
+    ) {
+        val (clientTransport, serverTransport) = ChannelTransport.createLinkedPair()
+        runBlocking {
+            launch {
+                val session = server.createSession(serverTransport)
+                session.setRequestHandler<ListToolsRequest>(Method.Defined.ToolsList) { _, _ ->
+                    listCalls.incrementAndGet()
+                    ListToolsResult(
+                        tools = listOf(
+                            Tool(
+                                name = tool,
+                                description = "the $tool tool",
+                                inputSchema = ToolSchema(properties = EmptyJsonObject, required = null),
+                            ),
+                        ),
+                        ttlMs = 60_000,
+                        cacheScope = scope,
+                    )
+                }
+            }
+            launch { client.connect(clientTransport) }
+        }
+    }
 
     /** A connected pair whose `tools/list` reports [ttlMs] as how long its listing stays fresh. */
     private suspend fun connect(
