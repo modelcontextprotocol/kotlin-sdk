@@ -439,7 +439,8 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
      *
      * Called by subclasses when the MCP initialization phase completes (the client after the
      * initialize exchange; the server session on receiving `notifications/initialized`). Until
-     * then, inbound messages are handled inline in arrival order. Reset by [connect].
+     * then, inbound messages are handled inline in arrival order, except request-scoped requests,
+     * which have no initialization phase and are always dispatched concurrently. Reset by [connect].
      */
     protected fun enableConcurrentDispatch() {
         val connection = connectionRef.value ?: return
@@ -553,7 +554,7 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
     }
 
     private suspend fun dispatchRequest(connection: Connection, request: JSONRPCRequest) {
-        if (!connection.concurrentDispatchEnabled.value) {
+        if (isInHandshakeSerialPhase(connection, request)) {
             // Serial phase (before the peer completes MCP initialization): inline, in arrival
             // order — the delivering coroutine awaits the handler.
             onRequest(request, connection, trackCancellation = false)
@@ -583,6 +584,9 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
             }
         }
     }
+
+    private fun isInHandshakeSerialPhase(connection: Connection, request: JSONRPCRequest): Boolean =
+        !connection.concurrentDispatchEnabled.value && eraOf(request.requestMeta()) == ProtocolEra.Legacy
 
     private suspend fun dispatchNotification(connection: Connection, notification: JSONRPCNotification) {
         if (notification.method == Method.Defined.NotificationsInitialized.value) {
