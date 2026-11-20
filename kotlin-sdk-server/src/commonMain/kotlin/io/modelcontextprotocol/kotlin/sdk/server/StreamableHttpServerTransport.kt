@@ -614,15 +614,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         // for server-to-client notifications when enableJsonResponse = true.
         val sseSession = session ?: error("Server session can't be null for streaming GET requests")
 
-        val acceptHeader = call.request.header(HttpHeaders.Accept)
-        if (!acceptHeader.accepts(ContentType.Text.EventStream)) {
-            call.reject(
-                HttpStatusCode.NotAcceptable,
-                RPCError.ErrorCode.CONNECTION_CLOSED,
-                "Not Acceptable: Client must accept text/event-stream",
-            )
-            return
-        }
+        if (!call.validateAcceptsEventStream()) return
 
         if (!validateSession(call) || !validateProtocolVersion(call)) return
 
@@ -782,7 +774,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         return true
     }
 
-    private suspend fun validateProtocolVersion(call: ApplicationCall, id: RequestId? = null): Boolean {
+    internal suspend fun validateProtocolVersion(call: ApplicationCall, id: RequestId? = null): Boolean {
         val version = call.request.headers[MCP_PROTOCOL_VERSION_HEADER] ?: return true
 
         return when (version) {
@@ -871,25 +863,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         }
     }
 
-    /**
-     * Reports whether the `Accept` header admits [mime].
-     *
-     * Comparison is over parsed media ranges rather than raw substrings, so wildcards are honored
-     * and a near miss such as `application/jsonp` no longer passes as `application/json`. An absent
-     * header states no preference and admits any type.
-     */
-    private fun String?.accepts(mime: ContentType): Boolean {
-        if (this == null) return true
-        return parseHeaderValue(this).any { range ->
-            if (range.quality <= 0.0) return@any false
-            try {
-                mime.match(ContentType.parse(range.value))
-            } catch (_: BadContentTypeFormatException) {
-                false
-            }
-        }
-    }
-
     private suspend fun emitOnStream(streamId: String, session: ServerSSESession?, message: JSONRPCMessage) {
         val eventId = configuration.eventStore?.storeEvent(streamId, message)
         try {
@@ -960,6 +933,36 @@ internal suspend fun ApplicationCall.reject(
 /** Answers a request for a session that does not exist or has ended. */
 internal suspend fun ApplicationCall.rejectSessionNotFound(id: RequestId? = null) {
     reject(HttpStatusCode.NotFound, REQUEST_TIMEOUT, "Session not found", id)
+}
+
+/** Answers `406 Not Acceptable` and returns `false` unless the `Accept` header admits `text/event-stream`. */
+internal suspend fun ApplicationCall.validateAcceptsEventStream(): Boolean {
+    if (request.header(HttpHeaders.Accept).accepts(ContentType.Text.EventStream)) return true
+    reject(
+        HttpStatusCode.NotAcceptable,
+        RPCError.ErrorCode.CONNECTION_CLOSED,
+        "Not Acceptable: Client must accept text/event-stream",
+    )
+    return false
+}
+
+/**
+ * Reports whether the `Accept` header admits [mime].
+ *
+ * Comparison is over parsed media ranges rather than raw substrings, so wildcards are honored
+ * and a near miss such as `application/jsonp` no longer passes as `application/json`. An absent
+ * header states no preference and admits any type.
+ */
+private fun String?.accepts(mime: ContentType): Boolean {
+    if (this == null) return true
+    return parseHeaderValue(this).any { range ->
+        if (range.quality <= 0.0) return@any false
+        try {
+            mime.match(ContentType.parse(range.value))
+        } catch (_: BadContentTypeFormatException) {
+            false
+        }
+    }
 }
 
 /** Closes this session, ignoring failures and giving up after [SSE_SESSION_CLOSE_TIMEOUT]. */
