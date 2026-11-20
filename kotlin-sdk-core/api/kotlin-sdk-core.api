@@ -21,6 +21,7 @@ public abstract class io/modelcontextprotocol/kotlin/sdk/shared/AbstractClientTr
 	protected abstract fun getLogger ()Lio/github/oshai/kotlinlogging/KLogger;
 	protected final fun getState ()Lio/modelcontextprotocol/kotlin/sdk/shared/ClientTransportState;
 	protected abstract fun initialize (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun onMessage (Lkotlin/jvm/functions/Function2;)V
 	protected abstract fun performSend (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun performSend$default (Lio/modelcontextprotocol/kotlin/sdk/shared/AbstractClientTransport;Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public fun send (Lio/modelcontextprotocol/kotlin/sdk/types/JSONRPCMessage;Lio/modelcontextprotocol/kotlin/sdk/shared/TransportSendOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
