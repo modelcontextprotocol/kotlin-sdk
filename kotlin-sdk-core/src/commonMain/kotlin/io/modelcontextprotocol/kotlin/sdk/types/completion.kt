@@ -6,7 +6,6 @@ import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonObject
 
 /**
  * A request from the client to the server to ask for completion options.
@@ -87,13 +86,15 @@ public data class CompleteRequestParams(
  * along with pagination information if there are many possible completions.
  *
  * @property completion The completion options and metadata about available results.
+ * @property resultType Discriminator for the result representation.
  * @property meta Optional metadata for this response. See MCP specification for details on _meta usage.
  */
 @Serializable
 public data class CompleteResult(
     public val completion: Completion,
+    val resultType: String = COMPLETE_RESULT_TYPE,
     @SerialName("_meta")
-    override val meta: JsonObject? = null,
+    override val meta: ResultMeta? = null,
 ) : ServerResult {
 
     /**

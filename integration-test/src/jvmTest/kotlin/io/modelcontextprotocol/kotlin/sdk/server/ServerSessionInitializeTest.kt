@@ -15,7 +15,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
-import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.LATEST_HANDSHAKE_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
@@ -44,7 +44,7 @@ class ServerSessionInitializeTest {
 
     private fun createInitializeRequest(clientName: String): InitializeRequest = InitializeRequest(
         InitializeRequestParams(
-            protocolVersion = LATEST_PROTOCOL_VERSION,
+            protocolVersion = LATEST_HANDSHAKE_VERSION,
             capabilities = ClientCapabilities(),
             clientInfo = Implementation(name = clientName, version = "1.0"),
         ),

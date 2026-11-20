@@ -8,7 +8,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.InitializeResult
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
-import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.LATEST_HANDSHAKE_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 
 /**
@@ -31,7 +31,7 @@ class MockTransport(
         requests += message
         val result = when (message.method) {
             "initialize" -> InitializeResult(
-                protocolVersion = LATEST_PROTOCOL_VERSION,
+                protocolVersion = LATEST_HANDSHAKE_VERSION,
                 capabilities = serverCapabilities,
                 serverInfo = Implementation("mock-server", "1.0.0"),
             )

@@ -16,7 +16,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
-import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.LATEST_HANDSHAKE_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
 import kotlin.coroutines.CoroutineContext
@@ -28,7 +28,7 @@ internal fun testServer(): Server = Server(
 
 internal fun initializeRequest(): JSONRPCRequest = InitializeRequest(
     InitializeRequestParams(
-        protocolVersion = LATEST_PROTOCOL_VERSION,
+        protocolVersion = LATEST_HANDSHAKE_VERSION,
         capabilities = ClientCapabilities(),
         clientInfo = Implementation(name = "test-client", version = "1.0.0"),
     ),
