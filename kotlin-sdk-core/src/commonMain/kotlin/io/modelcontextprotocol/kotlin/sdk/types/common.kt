@@ -62,15 +62,14 @@ public const val LATEST_MODERN_VERSION: String = "2026-07-28"
 /** The default protocol version used when negotiation is not performed. */
 public const val DEFAULT_NEGOTIATED_PROTOCOL_VERSION: String = "2025-03-26"
 
-/** All MCP protocol versions supported by this SDK. */
+/** The revisions reachable through the `initialize` handshake, ordered newest to oldest. */
 @Deprecated(
     "Prefer HANDSHAKE_PROTOCOL_VERSIONS or MODERN_PROTOCOL_VERSIONS. " +
-        "This union cannot express which lifecycle a version belongs to.",
-    ReplaceWith("HANDSHAKE_PROTOCOL_VERSIONS"),
+        "This list names only handshake revisions, newest first.",
+    ReplaceWith("HANDSHAKE_PROTOCOL_VERSIONS.reversed()"),
     DeprecationLevel.WARNING,
 )
-public val SUPPORTED_PROTOCOL_VERSIONS: List<String> =
-    HANDSHAKE_PROTOCOL_VERSIONS + MODERN_PROTOCOL_VERSIONS
+public val SUPPORTED_PROTOCOL_VERSIONS: List<String> = HANDSHAKE_PROTOCOL_VERSIONS.reversed()
 
 /**
  * Whether [version] is a known revision at least as new as [minimum].

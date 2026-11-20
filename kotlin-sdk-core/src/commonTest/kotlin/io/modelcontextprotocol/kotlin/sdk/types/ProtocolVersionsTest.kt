@@ -28,9 +28,12 @@ class ProtocolVersionsTest {
     }
 
     @Test
-    fun `the deprecated union should still name every known revision`() {
+    fun `the deprecated list should keep its handshake-only newest-first value`() {
         @Suppress("DEPRECATION")
-        SUPPORTED_PROTOCOL_VERSIONS.toSet() shouldBe KNOWN_PROTOCOL_VERSIONS.toSet()
+        val deprecated = SUPPORTED_PROTOCOL_VERSIONS
+
+        deprecated shouldContainExactly listOf("2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05")
+        HANDSHAKE_PROTOCOL_VERSIONS.reversed() shouldContainExactly deprecated
     }
 
     @Test
