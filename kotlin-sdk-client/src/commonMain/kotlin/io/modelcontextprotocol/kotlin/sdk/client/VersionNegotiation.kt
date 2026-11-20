@@ -32,7 +32,8 @@ public sealed interface VersionNegotiationMode {
      * evidence of the request-scoped lifecycle.
      *
      * Anything not recognized as such evidence falls back, so a server that has never heard of
-     * discovery still connects, at the cost of one extra round trip.
+     * discovery still connects, at the cost of one extra round trip. Over HTTP, a `5xx` or an
+     * unreachable server fails the connection instead.
      */
     public data object Auto : VersionNegotiationMode
 
@@ -150,9 +151,11 @@ private fun classifyRefusal(
     clientModernVersions: List<String>,
     fallbackAvailable: Boolean,
 ): ProbeVerdict {
-    // Denylist, not allowlist: only the one code that carries version evidence is read as such.
-    if (error.code != RPCError.ErrorCode.UNSUPPORTED_PROTOCOL_VERSION) {
+    if (error.code !in MODERN_ERROR_CODES) {
         return fallBack(fallbackAvailable) { error }
+    }
+    if (error.code != RPCError.ErrorCode.UNSUPPORTED_PROTOCOL_VERSION) {
+        return ProbeVerdict.Failed(error)
     }
     val supported = error.data
         ?.let {
@@ -174,6 +177,12 @@ private fun classifyRefusal(
         ProbeVerdict.Failed(error)
     }
 }
+
+private val MODERN_ERROR_CODES = setOf(
+    RPCError.ErrorCode.HEADER_MISMATCH,
+    RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY,
+    RPCError.ErrorCode.UNSUPPORTED_PROTOCOL_VERSION,
+)
 
 /** The verdict for an outcome carrying no positive evidence: fall back, or fail where none is left. */
 private inline fun fallBack(fallbackAvailable: Boolean, cause: () -> McpException): ProbeVerdict =
