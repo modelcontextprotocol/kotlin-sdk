@@ -55,6 +55,7 @@ public data class DiscoverResult(
     val capabilities: ServerCapabilities,
     val instructions: String? = null,
     val resultType: String = COMPLETE_RESULT_TYPE,
+    @Serializable(with = TtlMsSerializer::class)
     override val ttlMs: Long = 0,
     override val cacheScope: CacheScope = CacheScope.Private,
     @SerialName("_meta")

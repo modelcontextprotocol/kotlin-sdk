@@ -65,6 +65,25 @@ class CacheableResultTest {
     }
 
     @Test
+    fun `a negative freshness window from the wire should read as zero`() {
+        val negative = mapOf(
+            """{"supportedVersions": ["2026-07-28"], "capabilities": {}, "ttlMs": -1}""" to "DiscoverResult",
+            """{"tools": [], "ttlMs": -1}""" to "ListToolsResult",
+            """{"prompts": [], "ttlMs": -1}""" to "ListPromptsResult",
+            """{"resources": [], "ttlMs": -1}""" to "ListResourcesResult",
+            """{"resourceTemplates": [], "ttlMs": -1}""" to "ListResourceTemplatesResult",
+            """{"contents": [], "ttlMs": -1}""" to "ReadResourceResult",
+        )
+
+        negative.forEach { (wire, expected) ->
+            val decoded = McpJson.decodeFromString<ServerResult>(wire)
+
+            decoded::class.simpleName shouldBe expected
+            assertIs<CacheableResult>(decoded).ttlMs shouldBe 0
+        }
+    }
+
+    @Test
     fun `hints should survive a round trip`() {
         cacheableResults(ttlMs = 250, cacheScope = CacheScope.Public).forEach { result ->
             // Encoded through RequestResult: CacheableResult is a read-side marker, and results
