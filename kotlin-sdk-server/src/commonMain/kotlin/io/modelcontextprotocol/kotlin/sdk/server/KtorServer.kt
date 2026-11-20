@@ -346,8 +346,11 @@ private fun Application.mcpStatelessStreamableHttp(
  * over _stateless_ [Streamable HTTP Transport](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#streamable-http)
  *
  * Sets up an HTTP POST endpoint at [path]. GET and DELETE requests return 405 Method Not Allowed.
- * Every request/response pair is returned as JSON, so this endpoint opens no SSE stream and
- * offers no resumability. Use [mcpStreamableHttp] when either is required.
+ * A handshake-era request is answered as JSON. A request-scoped one (protocol revision 2026-07-28) is
+ * answered as JSON too, unless its handler emits a notification or runs past the keepalive interval;
+ * then its response becomes an SSE stream that serves that one request and ends with its answer. The
+ * endpoint offers no standalone SSE stream and no resumability. Use [mcpStreamableHttp] when either
+ * is required.
  *
  * Automatically installs [ContentNegotiation][io.ktor.server.plugins.contentnegotiation.ContentNegotiation]
  * with [McpJson][io.modelcontextprotocol.kotlin.sdk.types.McpJson].
