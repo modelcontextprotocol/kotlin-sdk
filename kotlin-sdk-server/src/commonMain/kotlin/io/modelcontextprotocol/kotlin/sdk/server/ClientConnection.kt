@@ -233,13 +233,13 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
     override suspend fun createMessage(request: CreateMessageRequest, options: RequestOptions?): CreateMessageResult {
         val params = request.params
 
+        requireBackChannel(Method.Defined.SamplingCreateMessage)
         val needsTools = params.tools != null || params.toolChoice != null
         requireClientCapabilities(
             ClientCapabilities(
                 sampling = ClientCapabilities.Sampling(tools = EmptyJsonObject.takeIf { needsTools }),
             ),
         )
-        requireBackChannel(Method.Defined.SamplingCreateMessage)
 
         val caps = governingClientCapabilities()
         if (params.includeContext != null && params.includeContext != IncludeContext.None) {
@@ -265,14 +265,15 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
     }
 
     override suspend fun listRoots(request: ListRootsRequest, options: RequestOptions?): ListRootsResult {
-        requireClientCapabilities(ClientCapabilities(roots = ClientCapabilities.Roots()))
         requireBackChannel(Method.Defined.RootsList)
+        requireClientCapabilities(ClientCapabilities(roots = ClientCapabilities.Roots()))
         logger.debug { "Listing roots" }
         return request(request, options)
     }
 
     override suspend fun createElicitation(request: ElicitRequest, options: RequestOptions?): ElicitResult {
         val params = request.params
+        requireBackChannel(Method.Defined.ElicitationCreate)
         requireClientCapabilities(
             ClientCapabilities(
                 elicitation = when (params) {
@@ -281,7 +282,6 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
                 },
             ),
         )
-        requireBackChannel(Method.Defined.ElicitationCreate)
         logger.debug {
             when (params) {
                 is ElicitRequestFormParams ->
