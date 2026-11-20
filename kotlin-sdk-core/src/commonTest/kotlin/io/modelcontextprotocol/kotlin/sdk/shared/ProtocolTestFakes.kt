@@ -20,7 +20,8 @@ import kotlinx.serialization.json.encodeToJsonElement
  * The concurrency gate is flipped only via [enableConcurrency]; nothing in this double flips it
  * implicitly, so tests keep today's serial semantics unless they opt in.
  */
-internal class TestProtocol(options: ProtocolOptions? = null) : Protocol(options) {
+internal class TestProtocol(options: ProtocolOptions? = null, override val negotiatedProtocolVersion: String? = null) :
+    Protocol(options) {
     val errors = mutableListOf<Throwable>()
     var initializedNotificationCount = 0
 

@@ -9,15 +9,21 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.modelcontextprotocol.kotlin.sdk.types.CustomRequest
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
+import io.modelcontextprotocol.kotlin.sdk.types.LATEST_MODERN_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.ListToolsRequest
+import io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult
+import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.PingRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ProgressNotification
 import io.modelcontextprotocol.kotlin.sdk.types.ProgressNotificationParams
 import io.modelcontextprotocol.kotlin.sdk.types.ProgressToken
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.Request
@@ -239,6 +245,29 @@ class ProtocolTest {
 
         protocol.responseHandlers shouldBe emptyMap()
         protocol.progressHandlers shouldBe emptyMap()
+    }
+
+    @Test
+    fun `a result of unrecognized type fails the request on a request-scoped connection`() = runTest {
+        val protocol = TestProtocol(negotiatedProtocolVersion = LATEST_MODERN_VERSION)
+        val transport = RecordingTransport()
+        protocol.connect(transport)
+        val inFlight = async { runCatching { protocol.request<ListToolsResult>(ListToolsRequest()) } }
+        val sent = transport.awaitRequest()
+
+        val wire = buildJsonObject {
+            put("jsonrpc", "2.0")
+            put("id", McpJson.encodeToJsonElement(sent.id))
+            putJsonObject("result") {
+                put("resultType", "input_required")
+                put("requestState", "abc")
+            }
+        }
+        transport.deliver(McpJson.decodeFromString<JSONRPCMessage>(wire.toString()))
+
+        val failure = inFlight.await().exceptionOrNull().shouldBeInstanceOf<McpException>()
+        failure.code shouldBe RPCError.ErrorCode.INVALID_PARAMS
+        failure.message.orEmpty() shouldContain "input_required"
     }
 
     @Test

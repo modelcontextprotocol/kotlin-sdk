@@ -2,6 +2,7 @@ package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
+import io.modelcontextprotocol.kotlin.sdk.InternalMcpApi
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
@@ -430,6 +431,15 @@ private fun selectEmptyResult(element: JsonElement): DeserializationStrategy<Emp
     }
 }
 
+@OptIn(InternalMcpApi::class)
+private fun selectUnrecognizedResult(element: JsonElement): DeserializationStrategy<WireResult>? {
+    val resultType = element.jsonObject.resultTypeString()
+    return when {
+        resultType != null && resultType != COMPLETE_RESULT_TYPE -> WireResult.serializer()
+        else -> null
+    }
+}
+
 /**
  * Selects the appropriate deserializer for client results based on JSON content.
  * Returns null if the structure doesn't match any known client result type.
@@ -485,6 +495,7 @@ internal object RequestResultPolymorphicSerializer :
         selectClientResultDeserializer(element)
             ?: selectServerResultDeserializer(element)
             ?: selectEmptyResult(element)
+            ?: selectUnrecognizedResult(element)
             ?: throw SerializationException("Cannot determine RequestResult type from JSON: ${element.jsonObject.keys}")
 }
 
@@ -497,6 +508,7 @@ internal object ClientResultPolymorphicSerializer :
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<ClientResult> =
         selectClientResultDeserializer(element)
             ?: selectEmptyResult(element)
+            ?: selectUnrecognizedResult(element)
             ?: throw SerializationException("Cannot determine RequestResult type from JSON: ${element.jsonObject.keys}")
 }
 
@@ -509,6 +521,7 @@ internal object ServerResultPolymorphicSerializer :
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<ServerResult> =
         selectServerResultDeserializer(element)
             ?: selectEmptyResult(element)
+            ?: selectUnrecognizedResult(element)
             ?: throw SerializationException("Cannot determine RequestResult type from JSON: ${element.jsonObject.keys}")
 }
 
