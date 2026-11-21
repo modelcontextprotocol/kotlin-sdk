@@ -132,7 +132,7 @@ private class SessionNotificationJob {
                                 "as it is older than subscription timestamp $resourceFromTimestamp"
                         }
                     }
-                } ?: {
+                } ?: run {
                     logger.info {
                         "No subscription for resource ${notification.params.uri}. " +
                             "Skipping notification: $notification"
