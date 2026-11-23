@@ -9,7 +9,6 @@ import io.modelcontextprotocol.kotlin.sdk.shared.RequestHandlerExtra
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
 import io.modelcontextprotocol.kotlin.sdk.types.BooleanSchema
-import io.modelcontextprotocol.kotlin.sdk.types.CacheScope
 import io.modelcontextprotocol.kotlin.sdk.types.CacheableResult
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequestParams
@@ -125,11 +124,10 @@ private val logger = KotlinLogging.logger {}
  * @property responseCache Where to keep results a server marked reusable. Off by default;
  *   [InMemoryResponseCacheStore] caches for the lifetime of this client. Consulted only on the
  *   request-scoped lifecycle, the only one whose results carry caching directives.
- * @property cachePartition The namespace this client files cached results under, public and
- *   [CacheScope.Private] alike. Clients configured with the same partition share entries, so it
- *   must name both the server and the authorization context, such as the server URL and the
- *   access token's subject. Empty, the default, confines entries to the current connection:
- *   neither another client nor this one after a reconnect is served them.
+ * @property cachePartition The namespace every cached result is filed under. Clients configured
+ *   with the same partition share entries, so name one server and one authorization context,
+ *   such as the server URL plus the token subject. Empty, the default, confines entries to
+ *   this connection.
  */
 public class ClientOptions(
     public val capabilities: ClientCapabilities = ClientCapabilities(),

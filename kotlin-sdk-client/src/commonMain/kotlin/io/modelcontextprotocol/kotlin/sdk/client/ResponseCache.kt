@@ -33,9 +33,9 @@ public enum class CacheMode {
  * @property method the JSON-RPC method that produced the result
  * @property paramsKey the part of the request that changes the result — a URI for `resources/read`,
  * empty for the list methods, whose results depend on nothing else
- * @property partition the namespace the result was filed under, naming one server seen under one
- * authorization context: [ClientOptions.cachePartition], or a value unique to the connection that
- * fetched it when that is empty. No entry, [CacheScope.Private] or not, is served across partitions.
+ * @property partition the namespace the result was filed under: [ClientOptions.cachePartition],
+ * or a value unique to the connection that fetched it when that is empty. Entries are never
+ * served across partitions, whatever their [CacheScope].
  */
 @ExperimentalMcpApi
 public data class CacheKey(val method: String, val paramsKey: String = "", val partition: String = "")
