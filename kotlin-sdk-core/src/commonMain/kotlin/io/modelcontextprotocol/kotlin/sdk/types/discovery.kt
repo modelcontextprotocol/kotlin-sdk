@@ -69,11 +69,10 @@ public enum class CacheScope {
  * @property capabilities capabilities advertised by the server
  * @property instructions optional guidance for clients using the server
  * @property resultType discriminator for the result representation
- * @property ttlMs number of milliseconds clients may treat this result as fresh;
- * per the caching spec, clients SHOULD ignore a negative `ttlMs` and treat it as `0`,
- * so a negative value is coerced to zero
+ * @property ttlMs number of milliseconds clients may treat this result as fresh
  * @property cacheScope authorization boundary within which the result may be reused
  * @property meta optional response metadata, including optional server information
+ * @throws IllegalArgumentException if [ttlMs] is negative
  */
 @Serializable
 @ExperimentalMcpApi
@@ -84,14 +83,15 @@ public data class DiscoverResult(
     @EncodeDefault
     val resultType: String = COMPLETE_RESULT_TYPE,
     @Required
-    var ttlMs: Long = 0,
+    @Serializable(with = TtlMsSerializer::class)
+    val ttlMs: Long = 0,
     @Required
     val cacheScope: CacheScope = CacheScope.Private,
     @SerialName("_meta")
     override val meta: JsonObject? = null,
 ) : ServerResult {
     init {
-        this.ttlMs = ttlMs.coerceAtLeast(0)
+        require(ttlMs >= 0) { "ttlMs must be non-negative, but was $ttlMs" }
     }
 }
 
