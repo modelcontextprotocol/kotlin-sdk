@@ -302,6 +302,8 @@ class RequestScopedLifecycleTest {
         LoggingMessageNotificationParams(level = level, data = JsonPrimitive("entry")),
     )
 
+    private data class ConnectedClient(val client: Client, val session: ServerSession)
+
     /**
      * Serves one `echo` tool backed by [handler] and returns a client connected to it, having
      * settled its lifecycle through [negotiation].
@@ -312,7 +314,7 @@ class RequestScopedLifecycleTest {
         onLog: (LoggingLevel) -> Unit = {},
         capabilities: ClientCapabilities = clientCapabilities,
         handler: suspend ClientConnection.(CallToolRequest) -> CallToolResult,
-    ): Client = connectWithSession(negotiation, logLevel, onLog, capabilities, handler).first
+    ): Client = connectWithSession(negotiation, logLevel, onLog, capabilities, handler).client
 
     private suspend fun connectWithSession(
         negotiation: VersionNegotiationMode,
@@ -320,7 +322,7 @@ class RequestScopedLifecycleTest {
         onLog: (LoggingLevel) -> Unit = {},
         capabilities: ClientCapabilities = clientCapabilities,
         handler: suspend ClientConnection.(CallToolRequest) -> CallToolResult,
-    ): Pair<Client, ServerSession> {
+    ): ConnectedClient {
         val server = Server(
             serverInfo = serverInfo,
             options = ServerOptions(
@@ -357,6 +359,6 @@ class RequestScopedLifecycleTest {
             launch { client.connect(clientTransport) }
             created.await()
         }
-        return client to session
+        return ConnectedClient(client, session)
     }
 }
