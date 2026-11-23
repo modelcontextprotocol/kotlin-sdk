@@ -354,6 +354,56 @@ Use prompts for anything that deserves a template: bug triage questions, onboard
 `listChanged = true` only if your prompt catalog can change at runtime and your server will emit
 `notifications/prompts/list_changed` when it does.
 
+A prompt can return an image and embed resource contents directly in its messages. Pass base64-encoded image bytes
+without a data URI prefix to `ImageContent`, and use the MIME type of the original image. An `EmbeddedResource`
+includes the resource's URI and contents in the prompt response, so the client already has the data when it receives
+the prompt. This example assumes the server advertises the `prompts` capability, as above.
+
+<!--- INCLUDE
+import io.modelcontextprotocol.kotlin.sdk.server.Server
+import io.modelcontextprotocol.kotlin.sdk.types.EmbeddedResource
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult
+import io.modelcontextprotocol.kotlin.sdk.types.ImageContent
+import io.modelcontextprotocol.kotlin.sdk.types.PromptMessage
+import io.modelcontextprotocol.kotlin.sdk.types.Role
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
+import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
+-->
+
+```kotlin
+fun registerScreenshotReviewPrompt(server: Server, pngBase64: String) {
+    server.addPrompt(
+        name = "review-screenshot",
+        description = "Review a screenshot using the accessibility checklist",
+    ) {
+        GetPromptResult(
+            messages = listOf(
+                PromptMessage(
+                    role = Role.User,
+                    content = TextContent(text = "Review this screenshot using the attached checklist."),
+                ),
+                PromptMessage(
+                    role = Role.User,
+                    content = ImageContent(data = pngBase64, mimeType = "image/png"),
+                ),
+                PromptMessage(
+                    role = Role.User,
+                    content = EmbeddedResource(
+                        resource = TextResourceContents(
+                            uri = "review://checklists/accessibility",
+                            mimeType = "text/plain",
+                            text = "Check text contrast and whether the primary action is easy to find.",
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+}
+```
+
+<!--- KNIT example-server-prompt-content-01.kt -->
+
 #### Resources
 
 Resources are application-driven context that clients discover via `resources/list` or `resources/templates/list`, then
