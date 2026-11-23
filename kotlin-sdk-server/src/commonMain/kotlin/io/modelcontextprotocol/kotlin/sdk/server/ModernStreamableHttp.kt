@@ -16,6 +16,7 @@ import io.ktor.utils.io.InternalAPI
 import io.ktor.utils.io.writeString
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.TransportSendOptions
+import io.modelcontextprotocol.kotlin.sdk.shared.currentRequestHandlerExtra
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
@@ -188,7 +189,7 @@ private suspend fun ApplicationCall.respondModern(transport: SingleExchangeTrans
             respondText(
                 text = McpJson.encodeToString(first.message),
                 contentType = ContentType.Application.Json,
-                status = statusOf(first.message),
+                status = statusOf(first.message, byHandler = transport.answeredByHandler),
             )
             return
         }
@@ -241,11 +242,15 @@ private fun JSONRPCMessage.isFinal(requestId: RequestId): Boolean = when (this) 
 /**
  * The HTTP status [message] travels on.
  *
- * `200`, unless it is an error whose code has an entry in [HTTP_STATUS_BY_ERROR_CODE].
+ * A refusal made before any handler ran takes the status [HTTP_STATUS_BY_ERROR_CODE] gives its code,
+ * which is how a method this server does not implement answers `404`. An error a handler raised is
+ * the payload and travels on `200`, except a missing client capability, which the revision answers
+ * `400` wherever it surfaces.
  */
-private fun statusOf(message: JSONRPCMessage): HttpStatusCode = when (message) {
-    is JSONRPCError -> HTTP_STATUS_BY_ERROR_CODE[message.error.code] ?: HttpStatusCode.OK
-    else -> HttpStatusCode.OK
+private fun statusOf(message: JSONRPCMessage, byHandler: Boolean): HttpStatusCode {
+    val code = (message as? JSONRPCError)?.error?.code ?: return HttpStatusCode.OK
+    if (byHandler && code != RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY) return HttpStatusCode.OK
+    return HTTP_STATUS_BY_ERROR_CODE[code] ?: HttpStatusCode.OK
 }
 
 private fun sseEvent(message: JSONRPCMessage): String = "data: ${McpJson.encodeToString(message)}\n\n"
@@ -276,10 +281,14 @@ private class SingleExchangeTransport(val requestId: RequestId) : AbstractTransp
 
     val notifications: Channel<JSONRPCMessage> = Channel(Channel.BUFFERED)
 
+    var answeredByHandler: Boolean = false
+        private set
+
     override suspend fun start() = Unit
 
     override suspend fun send(message: JSONRPCMessage, options: TransportSendOptions?) {
         if (message.isFinal(requestId)) {
+            answeredByHandler = currentRequestHandlerExtra() != null
             outcome.complete(message)
             return
         }
