@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalSerializationApi::class)
+
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
@@ -107,7 +109,8 @@ internal object SkillResourcesSerializer : KSerializer<SkillResources> {
     override val descriptor: SerialDescriptor = JsonElement.serializer().descriptor
 
     override fun serialize(encoder: Encoder, value: SkillResources) {
-        val json = encoder as JsonEncoder
+        val json = encoder as? JsonEncoder
+            ?: throw SerializationException("SkillResourcesSerializer requires a Json encoder")
         val element = when (value) {
             is SkillResources.Files -> json.json.encodeToJsonElement(filesSerializer, value.files)
             SkillResources.Dynamic -> JsonPrimitive(DYNAMIC)
@@ -116,7 +119,8 @@ internal object SkillResourcesSerializer : KSerializer<SkillResources> {
     }
 
     override fun deserialize(decoder: Decoder): SkillResources {
-        val json = decoder as JsonDecoder
+        val json = decoder as? JsonDecoder
+            ?: throw SerializationException("SkillResourcesSerializer requires a Json decoder")
         val element = json.decodeJsonElement()
         return when {
             element is JsonArray -> SkillResources.Files(json.json.decodeFromJsonElement(filesSerializer, element))
@@ -176,7 +180,6 @@ private fun JsonObject.stringField(key: String): String? =
 public data class ListSkillsRequest(override val params: PaginatedRequestParams? = null) :
     ClientRequest,
     PaginatedRequest {
-    @OptIn(ExperimentalSerializationApi::class)
     @EncodeDefault
     override val method: Method = Method.Defined.SkillsList
 }
@@ -197,7 +200,6 @@ public data class ListSkillsRequest(override val params: PaginatedRequestParams?
 public data class ListSkillsResult(
     val skills: List<Skill>,
     override val nextCursor: String? = null,
-    @OptIn(ExperimentalSerializationApi::class)
     @EncodeDefault
     val resultType: String = COMPLETE_RESULT_TYPE,
     @Required
@@ -239,7 +241,6 @@ public data class GetSkillRequestParams(
 @Serializable
 @ExperimentalMcpApi
 public data class GetSkillRequest(override val params: GetSkillRequestParams) : ClientRequest {
-    @OptIn(ExperimentalSerializationApi::class)
     @EncodeDefault
     override val method: Method = Method.Defined.SkillsGet
 
@@ -262,7 +263,6 @@ public data class GetSkillRequest(override val params: GetSkillRequestParams) : 
 @ExperimentalMcpApi
 public data class GetSkillResult(
     val skill: Skill,
-    @OptIn(ExperimentalSerializationApi::class)
     @EncodeDefault
     val resultType: String = COMPLETE_RESULT_TYPE,
     @Required
