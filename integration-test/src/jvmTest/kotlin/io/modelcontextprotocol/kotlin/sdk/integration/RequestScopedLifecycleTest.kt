@@ -10,6 +10,7 @@ import io.modelcontextprotocol.kotlin.sdk.client.VersionNegotiationMode
 import io.modelcontextprotocol.kotlin.sdk.server.ClientConnection
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
+import io.modelcontextprotocol.kotlin.sdk.server.ServerSession
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestHandlerExtra
 import io.modelcontextprotocol.kotlin.sdk.shared.currentRequestHandlerExtra
 import io.modelcontextprotocol.kotlin.sdk.testing.ChannelTransport
@@ -39,6 +40,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import io.modelcontextprotocol.kotlin.sdk.types.serverInfo
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonPrimitive
@@ -258,14 +260,49 @@ class RequestScopedLifecycleTest {
         client.close()
     }
 
+    @Test
+    fun `a log sent outside any request does not reach a request-scoped client`() = runBlocking {
+        val logs = mutableListOf<LoggingLevel>()
+        val (client, session) = connectWithSession(
+            negotiation = VersionNegotiationMode.Auto,
+            logLevel = LoggingLevel.Debug,
+            onLog = { logs += it },
+        ) { ok() }
+        client.callTool("echo", emptyMap())
+
+        session.sendLoggingMessage(log(LoggingLevel.Error))
+        client.awaitEarlierServerMessages()
+
+        logs.shouldContainExactly()
+        client.close()
+    }
+
+    @Test
+    fun `a log sent outside any request reaches a handshake client`() = runBlocking {
+        val logs = mutableListOf<LoggingLevel>()
+        val (client, session) = connectWithSession(VersionNegotiationMode.Legacy, onLog = { logs += it }) { ok() }
+
+        session.sendLoggingMessage(log(LoggingLevel.Error))
+        client.awaitEarlierServerMessages()
+
+        logs.shouldContainExactly(LoggingLevel.Error)
+        client.close()
+    }
+
     private fun ok() = CallToolResult(content = listOf(TextContent("ok")))
 
     private suspend fun refusalCode(block: suspend () -> Unit): Int? =
         (runCatching { block() }.exceptionOrNull() as? McpException)?.code
 
+    private suspend fun Client.awaitEarlierServerMessages() {
+        callTool("echo", emptyMap())
+    }
+
     private fun log(level: LoggingLevel) = LoggingMessageNotification(
         LoggingMessageNotificationParams(level = level, data = JsonPrimitive("entry")),
     )
+
+    private data class ConnectedClient(val client: Client, val session: ServerSession)
 
     /**
      * Serves one `echo` tool backed by [handler] and returns a client connected to it, having
@@ -277,7 +314,15 @@ class RequestScopedLifecycleTest {
         onLog: (LoggingLevel) -> Unit = {},
         capabilities: ClientCapabilities = clientCapabilities,
         handler: suspend ClientConnection.(CallToolRequest) -> CallToolResult,
-    ): Client {
+    ): Client = connectWithSession(negotiation, logLevel, onLog, capabilities, handler).client
+
+    private suspend fun connectWithSession(
+        negotiation: VersionNegotiationMode,
+        logLevel: LoggingLevel? = null,
+        onLog: (LoggingLevel) -> Unit = {},
+        capabilities: ClientCapabilities = clientCapabilities,
+        handler: suspend ClientConnection.(CallToolRequest) -> CallToolResult,
+    ): ConnectedClient {
         val server = Server(
             serverInfo = serverInfo,
             options = ServerOptions(
@@ -309,10 +354,11 @@ class RequestScopedLifecycleTest {
         }
 
         val (clientTransport, serverTransport) = ChannelTransport.createLinkedPair()
-        runBlocking {
-            launch { server.createSession(serverTransport) }
+        val session = runBlocking {
+            val created = async { server.createSession(serverTransport) }
             launch { client.connect(clientTransport) }
+            created.await()
         }
-        return client
+        return ConnectedClient(client, session)
     }
 }
