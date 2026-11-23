@@ -251,6 +251,7 @@ class ResponseCacheTest {
         server: Server,
         tool: String,
         scope: CacheScope,
+        ttlMs: Long = 60_000,
         listCalls: AtomicInteger = AtomicInteger(),
     ) {
         val (clientTransport, serverTransport) = ChannelTransport.createLinkedPair()
@@ -267,7 +268,7 @@ class ResponseCacheTest {
                                 inputSchema = ToolSchema(properties = EmptyJsonObject, required = null),
                             ),
                         ),
-                        ttlMs = 60_000,
+                        ttlMs = ttlMs,
                         cacheScope = scope,
                     )
                 }
@@ -276,18 +277,12 @@ class ResponseCacheTest {
         }
     }
 
-    /** A connected pair whose `tools/list` reports [ttlMs] as how long its listing stays fresh. */
     private suspend fun connect(
         ttlMs: Long,
         negotiation: VersionNegotiationMode = VersionNegotiationMode.Auto,
     ): Fixture {
         val listCalls = AtomicInteger()
-        val server = Server(
-            serverInfo = Implementation("cache-server", "1.0"),
-            options = ServerOptions(
-                capabilities = ServerCapabilities(tools = ServerCapabilities.Tools(listChanged = true)),
-            ),
-        )
+        val server = cacheServer()
         val client = Client(
             clientInfo = Implementation("cache-client", "1.0"),
             options = ClientOptions(
@@ -295,28 +290,7 @@ class ResponseCacheTest {
                 responseCache = InMemoryResponseCacheStore(),
             ),
         )
-
-        val (clientTransport, serverTransport) = ChannelTransport.createLinkedPair()
-        runBlocking {
-            launch {
-                val session = server.createSession(serverTransport)
-                session.setRequestHandler<ListToolsRequest>(Method.Defined.ToolsList) { _, _ ->
-                    listCalls.incrementAndGet()
-                    ListToolsResult(
-                        tools = listOf(
-                            Tool(
-                                name = "echo",
-                                description = "echoes",
-                                inputSchema = ToolSchema(properties = EmptyJsonObject, required = null),
-                            ),
-                        ),
-                        ttlMs = ttlMs,
-                        cacheScope = CacheScope.Private,
-                    )
-                }
-            }
-            launch { client.connect(clientTransport) }
-        }
+        connectSession(client, server, tool = "echo", scope = CacheScope.Private, ttlMs = ttlMs, listCalls = listCalls)
         return Fixture(server, client, listCalls)
     }
 }
