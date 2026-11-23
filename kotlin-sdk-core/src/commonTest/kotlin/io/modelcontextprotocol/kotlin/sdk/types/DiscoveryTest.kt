@@ -7,7 +7,6 @@ import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
-import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -203,14 +202,14 @@ class DiscoveryTest {
     }
 
     @Test
-    fun `should reject a negative discovery ttl`() {
-        assertFailsWith<IllegalArgumentException> {
-            DiscoverResult(
-                supportedVersions = listOf("2026-07-28"),
-                capabilities = ServerCapabilities(),
-                ttlMs = -1,
-            )
-        }
+    fun `should coerce a negative discovery ttl to zero`() {
+        val result = DiscoverResult(
+            supportedVersions = listOf("2026-07-28"),
+            capabilities = ServerCapabilities(),
+            ttlMs = -1,
+        )
+
+        assertEquals(0L, result.ttlMs)
     }
 
     @Test

@@ -1491,6 +1491,7 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/DiscoverResult : io/
 	public final fun getSupportedVersions ()Ljava/util/List;
 	public final fun getTtlMs ()J
 	public fun hashCode ()I
+	public final fun setTtlMs (J)V
 	public fun toString ()Ljava/lang/String;
 }
 

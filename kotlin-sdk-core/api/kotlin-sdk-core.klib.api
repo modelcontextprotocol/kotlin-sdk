@@ -2032,8 +2032,10 @@ final class io.modelcontextprotocol.kotlin.sdk.types/DiscoverResult : io.modelco
         final fun <get-resultType>(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/DiscoverResult.resultType.<get-resultType>|<get-resultType>(){}[0]
     final val supportedVersions // io.modelcontextprotocol.kotlin.sdk.types/DiscoverResult.supportedVersions|{}supportedVersions[0]
         final fun <get-supportedVersions>(): kotlin.collections/List<kotlin/String> // io.modelcontextprotocol.kotlin.sdk.types/DiscoverResult.supportedVersions.<get-supportedVersions>|<get-supportedVersions>(){}[0]
-    final val ttlMs // io.modelcontextprotocol.kotlin.sdk.types/DiscoverResult.ttlMs|{}ttlMs[0]
+
+    final var ttlMs // io.modelcontextprotocol.kotlin.sdk.types/DiscoverResult.ttlMs|{}ttlMs[0]
         final fun <get-ttlMs>(): kotlin/Long // io.modelcontextprotocol.kotlin.sdk.types/DiscoverResult.ttlMs.<get-ttlMs>|<get-ttlMs>(){}[0]
+        final fun <set-ttlMs>(kotlin/Long) // io.modelcontextprotocol.kotlin.sdk.types/DiscoverResult.ttlMs.<set-ttlMs>|<set-ttlMs>(kotlin.Long){}[0]
 
     final fun component1(): kotlin.collections/List<kotlin/String> // io.modelcontextprotocol.kotlin.sdk.types/DiscoverResult.component1|component1(){}[0]
     final fun component2(): io.modelcontextprotocol.kotlin.sdk.types/ServerCapabilities // io.modelcontextprotocol.kotlin.sdk.types/DiscoverResult.component2|component2(){}[0]
