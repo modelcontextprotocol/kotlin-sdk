@@ -243,7 +243,7 @@ class ModernStreamableHttpTest {
                 Server(
                     Implementation("test-server", "1.0"),
                     ServerOptions(capabilities = ServerCapabilities(prompts = ServerCapabilities.Prompts(null))),
-                ).apply { addPrompt(name = "greet", promptProvider = provider) }
+                ).apply { addPrompt(name = "greet", description = "greets", promptProvider = provider) }
             }
         }
     }
