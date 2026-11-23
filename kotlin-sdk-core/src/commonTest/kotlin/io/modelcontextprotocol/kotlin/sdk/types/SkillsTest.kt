@@ -1,16 +1,16 @@
 package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.kotest.assertions.json.shouldEqualJson
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
-import kotlin.test.assertNull
 
 @OptIn(ExperimentalMcpApi::class)
 class SkillsTest {
@@ -96,24 +96,24 @@ class SkillsTest {
 
     @Test
     fun `should round trip the spec skills list result`() {
-        val result = assertIs<ListSkillsResult>(McpJson.decodeFromString<RequestResult>(listResultJson))
+        val result = McpJson.decodeFromString<RequestResult>(listResultJson).shouldBeInstanceOf<ListSkillsResult>()
 
-        assertEquals(listOf("git-workflow", "refunds", "daily"), result.skills.map { it.name })
-        assertEquals(JsonPrimitive("Apache-2.0"), result.skills[1].frontmatter["license"])
-        assertEquals(2, assertIs<SkillResources.Files>(result.skills[1].resources).files.size)
-        assertEquals(SkillResources.Dynamic, result.skills[2].resources)
-        assertEquals(300_000, result.ttlMs)
-        assertEquals(CacheScope.Public, result.cacheScope)
-        assertNull(result.nextCursor)
+        result.skills.map { it.name } shouldBe listOf("git-workflow", "refunds", "daily")
+        result.skills[1].frontmatter["license"] shouldBe JsonPrimitive("Apache-2.0")
+        result.skills[1].resources.shouldBeInstanceOf<SkillResources.Files>().files.size shouldBe 2
+        result.skills[2].resources shouldBe SkillResources.Dynamic
+        result.ttlMs shouldBe 300_000
+        result.cacheScope shouldBe CacheScope.Public
+        result.nextCursor.shouldBeNull()
         McpJson.encodeToString<RequestResult>(result) shouldEqualJson listResultJson
     }
 
     @Test
     fun `should round trip the spec skills get result`() {
-        val result = assertIs<GetSkillResult>(McpJson.decodeFromString<RequestResult>(getResultJson))
+        val result = McpJson.decodeFromString<RequestResult>(getResultJson).shouldBeInstanceOf<GetSkillResult>()
 
-        assertEquals("skill://pdf-processing/SKILL.md", result.skill.uri)
-        assertEquals("Extract, fill, and assemble PDF documents", result.skill.description)
+        result.skill.uri shouldBe "skill://pdf-processing/SKILL.md"
+        result.skill.description shouldBe "Extract, fill, and assemble PDF documents"
         McpJson.encodeToString<RequestResult>(result) shouldEqualJson getResultJson
     }
 
@@ -139,11 +139,11 @@ class SkillsTest {
             }
         """.trimIndent()
 
-        val list = assertIs<ListSkillsRequest>(McpJson.decodeFromString<Request>(listJson))
-        val get = assertIs<GetSkillRequest>(McpJson.decodeFromString<Request>(getJson))
+        val list = McpJson.decodeFromString<Request>(listJson).shouldBeInstanceOf<ListSkillsRequest>()
+        val get = McpJson.decodeFromString<Request>(getJson).shouldBeInstanceOf<GetSkillRequest>()
 
-        assertEquals("2026-07-28", list.params?.meta?.protocolVersion)
-        assertEquals("skill://pdf-processing/SKILL.md", get.uri)
+        list.params?.meta?.protocolVersion shouldBe "2026-07-28"
+        get.uri shouldBe "skill://pdf-processing/SKILL.md"
         McpJson.encodeToString<Request>(list) shouldEqualJson listJson
         McpJson.encodeToString<Request>(get) shouldEqualJson getJson
     }
@@ -160,21 +160,21 @@ class SkillsTest {
         fun skillWith(resources: String, frontmatter: String = """{"name": "a", "description": "b"}""") =
             """{"uri": "skill://a/SKILL.md", "frontmatter": $frontmatter, "resources": $resources}"""
 
-        assertFailsWith<SerializationException> { McpJson.decodeFromString<Skill>(skillWith("\"static\"")) }
-        assertFailsWith<SerializationException> {
+        shouldThrow<SerializationException> { McpJson.decodeFromString<Skill>(skillWith("\"static\"")) }
+        shouldThrow<SerializationException> {
             McpJson.decodeFromString<Skill>(
                 """{"uri": "skill://a/SKILL.md", "frontmatter": {"name": "a", "description": "b"}}""",
             )
         }
-        assertFailsWith<IllegalArgumentException> {
+        shouldThrow<IllegalArgumentException> {
             McpJson.decodeFromString<Skill>(skillWith("\"dynamic\"", """{"name": "a"}"""))
         }
-        assertFailsWith<IllegalArgumentException> {
+        shouldThrow<IllegalArgumentException> {
             McpJson.decodeFromString<Skill>(
                 skillWith("""[{"uri": "skill://a/SKILL.md", "digest": "sha256:ABC", "size": 1}]"""),
             )
         }
-        assertFailsWith<IllegalArgumentException> { ListSkillsResult(skills = emptyList(), ttlMs = -1) }
+        shouldThrow<IllegalArgumentException> { ListSkillsResult(skills = emptyList(), ttlMs = -1) }
     }
 
     @Test
@@ -189,8 +189,8 @@ class SkillsTest {
               }
             }
         """.trimIndent()
-        assertEquals(SkillsExtensionSettings(directoryRead = true), capabilities.skillsExtension)
-        assertNull(ServerCapabilities().skillsExtension)
+        capabilities.skillsExtension shouldBe SkillsExtensionSettings(directoryRead = true)
+        ServerCapabilities().skillsExtension.shouldBeNull()
     }
 
     @Test
@@ -201,8 +201,8 @@ class SkillsTest {
             extensions = mapOf("io.modelcontextprotocol/ui" to ui),
         ).withSkillsExtension()
 
-        assertEquals(ServerCapabilities.Resources(subscribe = true), capabilities.resources)
-        assertEquals(ui, capabilities.extensions?.get("io.modelcontextprotocol/ui"))
-        assertEquals(SkillsExtensionSettings(), capabilities.skillsExtension)
+        capabilities.resources shouldBe ServerCapabilities.Resources(subscribe = true)
+        capabilities.extensions?.get("io.modelcontextprotocol/ui") shouldBe ui
+        capabilities.skillsExtension shouldBe SkillsExtensionSettings()
     }
 }
