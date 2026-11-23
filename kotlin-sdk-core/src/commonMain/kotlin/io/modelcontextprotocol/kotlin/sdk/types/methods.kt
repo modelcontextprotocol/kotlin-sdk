@@ -47,6 +47,8 @@ public sealed interface Method {
         TasksResult("tasks/result"),
         TasksList("tasks/list"),
         TasksCancel("tasks/cancel"),
+        SkillsList("skills/list"),
+        SkillsGet("skills/get"),
     }
 
     /**
