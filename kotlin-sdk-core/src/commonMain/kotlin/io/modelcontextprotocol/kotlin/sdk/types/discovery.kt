@@ -70,7 +70,8 @@ public enum class CacheScope {
  * @property instructions optional guidance for clients using the server
  * @property resultType discriminator for the result representation
  * @property ttlMs number of milliseconds clients may treat this result as fresh;
- * a negative value is coerced to zero
+ * per the caching spec, clients SHOULD ignore a negative `ttlMs` and treat it as `0`,
+ * so a negative value is coerced to zero
  * @property cacheScope authorization boundary within which the result may be reused
  * @property meta optional response metadata, including optional server information
  */
