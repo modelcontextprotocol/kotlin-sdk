@@ -132,26 +132,8 @@ class AbstractClientTransportTest {
     }
 
     @Test
-    fun `should evaluate a custom checkState message once with the actual state`() {
-        var invocations = 0
-        var observed: ClientTransportState? = null
-
-        val exception = shouldThrow<IllegalStateException> {
-            transport.testCheckState(ClientTransportState.Operational) { actual ->
-                invocations++
-                observed = actual
-                "state was $actual"
-            }
-        }
-
-        invocations shouldBe 1
-        observed shouldBe ClientTransportState.New
-        exception.message shouldBe "state was New"
-    }
-
-    @Test
-    fun `should skip the checkState message when the state matches`() {
-        transport.testCheckState(ClientTransportState.New) { error("message must not be evaluated") }
+    fun `should pass checkState when the state matches`() {
+        transport.testCheckState(ClientTransportState.New)
     }
 
     @Test
@@ -282,9 +264,6 @@ class AbstractClientTransportTest {
         fun forceState(newState: ClientTransportState) = updateState(newState)
 
         fun testCheckState(expected: ClientTransportState) = checkState(expected)
-
-        fun testCheckState(expected: ClientTransportState, lazyMessage: (ClientTransportState) -> Any) =
-            checkState(expected, lazyMessage)
     }
 
     private class TestException(message: String) : Exception(message)

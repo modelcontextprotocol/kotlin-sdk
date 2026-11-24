@@ -101,17 +101,10 @@ public abstract class AbstractClientTransport : AbstractTransport() {
      *
      * @param expected The expected transport state.
      * An exception will be thrown if the actual state does not match this value.
-     * @param lazyMessage Function that builds the exception message from the actual state when the check fails.
-     * Defaults to a message that compares the expected state against the observed one.
      */
-    protected fun checkState(
-        expected: ClientTransportState,
-        lazyMessage: (ClientTransportState) -> Any = {
-            "Expected transport state $expected, but found $it"
-        },
-    ) {
-        val actualState = state
-        check(actualState == expected) { lazyMessage(actualState) }
+    protected fun checkState(expected: ClientTransportState) {
+        val actual = state
+        check(actual == expected) { "Expected transport state $expected, but found $actual" }
     }
 
     /**
