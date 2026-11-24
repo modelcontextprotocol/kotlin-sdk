@@ -442,7 +442,6 @@ internal class ClientConnectionImpl(private val session: ServerSession) : Client
             data = McpJson.encodeToJsonElement(MissingRequiredClientCapabilityData(missing)),
         )
     }
-}
 
-@OptIn(ExperimentalMcpApi::class)
-private val RequestHandlerExtra.isRequestScoped: Boolean get() = envelope != null
+    private val RequestHandlerExtra.isRequestScoped: Boolean get() = envelope != null
+}
