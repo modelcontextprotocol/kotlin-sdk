@@ -3,7 +3,6 @@ package io.modelcontextprotocol.kotlin.sdk.types
 import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import kotlin.test.Test
-import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 
 @OptIn(ExperimentalMcpApi::class)
@@ -51,17 +50,11 @@ class CacheableResultTest {
     }
 
     @Test
-    fun `a negative freshness window should be refused at construction`() {
-        assertFailsWith<IllegalArgumentException> {
-            DiscoverResult(MODERN_PROTOCOL_VERSIONS, ServerCapabilities(), ttlMs = -1)
+    fun `a negative freshness window should be coerced to zero at construction and copy`() {
+        cacheableResults(ttlMs = -1).forEach { result ->
+            result.ttlMs shouldBe 0
         }
-        assertFailsWith<IllegalArgumentException> { ListToolsResult(tools = emptyList(), ttlMs = -1) }
-        assertFailsWith<IllegalArgumentException> { ListPromptsResult(prompts = emptyList(), ttlMs = -1) }
-        assertFailsWith<IllegalArgumentException> { ListResourcesResult(resources = emptyList(), ttlMs = -1) }
-        assertFailsWith<IllegalArgumentException> {
-            ListResourceTemplatesResult(resourceTemplates = emptyList(), ttlMs = -1)
-        }
-        assertFailsWith<IllegalArgumentException> { ReadResourceResult(contents = emptyList(), ttlMs = -1) }
+        ListToolsResult(tools = emptyList()).copy(ttlMs = -1).ttlMs shouldBe 0
     }
 
     @Test

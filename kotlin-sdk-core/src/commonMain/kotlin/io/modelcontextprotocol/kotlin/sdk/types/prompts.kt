@@ -204,10 +204,10 @@ public data class ListPromptsRequest(override val params: PaginatedRequestParams
  *                     If present, there may be more results available. The client can pass this token
  *                     in a subsequent request to fetch the next page.
  * @property resultType Discriminator for the result representation.
- * @property ttlMs number of milliseconds clients may treat this result as fresh
+ * @property ttlMs number of milliseconds clients may treat this result as fresh;
+ * a negative value is coerced to zero
  * @property cacheScope authorization boundary within which the result may be reused
  * @property meta Optional metadata for this response.
- * @throws IllegalArgumentException if [ttlMs] is negative
  */
 @Serializable
 @OptIn(ExperimentalMcpApi::class)
@@ -215,8 +215,7 @@ public data class ListPromptsResult(
     val prompts: List<Prompt>,
     override val nextCursor: String? = null,
     val resultType: String = COMPLETE_RESULT_TYPE,
-    @Serializable(with = TtlMsSerializer::class)
-    override val ttlMs: Long = 0,
+    override var ttlMs: Long = 0,
     override val cacheScope: CacheScope = CacheScope.Private,
     @SerialName("_meta")
     override val meta: ResultMeta? = null,
@@ -224,6 +223,6 @@ public data class ListPromptsResult(
     PaginatedResult,
     CacheableResult {
     init {
-        require(ttlMs >= 0) { "ttlMs must be non-negative, but was $ttlMs" }
+        this.ttlMs = ttlMs.coerceAtLeast(0)
     }
 }
