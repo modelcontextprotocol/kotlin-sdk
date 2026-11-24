@@ -187,8 +187,8 @@ public data class EmptyResult(
  */
 @Serializable(with = CustomResultSerializer::class)
 internal data class CustomResult(val json: JsonObject) : RequestResult {
-    override val meta: JsonObject?
-        get() = json["_meta"] as? JsonObject
+    override val meta: ResultMeta?
+        get() = (json["_meta"] as? JsonObject)?.let(::ResultMeta)
 }
 
 /**

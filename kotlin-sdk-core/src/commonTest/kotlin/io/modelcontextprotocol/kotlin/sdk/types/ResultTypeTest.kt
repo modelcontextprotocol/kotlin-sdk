@@ -122,4 +122,19 @@ class ResultTypeTest {
         assertNull(silent.resultTypeOrNull)
         assertNull(illTyped.resultTypeOrNull)
     }
+
+    @Test
+    fun `a custom result should expose metadata and enforce its result type`() {
+        val json = McpJson.decodeFromString<JsonObject>(
+            """{"custom": true, "_meta": {"traceId": "abc"}, "resultType": "input_required"}""",
+        )
+        val result = CustomResult(json)
+
+        result.meta?.json shouldBe McpJson.decodeFromString<JsonObject>("""{"traceId": "abc"}""")
+        result.resultTypeOrNull shouldBe "input_required"
+        checkInboundResult(ProtocolEra.Legacy, result)
+        val failure = assertFailsWith<McpException> { checkInboundResult(ProtocolEra.Modern, result) }
+        failure.code shouldBe RPCError.ErrorCode.INVALID_PARAMS
+        assertNull(CustomResult(McpJson.decodeFromString<JsonObject>("""{"custom": true}""")).meta)
+    }
 }

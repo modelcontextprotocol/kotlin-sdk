@@ -203,7 +203,7 @@ class JsonRpcTest {
         )
 
         val result = assertIs<CustomResult>(assertIs<JSONRPCResponse>(message).result)
-        result.meta shouldBe buildJsonObject { put("traceId", "abc") }
+        result.meta?.json shouldBe buildJsonObject { put("traceId", "abc") }
     }
 
     @Test

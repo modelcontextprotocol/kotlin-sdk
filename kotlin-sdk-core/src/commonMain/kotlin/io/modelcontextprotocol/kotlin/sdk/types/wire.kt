@@ -121,6 +121,7 @@ internal val RequestResult.resultTypeOrNull: String?
         is GetTaskResult -> resultType
         is ListTasksResult -> resultType
         is GetTaskPayloadResult -> json.resultTypeString()
+        is CustomResult -> json.resultTypeString()
         is WireResult -> json.resultTypeString()
         is UnknownResult -> json.resultTypeString()
     }
