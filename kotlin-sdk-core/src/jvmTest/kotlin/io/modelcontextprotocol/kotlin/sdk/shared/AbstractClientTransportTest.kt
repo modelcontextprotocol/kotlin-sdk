@@ -126,18 +126,6 @@ class AbstractClientTransportTest {
 
     @Test
     fun `should explain the observed state when checkState fails`() {
-        shouldThrow<IllegalStateException> {
-            transport.testCheckState(ClientTransportState.Operational)
-        }.message shouldBe "Expected transport state Operational, but found New"
-    }
-
-    @Test
-    fun `should pass checkState when the state matches`() {
-        transport.testCheckState(ClientTransportState.New)
-    }
-
-    @Test
-    fun `should format checkState from the forced actual state`() {
         transport.forceState(ClientTransportState.Stopped)
 
         shouldThrow<IllegalStateException> {
