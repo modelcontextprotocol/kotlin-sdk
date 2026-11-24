@@ -407,8 +407,7 @@ public open class Client(private val clientInfo: Implementation, options: Client
 
                 cause is IOException -> throw e
 
-                // Silence and a peer that went away instead of answering are the same signal; on stdio
-                // both mean a server that predates discovery, and the classifier decides what to do.
+                // On stdio, no answer means a server that predates discovery.
                 e.code == RPCError.ErrorCode.REQUEST_TIMEOUT || e.code == RPCError.ErrorCode.CONNECTION_CLOSED ->
                     ProbeOutcome.Silent
 
