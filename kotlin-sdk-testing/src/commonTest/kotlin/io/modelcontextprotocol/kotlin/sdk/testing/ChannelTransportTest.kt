@@ -5,9 +5,15 @@ import io.kotest.matchers.shouldBe
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -25,6 +31,28 @@ class ChannelTransportTest {
         transport.send(message)
 
         sendChannel.receive() shouldBe message
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `answers a request the peer sent before start returned`() = runTest {
+        val loopScheduler = TestCoroutineScheduler()
+        val sendChannel = Channel<JSONRPCMessage>(Channel.UNLIMITED)
+        val receiveChannel = Channel<JSONRPCMessage>(Channel.UNLIMITED)
+        val transport = ChannelTransport(sendChannel, receiveChannel, StandardTestDispatcher(loopScheduler))
+        val request = JSONRPCRequest(RequestId.NumberId(1), "ping")
+        val response = JSONRPCResponse(request.id)
+        transport.onMessage { transport.send(response) }
+        receiveChannel.send(request)
+
+        val start = launch { transport.start() }
+        runCurrent()
+        loopScheduler.runCurrent()
+        runCurrent()
+        loopScheduler.runCurrent()
+
+        start.isCompleted shouldBe true
+        sendChannel.tryReceive().getOrNull() shouldBe response
     }
 
     @Test
