@@ -3,6 +3,7 @@ package io.modelcontextprotocol.kotlin.sdk.shared
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.types.CancelledNotification
 import io.modelcontextprotocol.kotlin.sdk.types.CancelledNotificationParams
+import io.modelcontextprotocol.kotlin.sdk.types.CustomResult
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyResult
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCEmptyMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
@@ -814,8 +815,14 @@ public abstract class Protocol(@PublishedApi internal val options: ProtocolOptio
                 }
 
                 try {
+                    val value = response!!.result
+                    if (value is CustomResult) {
+                        throw SerializationException(
+                            "Cannot determine RequestResult type from JSON: ${value.json.keys}",
+                        )
+                    }
                     @Suppress("UNCHECKED_CAST")
-                    result.complete(response!!.result as T)
+                    result.complete(value as T)
                 } catch (e: Throwable) {
                     result.completeExceptionally(e)
                 }

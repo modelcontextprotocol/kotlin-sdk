@@ -486,7 +486,7 @@ private fun selectServerResultDeserializer(element: JsonElement): Deserializatio
 /**
  * Polymorphic serializer for [RequestResult] types.
  * Supports both client and server results.
- * Throws [SerializationException] if the result type cannot be determined.
+ * Falls back to [CustomResult] if the result type cannot be determined.
  */
 internal object RequestResultPolymorphicSerializer :
     JsonContentPolymorphicSerializer<RequestResult>(RequestResult::class) {
@@ -494,7 +494,21 @@ internal object RequestResultPolymorphicSerializer :
         selectClientResultDeserializer(element)
             ?: selectServerResultDeserializer(element)
             ?: selectEmptyResult(element)
-            ?: throw SerializationException("Cannot determine RequestResult type from JSON: ${element.jsonObject.keys}")
+            ?: CustomResultSerializer
+}
+
+/**
+ * Writes and reads a [CustomResult] as its JSON object, unchanged.
+ */
+internal object CustomResultSerializer : KSerializer<CustomResult> {
+    override val descriptor: SerialDescriptor = JsonObject.serializer().descriptor
+
+    override fun serialize(encoder: Encoder, value: CustomResult) {
+        JsonObject.serializer().serialize(encoder, value.json)
+    }
+
+    override fun deserialize(decoder: Decoder): CustomResult =
+        CustomResult(JsonObject.serializer().deserialize(decoder))
 }
 
 /**
