@@ -31,7 +31,6 @@ import io.ktor.server.sse.ServerSSESession
 import io.ktor.server.sse.heartbeat
 import io.ktor.server.sse.sse
 import io.ktor.utils.io.KtorDsl
-import io.modelcontextprotocol.kotlin.sdk.InternalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.MCP_PROTOCOL_VERSION_HEADER
 import io.modelcontextprotocol.kotlin.sdk.types.MODERN_PROTOCOL_VERSIONS
@@ -455,7 +454,7 @@ private suspend fun RoutingContext.mcpDualEraStreamableHttpEndpoint(
     val parsed = try {
         McpJson.parseToJsonElement(body)
     } catch (e: SerializationException) {
-        if (call.claimsLegacyLifecycle()) {
+        if (call.request.headers[MCP_PROTOCOL_VERSION_HEADER] !in MODERN_PROTOCOL_VERSIONS) {
             mcpStatelessStreamableHttpEndpoint(configuration, block)
             return
         }
@@ -481,10 +480,6 @@ private suspend fun RoutingContext.mcpDualEraStreamableHttpEndpoint(
         )
     }
 }
-
-@OptIn(InternalMcpApi::class)
-private fun ApplicationCall.claimsLegacyLifecycle(): Boolean =
-    request.headers[MCP_PROTOCOL_VERSION_HEADER] !in MODERN_PROTOCOL_VERSIONS
 
 private suspend fun RoutingContext.mcpStatelessStreamableHttpEndpoint(
     configuration: StreamableHttpServerTransport.Configuration,
