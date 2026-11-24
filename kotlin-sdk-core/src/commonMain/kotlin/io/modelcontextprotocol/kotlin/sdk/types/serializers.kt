@@ -2,7 +2,6 @@ package io.modelcontextprotocol.kotlin.sdk.types
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
-import io.modelcontextprotocol.kotlin.sdk.InternalMcpApi
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
@@ -431,11 +430,10 @@ private fun selectEmptyResult(element: JsonElement): DeserializationStrategy<Emp
     }
 }
 
-@OptIn(InternalMcpApi::class)
-private fun selectUnrecognizedResult(element: JsonElement): DeserializationStrategy<WireResult>? {
+private fun selectUnrecognizedResult(element: JsonElement): DeserializationStrategy<UnknownResult>? {
     val resultType = element.jsonObject.resultTypeString()
     return when {
-        resultType != null && resultType != COMPLETE_RESULT_TYPE -> WireResult.serializer()
+        resultType != null && resultType != COMPLETE_RESULT_TYPE -> UnknownResult.serializer()
         else -> null
     }
 }
