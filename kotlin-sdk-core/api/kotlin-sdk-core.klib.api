@@ -2072,10 +2072,8 @@ final class io.modelcontextprotocol.kotlin.sdk.types/DiscoverResult : io.modelco
         final fun <get-resultType>(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/DiscoverResult.resultType.<get-resultType>|<get-resultType>(){}[0]
     final val supportedVersions // io.modelcontextprotocol.kotlin.sdk.types/DiscoverResult.supportedVersions|{}supportedVersions[0]
         final fun <get-supportedVersions>(): kotlin.collections/List<kotlin/String> // io.modelcontextprotocol.kotlin.sdk.types/DiscoverResult.supportedVersions.<get-supportedVersions>|<get-supportedVersions>(){}[0]
-
-    final var ttlMs // io.modelcontextprotocol.kotlin.sdk.types/DiscoverResult.ttlMs|{}ttlMs[0]
+    final val ttlMs // io.modelcontextprotocol.kotlin.sdk.types/DiscoverResult.ttlMs|{}ttlMs[0]
         final fun <get-ttlMs>(): kotlin/Long // io.modelcontextprotocol.kotlin.sdk.types/DiscoverResult.ttlMs.<get-ttlMs>|<get-ttlMs>(){}[0]
-        final fun <set-ttlMs>(kotlin/Long) // io.modelcontextprotocol.kotlin.sdk.types/DiscoverResult.ttlMs.<set-ttlMs>|<set-ttlMs>(kotlin.Long){}[0]
 
     final fun component1(): kotlin.collections/List<kotlin/String> // io.modelcontextprotocol.kotlin.sdk.types/DiscoverResult.component1|component1(){}[0]
     final fun component2(): io.modelcontextprotocol.kotlin.sdk.types/ServerCapabilities // io.modelcontextprotocol.kotlin.sdk.types/DiscoverResult.component2|component2(){}[0]
@@ -3348,10 +3346,8 @@ final class io.modelcontextprotocol.kotlin.sdk.types/ListPromptsResult : io.mode
         final fun <get-prompts>(): kotlin.collections/List<io.modelcontextprotocol.kotlin.sdk.types/Prompt> // io.modelcontextprotocol.kotlin.sdk.types/ListPromptsResult.prompts.<get-prompts>|<get-prompts>(){}[0]
     final val resultType // io.modelcontextprotocol.kotlin.sdk.types/ListPromptsResult.resultType|{}resultType[0]
         final fun <get-resultType>(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/ListPromptsResult.resultType.<get-resultType>|<get-resultType>(){}[0]
-
-    final var ttlMs // io.modelcontextprotocol.kotlin.sdk.types/ListPromptsResult.ttlMs|{}ttlMs[0]
+    final val ttlMs // io.modelcontextprotocol.kotlin.sdk.types/ListPromptsResult.ttlMs|{}ttlMs[0]
         final fun <get-ttlMs>(): kotlin/Long // io.modelcontextprotocol.kotlin.sdk.types/ListPromptsResult.ttlMs.<get-ttlMs>|<get-ttlMs>(){}[0]
-        final fun <set-ttlMs>(kotlin/Long) // io.modelcontextprotocol.kotlin.sdk.types/ListPromptsResult.ttlMs.<set-ttlMs>|<set-ttlMs>(kotlin.Long){}[0]
 
     final fun component1(): kotlin.collections/List<io.modelcontextprotocol.kotlin.sdk.types/Prompt> // io.modelcontextprotocol.kotlin.sdk.types/ListPromptsResult.component1|component1(){}[0]
     final fun component2(): kotlin/String? // io.modelcontextprotocol.kotlin.sdk.types/ListPromptsResult.component2|component2(){}[0]
@@ -3427,10 +3423,8 @@ final class io.modelcontextprotocol.kotlin.sdk.types/ListResourceTemplatesResult
         final fun <get-resourceTemplates>(): kotlin.collections/List<io.modelcontextprotocol.kotlin.sdk.types/ResourceTemplate> // io.modelcontextprotocol.kotlin.sdk.types/ListResourceTemplatesResult.resourceTemplates.<get-resourceTemplates>|<get-resourceTemplates>(){}[0]
     final val resultType // io.modelcontextprotocol.kotlin.sdk.types/ListResourceTemplatesResult.resultType|{}resultType[0]
         final fun <get-resultType>(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/ListResourceTemplatesResult.resultType.<get-resultType>|<get-resultType>(){}[0]
-
-    final var ttlMs // io.modelcontextprotocol.kotlin.sdk.types/ListResourceTemplatesResult.ttlMs|{}ttlMs[0]
+    final val ttlMs // io.modelcontextprotocol.kotlin.sdk.types/ListResourceTemplatesResult.ttlMs|{}ttlMs[0]
         final fun <get-ttlMs>(): kotlin/Long // io.modelcontextprotocol.kotlin.sdk.types/ListResourceTemplatesResult.ttlMs.<get-ttlMs>|<get-ttlMs>(){}[0]
-        final fun <set-ttlMs>(kotlin/Long) // io.modelcontextprotocol.kotlin.sdk.types/ListResourceTemplatesResult.ttlMs.<set-ttlMs>|<set-ttlMs>(kotlin.Long){}[0]
 
     final fun component1(): kotlin.collections/List<io.modelcontextprotocol.kotlin.sdk.types/ResourceTemplate> // io.modelcontextprotocol.kotlin.sdk.types/ListResourceTemplatesResult.component1|component1(){}[0]
     final fun component2(): kotlin/String? // io.modelcontextprotocol.kotlin.sdk.types/ListResourceTemplatesResult.component2|component2(){}[0]
@@ -3506,10 +3500,8 @@ final class io.modelcontextprotocol.kotlin.sdk.types/ListResourcesResult : io.mo
         final fun <get-resources>(): kotlin.collections/List<io.modelcontextprotocol.kotlin.sdk.types/Resource> // io.modelcontextprotocol.kotlin.sdk.types/ListResourcesResult.resources.<get-resources>|<get-resources>(){}[0]
     final val resultType // io.modelcontextprotocol.kotlin.sdk.types/ListResourcesResult.resultType|{}resultType[0]
         final fun <get-resultType>(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/ListResourcesResult.resultType.<get-resultType>|<get-resultType>(){}[0]
-
-    final var ttlMs // io.modelcontextprotocol.kotlin.sdk.types/ListResourcesResult.ttlMs|{}ttlMs[0]
+    final val ttlMs // io.modelcontextprotocol.kotlin.sdk.types/ListResourcesResult.ttlMs|{}ttlMs[0]
         final fun <get-ttlMs>(): kotlin/Long // io.modelcontextprotocol.kotlin.sdk.types/ListResourcesResult.ttlMs.<get-ttlMs>|<get-ttlMs>(){}[0]
-        final fun <set-ttlMs>(kotlin/Long) // io.modelcontextprotocol.kotlin.sdk.types/ListResourcesResult.ttlMs.<set-ttlMs>|<set-ttlMs>(kotlin.Long){}[0]
 
     final fun component1(): kotlin.collections/List<io.modelcontextprotocol.kotlin.sdk.types/Resource> // io.modelcontextprotocol.kotlin.sdk.types/ListResourcesResult.component1|component1(){}[0]
     final fun component2(): kotlin/String? // io.modelcontextprotocol.kotlin.sdk.types/ListResourcesResult.component2|component2(){}[0]
@@ -3720,10 +3712,8 @@ final class io.modelcontextprotocol.kotlin.sdk.types/ListToolsResult : io.modelc
         final fun <get-resultType>(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/ListToolsResult.resultType.<get-resultType>|<get-resultType>(){}[0]
     final val tools // io.modelcontextprotocol.kotlin.sdk.types/ListToolsResult.tools|{}tools[0]
         final fun <get-tools>(): kotlin.collections/List<io.modelcontextprotocol.kotlin.sdk.types/Tool> // io.modelcontextprotocol.kotlin.sdk.types/ListToolsResult.tools.<get-tools>|<get-tools>(){}[0]
-
-    final var ttlMs // io.modelcontextprotocol.kotlin.sdk.types/ListToolsResult.ttlMs|{}ttlMs[0]
+    final val ttlMs // io.modelcontextprotocol.kotlin.sdk.types/ListToolsResult.ttlMs|{}ttlMs[0]
         final fun <get-ttlMs>(): kotlin/Long // io.modelcontextprotocol.kotlin.sdk.types/ListToolsResult.ttlMs.<get-ttlMs>|<get-ttlMs>(){}[0]
-        final fun <set-ttlMs>(kotlin/Long) // io.modelcontextprotocol.kotlin.sdk.types/ListToolsResult.ttlMs.<set-ttlMs>|<set-ttlMs>(kotlin.Long){}[0]
 
     final fun component1(): kotlin.collections/List<io.modelcontextprotocol.kotlin.sdk.types/Tool> // io.modelcontextprotocol.kotlin.sdk.types/ListToolsResult.component1|component1(){}[0]
     final fun component2(): kotlin/String? // io.modelcontextprotocol.kotlin.sdk.types/ListToolsResult.component2|component2(){}[0]
@@ -4372,10 +4362,8 @@ final class io.modelcontextprotocol.kotlin.sdk.types/ReadResourceResult : io.mod
         final fun <get-meta>(): io.modelcontextprotocol.kotlin.sdk.types/ResultMeta? // io.modelcontextprotocol.kotlin.sdk.types/ReadResourceResult.meta.<get-meta>|<get-meta>(){}[0]
     final val resultType // io.modelcontextprotocol.kotlin.sdk.types/ReadResourceResult.resultType|{}resultType[0]
         final fun <get-resultType>(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/ReadResourceResult.resultType.<get-resultType>|<get-resultType>(){}[0]
-
-    final var ttlMs // io.modelcontextprotocol.kotlin.sdk.types/ReadResourceResult.ttlMs|{}ttlMs[0]
+    final val ttlMs // io.modelcontextprotocol.kotlin.sdk.types/ReadResourceResult.ttlMs|{}ttlMs[0]
         final fun <get-ttlMs>(): kotlin/Long // io.modelcontextprotocol.kotlin.sdk.types/ReadResourceResult.ttlMs.<get-ttlMs>|<get-ttlMs>(){}[0]
-        final fun <set-ttlMs>(kotlin/Long) // io.modelcontextprotocol.kotlin.sdk.types/ReadResourceResult.ttlMs.<set-ttlMs>|<set-ttlMs>(kotlin.Long){}[0]
 
     final fun component1(): kotlin.collections/List<io.modelcontextprotocol.kotlin.sdk.types/ResourceContents> // io.modelcontextprotocol.kotlin.sdk.types/ReadResourceResult.component1|component1(){}[0]
     final fun component2(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/ReadResourceResult.component2|component2(){}[0]

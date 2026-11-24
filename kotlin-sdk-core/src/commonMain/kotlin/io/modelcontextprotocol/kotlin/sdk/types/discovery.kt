@@ -43,10 +43,10 @@ public data class DiscoverRequest(override val params: DiscoverRequestParams) : 
  * @property capabilities capabilities advertised by the server
  * @property instructions optional guidance for clients using the server
  * @property resultType Discriminator for the result representation.
- * @property ttlMs number of milliseconds clients may treat this result as fresh;
- * a negative value is coerced to zero
+ * @property ttlMs number of milliseconds clients may treat this result as fresh
  * @property cacheScope authorization boundary within which the result may be reused
  * @property meta optional response metadata, including optional server information
+ * @throws IllegalArgumentException if [ttlMs] is negative
  */
 @Serializable
 @ExperimentalMcpApi
@@ -55,14 +55,15 @@ public data class DiscoverResult(
     val capabilities: ServerCapabilities,
     val instructions: String? = null,
     val resultType: String = COMPLETE_RESULT_TYPE,
-    override var ttlMs: Long = 0,
+    @Serializable(with = TtlMsSerializer::class)
+    override val ttlMs: Long = 0,
     override val cacheScope: CacheScope = CacheScope.Private,
     @SerialName("_meta")
     override val meta: ResultMeta? = null,
 ) : ServerResult,
     CacheableResult {
     init {
-        this.ttlMs = ttlMs.coerceAtLeast(0)
+        require(ttlMs >= 0) { "ttlMs must be non-negative, but was $ttlMs" }
     }
 }
 

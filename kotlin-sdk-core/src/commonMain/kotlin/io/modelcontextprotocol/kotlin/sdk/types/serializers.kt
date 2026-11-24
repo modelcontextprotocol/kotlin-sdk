@@ -69,6 +69,18 @@ internal object MethodSerializer : KSerializer<Method> {
     override fun deserialize(decoder: Decoder): Method = Method.from(decoder.decodeString())
 }
 
+/** Per the caching spec, clients SHOULD ignore a negative `ttlMs` and treat it as `0`. */
+internal object TtlMsSerializer : KSerializer<Long> {
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("io.modelcontextprotocol.kotlin.sdk.types.TtlMs", PrimitiveKind.LONG)
+
+    override fun serialize(encoder: Encoder, value: Long) {
+        encoder.encodeLong(value)
+    }
+
+    override fun deserialize(decoder: Decoder): Long = decoder.decodeLong().coerceAtLeast(0)
+}
+
 // ============================================================================
 // Reference Serializers
 // ============================================================================

@@ -191,14 +191,14 @@ class DiscoveryTest {
     }
 
     @Test
-    fun `should coerce a negative discovery ttl to zero`() {
-        val result = DiscoverResult(
-            supportedVersions = listOf("2026-07-28"),
-            capabilities = ServerCapabilities(),
-            ttlMs = -1,
-        )
-
-        assertEquals(0L, result.ttlMs)
+    fun `should reject a negative discovery ttl`() {
+        assertFailsWith<IllegalArgumentException> {
+            DiscoverResult(
+                supportedVersions = listOf("2026-07-28"),
+                capabilities = ServerCapabilities(),
+                ttlMs = -1,
+            )
+        }
     }
 
     @Test

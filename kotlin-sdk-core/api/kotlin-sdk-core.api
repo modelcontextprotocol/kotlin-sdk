@@ -1522,7 +1522,6 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/DiscoverResult : io/
 	public final fun getSupportedVersions ()Ljava/util/List;
 	public fun getTtlMs ()J
 	public fun hashCode ()I
-	public fun setTtlMs (J)V
 	public fun toString ()Ljava/lang/String;
 }
 
@@ -2889,7 +2888,6 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ListPromptsResult : 
 	public final fun getResultType ()Ljava/lang/String;
 	public fun getTtlMs ()J
 	public fun hashCode ()I
-	public fun setTtlMs (J)V
 	public fun toString ()Ljava/lang/String;
 }
 
@@ -2967,7 +2965,6 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ListResourceTemplate
 	public final fun getResultType ()Ljava/lang/String;
 	public fun getTtlMs ()J
 	public fun hashCode ()I
-	public fun setTtlMs (J)V
 	public fun toString ()Ljava/lang/String;
 }
 
@@ -3045,7 +3042,6 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ListResourcesResult 
 	public final fun getResultType ()Ljava/lang/String;
 	public fun getTtlMs ()J
 	public fun hashCode ()I
-	public fun setTtlMs (J)V
 	public fun toString ()Ljava/lang/String;
 }
 
@@ -3260,7 +3256,6 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ListToolsResult : io
 	public final fun getTools ()Ljava/util/List;
 	public fun getTtlMs ()J
 	public fun hashCode ()I
-	public fun setTtlMs (J)V
 	public fun toString ()Ljava/lang/String;
 }
 
@@ -4115,7 +4110,6 @@ public final class io/modelcontextprotocol/kotlin/sdk/types/ReadResourceResult :
 	public final fun getResultType ()Ljava/lang/String;
 	public fun getTtlMs ()J
 	public fun hashCode ()I
-	public fun setTtlMs (J)V
 	public fun toString ()Ljava/lang/String;
 }
 
