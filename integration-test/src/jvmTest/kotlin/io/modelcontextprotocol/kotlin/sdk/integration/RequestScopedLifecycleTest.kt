@@ -226,6 +226,28 @@ class RequestScopedLifecycleTest {
     }
 
     @Test
+    fun `a handshake client lacking a capability a tool needs gets a failed tool result`() = runBlocking {
+        val client = connect(VersionNegotiationMode.Legacy) {
+            createElicitation("confirm?", ElicitRequestParams.RequestedSchema(properties = emptyMap()))
+            ok()
+        }
+
+        client.callTool("echo", emptyMap()).isError shouldBe true
+        client.close()
+    }
+
+    @Test
+    fun `a request-scoped client lacking a capability a tool needs gets -32021`() = runBlocking {
+        val client = connect(VersionNegotiationMode.Auto) {
+            throw McpException(RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY, "needs elicitation")
+        }
+
+        assertFailsWith<McpException> { client.callTool("echo", emptyMap()) }.code shouldBe
+            RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY
+        client.close()
+    }
+
+    @Test
     fun `a request-scoped request that did not opt in receives no log notifications`() = runBlocking {
         val logs = mutableListOf<LoggingLevel>()
         val client = connect(VersionNegotiationMode.Auto, onLog = { logs += it }) {
