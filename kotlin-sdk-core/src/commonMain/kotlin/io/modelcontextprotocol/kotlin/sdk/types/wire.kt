@@ -28,6 +28,23 @@ public value class WireResult(public val json: JsonObject) :
         get() = (json["_meta"] as? JsonObject)?.let(::ResultMeta)
 }
 
+/**
+ * A result whose `resultType` this SDK does not recognize, kept as the JSON it arrived as.
+ *
+ * The result serializers select it when no typed result matches, so the response reaches the
+ * request it answers and [checkInboundResult] refuses it.
+ *
+ * @property json the result exactly as it was received
+ */
+@JvmInline
+@Serializable
+internal value class UnknownResult(public val json: JsonObject) :
+    ClientResult,
+    ServerResult {
+    override val meta: ResultMeta?
+        get() = (json["_meta"] as? JsonObject)?.let(::ResultMeta)
+}
+
 /** Result fields introduced by the request-scoped lifecycle, which no earlier peer understands. */
 private val REQUEST_SCOPED_RESULT_KEYS: Set<String> = setOf("resultType", "ttlMs", "cacheScope")
 
@@ -105,9 +122,10 @@ internal val RequestResult.resultTypeOrNull: String?
         is ListTasksResult -> resultType
         is GetTaskPayloadResult -> json.resultTypeString()
         is WireResult -> json.resultTypeString()
+        is UnknownResult -> json.resultTypeString()
     }
 
-private fun JsonObject.resultTypeString(): String? = (this["resultType"] as? JsonPrimitive)
+internal fun JsonObject.resultTypeString(): String? = (this["resultType"] as? JsonPrimitive)
     ?.takeIf { it.isString }
     ?.content
 

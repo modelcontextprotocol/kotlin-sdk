@@ -89,6 +89,22 @@ class ResultTypeTest {
     }
 
     @Test
+    fun `a result of unrecognized type should be kept as received`() {
+        val decoded = McpJson.decodeFromString<RequestResult>(
+            """{"resultType": "input_required", "requestState": "abc"}""",
+        )
+
+        val unknown = assertIs<UnknownResult>(decoded)
+        unknown.json.toString() shouldEqualJson """{"resultType": "input_required", "requestState": "abc"}"""
+        unknown.resultTypeOrNull shouldBe "input_required"
+
+        checkInboundResult(ProtocolEra.Legacy, unknown)
+        val failure = assertFailsWith<McpException> { checkInboundResult(ProtocolEra.Modern, unknown) }
+        failure.code shouldBe RPCError.ErrorCode.INVALID_PARAMS
+        failure.message.orEmpty() shouldContain "input_required"
+    }
+
+    @Test
     fun `a recognized or absent result type should pass in either lifecycle`() {
         ProtocolEra.entries.forEach { era ->
             checkInboundResult(era, CallToolResult(content = emptyList()))
