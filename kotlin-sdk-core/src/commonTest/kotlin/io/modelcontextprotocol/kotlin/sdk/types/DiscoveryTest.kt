@@ -214,6 +214,22 @@ class DiscoveryTest {
     }
 
     @Test
+    fun `should read a negative discovery ttl from the wire as zero`() {
+        val result = McpJson.decodeFromString<ServerResult>(
+            """
+            {
+              "supportedVersions": ["2026-07-28"],
+              "capabilities": {},
+              "ttlMs": -1,
+              "cacheScope": "private"
+            }
+            """.trimIndent(),
+        )
+
+        assertEquals(0L, assertIs<DiscoverResult>(result).ttlMs)
+    }
+
+    @Test
     fun `should serialize unsupported protocol version data`() {
         verifySerialization(
             UnsupportedProtocolVersionData(supported = listOf("2026-07-28", "2025-11-25"), requested = "2099-01-01"),

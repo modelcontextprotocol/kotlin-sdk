@@ -73,9 +73,6 @@ class ProtocolConcurrencyIntegrationTest {
         ),
     )
 
-    // ChannelTransport delivers inbound messages as soon as its read loop starts, which is before
-    // start() marks it operational. Creating the session first keeps the client's initialize from
-    // landing on a transport that would reject the session's response.
     private suspend fun connect(
         client: Client,
         clientTransport: ChannelTransport,

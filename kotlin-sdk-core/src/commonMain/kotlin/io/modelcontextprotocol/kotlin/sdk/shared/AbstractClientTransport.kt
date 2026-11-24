@@ -6,6 +6,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.CONNECTION_CLOSED
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError.ErrorCode.INTERNAL_ERROR
+import kotlinx.coroutines.CompletableDeferred
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.cancellation.CancellationException
@@ -38,6 +39,8 @@ public abstract class AbstractClientTransport : AbstractTransport() {
      * @see checkState
      */
     private val _state: AtomicReference<ClientTransportState> = AtomicReference(ClientTransportState.New)
+
+    private val operational = CompletableDeferred<Unit>()
 
     /**
      * Current transport state. Thread-safe via atomic reference.
@@ -136,10 +139,22 @@ public abstract class AbstractClientTransport : AbstractTransport() {
         try {
             initialize()
             stateTransition(from = ClientTransportState.Initializing, to = ClientTransportState.Operational)
+            operational.complete(Unit)
         } catch (e: Exception) {
             _state.store(ClientTransportState.InitializationFailed)
             closeResources()
             throw e
+        }
+    }
+
+    /**
+     * Registers [block] to handle inbound messages. Messages received before [start] completes
+     * are handed to [block] only once the transport is [ClientTransportState.Operational].
+     */
+    public override fun onMessage(block: suspend (JSONRPCMessage) -> Unit) {
+        super.onMessage { message ->
+            operational.await()
+            block(message)
         }
     }
 

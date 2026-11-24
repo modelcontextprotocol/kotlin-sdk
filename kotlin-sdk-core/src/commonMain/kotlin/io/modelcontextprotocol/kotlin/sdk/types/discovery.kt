@@ -83,6 +83,7 @@ public data class DiscoverResult(
     @EncodeDefault
     val resultType: String = COMPLETE_RESULT_TYPE,
     @Required
+    @Serializable(with = TtlMsSerializer::class)
     val ttlMs: Long = 0,
     @Required
     val cacheScope: CacheScope = CacheScope.Private,
