@@ -119,23 +119,24 @@ private class SessionNotificationJob {
             }
 
             is ResourceUpdatedNotification -> {
-                resourceSubscriptions.value[notification.params.uri]?.let { resourceFromTimestamp ->
-                    if (event.timestamp >= resourceFromTimestamp) {
+                val uri = notification.params.uri
+                val subscribedAt = resourceSubscriptions.value[uri]
+                when {
+                    subscribedAt == null -> logger.debug {
+                        "No subscription for resource $uri in sessionId: ${session.sessionId}. Skipping notification"
+                    }
+
+                    event.timestamp < subscribedAt -> logger.info {
+                        "Skipping resource updated notification for resource $uri " +
+                            "as it is older than subscription timestamp $subscribedAt"
+                    }
+
+                    else -> {
                         logger.info {
-                            "Sending resource updated notification for resource ${notification.params.uri} " +
+                            "Sending resource updated notification for resource $uri " +
                                 "to sessionId: ${session.sessionId}"
                         }
                         session.notification(notification)
-                    } else {
-                        logger.info {
-                            "Skipping resource updated notification for resource ${notification.params.uri} " +
-                                "as it is older than subscription timestamp $resourceFromTimestamp"
-                        }
-                    }
-                } ?: {
-                    logger.info {
-                        "No subscription for resource ${notification.params.uri}. " +
-                            "Skipping notification: $notification"
                     }
                 }
             }
