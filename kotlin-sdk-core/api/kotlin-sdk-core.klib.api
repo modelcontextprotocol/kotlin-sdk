@@ -352,6 +352,8 @@ sealed interface io.modelcontextprotocol.kotlin.sdk.types/Method { // io.modelco
         enum entry RootsList // io.modelcontextprotocol.kotlin.sdk.types/Method.Defined.RootsList|null[0]
         enum entry SamplingCreateMessage // io.modelcontextprotocol.kotlin.sdk.types/Method.Defined.SamplingCreateMessage|null[0]
         enum entry ServerDiscover // io.modelcontextprotocol.kotlin.sdk.types/Method.Defined.ServerDiscover|null[0]
+        enum entry SkillsGet // io.modelcontextprotocol.kotlin.sdk.types/Method.Defined.SkillsGet|null[0]
+        enum entry SkillsList // io.modelcontextprotocol.kotlin.sdk.types/Method.Defined.SkillsList|null[0]
         enum entry TasksCancel // io.modelcontextprotocol.kotlin.sdk.types/Method.Defined.TasksCancel|null[0]
         enum entry TasksGet // io.modelcontextprotocol.kotlin.sdk.types/Method.Defined.TasksGet|null[0]
         enum entry TasksList // io.modelcontextprotocol.kotlin.sdk.types/Method.Defined.TasksList|null[0]
@@ -617,6 +619,32 @@ sealed interface io.modelcontextprotocol.kotlin.sdk.types/SingleSelectEnumSchema
     final object Companion : kotlinx.serialization.internal/SerializerFactory { // io.modelcontextprotocol.kotlin.sdk.types/SingleSelectEnumSchema.Companion|null[0]
         final fun serializer(): kotlinx.serialization/KSerializer<io.modelcontextprotocol.kotlin.sdk.types/SingleSelectEnumSchema> // io.modelcontextprotocol.kotlin.sdk.types/SingleSelectEnumSchema.Companion.serializer|serializer(){}[0]
         final fun serializer(kotlin/Array<out kotlinx.serialization/KSerializer<*>>...): kotlinx.serialization/KSerializer<*> // io.modelcontextprotocol.kotlin.sdk.types/SingleSelectEnumSchema.Companion.serializer|serializer(kotlin.Array<out|kotlinx.serialization.KSerializer<*>>...){}[0]
+    }
+}
+
+sealed interface io.modelcontextprotocol.kotlin.sdk.types/SkillResources { // io.modelcontextprotocol.kotlin.sdk.types/SkillResources|null[0]
+    final class Files : io.modelcontextprotocol.kotlin.sdk.types/SkillResources { // io.modelcontextprotocol.kotlin.sdk.types/SkillResources.Files|null[0]
+        constructor <init>(kotlin.collections/List<io.modelcontextprotocol.kotlin.sdk.types/SkillResource>) // io.modelcontextprotocol.kotlin.sdk.types/SkillResources.Files.<init>|<init>(kotlin.collections.List<io.modelcontextprotocol.kotlin.sdk.types.SkillResource>){}[0]
+
+        final val files // io.modelcontextprotocol.kotlin.sdk.types/SkillResources.Files.files|{}files[0]
+            final fun <get-files>(): kotlin.collections/List<io.modelcontextprotocol.kotlin.sdk.types/SkillResource> // io.modelcontextprotocol.kotlin.sdk.types/SkillResources.Files.files.<get-files>|<get-files>(){}[0]
+
+        final fun component1(): kotlin.collections/List<io.modelcontextprotocol.kotlin.sdk.types/SkillResource> // io.modelcontextprotocol.kotlin.sdk.types/SkillResources.Files.component1|component1(){}[0]
+        final fun copy(kotlin.collections/List<io.modelcontextprotocol.kotlin.sdk.types/SkillResource> = ...): io.modelcontextprotocol.kotlin.sdk.types/SkillResources.Files // io.modelcontextprotocol.kotlin.sdk.types/SkillResources.Files.copy|copy(kotlin.collections.List<io.modelcontextprotocol.kotlin.sdk.types.SkillResource>){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.modelcontextprotocol.kotlin.sdk.types/SkillResources.Files.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.modelcontextprotocol.kotlin.sdk.types/SkillResources.Files.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/SkillResources.Files.toString|toString(){}[0]
+    }
+
+    final object Companion : kotlinx.serialization.internal/SerializerFactory { // io.modelcontextprotocol.kotlin.sdk.types/SkillResources.Companion|null[0]
+        final fun serializer(): kotlinx.serialization/KSerializer<io.modelcontextprotocol.kotlin.sdk.types/SkillResources> // io.modelcontextprotocol.kotlin.sdk.types/SkillResources.Companion.serializer|serializer(){}[0]
+        final fun serializer(kotlin/Array<out kotlinx.serialization/KSerializer<*>>...): kotlinx.serialization/KSerializer<*> // io.modelcontextprotocol.kotlin.sdk.types/SkillResources.Companion.serializer|serializer(kotlin.Array<out|kotlinx.serialization.KSerializer<*>>...){}[0]
+    }
+
+    final object Dynamic : io.modelcontextprotocol.kotlin.sdk.types/SkillResources { // io.modelcontextprotocol.kotlin.sdk.types/SkillResources.Dynamic|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.modelcontextprotocol.kotlin.sdk.types/SkillResources.Dynamic.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.modelcontextprotocol.kotlin.sdk.types/SkillResources.Dynamic.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/SkillResources.Dynamic.toString|toString(){}[0]
     }
 }
 
@@ -2553,6 +2581,105 @@ final class io.modelcontextprotocol.kotlin.sdk.types/GetPromptResult : io.modelc
     }
 }
 
+final class io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequest : io.modelcontextprotocol.kotlin.sdk.types/ClientRequest { // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequest|null[0]
+    constructor <init>(io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams) // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequest.<init>|<init>(io.modelcontextprotocol.kotlin.sdk.types.GetSkillRequestParams){}[0]
+
+    final val method // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequest.method|{}method[0]
+        final fun <get-method>(): io.modelcontextprotocol.kotlin.sdk.types/Method // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequest.method.<get-method>|<get-method>(){}[0]
+    final val params // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequest.params|{}params[0]
+        final fun <get-params>(): io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequest.params.<get-params>|<get-params>(){}[0]
+    final val uri // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequest.uri|{}uri[0]
+        final fun <get-uri>(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequest.uri.<get-uri>|<get-uri>(){}[0]
+
+    final fun component1(): io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequest.component1|component1(){}[0]
+    final fun copy(io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams = ...): io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequest // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequest.copy|copy(io.modelcontextprotocol.kotlin.sdk.types.GetSkillRequestParams){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequest.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequest.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequest.toString|toString(){}[0]
+
+    final object $serializer : kotlinx.serialization.internal/GeneratedSerializer<io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequest> { // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequest.$serializer|null[0]
+        final val descriptor // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequest.$serializer.descriptor|{}descriptor[0]
+            final fun <get-descriptor>(): kotlinx.serialization.descriptors/SerialDescriptor // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequest.$serializer.descriptor.<get-descriptor>|<get-descriptor>(){}[0]
+
+        final fun childSerializers(): kotlin/Array<kotlinx.serialization/KSerializer<*>> // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequest.$serializer.childSerializers|childSerializers(){}[0]
+        final fun deserialize(kotlinx.serialization.encoding/Decoder): io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequest // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequest.$serializer.deserialize|deserialize(kotlinx.serialization.encoding.Decoder){}[0]
+        final fun serialize(kotlinx.serialization.encoding/Encoder, io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequest) // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequest.$serializer.serialize|serialize(kotlinx.serialization.encoding.Encoder;io.modelcontextprotocol.kotlin.sdk.types.GetSkillRequest){}[0]
+    }
+
+    final object Companion { // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequest.Companion|null[0]
+        final fun serializer(): kotlinx.serialization/KSerializer<io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequest> // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequest.Companion.serializer|serializer(){}[0]
+    }
+}
+
+final class io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams : io.modelcontextprotocol.kotlin.sdk.types/RequestParams { // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams|null[0]
+    constructor <init>(kotlin/String, io.modelcontextprotocol.kotlin.sdk.types/RequestMeta? = ...) // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams.<init>|<init>(kotlin.String;io.modelcontextprotocol.kotlin.sdk.types.RequestMeta?){}[0]
+
+    final val meta // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams.meta|{}meta[0]
+        final fun <get-meta>(): io.modelcontextprotocol.kotlin.sdk.types/RequestMeta? // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams.meta.<get-meta>|<get-meta>(){}[0]
+    final val uri // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams.uri|{}uri[0]
+        final fun <get-uri>(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams.uri.<get-uri>|<get-uri>(){}[0]
+
+    final fun component1(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams.component1|component1(){}[0]
+    final fun component2(): io.modelcontextprotocol.kotlin.sdk.types/RequestMeta? // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams.component2|component2(){}[0]
+    final fun copy(kotlin/String = ..., io.modelcontextprotocol.kotlin.sdk.types/RequestMeta? = ...): io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams.copy|copy(kotlin.String;io.modelcontextprotocol.kotlin.sdk.types.RequestMeta?){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams.toString|toString(){}[0]
+
+    final object $serializer : kotlinx.serialization.internal/GeneratedSerializer<io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams> { // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams.$serializer|null[0]
+        final val descriptor // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams.$serializer.descriptor|{}descriptor[0]
+            final fun <get-descriptor>(): kotlinx.serialization.descriptors/SerialDescriptor // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams.$serializer.descriptor.<get-descriptor>|<get-descriptor>(){}[0]
+
+        final fun childSerializers(): kotlin/Array<kotlinx.serialization/KSerializer<*>> // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams.$serializer.childSerializers|childSerializers(){}[0]
+        final fun deserialize(kotlinx.serialization.encoding/Decoder): io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams.$serializer.deserialize|deserialize(kotlinx.serialization.encoding.Decoder){}[0]
+        final fun serialize(kotlinx.serialization.encoding/Encoder, io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams) // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams.$serializer.serialize|serialize(kotlinx.serialization.encoding.Encoder;io.modelcontextprotocol.kotlin.sdk.types.GetSkillRequestParams){}[0]
+    }
+
+    final object Companion { // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams.Companion|null[0]
+        final fun serializer(): kotlinx.serialization/KSerializer<io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams> // io.modelcontextprotocol.kotlin.sdk.types/GetSkillRequestParams.Companion.serializer|serializer(){}[0]
+    }
+}
+
+final class io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult : io.modelcontextprotocol.kotlin.sdk.types/ServerResult { // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult|null[0]
+    constructor <init>(io.modelcontextprotocol.kotlin.sdk.types/Skill, kotlin/String = ..., kotlin/Long = ..., io.modelcontextprotocol.kotlin.sdk.types/CacheScope = ..., kotlinx.serialization.json/JsonObject? = ...) // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.<init>|<init>(io.modelcontextprotocol.kotlin.sdk.types.Skill;kotlin.String;kotlin.Long;io.modelcontextprotocol.kotlin.sdk.types.CacheScope;kotlinx.serialization.json.JsonObject?){}[0]
+
+    final val cacheScope // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.cacheScope|{}cacheScope[0]
+        final fun <get-cacheScope>(): io.modelcontextprotocol.kotlin.sdk.types/CacheScope // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.cacheScope.<get-cacheScope>|<get-cacheScope>(){}[0]
+    final val meta // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.meta|{}meta[0]
+        final fun <get-meta>(): kotlinx.serialization.json/JsonObject? // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.meta.<get-meta>|<get-meta>(){}[0]
+    final val resultType // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.resultType|{}resultType[0]
+        final fun <get-resultType>(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.resultType.<get-resultType>|<get-resultType>(){}[0]
+    final val skill // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.skill|{}skill[0]
+        final fun <get-skill>(): io.modelcontextprotocol.kotlin.sdk.types/Skill // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.skill.<get-skill>|<get-skill>(){}[0]
+    final val ttlMs // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.ttlMs|{}ttlMs[0]
+        final fun <get-ttlMs>(): kotlin/Long // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.ttlMs.<get-ttlMs>|<get-ttlMs>(){}[0]
+
+    final fun component1(): io.modelcontextprotocol.kotlin.sdk.types/Skill // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.component1|component1(){}[0]
+    final fun component2(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.component2|component2(){}[0]
+    final fun component3(): kotlin/Long // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.component3|component3(){}[0]
+    final fun component4(): io.modelcontextprotocol.kotlin.sdk.types/CacheScope // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.component4|component4(){}[0]
+    final fun component5(): kotlinx.serialization.json/JsonObject? // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.component5|component5(){}[0]
+    final fun copy(io.modelcontextprotocol.kotlin.sdk.types/Skill = ..., kotlin/String = ..., kotlin/Long = ..., io.modelcontextprotocol.kotlin.sdk.types/CacheScope = ..., kotlinx.serialization.json/JsonObject? = ...): io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.copy|copy(io.modelcontextprotocol.kotlin.sdk.types.Skill;kotlin.String;kotlin.Long;io.modelcontextprotocol.kotlin.sdk.types.CacheScope;kotlinx.serialization.json.JsonObject?){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.toString|toString(){}[0]
+
+    final object $serializer : kotlinx.serialization.internal/GeneratedSerializer<io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult> { // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.$serializer|null[0]
+        final val descriptor // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.$serializer.descriptor|{}descriptor[0]
+            final fun <get-descriptor>(): kotlinx.serialization.descriptors/SerialDescriptor // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.$serializer.descriptor.<get-descriptor>|<get-descriptor>(){}[0]
+
+        final fun childSerializers(): kotlin/Array<kotlinx.serialization/KSerializer<*>> // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.$serializer.childSerializers|childSerializers(){}[0]
+        final fun deserialize(kotlinx.serialization.encoding/Decoder): io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.$serializer.deserialize|deserialize(kotlinx.serialization.encoding.Decoder){}[0]
+        final fun serialize(kotlinx.serialization.encoding/Encoder, io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult) // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.$serializer.serialize|serialize(kotlinx.serialization.encoding.Encoder;io.modelcontextprotocol.kotlin.sdk.types.GetSkillResult){}[0]
+    }
+
+    final object Companion { // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.Companion|null[0]
+        final val $childSerializers // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.Companion.$childSerializers|{}$childSerializers[0]
+
+        final fun serializer(): kotlinx.serialization/KSerializer<io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult> // io.modelcontextprotocol.kotlin.sdk.types/GetSkillResult.Companion.serializer|serializer(){}[0]
+    }
+}
+
 final class io.modelcontextprotocol.kotlin.sdk.types/GetTaskPayloadRequest : io.modelcontextprotocol.kotlin.sdk.types/ClientRequest, io.modelcontextprotocol.kotlin.sdk.types/ServerRequest { // io.modelcontextprotocol.kotlin.sdk.types/GetTaskPayloadRequest|null[0]
     constructor <init>(io.modelcontextprotocol.kotlin.sdk.types/GetTaskPayloadRequestParams) // io.modelcontextprotocol.kotlin.sdk.types/GetTaskPayloadRequest.<init>|<init>(io.modelcontextprotocol.kotlin.sdk.types.GetTaskPayloadRequestParams){}[0]
 
@@ -3497,6 +3624,77 @@ final class io.modelcontextprotocol.kotlin.sdk.types/ListRootsResult : io.modelc
         final val $childSerializers // io.modelcontextprotocol.kotlin.sdk.types/ListRootsResult.Companion.$childSerializers|{}$childSerializers[0]
 
         final fun serializer(): kotlinx.serialization/KSerializer<io.modelcontextprotocol.kotlin.sdk.types/ListRootsResult> // io.modelcontextprotocol.kotlin.sdk.types/ListRootsResult.Companion.serializer|serializer(){}[0]
+    }
+}
+
+final class io.modelcontextprotocol.kotlin.sdk.types/ListSkillsRequest : io.modelcontextprotocol.kotlin.sdk.types/ClientRequest, io.modelcontextprotocol.kotlin.sdk.types/PaginatedRequest { // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsRequest|null[0]
+    constructor <init>(io.modelcontextprotocol.kotlin.sdk.types/PaginatedRequestParams? = ...) // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsRequest.<init>|<init>(io.modelcontextprotocol.kotlin.sdk.types.PaginatedRequestParams?){}[0]
+
+    final val method // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsRequest.method|{}method[0]
+        final fun <get-method>(): io.modelcontextprotocol.kotlin.sdk.types/Method // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsRequest.method.<get-method>|<get-method>(){}[0]
+    final val params // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsRequest.params|{}params[0]
+        final fun <get-params>(): io.modelcontextprotocol.kotlin.sdk.types/PaginatedRequestParams? // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsRequest.params.<get-params>|<get-params>(){}[0]
+
+    final fun component1(): io.modelcontextprotocol.kotlin.sdk.types/PaginatedRequestParams? // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsRequest.component1|component1(){}[0]
+    final fun copy(io.modelcontextprotocol.kotlin.sdk.types/PaginatedRequestParams? = ...): io.modelcontextprotocol.kotlin.sdk.types/ListSkillsRequest // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsRequest.copy|copy(io.modelcontextprotocol.kotlin.sdk.types.PaginatedRequestParams?){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsRequest.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsRequest.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsRequest.toString|toString(){}[0]
+
+    final object $serializer : kotlinx.serialization.internal/GeneratedSerializer<io.modelcontextprotocol.kotlin.sdk.types/ListSkillsRequest> { // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsRequest.$serializer|null[0]
+        final val descriptor // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsRequest.$serializer.descriptor|{}descriptor[0]
+            final fun <get-descriptor>(): kotlinx.serialization.descriptors/SerialDescriptor // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsRequest.$serializer.descriptor.<get-descriptor>|<get-descriptor>(){}[0]
+
+        final fun childSerializers(): kotlin/Array<kotlinx.serialization/KSerializer<*>> // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsRequest.$serializer.childSerializers|childSerializers(){}[0]
+        final fun deserialize(kotlinx.serialization.encoding/Decoder): io.modelcontextprotocol.kotlin.sdk.types/ListSkillsRequest // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsRequest.$serializer.deserialize|deserialize(kotlinx.serialization.encoding.Decoder){}[0]
+        final fun serialize(kotlinx.serialization.encoding/Encoder, io.modelcontextprotocol.kotlin.sdk.types/ListSkillsRequest) // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsRequest.$serializer.serialize|serialize(kotlinx.serialization.encoding.Encoder;io.modelcontextprotocol.kotlin.sdk.types.ListSkillsRequest){}[0]
+    }
+
+    final object Companion { // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsRequest.Companion|null[0]
+        final fun serializer(): kotlinx.serialization/KSerializer<io.modelcontextprotocol.kotlin.sdk.types/ListSkillsRequest> // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsRequest.Companion.serializer|serializer(){}[0]
+    }
+}
+
+final class io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult : io.modelcontextprotocol.kotlin.sdk.types/PaginatedResult, io.modelcontextprotocol.kotlin.sdk.types/ServerResult { // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult|null[0]
+    constructor <init>(kotlin.collections/List<io.modelcontextprotocol.kotlin.sdk.types/Skill>, kotlin/String? = ..., kotlin/String = ..., kotlin/Long = ..., io.modelcontextprotocol.kotlin.sdk.types/CacheScope = ..., kotlinx.serialization.json/JsonObject? = ...) // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.<init>|<init>(kotlin.collections.List<io.modelcontextprotocol.kotlin.sdk.types.Skill>;kotlin.String?;kotlin.String;kotlin.Long;io.modelcontextprotocol.kotlin.sdk.types.CacheScope;kotlinx.serialization.json.JsonObject?){}[0]
+
+    final val cacheScope // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.cacheScope|{}cacheScope[0]
+        final fun <get-cacheScope>(): io.modelcontextprotocol.kotlin.sdk.types/CacheScope // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.cacheScope.<get-cacheScope>|<get-cacheScope>(){}[0]
+    final val meta // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.meta|{}meta[0]
+        final fun <get-meta>(): kotlinx.serialization.json/JsonObject? // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.meta.<get-meta>|<get-meta>(){}[0]
+    final val nextCursor // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.nextCursor|{}nextCursor[0]
+        final fun <get-nextCursor>(): kotlin/String? // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.nextCursor.<get-nextCursor>|<get-nextCursor>(){}[0]
+    final val resultType // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.resultType|{}resultType[0]
+        final fun <get-resultType>(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.resultType.<get-resultType>|<get-resultType>(){}[0]
+    final val skills // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.skills|{}skills[0]
+        final fun <get-skills>(): kotlin.collections/List<io.modelcontextprotocol.kotlin.sdk.types/Skill> // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.skills.<get-skills>|<get-skills>(){}[0]
+    final val ttlMs // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.ttlMs|{}ttlMs[0]
+        final fun <get-ttlMs>(): kotlin/Long // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.ttlMs.<get-ttlMs>|<get-ttlMs>(){}[0]
+
+    final fun component1(): kotlin.collections/List<io.modelcontextprotocol.kotlin.sdk.types/Skill> // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.component1|component1(){}[0]
+    final fun component2(): kotlin/String? // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.component2|component2(){}[0]
+    final fun component3(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.component3|component3(){}[0]
+    final fun component4(): kotlin/Long // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.component4|component4(){}[0]
+    final fun component5(): io.modelcontextprotocol.kotlin.sdk.types/CacheScope // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.component5|component5(){}[0]
+    final fun component6(): kotlinx.serialization.json/JsonObject? // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.component6|component6(){}[0]
+    final fun copy(kotlin.collections/List<io.modelcontextprotocol.kotlin.sdk.types/Skill> = ..., kotlin/String? = ..., kotlin/String = ..., kotlin/Long = ..., io.modelcontextprotocol.kotlin.sdk.types/CacheScope = ..., kotlinx.serialization.json/JsonObject? = ...): io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.copy|copy(kotlin.collections.List<io.modelcontextprotocol.kotlin.sdk.types.Skill>;kotlin.String?;kotlin.String;kotlin.Long;io.modelcontextprotocol.kotlin.sdk.types.CacheScope;kotlinx.serialization.json.JsonObject?){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.toString|toString(){}[0]
+
+    final object $serializer : kotlinx.serialization.internal/GeneratedSerializer<io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult> { // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.$serializer|null[0]
+        final val descriptor // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.$serializer.descriptor|{}descriptor[0]
+            final fun <get-descriptor>(): kotlinx.serialization.descriptors/SerialDescriptor // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.$serializer.descriptor.<get-descriptor>|<get-descriptor>(){}[0]
+
+        final fun childSerializers(): kotlin/Array<kotlinx.serialization/KSerializer<*>> // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.$serializer.childSerializers|childSerializers(){}[0]
+        final fun deserialize(kotlinx.serialization.encoding/Decoder): io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.$serializer.deserialize|deserialize(kotlinx.serialization.encoding.Decoder){}[0]
+        final fun serialize(kotlinx.serialization.encoding/Encoder, io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult) // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.$serializer.serialize|serialize(kotlinx.serialization.encoding.Encoder;io.modelcontextprotocol.kotlin.sdk.types.ListSkillsResult){}[0]
+    }
+
+    final object Companion { // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.Companion|null[0]
+        final val $childSerializers // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.Companion.$childSerializers|{}$childSerializers[0]
+
+        final fun serializer(): kotlinx.serialization/KSerializer<io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult> // io.modelcontextprotocol.kotlin.sdk.types/ListSkillsResult.Companion.serializer|serializer(){}[0]
     }
 }
 
@@ -4943,6 +5141,103 @@ final class io.modelcontextprotocol.kotlin.sdk.types/SetLevelRequestParams : io.
     }
 }
 
+final class io.modelcontextprotocol.kotlin.sdk.types/Skill { // io.modelcontextprotocol.kotlin.sdk.types/Skill|null[0]
+    constructor <init>(kotlin/String, kotlinx.serialization.json/JsonObject, io.modelcontextprotocol.kotlin.sdk.types/SkillResources, kotlinx.serialization.json/JsonObject? = ...) // io.modelcontextprotocol.kotlin.sdk.types/Skill.<init>|<init>(kotlin.String;kotlinx.serialization.json.JsonObject;io.modelcontextprotocol.kotlin.sdk.types.SkillResources;kotlinx.serialization.json.JsonObject?){}[0]
+
+    final val description // io.modelcontextprotocol.kotlin.sdk.types/Skill.description|{}description[0]
+        final fun <get-description>(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/Skill.description.<get-description>|<get-description>(){}[0]
+    final val frontmatter // io.modelcontextprotocol.kotlin.sdk.types/Skill.frontmatter|{}frontmatter[0]
+        final fun <get-frontmatter>(): kotlinx.serialization.json/JsonObject // io.modelcontextprotocol.kotlin.sdk.types/Skill.frontmatter.<get-frontmatter>|<get-frontmatter>(){}[0]
+    final val meta // io.modelcontextprotocol.kotlin.sdk.types/Skill.meta|{}meta[0]
+        final fun <get-meta>(): kotlinx.serialization.json/JsonObject? // io.modelcontextprotocol.kotlin.sdk.types/Skill.meta.<get-meta>|<get-meta>(){}[0]
+    final val name // io.modelcontextprotocol.kotlin.sdk.types/Skill.name|{}name[0]
+        final fun <get-name>(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/Skill.name.<get-name>|<get-name>(){}[0]
+    final val resources // io.modelcontextprotocol.kotlin.sdk.types/Skill.resources|{}resources[0]
+        final fun <get-resources>(): io.modelcontextprotocol.kotlin.sdk.types/SkillResources // io.modelcontextprotocol.kotlin.sdk.types/Skill.resources.<get-resources>|<get-resources>(){}[0]
+    final val uri // io.modelcontextprotocol.kotlin.sdk.types/Skill.uri|{}uri[0]
+        final fun <get-uri>(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/Skill.uri.<get-uri>|<get-uri>(){}[0]
+
+    final fun component1(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/Skill.component1|component1(){}[0]
+    final fun component2(): kotlinx.serialization.json/JsonObject // io.modelcontextprotocol.kotlin.sdk.types/Skill.component2|component2(){}[0]
+    final fun component3(): io.modelcontextprotocol.kotlin.sdk.types/SkillResources // io.modelcontextprotocol.kotlin.sdk.types/Skill.component3|component3(){}[0]
+    final fun component4(): kotlinx.serialization.json/JsonObject? // io.modelcontextprotocol.kotlin.sdk.types/Skill.component4|component4(){}[0]
+    final fun copy(kotlin/String = ..., kotlinx.serialization.json/JsonObject = ..., io.modelcontextprotocol.kotlin.sdk.types/SkillResources = ..., kotlinx.serialization.json/JsonObject? = ...): io.modelcontextprotocol.kotlin.sdk.types/Skill // io.modelcontextprotocol.kotlin.sdk.types/Skill.copy|copy(kotlin.String;kotlinx.serialization.json.JsonObject;io.modelcontextprotocol.kotlin.sdk.types.SkillResources;kotlinx.serialization.json.JsonObject?){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // io.modelcontextprotocol.kotlin.sdk.types/Skill.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // io.modelcontextprotocol.kotlin.sdk.types/Skill.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/Skill.toString|toString(){}[0]
+
+    final object $serializer : kotlinx.serialization.internal/GeneratedSerializer<io.modelcontextprotocol.kotlin.sdk.types/Skill> { // io.modelcontextprotocol.kotlin.sdk.types/Skill.$serializer|null[0]
+        final val descriptor // io.modelcontextprotocol.kotlin.sdk.types/Skill.$serializer.descriptor|{}descriptor[0]
+            final fun <get-descriptor>(): kotlinx.serialization.descriptors/SerialDescriptor // io.modelcontextprotocol.kotlin.sdk.types/Skill.$serializer.descriptor.<get-descriptor>|<get-descriptor>(){}[0]
+
+        final fun childSerializers(): kotlin/Array<kotlinx.serialization/KSerializer<*>> // io.modelcontextprotocol.kotlin.sdk.types/Skill.$serializer.childSerializers|childSerializers(){}[0]
+        final fun deserialize(kotlinx.serialization.encoding/Decoder): io.modelcontextprotocol.kotlin.sdk.types/Skill // io.modelcontextprotocol.kotlin.sdk.types/Skill.$serializer.deserialize|deserialize(kotlinx.serialization.encoding.Decoder){}[0]
+        final fun serialize(kotlinx.serialization.encoding/Encoder, io.modelcontextprotocol.kotlin.sdk.types/Skill) // io.modelcontextprotocol.kotlin.sdk.types/Skill.$serializer.serialize|serialize(kotlinx.serialization.encoding.Encoder;io.modelcontextprotocol.kotlin.sdk.types.Skill){}[0]
+    }
+
+    final object Companion { // io.modelcontextprotocol.kotlin.sdk.types/Skill.Companion|null[0]
+        final fun serializer(): kotlinx.serialization/KSerializer<io.modelcontextprotocol.kotlin.sdk.types/Skill> // io.modelcontextprotocol.kotlin.sdk.types/Skill.Companion.serializer|serializer(){}[0]
+    }
+}
+
+final class io.modelcontextprotocol.kotlin.sdk.types/SkillResource { // io.modelcontextprotocol.kotlin.sdk.types/SkillResource|null[0]
+    constructor <init>(kotlin/String, kotlin/String, kotlin/Long) // io.modelcontextprotocol.kotlin.sdk.types/SkillResource.<init>|<init>(kotlin.String;kotlin.String;kotlin.Long){}[0]
+
+    final val digest // io.modelcontextprotocol.kotlin.sdk.types/SkillResource.digest|{}digest[0]
+        final fun <get-digest>(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/SkillResource.digest.<get-digest>|<get-digest>(){}[0]
+    final val size // io.modelcontextprotocol.kotlin.sdk.types/SkillResource.size|{}size[0]
+        final fun <get-size>(): kotlin/Long // io.modelcontextprotocol.kotlin.sdk.types/SkillResource.size.<get-size>|<get-size>(){}[0]
+    final val uri // io.modelcontextprotocol.kotlin.sdk.types/SkillResource.uri|{}uri[0]
+        final fun <get-uri>(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/SkillResource.uri.<get-uri>|<get-uri>(){}[0]
+
+    final fun component1(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/SkillResource.component1|component1(){}[0]
+    final fun component2(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/SkillResource.component2|component2(){}[0]
+    final fun component3(): kotlin/Long // io.modelcontextprotocol.kotlin.sdk.types/SkillResource.component3|component3(){}[0]
+    final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin/Long = ...): io.modelcontextprotocol.kotlin.sdk.types/SkillResource // io.modelcontextprotocol.kotlin.sdk.types/SkillResource.copy|copy(kotlin.String;kotlin.String;kotlin.Long){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // io.modelcontextprotocol.kotlin.sdk.types/SkillResource.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // io.modelcontextprotocol.kotlin.sdk.types/SkillResource.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/SkillResource.toString|toString(){}[0]
+
+    final object $serializer : kotlinx.serialization.internal/GeneratedSerializer<io.modelcontextprotocol.kotlin.sdk.types/SkillResource> { // io.modelcontextprotocol.kotlin.sdk.types/SkillResource.$serializer|null[0]
+        final val descriptor // io.modelcontextprotocol.kotlin.sdk.types/SkillResource.$serializer.descriptor|{}descriptor[0]
+            final fun <get-descriptor>(): kotlinx.serialization.descriptors/SerialDescriptor // io.modelcontextprotocol.kotlin.sdk.types/SkillResource.$serializer.descriptor.<get-descriptor>|<get-descriptor>(){}[0]
+
+        final fun childSerializers(): kotlin/Array<kotlinx.serialization/KSerializer<*>> // io.modelcontextprotocol.kotlin.sdk.types/SkillResource.$serializer.childSerializers|childSerializers(){}[0]
+        final fun deserialize(kotlinx.serialization.encoding/Decoder): io.modelcontextprotocol.kotlin.sdk.types/SkillResource // io.modelcontextprotocol.kotlin.sdk.types/SkillResource.$serializer.deserialize|deserialize(kotlinx.serialization.encoding.Decoder){}[0]
+        final fun serialize(kotlinx.serialization.encoding/Encoder, io.modelcontextprotocol.kotlin.sdk.types/SkillResource) // io.modelcontextprotocol.kotlin.sdk.types/SkillResource.$serializer.serialize|serialize(kotlinx.serialization.encoding.Encoder;io.modelcontextprotocol.kotlin.sdk.types.SkillResource){}[0]
+    }
+
+    final object Companion { // io.modelcontextprotocol.kotlin.sdk.types/SkillResource.Companion|null[0]
+        final fun serializer(): kotlinx.serialization/KSerializer<io.modelcontextprotocol.kotlin.sdk.types/SkillResource> // io.modelcontextprotocol.kotlin.sdk.types/SkillResource.Companion.serializer|serializer(){}[0]
+    }
+}
+
+final class io.modelcontextprotocol.kotlin.sdk.types/SkillsExtensionSettings { // io.modelcontextprotocol.kotlin.sdk.types/SkillsExtensionSettings|null[0]
+    constructor <init>(kotlin/Boolean? = ...) // io.modelcontextprotocol.kotlin.sdk.types/SkillsExtensionSettings.<init>|<init>(kotlin.Boolean?){}[0]
+
+    final val directoryRead // io.modelcontextprotocol.kotlin.sdk.types/SkillsExtensionSettings.directoryRead|{}directoryRead[0]
+        final fun <get-directoryRead>(): kotlin/Boolean? // io.modelcontextprotocol.kotlin.sdk.types/SkillsExtensionSettings.directoryRead.<get-directoryRead>|<get-directoryRead>(){}[0]
+
+    final fun component1(): kotlin/Boolean? // io.modelcontextprotocol.kotlin.sdk.types/SkillsExtensionSettings.component1|component1(){}[0]
+    final fun copy(kotlin/Boolean? = ...): io.modelcontextprotocol.kotlin.sdk.types/SkillsExtensionSettings // io.modelcontextprotocol.kotlin.sdk.types/SkillsExtensionSettings.copy|copy(kotlin.Boolean?){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // io.modelcontextprotocol.kotlin.sdk.types/SkillsExtensionSettings.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // io.modelcontextprotocol.kotlin.sdk.types/SkillsExtensionSettings.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/SkillsExtensionSettings.toString|toString(){}[0]
+
+    final object $serializer : kotlinx.serialization.internal/GeneratedSerializer<io.modelcontextprotocol.kotlin.sdk.types/SkillsExtensionSettings> { // io.modelcontextprotocol.kotlin.sdk.types/SkillsExtensionSettings.$serializer|null[0]
+        final val descriptor // io.modelcontextprotocol.kotlin.sdk.types/SkillsExtensionSettings.$serializer.descriptor|{}descriptor[0]
+            final fun <get-descriptor>(): kotlinx.serialization.descriptors/SerialDescriptor // io.modelcontextprotocol.kotlin.sdk.types/SkillsExtensionSettings.$serializer.descriptor.<get-descriptor>|<get-descriptor>(){}[0]
+
+        final fun childSerializers(): kotlin/Array<kotlinx.serialization/KSerializer<*>> // io.modelcontextprotocol.kotlin.sdk.types/SkillsExtensionSettings.$serializer.childSerializers|childSerializers(){}[0]
+        final fun deserialize(kotlinx.serialization.encoding/Decoder): io.modelcontextprotocol.kotlin.sdk.types/SkillsExtensionSettings // io.modelcontextprotocol.kotlin.sdk.types/SkillsExtensionSettings.$serializer.deserialize|deserialize(kotlinx.serialization.encoding.Decoder){}[0]
+        final fun serialize(kotlinx.serialization.encoding/Encoder, io.modelcontextprotocol.kotlin.sdk.types/SkillsExtensionSettings) // io.modelcontextprotocol.kotlin.sdk.types/SkillsExtensionSettings.$serializer.serialize|serialize(kotlinx.serialization.encoding.Encoder;io.modelcontextprotocol.kotlin.sdk.types.SkillsExtensionSettings){}[0]
+    }
+
+    final object Companion { // io.modelcontextprotocol.kotlin.sdk.types/SkillsExtensionSettings.Companion|null[0]
+        final fun serializer(): kotlinx.serialization/KSerializer<io.modelcontextprotocol.kotlin.sdk.types/SkillsExtensionSettings> // io.modelcontextprotocol.kotlin.sdk.types/SkillsExtensionSettings.Companion.serializer|serializer(){}[0]
+    }
+}
+
 final class io.modelcontextprotocol.kotlin.sdk.types/StringSchema : io.modelcontextprotocol.kotlin.sdk.types/PrimitiveSchemaDefinition { // io.modelcontextprotocol.kotlin.sdk.types/StringSchema|null[0]
     constructor <init>(kotlin/String? = ..., kotlin/String? = ..., kotlin/Int? = ..., kotlin/Int? = ..., io.modelcontextprotocol.kotlin.sdk.types/StringSchemaFormat? = ..., kotlin/String? = ...) // io.modelcontextprotocol.kotlin.sdk.types/StringSchema.<init>|<init>(kotlin.String?;kotlin.String?;kotlin.Int?;kotlin.Int?;io.modelcontextprotocol.kotlin.sdk.types.StringSchemaFormat?;kotlin.String?){}[0]
 
@@ -6206,6 +6501,8 @@ final const val io.modelcontextprotocol.kotlin.sdk.types/LATEST_PROTOCOL_VERSION
     final fun <get-LATEST_PROTOCOL_VERSION>(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/LATEST_PROTOCOL_VERSION.<get-LATEST_PROTOCOL_VERSION>|<get-LATEST_PROTOCOL_VERSION>(){}[0]
 final const val io.modelcontextprotocol.kotlin.sdk.types/RELATED_TASK_META_KEY // io.modelcontextprotocol.kotlin.sdk.types/RELATED_TASK_META_KEY|{}RELATED_TASK_META_KEY[0]
     final fun <get-RELATED_TASK_META_KEY>(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/RELATED_TASK_META_KEY.<get-RELATED_TASK_META_KEY>|<get-RELATED_TASK_META_KEY>(){}[0]
+final const val io.modelcontextprotocol.kotlin.sdk.types/SKILLS_EXTENSION_ID // io.modelcontextprotocol.kotlin.sdk.types/SKILLS_EXTENSION_ID|{}SKILLS_EXTENSION_ID[0]
+    final fun <get-SKILLS_EXTENSION_ID>(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.types/SKILLS_EXTENSION_ID.<get-SKILLS_EXTENSION_ID>|<get-SKILLS_EXTENSION_ID>(){}[0]
 final const val io.modelcontextprotocol.kotlin.sdk/LIB_VERSION // io.modelcontextprotocol.kotlin.sdk/LIB_VERSION|{}LIB_VERSION[0]
     final fun <get-LIB_VERSION>(): kotlin/String // io.modelcontextprotocol.kotlin.sdk/LIB_VERSION.<get-LIB_VERSION>|<get-LIB_VERSION>(){}[0]
 
@@ -6219,6 +6516,8 @@ final val io.modelcontextprotocol.kotlin.sdk.types/McpJson // io.modelcontextpro
     final fun <get-McpJson>(): kotlinx.serialization.json/Json // io.modelcontextprotocol.kotlin.sdk.types/McpJson.<get-McpJson>|<get-McpJson>(){}[0]
 final val io.modelcontextprotocol.kotlin.sdk.types/SUPPORTED_PROTOCOL_VERSIONS // io.modelcontextprotocol.kotlin.sdk.types/SUPPORTED_PROTOCOL_VERSIONS|{}SUPPORTED_PROTOCOL_VERSIONS[0]
     final fun <get-SUPPORTED_PROTOCOL_VERSIONS>(): kotlin.collections/List<kotlin/String> // io.modelcontextprotocol.kotlin.sdk.types/SUPPORTED_PROTOCOL_VERSIONS.<get-SUPPORTED_PROTOCOL_VERSIONS>|<get-SUPPORTED_PROTOCOL_VERSIONS>(){}[0]
+final val io.modelcontextprotocol.kotlin.sdk.types/skillsExtension // io.modelcontextprotocol.kotlin.sdk.types/skillsExtension|@io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities{}skillsExtension[0]
+    final fun (io.modelcontextprotocol.kotlin.sdk.types/ServerCapabilities).<get-skillsExtension>(): io.modelcontextprotocol.kotlin.sdk.types/SkillsExtensionSettings? // io.modelcontextprotocol.kotlin.sdk.types/skillsExtension.<get-skillsExtension>|<get-skillsExtension>@io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities(){}[0]
 final val io.modelcontextprotocol.kotlin.sdk.types/supportsUrl // io.modelcontextprotocol.kotlin.sdk.types/supportsUrl|@io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities.Elicitation?{}supportsUrl[0]
     final fun (io.modelcontextprotocol.kotlin.sdk.types/ClientCapabilities.Elicitation?).<get-supportsUrl>(): kotlin/Boolean // io.modelcontextprotocol.kotlin.sdk.types/supportsUrl.<get-supportsUrl>|<get-supportsUrl>@io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities.Elicitation?(){}[0]
 
@@ -6235,6 +6534,7 @@ final fun (io.modelcontextprotocol.kotlin.sdk.types/SamplingMessageBuilder).io.m
 final fun (io.modelcontextprotocol.kotlin.sdk.types/SamplingMessageBuilder).io.modelcontextprotocol.kotlin.sdk.types/userAudio(kotlin/Function1<io.modelcontextprotocol.kotlin.sdk.types/AudioContentBuilder, kotlin/Unit>) // io.modelcontextprotocol.kotlin.sdk.types/userAudio|userAudio@io.modelcontextprotocol.kotlin.sdk.types.SamplingMessageBuilder(kotlin.Function1<io.modelcontextprotocol.kotlin.sdk.types.AudioContentBuilder,kotlin.Unit>){}[0]
 final fun (io.modelcontextprotocol.kotlin.sdk.types/SamplingMessageBuilder).io.modelcontextprotocol.kotlin.sdk.types/userImage(kotlin/Function1<io.modelcontextprotocol.kotlin.sdk.types/ImageContentBuilder, kotlin/Unit>) // io.modelcontextprotocol.kotlin.sdk.types/userImage|userImage@io.modelcontextprotocol.kotlin.sdk.types.SamplingMessageBuilder(kotlin.Function1<io.modelcontextprotocol.kotlin.sdk.types.ImageContentBuilder,kotlin.Unit>){}[0]
 final fun (io.modelcontextprotocol.kotlin.sdk.types/SamplingMessageBuilder).io.modelcontextprotocol.kotlin.sdk.types/userText(kotlin/Function1<io.modelcontextprotocol.kotlin.sdk.types/TextContentBuilder, kotlin/Unit>) // io.modelcontextprotocol.kotlin.sdk.types/userText|userText@io.modelcontextprotocol.kotlin.sdk.types.SamplingMessageBuilder(kotlin.Function1<io.modelcontextprotocol.kotlin.sdk.types.TextContentBuilder,kotlin.Unit>){}[0]
+final fun (io.modelcontextprotocol.kotlin.sdk.types/ServerCapabilities).io.modelcontextprotocol.kotlin.sdk.types/withSkillsExtension(io.modelcontextprotocol.kotlin.sdk.types/SkillsExtensionSettings = ...): io.modelcontextprotocol.kotlin.sdk.types/ServerCapabilities // io.modelcontextprotocol.kotlin.sdk.types/withSkillsExtension|withSkillsExtension@io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities(io.modelcontextprotocol.kotlin.sdk.types.SkillsExtensionSettings){}[0]
 final fun (kotlin.collections/Map<kotlin/String, kotlin/Any?>).io.modelcontextprotocol.kotlin.sdk.types/toJson(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> // io.modelcontextprotocol.kotlin.sdk.types/toJson|toJson@kotlin.collections.Map<kotlin.String,kotlin.Any?>(){}[0]
 final fun io.modelcontextprotocol.kotlin.sdk.shared/serializeMessage(io.modelcontextprotocol.kotlin.sdk.types/JSONRPCMessage): kotlin/String // io.modelcontextprotocol.kotlin.sdk.shared/serializeMessage|serializeMessage(io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage){}[0]
 final fun io.modelcontextprotocol.kotlin.sdk.types/ElicitRequestParams(kotlin/String, io.modelcontextprotocol.kotlin.sdk.types/ElicitRequestParams.RequestedSchema, io.modelcontextprotocol.kotlin.sdk.types/RequestMeta? = ...): io.modelcontextprotocol.kotlin.sdk.types/ElicitRequestFormParams // io.modelcontextprotocol.kotlin.sdk.types/ElicitRequestParams|ElicitRequestParams(kotlin.String;io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestParams.RequestedSchema;io.modelcontextprotocol.kotlin.sdk.types.RequestMeta?){}[0]

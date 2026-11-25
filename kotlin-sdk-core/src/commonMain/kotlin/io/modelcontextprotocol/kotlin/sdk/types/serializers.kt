@@ -293,6 +293,8 @@ private val clientRequestDeserializers: Map<String, DeserializationStrategy<Clie
         Method.Defined.ResourcesTemplatesList.value to ListResourceTemplatesRequest.serializer(),
         Method.Defined.ToolsCall.value to CallToolRequest.serializer(),
         Method.Defined.ToolsList.value to ListToolsRequest.serializer(),
+        Method.Defined.SkillsList.value to ListSkillsRequest.serializer(),
+        Method.Defined.SkillsGet.value to GetSkillRequest.serializer(),
         Method.Defined.TasksGet.value to GetTaskRequest.serializer(),
         Method.Defined.TasksResult.value to GetTaskPayloadRequest.serializer(),
         Method.Defined.TasksList.value to ListTasksRequest.serializer(),
@@ -470,6 +472,8 @@ private fun selectServerResultDeserializer(element: JsonElement): Deserializatio
         "protocolVersion" in jsonObject && "capabilities" in jsonObject -> InitializeResult.serializer()
         "completion" in jsonObject -> CompleteResult.serializer()
         "tools" in jsonObject -> ListToolsResult.serializer()
+        "skills" in jsonObject -> ListSkillsResult.serializer()
+        "skill" in jsonObject -> GetSkillResult.serializer()
         "resources" in jsonObject -> ListResourcesResult.serializer()
         "resourceTemplates" in jsonObject -> ListResourceTemplatesResult.serializer()
         "prompts" in jsonObject -> ListPromptsResult.serializer()
