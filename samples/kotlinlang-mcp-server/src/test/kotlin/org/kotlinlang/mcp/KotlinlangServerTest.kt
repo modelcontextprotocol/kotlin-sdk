@@ -5,9 +5,7 @@ import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.ClientOptions
 import io.modelcontextprotocol.kotlin.sdk.testing.ChannelTransport
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
-import kotlinx.coroutines.joinAll
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.kotlinlang.mcp.config.ServerConfig
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -23,7 +21,7 @@ class KotlinlangServerTest {
     )
 
     @Test
-    fun `server registers both tools with correct schema and annotations`() = runTest {
+    fun `server registers both tools with correct schema and annotations`() = runBlocking {
         val kotlinlangServer = KotlinlangServer(testConfig)
         kotlinlangServer.use {
             val (clientTransport, serverTransport) = ChannelTransport.createLinkedPair()
@@ -33,10 +31,8 @@ class KotlinlangServerTest {
                 options = ClientOptions(),
             )
 
-            joinAll(
-                launch { client.connect(clientTransport) },
-                launch { kotlinlangServer.server.createSession(serverTransport) },
-            )
+            kotlinlangServer.server.createSession(serverTransport)
+            client.connect(clientTransport)
 
             val tools = client.listTools().tools
 
