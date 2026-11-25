@@ -129,6 +129,15 @@ class AbstractClientTransportTest {
     }
 
     @Test
+    fun `should explain the observed state when checkState fails`() {
+        transport.forceState(ClientTransportState.Stopped)
+
+        shouldThrow<IllegalStateException> {
+            transport.testCheckState(ClientTransportState.Operational)
+        }.message shouldBe "Expected transport state Operational, but found Stopped"
+    }
+
+    @Test
     fun `should pass message and options to performSend`() = runTest {
         val message = PingRequest().toJSON()
         val options = TransportSendOptions()
@@ -267,6 +276,8 @@ class AbstractClientTransportTest {
         fun testStateTransition(from: ClientTransportState, to: ClientTransportState) = stateTransition(from, to)
 
         fun forceState(newState: ClientTransportState) = updateState(newState)
+
+        fun testCheckState(expected: ClientTransportState) = checkState(expected)
     }
 
     private class TestException(message: String) : Exception(message)
