@@ -57,6 +57,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -83,9 +84,7 @@ private const val DEFAULT_MAX_INLINE_SSE_EVENT_SIZE: Int = 16 * 1024 * 1024
  * @param message detailed error description appended to the exception message
  */
 public class StreamableHttpError(public val code: Int? = null, message: String? = null) :
-    Exception("Streamable HTTP error: $message") {
-    internal var rejectedBody: String? = null
-}
+    Exception("Streamable HTTP error: $message")
 
 private sealed interface ConnectResult {
     data class Success(val session: ClientSSESession) : ConnectResult
@@ -101,6 +100,8 @@ private sealed interface ConnectResult {
  * `Last-Event-ID` header, and explicit session termination.
  *
  * A session the server has terminated answers `404`, reported through [onError] as a [StreamableHttpError].
+ * Any other `4xx` whose body is a JSON-RPC error answering the request fails that request with the
+ * error's code, message and data.
  * The transport does not start a new session; connect the client again with a new transport.
  *
  * @param client Ktor HTTP client used for all requests
@@ -217,7 +218,11 @@ public class StreamableHttpClientTransport(
 
         if (!response.status.isSuccess()) {
             val body = response.bodyAsText()
-            val error = StreamableHttpError(response.status.value, body).apply { rejectedBody = body }
+            rejectionAnswering(message, response.status, body)?.let {
+                _onMessage(it)
+                return
+            }
+            val error = StreamableHttpError(response.status.value, body)
             _onError(error)
             throw error
         }
@@ -255,6 +260,22 @@ public class StreamableHttpClientTransport(
                 throw error
             }
         }
+    }
+
+    /**
+     * The JSON-RPC error a `4xx` body carries in answer to [message], or `null` when the body is
+     * anything else. An error with a `null` id names no request, and a `404` on a session means the
+     * session is gone, so both stay HTTP failures.
+     */
+    private fun rejectionAnswering(message: JSONRPCMessage, status: HttpStatusCode, body: String): JSONRPCError? {
+        if (message !is JSONRPCRequest || status.value !in 400..499) return null
+        if (status == HttpStatusCode.NotFound && sessionId != null) return null
+        val error = try {
+            McpJson.decodeFromString<JSONRPCMessage>(body) as? JSONRPCError
+        } catch (_: SerializationException) {
+            null
+        }
+        return error?.takeIf { it.id == message.id }
     }
 
     /**
