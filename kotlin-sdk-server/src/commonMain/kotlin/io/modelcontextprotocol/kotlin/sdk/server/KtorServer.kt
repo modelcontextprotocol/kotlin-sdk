@@ -436,6 +436,7 @@ private suspend fun RoutingContext.mcpDualEraStreamableHttpEndpoint(
     configuration: StreamableHttpServerTransport.Configuration,
     block: RoutingContext.() -> Server,
 ) {
+    if (call.rejectUnsupportedPostMediaTypes()) return
     val body = try {
         call.receiveTextWithLimit(configuration.maxRequestBodySize)
     } catch (e: RequestBodyTooLargeException) {
