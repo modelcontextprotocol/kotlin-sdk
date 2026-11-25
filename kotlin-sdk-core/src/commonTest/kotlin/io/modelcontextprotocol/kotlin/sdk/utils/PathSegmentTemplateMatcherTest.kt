@@ -136,6 +136,35 @@ class PathSegmentTemplateMatcherTest {
     }
 
     @Test
+    fun `should match URI at exactly the configured depth`() {
+        matcher("a/{id}", maxDepth = 2).match("a/42")?.variables shouldBe mapOf("id" to "42")
+    }
+
+    @Test
+    fun `should reject deeply nested URI within the length limit`() {
+        val deepUri = List(1000) { "a" }.joinToString("/")
+        matcher("a/{id}", maxDepth = 2).match(deepUri) shouldBe null
+    }
+
+    @Test
+    fun `should ignore outer slashes when applying depth limit`() {
+        matcher("a/{id}", maxDepth = 2).match("///a/42///")?.variables shouldBe mapOf("id" to "42")
+    }
+
+    @Test
+    fun `should count empty inner segments toward depth limit`() {
+        matcher("file:///{id}", maxDepth = 4).match("file:///report")?.variables shouldBe
+            mapOf("id" to "report")
+        shouldThrow<IllegalArgumentException> { matcher("file:///{id}", maxDepth = 3) }
+    }
+
+    @Test
+    fun `should preserve single segment and slash only matching at depth one`() {
+        matcher("{id}", maxDepth = 1).match("42")?.variables shouldBe mapOf("id" to "42")
+        matcher("/", maxDepth = 1).match("///").shouldNotBeNull()
+    }
+
+    @Test
     fun `factory creates matcher equal to direct construction`() {
         val template = ResourceTemplate("items/{id}", "Items")
         val fromFactory = PathSegmentTemplateMatcher.factory.create(template)

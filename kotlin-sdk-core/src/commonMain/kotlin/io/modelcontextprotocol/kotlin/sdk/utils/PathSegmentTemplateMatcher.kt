@@ -126,11 +126,13 @@ public class PathSegmentTemplateMatcher @JvmOverloads constructor(
         // Prevents traversal attacks on JVM/JS; no-op on native/WASM targets.
         val normalized = normalizeUri(resourceUri)
 
-        val urlParts = normalized.trim('/').split("/")
-        if (urlParts.size > maxDepth) {
+        val path = normalized.trim('/')
+        // Check depth before allocating a list and a string for every segment.
+        if (path.count { it == '/' } >= maxDepth) {
             logger.debug { "URI has too many segments (max=$maxDepth)" }
             return null
         }
+        val urlParts = path.split("/")
         if (urlParts.size != templateParts.size) return null
 
         val variables = mutableMapOf<String, String>()

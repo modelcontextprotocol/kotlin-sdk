@@ -18,5 +18,11 @@ class PathSegmentTemplateMatcherJvmTest {
         matcher("files/{a}/{b}").match("files/../etc") shouldBe null
     }
 
+    @Test
+    fun `should apply depth limit after dot-segment normalization`() {
+        val matcher = PathSegmentTemplateMatcher(ResourceTemplate("a/{id}", "Test"), maxDepth = 2)
+        matcher.match("a/discard/../42")?.variables shouldBe mapOf("id" to "42")
+    }
+
     private fun matcher(uriTemplate: String) = PathSegmentTemplateMatcher(ResourceTemplate(uriTemplate, "Test"))
 }
