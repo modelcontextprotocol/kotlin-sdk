@@ -146,7 +146,12 @@ class ModernStreamableHttpTest {
 
     @Test
     fun `a missing client capability raised inside a handler answers 400`() = testApplication {
-        servePrompt { GetPromptResult(messages = emptyList(), description = listRoots().roots.toString()) }
+        servePrompt {
+            throw McpException(
+                code = RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY,
+                message = "Client did not declare the required capability",
+            )
+        }
 
         val response = post(getPrompt(clientCapabilities = "{}"), method = "prompts/get", name = "greet")
 
