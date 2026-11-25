@@ -60,6 +60,8 @@ private suspend fun dynamicClientRegistration(
         put("grant_types", buildJsonArray { add(kotlinx.serialization.json.JsonPrimitive("authorization_code")) })
         put("response_types", buildJsonArray { add(kotlinx.serialization.json.JsonPrimitive("code")) })
         put("token_endpoint_auth_method", "client_secret_post")
+        // A local client with a loopback CALLBACK_URL is a native application (SEP-837).
+        put("application_type", "native")
     }
 
     val response = httpClient.post(registrationEndpoint) {
