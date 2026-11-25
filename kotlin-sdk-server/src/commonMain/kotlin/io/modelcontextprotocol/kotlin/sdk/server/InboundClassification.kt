@@ -243,7 +243,8 @@ private fun claimOf(body: JsonObject): RequestMeta? {
 }
 
 /**
- * The first standard header that is absent or disagrees with [body], or `null` when they all agree.
+ * The first standard header that is absent, carries characters no header value may carry, or
+ * disagrees with [body], or `null` when they all agree.
  *
  * Presence is checked explicitly rather than by comparison: an absent header and an absent body
  * value would otherwise compare equal and mask each other.
@@ -255,6 +256,9 @@ private fun headerMismatch(
     meta: RequestMeta,
     headers: Headers,
 ): RPCError? {
+    // Engines differ on how they decode header bytes outside ASCII, so such a value cannot be compared.
+    val unsafe = STANDARD_HEADERS.firstOrNull { name -> headers[name]?.all(::isFieldValueChar) == false }
+    if (unsafe != null) return mismatch("$unsafe contains characters a header value cannot carry")
     val version = headers[MCP_PROTOCOL_VERSION_HEADER]
     if (version == null || version != meta.claimedProtocolVersion) {
         return mismatch("$MCP_PROTOCOL_VERSION_HEADER does not match the request envelope's protocol version")
@@ -275,5 +279,11 @@ private fun headerMismatch(
 }
 
 private fun mismatch(message: String): RPCError = RPCError(code = RPCError.ErrorCode.HEADER_MISMATCH, message = message)
+
+@OptIn(InternalMcpApi::class)
+private val STANDARD_HEADERS = listOf(MCP_PROTOCOL_VERSION_HEADER, MCP_METHOD_HEADER, MCP_NAME_HEADER)
+
+/** Visible ASCII, space and tab: the only characters the transport spec allows in a header value. */
+private fun isFieldValueChar(char: Char): Boolean = char == '\t' || char.code in 0x20..0x7e
 
 private fun JsonObject.stringOf(key: String): String? = (this[key] as? JsonPrimitive)?.takeIf { it.isString }?.content

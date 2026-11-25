@@ -41,6 +41,9 @@ class InboundClassificationTest {
         return """{"jsonrpc": "2.0", "id": $id, "method": "$method"$params}"""
     }
 
+    private fun toolCall(name: String): String =
+        """{"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "$name", ${envelope()}}}"""
+
     private fun modernHeaders(
         version: String = LATEST_MODERN_VERSION,
         method: String? = "tools/list",
@@ -125,12 +128,33 @@ class InboundClassificationTest {
     }
 
     @Test
+    fun `should refuse a method header disagreeing with the body`() {
+        classify(request(), modernHeaders(method = "tools/call"))
+            .shouldReject(RPCError.ErrorCode.HEADER_MISMATCH, HttpStatusCode.BadRequest)
+    }
+
+    @Test
     fun `should refuse a name header disagreeing with the body`() {
-        val body = """
-            {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
-             "params": {"name": "add", ${envelope()}}}
-        """.trimIndent()
-        classify(body, modernHeaders(method = "tools/call", name = "subtract"))
+        classify(toolCall("add"), modernHeaders(method = "tools/call", name = "subtract"))
+            .shouldReject(RPCError.ErrorCode.HEADER_MISMATCH, HttpStatusCode.BadRequest)
+    }
+
+    @Test
+    fun `should refuse a name-bearing request without the name header`() {
+        classify(toolCall("add"), modernHeaders(method = "tools/call"))
+            .shouldReject(RPCError.ErrorCode.HEADER_MISMATCH, HttpStatusCode.BadRequest)
+    }
+
+    @Test
+    fun `should decode an encoded name header before comparing it`() {
+        classify(toolCall("Hello, 世界"), modernHeaders(method = "tools/call", name = "=?base64?SGVsbG8sIOS4lueVjA==?="))
+            .shouldBeInstanceOf<InboundOutcome.Modern>()
+    }
+
+    @Test
+    fun `should refuse a header value with characters a header cannot carry`() {
+        // Matches the body only on an engine that reads header bytes as UTF-8; must fail on every engine.
+        classify(toolCall("café"), modernHeaders(method = "tools/call", name = "café"))
             .shouldReject(RPCError.ErrorCode.HEADER_MISMATCH, HttpStatusCode.BadRequest)
     }
 
