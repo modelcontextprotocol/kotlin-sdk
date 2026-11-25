@@ -140,6 +140,8 @@ public class PathSegmentTemplateMatcher @JvmOverloads constructor(
             val urlSegment = urlParts[i].decodeURLPart()
             val variableName = variableIndices[i]
             if (variableName != null) {
+                val previousValue = variables[variableName]
+                if (previousValue != null && previousValue != urlSegment) return null
                 variables[variableName] = urlSegment
                 score += VARIABLE_MATCH_SCORE
             } else if (templateParts[i] == urlSegment) {
