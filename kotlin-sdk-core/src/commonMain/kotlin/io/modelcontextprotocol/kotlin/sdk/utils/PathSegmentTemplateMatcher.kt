@@ -34,6 +34,8 @@ private const val VARIABLE_MATCH_SCORE = 1
  * - The URI and template must have the same number of `/`-delimited segments.
  * - Literal segments must match exactly (after percent-decoding the URI segment).
  * - `{variable}` segments capture the percent-decoded URI segment value.
+ * - Repeated variable names must capture the same percent-decoded value in every
+ *   occurrence; otherwise the template does not match (e.g. `{id}/{id}` cannot match `42/43`).
  * - Query strings and fragments (`?`, `#`) are **not** stripped — they become part of
  *   the captured variable value for the segment that contains them.
  *
