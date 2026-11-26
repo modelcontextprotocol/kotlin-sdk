@@ -1,10 +1,15 @@
 package io.modelcontextprotocol.kotlin.sdk.server
 
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldStartWith
+import io.ktor.client.HttpClient
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.request.post
 import io.ktor.client.request.request
+import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
@@ -17,6 +22,7 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
+import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import org.junit.jupiter.params.ParameterizedTest
@@ -92,6 +98,43 @@ class StreamableHttpResponseDeliveryTest {
     }
 
     @Test
+    fun `stateful GET whose Accept header excludes event-stream returns 406`() = testApplication {
+        application { mcpStreamableHttp { testServer() } }
+        val sessionId = client.initialize()
+
+        val response = client.get("/mcp") {
+            header(HttpHeaders.Host, "localhost")
+            header(HttpHeaders.Accept, ContentType.Application.Json.toString())
+            header(MCP_SESSION_ID_HEADER, sessionId)
+        }
+
+        response.status shouldBe HttpStatusCode.NotAcceptable
+        response.contentType()?.withoutParameters() shouldBe ContentType.Application.Json
+        val error = response.decodeError().error
+        error.message shouldBe "Not Acceptable: Client must accept text/event-stream"
+        error.code shouldBe RPCError.ErrorCode.CONNECTION_CLOSED
+    }
+
+    @Test
+    fun `stateful GET with an unsupported protocol version returns 400`() = testApplication {
+        application { mcpStreamableHttp { testServer() } }
+        val sessionId = client.initialize()
+
+        val response = client.get("/mcp") {
+            header(HttpHeaders.Host, "localhost")
+            header(HttpHeaders.Accept, eventStream)
+            header(MCP_SESSION_ID_HEADER, sessionId)
+            header("mcp-protocol-version", "1900-01-01")
+        }
+
+        response.status shouldBe HttpStatusCode.BadRequest
+        response.contentType()?.withoutParameters() shouldBe ContentType.Application.Json
+        val error = response.decodeError().error
+        error.message shouldStartWith "Bad Request: Unsupported protocol version"
+        error.code shouldBe RPCError.ErrorCode.CONNECTION_CLOSED
+    }
+
+    @Test
     fun `GET routes next to the stateful endpoint are not checked for a session`() = testApplication {
         application {
             mcpStreamableHttp { testServer() }
@@ -102,6 +145,16 @@ class StreamableHttpResponseDeliveryTest {
 
         response.status shouldBe HttpStatusCode.OK
         response.bodyAsText() shouldBe "ok"
+    }
+
+    private suspend fun HttpClient.initialize(): String {
+        val response = post("/mcp") {
+            header(HttpHeaders.Host, "localhost")
+            streamableHeaders()
+            setBody(McpJson.encodeToString(JSONRPCMessage.serializer(), initializeRequest()))
+        }
+        response.status shouldBe HttpStatusCode.OK
+        return response.headers[MCP_SESSION_ID_HEADER].shouldNotBeNull()
     }
 
     private suspend fun HttpResponse.decodeError(): JSONRPCError = McpJson.decodeFromString(bodyAsText())

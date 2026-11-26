@@ -571,17 +571,23 @@ private fun Route.installCancelCallOnClose() {
     }
 }
 
-/** Checks the session of a GET before sse {}, which sends 200 and the headers before its handler runs. */
+/**
+ * Checks the `Accept` header, session and protocol version of a GET before sse {}, which sends 200 and the headers
+ * before its handler runs.
+ */
 private fun Route.installGetSessionGuard(sessions: StreamableHttpSessionManager<StreamableHttpServerTransport>) {
     val guard = createRouteScopedPlugin("MCP-StreamableHttpGetSessionGuard") {
         onCall { call ->
             if (call.request.httpMethod != HttpMethod.Get || call.isHandled) return@onCall
+            if (!call.validateAcceptsEventStream()) return@onCall
             val sessionId = call.sessionIdOrReject() ?: return@onCall
             // Touched so that the session cannot expire before sse {} runs.
-            if (sessions.touch(sessionId) == null) {
+            val transport = sessions.touch(sessionId)
+            if (transport == null) {
                 call.rejectSessionNotFound()
                 return@onCall
             }
+            if (!transport.validateProtocolVersion(call)) return@onCall
             call.response.header(MCP_SESSION_ID_HEADER, sessionId)
         }
     }
