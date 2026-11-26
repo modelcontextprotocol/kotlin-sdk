@@ -106,6 +106,25 @@ class ServerResourceTemplateTest : AbstractServerFeaturesTest() {
     }
 
     @Test
+    fun `readResource should reject inconsistent repeated captures without invoking the handler`() = runTest {
+        var handlerCalled = false
+        server.addResourceTemplate("test://items/{id}/{id}", "Repeated ID") { request, variables ->
+            handlerCalled = true
+            ReadResourceResult(listOf(TextResourceContents("id=${variables["id"]}", request.uri)))
+        }
+
+        val exception = shouldThrow<McpException> {
+            client.readResource(ReadResourceRequest(ReadResourceRequestParams("test://items/42/43")))
+        }
+        exception.code shouldBe RPCError.ErrorCode.INVALID_PARAMS
+        handlerCalled shouldBe false
+
+        val result = client.readResource(ReadResourceRequest(ReadResourceRequestParams("test://items/42/42")))
+        handlerCalled shouldBe true
+        (result.contents[0] as TextResourceContents).text shouldBe "id=42"
+    }
+
+    @Test
     fun `resourceTemplates property should reflect registered templates`() {
         server.addResourceTemplate(ResourceTemplate("test://a/{x}", "A")) { _, _ ->
             ReadResourceResult(emptyList())
