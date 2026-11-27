@@ -444,27 +444,7 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
                 error("Server session can't be null for SSE responses")
             }
 
-            val acceptHeader = call.request.header(HttpHeaders.Accept)
-            val isAcceptEventStream = acceptHeader.accepts(ContentType.Text.EventStream)
-            val isAcceptJson = acceptHeader.accepts(ContentType.Application.Json)
-
-            if (!isAcceptEventStream || !isAcceptJson) {
-                call.reject(
-                    HttpStatusCode.NotAcceptable,
-                    RPCError.ErrorCode.CONNECTION_CLOSED,
-                    "Not Acceptable: Client must accept both application/json and text/event-stream",
-                )
-                return
-            }
-
-            if (!call.request.contentType().match(ContentType.Application.Json)) {
-                call.reject(
-                    HttpStatusCode.UnsupportedMediaType,
-                    RPCError.ErrorCode.CONNECTION_CLOSED,
-                    "Unsupported Media Type: Content-Type must be application/json",
-                )
-                return
-            }
+            if (call.rejectUnsupportedPostMediaTypes()) return
 
             val messages = parseBody(call) ?: return
             val initializationRequest = messages.filterIsInstance<JSONRPCRequest>().firstOrNull {
@@ -878,25 +858,6 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         }
     }
 
-    /**
-     * Reports whether the `Accept` header admits [mime].
-     *
-     * Comparison is over parsed media ranges rather than raw substrings, so wildcards are honored
-     * and a near miss such as `application/jsonp` no longer passes as `application/json`. An absent
-     * header states no preference and admits any type.
-     */
-    private fun String?.accepts(mime: ContentType): Boolean {
-        if (this == null) return true
-        return parseHeaderValue(this).any { range ->
-            if (range.quality <= 0.0) return@any false
-            try {
-                mime.match(ContentType.parse(range.value))
-            } catch (_: BadContentTypeFormatException) {
-                false
-            }
-        }
-    }
-
     private suspend fun emitOnStream(streamId: String, session: ServerSSESession?, message: JSONRPCMessage) {
         val eventId = configuration.eventStore?.storeEvent(streamId, message)
         try {
@@ -951,6 +912,50 @@ public class StreamableHttpServerTransport(private val configuration: Configurat
         sessionId?.let { this.response.headers.append(MCP_SESSION_ID_HEADER, it) }
         this.response.status(HttpStatusCode.OK)
     }
+}
+
+/**
+ * Reports whether the `Accept` header admits [mime].
+ *
+ * Comparison is over parsed media ranges rather than raw substrings, so wildcards are honored
+ * and a near miss such as `application/jsonp` no longer passes as `application/json`. An absent
+ * header states no preference and admits any type.
+ */
+private fun String?.accepts(mime: ContentType): Boolean {
+    if (this == null) return true
+    return parseHeaderValue(this).any { range ->
+        if (range.quality <= 0.0) return@any false
+        try {
+            mime.match(ContentType.parse(range.value))
+        } catch (_: BadContentTypeFormatException) {
+            false
+        }
+    }
+}
+
+/**
+ * Answers 406 unless the POST accepts both `application/json` and `text/event-stream`, or 415 unless
+ * its body is `application/json`. Returns `true` when it has answered.
+ */
+internal suspend fun ApplicationCall.rejectUnsupportedPostMediaTypes(): Boolean {
+    val acceptHeader = request.header(HttpHeaders.Accept)
+    if (!acceptHeader.accepts(ContentType.Text.EventStream) || !acceptHeader.accepts(ContentType.Application.Json)) {
+        reject(
+            HttpStatusCode.NotAcceptable,
+            RPCError.ErrorCode.CONNECTION_CLOSED,
+            "Not Acceptable: Client must accept both application/json and text/event-stream",
+        )
+        return true
+    }
+    if (!request.contentType().match(ContentType.Application.Json)) {
+        reject(
+            HttpStatusCode.UnsupportedMediaType,
+            RPCError.ErrorCode.CONNECTION_CLOSED,
+            "Unsupported Media Type: Content-Type must be application/json",
+        )
+        return true
+    }
+    return false
 }
 
 /** Writes an already serialized body so a client accepting only `text/event-stream` still receives [status]. */

@@ -160,6 +160,31 @@ class ModernStreamableHttpTest {
     }
 
     @Test
+    fun `a request-scoped POST not accepting json and event-stream answers 406`() = testApplication {
+        serve()
+
+        val response = post(request(id = 1, method = "tools/list"), method = "tools/list") {
+            headers.remove(HttpHeaders.Accept)
+            header(HttpHeaders.Accept, ContentType.Text.Plain.toString())
+        }
+
+        response.status shouldBe HttpStatusCode.NotAcceptable
+        response.errorCode() shouldBe RPCError.ErrorCode.CONNECTION_CLOSED
+    }
+
+    @Test
+    fun `a request-scoped POST with a non-json content type answers 415`() = testApplication {
+        serve()
+
+        val response = post(request(id = 1, method = "tools/list"), method = "tools/list") {
+            contentType(ContentType.Text.Plain)
+        }
+
+        response.status shouldBe HttpStatusCode.UnsupportedMediaType
+        response.errorCode() shouldBe RPCError.ErrorCode.CONNECTION_CLOSED
+    }
+
+    @Test
     fun `a request-scoped notification is acknowledged with 202 and no body`() = testApplication {
         serve()
 
