@@ -117,6 +117,8 @@ class ResourcesTest {
                 {"uri": "file:///workspace/CONTRIBUTING.md", "name": "CONTRIBUTING"}
               ],
               "nextCursor": "cursor-2",
+              "ttlMs": 0,
+              "cacheScope": "private",
               "_meta": {
                 "page": 1
               }
@@ -139,6 +141,8 @@ class ResourcesTest {
                 },
                 {"uri": "custom://resource/42", "mimeType": "application/octet-stream"}
               ],
+              "ttlMs": 0,
+              "cacheScope": "private",
               "_meta": {"generatedAt": "2025-01-12T15:00:58Z"}
             }
         """.trimIndent()
@@ -174,6 +178,8 @@ class ResourcesTest {
                 }
               ],
               "nextCursor": "cursor-templates-2",
+              "ttlMs": 0,
+              "cacheScope": "private",
               "_meta": {
                 "page": 3
               }
