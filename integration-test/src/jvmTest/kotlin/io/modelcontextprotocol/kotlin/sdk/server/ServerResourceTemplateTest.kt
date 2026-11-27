@@ -106,6 +106,25 @@ class ServerResourceTemplateTest : AbstractServerFeaturesTest() {
     }
 
     @Test
+    fun `readResource should not invoke template handler for blank URI`() = runTest {
+        var handlerCalled = false
+        server.addResourceTemplate("{id}", "Item") { _, _ ->
+            handlerCalled = true
+            ReadResourceResult(emptyList())
+        }
+
+        listOf("", " ", "\t").forEach { uri ->
+            val exception = shouldThrow<McpException> {
+                client.readResource(ReadResourceRequest(ReadResourceRequestParams(uri)))
+            }
+
+            exception.code shouldBe RPCError.ErrorCode.RESOURCE_NOT_FOUND
+            exception.data shouldBe buildJsonObject { put("uri", uri) }
+            handlerCalled shouldBe false
+        }
+    }
+
+    @Test
     fun `resourceTemplates property should reflect registered templates`() {
         server.addResourceTemplate(ResourceTemplate("test://a/{x}", "A")) { _, _ ->
             ReadResourceResult(emptyList())

@@ -127,11 +127,40 @@ class PathSegmentTemplateMatcherTest {
     }
 
     @Test
-    fun `should capture empty string for single-segment variable when URI is empty`() {
-        // "".trim('/').split("/") == [""] — one segment — so {id} captures ""
-        val result = matcher("{id}").match("")
+    fun `should return null for blank URI`() {
+        listOf("", " ", "\t", "\r\n").forEach { uri ->
+            withClue(uri) {
+                matcher("{id}").match(uri) shouldBe null
+            }
+        }
+    }
+
+    @Test
+    fun `should return null for empty variable segments`() {
+        listOf("{id}" to "/", "test://{host}/items" to "test:///items").forEach { (template, uri) ->
+            withClue("$template matching $uri") {
+                matcher(template).match(uri) shouldBe null
+            }
+        }
+    }
+
+    @Test
+    fun `should preserve empty literal segments in file URI`() {
+        val result = matcher("file:///{path}").match("file:///report.txt")
         result.shouldNotBeNull {
-            variables["id"] shouldBe ""
+            variables["path"] shouldBe "report.txt"
+        }
+    }
+
+    @Test
+    fun `should preserve percent-encoded whitespace in variable values`() {
+        matcher("{id}").match("%20")?.variables shouldBe mapOf("id" to " ")
+    }
+
+    @Test
+    fun `should preserve literal root URI`() {
+        matcher("/").match("/").shouldNotBeNull {
+            variables.shouldBeEmpty()
         }
     }
 
