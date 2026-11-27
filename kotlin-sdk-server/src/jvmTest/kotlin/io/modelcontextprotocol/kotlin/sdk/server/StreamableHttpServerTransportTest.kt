@@ -42,7 +42,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
-import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.LATEST_HANDSHAKE_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.ListResourcesResult
 import io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
@@ -646,7 +646,7 @@ class StreamableHttpServerTransportTest {
         header(HttpHeaders.Host, "localhost")
         header(HttpHeaders.Accept, ContentType.Text.EventStream.toString())
         header(MCP_SESSION_ID_HEADER, sessionId)
-        header("mcp-protocol-version", LATEST_PROTOCOL_VERSION)
+        header("mcp-protocol-version", LATEST_HANDSHAKE_VERSION)
     }
 
     /** A live standalone stream carries the session id and stays open after its first event. */

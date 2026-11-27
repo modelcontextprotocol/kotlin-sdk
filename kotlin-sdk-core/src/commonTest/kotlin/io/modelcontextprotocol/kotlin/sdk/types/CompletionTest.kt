@@ -111,9 +111,11 @@ class CompletionTest {
                 total = 25,
                 hasMore = true,
             ),
-            meta = buildJsonObject {
-                put("source", "cache")
-            },
+            meta = ResultMeta(
+                buildJsonObject {
+                    put("source", "cache")
+                },
+            ),
         )
 
         verifySerialization<ServerResult>(
@@ -129,6 +131,7 @@ class CompletionTest {
                 "total": 25,
                 "hasMore": true
               },
+              "resultType": "complete",
               "_meta": {
                 "source": "cache"
               }

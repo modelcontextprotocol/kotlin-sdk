@@ -145,7 +145,7 @@ class JsonRpcTest {
         val response = JSONRPCResponse(
             id = RequestId("call-1"),
             result = EmptyResult(
-                meta = buildJsonObject { put("durationMs", 15) },
+                meta = ResultMeta(buildJsonObject { put("durationMs", 15) }),
             ),
         )
 
@@ -203,7 +203,7 @@ class JsonRpcTest {
         )
 
         val result = assertIs<CustomResult>(assertIs<JSONRPCResponse>(message).result)
-        result.meta shouldBe buildJsonObject { put("traceId", "abc") }
+        result.meta?.json shouldBe buildJsonObject { put("traceId", "abc") }
     }
 
     @Test

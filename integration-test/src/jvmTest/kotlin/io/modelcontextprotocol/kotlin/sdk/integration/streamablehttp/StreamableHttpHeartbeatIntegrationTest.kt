@@ -24,7 +24,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequest
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequestParams
-import io.modelcontextprotocol.kotlin.sdk.types.LATEST_PROTOCOL_VERSION
+import io.modelcontextprotocol.kotlin.sdk.types.LATEST_HANDSHAKE_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.toJSON
@@ -74,7 +74,7 @@ class StreamableHttpHeartbeatIntegrationTest {
                 httpClient.prepareGet(url) {
                     header(HttpHeaders.Accept, ContentType.Text.EventStream.toString())
                     header(SESSION_ID_HEADER, sessionId)
-                    header("mcp-protocol-version", LATEST_PROTOCOL_VERSION)
+                    header("mcp-protocol-version", LATEST_HANDSHAKE_VERSION)
                 }.execute { response ->
                     response.status shouldBe HttpStatusCode.OK
                     block(response.bodyAsChannel())
@@ -88,7 +88,7 @@ class StreamableHttpHeartbeatIntegrationTest {
     private suspend fun HttpClient.initializeSession(url: String): String {
         val initialize = InitializeRequest(
             InitializeRequestParams(
-                protocolVersion = LATEST_PROTOCOL_VERSION,
+                protocolVersion = LATEST_HANDSHAKE_VERSION,
                 capabilities = ClientCapabilities(),
                 clientInfo = Implementation("heartbeat-client", "1.0.0"),
             ),

@@ -424,14 +424,28 @@ internal object ServerNotificationPolymorphicSerializer :
 // Result Serializers
 // ============================================================================
 
+/** The keys an empty result may carry; anything else makes it a result of some other shape. */
+private val EMPTY_RESULT_KEYS: Set<String> = setOf("_meta", "resultType")
+
 /**
  * Selects the appropriate deserializer for empty results.
- * Returns EmptyResult serializer if the JSON object is empty or contains only metadata.
+ *
+ * An empty result carries no payload of its own, so it is recognized by the absence of one:
+ * nothing beyond `_meta` and `resultType`. A request-scoped peer answers `{"resultType":"complete"}`
+ * where a peer predating the field answers `{}`, and both have to read as the same result.
  */
 private fun selectEmptyResult(element: JsonElement): DeserializationStrategy<EmptyResult>? {
     val jsonObject = element.jsonObject
     return when {
-        jsonObject.isEmpty() || (jsonObject.size == 1 && "_meta" in jsonObject) -> EmptyResult.serializer()
+        jsonObject.keys.all { it in EMPTY_RESULT_KEYS } -> EmptyResult.serializer()
+        else -> null
+    }
+}
+
+private fun selectUnrecognizedResult(element: JsonElement): DeserializationStrategy<UnknownResult>? {
+    val resultType = element.jsonObject.resultTypeString()
+    return when {
+        resultType != null && resultType != COMPLETE_RESULT_TYPE -> UnknownResult.serializer()
         else -> null
     }
 }
@@ -460,14 +474,11 @@ private fun selectClientResultDeserializer(element: JsonElement): Deserializatio
 @OptIn(ExperimentalMcpApi::class)
 private fun selectServerResultDeserializer(element: JsonElement): DeserializationStrategy<ServerResult>? {
     val jsonObject = element.jsonObject
-    val isDiscoverResult =
-        "supportedVersions" in jsonObject &&
-            "capabilities" in jsonObject &&
-            "ttlMs" in jsonObject &&
-            "cacheScope" in jsonObject
+    // Initialize is matched before discovery: only it carries protocolVersion, so a result that
+    // extends it with a supportedVersions field of its own is not mistaken for discovery.
     return when {
-        isDiscoverResult -> DiscoverResult.serializer()
         "protocolVersion" in jsonObject && "capabilities" in jsonObject -> InitializeResult.serializer()
+        "supportedVersions" in jsonObject && "capabilities" in jsonObject -> DiscoverResult.serializer()
         "completion" in jsonObject -> CompleteResult.serializer()
         "tools" in jsonObject -> ListToolsResult.serializer()
         "resources" in jsonObject -> ListResourcesResult.serializer()
@@ -494,6 +505,7 @@ internal object RequestResultPolymorphicSerializer :
         selectClientResultDeserializer(element)
             ?: selectServerResultDeserializer(element)
             ?: selectEmptyResult(element)
+            ?: selectUnrecognizedResult(element)
             ?: CustomResultSerializer
 }
 
@@ -520,6 +532,7 @@ internal object ClientResultPolymorphicSerializer :
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<ClientResult> =
         selectClientResultDeserializer(element)
             ?: selectEmptyResult(element)
+            ?: selectUnrecognizedResult(element)
             ?: throw SerializationException("Cannot determine RequestResult type from JSON: ${element.jsonObject.keys}")
 }
 
@@ -532,6 +545,7 @@ internal object ServerResultPolymorphicSerializer :
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<ServerResult> =
         selectServerResultDeserializer(element)
             ?: selectEmptyResult(element)
+            ?: selectUnrecognizedResult(element)
             ?: throw SerializationException("Cannot determine RequestResult type from JSON: ${element.jsonObject.keys}")
 }
 

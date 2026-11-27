@@ -6,11 +6,113 @@
 // - Show declarations: true
 
 // Library unique name: <io.modelcontextprotocol:kotlin-sdk-client>
+final enum class io.modelcontextprotocol.kotlin.sdk.client/CacheMode : kotlin/Enum<io.modelcontextprotocol.kotlin.sdk.client/CacheMode> { // io.modelcontextprotocol.kotlin.sdk.client/CacheMode|null[0]
+    enum entry Bypass // io.modelcontextprotocol.kotlin.sdk.client/CacheMode.Bypass|null[0]
+    enum entry Refresh // io.modelcontextprotocol.kotlin.sdk.client/CacheMode.Refresh|null[0]
+    enum entry Use // io.modelcontextprotocol.kotlin.sdk.client/CacheMode.Use|null[0]
+
+    final val entries // io.modelcontextprotocol.kotlin.sdk.client/CacheMode.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<io.modelcontextprotocol.kotlin.sdk.client/CacheMode> // io.modelcontextprotocol.kotlin.sdk.client/CacheMode.entries.<get-entries>|<get-entries>#static(){}[0]
+
+    final fun valueOf(kotlin/String): io.modelcontextprotocol.kotlin.sdk.client/CacheMode // io.modelcontextprotocol.kotlin.sdk.client/CacheMode.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<io.modelcontextprotocol.kotlin.sdk.client/CacheMode> // io.modelcontextprotocol.kotlin.sdk.client/CacheMode.values|values#static(){}[0]
+}
+
+abstract interface io.modelcontextprotocol.kotlin.sdk.client/ResponseCacheStore { // io.modelcontextprotocol.kotlin.sdk.client/ResponseCacheStore|null[0]
+    abstract suspend fun clear() // io.modelcontextprotocol.kotlin.sdk.client/ResponseCacheStore.clear|clear(){}[0]
+    abstract suspend fun get(io.modelcontextprotocol.kotlin.sdk.client/CacheKey): io.modelcontextprotocol.kotlin.sdk.client/CacheEntry? // io.modelcontextprotocol.kotlin.sdk.client/ResponseCacheStore.get|get(io.modelcontextprotocol.kotlin.sdk.client.CacheKey){}[0]
+    abstract suspend fun invalidate(kotlin/String) // io.modelcontextprotocol.kotlin.sdk.client/ResponseCacheStore.invalidate|invalidate(kotlin.String){}[0]
+    abstract suspend fun put(io.modelcontextprotocol.kotlin.sdk.client/CacheKey, io.modelcontextprotocol.kotlin.sdk.client/CacheEntry) // io.modelcontextprotocol.kotlin.sdk.client/ResponseCacheStore.put|put(io.modelcontextprotocol.kotlin.sdk.client.CacheKey;io.modelcontextprotocol.kotlin.sdk.client.CacheEntry){}[0]
+}
+
+sealed interface io.modelcontextprotocol.kotlin.sdk.client/VersionNegotiationMode { // io.modelcontextprotocol.kotlin.sdk.client/VersionNegotiationMode|null[0]
+    final class Pin : io.modelcontextprotocol.kotlin.sdk.client/VersionNegotiationMode { // io.modelcontextprotocol.kotlin.sdk.client/VersionNegotiationMode.Pin|null[0]
+        constructor <init>(kotlin/String) // io.modelcontextprotocol.kotlin.sdk.client/VersionNegotiationMode.Pin.<init>|<init>(kotlin.String){}[0]
+
+        final val version // io.modelcontextprotocol.kotlin.sdk.client/VersionNegotiationMode.Pin.version|{}version[0]
+            final fun <get-version>(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.client/VersionNegotiationMode.Pin.version.<get-version>|<get-version>(){}[0]
+
+        final fun component1(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.client/VersionNegotiationMode.Pin.component1|component1(){}[0]
+        final fun copy(kotlin/String = ...): io.modelcontextprotocol.kotlin.sdk.client/VersionNegotiationMode.Pin // io.modelcontextprotocol.kotlin.sdk.client/VersionNegotiationMode.Pin.copy|copy(kotlin.String){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.modelcontextprotocol.kotlin.sdk.client/VersionNegotiationMode.Pin.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.modelcontextprotocol.kotlin.sdk.client/VersionNegotiationMode.Pin.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.client/VersionNegotiationMode.Pin.toString|toString(){}[0]
+    }
+
+    final object Auto : io.modelcontextprotocol.kotlin.sdk.client/VersionNegotiationMode { // io.modelcontextprotocol.kotlin.sdk.client/VersionNegotiationMode.Auto|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.modelcontextprotocol.kotlin.sdk.client/VersionNegotiationMode.Auto.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.modelcontextprotocol.kotlin.sdk.client/VersionNegotiationMode.Auto.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.client/VersionNegotiationMode.Auto.toString|toString(){}[0]
+    }
+
+    final object Legacy : io.modelcontextprotocol.kotlin.sdk.client/VersionNegotiationMode { // io.modelcontextprotocol.kotlin.sdk.client/VersionNegotiationMode.Legacy|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.modelcontextprotocol.kotlin.sdk.client/VersionNegotiationMode.Legacy.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.modelcontextprotocol.kotlin.sdk.client/VersionNegotiationMode.Legacy.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.client/VersionNegotiationMode.Legacy.toString|toString(){}[0]
+    }
+}
+
+final class io.modelcontextprotocol.kotlin.sdk.client/CacheEntry { // io.modelcontextprotocol.kotlin.sdk.client/CacheEntry|null[0]
+    constructor <init>(io.modelcontextprotocol.kotlin.sdk.types/RequestResult, kotlin.time/Instant, io.modelcontextprotocol.kotlin.sdk.types/CacheScope) // io.modelcontextprotocol.kotlin.sdk.client/CacheEntry.<init>|<init>(io.modelcontextprotocol.kotlin.sdk.types.RequestResult;kotlin.time.Instant;io.modelcontextprotocol.kotlin.sdk.types.CacheScope){}[0]
+
+    final val cacheScope // io.modelcontextprotocol.kotlin.sdk.client/CacheEntry.cacheScope|{}cacheScope[0]
+        final fun <get-cacheScope>(): io.modelcontextprotocol.kotlin.sdk.types/CacheScope // io.modelcontextprotocol.kotlin.sdk.client/CacheEntry.cacheScope.<get-cacheScope>|<get-cacheScope>(){}[0]
+    final val expiresAt // io.modelcontextprotocol.kotlin.sdk.client/CacheEntry.expiresAt|{}expiresAt[0]
+        final fun <get-expiresAt>(): kotlin.time/Instant // io.modelcontextprotocol.kotlin.sdk.client/CacheEntry.expiresAt.<get-expiresAt>|<get-expiresAt>(){}[0]
+    final val result // io.modelcontextprotocol.kotlin.sdk.client/CacheEntry.result|{}result[0]
+        final fun <get-result>(): io.modelcontextprotocol.kotlin.sdk.types/RequestResult // io.modelcontextprotocol.kotlin.sdk.client/CacheEntry.result.<get-result>|<get-result>(){}[0]
+
+    final fun component1(): io.modelcontextprotocol.kotlin.sdk.types/RequestResult // io.modelcontextprotocol.kotlin.sdk.client/CacheEntry.component1|component1(){}[0]
+    final fun component2(): kotlin.time/Instant // io.modelcontextprotocol.kotlin.sdk.client/CacheEntry.component2|component2(){}[0]
+    final fun component3(): io.modelcontextprotocol.kotlin.sdk.types/CacheScope // io.modelcontextprotocol.kotlin.sdk.client/CacheEntry.component3|component3(){}[0]
+    final fun copy(io.modelcontextprotocol.kotlin.sdk.types/RequestResult = ..., kotlin.time/Instant = ..., io.modelcontextprotocol.kotlin.sdk.types/CacheScope = ...): io.modelcontextprotocol.kotlin.sdk.client/CacheEntry // io.modelcontextprotocol.kotlin.sdk.client/CacheEntry.copy|copy(io.modelcontextprotocol.kotlin.sdk.types.RequestResult;kotlin.time.Instant;io.modelcontextprotocol.kotlin.sdk.types.CacheScope){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // io.modelcontextprotocol.kotlin.sdk.client/CacheEntry.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // io.modelcontextprotocol.kotlin.sdk.client/CacheEntry.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.client/CacheEntry.toString|toString(){}[0]
+}
+
+final class io.modelcontextprotocol.kotlin.sdk.client/CacheKey { // io.modelcontextprotocol.kotlin.sdk.client/CacheKey|null[0]
+    constructor <init>(kotlin/String, kotlin/String = ..., kotlin/String = ...) // io.modelcontextprotocol.kotlin.sdk.client/CacheKey.<init>|<init>(kotlin.String;kotlin.String;kotlin.String){}[0]
+
+    final val method // io.modelcontextprotocol.kotlin.sdk.client/CacheKey.method|{}method[0]
+        final fun <get-method>(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.client/CacheKey.method.<get-method>|<get-method>(){}[0]
+    final val paramsKey // io.modelcontextprotocol.kotlin.sdk.client/CacheKey.paramsKey|{}paramsKey[0]
+        final fun <get-paramsKey>(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.client/CacheKey.paramsKey.<get-paramsKey>|<get-paramsKey>(){}[0]
+    final val partition // io.modelcontextprotocol.kotlin.sdk.client/CacheKey.partition|{}partition[0]
+        final fun <get-partition>(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.client/CacheKey.partition.<get-partition>|<get-partition>(){}[0]
+
+    final fun component1(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.client/CacheKey.component1|component1(){}[0]
+    final fun component2(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.client/CacheKey.component2|component2(){}[0]
+    final fun component3(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.client/CacheKey.component3|component3(){}[0]
+    final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin/String = ...): io.modelcontextprotocol.kotlin.sdk.client/CacheKey // io.modelcontextprotocol.kotlin.sdk.client/CacheKey.copy|copy(kotlin.String;kotlin.String;kotlin.String){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // io.modelcontextprotocol.kotlin.sdk.client/CacheKey.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // io.modelcontextprotocol.kotlin.sdk.client/CacheKey.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.client/CacheKey.toString|toString(){}[0]
+}
+
 final class io.modelcontextprotocol.kotlin.sdk.client/ClientOptions : io.modelcontextprotocol.kotlin.sdk.shared/ProtocolOptions { // io.modelcontextprotocol.kotlin.sdk.client/ClientOptions|null[0]
     constructor <init>(io.modelcontextprotocol.kotlin.sdk.types/ClientCapabilities = ..., kotlin/Boolean = ..., kotlin.coroutines/CoroutineContext = ...) // io.modelcontextprotocol.kotlin.sdk.client/ClientOptions.<init>|<init>(io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities;kotlin.Boolean;kotlin.coroutines.CoroutineContext){}[0]
+    constructor <init>(io.modelcontextprotocol.kotlin.sdk.types/ClientCapabilities = ..., kotlin/Boolean = ..., kotlin.coroutines/CoroutineContext = ..., io.modelcontextprotocol.kotlin.sdk.client/VersionNegotiationMode = ..., io.modelcontextprotocol.kotlin.sdk.types/LoggingLevel? = ..., io.modelcontextprotocol.kotlin.sdk.client/ResponseCacheStore? = ..., kotlin/String = ...) // io.modelcontextprotocol.kotlin.sdk.client/ClientOptions.<init>|<init>(io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities;kotlin.Boolean;kotlin.coroutines.CoroutineContext;io.modelcontextprotocol.kotlin.sdk.client.VersionNegotiationMode;io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel?;io.modelcontextprotocol.kotlin.sdk.client.ResponseCacheStore?;kotlin.String){}[0]
 
+    final val cachePartition // io.modelcontextprotocol.kotlin.sdk.client/ClientOptions.cachePartition|{}cachePartition[0]
+        final fun <get-cachePartition>(): kotlin/String // io.modelcontextprotocol.kotlin.sdk.client/ClientOptions.cachePartition.<get-cachePartition>|<get-cachePartition>(){}[0]
     final val capabilities // io.modelcontextprotocol.kotlin.sdk.client/ClientOptions.capabilities|{}capabilities[0]
         final fun <get-capabilities>(): io.modelcontextprotocol.kotlin.sdk.types/ClientCapabilities // io.modelcontextprotocol.kotlin.sdk.client/ClientOptions.capabilities.<get-capabilities>|<get-capabilities>(){}[0]
+    final val logLevel // io.modelcontextprotocol.kotlin.sdk.client/ClientOptions.logLevel|{}logLevel[0]
+        final fun <get-logLevel>(): io.modelcontextprotocol.kotlin.sdk.types/LoggingLevel? // io.modelcontextprotocol.kotlin.sdk.client/ClientOptions.logLevel.<get-logLevel>|<get-logLevel>(){}[0]
+    final val responseCache // io.modelcontextprotocol.kotlin.sdk.client/ClientOptions.responseCache|{}responseCache[0]
+        final fun <get-responseCache>(): io.modelcontextprotocol.kotlin.sdk.client/ResponseCacheStore? // io.modelcontextprotocol.kotlin.sdk.client/ClientOptions.responseCache.<get-responseCache>|<get-responseCache>(){}[0]
+    final val versionNegotiation // io.modelcontextprotocol.kotlin.sdk.client/ClientOptions.versionNegotiation|{}versionNegotiation[0]
+        final fun <get-versionNegotiation>(): io.modelcontextprotocol.kotlin.sdk.client/VersionNegotiationMode // io.modelcontextprotocol.kotlin.sdk.client/ClientOptions.versionNegotiation.<get-versionNegotiation>|<get-versionNegotiation>(){}[0]
+}
+
+final class io.modelcontextprotocol.kotlin.sdk.client/InMemoryResponseCacheStore : io.modelcontextprotocol.kotlin.sdk.client/ResponseCacheStore { // io.modelcontextprotocol.kotlin.sdk.client/InMemoryResponseCacheStore|null[0]
+    constructor <init>() // io.modelcontextprotocol.kotlin.sdk.client/InMemoryResponseCacheStore.<init>|<init>(){}[0]
+
+    final suspend fun clear() // io.modelcontextprotocol.kotlin.sdk.client/InMemoryResponseCacheStore.clear|clear(){}[0]
+    final suspend fun get(io.modelcontextprotocol.kotlin.sdk.client/CacheKey): io.modelcontextprotocol.kotlin.sdk.client/CacheEntry? // io.modelcontextprotocol.kotlin.sdk.client/InMemoryResponseCacheStore.get|get(io.modelcontextprotocol.kotlin.sdk.client.CacheKey){}[0]
+    final suspend fun invalidate(kotlin/String) // io.modelcontextprotocol.kotlin.sdk.client/InMemoryResponseCacheStore.invalidate|invalidate(kotlin.String){}[0]
+    final suspend fun put(io.modelcontextprotocol.kotlin.sdk.client/CacheKey, io.modelcontextprotocol.kotlin.sdk.client/CacheEntry) // io.modelcontextprotocol.kotlin.sdk.client/InMemoryResponseCacheStore.put|put(io.modelcontextprotocol.kotlin.sdk.client.CacheKey;io.modelcontextprotocol.kotlin.sdk.client.CacheEntry){}[0]
 }
 
 final class io.modelcontextprotocol.kotlin.sdk.client/ReconnectionOptions { // io.modelcontextprotocol.kotlin.sdk.client/ReconnectionOptions|null[0]
@@ -80,6 +182,11 @@ final class io.modelcontextprotocol.kotlin.sdk.client/WebSocketClientTransport :
 open class io.modelcontextprotocol.kotlin.sdk.client/Client : io.modelcontextprotocol.kotlin.sdk.shared/Protocol { // io.modelcontextprotocol.kotlin.sdk.client/Client|null[0]
     constructor <init>(io.modelcontextprotocol.kotlin.sdk.types/Implementation, io.modelcontextprotocol.kotlin.sdk.client/ClientOptions = ...) // io.modelcontextprotocol.kotlin.sdk.client/Client.<init>|<init>(io.modelcontextprotocol.kotlin.sdk.types.Implementation;io.modelcontextprotocol.kotlin.sdk.client.ClientOptions){}[0]
 
+    final val negotiatedProtocolVersion // io.modelcontextprotocol.kotlin.sdk.client/Client.negotiatedProtocolVersion|{}negotiatedProtocolVersion[0]
+        final fun <get-negotiatedProtocolVersion>(): kotlin/String? // io.modelcontextprotocol.kotlin.sdk.client/Client.negotiatedProtocolVersion.<get-negotiatedProtocolVersion>|<get-negotiatedProtocolVersion>(){}[0]
+    final val protocolVersion // io.modelcontextprotocol.kotlin.sdk.client/Client.protocolVersion|{}protocolVersion[0]
+        final fun <get-protocolVersion>(): kotlin/String? // io.modelcontextprotocol.kotlin.sdk.client/Client.protocolVersion.<get-protocolVersion>|<get-protocolVersion>(){}[0]
+
     final var serverCapabilities // io.modelcontextprotocol.kotlin.sdk.client/Client.serverCapabilities|{}serverCapabilities[0]
         final fun <get-serverCapabilities>(): io.modelcontextprotocol.kotlin.sdk.types/ServerCapabilities? // io.modelcontextprotocol.kotlin.sdk.client/Client.serverCapabilities.<get-serverCapabilities>|<get-serverCapabilities>(){}[0]
     final var serverInstructions // io.modelcontextprotocol.kotlin.sdk.client/Client.serverInstructions|{}serverInstructions[0]
@@ -90,6 +197,7 @@ open class io.modelcontextprotocol.kotlin.sdk.client/Client : io.modelcontextpro
     final fun addRoot(kotlin/String, kotlin/String) // io.modelcontextprotocol.kotlin.sdk.client/Client.addRoot|addRoot(kotlin.String;kotlin.String){}[0]
     final fun addRoots(kotlin.collections/List<io.modelcontextprotocol.kotlin.sdk.types/Root>) // io.modelcontextprotocol.kotlin.sdk.client/Client.addRoots|addRoots(kotlin.collections.List<io.modelcontextprotocol.kotlin.sdk.types.Root>){}[0]
     final fun assertCapability(kotlin/String, kotlin/String) // io.modelcontextprotocol.kotlin.sdk.client/Client.assertCapability|assertCapability(kotlin.String;kotlin.String){}[0]
+    final fun decorateOutboundRequest(io.modelcontextprotocol.kotlin.sdk.types/JSONRPCRequest): io.modelcontextprotocol.kotlin.sdk.types/JSONRPCRequest // io.modelcontextprotocol.kotlin.sdk.client/Client.decorateOutboundRequest|decorateOutboundRequest(io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest){}[0]
     final fun removeRoot(kotlin/String): kotlin/Boolean // io.modelcontextprotocol.kotlin.sdk.client/Client.removeRoot|removeRoot(kotlin.String){}[0]
     final fun removeRoots(kotlin.collections/List<kotlin/String>): kotlin/Int // io.modelcontextprotocol.kotlin.sdk.client/Client.removeRoots|removeRoots(kotlin.collections.List<kotlin.String>){}[0]
     final fun setElicitationCompleteHandler(kotlin/Function1<io.modelcontextprotocol.kotlin.sdk.types/ElicitationCompleteNotification, kotlin/Unit>) // io.modelcontextprotocol.kotlin.sdk.client/Client.setElicitationCompleteHandler|setElicitationCompleteHandler(kotlin.Function1<io.modelcontextprotocol.kotlin.sdk.types.ElicitationCompleteNotification,kotlin.Unit>){}[0]
@@ -97,13 +205,15 @@ open class io.modelcontextprotocol.kotlin.sdk.client/Client : io.modelcontextpro
     final suspend fun callTool(io.modelcontextprotocol.kotlin.sdk.types/CallToolRequest, io.modelcontextprotocol.kotlin.sdk.shared/RequestOptions? = ...): io.modelcontextprotocol.kotlin.sdk.types/CallToolResult // io.modelcontextprotocol.kotlin.sdk.client/Client.callTool|callTool(io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest;io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions?){}[0]
     final suspend fun callTool(kotlin/String, kotlin.collections/Map<kotlin/String, kotlin/Any?>, kotlin.collections/Map<kotlin/String, kotlin/Any?> = ..., io.modelcontextprotocol.kotlin.sdk.shared/RequestOptions? = ...): io.modelcontextprotocol.kotlin.sdk.types/CallToolResult // io.modelcontextprotocol.kotlin.sdk.client/Client.callTool|callTool(kotlin.String;kotlin.collections.Map<kotlin.String,kotlin.Any?>;kotlin.collections.Map<kotlin.String,kotlin.Any?>;io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions?){}[0]
     final suspend fun complete(io.modelcontextprotocol.kotlin.sdk.types/CompleteRequest, io.modelcontextprotocol.kotlin.sdk.shared/RequestOptions? = ...): io.modelcontextprotocol.kotlin.sdk.types/CompleteResult // io.modelcontextprotocol.kotlin.sdk.client/Client.complete|complete(io.modelcontextprotocol.kotlin.sdk.types.CompleteRequest;io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions?){}[0]
+    final suspend fun discover(): io.modelcontextprotocol.kotlin.sdk.types/DiscoverResult // io.modelcontextprotocol.kotlin.sdk.client/Client.discover|discover(){}[0]
     final suspend fun getPrompt(io.modelcontextprotocol.kotlin.sdk.types/GetPromptRequest, io.modelcontextprotocol.kotlin.sdk.shared/RequestOptions? = ...): io.modelcontextprotocol.kotlin.sdk.types/GetPromptResult // io.modelcontextprotocol.kotlin.sdk.client/Client.getPrompt|getPrompt(io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest;io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions?){}[0]
-    final suspend fun listPrompts(io.modelcontextprotocol.kotlin.sdk.types/ListPromptsRequest = ..., io.modelcontextprotocol.kotlin.sdk.shared/RequestOptions? = ...): io.modelcontextprotocol.kotlin.sdk.types/ListPromptsResult // io.modelcontextprotocol.kotlin.sdk.client/Client.listPrompts|listPrompts(io.modelcontextprotocol.kotlin.sdk.types.ListPromptsRequest;io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions?){}[0]
-    final suspend fun listResourceTemplates(io.modelcontextprotocol.kotlin.sdk.types/ListResourceTemplatesRequest, io.modelcontextprotocol.kotlin.sdk.shared/RequestOptions? = ...): io.modelcontextprotocol.kotlin.sdk.types/ListResourceTemplatesResult // io.modelcontextprotocol.kotlin.sdk.client/Client.listResourceTemplates|listResourceTemplates(io.modelcontextprotocol.kotlin.sdk.types.ListResourceTemplatesRequest;io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions?){}[0]
-    final suspend fun listResources(io.modelcontextprotocol.kotlin.sdk.types/ListResourcesRequest = ..., io.modelcontextprotocol.kotlin.sdk.shared/RequestOptions? = ...): io.modelcontextprotocol.kotlin.sdk.types/ListResourcesResult // io.modelcontextprotocol.kotlin.sdk.client/Client.listResources|listResources(io.modelcontextprotocol.kotlin.sdk.types.ListResourcesRequest;io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions?){}[0]
-    final suspend fun listTools(io.modelcontextprotocol.kotlin.sdk.types/ListToolsRequest = ..., io.modelcontextprotocol.kotlin.sdk.shared/RequestOptions? = ...): io.modelcontextprotocol.kotlin.sdk.types/ListToolsResult // io.modelcontextprotocol.kotlin.sdk.client/Client.listTools|listTools(io.modelcontextprotocol.kotlin.sdk.types.ListToolsRequest;io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions?){}[0]
+    final suspend fun listPrompts(io.modelcontextprotocol.kotlin.sdk.types/ListPromptsRequest = ..., io.modelcontextprotocol.kotlin.sdk.shared/RequestOptions? = ..., io.modelcontextprotocol.kotlin.sdk.client/CacheMode = ...): io.modelcontextprotocol.kotlin.sdk.types/ListPromptsResult // io.modelcontextprotocol.kotlin.sdk.client/Client.listPrompts|listPrompts(io.modelcontextprotocol.kotlin.sdk.types.ListPromptsRequest;io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions?;io.modelcontextprotocol.kotlin.sdk.client.CacheMode){}[0]
+    final suspend fun listResourceTemplates(io.modelcontextprotocol.kotlin.sdk.types/ListResourceTemplatesRequest, io.modelcontextprotocol.kotlin.sdk.shared/RequestOptions? = ..., io.modelcontextprotocol.kotlin.sdk.client/CacheMode = ...): io.modelcontextprotocol.kotlin.sdk.types/ListResourceTemplatesResult // io.modelcontextprotocol.kotlin.sdk.client/Client.listResourceTemplates|listResourceTemplates(io.modelcontextprotocol.kotlin.sdk.types.ListResourceTemplatesRequest;io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions?;io.modelcontextprotocol.kotlin.sdk.client.CacheMode){}[0]
+    final suspend fun listResources(io.modelcontextprotocol.kotlin.sdk.types/ListResourcesRequest = ..., io.modelcontextprotocol.kotlin.sdk.shared/RequestOptions? = ..., io.modelcontextprotocol.kotlin.sdk.client/CacheMode = ...): io.modelcontextprotocol.kotlin.sdk.types/ListResourcesResult // io.modelcontextprotocol.kotlin.sdk.client/Client.listResources|listResources(io.modelcontextprotocol.kotlin.sdk.types.ListResourcesRequest;io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions?;io.modelcontextprotocol.kotlin.sdk.client.CacheMode){}[0]
+    final suspend fun listTools(io.modelcontextprotocol.kotlin.sdk.types/ListToolsRequest = ..., io.modelcontextprotocol.kotlin.sdk.shared/RequestOptions? = ..., io.modelcontextprotocol.kotlin.sdk.client/CacheMode = ...): io.modelcontextprotocol.kotlin.sdk.types/ListToolsResult // io.modelcontextprotocol.kotlin.sdk.client/Client.listTools|listTools(io.modelcontextprotocol.kotlin.sdk.types.ListToolsRequest;io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions?;io.modelcontextprotocol.kotlin.sdk.client.CacheMode){}[0]
+    final suspend fun onNotificationRouted(io.modelcontextprotocol.kotlin.sdk.types/JSONRPCNotification) // io.modelcontextprotocol.kotlin.sdk.client/Client.onNotificationRouted|onNotificationRouted(io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification){}[0]
     final suspend fun ping(io.modelcontextprotocol.kotlin.sdk.shared/RequestOptions? = ...): io.modelcontextprotocol.kotlin.sdk.types/EmptyResult // io.modelcontextprotocol.kotlin.sdk.client/Client.ping|ping(io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions?){}[0]
-    final suspend fun readResource(io.modelcontextprotocol.kotlin.sdk.types/ReadResourceRequest, io.modelcontextprotocol.kotlin.sdk.shared/RequestOptions? = ...): io.modelcontextprotocol.kotlin.sdk.types/ReadResourceResult // io.modelcontextprotocol.kotlin.sdk.client/Client.readResource|readResource(io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest;io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions?){}[0]
+    final suspend fun readResource(io.modelcontextprotocol.kotlin.sdk.types/ReadResourceRequest, io.modelcontextprotocol.kotlin.sdk.shared/RequestOptions? = ..., io.modelcontextprotocol.kotlin.sdk.client/CacheMode = ...): io.modelcontextprotocol.kotlin.sdk.types/ReadResourceResult // io.modelcontextprotocol.kotlin.sdk.client/Client.readResource|readResource(io.modelcontextprotocol.kotlin.sdk.types.ReadResourceRequest;io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions?;io.modelcontextprotocol.kotlin.sdk.client.CacheMode){}[0]
     final suspend fun sendRootsListChanged() // io.modelcontextprotocol.kotlin.sdk.client/Client.sendRootsListChanged|sendRootsListChanged(){}[0]
     final suspend fun setLoggingLevel(io.modelcontextprotocol.kotlin.sdk.types/LoggingLevel, io.modelcontextprotocol.kotlin.sdk.shared/RequestOptions? = ...): io.modelcontextprotocol.kotlin.sdk.types/EmptyResult // io.modelcontextprotocol.kotlin.sdk.client/Client.setLoggingLevel|setLoggingLevel(io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel;io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions?){}[0]
     final suspend fun subscribeResource(io.modelcontextprotocol.kotlin.sdk.types/SubscribeRequest, io.modelcontextprotocol.kotlin.sdk.shared/RequestOptions? = ...): io.modelcontextprotocol.kotlin.sdk.types/EmptyResult // io.modelcontextprotocol.kotlin.sdk.client/Client.subscribeResource|subscribeResource(io.modelcontextprotocol.kotlin.sdk.types.SubscribeRequest;io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions?){}[0]
@@ -114,6 +224,9 @@ open class io.modelcontextprotocol.kotlin.sdk.client/Client : io.modelcontextpro
     open fun assertRequestHandlerCapability(io.modelcontextprotocol.kotlin.sdk.types/Method) // io.modelcontextprotocol.kotlin.sdk.client/Client.assertRequestHandlerCapability|assertRequestHandlerCapability(io.modelcontextprotocol.kotlin.sdk.types.Method){}[0]
     open suspend fun connect(io.modelcontextprotocol.kotlin.sdk.shared/Transport) // io.modelcontextprotocol.kotlin.sdk.client/Client.connect|connect(io.modelcontextprotocol.kotlin.sdk.shared.Transport){}[0]
 }
+
+final const val io.modelcontextprotocol.kotlin.sdk.client/MAX_CACHE_TTL_MS // io.modelcontextprotocol.kotlin.sdk.client/MAX_CACHE_TTL_MS|{}MAX_CACHE_TTL_MS[0]
+    final fun <get-MAX_CACHE_TTL_MS>(): kotlin/Long // io.modelcontextprotocol.kotlin.sdk.client/MAX_CACHE_TTL_MS.<get-MAX_CACHE_TTL_MS>|<get-MAX_CACHE_TTL_MS>(){}[0]
 
 final fun (io.ktor.client/HttpClient).io.modelcontextprotocol.kotlin.sdk.client/mcpSseTransport(kotlin/String? = ..., kotlin.time/Duration? = ..., kotlin/Function1<io.ktor.client.request/HttpRequestBuilder, kotlin/Unit> = ...): io.modelcontextprotocol.kotlin.sdk.client/SseClientTransport // io.modelcontextprotocol.kotlin.sdk.client/mcpSseTransport|mcpSseTransport@io.ktor.client.HttpClient(kotlin.String?;kotlin.time.Duration?;kotlin.Function1<io.ktor.client.request.HttpRequestBuilder,kotlin.Unit>){}[0]
 final fun (io.ktor.client/HttpClient).io.modelcontextprotocol.kotlin.sdk.client/mcpStreamableHttpTransport(kotlin/String, io.modelcontextprotocol.kotlin.sdk.client/ReconnectionOptions = ..., kotlin/Function1<io.ktor.client.request/HttpRequestBuilder, kotlin/Unit> = ...): io.modelcontextprotocol.kotlin.sdk.client/StreamableHttpClientTransport // io.modelcontextprotocol.kotlin.sdk.client/mcpStreamableHttpTransport|mcpStreamableHttpTransport@io.ktor.client.HttpClient(kotlin.String;io.modelcontextprotocol.kotlin.sdk.client.ReconnectionOptions;kotlin.Function1<io.ktor.client.request.HttpRequestBuilder,kotlin.Unit>){}[0]
