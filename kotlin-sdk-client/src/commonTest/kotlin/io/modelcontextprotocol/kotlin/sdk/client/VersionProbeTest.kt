@@ -58,7 +58,7 @@ class VersionProbeTest {
     )
 
     private fun httpTransport(
-        onDiscover: MockRequestHandleScope.() -> HttpResponseData,
+        onDiscover: MockRequestHandleScope.(id: RequestId) -> HttpResponseData,
     ): StreamableHttpClientTransport {
         val engine = MockEngine { data ->
             if (data.method != HttpMethod.Post) return@MockEngine respond("", HttpStatusCode.MethodNotAllowed)
@@ -66,7 +66,7 @@ class VersionProbeTest {
             if (message !is JSONRPCRequest) return@MockEngine respond("", HttpStatusCode.Accepted)
             received += message.method
             when (message.method) {
-                "server/discover" -> onDiscover()
+                "server/discover" -> onDiscover(message.id)
                 "initialize" -> respond(initializeResponse(message.id), HttpStatusCode.OK, jsonHeaders)
                 else -> respond("", HttpStatusCode.Accepted)
             }
@@ -74,8 +74,10 @@ class VersionProbeTest {
         return StreamableHttpClientTransport(HttpClient(engine) { install(SSE) }, "http://localhost/mcp")
     }
 
-    private fun rejectWith(status: HttpStatusCode, body: String): MockRequestHandleScope.() -> HttpResponseData =
-        { respond(body, status, jsonHeaders) }
+    private fun rejectWith(
+        status: HttpStatusCode,
+        body: String,
+    ): MockRequestHandleScope.(RequestId) -> HttpResponseData = { respond(body, status, jsonHeaders) }
 
     // Protocol timeouts use delay(); runTest would skip them before the scripted server replies.
     private suspend fun connectAuto(transport: Transport): Client = withContext(Dispatchers.Default) {
@@ -116,13 +118,15 @@ class VersionProbeTest {
 
     @Test
     fun `should not fall back when a 400 carries an unsupported-version error`() = runTest {
-        val transport = httpTransport(
-            rejectWith(
-                HttpStatusCode.BadRequest,
-                """{"jsonrpc":"2.0","id":1,"error":{"code":-32022,"message":"Unsupported protocol version",""" +
+        val transport = httpTransport { id ->
+            respond(
+                """{"jsonrpc":"2.0","id":${McpJson.encodeToString(RequestId.serializer(), id)},""" +
+                    """"error":{"code":-32022,"message":"Unsupported protocol version",""" +
                     """"data":{"supported":["2099-01-01"],"requested":"2026-07-28"}}}""",
-            ),
-        )
+                HttpStatusCode.BadRequest,
+                jsonHeaders,
+            )
+        }
 
         val failure = connectAutoFailure(transport)
 

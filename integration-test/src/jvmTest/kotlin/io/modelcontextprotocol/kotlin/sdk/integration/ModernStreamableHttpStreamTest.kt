@@ -1,8 +1,10 @@
 package io.modelcontextprotocol.kotlin.sdk.integration
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.sse.SSE
 import io.ktor.client.request.header
 import io.ktor.client.request.preparePost
 import io.ktor.client.request.setBody
@@ -14,16 +16,26 @@ import io.ktor.http.contentType
 import io.ktor.server.cio.CIO
 import io.ktor.server.engine.embeddedServer
 import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
+import io.modelcontextprotocol.kotlin.sdk.client.Client
+import io.modelcontextprotocol.kotlin.sdk.client.ClientOptions
+import io.modelcontextprotocol.kotlin.sdk.client.StreamableHttpClientTransport
+import io.modelcontextprotocol.kotlin.sdk.client.VersionNegotiationMode
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.mcpStatelessStreamableHttp
+import io.modelcontextprotocol.kotlin.sdk.server.mcpStreamableHttp
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.LATEST_HANDSHAKE_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.LATEST_MODERN_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotification
 import io.modelcontextprotocol.kotlin.sdk.types.LoggingMessageNotificationParams
+import io.modelcontextprotocol.kotlin.sdk.types.McpException
+import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
@@ -232,6 +244,70 @@ class ModernStreamableHttpStreamTest {
                 }
             } finally {
                 client.close()
+                server.stop(1000, 2000)
+            }
+        }
+
+    @Test
+    fun `a JSON-RPC error answered on HTTP 400 reaches the caller with its code and data`(): Unit =
+        runBlocking(Dispatchers.IO) {
+            val mcpServer = Server(
+                Implementation("stream-server", "1.0"),
+                ServerOptions(capabilities = ServerCapabilities(prompts = ServerCapabilities.Prompts())),
+            ).apply {
+                addPrompt("needs-sampling") {
+                    throw McpException(
+                        code = RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY,
+                        message = "sampling required",
+                        data = JsonPrimitive("sampling"),
+                    )
+                }
+            }
+            val server = embeddedServer(CIO, port = 0) { mcpStatelessStreamableHttp { mcpServer } }.start(wait = false)
+            val http = HttpClient(ClientCIO) { install(SSE) }
+            val client = Client(
+                Implementation("stream-client", "1.0"),
+                ClientOptions(versionNegotiation = VersionNegotiationMode.Pin(LATEST_MODERN_VERSION)),
+            )
+            try {
+                val port = server.engine.resolvedConnectors().first().port
+                client.connect(StreamableHttpClientTransport(http, "http://localhost:$port/mcp"))
+
+                val failure = shouldThrow<McpException> {
+                    client.getPrompt(GetPromptRequest(GetPromptRequestParams(name = "needs-sampling")))
+                }
+
+                failure.code shouldBe RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY
+                failure.message shouldContain "sampling required"
+                failure.data shouldBe JsonPrimitive("sampling")
+            } finally {
+                client.close()
+                http.close()
+                server.stop(1000, 2000)
+            }
+        }
+
+    @Test
+    fun `an auto client against the stateful route still falls back to the handshake`(): Unit =
+        runBlocking(Dispatchers.IO) {
+            val mcpServer = Server(
+                Implementation("stream-server", "1.0"),
+                ServerOptions(capabilities = ServerCapabilities(prompts = ServerCapabilities.Prompts())),
+            )
+            val server = embeddedServer(CIO, port = 0) { mcpStreamableHttp { mcpServer } }.start(wait = false)
+            val http = HttpClient(ClientCIO) { install(SSE) }
+            val client = Client(
+                Implementation("stream-client", "1.0"),
+                ClientOptions(versionNegotiation = VersionNegotiationMode.Auto),
+            )
+            try {
+                val port = server.engine.resolvedConnectors().first().port
+                client.connect(StreamableHttpClientTransport(http, "http://localhost:$port/mcp"))
+
+                client.protocolVersion shouldBe LATEST_HANDSHAKE_VERSION
+            } finally {
+                client.close()
+                http.close()
                 server.stop(1000, 2000)
             }
         }

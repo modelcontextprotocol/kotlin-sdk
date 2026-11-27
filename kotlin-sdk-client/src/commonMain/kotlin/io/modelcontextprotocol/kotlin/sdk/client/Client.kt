@@ -35,7 +35,6 @@ import io.modelcontextprotocol.kotlin.sdk.types.InitializeRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.InitializeResult
 import io.modelcontextprotocol.kotlin.sdk.types.InitializedNotification
 import io.modelcontextprotocol.kotlin.sdk.types.IntegerSchema
-import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCError
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.LATEST_HANDSHAKE_VERSION
@@ -91,6 +90,7 @@ import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.io.IOException
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonElement
@@ -408,23 +408,25 @@ public open class Client(private val clientInfo: Implementation, options: Client
     private suspend fun probeDiscovery(version: String, transport: Transport, timeout: Duration): ProbeOutcome {
         settle(version, transport)
         return try {
-            ProbeOutcome.Answered(
+            // Timed here rather than by the request, so silence is never mistaken for a server
+            // that answered with a timeout code.
+            withTimeoutOrNull(timeout) {
                 request<DiscoverResult>(
                     DiscoverRequest(DiscoverRequestParams(meta = envelope(version).toMeta())),
-                    RequestOptions(timeout = timeout),
-                ),
-            )
+                    RequestOptions(timeout = Duration.INFINITE),
+                )
+            }?.let { ProbeOutcome.Answered(it) } ?: ProbeOutcome.Silent
         } catch (e: CancellationException) {
             throw e
         } catch (e: McpException) {
             val cause = e.cause
             when {
-                cause is StreamableHttpError -> httpRejection(e, cause)
+                cause is StreamableHttpError && cause.code !in 400..499 -> throw e
 
                 cause is IOException -> throw e
 
-                // On stdio, no answer means a server that predates discovery.
-                e.code == RPCError.ErrorCode.REQUEST_TIMEOUT || e.code == RPCError.ErrorCode.CONNECTION_CLOSED ->
+                // On stdio, a server that exits instead of answering predates discovery.
+                transport is StdioClientTransport && e.code == RPCError.ErrorCode.CONNECTION_CLOSED ->
                     ProbeOutcome.Silent
 
                 else -> ProbeOutcome.Refused(e)
@@ -437,20 +439,6 @@ public open class Client(private val clientInfo: Implementation, options: Client
         } finally {
             withdraw(transport)
         }
-    }
-
-    /**
-     * A request-scoped server puts a JSON-RPC error in the body of its `4xx`, so the body is what
-     * tells the two eras apart.
-     */
-    private fun httpRejection(failure: McpException, rejection: StreamableHttpError): ProbeOutcome {
-        if (rejection.code !in 400..499) throw failure
-        val error = try {
-            rejection.rejectedBody?.let { McpJson.decodeFromString<JSONRPCError>(it).error }
-        } catch (_: SerializationException) {
-            null
-        } ?: return ProbeOutcome.Refused(failure)
-        return ProbeOutcome.Refused(McpException(error.code, error.message, error.data, cause = rejection))
     }
 
     /** Undoes [settle], leaving the connection unsettled again. */
