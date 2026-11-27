@@ -23,6 +23,7 @@ import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.utils.io.charsets.TooLongLineException
 import io.ktor.utils.io.readUTF8Line
+import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.InternalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.shared.AbstractClientTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.TooLongFrameException
@@ -38,6 +39,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.MCP_PROTOCOL_VERSION_HEADER
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
 import io.modelcontextprotocol.kotlin.sdk.types.Method
 import io.modelcontextprotocol.kotlin.sdk.types.NAME_BEARING_METHODS
+import io.modelcontextprotocol.kotlin.sdk.types.PROTOCOL_VERSION_META_KEY
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.encodeMcpHeaderValue
 import kotlinx.atomicfu.atomic
@@ -472,16 +474,21 @@ public class StreamableHttpClientTransport(
      * a receiver cross-checking them against a notification would be checking a rule nobody wrote.
      * The subject is selected by method rather than by whichever of `name` or `uri` happens to be
      * present, so both ends compare the same field by construction.
+     *
+     * Modern-era requests only, recognized by [PROTOCOL_VERSION_META_KEY] in `_meta`: no earlier
+     * revision checks these headers against the body.
      */
+    @OptIn(ExperimentalMcpApi::class)
     private fun applyStandardPostHeaders(builder: HttpRequestBuilder, message: JSONRPCMessage) {
         if (message !is JSONRPCRequest) return
+        val params = message.params as? JsonObject ?: return
+        if ((params["_meta"] as? JsonObject)?.containsKey(PROTOCOL_VERSION_META_KEY) != true) return
 
         builder.headers {
             append(MCP_METHOD_HEADER, message.method)
 
             val nameKey = NAME_BEARING_METHODS[message.method] ?: return@headers
-            val paramsObject = message.params as? JsonObject ?: return@headers
-            paramsObject.stringValue(nameKey)?.let { append(MCP_NAME_HEADER, it.encodeMcpHeaderValue()) }
+            params.stringValue(nameKey)?.let { append(MCP_NAME_HEADER, it.encodeMcpHeaderValue()) }
         }
     }
 

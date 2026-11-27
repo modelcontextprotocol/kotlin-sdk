@@ -21,6 +21,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteReadChannel
+import io.modelcontextprotocol.kotlin.sdk.ExperimentalMcpApi
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.client.StreamableHttpClientTransport
 import io.modelcontextprotocol.kotlin.sdk.client.StreamableHttpError
@@ -32,14 +33,17 @@ import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCMessage
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCNotification
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCRequest
 import io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse
+import io.modelcontextprotocol.kotlin.sdk.types.LATEST_MODERN_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.McpException
 import io.modelcontextprotocol.kotlin.sdk.types.McpJson
+import io.modelcontextprotocol.kotlin.sdk.types.PROTOCOL_VERSION_META_KEY
 import io.modelcontextprotocol.kotlin.sdk.types.RPCError
 import io.modelcontextprotocol.kotlin.sdk.types.RequestId
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
@@ -50,6 +54,7 @@ private const val SESSION_ID_HEADER = "mcp-session-id"
 private const val SESSION_ID = "test-session-id"
 private const val MAX_INLINE_SSE_EVENT_SIZE = 16 * 1024 * 1024
 
+@OptIn(ExperimentalMcpApi::class)
 class StreamableHttpClientTransportTest {
 
     private val request = JSONRPCRequest(id = "req-1", method = "test")
@@ -195,76 +200,20 @@ class StreamableHttpClientTransportTest {
     }
 
     @Test
-    fun `should send MCP method and name headers from name`() = runTest {
-        val headers = postHeaders(
-            JSONRPCRequest(
-                id = "test-id",
-                method = "tools/call",
-                params = buildJsonObject {
-                    put("name", "read_file")
-                    putJsonObject("arguments") { put("path", "README.md") }
-                },
-            ),
-        )
-
-        headers["Mcp-Method"] shouldBe "tools/call"
-        headers["Mcp-Name"] shouldBe "read_file"
-    }
-
-    @Test
-    fun `should send MCP name header from URI`() = runTest {
-        val headers = postHeaders(
-            JSONRPCRequest(
-                id = "test-id",
-                method = "resources/read",
-                params = buildJsonObject { put("uri", "file:///README.md") },
-            ),
-        )
-
-        headers["Mcp-Method"] shouldBe "resources/read"
-        headers["Mcp-Name"] shouldBe "file:///README.md"
-    }
-
-    @Test
-    fun `should send MCP name header from name for prompts get`() = runTest {
-        val headers = postHeaders(
-            JSONRPCRequest(
-                id = "test-id",
-                method = "prompts/get",
-                params = buildJsonObject { put("name", "code_review") },
-            ),
-        )
-
-        headers["Mcp-Method"] shouldBe "prompts/get"
-        headers["Mcp-Name"] shouldBe "code_review"
-    }
-
-    @Test
-    fun `should omit MCP name header for methods without a defined source`() = runTest {
-        val headers = postHeaders(
-            JSONRPCRequest(
-                id = "test-id",
-                method = "resources/subscribe",
-                params = buildJsonObject { put("uri", "file:///README.md") },
-            ),
-        )
-
-        headers["Mcp-Method"] shouldBe "resources/subscribe"
-        headers["Mcp-Name"].shouldBeNull()
-    }
-
-    @Test
-    fun `should send only the MCP method header for requests without a name source`() = runTest {
-        val headers = postHeaders(
-            JSONRPCRequest(
-                id = "test-id",
-                method = "tools/list",
-                params = buildJsonObject { put("cursor", "next-page") },
-            ),
-        )
-
-        headers["Mcp-Method"] shouldBe "tools/list"
-        headers["Mcp-Name"].shouldBeNull()
+    fun `should send MCP method and name headers on a modern request`() = runTest {
+        listOf(
+            modernRequest("tools/call", buildJsonObject { put("name", "read_file") }) to "read_file",
+            modernRequest("resources/read", buildJsonObject { put("uri", "file:///README.md") }) to "file:///README.md",
+            modernRequest("prompts/get", buildJsonObject { put("name", "code_review") }) to "code_review",
+            modernRequest("resources/subscribe", buildJsonObject { put("uri", "file:///README.md") }) to null,
+            modernRequest("tools/list", buildJsonObject { put("cursor", "next-page") }) to null,
+        ).forEach { (request, expectedName) ->
+            withClue(request.method) {
+                val headers = postHeaders(request)
+                headers["Mcp-Method"] shouldBe request.method
+                headers["Mcp-Name"] shouldBe expectedName
+            }
+        }
     }
 
     @Test
@@ -276,34 +225,22 @@ class StreamableHttpClientTransportTest {
             "=?base64?literal?=" to "=?base64?PT9iYXNlNjQ/bGl0ZXJhbD89?=",
         ).forEach { (name, expectedHeader) ->
             withClue(name) {
-                val headers = postHeaders(
-                    JSONRPCRequest(
-                        id = "test-id",
-                        method = "tools/call",
-                        params = buildJsonObject {
-                            put("name", name)
-                        },
-                    ),
-                )
+                val headers = postHeaders(modernRequest("tools/call", buildJsonObject { put("name", name) }))
                 headers["Mcp-Name"] shouldBe expectedHeader
             }
         }
     }
 
     @Test
-    fun `should omit MCP standard headers for notifications`() = runTest {
-        val headers = postHeaders(JSONRPCNotification(method = "notifications/tools/list_changed"))
-
-        headers["Mcp-Method"].shouldBeNull()
-        headers["Mcp-Name"].shouldBeNull()
-    }
-
-    @Test
-    fun `should omit MCP standard headers for notifications that carry a URI`() = runTest {
+    fun `should omit MCP standard headers on a request without a protocol version claim`() = runTest {
         val headers = postHeaders(
-            JSONRPCNotification(
-                method = "notifications/resources/updated",
-                params = buildJsonObject { put("uri", "file:///README.md") },
+            JSONRPCRequest(
+                id = "test-id",
+                method = "tools/call",
+                params = buildJsonObject {
+                    put("name", "read_file")
+                    putJsonObject("_meta") { put("progressToken", 1) }
+                },
             ),
         )
 
@@ -312,11 +249,23 @@ class StreamableHttpClientTransportTest {
     }
 
     @Test
-    fun `should omit MCP standard headers for responses`() = runTest {
-        val headers = postHeaders(JSONRPCResponse(id = RequestId.StringId("test-id")))
-
-        headers["Mcp-Method"].shouldBeNull()
-        headers["Mcp-Name"].shouldBeNull()
+    fun `should omit MCP standard headers on messages other than requests`() = runTest {
+        listOf(
+            JSONRPCNotification(
+                method = "notifications/resources/updated",
+                params = buildJsonObject {
+                    put("uri", "file:///README.md")
+                    putJsonObject("_meta") { put(PROTOCOL_VERSION_META_KEY, LATEST_MODERN_VERSION) }
+                },
+            ),
+            JSONRPCResponse(id = RequestId.StringId("test-id")),
+        ).forEach { message ->
+            withClue(message) {
+                val headers = postHeaders(message)
+                headers["Mcp-Method"].shouldBeNull()
+                headers["Mcp-Name"].shouldBeNull()
+            }
+        }
     }
 
     @Test
@@ -423,6 +372,15 @@ class StreamableHttpClientTransportTest {
         transport.sessionId shouldBe SESSION_ID
         return transport
     }
+
+    /** A request carrying the protocol version claim that marks it as modern-era. */
+    private fun modernRequest(method: String, params: JsonObject): JSONRPCRequest = JSONRPCRequest(
+        id = "test-id",
+        method = method,
+        params = JsonObject(
+            params + ("_meta" to buildJsonObject { put(PROTOCOL_VERSION_META_KEY, LATEST_MODERN_VERSION) }),
+        ),
+    )
 
     private suspend fun postHeaders(
         message: JSONRPCMessage,
