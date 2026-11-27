@@ -76,7 +76,9 @@ private fun JsonObject.withServerInfoStamp(serverInfo: Implementation?): JsonObj
  * The error code to put on the wire for a locally raised [code].
  *
  * Retired codes are never emitted: `-32002` (resource not found) travels as invalid params under
- * either lifecycle, and `-32042` survives only where URL elicitation does. Local-only codes are
+ * either lifecycle, and `-32042` survives only where URL elicitation does. `-32021` (missing client
+ * capability) belongs to the request-scoped revisions, so a handshake-era peer gets `-32603`, as it
+ * did before that code existed. Local-only codes are
  * never emitted either: a timeout or connection failure of this side's own nested call must not
  * read to the peer as its counterparty's verdict.
  */
@@ -88,6 +90,9 @@ internal fun outboundErrorCode(era: ProtocolEra, code: Int): Int = when {
         RPCError.ErrorCode.INTERNAL_ERROR
 
     era == ProtocolEra.Modern && code == RPCError.ErrorCode.URL_ELICITATION_REQUIRED ->
+        RPCError.ErrorCode.INTERNAL_ERROR
+
+    era == ProtocolEra.Legacy && code == RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY ->
         RPCError.ErrorCode.INTERNAL_ERROR
 
     else -> code

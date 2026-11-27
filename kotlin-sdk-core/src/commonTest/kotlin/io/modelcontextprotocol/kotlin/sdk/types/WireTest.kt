@@ -151,6 +151,14 @@ class WireTest {
     }
 
     @Test
+    fun `a missing client capability should reach the wire only where the code is defined`() {
+        val missing = RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY
+
+        outboundErrorCode(ProtocolEra.Modern, missing) shouldBe missing
+        outboundErrorCode(ProtocolEra.Legacy, missing) shouldBe RPCError.ErrorCode.INTERNAL_ERROR
+    }
+
+    @Test
     fun `a local-only error code should never reach the wire`() {
         // A timeout or connection failure is this side's own verdict on its own nested call; a peer
         // reading it as the counterparty's answer would be misled.
@@ -167,7 +175,6 @@ class WireTest {
             RPCError.ErrorCode.INTERNAL_ERROR,
             RPCError.ErrorCode.METHOD_NOT_FOUND,
             RPCError.ErrorCode.HEADER_MISMATCH,
-            RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY,
             RPCError.ErrorCode.UNSUPPORTED_PROTOCOL_VERSION,
         )
 

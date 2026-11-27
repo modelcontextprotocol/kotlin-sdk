@@ -21,6 +21,9 @@ import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CreateMessageRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.ElicitRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequest
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.LATEST_HANDSHAKE_VERSION
 import io.modelcontextprotocol.kotlin.sdk.types.LATEST_MODERN_VERSION
@@ -237,6 +240,17 @@ class RequestScopedLifecycleTest {
     }
 
     @Test
+    fun `a handshake client lacking a capability a prompt needs gets an internal error`() = runBlocking {
+        val client = connect(VersionNegotiationMode.Legacy) { ok() }
+
+        // -32021 is not defined by the handshake revision; such a client got -32603 before it existed.
+        assertFailsWith<McpException> {
+            client.getPrompt(GetPromptRequest(GetPromptRequestParams(name = "elicits")))
+        }.code shouldBe RPCError.ErrorCode.INTERNAL_ERROR
+        client.close()
+    }
+
+    @Test
     fun `a request-scoped client lacking a capability a tool needs gets -32021`() = runBlocking {
         val client = connect(VersionNegotiationMode.Auto) {
             throw McpException(RPCError.ErrorCode.MISSING_REQUIRED_CLIENT_CAPABILITY, "needs elicitation")
@@ -350,6 +364,7 @@ class RequestScopedLifecycleTest {
             options = ServerOptions(
                 capabilities = ServerCapabilities(
                     tools = ServerCapabilities.Tools(null),
+                    prompts = ServerCapabilities.Prompts(),
                     resources = ServerCapabilities.Resources(subscribe = true, listChanged = null),
                     logging = EmptyJsonObject,
                 ),
@@ -361,6 +376,10 @@ class RequestScopedLifecycleTest {
             inputSchema = ToolSchema(properties = EmptyJsonObject, required = null),
             handler = handler,
         )
+        server.addPrompt(name = "elicits") {
+            createElicitation("confirm?", ElicitRequestParams.RequestedSchema(properties = emptyMap()))
+            GetPromptResult(messages = emptyList())
+        }
 
         val client = Client(
             clientInfo = clientInfo,
