@@ -91,6 +91,7 @@ final class io.modelcontextprotocol.kotlin.sdk.client/CacheKey { // io.modelcont
 }
 
 final class io.modelcontextprotocol.kotlin.sdk.client/ClientOptions : io.modelcontextprotocol.kotlin.sdk.shared/ProtocolOptions { // io.modelcontextprotocol.kotlin.sdk.client/ClientOptions|null[0]
+    constructor <init>(io.modelcontextprotocol.kotlin.sdk.types/ClientCapabilities = ..., kotlin/Boolean = ..., kotlin.coroutines/CoroutineContext = ...) // io.modelcontextprotocol.kotlin.sdk.client/ClientOptions.<init>|<init>(io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities;kotlin.Boolean;kotlin.coroutines.CoroutineContext){}[0]
     constructor <init>(io.modelcontextprotocol.kotlin.sdk.types/ClientCapabilities = ..., kotlin/Boolean = ..., kotlin.coroutines/CoroutineContext = ..., io.modelcontextprotocol.kotlin.sdk.client/VersionNegotiationMode = ..., io.modelcontextprotocol.kotlin.sdk.types/LoggingLevel? = ..., io.modelcontextprotocol.kotlin.sdk.client/ResponseCacheStore? = ..., kotlin/String = ...) // io.modelcontextprotocol.kotlin.sdk.client/ClientOptions.<init>|<init>(io.modelcontextprotocol.kotlin.sdk.types.ClientCapabilities;kotlin.Boolean;kotlin.coroutines.CoroutineContext;io.modelcontextprotocol.kotlin.sdk.client.VersionNegotiationMode;io.modelcontextprotocol.kotlin.sdk.types.LoggingLevel?;io.modelcontextprotocol.kotlin.sdk.client.ResponseCacheStore?;kotlin.String){}[0]
 
     final val cachePartition // io.modelcontextprotocol.kotlin.sdk.client/ClientOptions.cachePartition|{}cachePartition[0]

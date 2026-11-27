@@ -110,6 +110,20 @@ public class ServerOptions(
         capabilities: ServerCapabilities,
         enforceStrictCapabilities: Boolean = true,
     ) : this(capabilities, enforceStrictCapabilities, PathSegmentTemplateMatcher.factory)
+
+    @Deprecated("Kept for binary compatibility", level = DeprecationLevel.HIDDEN)
+    public constructor(
+        capabilities: ServerCapabilities,
+        enforceStrictCapabilities: Boolean = true,
+        resourceTemplateMatcherFactory: ResourceTemplateMatcherFactory = PathSegmentTemplateMatcher.factory,
+        handlerCoroutineContext: CoroutineContext = Dispatchers.Default,
+    ) : this(
+        capabilities = capabilities,
+        enforceStrictCapabilities = enforceStrictCapabilities,
+        resourceTemplateMatcherFactory = resourceTemplateMatcherFactory,
+        handlerCoroutineContext = handlerCoroutineContext,
+        sendServerInfo = true,
+    )
 }
 
 /**

@@ -146,7 +146,19 @@ public class ClientOptions(
 ) : ProtocolOptions(
     enforceStrictCapabilities = enforceStrictCapabilities,
     handlerCoroutineContext = handlerCoroutineContext,
-)
+) {
+    @Deprecated("Kept for binary compatibility", level = DeprecationLevel.HIDDEN)
+    public constructor(
+        capabilities: ClientCapabilities = ClientCapabilities(),
+        enforceStrictCapabilities: Boolean = true,
+        handlerCoroutineContext: CoroutineContext = Dispatchers.Default,
+    ) : this(
+        capabilities = capabilities,
+        enforceStrictCapabilities = enforceStrictCapabilities,
+        handlerCoroutineContext = handlerCoroutineContext,
+        versionNegotiation = VersionNegotiationMode.Legacy,
+    )
+}
 
 /**
  * Initializes and connects an MCP client using the provided clientInfo [Implementation], client options,
